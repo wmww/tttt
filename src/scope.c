@@ -17,3 +17,10 @@ cstr Scope_to_cstr(Scope* self, int indent) {
     cstr_append_sv(&ret, c_sv("}"));
     return ret;
 }
+
+Scope scope_simplify(Scope self) {
+    c_foreach(i, vec_Statement, self.statements) {
+        *i.ref = statement_simplify(*i.ref);
+    }
+    return self;
+}

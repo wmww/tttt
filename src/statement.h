@@ -19,6 +19,7 @@ typedef struct Statement {
 
 void Statement_drop(Statement* self);
 cstr Statement_to_cstr(Statement* self, int indent);
+Statement statement_simplify(Statement self);
 
 #define i_key_class Statement
 #define i_is_forward

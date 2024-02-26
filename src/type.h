@@ -48,4 +48,4 @@ cstr Type_to_cstr(Type* self, int indent);
 Type Type_move(Type* self);
 
 bool type_extends(Type *sub, Type *super);
-Type type_simplify(Type t);
+Type type_simplify(Type self);

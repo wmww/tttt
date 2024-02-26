@@ -32,3 +32,19 @@ cstr Statement_to_cstr(Statement* self, int indent) {
     }
     UNREACHABLE;
 }
+
+Statement statement_simplify(Statement self) {
+    switch (self.tag) {
+        case STATEMENT_INTERFACE:
+            self.data.interface.content = interface_simplify(self.data.interface.content);
+            break;
+
+        case STATEMENT_SCOPE:
+            self.data.scope = scope_simplify(self.data.scope);
+            break;
+
+        case STATEMENT_EXPR:
+            break;
+    }
+    return self;
+}

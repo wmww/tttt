@@ -3,10 +3,13 @@
 #include "interface.h"
 #include "interface_member.h"
 #include "statement.h"
+#include "ternary_type.h"
+#include "extends_conditional.h"
 #include "type.h"
 
 static bool parse_scope(const char** src, Scope* ret);
 static bool parse_interface(const char** src, Interface* ret);
+static bool parse_type(const char** src, Type* type);
 
 static inline bool hop_whitespace(const char** str) {
     bool ret = false;
@@ -84,7 +87,60 @@ static bool parse_identifier(const char** src, cstr* name) {
     }
 }
 
+static bool parse_ternary_type(const char** src, TernaryType* ret) {
+    const char* s = *src;
+    Type maybeSub = {0};
+    Type maybeSuper = {0};
+    Type trueType = {0};
+    Type falseType = {0};
+    if (!hop_start_if_ends_on_word_break(&s, "extends")) {
+        goto fail;
+    }
+    hop_whitespace(&s);
+    if (!parse_type(&s, &maybeSub)) {
+        goto fail;
+    }
+    hop_whitespace(&s);
+    if (!parse_type(&s, &maybeSuper)) {
+        goto fail;
+    }
+    hop_whitespace(&s);
+    if (!hop_start(&s, "?")) {
+        goto fail;
+    }
+    hop_whitespace(&s);
+    if (!parse_type(&s, &trueType)) {
+        goto fail;
+    }
+    hop_whitespace(&s);
+    if (!hop_start(&s, ":")) {
+        goto fail;
+    }
+    hop_whitespace(&s);
+    if (!parse_type(&s, &falseType)) {
+        goto fail;
+    }
+    *ret = (TernaryType){
+        .conditional = (ExtendsConditional){
+            .maybeSub = maybeSub,
+            .maybeSuper = maybeSuper,
+        },
+        .trueType = trueType,
+        .falseType = falseType,
+    };
+    *src = s;
+    return true;
+
+fail:
+    Type_drop(&maybeSub);
+    Type_drop(&maybeSuper);
+    Type_drop(&trueType);
+    Type_drop(&falseType);
+    return false;
+}
+
 static bool parse_type(const char** src, Type* type) {
+    TernaryType ternary;
     if (hop_start_if_ends_on_word_break(src, "any")) {
         *type = type_any_new();
         return true;
@@ -105,6 +161,9 @@ static bool parse_type(const char** src, Type* type) {
         return true;
     } else if (parse_interface(src, &type->data.interface)) {
         type->tag = TYPE_INTERFACE;
+        return true;
+    } else if (parse_ternary_type(src, &ternary)) {
+        *type = type_ternary_new(c_new(TernaryType, ternary));
         return true;
     } else {
         return false;
@@ -161,16 +220,17 @@ static bool parse_interface(const char** src, Interface* ret) {
 }
 
 static bool parse_named_interface(const char** src, NamedInterface* ret) {
-    if (!hop_start_and_required_whitespace(src, "interface")) {
+    const char* s = *src;
+    if (!hop_start_and_required_whitespace(&s, "interface")) {
         return false;
     }
     cstr name;
-    if (!parse_identifier(src, &name)) {
+    if (!parse_identifier(&s, &name)) {
         return false;
     }
-    hop_whitespace(src);
+    hop_whitespace(&s);
     Interface interface;
-    if (!parse_interface(src, &interface)) {
+    if (!parse_interface(&s, &interface)) {
         cstr_drop(&name);
         return false;
     }
@@ -178,6 +238,7 @@ static bool parse_named_interface(const char** src, NamedInterface* ret) {
         .name = name,
         .content = interface,
     };
+    *src = s;
     return true;
 }
 

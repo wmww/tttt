@@ -22,6 +22,13 @@ cstr Interface_to_cstr(Interface* self, int indent) {
     return ret;
 }
 
+Interface interface_simplify(Interface self) {
+    c_foreach(i, vec_InterfaceMember, self.members) {
+        i.ref->type = type_simplify(i.ref->type);
+    }
+    return self;
+}
+
 void NamedInterface_drop(NamedInterface* self) {
     cstr_drop(&self->name);
     Interface_drop(&self->content);

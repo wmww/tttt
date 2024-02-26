@@ -14,9 +14,13 @@ int main(int argc, const char** argv) {
         PANIC("failed to read file");
     }
     Scope parsed = parse_file(cstr_str(&contents));
+    cstr_drop(&contents);
     cstr parsed_str = Scope_to_cstr(&parsed, 0);
     printf("Parsed:\n%s\n", cstr_str(&parsed_str));
-    cstr_drop(&contents);
+    cstr_drop(&parsed_str);
+    parsed = scope_simplify(parsed);
+    parsed_str = Scope_to_cstr(&parsed, 0);
+    printf("Simplified:\n%s\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
     Scope_drop(&parsed);
     return 0;

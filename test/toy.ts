@@ -6,3 +6,7 @@ interface Foo {
         c: null
     }
 }
+
+interface Bar {
+    xyz: extends boolean boolean ? string : number
+}

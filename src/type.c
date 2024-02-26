@@ -23,6 +23,7 @@ void Type_drop(Type* self) {
             free(self->data.ternary);
             break;
     }
+    self->tag = TYPE_ANY;
 }
 
 cstr Type_to_cstr(Type* self, int indent) {
@@ -66,33 +67,31 @@ bool type_extends(Type *sub, Type *super) {
     UNREACHABLE;
 }
 
-Type type_simplify(Type t) {
-    switch (t.tag) {
+Type type_simplify(Type self) {
+    switch (self.tag) {
         case TYPE_NULL:
         case TYPE_ANY:
         case TYPE_UNDEFINED:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
-            return t;
+            return self;
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_InterfaceMember, t.data.interface.members) {
-                i.ref->type = type_simplify(i.ref->type);
-            }
-            return t;
+            self.data.interface = interface_simplify(self.data.interface);
+            return self;
             break;
 
         case TYPE_TERNARY: {
             Type ret;
-            if (extends_conditional_eval(&t.data.ternary->conditional)) {
-                Type_drop(&t.data.ternary->falseType);
-                ret = Type_move(&t.data.ternary->trueType);
+            if (extends_conditional_eval(&self.data.ternary->conditional)) {
+                Type_drop(&self.data.ternary->falseType);
+                ret = Type_move(&self.data.ternary->trueType);
             } else {
-                Type_drop(&t.data.ternary->trueType);
-                ret = Type_move(&t.data.ternary->falseType);
+                Type_drop(&self.data.ternary->trueType);
+                ret = Type_move(&self.data.ternary->falseType);
             }
-            free(t.data.ternary);
+            free(self.data.ternary);
             return type_simplify(ret);
         }
     }

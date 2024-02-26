@@ -11,3 +11,4 @@ typedef struct Scope {
 
 void Scope_drop(Scope* self);
 cstr Scope_to_cstr(Scope* self, int indent);
+Scope scope_simplify(Scope self);
