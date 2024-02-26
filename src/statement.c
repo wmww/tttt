@@ -32,7 +32,7 @@ cstr VarInit_to_cstr(VarInit* self, int indent) {
 
 VarInit VarInit_simplify(VarInit self) {
     if (self.has_type) {
-        self.type = type_simplify(self.type);
+        self.type = Type_simplify(self.type);
     }
     if (self.has_value) {
         self.value = Expr_simplify(self.value);
@@ -83,7 +83,7 @@ cstr Statement_to_cstr(Statement* self, int indent) {
 Statement statement_simplify(Statement self) {
     switch (self.tag) {
         case STATEMENT_INTERFACE:
-            self.data.interface.content = interface_simplify(self.data.interface.content);
+            self.data.interface.content = Interface_simplify(self.data.interface.content);
             break;
 
         case STATEMENT_SCOPE:

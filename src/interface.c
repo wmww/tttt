@@ -22,9 +22,9 @@ cstr Interface_to_cstr(Interface* self, int indent) {
     return ret;
 }
 
-Interface interface_simplify(Interface self) {
+Interface Interface_simplify(Interface self) {
     c_foreach(i, vec_InterfaceMember, self.members) {
-        i.ref->type = type_simplify(i.ref->type);
+        i.ref->type = Type_simplify(i.ref->type);
     }
     return self;
 }

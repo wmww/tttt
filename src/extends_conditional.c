@@ -14,6 +14,6 @@ cstr ExtendsConditional_to_cstr(ExtendsConditional* self, int indent) {
     return ret;
 }
 
-bool extends_conditional_eval(ExtendsConditional* self) {
-    return type_extends(&self->maybeSub, &self->maybeSuper);
+bool ExtendsConditional_eval(ExtendsConditional* self) {
+    return Type_extends(&self->maybeSub, &self->maybeSuper);
 }

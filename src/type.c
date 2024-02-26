@@ -46,7 +46,7 @@ Type Type_move(Type* self) {
     return ret;
 }
 
-bool type_extends(Type *sub, Type *super) {
+bool Type_extends(Type *sub, Type *super) {
     switch (sub->tag) {
         case TYPE_NULL:
         case TYPE_ANY:
@@ -67,7 +67,7 @@ bool type_extends(Type *sub, Type *super) {
     UNREACHABLE;
 }
 
-Type type_simplify(Type self) {
+Type Type_simplify(Type self) {
     switch (self.tag) {
         case TYPE_NULL:
         case TYPE_ANY:
@@ -78,13 +78,13 @@ Type type_simplify(Type self) {
             return self;
 
         case TYPE_INTERFACE:
-            self.data.interface = interface_simplify(self.data.interface);
+            self.data.interface = Interface_simplify(self.data.interface);
             return self;
             break;
 
         case TYPE_TERNARY: {
             Type ret;
-            if (extends_conditional_eval(&self.data.ternary->conditional)) {
+            if (ExtendsConditional_eval(&self.data.ternary->conditional)) {
                 Type_drop(&self.data.ternary->falseType);
                 ret = Type_move(&self.data.ternary->trueType);
             } else {
@@ -92,7 +92,7 @@ Type type_simplify(Type self) {
                 ret = Type_move(&self.data.ternary->falseType);
             }
             free(self.data.ternary);
-            return type_simplify(ret);
+            return Type_simplify(ret);
         }
     }
     UNREACHABLE;

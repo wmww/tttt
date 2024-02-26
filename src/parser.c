@@ -152,17 +152,17 @@ static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, E
 static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
-        type = type_any_new();
+        type = Type_any_new();
     } else if (hop_start_if_ends_on_word_break(src, "undefined")) {
-        type = type_undefined_new();
+        type = Type_undefined_new();
     } else if (hop_start_if_ends_on_word_break(src, "null")) {
-        type = type_null_new();
+        type = Type_null_new();
     } else if (hop_start_if_ends_on_word_break(src, "boolean")) {
-        type = type_boolean_new();
+        type = Type_boolean_new();
     } else if (hop_start_if_ends_on_word_break(src, "number")) {
-        type = type_number_new();
+        type = Type_number_new();
     } else if (hop_start_if_ends_on_word_break(src, "string")) {
-        type = type_string_new();
+        type = Type_string_new();
     } else if (parse_interface(src, &type.data.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
@@ -171,7 +171,7 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     }
     TernaryType ternary;
     if (parse_ternary_type(src, type, &ternary, errs)) {
-        *ret = type_ternary_new(c_new(TernaryType, ternary));
+        *ret = Type_ternary_new(c_new(TernaryType, ternary));
         return true;
     } else {
         *ret = type;
