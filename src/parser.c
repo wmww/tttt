@@ -246,6 +246,7 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
     return true;
 }
 
+// Only takes ownership of a on success (confusing but it works)
 static bool parse_binary_op(const char** src, Expr a, BinaryOp* ret, ErrorCtx* errs) {
     const char* s = *src;
     if (hop_start(&s, "+")) {
@@ -253,7 +254,6 @@ static bool parse_binary_op(const char** src, Expr a, BinaryOp* ret, ErrorCtx* e
     } else if (hop_start(&s, "-")) {
         ret->op = BINARY_OP_MINUS;
     } else {
-        Expr_drop(&a);
         return false;
     }
     ret->a = a;
