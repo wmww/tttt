@@ -4,4 +4,4 @@
 
 typedef struct Scope Scope;
 
-Scope parse_file(const char* src);
+bool parse_file(const char* src, Scope* scope);

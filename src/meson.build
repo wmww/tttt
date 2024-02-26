@@ -10,5 +10,6 @@ src_files = files(
     'expr.c',
     'statement.c',
     'parser.c',
+    'error.c',
     'filesystem.c',
 )

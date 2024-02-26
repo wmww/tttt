@@ -6,10 +6,11 @@
 #include "ternary_type.h"
 #include "extends_conditional.h"
 #include "type.h"
+#include "error.h"
 
-static bool parse_scope(const char** src, Scope* ret);
-static bool parse_interface(const char** src, Interface* ret);
-static bool parse_type(const char** src, Type* type);
+static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs);
+static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs);
+static bool parse_type(const char** src, Type* type, ErrorCtx* errs);
 
 static inline bool hop_whitespace(const char** str) {
     bool ret = false;
@@ -87,35 +88,29 @@ static bool parse_identifier(const char** src, cstr* name) {
     }
 }
 
-static bool parse_ternary_type(const char** src, Type first, TernaryType* ret) {
+static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, ErrorCtx* errs) {
     const char* s = *src;
     Type maybeSuper = {0};
     Type trueType = {0};
     Type falseType = {0};
     hop_whitespace(&s);
     if (!hop_start_if_ends_on_word_break(&s, "extends")) {
-        goto fail;
+        return false;
     }
     hop_whitespace(&s);
-    if (!parse_type(&s, &maybeSuper)) {
-        goto fail;
-    }
+    parse_type(&s, &maybeSuper, errs);
     hop_whitespace(&s);
     if (!hop_start(&s, "?")) {
-        goto fail;
+        ErrorCtx_error(errs, *src, "expected '?'");
     }
     hop_whitespace(&s);
-    if (!parse_type(&s, &trueType)) {
-        goto fail;
-    }
+    parse_type(&s, &trueType, errs);
     hop_whitespace(&s);
     if (!hop_start(&s, ":")) {
-        goto fail;
+        ErrorCtx_error(errs, *src, "expected ':'");
     }
     hop_whitespace(&s);
-    if (!parse_type(&s, &falseType)) {
-        goto fail;
-    }
+    parse_type(&s, &falseType, errs);
     *ret = (TernaryType){
         .conditional = (ExtendsConditional){
             .maybeSub = first,
@@ -126,15 +121,9 @@ static bool parse_ternary_type(const char** src, Type first, TernaryType* ret) {
     };
     *src = s;
     return true;
-
-fail:
-    Type_drop(&maybeSuper);
-    Type_drop(&trueType);
-    Type_drop(&falseType);
-    return false;
 }
 
-static bool parse_type(const char** src, Type* ret) {
+static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
         type = type_any_new();
@@ -148,13 +137,14 @@ static bool parse_type(const char** src, Type* ret) {
         type = type_number_new();
     } else if (hop_start_if_ends_on_word_break(src, "string")) {
         type = type_string_new();
-    } else if (parse_interface(src, &type.data.interface)) {
+    } else if (parse_interface(src, &type.data.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
+        ErrorCtx_error(errs, *src, "did not find type");
         return false;
     }
     TernaryType ternary;
-    if (parse_ternary_type(src, type, &ternary)) {
+    if (parse_ternary_type(src, type, &ternary, errs)) {
         *ret = type_ternary_new(c_new(TernaryType, ternary));
         return true;
     } else {
@@ -163,33 +153,28 @@ static bool parse_type(const char** src, Type* ret) {
     }
 }
 
-static bool parse_interface(const char** src, Interface* ret) {
+static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs) {
     const char* s = *src;
     if (!hop_char(&s, '{')) {
         return false;
     }
     vec_InterfaceMember members = {0};
     hop_whitespace(&s);
-    while (*s && *s != '}') {
+    const char* prev_s = nullptr;
+    while (*s && *s != '}' && s != prev_s) {
+        prev_s = s;
         hop_whitespace(&s);
         cstr name = cstr_null;
         if (!parse_identifier(&s, &name)) {
-            vec_InterfaceMember_drop(&members);
-            return false;
+            ErrorCtx_error(errs, *src, "expected interface member name");
         }
         hop_whitespace(&s);
         if (!hop_char(&s, ':')) {
-            vec_InterfaceMember_drop(&members);
-            cstr_drop(&name);
-            return false;
+            ErrorCtx_error(errs, *src, "expected ':'");
         }
         hop_whitespace(&s);
         Type type;
-        if (!parse_type(&s, &type)) {
-            vec_InterfaceMember_drop(&members);
-            cstr_drop(&name);
-            return false;
-        }
+        parse_type(&s, &type, errs);
         vec_InterfaceMember_push(&members, (InterfaceMember){
             .name = name,
             .type = type,
@@ -200,33 +185,34 @@ static bool parse_interface(const char** src, Interface* ret) {
         (void)(hop_char(&s, ',') || hop_char(&s, ';'));
         hop_whitespace(&s);
     }
-    if (hop_char(&s, '}')) {
-        *ret = (Interface) {
-            .members = members,
-        };
-        *src = s;
-        return true;
-    } else {
-        vec_InterfaceMember_drop(&members);
-        return false;
+    if (!hop_char(&s, '}')) {
+        ErrorCtx_error(errs, *src, "expected '}'");
     }
+    *ret = (Interface) {
+        .members = members,
+    };
+    *src = s;
+    return true;
 }
 
-static bool parse_named_interface(const char** src, NamedInterface* ret) {
+static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCtx* errs) {
     const char* s = *src;
     if (!hop_start_and_required_whitespace(&s, "interface")) {
         return false;
     }
-    cstr name;
+    cstr name = cstr_null;
+    ErrorCtx local_errs = {0};
     if (!parse_identifier(&s, &name)) {
-        return false;
+        ErrorCtx_error(&local_errs, *src, "interface does not have a name");
     }
     hop_whitespace(&s);
     Interface interface;
-    if (!parse_interface(&s, &interface)) {
+    if (!parse_interface(&s, &interface, errs)) {
+        ErrorCtx_drop(&local_errs);
         cstr_drop(&name);
         return false;
     }
+    ErrorCtx_append(errs, local_errs);
     *ret = (NamedInterface) {
         .name = name,
         .content = interface,
@@ -235,12 +221,12 @@ static bool parse_named_interface(const char** src, NamedInterface* ret) {
     return true;
 }
 
-static bool parse_statement(const char** src, Statement* ret) {
+static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     hop_whitespace(src);
-    if (parse_named_interface(src, &ret->data.interface)) {
+    if (parse_named_interface(src, &ret->data.interface, errs)) {
         ret->tag = STATEMENT_INTERFACE;
         return true;
-    } else if (parse_scope(src, &ret->data.scope)) {
+    } else if (parse_scope(src, &ret->data.scope, errs)) {
         ret->tag = STATEMENT_SCOPE;
         return true;
     } else {
@@ -248,49 +234,53 @@ static bool parse_statement(const char** src, Statement* ret) {
     }
 }
 
-static bool parse_scope_inner(const char** src, Scope* ret) {
+static void parse_scope_inner(const char** src, Scope* ret, ErrorCtx* errs) {
     const char* s = *src;
     vec_Statement statements = {0};
     hop_whitespace(&s);
     while(*s && *s != '}') {
         Statement statement;
-        if (!parse_statement(&s, &statement)) {
-            vec_Statement_drop(&statements);
-            return false;
+        if (*s == ';') {
+            s++;
+        } else if (parse_statement(&s, &statement, errs)) {
+            vec_Statement_push(&statements, statement);
+        } else {
+            ErrorCtx_error(errs, *src, "invalid statement");
+            while (*s && *s != '}' && *s != ';' && *s != '\n') { s++; }
         }
-        vec_Statement_push(&statements, statement);
         hop_whitespace(&s);
     }
     *ret = (Scope){
         .statements = statements,
     };
     *src = s;
-    return true;
 }
 
-static bool parse_scope(const char** src, Scope* ret) {
+static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs) {
     const char* s = *src;
     if (!hop_char(&s, '{')) return false;
-    if (!parse_scope_inner(&s, ret)) {
-        return false;
-    }
+    parse_scope_inner(&s, ret, errs);
     hop_whitespace(&s);
     if (!hop_char(&s, '}')) {
-        Scope_drop(ret);
-        return false;
+        ErrorCtx_error(errs, *src, "expected '}'");
     }
     *src = s;
     return true;
 }
 
-Scope parse_file(const char* src) {
-    Scope scope;
+bool parse_file(const char* src, Scope* scope) {
+    ErrorCtx errs = {0};
     hop_whitespace(&src);
-    if (!parse_scope_inner(&src, &scope)) {
-        PANIC("parse error");
-    }
+    parse_scope_inner(&src, scope, &errs);
     if (*src) {
-        PANIC("unexpected }");
+        ErrorCtx_error(&errs, src, "unexpected '}'");
     }
-    return scope;
+    if (ErrorCtx_empty(&errs)) {
+        return true;
+    } else {
+        ErrorCtx_display(&errs);
+        ErrorCtx_drop(&errs);
+        Scope_drop(scope);
+        return false;
+    }
 }
