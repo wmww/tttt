@@ -36,10 +36,10 @@ void Type_drop(Type* self) {
 
 cstr Type_to_cstr(Type* self, int indent) {
     switch (self->tag) {
-        case TYPE_ANY: return cstr_lit("any");
-        case TYPE_BOOLEAN: return cstr_lit("boolean");
-        case TYPE_NUMBER: return cstr_lit("number");
-        case TYPE_STRING: return cstr_lit("string");
+        case TYPE_ANY: return cstr_lit(CLR_TYPE "any" CLR0);
+        case TYPE_BOOLEAN: return cstr_lit(CLR_TYPE "boolean" CLR0);
+        case TYPE_NUMBER: return cstr_lit(CLR_TYPE "number" CLR0);
+        case TYPE_STRING: return cstr_lit(CLR_TYPE "string" CLR0);
         case TYPE_VALUE: return Value_to_cstr(&self->data.value, indent);
         case TYPE_INTERFACE: return Interface_to_cstr(&self->data.interface, indent);
         case TYPE_TERNARY: return TernaryType_to_cstr(self->data.ternary, indent);

@@ -12,3 +12,12 @@ void panic(const char* file, int line, const char* fmt, ...) __attribute__ ((for
 
 #define INDENT "  "
 #define APPEND_INDENT(str, level) for (int indent_i = 0; indent_i < level; indent_i++) cstr_append(str, INDENT);
+
+#define CLR0 "\x1b[0m"
+#define CLR_ERR "\x1b[31m"
+#define CLR_GOOD "\x1b[32;1m"
+#define CLR_VALUE "\x1b[36m"
+#define CLR_STR "\x1b[33m"
+#define CLR_NUM "\x1b[34m"
+#define CLR_TYPE "\x1b[32m"
+#define CLR_NAME "\x1b[35m"

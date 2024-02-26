@@ -14,7 +14,9 @@ cstr VarInit_to_cstr(VarInit* self, int indent) {
         case VAR_INIT_LET: ret = cstr_lit("let "); break;
         case VAR_INIT_CONST: ret = cstr_lit("const "); break;
     }
+    cstr_append(&ret, CLR_NAME);
     cstr_append_s(&ret, self->name);
+    cstr_append(&ret, CLR0);
     if (self->has_type) {
         cstr_append(&ret, ": ");
         cstr type = Type_to_cstr(&self->type, indent);

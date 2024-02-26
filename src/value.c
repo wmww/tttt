@@ -34,15 +34,17 @@ Value Value_clone(Value self) {
 cstr Value_to_cstr(Value const* self, int indent) {
     (void)indent;
     switch (self->tag) {
-        case VALUE_NULL: return cstr_lit("null");
-        case VALUE_UNDEFINED: return cstr_lit("undefined");
-        case VALUE_BOOLEAN: return self->data.boolean ? cstr_lit("true") : cstr_lit("false");
+        case VALUE_NULL: return cstr_lit(CLR_VALUE "null" CLR0);
+        case VALUE_UNDEFINED: return cstr_lit(CLR_VALUE "undefined" CLR0);
+        case VALUE_BOOLEAN: return self->data.boolean
+            ? cstr_lit(CLR_VALUE "true" CLR0)
+            : cstr_lit(CLR_VALUE "false" CLR0);
         case VALUE_NUMBER: return round(self->data.number) == self->data.number
-            ? cstr_from_fmt("%ld", (long)self->data.number)
-            : cstr_from_fmt("%f", self->data.number);
+            ? cstr_from_fmt(CLR_NUM "%ld" CLR0, (long)self->data.number)
+            : cstr_from_fmt(CLR_NUM "%f" CLR0, self->data.number);
         case VALUE_STRING:
             // TODO: escape string contents
-            return cstr_from_fmt("'%s'", cstr_str(&self->data.string));
+            return cstr_from_fmt(CLR_STR "'%s'" CLR0, cstr_str(&self->data.string));
     }
     UNREACHABLE;
 }

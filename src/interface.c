@@ -10,8 +10,9 @@ cstr Interface_to_cstr(Interface* self, int indent) {
     cstr ret = cstr_lit("{\n");
     c_foreach(i, vec_InterfaceMember, self->members) {
         APPEND_INDENT(&ret, indent + 1);
+        cstr_append(&ret, CLR_NAME);
         cstr_append_s(&ret, i.ref->name);
-        cstr_append_sv(&ret, c_sv(": "));
+        cstr_append_sv(&ret, c_sv(CLR0 ": "));
         cstr type = Type_to_cstr(&i.ref->type, indent + 1);
         cstr_append_s(&ret, type);
         cstr_drop(&type);
@@ -28,9 +29,9 @@ void NamedInterface_drop(NamedInterface* self) {
 }
 
 cstr NamedInterface_to_cstr(NamedInterface* self, int indent) {
-    cstr ret = cstr_lit("interface ");
+    cstr ret = cstr_lit("interface " CLR_NAME);
     cstr_append_s(&ret, self->name);
-    cstr_append(&ret, " ");
+    cstr_append(&ret, CLR0 " ");
     cstr content = Interface_to_cstr(&self->content, indent);
     cstr_append_s(&ret, content);
     cstr_drop(&content);

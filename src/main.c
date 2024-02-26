@@ -28,7 +28,7 @@ int main(int argc, const char** argv) {
     }
 
     cstr parsed_str = Scope_to_cstr(&parsed, 0);
-    printf("Parsed:\n%s\n\n", cstr_str(&parsed_str));
+    printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
 
     Scope_typecheck(&parsed, &errs);
@@ -40,7 +40,7 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    printf("Typecheck passed\n");
+    printf(CLR_GOOD "Typecheck passed\n" CLR0);
 
     ErrorCtx_drop(&errs);
     Scope_drop(&parsed);
