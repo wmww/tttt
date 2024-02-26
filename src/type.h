@@ -45,6 +45,7 @@ static inline Type type_ternary_new(TernaryType* ternary) {
 
 void Type_drop(Type* self);
 cstr Type_to_cstr(Type* self);
+Type Type_move(Type* self);
 
 bool type_extends(Type *sub, Type *super);
 Type type_simplify(Type t);

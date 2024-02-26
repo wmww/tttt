@@ -18,5 +18,6 @@ int main() {
     cstr simplified_s = Type_to_cstr(&t);
     printf("Simplified: %s\n", cstr_str(&simplified_s));
     cstr_drop(&simplified_s);
+    Type_drop(&t);
     return 0;
 }

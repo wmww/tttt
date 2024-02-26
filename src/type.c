@@ -39,6 +39,12 @@ cstr Type_to_cstr(Type* self) {
     UNREACHABLE;
 }
 
+Type Type_move(Type* self) {
+    Type ret = *self;
+    self->tag = TYPE_UNDEFINED;
+    return ret;
+}
+
 bool type_extends(Type *sub, Type *super) {
     switch (sub->tag) {
         case TYPE_NULL:
@@ -77,14 +83,18 @@ Type type_simplify(Type t) {
             return t;
             break;
 
-        case TYPE_TERNARY:
+        case TYPE_TERNARY: {
+            Type ret;
             if (extends_conditional_eval(&t.data.ternary->conditional)) {
                 Type_drop(&t.data.ternary->falseType);
-                return type_simplify(t.data.ternary->trueType);
+                ret = Type_move(&t.data.ternary->trueType);
             } else {
                 Type_drop(&t.data.ternary->trueType);
-                return type_simplify(t.data.ternary->falseType);
+                ret = Type_move(&t.data.ternary->falseType);
             }
+            free(t.data.ternary);
+            return type_simplify(ret);
+        }
     }
     UNREACHABLE;
 }
