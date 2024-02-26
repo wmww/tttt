@@ -87,17 +87,13 @@ static bool parse_identifier(const char** src, cstr* name) {
     }
 }
 
-static bool parse_ternary_type(const char** src, TernaryType* ret) {
+static bool parse_ternary_type(const char** src, Type first, TernaryType* ret) {
     const char* s = *src;
-    Type maybeSub = {0};
     Type maybeSuper = {0};
     Type trueType = {0};
     Type falseType = {0};
-    if (!hop_start_if_ends_on_word_break(&s, "extends")) {
-        goto fail;
-    }
     hop_whitespace(&s);
-    if (!parse_type(&s, &maybeSub)) {
+    if (!hop_start_if_ends_on_word_break(&s, "extends")) {
         goto fail;
     }
     hop_whitespace(&s);
@@ -122,7 +118,7 @@ static bool parse_ternary_type(const char** src, TernaryType* ret) {
     }
     *ret = (TernaryType){
         .conditional = (ExtendsConditional){
-            .maybeSub = maybeSub,
+            .maybeSub = first,
             .maybeSuper = maybeSuper,
         },
         .trueType = trueType,
@@ -132,41 +128,38 @@ static bool parse_ternary_type(const char** src, TernaryType* ret) {
     return true;
 
 fail:
-    Type_drop(&maybeSub);
     Type_drop(&maybeSuper);
     Type_drop(&trueType);
     Type_drop(&falseType);
     return false;
 }
 
-static bool parse_type(const char** src, Type* type) {
-    TernaryType ternary;
+static bool parse_type(const char** src, Type* ret) {
+    Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
-        *type = type_any_new();
-        return true;
+        type = type_any_new();
     } else if (hop_start_if_ends_on_word_break(src, "undefined")) {
-        *type = type_undefined_new();
-        return true;
+        type = type_undefined_new();
     } else if (hop_start_if_ends_on_word_break(src, "null")) {
-        *type = type_null_new();
-        return true;
+        type = type_null_new();
     } else if (hop_start_if_ends_on_word_break(src, "boolean")) {
-        *type = type_boolean_new();
-        return true;
+        type = type_boolean_new();
     } else if (hop_start_if_ends_on_word_break(src, "number")) {
-        *type = type_number_new();
-        return true;
+        type = type_number_new();
     } else if (hop_start_if_ends_on_word_break(src, "string")) {
-        *type = type_string_new();
-        return true;
-    } else if (parse_interface(src, &type->data.interface)) {
-        type->tag = TYPE_INTERFACE;
-        return true;
-    } else if (parse_ternary_type(src, &ternary)) {
-        *type = type_ternary_new(c_new(TernaryType, ternary));
-        return true;
+        type = type_string_new();
+    } else if (parse_interface(src, &type.data.interface)) {
+        type.tag = TYPE_INTERFACE;
     } else {
         return false;
+    }
+    TernaryType ternary;
+    if (parse_ternary_type(src, type, &ternary)) {
+        *ret = type_ternary_new(c_new(TernaryType, ternary));
+        return true;
+    } else {
+        *ret = type;
+        return true;
     }
 }
 
