@@ -19,10 +19,11 @@ add_project_arguments([
 ], language: 'c')
 
 subdir('thirdparty')
+subdir('src')
 
 executable(
     'tttt',
-    files('main.c'),
+    src_files,
     include_directories: thirdparty_inc,
     link_with: thirdparty_libs,
     link_args: '-lm',
