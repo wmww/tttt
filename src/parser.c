@@ -67,6 +67,18 @@ static inline bool is_identifier_char(char c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
 }
 
+static inline bool is_identifier_start_char(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+static inline bool is_number_char(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '.';
+}
+
+static inline bool is_number_start_char(char c) {
+    return (c >= '0' && c <= '9') || c == '.';
+}
+
 static inline bool hop_start_if_ends_on_word_break(const char** str, const char* prefix) {
     const char* local_str = *str;
     if (hop_start(&local_str, prefix)) {
@@ -80,12 +92,25 @@ static inline bool hop_start_if_ends_on_word_break(const char** str, const char*
 
 static bool parse_identifier(const char** src, cstr* name) {
     const char* start = *src;
-    while (is_identifier_char(**src)) (*src)++;
-    if (start == *src) {
-        return false;
-    } else {
+    if (is_identifier_start_char(**src)) {
+        (*src)++;
+        while (is_identifier_char(**src)) (*src)++;
         *name = cstr_from_n(start, *src - start);
         return true;
+    } else {
+        return false;
+    }
+}
+
+static bool parse_number_str(const char** src, cstr* name) {
+    const char* start = *src;
+    if (is_number_start_char(**src)) {
+        (*src)++;
+        while (is_number_char(**src)) (*src)++;
+        *name = cstr_from_n(start, *src - start);
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -251,6 +276,44 @@ static bool parse_right_hand_op(const char** src, Expr a, Expr* ret, ErrorCtx* e
     }
 }
 
+static bool parse_number(const char** src, double* ret, ErrorCtx* errs) {
+    const char* s = *src;
+    cstr number_str;
+    if (!parse_number_str(&s, &number_str)) {
+        return false;
+    } else {
+        // TODO: javascript-compliant number parsing
+        char* end;
+        *ret = strtod(cstr_str(&number_str), &end);
+        if (end != cstr_str(&number_str) + cstr_size(&number_str)) {
+            ErrorCtx_error(errs, *src, "invalid number");
+        }
+        *src = s;
+        return true;
+    }
+}
+
+static bool parse_string(const char** src, cstr* ret, ErrorCtx* errs) {
+    (void)errs;
+    char quote = **src;
+    if (quote != '"' && quote != '\'') {
+        return false;
+    }
+    (*src)++;
+    const char* start = *src;
+    // TODO: remotely correct string parsing
+    while (**src != quote) {
+        if (**src == '\\') {
+            (*src) += 2;
+        } else {
+            (*src)++;
+        }
+    }
+    *ret = cstr_from_n(start, *src - start);
+    (*src)++;
+    return true;
+}
+
 static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
     if (hop_start_if_ends_on_word_break(src, "null")) {
         *ret = Value_null_new();
@@ -264,14 +327,12 @@ static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
     } else if (hop_start_if_ends_on_word_break(src, "false")) {
         *ret = Value_boolean_new(false);
         return true;
-        /*
     } else if (parse_number(src, &ret->data.number, errs)) {
         ret->tag = VALUE_NUMBER;
         return true;
     } else if (parse_string(src, &ret->data.string, errs)) {
         ret->tag = VALUE_STRING;
         return true;
-        */
     } else {
         return false;
     }

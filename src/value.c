@@ -41,7 +41,7 @@ cstr Value_to_cstr(Value* self, int indent) {
             : cstr_from_fmt("%f", self->data.number);
         case VALUE_STRING:
             // TODO: escape string contents
-            return cstr_from_fmt("\"%s\"", cstr_str(&self->data.string));
+            return cstr_from_fmt("'%s'", cstr_str(&self->data.string));
     }
     UNREACHABLE;
 }
