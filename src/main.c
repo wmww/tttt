@@ -1,23 +1,12 @@
 #include "type.h"
-#include "extends_conditional.h"
-#include "ternary_type.h"
+#include "parser.h"
+#include "scope.h"
 
 int main() {
-    Type t = type_ternary_new(c_new(TernaryType, {
-        .conditional = (ExtendsConditional){
-            .maybeSub = type_boolean_new(),
-            .maybeSuper = type_number_new(),
-        },
-        .trueType = type_number_new(),
-        .falseType = type_string_new(),
-    }));
-    cstr initial_s = Type_to_cstr(&t);
-    printf("   Initial: %s\n", cstr_str(&initial_s));
-    cstr_drop(&initial_s);
-    t = type_simplify(t);
-    cstr simplified_s = Type_to_cstr(&t);
-    printf("Simplified: %s\n", cstr_str(&simplified_s));
-    cstr_drop(&simplified_s);
-    Type_drop(&t);
+    Scope parsed = parse_file("interface Foo { a: boolean, b: any, c: { a: undefined, c: null } }");
+    cstr parsed_str = Scope_to_cstr(&parsed, 0);
+    printf("Parsed:\n%s\n", cstr_str(&parsed_str));
+    cstr_drop(&parsed_str);
+    Scope_drop(&parsed);
     return 0;
 }

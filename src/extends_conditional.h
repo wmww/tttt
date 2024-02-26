@@ -8,5 +8,5 @@ typedef struct ExtendsConditional {
 } ExtendsConditional;
 
 void ExtendsConditional_drop(ExtendsConditional* self);
-cstr ExtendsConditional_to_cstr(ExtendsConditional* self);
+cstr ExtendsConditional_to_cstr(ExtendsConditional* self, int indent);
 bool extends_conditional_eval(ExtendsConditional* self);

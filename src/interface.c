@@ -6,19 +6,33 @@ void Interface_drop(Interface* self) {
     vec_InterfaceMember_drop(&self->members);
 }
 
-cstr Interface_to_cstr(Interface* self) {
-    cstr ret = cstr_lit("{ ");
-    bool start = false;
+cstr Interface_to_cstr(Interface* self, int indent) {
+    cstr ret = cstr_lit("{\n");
     c_foreach(i, vec_InterfaceMember, self->members) {
-        if (!start) {
-            cstr_append_sv(&ret, c_sv(", "));
-        }
+        APPEND_INDENT(&ret, indent + 1);
         cstr_append_s(&ret, i.ref->name);
         cstr_append_sv(&ret, c_sv(": "));
-        cstr type = Type_to_cstr(&i.ref->type);
+        cstr type = Type_to_cstr(&i.ref->type, indent + 1);
         cstr_append_s(&ret, type);
         cstr_drop(&type);
+        cstr_append(&ret, ",\n");
     }
-    cstr_append_sv(&ret, c_sv(" }"));
+    APPEND_INDENT(&ret, indent);
+    cstr_append_sv(&ret, c_sv("}"));
+    return ret;
+}
+
+void NamedInterface_drop(NamedInterface* self) {
+    cstr_drop(&self->name);
+    Interface_drop(&self->content);
+}
+
+cstr NamedInterface_to_cstr(NamedInterface* self, int indent) {
+    cstr ret = cstr_lit("interface ");
+    cstr_append_s(&ret, self->name);
+    cstr_append(&ret, " ");
+    cstr content = Interface_to_cstr(&self->content, indent);
+    cstr_append_s(&ret, content);
+    cstr_drop(&content);
     return ret;
 }

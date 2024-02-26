@@ -9,4 +9,4 @@ typedef struct TernaryType {
 } TernaryType;
 
 void TernaryType_drop(TernaryType* self);
-cstr TernaryType_to_cstr(TernaryType* self);
+cstr TernaryType_to_cstr(TernaryType* self, int indent);

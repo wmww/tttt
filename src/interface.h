@@ -10,4 +10,12 @@ typedef struct Interface {
 } Interface;
 
 void Interface_drop(Interface* self);
-cstr Interface_to_cstr(Interface* self);
+cstr Interface_to_cstr(Interface* self, int indent);
+
+typedef struct NamedInterface {
+    cstr name;
+    Interface content;
+} NamedInterface;
+
+void NamedInterface_drop(NamedInterface* self);
+cstr NamedInterface_to_cstr(NamedInterface* self, int indent);

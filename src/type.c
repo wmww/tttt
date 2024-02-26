@@ -25,7 +25,7 @@ void Type_drop(Type* self) {
     }
 }
 
-cstr Type_to_cstr(Type* self) {
+cstr Type_to_cstr(Type* self, int indent) {
     switch (self->tag) {
         case TYPE_NULL: return cstr_lit("null");
         case TYPE_ANY: return cstr_lit("any");
@@ -33,8 +33,8 @@ cstr Type_to_cstr(Type* self) {
         case TYPE_BOOLEAN: return cstr_lit("boolean");
         case TYPE_NUMBER: return cstr_lit("number");
         case TYPE_STRING: return cstr_lit("string");
-        case TYPE_INTERFACE: return Interface_to_cstr(&self->data.interface);
-        case TYPE_TERNARY: return TernaryType_to_cstr(self->data.ternary);
+        case TYPE_INTERFACE: return Interface_to_cstr(&self->data.interface, indent);
+        case TYPE_TERNARY: return TernaryType_to_cstr(self->data.ternary, indent);
     }
     UNREACHABLE;
 }

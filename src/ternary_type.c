@@ -6,11 +6,20 @@ void TernaryType_drop(TernaryType* self) {
     Type_drop(&self->falseType);
 }
 
-cstr TernaryType_to_cstr(TernaryType* self) {
-    cstr conditional = ExtendsConditional_to_cstr(&self->conditional);
-    cstr trueType = Type_to_cstr(&self->trueType);
-    cstr falseType = Type_to_cstr(&self->falseType);
-    cstr ret = cstr_from_fmt("%s ? %s : %s", cstr_str(&conditional), cstr_str(&trueType), cstr_str(&falseType));
+cstr TernaryType_to_cstr(TernaryType* self, int indent) {
+    cstr conditional = ExtendsConditional_to_cstr(&self->conditional, indent);
+    cstr trueType = Type_to_cstr(&self->trueType, indent + 1);
+    cstr falseType = Type_to_cstr(&self->falseType, indent + 1);
+    cstr ret = cstr_null;
+    cstr_append_s(&ret, conditional);
+    cstr_append(&ret, "\n");
+    APPEND_INDENT(&ret, indent + 1);
+    cstr_append(&ret, "? ");
+    cstr_append_s(&ret, trueType);
+    cstr_append(&ret, "\n");
+    APPEND_INDENT(&ret, indent + 1);
+    cstr_append(&ret, ": ");
+    cstr_append_s(&ret, falseType);
     cstr_drop(&conditional);
     cstr_drop(&trueType);
     cstr_drop(&falseType);
