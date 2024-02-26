@@ -6,7 +6,7 @@ void ErrorCtx_drop(ErrorCtx* self) {
 
 void ErrorCtx_display(ErrorCtx* self) {
     c_foreach(i, vec_Error, self->errors) {
-        printf("Error: %s\n", i.ref->static_message);
+        printf("\x1b[31mError:\x1b[0m %s\n", i.ref->static_message);
     }
 }
 
