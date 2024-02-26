@@ -70,33 +70,3 @@ bool Type_extends(Type *sub, Type *super) {
     }
     UNREACHABLE;
 }
-
-Type Type_simplify(Type self) {
-    switch (self.tag) {
-        case TYPE_ANY:
-        case TYPE_BOOLEAN:
-        case TYPE_NUMBER:
-        case TYPE_STRING:
-        case TYPE_VALUE:
-            return self;
-
-        case TYPE_INTERFACE:
-            self.data.interface = Interface_simplify(self.data.interface);
-            return self;
-            break;
-
-        case TYPE_TERNARY: {
-            Type ret;
-            if (ExtendsConditional_eval(&self.data.ternary->conditional)) {
-                Type_drop(&self.data.ternary->falseType);
-                ret = Type_move(&self.data.ternary->trueType);
-            } else {
-                Type_drop(&self.data.ternary->trueType);
-                ret = Type_move(&self.data.ternary->falseType);
-            }
-            free(self.data.ternary);
-            return Type_simplify(ret);
-        }
-    }
-    UNREACHABLE;
-}

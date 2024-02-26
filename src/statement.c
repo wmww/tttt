@@ -30,16 +30,6 @@ cstr VarInit_to_cstr(VarInit* self, int indent) {
     return ret;
 }
 
-VarInit VarInit_simplify(VarInit self) {
-    if (self.has_type) {
-        self.type = Type_simplify(self.type);
-    }
-    if (self.has_value) {
-        self.value = Expr_simplify(self.value);
-    }
-    return self;
-}
-
 void Statement_drop(Statement* self) {
     switch (self->tag) {
         case STATEMENT_INTERFACE:
@@ -78,25 +68,4 @@ cstr Statement_to_cstr(Statement* self, int indent) {
             return VarInit_to_cstr(&self->data.var_init, indent);
     }
     UNREACHABLE;
-}
-
-Statement statement_simplify(Statement self) {
-    switch (self.tag) {
-        case STATEMENT_INTERFACE:
-            self.data.interface.content = Interface_simplify(self.data.interface.content);
-            break;
-
-        case STATEMENT_SCOPE:
-            self.data.scope = scope_simplify(self.data.scope);
-            break;
-
-        case STATEMENT_EXPR:
-            self.data.expr = Expr_simplify(self.data.expr);
-            break;
-
-        case STATEMENT_VAR_INIT:
-            self.data.var_init = VarInit_simplify(self.data.var_init);
-            break;
-    }
-    return self;
 }

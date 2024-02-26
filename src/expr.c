@@ -37,8 +37,3 @@ cstr Expr_to_cstr(Expr* self, int indent) {
     }
     UNREACHABLE;
 }
-
-Expr Expr_simplify(Expr self) {
-    // TODO
-    return self;
-}
