@@ -10,3 +10,5 @@ typedef struct TernaryType {
 
 void TernaryType_drop(TernaryType* self);
 cstr TernaryType_to_cstr(TernaryType* self, int indent);
+// Does not return ownership to the returned type
+Type* TernaryType_resolve(TernaryType* self);

@@ -3,5 +3,6 @@
 #include "prelude.h"
 
 typedef struct Scope Scope;
+typedef struct ErrorCtx ErrorCtx;
 
-bool parse_file(const char* src, Scope* scope);
+Scope parse_file(const char* src, ErrorCtx* errs);

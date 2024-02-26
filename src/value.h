@@ -27,4 +27,5 @@ static inline Value Value_string_new(cstr value) { return (Value){ .tag = VALUE_
 
 void Value_drop(Value* self);
 Value Value_clone(Value self);
-cstr Value_to_cstr(Value* self, int indent);
+cstr Value_to_cstr(Value const* self, int indent);
+bool Value_strict_eq(Value const* a, Value const* b);

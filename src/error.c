@@ -22,12 +22,22 @@ void ErrorCtx_append(ErrorCtx* self, ErrorCtx other) {
     ErrorCtx_drop(&other);
 }
 
-void ErrorCtx_error(ErrorCtx* self, const char* location, const char* static_message) {
+void ErrorCtx_parse_error(ErrorCtx* self, const char* location, const char* static_message) {
     if (!self) {
         return;
     }
     vec_Error_push(&self->errors, (Error){
         .location = location,
+        .static_message = static_message,
+    });
+}
+
+void ErrorCtx_type_error(ErrorCtx* self, const char* static_message) {
+    if (!self) {
+        return;
+    }
+    vec_Error_push(&self->errors, (Error){
+        .location = nullptr,
         .static_message = static_message,
     });
 }

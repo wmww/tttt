@@ -128,13 +128,13 @@ static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, E
     parse_type(&s, &maybeSuper, errs);
     hop_whitespace(&s);
     if (!hop_start(&s, "?")) {
-        ErrorCtx_error(errs, *src, "expected '?'");
+        ErrorCtx_parse_error(errs, *src, "expected '?'");
     }
     hop_whitespace(&s);
     parse_type(&s, &trueType, errs);
     hop_whitespace(&s);
     if (!hop_start(&s, ":")) {
-        ErrorCtx_error(errs, *src, "expected ':'");
+        ErrorCtx_parse_error(errs, *src, "expected ':'");
     }
     hop_whitespace(&s);
     parse_type(&s, &falseType, errs);
@@ -153,19 +153,19 @@ static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, E
 static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
-        type = Type_any_new();
+        type = Type_any;
     } else if (hop_start_if_ends_on_word_break(src, "boolean")) {
-        type = Type_boolean_new();
+        type = Type_boolean;
     } else if (hop_start_if_ends_on_word_break(src, "number")) {
-        type = Type_number_new();
+        type = Type_number;
     } else if (hop_start_if_ends_on_word_break(src, "string")) {
-        type = Type_string_new();
+        type = Type_string;
     } else if (parse_type_compat_literal(src, &type.data.value, errs)) {
         type.tag = TYPE_VALUE;
     } else if (parse_interface(src, &type.data.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
-        ErrorCtx_error(errs, *src, "did not find type");
+        ErrorCtx_parse_error(errs, *src, "did not find type");
         return false;
     }
     TernaryType ternary;
@@ -191,11 +191,11 @@ static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs) {
         hop_whitespace(&s);
         cstr name = cstr_null;
         if (!parse_identifier(&s, &name)) {
-            ErrorCtx_error(errs, *src, "expected interface member name");
+            ErrorCtx_parse_error(errs, *src, "expected interface member name");
         }
         hop_whitespace(&s);
         if (!hop_char(&s, ':')) {
-            ErrorCtx_error(errs, *src, "expected ':'");
+            ErrorCtx_parse_error(errs, *src, "expected ':'");
         }
         hop_whitespace(&s);
         Type type;
@@ -211,7 +211,7 @@ static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs) {
         hop_whitespace(&s);
     }
     if (!hop_char(&s, '}')) {
-        ErrorCtx_error(errs, *src, "expected '}'");
+        ErrorCtx_parse_error(errs, *src, "expected '}'");
     }
     *ret = (Interface) {
         .members = members,
@@ -228,7 +228,7 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
     cstr name = cstr_null;
     ErrorCtx local_errs = {0};
     if (!parse_identifier(&s, &name)) {
-        ErrorCtx_error(&local_errs, *src, "interface does not have a name");
+        ErrorCtx_parse_error(&local_errs, *src, "interface does not have a name");
     }
     hop_whitespace(&s);
     Interface interface;
@@ -259,7 +259,7 @@ static bool parse_binary_op(const char** src, Expr a, BinaryOp* ret, ErrorCtx* e
     ret->a = a;
     ret->b = (Expr){ .tag = EXPR_LITERAL, .data.literal = Value_undefined_new() };
     if (!parse_expr(&s, &ret->b, errs)) {
-        ErrorCtx_error(errs, *src, "expected expression after operation");
+        ErrorCtx_parse_error(errs, *src, "expected expression after operation");
     }
     *src = s;
     return true;
@@ -285,7 +285,7 @@ static bool parse_number(const char** src, double* ret, ErrorCtx* errs) {
         char* end;
         *ret = strtod(cstr_str(&number_str), &end);
         if (end != cstr_str(&number_str) + cstr_size(&number_str)) {
-            ErrorCtx_error(errs, *src, "invalid number");
+            ErrorCtx_parse_error(errs, *src, "invalid number");
         }
         *src = s;
         return true;
@@ -369,7 +369,7 @@ static bool parse_var_init(const char** src, VarInit* ret, ErrorCtx* errs) {
     }
     cstr name = cstr_null;
     if (!parse_identifier(&s, &name)) {
-        ErrorCtx_error(errs, *src, "missing variable name");
+        ErrorCtx_parse_error(errs, *src, "missing variable name");
     }
     hop_whitespace(&s);
     Type type = {0};
@@ -428,7 +428,7 @@ static void parse_scope_inner(const char** src, Scope* ret, ErrorCtx* errs) {
         } else if (parse_statement(&s, &statement, errs)) {
             vec_Statement_push(&statements, statement);
         } else {
-            ErrorCtx_error(errs, *src, "invalid statement");
+            ErrorCtx_parse_error(errs, *src, "invalid statement");
             while (*s && *s != '}' && *s != ';' && *s != '\n') { s++; }
         }
         hop_whitespace(&s);
@@ -445,25 +445,18 @@ static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs) {
     parse_scope_inner(&s, ret, errs);
     hop_whitespace(&s);
     if (!hop_char(&s, '}')) {
-        ErrorCtx_error(errs, *src, "expected '}'");
+        ErrorCtx_parse_error(errs, *src, "expected '}'");
     }
     *src = s;
     return true;
 }
 
-bool parse_file(const char* src, Scope* scope) {
-    ErrorCtx errs = {0};
+Scope parse_file(const char* src, ErrorCtx* errs) {
     hop_whitespace(&src);
-    parse_scope_inner(&src, scope, &errs);
+    Scope scope;
+    parse_scope_inner(&src, &scope, errs);
     if (*src) {
-        ErrorCtx_error(&errs, src, "unexpected '}'");
+        ErrorCtx_parse_error(errs, src, "unexpected '}'");
     }
-    if (ErrorCtx_empty(&errs)) {
-        return true;
-    } else {
-        ErrorCtx_display(&errs);
-        ErrorCtx_drop(&errs);
-        Scope_drop(scope);
-        return false;
-    }
+    return scope;
 }

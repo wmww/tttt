@@ -23,11 +23,10 @@ typedef struct Type {
     } data;
 } Type;
 
-#define TYPE_NEW_DECL(name, type) static inline Type Type_##name##_new() { return (Type){ .tag = TYPE_##type }; }
-TYPE_NEW_DECL(any, ANY)
-TYPE_NEW_DECL(boolean, BOOLEAN)
-TYPE_NEW_DECL(number, NUMBER)
-TYPE_NEW_DECL(string, STRING)
+extern const Type Type_any;
+extern const Type Type_boolean;
+extern const Type Type_number;
+extern const Type Type_string;
 #undef TYPE_NEW_DECL
 static inline Type Type_value_new(Value value) {
     return (Type){
@@ -52,4 +51,4 @@ void Type_drop(Type* self);
 cstr Type_to_cstr(Type* self, int indent);
 Type Type_move(Type* self);
 
-bool Type_extends(Type *sub, Type *super);
+bool Type_extends(Type const* sub, Type const* super);

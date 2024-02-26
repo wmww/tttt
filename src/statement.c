@@ -1,4 +1,5 @@
 #include "statement.h"
+#include "error.h"
 
 void VarInit_drop(VarInit* self) {
     cstr_drop(&self->name);
@@ -68,4 +69,31 @@ cstr Statement_to_cstr(Statement* self, int indent) {
             return VarInit_to_cstr(&self->data.var_init, indent);
     }
     UNREACHABLE;
+}
+
+void Statement_typecheck(Statement* self, ErrorCtx* errs) {
+    switch (self->tag) {
+        case STATEMENT_INTERFACE: break;
+
+        case STATEMENT_SCOPE:
+            Scope_typecheck(&self->data.scope, errs);
+            break;
+
+        case STATEMENT_EXPR: {
+            Type t = Expr_get_type_and_typecheck(&self->data.expr, errs);
+            Type_drop(&t);
+        }   break;
+
+        case STATEMENT_VAR_INIT:
+            if (self->data.var_init.has_value) {
+                Type expr_type = Expr_get_type_and_typecheck(&self->data.var_init.value, errs);
+                if (self->data.var_init.has_type) {
+                    if (!Type_extends(&expr_type, &self->data.var_init.type)) {
+                        ErrorCtx_type_error(errs, "invalid variable initialization type");
+                    }
+                }
+                Type_drop(&expr_type);
+            }
+            break;
+    }
 }

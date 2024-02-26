@@ -20,4 +20,5 @@ void ErrorCtx_drop(ErrorCtx* self);
 void ErrorCtx_display(ErrorCtx* self);
 bool ErrorCtx_empty(ErrorCtx* self);
 void ErrorCtx_append(ErrorCtx* self, ErrorCtx other);
-void ErrorCtx_error(ErrorCtx* self, const char* location, const char* static_message);
+void ErrorCtx_parse_error(ErrorCtx* self, const char* location, const char* static_message);
+void ErrorCtx_type_error(ErrorCtx* self, const char* static_message);

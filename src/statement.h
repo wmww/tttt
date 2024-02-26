@@ -5,6 +5,8 @@
 #include "interface.h"
 #include "type.h"
 
+typedef struct ErrorCtx ErrorCtx;
+
 typedef struct VarInit {
     enum {
         VAR_INIT_VAR,
@@ -38,6 +40,7 @@ typedef struct Statement {
 
 void Statement_drop(Statement* self);
 cstr Statement_to_cstr(Statement* self, int indent);
+void Statement_typecheck(Statement* self, ErrorCtx* errs);
 
 #define i_key_class Statement
 #define i_is_forward

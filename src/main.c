@@ -2,6 +2,7 @@
 #include "parser.h"
 #include "scope.h"
 #include "filesystem.h"
+#include "error.h"
 
 int main(int argc, const char** argv) {
     if (argc > 2) {
@@ -9,19 +10,39 @@ int main(int argc, const char** argv) {
     } else if (argc < 2) {
         PANIC("too few arguments");
     }
+
     cstr contents = cstr_null;
     if (!read_entire_file(argv[1], true, &contents)) {
         PANIC("failed to read file");
     }
-    Scope parsed = {0};
-    if (!parse_file(cstr_str(&contents), &parsed)) {
-        cstr_drop(&contents);
-        PANIC("failed to parse");
-    }
+
+    ErrorCtx errs = {0};
+    Scope parsed = parse_file(cstr_str(&contents), &errs);
     cstr_drop(&contents);
+
+    if (!ErrorCtx_empty(&errs)) {
+        ErrorCtx_display(&errs);
+        ErrorCtx_drop(&errs);
+        Scope_drop(&parsed);
+        return 1;
+    }
+
     cstr parsed_str = Scope_to_cstr(&parsed, 0);
-    printf("Parsed:\n%s\n", cstr_str(&parsed_str));
+    printf("Parsed:\n%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
+
+    Scope_typecheck(&parsed, &errs);
+
+    if (!ErrorCtx_empty(&errs)) {
+        ErrorCtx_display(&errs);
+        ErrorCtx_drop(&errs);
+        Scope_drop(&parsed);
+        return 1;
+    }
+
+    printf("Typecheck passed\n");
+
+    ErrorCtx_drop(&errs);
     Scope_drop(&parsed);
     return 0;
 }

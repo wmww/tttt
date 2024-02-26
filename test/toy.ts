@@ -4,4 +4,4 @@ interface Bar { xyz: boolean extends boolean ? string : number }
 
 let a: number = 75;
 const b = 'hello';
-const c = "world";
+const c: true extends boolean ? 'abc' : 'xyz' = 'abc';

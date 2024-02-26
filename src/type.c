@@ -5,6 +5,11 @@
 #include "extends_conditional.h"
 #include "value.h"
 
+const Type Type_any = { .tag = TYPE_ANY };
+const Type Type_boolean = { .tag = TYPE_BOOLEAN };
+const Type Type_number = { .tag = TYPE_NUMBER };
+const Type Type_string = { .tag = TYPE_STRING };
+
 void Type_drop(Type* self) {
     switch (self->tag) {
         case TYPE_ANY:
@@ -48,25 +53,38 @@ Type Type_move(Type* self) {
     return ret;
 }
 
-bool Type_extends(Type *sub, Type *super) {
+bool Type_extends(Type const* sub, Type const* super) {
     switch (sub->tag) {
+        case TYPE_ANY: return true;
+        case TYPE_TERNARY: Type_extends(TernaryType_resolve(sub->data.ternary), super);
+        default: break;
+    }
+
+    switch (super->tag) {
         case TYPE_ANY:
+            return true;
+
         case TYPE_BOOLEAN:
+            return sub->tag == TYPE_BOOLEAN || (sub->tag == TYPE_VALUE && sub->data.value.tag == VALUE_BOOLEAN);
+
         case TYPE_NUMBER:
+            return sub->tag == TYPE_NUMBER || (sub->tag == TYPE_VALUE && sub->data.value.tag == VALUE_NUMBER);
+
         case TYPE_STRING:
-            return sub->tag == super->tag;
+            return sub->tag == TYPE_STRING || (sub->tag == TYPE_VALUE && sub->data.value.tag == VALUE_STRING);
 
         case TYPE_VALUE:
-            PANIC("extends(TYPE_VALUE, ...) not implemented");
+            if (sub->tag != TYPE_VALUE) {
+                return false;
+            }
+            return Value_strict_eq(&sub->data.value, &super->data.value);
             break;
 
         case TYPE_INTERFACE:
             PANIC("extends(TYPE_INTERFACE, ...) not implemented");
             break;
 
-        case TYPE_TERNARY:
-            PANIC("extends(TYPE_TERNARY, ...) not implemented");
-            break;
+        case TYPE_TERNARY: return Type_extends(sub, TernaryType_resolve(super->data.ternary));
     }
     UNREACHABLE;
 }

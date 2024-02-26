@@ -25,3 +25,11 @@ cstr TernaryType_to_cstr(TernaryType* self, int indent) {
     cstr_drop(&falseType);
     return ret;
 }
+
+Type* TernaryType_resolve(TernaryType* self) {
+    if (ExtendsConditional_eval(&self->conditional)) {
+        return &self->trueType;
+    } else {
+        return &self->falseType;
+    }
+}

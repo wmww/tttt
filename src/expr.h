@@ -4,6 +4,7 @@
 #include "value.h"
 
 typedef struct BinaryOp BinaryOp;
+typedef struct ErrorCtx ErrorCtx;
 
 typedef struct Expr {
     enum {
@@ -31,3 +32,4 @@ static inline BinaryOp BinaryOp_op_new(Expr a, typeof((BinaryOp){0}.op) op, Expr
 
 void Expr_drop(Expr* self);
 cstr Expr_to_cstr(Expr* self, int indent);
+Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);

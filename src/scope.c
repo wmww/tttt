@@ -17,3 +17,9 @@ cstr Scope_to_cstr(Scope* self, int indent) {
     cstr_append_sv(&ret, c_sv("}"));
     return ret;
 }
+
+void Scope_typecheck(Scope* self, ErrorCtx* errs) {
+    c_foreach(i, vec_Statement, self->statements) {
+        Statement_typecheck(i.ref, errs);
+    }
+}

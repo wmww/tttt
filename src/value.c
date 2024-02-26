@@ -31,7 +31,7 @@ Value Value_clone(Value self) {
     return self;
 }
 
-cstr Value_to_cstr(Value* self, int indent) {
+cstr Value_to_cstr(Value const* self, int indent) {
     (void)indent;
     switch (self->tag) {
         case VALUE_NULL: return cstr_lit("null");
@@ -43,6 +43,20 @@ cstr Value_to_cstr(Value* self, int indent) {
         case VALUE_STRING:
             // TODO: escape string contents
             return cstr_from_fmt("'%s'", cstr_str(&self->data.string));
+    }
+    UNREACHABLE;
+}
+
+bool Value_strict_eq(Value const* a, Value const* b) {
+    if (a->tag != b->tag) {
+        return false;
+    }
+    switch (a->tag) {
+        case VALUE_NULL: return true;
+        case VALUE_UNDEFINED: return true;
+        case VALUE_BOOLEAN: return a->data.boolean == b->data.boolean;
+        case VALUE_NUMBER: return a->data.number == b->data.boolean;
+        case VALUE_STRING: return cstr_eq(&a->data.string, &b->data.string);
     }
     UNREACHABLE;
 }
