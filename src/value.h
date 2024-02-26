@@ -2,6 +2,8 @@
 
 #include "prelude.h"
 
+typedef struct Type Type;
+
 typedef struct Value {
     enum {
         VALUE_NULL,

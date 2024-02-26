@@ -3,15 +3,18 @@
 #include "interface_member.h"
 #include "ternary_type.h"
 #include "extends_conditional.h"
+#include "value.h"
 
 void Type_drop(Type* self) {
     switch (self->tag) {
-        case TYPE_NULL:
         case TYPE_ANY:
-        case TYPE_UNDEFINED:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+            break;
+
+        case TYPE_VALUE:
+            Value_drop(&self->data.value);
             break;
 
         case TYPE_INTERFACE:
@@ -28,12 +31,11 @@ void Type_drop(Type* self) {
 
 cstr Type_to_cstr(Type* self, int indent) {
     switch (self->tag) {
-        case TYPE_NULL: return cstr_lit("null");
         case TYPE_ANY: return cstr_lit("any");
-        case TYPE_UNDEFINED: return cstr_lit("undefined");
         case TYPE_BOOLEAN: return cstr_lit("boolean");
         case TYPE_NUMBER: return cstr_lit("number");
         case TYPE_STRING: return cstr_lit("string");
+        case TYPE_VALUE: return Value_to_cstr(&self->data.value, indent);
         case TYPE_INTERFACE: return Interface_to_cstr(&self->data.interface, indent);
         case TYPE_TERNARY: return TernaryType_to_cstr(self->data.ternary, indent);
     }
@@ -42,19 +44,21 @@ cstr Type_to_cstr(Type* self, int indent) {
 
 Type Type_move(Type* self) {
     Type ret = *self;
-    self->tag = TYPE_UNDEFINED;
+    self->tag = TYPE_ANY;
     return ret;
 }
 
 bool Type_extends(Type *sub, Type *super) {
     switch (sub->tag) {
-        case TYPE_NULL:
         case TYPE_ANY:
-        case TYPE_UNDEFINED:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
             return sub->tag == super->tag;
+
+        case TYPE_VALUE:
+            PANIC("extends(TYPE_VALUE, ...) not implemented");
+            break;
 
         case TYPE_INTERFACE:
             PANIC("extends(TYPE_INTERFACE, ...) not implemented");
@@ -69,12 +73,11 @@ bool Type_extends(Type *sub, Type *super) {
 
 Type Type_simplify(Type self) {
     switch (self.tag) {
-        case TYPE_NULL:
         case TYPE_ANY:
-        case TYPE_UNDEFINED:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_VALUE:
             return self;
 
         case TYPE_INTERFACE:

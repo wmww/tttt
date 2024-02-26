@@ -11,6 +11,7 @@
 static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs);
 static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs);
 static bool parse_type(const char** src, Type* type, ErrorCtx* errs);
+static bool parse_type_compat_literal(const char** src, Value* ret, ErrorCtx* errs);
 static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs);
 
 static inline bool hop_whitespace(const char** str) {
@@ -153,16 +154,14 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
         type = Type_any_new();
-    } else if (hop_start_if_ends_on_word_break(src, "undefined")) {
-        type = Type_undefined_new();
-    } else if (hop_start_if_ends_on_word_break(src, "null")) {
-        type = Type_null_new();
     } else if (hop_start_if_ends_on_word_break(src, "boolean")) {
         type = Type_boolean_new();
     } else if (hop_start_if_ends_on_word_break(src, "number")) {
         type = Type_number_new();
     } else if (hop_start_if_ends_on_word_break(src, "string")) {
         type = Type_string_new();
+    } else if (parse_type_compat_literal(src, &type.data.value, errs)) {
+        type.tag = TYPE_VALUE;
     } else if (parse_interface(src, &type.data.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
@@ -314,7 +313,7 @@ static bool parse_string(const char** src, cstr* ret, ErrorCtx* errs) {
     return true;
 }
 
-static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
+static bool parse_type_compat_literal(const char** src, Value* ret, ErrorCtx* errs) {
     if (hop_start_if_ends_on_word_break(src, "null")) {
         *ret = Value_null_new();
         return true;
@@ -336,6 +335,10 @@ static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
     } else {
         return false;
     }
+}
+
+static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
+    return parse_type_compat_literal(src, ret, errs);
 }
 
 static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {

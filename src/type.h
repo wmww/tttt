@@ -2,34 +2,39 @@
 
 #include "prelude.h"
 #include "interface.h"
+#include "value.h"
 
 typedef struct TernaryType TernaryType;
 
 typedef struct Type {
     enum {
         TYPE_ANY = 0,
-        TYPE_UNDEFINED,
-        TYPE_NULL,
         TYPE_BOOLEAN,
         TYPE_NUMBER,
         TYPE_STRING,
+        TYPE_VALUE,
         TYPE_INTERFACE,
         TYPE_TERNARY,
     } tag;
     union {
+        Value value;
         Interface interface;
         TernaryType* ternary;
     } data;
 } Type;
 
 #define TYPE_NEW_DECL(name, type) static inline Type Type_##name##_new() { return (Type){ .tag = TYPE_##type }; }
-TYPE_NEW_DECL(any, NULL)
-TYPE_NEW_DECL(undefined, UNDEFINED)
-TYPE_NEW_DECL(null, NULL)
+TYPE_NEW_DECL(any, ANY)
 TYPE_NEW_DECL(boolean, BOOLEAN)
 TYPE_NEW_DECL(number, NUMBER)
 TYPE_NEW_DECL(string, STRING)
 #undef TYPE_NEW_DECL
+static inline Type Type_value_new(Value value) {
+    return (Type){
+        .tag = TYPE_VALUE,
+        .data.value = value,
+    };
+}
 static inline Type Type_interface_new(Interface interface) {
     return (Type){
         .tag = TYPE_INTERFACE,

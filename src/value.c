@@ -1,5 +1,6 @@
 #include "value.h"
 #include "math.h"
+#include "type.h"
 
 void Value_drop(Value* self) {
     switch (self->tag) {
