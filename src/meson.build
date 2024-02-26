@@ -8,6 +8,7 @@ src_files = files(
     'ternary_type.c',
     'scope.c',
     'expr.c',
+    'value.c',
     'statement.c',
     'parser.c',
     'error.c',

@@ -3,17 +3,37 @@
 #include "scope.h"
 #include "expr.h"
 #include "interface.h"
+#include "type.h"
+
+typedef struct VarInit {
+    enum {
+        VAR_INIT_VAR,
+        VAR_INIT_LET,
+        VAR_INIT_CONST,
+    } keyword;
+    cstr name;
+    bool has_type;
+    Type type;
+    bool has_value;
+    Expr value;
+} VarInit;
+
+void VarInit_drop(VarInit* self);
+cstr VarInit_to_cstr(VarInit* self, int indent);
+VarInit VarInit_simplify(VarInit self);
 
 typedef struct Statement {
     enum {
         STATEMENT_INTERFACE,
         STATEMENT_SCOPE,
         STATEMENT_EXPR,
+        STATEMENT_VAR_INIT,
     } tag;
     union {
         NamedInterface interface;
         Scope scope;
         Expr expr;
+        VarInit var_init;
     } data;
 } Statement;
 

@@ -11,6 +11,7 @@
 static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs);
 static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs);
 static bool parse_type(const char** src, Type* type, ErrorCtx* errs);
+static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs);
 
 static inline bool hop_whitespace(const char** str) {
     bool ret = false;
@@ -221,6 +222,121 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
     return true;
 }
 
+static bool parse_binary_op(const char** src, Expr a, BinaryOp* ret, ErrorCtx* errs) {
+    const char* s = *src;
+    if (hop_start(&s, "+")) {
+        ret->op = BINARY_OP_PLUS;
+    } else if (hop_start(&s, "-")) {
+        ret->op = BINARY_OP_MINUS;
+    } else {
+        Expr_drop(&a);
+        return false;
+    }
+    ret->a = a;
+    ret->b = (Expr){ .tag = EXPR_LITERAL, .data.literal = Value_undefined_new() };
+    if (!parse_expr(&s, &ret->b, errs)) {
+        ErrorCtx_error(errs, *src, "expected expression after operation");
+    }
+    *src = s;
+    return true;
+}
+
+static bool parse_right_hand_op(const char** src, Expr a, Expr* ret, ErrorCtx* errs) {
+    BinaryOp binary_op;
+    if (parse_binary_op(src, a, &binary_op, errs)) {
+        *ret = Expr_binary_op_new(c_new(BinaryOp, binary_op));
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
+    if (hop_start_if_ends_on_word_break(src, "null")) {
+        *ret = Value_null_new();
+        return true;
+    } else if (hop_start_if_ends_on_word_break(src, "undefined")) {
+        *ret = Value_undefined_new();
+        return true;
+    } else if (hop_start_if_ends_on_word_break(src, "true")) {
+        *ret = Value_boolean_new(true);
+        return true;
+    } else if (hop_start_if_ends_on_word_break(src, "false")) {
+        *ret = Value_boolean_new(false);
+        return true;
+        /*
+    } else if (parse_number(src, &ret->data.number, errs)) {
+        ret->tag = VALUE_NUMBER;
+        return true;
+    } else if (parse_string(src, &ret->data.string, errs)) {
+        ret->tag = VALUE_STRING;
+        return true;
+        */
+    } else {
+        return false;
+    }
+}
+
+static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
+    if (parse_literal(src, &ret->data.literal, errs)) {
+        ret->tag = EXPR_LITERAL;
+    } else {
+        return false;
+    }
+    hop_whitespace(src);
+    Expr expr;
+    while (parse_right_hand_op(src, *ret, &expr, errs)) {
+        *ret = expr;
+    }
+    return true;
+}
+
+static bool parse_var_init(const char** src, VarInit* ret, ErrorCtx* errs) {
+    const char* s = *src;
+    typeof(ret->keyword) keyword;
+    if (hop_start_and_required_whitespace(&s, "var")) {
+        keyword = VAR_INIT_VAR;
+    } else if (hop_start_and_required_whitespace(&s, "let")) {
+        keyword = VAR_INIT_LET;
+    } else if (hop_start_and_required_whitespace(&s, "const")) {
+        keyword = VAR_INIT_CONST;
+    } else {
+        return false;
+    }
+    cstr name = cstr_null;
+    if (!parse_identifier(&s, &name)) {
+        ErrorCtx_error(errs, *src, "missing variable name");
+    }
+    hop_whitespace(&s);
+    Type type = {0};
+    bool has_type = false;
+    if (hop_start_if_ends_on_word_break(&s, ":")) {
+        hop_whitespace(&s);
+        if (parse_type(&s, &type, errs)) {
+            has_type = true;
+        }
+        hop_whitespace(&s);
+    }
+    Expr value = {0};
+    bool has_value = false;
+    if (hop_start_if_ends_on_word_break(&s, "=")) {
+        hop_whitespace(&s);
+        if (parse_expr(&s, &value, errs)) {
+            has_value = true;
+        }
+    }
+    *ret = (VarInit) {
+        .keyword = keyword,
+        .name = name,
+        .has_type = has_type,
+        .type = type,
+        .has_value = has_value,
+        .value = value,
+    };
+    *src = s;
+    return true;
+}
+
 static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     hop_whitespace(src);
     if (parse_named_interface(src, &ret->data.interface, errs)) {
@@ -228,6 +344,9 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
         return true;
     } else if (parse_scope(src, &ret->data.scope, errs)) {
         ret->tag = STATEMENT_SCOPE;
+        return true;
+    } else if (parse_var_init(src, &ret->data.var_init, errs)) {
+        ret->tag = STATEMENT_VAR_INIT;
         return true;
     } else {
         return false;
