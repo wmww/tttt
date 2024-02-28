@@ -22,4 +22,6 @@ function foo(a, b: number): void {
 }
 
 let j = {};
-let k = {x: 1, y: 'foo'};
+let k = {x: 1, y: {null_: null, three: 3}};
+k.x;
+k.y.three;

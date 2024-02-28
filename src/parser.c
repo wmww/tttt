@@ -356,6 +356,18 @@ static bool parse_right_unary_op_expr(const char** src, UnaryOp* op, ErrorCtx* e
     return true;
 }
 
+static bool parse_dot_prop(const char** src, cstr* prop, ErrorCtx* errs) {
+    if (!hop_start(src, ".")) {
+        return false;
+    }
+    hop_whitespace(src);
+    if (!parse_identifier(src, prop)) {
+        ErrorCtx_parse_error(errs, *src, "expected property name");
+        *prop = cstr_lit("INVALID PROPERTY");
+    }
+    return true;
+}
+
 static bool parse_binary_op_expr(const char** src, BinaryOp* op, Expr* right, ErrorCtx* errs) {
     if (hop_start(src, "+")) {
         *op = BINARY_OP_PLUS;
@@ -537,6 +549,15 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
             .callable = *ret,
             .args = args,
         }));
+    }
+
+    cstr dot_prop = cstr_null;
+    while (parse_dot_prop(src, &dot_prop, errs)) {
+        *ret = Expr_dot_prop_new(c_new(DotPropExpr, {
+            .expr = *ret,
+            .prop = dot_prop,
+        }));
+        dot_prop = cstr_null;
     }
 
     UnaryOp right_unary;

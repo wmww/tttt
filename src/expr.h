@@ -5,6 +5,7 @@
 
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
+typedef struct DotPropExpr DotPropExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_ObjectExprItem ObjectExpr;
@@ -18,6 +19,7 @@ typedef struct Expr {
         EXPR_IDENTIFIER,
         EXPR_BINARY_OP,
         EXPR_UNARY_OP,
+        EXPR_DOT_PROP,
         EXPR_CALL,
         EXPR_OBJECT,
     } tag;
@@ -26,6 +28,7 @@ typedef struct Expr {
         cstr identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
+        DotPropExpr* dot_prop;
         CallExpr* call;
         // TODO: perhaps optimize lookup somehow?
         ObjectExpr object;
@@ -48,6 +51,10 @@ static inline Expr Expr_binary_op_new(BinaryOpExpr* op) {
 
 static inline Expr Expr_unary_op_new(UnaryOpExpr* op) {
     return (Expr){ .tag = EXPR_UNARY_OP, .data.unary_op = op };
+}
+
+static inline Expr Expr_dot_prop_new(DotPropExpr* dot_prop) {
+    return (Expr){ .tag = EXPR_DOT_PROP, .data.dot_prop = dot_prop };
 }
 
 static inline Expr Expr_call_new(CallExpr* call) {
@@ -105,6 +112,11 @@ typedef struct UnaryOpExpr {
     Expr expr;
     bool parenthesized;
 } UnaryOpExpr;
+
+typedef struct DotPropExpr {
+    Expr expr;
+    cstr prop;
+} DotPropExpr;
 
 typedef struct CallExpr {
     Expr callable;

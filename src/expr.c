@@ -64,6 +64,12 @@ void Expr_drop(Expr* self) {
             free(self->data.unary_op);
             break;
 
+        case EXPR_DOT_PROP:
+            Expr_drop(&self->data.dot_prop->expr);
+            cstr_drop(&self->data.dot_prop->prop);
+            free(self->data.dot_prop);
+            break;
+
         case EXPR_CALL:
             Expr_drop(&self->data.call->callable);
             vec_Expr_drop(&self->data.call->args);
@@ -134,6 +140,13 @@ cstr Expr_to_cstr(Expr const* self, int indent) {
                 cstr_append(&ret, CLR_IMPLICIT ")" CLR0);
             }
             cstr_drop(&expr);
+            return ret;
+        }
+
+        case EXPR_DOT_PROP: {
+            cstr ret = Expr_to_cstr(&self->data.dot_prop->expr, indent);
+            cstr_append(&ret, ".");
+            cstr_append_s(&ret, self->data.dot_prop->prop);
             return ret;
         }
 
@@ -255,6 +268,11 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
             }
             Type_drop(&type);
             return ret;
+        }
+
+        case EXPR_DOT_PROP: {
+            // TODO: add typechecking
+            return Type_any;
         }
 
         case EXPR_CALL: {
