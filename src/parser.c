@@ -246,33 +246,70 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
     return true;
 }
 
-// Only takes ownership of a on success (confusing but it works)
-static bool parse_binary_op(const char** src, Expr a, BinaryOp* ret, ErrorCtx* errs) {
-    const char* s = *src;
-    if (hop_start(&s, "+")) {
-        ret->op = BINARY_OP_PLUS;
-    } else if (hop_start(&s, "-")) {
-        ret->op = BINARY_OP_MINUS;
+static bool parse_right_unary_op_expr(const char** src, UnaryOp* op, ErrorCtx* errs) {
+    (void)errs;
+    if (hop_start(src, "++")) {
+        *op = UNARY_OP_RIGHT_PLUS_PLUS;
+    } else if (hop_start(src, "--")) {
+        *op = UNARY_OP_RIGHT_MINUS_MINUS;
     } else {
         return false;
     }
-    ret->a = a;
-    ret->b = (Expr){ .tag = EXPR_LITERAL, .data.literal = Value_undefined_new() };
-    if (!parse_expr(&s, &ret->b, errs)) {
-        ErrorCtx_parse_error(errs, *src, "expected expression after operation");
-    }
-    *src = s;
     return true;
 }
 
-static bool parse_right_hand_op(const char** src, Expr a, Expr* ret, ErrorCtx* errs) {
-    BinaryOp binary_op;
-    if (parse_binary_op(src, a, &binary_op, errs)) {
-        *ret = Expr_binary_op_new(c_new(BinaryOp, binary_op));
-        return true;
+static bool parse_binary_op_expr(const char** src, BinaryOp* op, Expr* right, ErrorCtx* errs) {
+    if (hop_start(src, "+")) {
+        *op = BINARY_OP_PLUS;
+    } else if (hop_start(src, "-")) {
+        *op = BINARY_OP_MINUS;
+    } else if (hop_start(src, "*")) {
+        *op = BINARY_OP_STAR;
+    } else if (hop_start(src, "/")) {
+        *op = BINARY_OP_SLASH;
+    } else if (hop_start(src, "===")) {
+        *op = BINARY_OP_TRIPLE_EQUALS;
+    } else if (hop_start(src, "==")) {
+        *op = BINARY_OP_DOUBLE_EQUALS;
+    } else if (hop_start(src, "=")) {
+        *op = BINARY_OP_SINGLE_EQUALS;
     } else {
         return false;
     }
+
+    hop_whitespace(src);
+    if (!parse_expr(src, right, errs)) {
+        ErrorCtx_parse_error(errs, *src, "expected expression after binary operation");
+    }
+    return true;
+}
+
+static bool parse_left_unary_op_expr(const char** src, Expr* ret, ErrorCtx* errs) {
+    (void)errs;
+    UnaryOp op = 0;
+    if (hop_start(src, "!")) {
+        op = UNARY_OP_BANG;
+    } else if (hop_start(src, "++")) {
+        op = UNARY_OP_LEFT_PLUS_PLUS;
+    } else if (hop_start(src, "--")) {
+        op = UNARY_OP_LEFT_MINUS_MINUS;
+    } else if (hop_start(src, "+")) {
+        op = UNARY_OP_PLUS;
+    } else if (hop_start(src, "-")) {
+        op = UNARY_OP_MINUS;
+    } else {
+        return false;
+    }
+    hop_whitespace(src);
+    Expr expr = Expr_default;
+    if (!parse_expr(src, &expr, errs)) {
+        ErrorCtx_parse_error(errs, *src, "expected expression after unary operation");
+    }
+    *ret = Expr_unary_op_new(c_new(UnaryOpExpr, {
+        .op = op,
+        .expr = expr,
+    }));
+    return true;
 }
 
 static bool parse_number(const char** src, double* ret, ErrorCtx* errs) {
@@ -342,16 +379,57 @@ static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
 }
 
 static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
+    cstr name = cstr_null;
     if (parse_literal(src, &ret->data.literal, errs)) {
         ret->tag = EXPR_LITERAL;
+    } else if (parse_left_unary_op_expr(src, ret, errs)) {
+    } else if (parse_identifier(src, &name)) {
+        *ret = Expr_indentifier_new(name);
+    } else if (hop_start(src, "(")) {
+        parse_expr(src, ret, errs);
+        if (!hop_start(src, ")")) {
+            ErrorCtx_parse_error(errs, *src, "expected ')'");
+        }
+        switch (ret->tag) {
+            case EXPR_BINARY_OP: ret->data.binary_op->parenthesized = true; break;
+            case EXPR_UNARY_OP: ret->data.unary_op->parenthesized = true; break;
+            default: break;
+        }
     } else {
         return false;
     }
     hop_whitespace(src);
-    Expr expr;
-    while (parse_right_hand_op(src, *ret, &expr, errs)) {
-        *ret = expr;
+
+    UnaryOp right_unary;
+    while (parse_right_unary_op_expr(src, &right_unary, errs)) {
+        *ret = Expr_unary_op_new(c_new(UnaryOpExpr, {
+            .op = right_unary,
+            .expr = *ret,
+        }));
     }
+
+    Expr right = Expr_default;
+    BinaryOp binary = 0;
+    while (parse_binary_op_expr(src, &binary, &right, errs)) {
+        if (right.tag == EXPR_BINARY_OP &&
+            !right.data.binary_op->parenthesized &&
+            BinaryOp_cmp_precedence(binary, right.data.binary_op->op) >= 0
+        ) {
+            right.data.binary_op->left = Expr_binary_op_new(c_new(BinaryOpExpr, {
+                .left = *ret,
+                .op = binary,
+                .right = right.data.binary_op->left,
+            }));
+            *ret = right;
+        } else {
+            *ret = Expr_binary_op_new(c_new(BinaryOpExpr, {
+                .left = *ret,
+                .op = binary,
+                .right = right,
+            }));
+        }
+    }
+
     return true;
 }
 

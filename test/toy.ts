@@ -3,5 +3,11 @@ interface Foo { a: boolean, b: any, c: { a: undefined, c: null } }
 interface Bar { xyz: boolean extends boolean ? string : number }
 
 let a: number = 75;
-const b = 'hello';
+let b: any = 'hello';
 const c: true extends boolean ? 'abc' : 'xyz' = 'abc';
+
+let d = 1 * 2 + 3;
+let e = 1 + 2 - 3;
+let f = 1 + 2 * 3;
+let g = +a++;
+let h = ((10 + 10) / 2) + 'abc';

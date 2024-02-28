@@ -21,3 +21,4 @@ void panic(const char* file, int line, const char* fmt, ...) __attribute__ ((for
 #define CLR_NUM "\x1b[34m"
 #define CLR_TYPE "\x1b[32m"
 #define CLR_NAME "\x1b[35m"
+#define CLR_IMPLICIT "\x1b[37m"
