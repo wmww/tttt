@@ -20,3 +20,6 @@ let i = someFunc('hello', 2 + 3);
 function foo(a, b: number): void {
     String(a)
 }
+
+let j = {};
+let k = {x: 1, y: 'foo'};

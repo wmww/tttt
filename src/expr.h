@@ -6,7 +6,11 @@
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
 typedef struct CallExpr CallExpr;
+typedef struct ObjectExprItem ObjectExprItem;
+typedef struct vec_ObjectExprItem ObjectExpr;
 typedef struct ErrorCtx ErrorCtx;
+
+forward_vec(vec_ObjectExprItem, ObjectExprItem);
 
 typedef struct Expr {
     enum {
@@ -15,6 +19,7 @@ typedef struct Expr {
         EXPR_BINARY_OP,
         EXPR_UNARY_OP,
         EXPR_CALL,
+        EXPR_OBJECT,
     } tag;
     union {
         Value literal;
@@ -22,6 +27,8 @@ typedef struct Expr {
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
         CallExpr* call;
+        // TODO: perhaps optimize lookup somehow?
+        ObjectExpr object;
     } data;
 } Expr;
 
@@ -47,8 +54,12 @@ static inline Expr Expr_call_new(CallExpr* call) {
     return (Expr){ .tag = EXPR_CALL, .data.call = call };
 }
 
+static inline Expr Expr_object_new(ObjectExpr object) {
+    return (Expr){ .tag = EXPR_OBJECT, .data.object = object };
+}
+
 void Expr_drop(Expr* self);
-cstr Expr_to_cstr(Expr* self, int indent);
+cstr Expr_to_cstr(Expr const* self, int indent);
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
 #define i_key_class Expr
@@ -99,3 +110,16 @@ typedef struct CallExpr {
     Expr callable;
     vec_Expr args;
 } CallExpr;
+
+typedef struct ObjectExprItem {
+    cstr name;
+    Expr value;
+} ObjectExprItem;
+
+void ObjectExprItem_drop(ObjectExprItem* self);
+ObjectExprItem* ObjectExpr_get(ObjectExpr* self, const char* name);
+
+#define i_key_class ObjectExprItem
+#define i_no_clone
+#define i_is_forward
+#include "stc/vec.h"

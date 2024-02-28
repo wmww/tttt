@@ -312,6 +312,38 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
     return true;
 }
 
+static bool parse_object_item(const char** src, void* data, ErrorCtx* errs) {
+    vec_ObjectExprItem* ret = data;
+    cstr name;
+    if (!parse_identifier(src, &name)) {
+        return false;
+    }
+    hop_whitespace(src);
+    if (!hop_start(src, ":")) {
+        return false;
+    }
+    hop_whitespace(src);
+    Expr value;
+    if (!parse_expr(src, &value, errs)) {
+        ErrorCtx_parse_error(errs, *src, "bad expression in object");
+    }
+    vec_ObjectExprItem_push(ret, (ObjectExprItem){
+        .name = name,
+        .value = value,
+    });
+    return true;
+}
+
+static bool parse_object(const char** src, ObjectExpr* ret, ErrorCtx* errs) {
+    vec_ObjectExprItem items = {0};
+    if (!parse_sequence(src, "{", SEQUENCE_SEP_COMMA, '}', parse_object_item, &items, errs)) {
+        vec_ObjectExprItem_drop(&items);
+        return false;
+    }
+    *ret = items;
+    return true;
+}
+
 static bool parse_right_unary_op_expr(const char** src, UnaryOp* op, ErrorCtx* errs) {
     (void)errs;
     if (hop_start(src, "++")) {
@@ -448,6 +480,8 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
     cstr name = cstr_null;
     if (parse_literal(src, &ret->data.literal, errs)) {
         ret->tag = EXPR_LITERAL;
+    } else if (parse_object(src, &ret->data.object, errs)) {
+        ret->tag = EXPR_OBJECT;
     } else if (parse_left_unary_op_expr(src, ret, errs)) {
     } else if (parse_identifier(src, &name)) {
         *ret = Expr_indentifier_new(name);
@@ -619,7 +653,7 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
     }
     hop_whitespace(&s);
     vec_FunctionStatementArg args = {0};
-    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, &args, errs)) {
+    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, &args, &local_errs)) {
         ErrorCtx_drop(&local_errs);
         cstr_drop(&name);
         return false;
@@ -629,7 +663,7 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
     Type return_type = Type_any;
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
-        if (parse_type(&s, &return_type, errs)) {
+        if (parse_type(&s, &return_type, &local_errs)) {
             has_return_type = true;
         } else {
             ErrorCtx_parse_error(&local_errs, s, "invalid return type");
@@ -637,7 +671,7 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
     }
     hop_whitespace(&s);
     Scope body = {0};
-    if (!parse_scope(&s, &body, errs)) {
+    if (!parse_scope(&s, &body, &local_errs)) {
         ErrorCtx_parse_error(&local_errs, s, "invalid function body");
     }
     *ret = (FunctionStatement) {

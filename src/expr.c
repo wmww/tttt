@@ -69,10 +69,14 @@ void Expr_drop(Expr* self) {
             vec_Expr_drop(&self->data.call->args);
             free(self->data.call);
             break;
+
+        case EXPR_OBJECT:
+            vec_ObjectExprItem_drop(&self->data.object);
+            break;
     }
 }
 
-cstr Expr_to_cstr(Expr* self, int indent) {
+cstr Expr_to_cstr(Expr const* self, int indent) {
     switch (self->tag) {
         case EXPR_LITERAL:
             return Value_to_cstr(&self->data.literal, indent);
@@ -149,6 +153,33 @@ cstr Expr_to_cstr(Expr* self, int indent) {
                 }
                 cstr_append_sv(&ret, c_sv(")"));
             }
+            return ret;
+        }
+
+        case EXPR_OBJECT: {
+            cstr ret = cstr_lit("{");
+            int size = vec_ObjectExprItem_size(&self->data.object);
+            if (size > 1) {
+                cstr_append(&ret, "\n");
+                c_foreach(i, vec_ObjectExprItem, self->data.object) {
+                    APPEND_INDENT(&ret, indent + 1);
+                    cstr_append_s(&ret, i.ref->name);
+                    cstr_append(&ret, ": ");
+                    cstr item = Expr_to_cstr(&i.ref->value, indent);
+                    cstr_append_s(&ret, item);
+                    cstr_drop(&item);
+                    cstr_append(&ret, ",\n");
+                }
+                APPEND_INDENT(&ret, indent);
+            } else if (size == 1) {
+                cstr_append(&ret, " ");
+                cstr_append_s(&ret, vec_ObjectExprItem_at(&self->data.object, 0)->name);
+                cstr_append(&ret, ": ");
+                cstr item = Expr_to_cstr(&vec_ObjectExprItem_at(&self->data.object, 0)->value, indent);
+                cstr_drop(&item);
+                cstr_append(&ret, " ");
+            }
+            cstr_append(&ret, "}");
             return ret;
         }
     }
@@ -230,6 +261,11 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
             // TODO: add typechecking
             return Type_any;
         }
+
+        case EXPR_OBJECT: {
+            // TODO: add typechecking
+            return Type_any;
+        }
     }
     UNREACHABLE;
 }
@@ -238,4 +274,18 @@ signed char BinaryOp_cmp_precedence(BinaryOp a, BinaryOp b) {
     int ap = binary_op_get_precedence(a);
     int bp = binary_op_get_precedence(b);
     return ap == bp ? 0 : (ap > bp ? 1 : -1);
+}
+
+void ObjectExprItem_drop(ObjectExprItem* self) {
+    cstr_drop(&self->name);
+    Expr_drop(&self->value);
+}
+
+ObjectExprItem* ObjectExpr_get(ObjectExpr* self, const char* name) {
+    c_foreach(i, vec_ObjectExprItem, *self) {
+        if (strcmp(cstr_str(&i.ref->name), name) == 0) {
+            return i.ref;
+        }
+    }
+    return nullptr;
 }

@@ -13,6 +13,10 @@ void Value_drop(Value* self) {
         case VALUE_STRING:
             cstr_drop(&self->data.string);
             break;
+
+        case VALUE_OBJECT:
+            arc_Object_drop(&self->data.object);
+            break;
     }
 }
 
@@ -26,6 +30,10 @@ Value Value_clone(Value self) {
 
         case VALUE_STRING:
             self.data.string = cstr_clone(self.data.string);
+            break;
+
+        case VALUE_OBJECT:
+            self.data.object = arc_Object_clone(self.data.object);
             break;
     }
     return self;
@@ -45,6 +53,34 @@ cstr Value_to_cstr(Value const* self, int indent) {
         case VALUE_STRING:
             // TODO: escape string contents
             return cstr_from_fmt(CLR_STR "'%s'" CLR0, cstr_str(&self->data.string));
+        case VALUE_OBJECT: {
+            cstr ret = cstr_lit("{");
+            vec_ObjectItemRef items = ObjectValue_sorted_items(self->data.object.get);
+            int size = vec_ObjectItemRef_size(&items);
+            if (size > 1) {
+                cstr_append(&ret, "\n");
+                c_foreach(i, vec_ObjectItemRef, items) {
+                    APPEND_INDENT(&ret, indent + 1);
+                    cstr_append_s(&ret, *i.ref->name);
+                    cstr_append(&ret, ": ");
+                    cstr item = Value_to_cstr(&i.ref->item->value, indent);
+                    cstr_drop(&item);
+                    cstr_append(&ret, ",\n");
+                }
+                APPEND_INDENT(&ret, indent);
+            } else if (size == 1) {
+                cstr_append(&ret, " ");
+                cstr_append_s(&ret, *vec_ObjectItemRef_at(&items, 0)->name);
+                cstr_append(&ret, ": ");
+                cstr item = Value_to_cstr(&vec_ObjectItemRef_at(&items, 0)->item->value, indent);
+                cstr_drop(&item);
+                cstr_append(&ret, " ");
+            }
+            cstr_append(&ret, "}");
+            vec_ObjectItemRef_drop(&items);
+            return ret;
+        }
+
     }
     UNREACHABLE;
 }
@@ -59,6 +95,37 @@ bool Value_strict_eq(Value const* a, Value const* b) {
         case VALUE_BOOLEAN: return a->data.boolean == b->data.boolean;
         case VALUE_NUMBER: return a->data.number == b->data.boolean;
         case VALUE_STRING: return cstr_eq(&a->data.string, &b->data.string);
+        case VALUE_OBJECT: return a->data.object.get == b->data.object.get;
     }
     UNREACHABLE;
+}
+
+void ObjectValueItem_drop(ObjectValueItem* self) {
+    Value_drop(&self->value);
+}
+
+ObjectValueItem ObjectValueItem_clone(ObjectValueItem self) {
+    self.value = Value_clone(self.value);
+    return self;
+}
+
+void ObjectValue_drop(ObjectValue* self) {
+    hmap_str_ObjectValueItem_drop(&self->items);
+}
+
+ObjectValue ObjectValue_clone(ObjectValue self) {
+    self.items = hmap_str_ObjectValueItem_clone(self.items);
+    return self;
+}
+
+vec_ObjectItemRef ObjectValue_sorted_items(ObjectValue* self) {
+    vec_ObjectItemRef ret = vec_ObjectItemRef_with_capacity(self->total_inserted);
+    c_foreach(i, hmap_str_ObjectValueItem, self->items) {
+        vec_ObjectItemRef_push(&ret, (ObjectItemRef){
+            .name = &i.ref->first,
+            .item = &i.ref->second,
+        });
+    }
+    vec_ObjectItemRef_quicksort(&ret);
+    return ret;
 }
