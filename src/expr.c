@@ -63,6 +63,12 @@ void Expr_drop(Expr* self) {
             Expr_drop(&self->data.unary_op->expr);
             free(self->data.unary_op);
             break;
+
+        case EXPR_CALL:
+            Expr_drop(&self->data.call->callable);
+            vec_Expr_drop(&self->data.call->args);
+            free(self->data.call);
+            break;
     }
 }
 
@@ -104,7 +110,7 @@ cstr Expr_to_cstr(Expr* self, int indent) {
 
         case EXPR_UNARY_OP: {
             cstr ret = cstr_null;
-            if (self->data.binary_op->parenthesized) {
+            if (self->data.unary_op->parenthesized) {
                 cstr_append(&ret, "(");
             } else {
                 cstr_append(&ret, CLR_IMPLICIT "(" CLR0);
@@ -118,12 +124,31 @@ cstr Expr_to_cstr(Expr* self, int indent) {
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append(&ret, unary_op_get_str(op));
             }
-            if (self->data.binary_op->parenthesized) {
+            if (self->data.unary_op->parenthesized) {
                 cstr_append(&ret, ")");
             } else {
                 cstr_append(&ret, CLR_IMPLICIT ")" CLR0);
             }
             cstr_drop(&expr);
+            return ret;
+        }
+
+        case EXPR_CALL: {
+            cstr ret = Expr_to_cstr(&self->data.call->callable, indent);
+            if (vec_Expr_empty(&self->data.call->args)) {
+                cstr_append(&ret, CLR_NAME "()" CLR0);
+            } else {
+                cstr_append(&ret, CLR_NAME "(" CLR0 "\n");
+                c_foreach(i, vec_Expr, self->data.call->args) {
+                    APPEND_INDENT(&ret, indent + 1);
+                    cstr arg_str = Expr_to_cstr(i.ref, indent + 1);
+                    cstr_append_s(&ret, arg_str);
+                    cstr_drop(&arg_str);
+                    cstr_append(&ret, ",\n");
+                }
+                APPEND_INDENT(&ret, indent);
+                cstr_append_sv(&ret, c_sv(CLR_NAME ")" CLR0));
+            }
             return ret;
         }
     }
@@ -199,6 +224,11 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
             }
             Type_drop(&type);
             return ret;
+        }
+
+        case EXPR_CALL: {
+            // TODO: add typechecking
+            return Type_any;
         }
     }
     UNREACHABLE;

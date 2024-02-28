@@ -11,3 +11,4 @@ let e = 1 + 2 - 3;
 let f = 1 + 2 * 3;
 let g = +a++;
 let h = ((10 + 10) / 2) + 'abc';
+let i = someFunc(1, 2 + 3, 'hello');

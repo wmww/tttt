@@ -400,6 +400,45 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
     }
     hop_whitespace(src);
 
+    // Function call
+    if (hop_start(src, "(")) {
+        vec_Expr args = {0};
+        hop_whitespace(src);
+        while (**src && **src != ')') {
+            Expr arg = {0};
+            if (parse_expr(src, &arg, errs)) {
+                vec_Expr_push(&args, arg);
+            } else {
+                ErrorCtx_parse_error(errs, *src, "invald expression in call");
+                while (**src && **src != ')' && **src != ',') {
+                    (*src)++;
+                }
+            }
+            hop_whitespace(src);
+            if (**src != ',' && **src != ')') {
+                ErrorCtx_parse_error(errs, *src, "expected ',' or ')' in call");
+            }
+            bool first_comma = true;
+            while (**src == ',') {
+                (*src)++;
+                hop_whitespace(src);
+                if (!first_comma) {
+                    ErrorCtx_parse_error(errs, *src, "expected argument before ','");
+                }
+                first_comma = false;
+            }
+        }
+        if (**src == ')') {
+            (*src)++;
+        } else {
+            ErrorCtx_parse_error(errs, *src, "expected ')' at end of call");
+        }
+        *ret = Expr_call_new(c_new(CallExpr, {
+            .callable = *ret,
+            .args = args,
+        }));
+    }
+
     UnaryOp right_unary;
     while (parse_right_unary_op_expr(src, &right_unary, errs)) {
         *ret = Expr_unary_op_new(c_new(UnaryOpExpr, {
@@ -506,7 +545,7 @@ static void parse_scope_inner(const char** src, Scope* ret, ErrorCtx* errs) {
         } else if (parse_statement(&s, &statement, errs)) {
             vec_Statement_push(&statements, statement);
         } else {
-            ErrorCtx_parse_error(errs, *src, "invalid statement");
+            ErrorCtx_parse_error(errs, s, "invalid statement");
             while (*s && *s != '}' && *s != ';' && *s != '\n') { s++; }
         }
         hop_whitespace(&s);

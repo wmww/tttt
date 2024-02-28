@@ -5,6 +5,7 @@
 
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
+typedef struct CallExpr CallExpr;
 typedef struct ErrorCtx ErrorCtx;
 
 typedef struct Expr {
@@ -13,12 +14,14 @@ typedef struct Expr {
         EXPR_IDENTIFIER,
         EXPR_BINARY_OP,
         EXPR_UNARY_OP,
+        EXPR_CALL,
     } tag;
     union {
         Value literal;
         cstr identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
+        CallExpr* call;
     } data;
 } Expr;
 
@@ -40,9 +43,17 @@ static inline Expr Expr_unary_op_new(UnaryOpExpr* op) {
     return (Expr){ .tag = EXPR_UNARY_OP, .data.unary_op = op };
 }
 
+static inline Expr Expr_call_new(CallExpr* call) {
+    return (Expr){ .tag = EXPR_CALL, .data.call = call };
+}
+
 void Expr_drop(Expr* self);
 cstr Expr_to_cstr(Expr* self, int indent);
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
+
+#define i_key_class Expr
+#define i_no_clone
+#include "stc/vec.h"
 
 typedef enum BinaryOp {
     BINARY_OP_PLUS,
@@ -83,3 +94,8 @@ typedef struct UnaryOpExpr {
     Expr expr;
     bool parenthesized;
 } UnaryOpExpr;
+
+typedef struct CallExpr {
+    Expr callable;
+    vec_Expr args;
+} CallExpr;
