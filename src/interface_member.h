@@ -8,8 +8,8 @@ typedef struct InterfaceMember {
 } InterfaceMember;
 
 void InterfaceMember_drop(InterfaceMember* self);
+InterfaceMember InterfaceMember_clone(InterfaceMember self);
 
 #define i_key_class InterfaceMember
 #define i_is_forward
-#define i_no_clone
 #include "stc/vec.h"

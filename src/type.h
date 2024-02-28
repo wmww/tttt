@@ -9,6 +9,7 @@ typedef struct TernaryType TernaryType;
 typedef struct Type {
     enum {
         TYPE_ANY = 0,
+        TYPE_VOID,
         TYPE_BOOLEAN,
         TYPE_NUMBER,
         TYPE_STRING,
@@ -24,6 +25,7 @@ typedef struct Type {
 } Type;
 
 extern const Type Type_any;
+extern const Type Type_void;
 extern const Type Type_boolean;
 extern const Type Type_number;
 extern const Type Type_string;
@@ -49,6 +51,7 @@ static inline Type Type_ternary_new(TernaryType* ternary) {
 
 void Type_drop(Type* self);
 cstr Type_to_cstr(Type* self, int indent);
+Type Type_clone(Type self);
 Type Type_move(Type* self);
 
 bool Type_extends(Type const* sub, Type const* super);

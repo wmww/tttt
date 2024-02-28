@@ -6,9 +6,17 @@ let a: number = 75;
 let b: any = 'hello';
 const c: true extends boolean ? 'abc' : 'xyz' = 'abc';
 
+function someFunc(foo, bar: number = 8): void {
+    String(foo);
+}
+
 let d = 1 * 2 + 3;
 let e = 1 + 2 - 3;
 let f = 1 + 2 * 3;
 let g = +a++;
 let h = ((10 + 10) / 2) + 'abc';
-let i = someFunc(1, 2 + 3, 'hello');
+let i = someFunc('hello', 2 + 3);
+
+function foo(a, b: number): void {
+    String(a)
+}

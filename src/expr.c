@@ -136,18 +136,18 @@ cstr Expr_to_cstr(Expr* self, int indent) {
         case EXPR_CALL: {
             cstr ret = Expr_to_cstr(&self->data.call->callable, indent);
             if (vec_Expr_empty(&self->data.call->args)) {
-                cstr_append(&ret, CLR_NAME "()" CLR0);
+                cstr_append(&ret, "()");
             } else {
-                cstr_append(&ret, CLR_NAME "(" CLR0 "\n");
+                cstr_append(&ret, "(");
                 c_foreach(i, vec_Expr, self->data.call->args) {
-                    APPEND_INDENT(&ret, indent + 1);
                     cstr arg_str = Expr_to_cstr(i.ref, indent + 1);
                     cstr_append_s(&ret, arg_str);
                     cstr_drop(&arg_str);
-                    cstr_append(&ret, ",\n");
+                    if (i.ref < i.end - 1) {
+                        cstr_append(&ret, ", ");
+                    }
                 }
-                APPEND_INDENT(&ret, indent);
-                cstr_append_sv(&ret, c_sv(CLR_NAME ")" CLR0));
+                cstr_append_sv(&ret, c_sv(")"));
             }
             return ret;
         }

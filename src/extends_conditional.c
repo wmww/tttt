@@ -5,6 +5,13 @@ void ExtendsConditional_drop(ExtendsConditional* self) {
     Type_drop(&self->maybeSuper);
 }
 
+ExtendsConditional ExtendsConditional_clone(ExtendsConditional self) {
+    return (ExtendsConditional) {
+        .maybeSub = Type_clone(self.maybeSub),
+        .maybeSuper = Type_clone(self.maybeSuper),
+    };
+}
+
 cstr ExtendsConditional_to_cstr(ExtendsConditional* self, int indent) {
     cstr subType = Type_to_cstr(&self->maybeSub, indent);
     cstr superType = Type_to_cstr(&self->maybeSuper, indent);

@@ -6,6 +6,12 @@ void Interface_drop(Interface* self) {
     vec_InterfaceMember_drop(&self->members);
 }
 
+Interface Interface_clone(Interface self) {
+    return (Interface) {
+        .members = vec_InterfaceMember_clone(self.members),
+    };
+}
+
 cstr Interface_to_cstr(Interface* self, int indent) {
     cstr ret = cstr_lit("{\n");
     c_foreach(i, vec_InterfaceMember, self->members) {

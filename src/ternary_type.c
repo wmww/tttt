@@ -6,6 +6,14 @@ void TernaryType_drop(TernaryType* self) {
     Type_drop(&self->falseType);
 }
 
+TernaryType TernaryType_clone(TernaryType self) {
+    return (TernaryType) {
+        .conditional = ExtendsConditional_clone(self.conditional),
+        .trueType = Type_clone(self.trueType),
+        .falseType = Type_clone(self.falseType),
+    };
+}
+
 cstr TernaryType_to_cstr(TernaryType* self, int indent) {
     cstr conditional = ExtendsConditional_to_cstr(&self->conditional, indent);
     cstr trueType = Type_to_cstr(&self->trueType, indent + 1);

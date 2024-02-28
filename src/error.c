@@ -14,7 +14,7 @@ bool ErrorCtx_empty(ErrorCtx* self) {
     return vec_Error_empty(&self->errors);
 }
 
-void ErrorCtx_append(ErrorCtx* self, ErrorCtx other) {
+void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other) {
     c_foreach(i, vec_Error, other.errors) {
         vec_Error_push(&self->errors, *i.ref);
         *i.ref = (Error){0};

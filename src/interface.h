@@ -10,6 +10,7 @@ typedef struct Interface {
 } Interface;
 
 void Interface_drop(Interface* self);
+Interface Interface_clone(Interface self);
 cstr Interface_to_cstr(Interface* self, int indent);
 
 typedef struct NamedInterface {

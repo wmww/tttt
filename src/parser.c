@@ -115,6 +115,70 @@ static bool parse_number_str(const char** src, cstr* name) {
     }
 }
 
+typedef enum ParseSequenceSep {
+    SEQUENCE_SEP_COMMA,
+    SEQUENCE_SEP_COMMA_SEMI_NONE, // typescript interfaces are weird
+} ParseSequenceSep;
+
+static inline bool sep_required(ParseSequenceSep sep) {
+    switch (sep) {
+        case SEQUENCE_SEP_COMMA: return true;
+        case SEQUENCE_SEP_COMMA_SEMI_NONE: return false;
+    }
+    UNREACHABLE;
+}
+
+static inline bool char_is_sep(ParseSequenceSep sep, char c) {
+    switch (sep) {
+        case SEQUENCE_SEP_COMMA: return c == ',';
+        case SEQUENCE_SEP_COMMA_SEMI_NONE: return c == ',' || c == ';';
+    }
+    UNREACHABLE;
+}
+
+// Yes having start be a string and end a char is weird. whatcha gonna do about it?
+static bool parse_sequence(
+    const char** src,
+    const char* start,
+    ParseSequenceSep sep,
+    char end,
+    bool (*callback)(const char** src, void* data, ErrorCtx* errs),
+    void* data,
+    ErrorCtx* errs
+) {
+    if (!hop_start(src, start)) {
+        return false;
+    }
+    hop_whitespace(src);
+    while (**src && **src != end) {
+        if (!callback(src, data, errs)) {
+            ErrorCtx_parse_error(errs, *src, "invald item in sequence");
+            while (**src && **src != end && char_is_sep(sep, **src)) {
+                (*src)++;
+            }
+        }
+        hop_whitespace(src);
+        if (sep_required(sep) && !char_is_sep(sep, **src) && **src != end) {
+            ErrorCtx_parse_error(errs, *src, "expected separator or end of sequence");
+        }
+        bool first_sep = true;
+        while (char_is_sep(sep, **src)) {
+            (*src)++;
+            hop_whitespace(src);
+            if (!first_sep) {
+                ErrorCtx_parse_error(errs, *src, "expected item before separator");
+            }
+            first_sep = false;
+        }
+    }
+    if (**src == end) {
+        (*src)++;
+    } else {
+        ErrorCtx_parse_error(errs, *src, "expected end of sequence");
+    }
+    return true;
+}
+
 static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, ErrorCtx* errs) {
     const char* s = *src;
     Type maybeSuper = {0};
@@ -154,6 +218,8 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
         type = Type_any;
+    } else if (hop_start_if_ends_on_word_break(src, "void")) {
+        type = Type_void;
     } else if (hop_start_if_ends_on_word_break(src, "boolean")) {
         type = Type_boolean;
     } else if (hop_start_if_ends_on_word_break(src, "number")) {
@@ -237,7 +303,7 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
         cstr_drop(&name);
         return false;
     }
-    ErrorCtx_append(errs, local_errs);
+    ErrorCtx_append_consume(errs, local_errs);
     *ret = (NamedInterface) {
         .name = name,
         .content = interface,
@@ -472,21 +538,11 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
     return true;
 }
 
-static bool parse_var_init(const char** src, VarInit* ret, ErrorCtx* errs) {
+static bool parse_name_init(const char** src, NameInitData* ret, ErrorCtx* errs) {
     const char* s = *src;
-    typeof(ret->keyword) keyword;
-    if (hop_start_and_required_whitespace(&s, "var")) {
-        keyword = VAR_INIT_VAR;
-    } else if (hop_start_and_required_whitespace(&s, "let")) {
-        keyword = VAR_INIT_LET;
-    } else if (hop_start_and_required_whitespace(&s, "const")) {
-        keyword = VAR_INIT_CONST;
-    } else {
-        return false;
-    }
     cstr name = cstr_null;
     if (!parse_identifier(&s, &name)) {
-        ErrorCtx_parse_error(errs, *src, "missing variable name");
+        ErrorCtx_parse_error(errs, *src, "missing name");
     }
     hop_whitespace(&s);
     Type type = {0};
@@ -506,14 +562,92 @@ static bool parse_var_init(const char** src, VarInit* ret, ErrorCtx* errs) {
             has_value = true;
         }
     }
-    *ret = (VarInit) {
-        .keyword = keyword,
+    *ret = (NameInitData) {
         .name = name,
         .has_type = has_type,
         .type = type,
         .has_value = has_value,
         .value = value,
     };
+    *src = s;
+    return true;
+}
+
+static bool parse_var_init(const char** src, VarInitStatement* ret, ErrorCtx* errs) {
+    const char* s = *src;
+    typeof(ret->keyword) keyword;
+    if (hop_start_and_required_whitespace(&s, "var")) {
+        keyword = VAR_INIT_VAR;
+    } else if (hop_start_and_required_whitespace(&s, "let")) {
+        keyword = VAR_INIT_LET;
+    } else if (hop_start_and_required_whitespace(&s, "const")) {
+        keyword = VAR_INIT_CONST;
+    } else {
+        return false;
+    }
+    NameInitData data;
+    if (!parse_name_init(&s, &data, errs)) {
+        return false;
+    }
+    *ret = (VarInitStatement) {
+        .keyword = keyword,
+        .data = data,
+    };
+    *src = s;
+    return true;
+}
+
+static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
+    vec_FunctionStatementArg* args = data;
+    FunctionStatementArg arg = {0};
+    if (!parse_name_init(src, &arg.data, errs)) {
+        return false;
+    }
+    vec_FunctionStatementArg_push(args, arg);
+    return true;
+}
+
+static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* errs) {
+    const char* s = *src;
+    ErrorCtx local_errs = {0};
+    if (!hop_start_and_required_whitespace(&s, "function")) {
+        return false;
+    }
+    cstr name = cstr_null;
+    if (!parse_identifier(&s, &name)) {
+        ErrorCtx_parse_error(&local_errs, s, "missing function name");
+    }
+    hop_whitespace(&s);
+    vec_FunctionStatementArg args = {0};
+    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, &args, errs)) {
+        ErrorCtx_drop(&local_errs);
+        cstr_drop(&name);
+        return false;
+    }
+    hop_whitespace(&s);
+    bool has_return_type = false;
+    Type return_type = Type_any;
+    if (hop_start(&s, ":")) {
+        hop_whitespace(&s);
+        if (parse_type(&s, &return_type, errs)) {
+            has_return_type = true;
+        } else {
+            ErrorCtx_parse_error(&local_errs, s, "invalid return type");
+        }
+    }
+    hop_whitespace(&s);
+    Scope body = {0};
+    if (!parse_scope(&s, &body, errs)) {
+        ErrorCtx_parse_error(&local_errs, s, "invalid function body");
+    }
+    *ret = (FunctionStatement) {
+        .name = name,
+        .args = args,
+        .has_return_type = has_return_type,
+        .return_type = return_type,
+        .body = body,
+    };
+    ErrorCtx_append_consume(errs, local_errs);
     *src = s;
     return true;
 }
@@ -528,6 +662,12 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
         return true;
     } else if (parse_var_init(src, &ret->data.var_init, errs)) {
         ret->tag = STATEMENT_VAR_INIT;
+        return true;
+    } else if (parse_function(src, &ret->data.function, errs)) {
+        ret->tag = STATEMENT_FUNCTION;
+        return true;
+    } else if (parse_expr(src, &ret->data.expr, errs)) {
+        ret->tag = STATEMENT_EXPR;
         return true;
     } else {
         return false;
