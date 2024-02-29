@@ -45,9 +45,31 @@ typedef struct Value {
     } data;
 } Value;
 
-void Value_drop(Value* self);
+void Value_drop_internal(Value* self);
+static inline void Value_drop(Value* self) {
+    switch (self->tag) {
+        case VALUE_NULL:
+        case VALUE_UNDEFINED:
+        case VALUE_BOOLEAN:
+        case VALUE_NUMBER:
+            break;
+
+        case VALUE_STRING:
+        case VALUE_OBJECT:
+        case VALUE_ARRAY:
+        case VALUE_JS_FUNC:
+        case VALUE_NATIVE_FUNC:
+            Value_drop_internal(self);
+            break;
+    }
+    self->tag = VALUE_NULL; // Makes repeated calls to drop safe
+}
 Value Value_clone(Value self);
-cstr Value_to_cstr(Value const* self, int indent);
+void Value_append_to_string(Value const* self, cstr* target);
+bool Value_to_boolean(Value const* self);
+double Value_to_number(Value const* self);
+cstr Value_to_cstr_debug(Value const* self, int indent);
+bool Value_loose_eq(Value const* a, Value const* b);
 bool Value_strict_eq(Value const* a, Value const* b);
 
 // Object

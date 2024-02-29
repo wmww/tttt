@@ -43,7 +43,7 @@ cstr Type_to_cstr(Type* self, int indent) {
         case TYPE_BOOLEAN: return cstr_lit(CLR_TYPE "boolean" CLR0);
         case TYPE_NUMBER: return cstr_lit(CLR_TYPE "number" CLR0);
         case TYPE_STRING: return cstr_lit(CLR_TYPE "string" CLR0);
-        case TYPE_VALUE: return Value_to_cstr(&self->data.value, indent);
+        case TYPE_VALUE: return Value_to_cstr_debug(&self->data.value, indent);
         case TYPE_INTERFACE: return Interface_to_cstr(&self->data.interface, indent);
         case TYPE_TERNARY: return TernaryType_to_cstr(self->data.ternary, indent);
     }

@@ -73,6 +73,8 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 #define i_no_clone
 #include "stc/vec.h"
 
+// Binary op
+
 typedef enum BinaryOp {
     BINARY_OP_PLUS,
     BINARY_OP_MINUS,
@@ -95,6 +97,8 @@ typedef struct BinaryOpExpr {
     bool parenthesized;
 } BinaryOpExpr;
 
+// Unary op
+
 #define UNARY_OP_MIN_RIGHT_HAND_OP 100
 
 typedef enum UnaryOp {
@@ -113,15 +117,21 @@ typedef struct UnaryOpExpr {
     bool parenthesized;
 } UnaryOpExpr;
 
+// Dot property
+
 typedef struct DotPropExpr {
     Expr expr;
     cstr prop;
 } DotPropExpr;
 
+// Call
+
 typedef struct CallExpr {
     Expr callable;
     vec_Expr args;
 } CallExpr;
+
+// Object
 
 typedef struct ObjectExprItem {
     cstr name;

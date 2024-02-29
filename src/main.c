@@ -41,11 +41,11 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    printf(CLR_GOOD "Typecheck passed, running...\n" CLR0);
+    printf(CLR_GOOD "Typecheck passed, running..." CLR0 "\n");
 
     eval_program(&parsed);
 
-    printf(CLR_GOOD "Run succeeded\n" CLR0);
+    printf(CLR_GOOD "Run succeeded" CLR0 "\n");
 
     ErrorCtx_drop(&errs);
     Scope_drop(&parsed);

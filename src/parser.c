@@ -344,6 +344,44 @@ static bool parse_object(const char** src, ObjectExpr* ret, ErrorCtx* errs) {
     return true;
 }
 
+static bool parse_call_args(const char** src, vec_Expr* args, ErrorCtx* errs) {
+    if (!hop_start(src, "(")) {
+        return false;
+    }
+    hop_whitespace(src);
+    *args = vec_Expr_init();
+    while (**src && **src != ')') {
+        Expr arg = {0};
+        if (parse_expr(src, &arg, errs)) {
+            vec_Expr_push(args, arg);
+        } else {
+            ErrorCtx_parse_error(errs, *src, "invald expression in call");
+            while (**src && **src != ')' && **src != ',') {
+                (*src)++;
+            }
+        }
+        hop_whitespace(src);
+        if (**src != ',' && **src != ')') {
+            ErrorCtx_parse_error(errs, *src, "expected ',' or ')' in call");
+        }
+        bool first_comma = true;
+        while (**src == ',') {
+            (*src)++;
+            hop_whitespace(src);
+            if (!first_comma) {
+                ErrorCtx_parse_error(errs, *src, "expected argument before ','");
+            }
+            first_comma = false;
+        }
+    }
+    if (**src == ')') {
+        (*src)++;
+    } else {
+        ErrorCtx_parse_error(errs, *src, "expected ')' at end of call");
+    }
+    return true;
+}
+
 static bool parse_right_unary_op_expr(const char** src, UnaryOp* op, ErrorCtx* errs) {
     (void)errs;
     if (hop_start(src, "++")) {
@@ -512,81 +550,58 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
     }
     hop_whitespace(src);
 
-    // Function call
-    if (hop_start(src, "(")) {
-        vec_Expr args = {0};
-        hop_whitespace(src);
-        while (**src && **src != ')') {
-            Expr arg = {0};
-            if (parse_expr(src, &arg, errs)) {
-                vec_Expr_push(&args, arg);
+    bool done = false;
+    while (!done) {
+        done = true;
+
+        vec_Expr args;
+        if (parse_call_args(src, &args, errs)) {
+            *ret = Expr_call_new(c_new(CallExpr, {
+                .callable = *ret,
+                .args = args,
+            }));
+            done = false;
+        }
+
+        cstr dot_prop = cstr_null;
+        if (parse_dot_prop(src, &dot_prop, errs)) {
+            *ret = Expr_dot_prop_new(c_new(DotPropExpr, {
+                .expr = *ret,
+                .prop = dot_prop,
+            }));
+            done = false;
+        }
+
+        UnaryOp right_unary;
+        if (parse_right_unary_op_expr(src, &right_unary, errs)) {
+            *ret = Expr_unary_op_new(c_new(UnaryOpExpr, {
+                .op = right_unary,
+                .expr = *ret,
+            }));
+            done = false;
+        }
+
+        Expr right = Expr_default;
+        BinaryOp binary = 0;
+        if (parse_binary_op_expr(src, &binary, &right, errs)) {
+            if (right.tag == EXPR_BINARY_OP &&
+                !right.data.binary_op->parenthesized &&
+                BinaryOp_cmp_precedence(binary, right.data.binary_op->op) >= 0
+            ) {
+                right.data.binary_op->left = Expr_binary_op_new(c_new(BinaryOpExpr, {
+                    .left = *ret,
+                    .op = binary,
+                    .right = right.data.binary_op->left,
+                }));
+                *ret = right;
             } else {
-                ErrorCtx_parse_error(errs, *src, "invald expression in call");
-                while (**src && **src != ')' && **src != ',') {
-                    (*src)++;
-                }
+                *ret = Expr_binary_op_new(c_new(BinaryOpExpr, {
+                    .left = *ret,
+                    .op = binary,
+                    .right = right,
+                }));
             }
-            hop_whitespace(src);
-            if (**src != ',' && **src != ')') {
-                ErrorCtx_parse_error(errs, *src, "expected ',' or ')' in call");
-            }
-            bool first_comma = true;
-            while (**src == ',') {
-                (*src)++;
-                hop_whitespace(src);
-                if (!first_comma) {
-                    ErrorCtx_parse_error(errs, *src, "expected argument before ','");
-                }
-                first_comma = false;
-            }
-        }
-        if (**src == ')') {
-            (*src)++;
-        } else {
-            ErrorCtx_parse_error(errs, *src, "expected ')' at end of call");
-        }
-        *ret = Expr_call_new(c_new(CallExpr, {
-            .callable = *ret,
-            .args = args,
-        }));
-    }
-
-    cstr dot_prop = cstr_null;
-    while (parse_dot_prop(src, &dot_prop, errs)) {
-        *ret = Expr_dot_prop_new(c_new(DotPropExpr, {
-            .expr = *ret,
-            .prop = dot_prop,
-        }));
-        dot_prop = cstr_null;
-    }
-
-    UnaryOp right_unary;
-    while (parse_right_unary_op_expr(src, &right_unary, errs)) {
-        *ret = Expr_unary_op_new(c_new(UnaryOpExpr, {
-            .op = right_unary,
-            .expr = *ret,
-        }));
-    }
-
-    Expr right = Expr_default;
-    BinaryOp binary = 0;
-    while (parse_binary_op_expr(src, &binary, &right, errs)) {
-        if (right.tag == EXPR_BINARY_OP &&
-            !right.data.binary_op->parenthesized &&
-            BinaryOp_cmp_precedence(binary, right.data.binary_op->op) >= 0
-        ) {
-            right.data.binary_op->left = Expr_binary_op_new(c_new(BinaryOpExpr, {
-                .left = *ret,
-                .op = binary,
-                .right = right.data.binary_op->left,
-            }));
-            *ret = right;
-        } else {
-            *ret = Expr_binary_op_new(c_new(BinaryOpExpr, {
-                .left = *ret,
-                .op = binary,
-                .right = right,
-            }));
+            done = false;
         }
     }
 

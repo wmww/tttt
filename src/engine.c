@@ -50,15 +50,49 @@ static Result MUST_USE Engine_eval_identifier(Engine* self, csview identifier) {
 }
 
 static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* op_expr) {
-    (void)self;
-    (void)op_expr;
-    PANIC("binary op isn't implemented");
+    TRY_THROW(left, Engine_eval_expr(self, &op_expr->left));
+    TRY_CATCH(right, Engine_eval_expr(self, &op_expr->left), res_err, {
+        Value_drop(&left);
+        return res_err;
+    });
+    Value ret = Value_undefined;
+    switch (op_expr->op) {
+        case BINARY_OP_PLUS:
+            if (left.tag == VALUE_NUMBER && right.tag == VALUE_NUMBER) {
+                ret = Value_number(left.data.number + left.data.number);
+            } else {
+                cstr str = cstr_null;
+                Value_append_to_string(&left, &str);
+                Value_append_to_string(&right, &str);
+                ret = Value_string(str);
+            }
+            break;
+        case BINARY_OP_MINUS: ret = Value_number(Value_to_number(&left) - Value_to_number(&right)); break;
+        case BINARY_OP_STAR: ret = Value_number(Value_to_number(&left) * Value_to_number(&right)); break;
+        case BINARY_OP_SLASH: ret = Value_number(Value_to_number(&left) / Value_to_number(&right)); break;
+        case BINARY_OP_SINGLE_EQUALS: PANIC("assignment not implemented"); break;
+        case BINARY_OP_DOUBLE_EQUALS: ret = Value_boolean(Value_loose_eq(&left, &right)); break;
+        case BINARY_OP_TRIPLE_EQUALS: ret = Value_boolean(Value_strict_eq(&left, &right)); break;
+    }
+    Value_drop(&left);
+    Value_drop(&right);
+    return Result_ok(ret);
 }
 
 static Result MUST_USE Engine_eval_unary_op(Engine* self, UnaryOpExpr const* op_expr) {
-    (void)self;
-    (void)op_expr;
-    PANIC("unary op isn't implemented");
+    TRY_THROW(value, Engine_eval_expr(self, &op_expr->expr));
+    Value ret = Value_undefined;
+    switch (op_expr->op) {
+        case UNARY_OP_BANG: ret = Value_boolean(!Value_to_boolean(&value)); break;
+        case UNARY_OP_PLUS: ret = Value_number(Value_to_number(&value)); break;
+        case UNARY_OP_MINUS: ret = Value_number(-Value_to_number(&value)); break;
+        case UNARY_OP_LEFT_PLUS_PLUS: PANIC("increment not implemented"); break;
+        case UNARY_OP_LEFT_MINUS_MINUS: PANIC("decrement not implemented"); break;
+        case UNARY_OP_RIGHT_PLUS_PLUS: PANIC("increment not implemented"); break;
+        case UNARY_OP_RIGHT_MINUS_MINUS: PANIC("decrement not implemented"); break;
+    }
+    Value_drop(&value);
+    return Result_ok(ret);
 }
 
 static Result MUST_USE Engine_eval_dot_prop(Engine* self, DotPropExpr const* prop_expr) {
@@ -147,7 +181,7 @@ static Result MUST_USE Engine_eval_call(Engine* self, CallExpr const* call_expr)
             break;
 
         default: {
-            cstr callable_str = Value_to_cstr(&callable, 0);
+            cstr callable_str = Value_to_cstr_debug(&callable, 0);
             ret = Result_err(Value_string(cstr_from_fmt(
                 "%s is not a function",
                 cstr_str(&callable_str)
@@ -238,11 +272,15 @@ static Result MUST_USE Engine_run_scope_in_stack_frame(Engine* self, Scope const
 
 static Result console_log(Engine* engine, int argc, Value const argv[], void* data) {
     (void)engine; (void)data;
+    cstr str = cstr_null;
     for (int i = 0; i < argc; i++) {
-        cstr item = Value_to_cstr(&argv[i], 0);
-        printf("%s%s", cstr_str(&item), i == argc - 1 ? "\n" : " ");
-        cstr_drop(&item);
+        Value_append_to_string(&argv[i], &str);
+        if (i < argc - 1) {
+            cstr_append_sv(&str, c_sv(" "));
+        }
     }
+    printf("%s\n", cstr_str(&str));
+    cstr_drop(&str);
     return Result_ok_undefined;
 }
 
@@ -258,7 +296,7 @@ void eval_program(Scope const* scope) {
     };
     Result res = Engine_run_scope(&engine, scope);
     if (res.is_err) {
-        cstr err = Value_to_cstr(&res.value, 0);
+        cstr err = Value_to_cstr_debug(&res.value, 0);
         printf("Error thrown: %s\n", cstr_str(&err));
         cstr_drop(&err);
     }

@@ -85,7 +85,7 @@ void Expr_drop(Expr* self) {
 cstr Expr_to_cstr(Expr const* self, int indent) {
     switch (self->tag) {
         case EXPR_LITERAL:
-            return Value_to_cstr(&self->data.literal, indent);
+            return Value_to_cstr_debug(&self->data.literal, indent);
 
         case EXPR_IDENTIFIER: {
             cstr ret = cstr_lit(CLR_NAME);

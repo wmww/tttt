@@ -3,7 +3,7 @@
 #include "type.h"
 #include "result.h"
 
-void Value_drop(Value* self) {
+void Value_drop_internal(Value* self) {
     switch (self->tag) {
         case VALUE_NULL:
         case VALUE_UNDEFINED:
@@ -15,7 +15,6 @@ void Value_drop(Value* self) {
         case VALUE_JS_FUNC: arc_JsFunc_drop(&self->data.js_func); break;
         case VALUE_NATIVE_FUNC: arc_NativeFunc_drop(&self->data.native_func); break;
     }
-    self->tag = VALUE_NULL; // Makes repeated calls to drop safe
 }
 
 Value Value_clone(Value self) {
@@ -33,7 +32,104 @@ Value Value_clone(Value self) {
     return self;
 }
 
-cstr Value_to_cstr(Value const* self, int indent) {
+static double string_to_num(const char* start) {
+    if (*start) {
+        return 0;
+    }
+    char* end = (char*)start;
+    double num = strtod(start, &end);
+    if (!*end) {
+        return num;
+    } else {
+        return NAN;
+    }
+}
+
+bool Value_to_boolean(Value const* self) {
+    switch (self->tag) {
+        case VALUE_NULL: return false;
+        case VALUE_UNDEFINED: return false;
+        case VALUE_BOOLEAN: return self->data.boolean;
+        case VALUE_NUMBER: return self->data.number != 0;
+        case VALUE_STRING: return !cstr_empty(&self->data.string);
+        case VALUE_OBJECT: return true;
+        case VALUE_ARRAY: return true;
+        case VALUE_JS_FUNC: return true;
+        case VALUE_NATIVE_FUNC: return true;
+    }
+    UNREACHABLE;
+}
+
+double Value_to_number(Value const* self) {
+    switch (self->tag) {
+        case VALUE_UNDEFINED:
+        case VALUE_OBJECT:
+        case VALUE_JS_FUNC:
+        case VALUE_NATIVE_FUNC:
+            return NAN;
+
+        case VALUE_NULL: return 0;
+        case VALUE_BOOLEAN: return self->data.boolean ? 1 : 0;
+        case VALUE_NUMBER: return self->data.number;
+        case VALUE_STRING: return string_to_num(cstr_str(&self->data.string));
+
+        case VALUE_ARRAY: {
+            int len = vec_Value_size(&self->data.array.get->vec);
+            if (len == 0) {
+                return 0;
+            } else if (len == 1) {
+                cstr str = cstr_null;
+                Value_append_to_string(vec_Value_at(&self->data.array.get->vec, 0), &str);
+                double ret = string_to_num(cstr_str(&str));
+                cstr_drop(&str);
+                return ret;
+            } else {
+                return NAN;
+            }
+        }
+    }
+    UNREACHABLE;
+}
+
+void Value_append_to_string(Value const* self, cstr* target) {
+    switch (self->tag) {
+        case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
+        case VALUE_UNDEFINED: cstr_append_sv(target, c_sv("undefined")); break;
+        case VALUE_STRING: cstr_append_s(target, self->data.string); break;
+        case VALUE_OBJECT: cstr_append_sv(target, c_sv("[object Object]")); break;
+        case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
+        case VALUE_NATIVE_FUNC: cstr_append_sv(target, c_sv("[native function]")); break;
+
+        case VALUE_BOOLEAN:
+            if (self->data.boolean) {
+                cstr_append_sv(target, c_sv("true"));
+            } else {
+                cstr_append_sv(target, c_sv("false"));
+            }
+            break;
+
+        case VALUE_NUMBER:
+            if (round(self->data.number) == self->data.number) {
+                cstr_append_fmt(target, "%ld", (long)self->data.number);
+            } else if (isnan(self->data.number)) {
+                cstr_append_sv(target, c_sv("NaN"));
+            } else {
+                cstr_append_fmt(target, "%f", self->data.number);
+            }
+            break;
+
+        case VALUE_ARRAY:
+            c_foreach(i, vec_Value, self->data.array.get->vec) {
+                Value_append_to_string(i.ref, target);
+                if (i.ref < i.end - 1) {
+                    cstr_append_sv(target, c_sv(","));
+                }
+            }
+            break;
+    }
+}
+
+cstr Value_to_cstr_debug(Value const* self, int indent) {
     (void)indent;
     switch (self->tag) {
         case VALUE_NULL: return cstr_lit(CLR_VALUE "null" CLR0);
@@ -57,7 +153,7 @@ cstr Value_to_cstr(Value const* self, int indent) {
                     APPEND_INDENT(&ret, indent + 1);
                     cstr_append_s(&ret, *i.ref->name);
                     cstr_append(&ret, ": ");
-                    cstr item = Value_to_cstr(&i.ref->item->value, indent);
+                    cstr item = Value_to_cstr_debug(&i.ref->item->value, indent);
                     cstr_append_s(&ret, item);
                     cstr_drop(&item);
                     cstr_append(&ret, ",\n");
@@ -67,7 +163,7 @@ cstr Value_to_cstr(Value const* self, int indent) {
                 cstr_append(&ret, " ");
                 cstr_append_s(&ret, *vec_ObjectItemRef_at(&items, 0)->name);
                 cstr_append(&ret, ": ");
-                cstr item = Value_to_cstr(&vec_ObjectItemRef_at(&items, 0)->item->value, indent);
+                cstr item = Value_to_cstr_debug(&vec_ObjectItemRef_at(&items, 0)->item->value, indent);
                 cstr_append_s(&ret, item);
                 cstr_drop(&item);
                 cstr_append(&ret, " ");
@@ -84,7 +180,7 @@ cstr Value_to_cstr(Value const* self, int indent) {
                 cstr_append(&ret, "\n");
                 c_foreach(i, vec_Value, value->vec) {
                     APPEND_INDENT(&ret, indent + 1);
-                    cstr item = Value_to_cstr(i.ref, indent);
+                    cstr item = Value_to_cstr_debug(i.ref, indent);
                     cstr_append_s(&ret, item);
                     cstr_drop(&item);
                     cstr_append(&ret, ",\n");
@@ -92,7 +188,7 @@ cstr Value_to_cstr(Value const* self, int indent) {
                 APPEND_INDENT(&ret, indent);
             } else if (size == 1) {
                 cstr_append(&ret, " ");
-                cstr item = Value_to_cstr(vec_Value_at(&value->vec, 0), indent);
+                cstr item = Value_to_cstr_debug(vec_Value_at(&value->vec, 0), indent);
                 cstr_append_s(&ret, item);
                 cstr_drop(&item);
                 cstr_append(&ret, " ");
@@ -104,6 +200,30 @@ cstr Value_to_cstr(Value const* self, int indent) {
         case VALUE_NATIVE_FUNC: return cstr_lit("[native function]");
     }
     UNREACHABLE;
+}
+
+bool Value_loose_eq(Value const* a, Value const* b) {
+    if (a->tag == b->tag) {
+        return Value_strict_eq(a, b);
+    } else if (
+        a->tag == VALUE_UNDEFINED || a->tag == VALUE_NULL ||
+        b->tag == VALUE_UNDEFINED || b->tag == VALUE_NULL
+    ) {
+        return (
+            (a->tag == VALUE_UNDEFINED || a->tag == VALUE_NULL) &&
+            (b->tag == VALUE_UNDEFINED || b->tag == VALUE_NULL)
+        );
+    } else {
+        // TODO: there's complicated rules for this, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality
+        cstr as = cstr_null;
+        cstr bs = cstr_null;
+        Value_append_to_string(a, &as);
+        Value_append_to_string(a, &bs);
+        bool ret = cstr_eq(&as, &bs);
+        cstr_drop(&as);
+        cstr_drop(&bs);
+        return ret;
+    }
 }
 
 bool Value_strict_eq(Value const* a, Value const* b) {
