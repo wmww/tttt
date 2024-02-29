@@ -29,5 +29,6 @@ for (let i = 0; i < 10; i++) {
 
 while (a > 0) {
     console.log(String(a) + a);
+    //console.log();
     --a;
 }

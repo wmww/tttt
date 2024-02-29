@@ -583,11 +583,11 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
     } else {
         return false;
     }
-    hop_whitespace(src);
 
     bool done = false;
     while (!done) {
         done = true;
+        hop_whitespace(src);
 
         vec_Expr args;
         if (parse_call_args(src, &args, errs)) {
