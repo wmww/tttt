@@ -17,7 +17,7 @@ void panic(const char* file, int line, const char* fmt, ...) __attribute__ ((for
 #define MUST_USE __attribute__((warn_unused_result))
 
 #define CLR0 "\x1b[0m"
-#define CLR_ERR "\x1b[31m"
+#define CLR_ERR "\x1b[31;1m"
 #define CLR_GOOD "\x1b[32;1m"
 #define CLR_VALUE "\x1b[36m"
 #define CLR_STR "\x1b[33m"

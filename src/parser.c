@@ -802,6 +802,37 @@ static bool parse_for_loop(const char** src, LoopStatement* ret, ErrorCtx* errs)
     return true;
 }
 
+static bool parse_while_loop(const char** src, LoopStatement* ret, ErrorCtx* errs) {
+    if (!hop_start_if_ends_on_word_break(src, "while")) {
+        return false;
+    }
+    hop_whitespace(src);
+    if (!hop_start(src, "(")) {
+        ErrorCtx_parse_error(errs, *src, "expected '(' after while");
+    }
+    hop_whitespace(src);
+    Expr condition = Expr_literal_new(Value_boolean(false));
+    Statement body = Statement_noop;
+    if (!parse_expr(src, &condition, errs)) {
+        ErrorCtx_parse_error(errs, *src, "expected expression before ')'");
+    }
+    hop_whitespace(src);
+    if (!hop_start(src, ")")) {
+        ErrorCtx_parse_error(errs, *src, "expected ')' at end of for header");
+    }
+    hop_whitespace(src);
+    if (!parse_statement(src, &body, errs)) {
+        ErrorCtx_parse_error(errs, *src, "expected while loop body");
+    }
+    *ret = (LoopStatement) {
+        .initialization = Statement_noop,
+        .condition = condition,
+        .afterthought = Statement_noop,
+        .body = body,
+    };
+    return true;
+}
+
 static bool parse_return(const char** src, Expr* ret, ErrorCtx* errs) {
     if (!hop_start_if_ends_on_word_break(src, "return")) {
         return false;
@@ -889,10 +920,14 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
             .data.loop = c_new(LoopStatement, loop),
         };
         return true;
-    } /*else if (parse_while_loop(src, &ret->data.loop, errs)) {
-        ret->tag = STATEMENT_LOOP;
+    } else if (parse_while_loop(src, &loop, errs)) {
+        *ret = (Statement){
+            .tag = STATEMENT_LOOP,
+            .data.loop = c_new(LoopStatement, loop),
+        };
         return true;
-    }*/ else if (hop_start_if_ends_on_word_break(src, "break")) {
+        return true;
+    } else if (hop_start_if_ends_on_word_break(src, "break")) {
         ret->tag = STATEMENT_BREAK;
         return true;
     } else if (parse_return(src, &ret->data.return_expr, errs)) {

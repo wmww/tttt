@@ -23,6 +23,11 @@ if (1 === 2) {
     console.log('else arm');
 }
 
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 10; i++) {
     console.log(i);
+}
+
+while (a > 0) {
+    console.log(String(a) + a);
+    --a;
 }

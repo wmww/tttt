@@ -19,12 +19,12 @@ int main(int argc, const char** argv) {
 
     ErrorCtx errs = {0};
     Scope parsed = parse_file(cstr_str(&contents), &errs);
-    cstr_drop(&contents);
 
     if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs);
+        ErrorCtx_display(&errs, cstr_str(&contents));
         ErrorCtx_drop(&errs);
         Scope_drop(&parsed);
+        cstr_drop(&contents);
         return 1;
     }
 
@@ -36,9 +36,10 @@ int main(int argc, const char** argv) {
     Scope_typecheck(&parsed, &errs);
 
     if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs);
+        ErrorCtx_display(&errs, cstr_str(&contents));
         ErrorCtx_drop(&errs);
         Scope_drop(&parsed);
+        cstr_drop(&contents);
         return 1;
     }
 
@@ -48,6 +49,7 @@ int main(int argc, const char** argv) {
 
     printf(CLR_GOOD "Run succeeded" CLR0 "\n");
 
+    cstr_drop(&contents);
     ErrorCtx_drop(&errs);
     Scope_drop(&parsed);
     return 0;

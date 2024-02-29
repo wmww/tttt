@@ -17,7 +17,7 @@ typedef struct ErrorCtx {
 } ErrorCtx;
 
 void ErrorCtx_drop(ErrorCtx* self);
-void ErrorCtx_display(ErrorCtx* self);
+void ErrorCtx_display(ErrorCtx* self, const char* src);
 bool ErrorCtx_empty(ErrorCtx* self);
 void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other);
 void ErrorCtx_parse_error(ErrorCtx* self, const char* location, const char* static_message);
