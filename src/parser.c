@@ -10,6 +10,7 @@
 
 static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs);
 static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs);
+static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs);
 static bool parse_type(const char** src, Type* type, ErrorCtx* errs);
 static bool parse_type_compat_literal(const char** src, Value* ret, ErrorCtx* errs);
 static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs);
@@ -23,6 +24,28 @@ static inline bool hop_whitespace(const char** str) {
             case '\n':
             case '\r':
                 break;
+
+            case '/':
+                switch (*((*str) + 1)) {
+                    case '/':
+                        (*str) += 2;
+                        while (**str && **str != '\n') {
+                            (*str)++;
+                        }
+                        break;
+
+                    case '*':
+                        (*str)++;
+                        while (**str && (*((*str) - 1) != '*' || **str != '/')) {
+                            (*str)++;
+                        }
+                        break;
+
+                    default:
+                        return ret;
+                }
+                break;
+
             default:
                 return ret;
         }
@@ -667,6 +690,70 @@ static bool parse_var_init(const char** src, VarInitStatement* ret, ErrorCtx* er
     return true;
 }
 
+static bool parse_if_arm(const char** src, Expr* condition, Statement* statement, ErrorCtx* errs) {
+    if (!hop_start_if_ends_on_word_break(src, "if")) {
+        return false;
+    }
+    hop_whitespace(src);
+    if (!hop_start(src, "(")) {
+        ErrorCtx_parse_error(errs, *src, "expected '(' after if");
+    }
+    hop_whitespace(src);
+    if (!parse_expr(src, condition, errs)) {
+        ErrorCtx_parse_error(errs, *src, "invalid if condition");
+    }
+    hop_whitespace(src);
+    if (!hop_start(src, ")")) {
+        ErrorCtx_parse_error(errs, *src, "expected ')' after if condition");
+    }
+    hop_whitespace(src);
+    if (!parse_statement(src, statement, errs)) {
+        ErrorCtx_parse_error(errs, *src, "invalid if body");
+    }
+    return true;
+}
+
+static bool parse_if_else(const char** src, IfStatement* if_else, ErrorCtx* errs) {
+    vec_Expr conditions = {0};
+    vec_Statement statements = {0};
+    while (true) {
+        Expr condition = {0};
+        Statement statement = {0};
+        if (!parse_if_arm(src, &condition, &statement, errs)) {
+            if (vec_Expr_empty(&conditions)) {
+                return false;
+            } else if (parse_statement(src, &statement, errs)) {
+                vec_Statement_push(&statements, statement);
+                break;
+            } else {
+                ErrorCtx_parse_error(errs, *src, "expected else statement");
+            }
+        }
+        hop_whitespace(src);
+        vec_Expr_push(&conditions, condition);
+        vec_Statement_push(&statements, statement);
+        if (!hop_start_if_ends_on_word_break(src, "else")) {
+            break;
+        }
+    }
+    *if_else = (IfStatement){
+        .conditions = conditions,
+        .statements = statements,
+    };
+    return true;
+}
+
+static bool parse_return(const char** src, Expr* expr, ErrorCtx* errs) {
+    if (!hop_start_if_ends_on_word_break(src, "return")) {
+        return false;
+    }
+    hop_whitespace(src);
+    if (!parse_expr(src, expr, errs)) {
+        *expr = Expr_default;
+    }
+    return true;
+}
+
 static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
     vec_FunctionStatementArg* args = data;
     FunctionStatementArg arg = {0};
@@ -732,6 +819,24 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
         return true;
     } else if (parse_var_init(src, &ret->data.var_init, errs)) {
         ret->tag = STATEMENT_VAR_INIT;
+        return true;
+    } else if (parse_if_else(src, &ret->data.if_else, errs)) {
+        ret->tag = STATEMENT_IF_ELSE;
+        return true;
+    } /*else if (parse_for_loop(src, &ret->data.loop, errs)) {
+        ret->tag = STATEMENT_LOOP;
+        return true;
+    } else if (parse_while_loop(src, &ret->data.loop, errs)) {
+        ret->tag = STATEMENT_LOOP;
+        return true;
+    } else if (parse_do_while_loop(src, &ret->data.loop, errs)) {
+        ret->tag = STATEMENT_LOOP;
+        return true;
+    }*/ else if (hop_start_if_ends_on_word_break(src, "break")) {
+        ret->tag = STATEMENT_BREAK;
+        return true;
+    } else if (parse_return(src, &ret->data.return_expr, errs)) {
+        ret->tag = STATEMENT_RETURN;
         return true;
     } else if (parse_function(src, &ret->data.function, errs)) {
         ret->tag = STATEMENT_FUNCTION;

@@ -34,11 +34,11 @@ static Result MUST_USE Engine_eval_identifier(Engine* self, csview identifier) {
     Result get_result = Result_err(Value_undefined);
     c_foreach_rev(i, vec_StackFrame, self->stack) {
         get_result = ObjectValue_get(i.ref->get, identifier);
-        if (!get_result.is_err) {
+        if (get_result.tag == RESULT_OK) {
             break;
         }
     }
-    if (get_result.is_err) {
+    if (get_result.tag != RESULT_OK) {
         Result_drop(&get_result);
         return Result_err(Value_string(cstr_from_fmt(
             "ReferenceError: %s is not defined",
@@ -51,7 +51,7 @@ static Result MUST_USE Engine_eval_identifier(Engine* self, csview identifier) {
 
 static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* op_expr) {
     TRY_THROW(left, Engine_eval_expr(self, &op_expr->left));
-    TRY_CATCH(right, Engine_eval_expr(self, &op_expr->left), res_err, {
+    TRY_CATCH(right, Engine_eval_expr(self, &op_expr->right), res_err, {
         Value_drop(&left);
         return res_err;
     });
@@ -59,7 +59,7 @@ static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* o
     switch (op_expr->op) {
         case BINARY_OP_PLUS:
             if (left.tag == VALUE_NUMBER && right.tag == VALUE_NUMBER) {
-                ret = Value_number(left.data.number + left.data.number);
+                ret = Value_number(left.data.number + right.data.number);
             } else {
                 cstr str = cstr_null;
                 Value_append_to_string(&left, &str);
@@ -110,7 +110,7 @@ static Result MUST_USE Engine_eval_dot_prop(Engine* self, DotPropExpr const* pro
 
         case VALUE_OBJECT:
             ret = ObjectValue_get(value.data.object.get, cstr_sv(&prop_expr->prop));
-            ret.is_err = false; // undefined is fine if key is not found
+            ret.tag = RESULT_OK; // undefined is fine if key is not found
             break;
 
         case VALUE_ARRAY:
@@ -192,6 +192,9 @@ static Result MUST_USE Engine_eval_call(Engine* self, CallExpr const* call_expr)
 
     vec_Value_drop(&given_args);
     Value_drop(&callable);
+    if (ret.tag == RESULT_RETURN) {
+        ret.tag = RESULT_OK;
+    }
     return ret;
 }
 
@@ -220,6 +223,7 @@ static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
     UNREACHABLE;
 }
 
+// Only return statements return ok with a value, caller has to check statement tag to notice undefined returns
 static Result MUST_USE Engine_run_statement(Engine* self, Statement const* statement) {
     switch (statement->tag) {
         case STATEMENT_INTERFACE: break;
@@ -231,6 +235,11 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
         case STATEMENT_EXPR: {
             TRY_THROW_DROP(Engine_eval_expr(self, &statement->data.expr));
         }   break;
+
+        case STATEMENT_RETURN: {
+            TRY_THROW(value, Engine_eval_expr(self, &statement->data.return_expr));
+            return Result_return(value);
+        }
 
         case STATEMENT_VAR_INIT: {
             // TODO: respect keyword (let, const, var)
@@ -249,6 +258,32 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
             ObjectValue* locals = Engine_get_locals(self);
             ObjectValue_set(locals, name, value);
         }   break;
+
+        case STATEMENT_IF_ELSE: {
+            int statement_size = vec_Statement_size(&statement->data.if_else.statements);
+            int cond_size = vec_Expr_size(&statement->data.if_else.conditions);
+            if (statement_size != cond_size && statement_size != cond_size + 1) {
+                PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
+            }
+            for (int i = 0; i < statement_size; i++) {
+                bool cond_true = true;
+                if (i < cond_size) {
+                    TRY_THROW(condition, Engine_eval_expr(self, vec_Expr_at(&statement->data.if_else.conditions, i)));
+                    cond_true = Value_to_boolean(&condition);
+                    Value_drop(&condition);
+                }
+                if (cond_true) {
+                    TRY_THROW_DROP(Engine_run_statement(
+                        self,
+                        vec_Statement_at(&statement->data.if_else.statements, i)
+                    ));
+                    break;
+                }
+            }
+        }   break;
+
+        case STATEMENT_LOOP: PANIC("loops not implemented");
+        case STATEMENT_BREAK: PANIC("break");
     }
     return Result_ok_undefined;
 }
@@ -295,7 +330,7 @@ void eval_program(Scope const* scope) {
         }),
     };
     Result res = Engine_run_scope(&engine, scope);
-    if (res.is_err) {
+    if (res.tag == RESULT_ERR) {
         cstr err = Value_to_cstr_debug(&res.value, 0);
         printf("Error thrown: %s\n", cstr_str(&err));
         cstr_drop(&err);

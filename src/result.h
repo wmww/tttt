@@ -3,8 +3,12 @@
 #include "value.h"
 
 typedef struct Result {
+    enum {
+        RESULT_OK = 0,
+        RESULT_ERR,
+        RESULT_RETURN,
+    } tag;
     Value value;
-    bool is_err;
 } Result;
 
 static inline void Result_drop(Result* self) {
@@ -15,25 +19,32 @@ static inline void Result_drop(Result* self) {
 
 static inline Result Result_ok(Value value) {
     return (Result) {
-        .is_err = false,
+        .tag = RESULT_OK,
         .value = value,
     };
 }
 
 static inline Result Result_err(Value value) {
     return (Result) {
-        .is_err = true,
+        .tag = RESULT_ERR,
         .value = value,
     };
 }
 
-#define Result_ok_undefined ((Result){ .is_err = false, .value = Value_undefined })
+static inline Result Result_return(Value value) {
+    return (Result) {
+        .tag = RESULT_RETURN,
+        .value = value,
+    };
+}
+
+#define Result_ok_undefined ((Result){ .tag = RESULT_OK, .value = Value_undefined })
 
 #define TRY_CATCH(ok_name, expr, result_name, catch_block) \
     Value ok_name = Value_undefined; \
     { \
         Result result_name = expr; \
-        if (result_name.is_err) { catch_block } \
+        if (result_name.tag != RESULT_OK) { catch_block } \
         else { ok_name = result_name.value; } \
     }
 #define TRY_THROW(ok_name, expr) TRY_CATCH(ok_name, expr, result_tmp, return result_tmp;)

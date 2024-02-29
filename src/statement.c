@@ -121,6 +121,10 @@ void Statement_drop(Statement* self) {
             Expr_drop(&self->data.expr);
             break;
 
+        case STATEMENT_RETURN:
+            Expr_drop(&self->data.return_expr);
+            break;
+
         case STATEMENT_VAR_INIT:
             VarInitStatement_drop(&self->data.var_init);
             break;
@@ -128,6 +132,17 @@ void Statement_drop(Statement* self) {
         case STATEMENT_FUNCTION:
             FunctionStatement_drop(&self->data.function);
             break;
+
+        case STATEMENT_IF_ELSE:
+            vec_Expr_drop(&self->data.if_else.conditions);
+            vec_Statement_drop(&self->data.if_else.statements);
+            break;
+
+        case STATEMENT_LOOP:
+            Scope_drop(&self->data.loop.scope);
+            break;
+
+        case STATEMENT_BREAK: break; // nice
     }
 }
 
@@ -145,11 +160,52 @@ cstr Statement_to_cstr(Statement* self, int indent) {
             return ret;
         }
 
+        case STATEMENT_RETURN: {
+            cstr ret = cstr_lit("return ");
+            cstr expr = Expr_to_cstr(&self->data.return_expr, indent);
+            cstr_append_s(&ret, expr);
+            cstr_drop(&expr);
+            cstr_append(&ret, ";");
+            return ret;
+        }
+
         case STATEMENT_VAR_INIT:
             return VarInitStatement_to_cstr(&self->data.var_init, indent);
 
         case STATEMENT_FUNCTION:
             return FunctionStatement_to_cstr(&self->data.function, indent);
+
+        case STATEMENT_IF_ELSE: {
+            cstr ret = cstr_null;
+            int statement_size = vec_Statement_size(&self->data.if_else.statements);
+            int cond_size = vec_Expr_size(&self->data.if_else.conditions);
+            for (int i = 0; i < statement_size; i++) {
+                if (i < cond_size) {
+                    cstr_append(&ret, "if (");
+                    cstr expr = Expr_to_cstr(vec_Expr_at(&self->data.if_else.conditions, i), indent);
+                    cstr_append_s(&ret, expr);
+                    cstr_drop(&expr);
+                    cstr_append(&ret, ") ");
+                }
+                cstr stmt = Statement_to_cstr(vec_Statement_at_mut(&self->data.if_else.statements, i), indent);
+                cstr_append_s(&ret, stmt);
+                cstr_drop(&stmt);
+                if (i < statement_size - 1) {
+                    cstr_append(&ret, " else ");
+                }
+            }
+            return ret;
+        }
+
+        case STATEMENT_LOOP: {
+            cstr ret = cstr_lit("while (true) ");
+            cstr scope = Scope_to_cstr(&self->data.loop.scope, indent);
+            cstr_append_s(&ret, scope);
+            cstr_drop(&scope);
+            return ret;
+        }
+
+        case STATEMENT_BREAK: return cstr_lit("break;");
     }
     UNREACHABLE;
 }
@@ -167,6 +223,12 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
             Type_drop(&t);
         }   break;
 
+        case STATEMENT_RETURN: {
+            // TODO: typecheck
+            Type t = Expr_get_type_and_typecheck(&self->data.return_expr, errs);
+            Type_drop(&t);
+        }   break;
+
         case STATEMENT_VAR_INIT: {
             Type tmp = NameInitData_get_type_and_typecheck(&self->data.var_init.data, errs);
             Type_drop(&tmp);
@@ -175,6 +237,32 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
         case STATEMENT_FUNCTION:
             // TODO: typecheck args? return type?
             Scope_typecheck(&self->data.function.body, errs);
+            break;
+
+        case STATEMENT_IF_ELSE: {
+            int statement_size = vec_Statement_size(&self->data.if_else.statements);
+            int cond_size = vec_Expr_size(&self->data.if_else.conditions);
+            if (statement_size != cond_size && statement_size != cond_size + 1) {
+                PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
+            }
+            c_foreach(i, vec_Expr, self->data.if_else.conditions) {
+                Type t = Expr_get_type_and_typecheck(i.ref, errs);
+                // Conditions do not have to be booleans
+                Type_drop(&t);
+            }
+            c_foreach(i, vec_Statement, self->data.if_else.statements) {
+                Statement_typecheck(i.ref, errs);
+            }
+            break;
+        }
+
+        case STATEMENT_LOOP: {
+            Scope_typecheck(&self->data.loop.scope, errs);
+            break;
+        }
+
+        case STATEMENT_BREAK:
+            // TODO: can we check to make sure we're in a loop?
             break;
     }
 }

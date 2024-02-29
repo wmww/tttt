@@ -7,6 +7,8 @@
 
 typedef struct ErrorCtx ErrorCtx;
 
+// NameInitData is useful for multiple things that can optionally both values and types
+
 typedef struct NameInitData {
     cstr name;
     bool has_type;
@@ -19,6 +21,8 @@ void NameInitData_drop(NameInitData* self);
 cstr NameInitData_to_cstr(NameInitData* self, int indent);
 Type NameInitData_get_type_and_typecheck(NameInitData* self, ErrorCtx* errs);
 
+// Variable initialization
+
 typedef struct VarInitStatement {
     enum {
         VAR_INIT_VAR,
@@ -30,6 +34,8 @@ typedef struct VarInitStatement {
 
 void VarInitStatement_drop(VarInitStatement* self);
 cstr VarInitStatement_to_cstr(VarInitStatement* self, int indent);
+
+// Function declaration
 
 typedef struct FunctionStatementArg {
     NameInitData data;
@@ -54,20 +60,43 @@ void FunctionStatement_drop(FunctionStatement* self);
 cstr FunctionStatement_to_cstr(FunctionStatement* self, int indent);
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs);
 
+// If statements
+
+typedef struct IfStatement {
+    vec_Expr conditions;
+    // The length of statements should always be equal to conditions, or one greater (in the case of a trailing else)
+    vec_Statement statements;
+} IfStatement;
+
+// Loop statements
+
+typedef struct LoopStatement {
+    Scope scope;
+} LoopStatement;
+
+// Statements
+
 typedef struct Statement {
     enum {
         STATEMENT_INTERFACE,
         STATEMENT_SCOPE,
         STATEMENT_EXPR,
+        STATEMENT_RETURN,
         STATEMENT_VAR_INIT,
         STATEMENT_FUNCTION,
+        STATEMENT_IF_ELSE,
+        STATEMENT_LOOP,
+        STATEMENT_BREAK,
     } tag;
     union {
         NamedInterface interface;
         Scope scope;
         Expr expr;
+        Expr return_expr;
         VarInitStatement var_init;
         FunctionStatement function;
+        IfStatement if_else;
+        LoopStatement loop;
     } data;
 } Statement;
 

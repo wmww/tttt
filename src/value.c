@@ -234,7 +234,7 @@ bool Value_strict_eq(Value const* a, Value const* b) {
         case VALUE_NULL: return true;
         case VALUE_UNDEFINED: return true;
         case VALUE_BOOLEAN: return a->data.boolean == b->data.boolean;
-        case VALUE_NUMBER: return a->data.number == b->data.boolean;
+        case VALUE_NUMBER: return a->data.number == b->data.number;
         case VALUE_STRING: return cstr_eq(&a->data.string, &b->data.string);
         case VALUE_OBJECT: return a->data.object.get == b->data.object.get;
         case VALUE_ARRAY: return a->data.array.get == b->data.array.get;
