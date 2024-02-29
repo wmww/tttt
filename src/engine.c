@@ -419,7 +419,7 @@ static Result MUST_USE Engine_run_scope_in_stack_frame(Engine* self, Scope const
     return Result_ok_undefined;
 }
 
-static Result console_log(Engine* engine, int argc, Value const argv[], void* data) {
+static Result console_log_impl(Engine* engine, int argc, Value const argv[], void* data) {
     (void)engine; (void)data;
     cstr str = cstr_null;
     for (int i = 0; i < argc; i++) {
@@ -433,13 +433,37 @@ static Result console_log(Engine* engine, int argc, Value const argv[], void* da
     return Result_ok_undefined;
 }
 
+static Result string_impl(Engine* engine, int argc, Value const argv[], void* data) {
+    (void)engine; (void)data;
+    if (argc > 0) {
+        cstr ret = cstr_null;
+        cstr_append_value_js(&ret, argv);
+        return Result_ok(Value_string(ret));
+    } else {
+        return Result_ok(Value_string(cstr_null));
+    }
+}
+
+static Result number_impl(Engine* engine, int argc, Value const argv[], void* data) {
+    (void)engine; (void)data;
+    return Result_ok(Value_number(argc > 0 ? Value_to_number(argv) : 0));
+}
+
+static Result boolean_impl(Engine* engine, int argc, Value const argv[], void* data) {
+    (void)engine; (void)data;
+    return Result_ok(Value_boolean(argc > 0 ? Value_to_boolean(argv) : false));
+}
+
 void eval_program(Scope const* scope) {
     Engine engine = {
         .stack = c_init(vec_StackFrame, {
             Value_object_init({
                 {"console", Value_object_init({
-                    {"log", Value_native_func(console_log, nullptr, nullptr)}
+                    {"log", Value_native_func(console_log_impl, nullptr, nullptr)}
                 })},
+                {"String", Value_native_func(string_impl, nullptr, nullptr)},
+                {"Number", Value_native_func(number_impl, nullptr, nullptr)},
+                {"Boolean", Value_native_func(boolean_impl, nullptr, nullptr)},
             }).data.object,
         }),
     };
