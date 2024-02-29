@@ -11,5 +11,5 @@ typedef struct Scope {
 } Scope;
 
 void Scope_drop(Scope* self);
-cstr Scope_to_cstr(Scope* self, int indent);
+void cstr_append_scope_debug(cstr* target, Scope* self, int indent);
 void Scope_typecheck(Scope* self, ErrorCtx* errs);

@@ -9,5 +9,5 @@ typedef struct ExtendsConditional {
 
 void ExtendsConditional_drop(ExtendsConditional* self);
 ExtendsConditional ExtendsConditional_clone(ExtendsConditional self);
-cstr ExtendsConditional_to_cstr(ExtendsConditional* self, int indent);
+void cstr_append_extends_conditional_debug(cstr* target, ExtendsConditional* self, int indent);
 bool ExtendsConditional_eval(ExtendsConditional* self);

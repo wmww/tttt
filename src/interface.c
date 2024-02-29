@@ -12,21 +12,18 @@ Interface Interface_clone(Interface self) {
     };
 }
 
-cstr Interface_to_cstr(Interface* self, int indent) {
-    cstr ret = cstr_lit("{\n");
+void cstr_append_interface_debug(cstr* target, Interface* self, int indent) {
+    cstr_append_sv(target, c_sv(CLR0 "{\n"));
     c_foreach(i, vec_InterfaceMember, self->members) {
-        APPEND_INDENT(&ret, indent + 1);
-        cstr_append(&ret, CLR_NAME);
-        cstr_append_s(&ret, i.ref->name);
-        cstr_append_sv(&ret, c_sv(CLR0 ": "));
-        cstr type = Type_to_cstr(&i.ref->type, indent + 1);
-        cstr_append_s(&ret, type);
-        cstr_drop(&type);
-        cstr_append(&ret, ",\n");
+        APPEND_INDENT(target, indent + 1);
+        cstr_append_sv(target, c_sv(CLR_NAME));
+        cstr_append_s(target, i.ref->name);
+        cstr_append_sv(target, c_sv(CLR0 ": "));
+        cstr_append_type_debug(target, &i.ref->type, indent + 1);
+        cstr_append_sv(target, c_sv(",\n"));
     }
-    APPEND_INDENT(&ret, indent);
-    cstr_append_sv(&ret, c_sv("}"));
-    return ret;
+    APPEND_INDENT(target, indent);
+    cstr_append_sv(target, c_sv("}"));
 }
 
 void NamedInterface_drop(NamedInterface* self) {
@@ -34,12 +31,9 @@ void NamedInterface_drop(NamedInterface* self) {
     Interface_drop(&self->content);
 }
 
-cstr NamedInterface_to_cstr(NamedInterface* self, int indent) {
-    cstr ret = cstr_lit("interface " CLR_NAME);
-    cstr_append_s(&ret, self->name);
-    cstr_append(&ret, CLR0 " ");
-    cstr content = Interface_to_cstr(&self->content, indent);
-    cstr_append_s(&ret, content);
-    cstr_drop(&content);
-    return ret;
+void cstr_append_named_interface_debug(cstr* target, NamedInterface* self, int indent) {
+    cstr_append_sv(target, c_sv("interface " CLR_NAME));
+    cstr_append_s(target, self->name);
+    cstr_append_sv(target, c_sv(CLR0 " "));
+    cstr_append_interface_debug(target, &self->content, indent);
 }

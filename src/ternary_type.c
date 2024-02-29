@@ -14,24 +14,16 @@ TernaryType TernaryType_clone(TernaryType self) {
     };
 }
 
-cstr TernaryType_to_cstr(TernaryType* self, int indent) {
-    cstr conditional = ExtendsConditional_to_cstr(&self->conditional, indent);
-    cstr trueType = Type_to_cstr(&self->trueType, indent + 1);
-    cstr falseType = Type_to_cstr(&self->falseType, indent + 1);
-    cstr ret = cstr_null;
-    cstr_append_s(&ret, conditional);
-    cstr_append(&ret, "\n");
-    APPEND_INDENT(&ret, indent + 1);
-    cstr_append(&ret, "? ");
-    cstr_append_s(&ret, trueType);
-    cstr_append(&ret, "\n");
-    APPEND_INDENT(&ret, indent + 1);
-    cstr_append(&ret, ": ");
-    cstr_append_s(&ret, falseType);
-    cstr_drop(&conditional);
-    cstr_drop(&trueType);
-    cstr_drop(&falseType);
-    return ret;
+void cstr_append_ternary_type_debug(cstr* target, TernaryType* self, int indent) {
+    cstr_append_extends_conditional_debug(target, &self->conditional, indent);
+    cstr_append_sv(target, c_sv("\n"));
+    APPEND_INDENT(target, indent + 1);
+    cstr_append_sv(target, c_sv("? "));
+    cstr_append_type_debug(target, &self->trueType, indent + 1);
+    cstr_append_sv(target, c_sv("\n"));
+    APPEND_INDENT(target, indent + 1);
+    cstr_append_sv(target, c_sv(": "));
+    cstr_append_type_debug(target, &self->falseType, indent + 1);
 }
 
 Type* TernaryType_resolve(TernaryType* self) {

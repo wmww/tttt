@@ -1,17 +1,28 @@
 function func() {
     console.log('hello from func');
+    globe = 'global is now changed';
 }
 
 console.log('Hello, World');
-const a = 2 + 2;
+let a = 2 + 2;
 console.log('a:', a);
+let globe = 'global set in global scope'
 func();
-console.log(+{});
+console.log(globe);
+
+// this is a comment
 
 if (1 === 2) {
-    console.log(1);
+    console.log('if arm');
+    /* multiline
+     * comment
+     */
 } else if ('44' == 44) {
-    console.log(2);
+    console.log('else if arm');
 } else {
-    console.log(3);
+    console.log('else arm');
+}
+
+for (let i = 0; i < 100; i++) {
+    console.log(i);
 }

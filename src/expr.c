@@ -6,9 +6,15 @@ const Expr Expr_default = { .tag = EXPR_LITERAL, .data.literal = { .tag = VALUE_
 
 static inline int binary_op_get_precedence(BinaryOp op) {
     switch (op) {
-        case BINARY_OP_SINGLE_EQUALS: return 10;
-        case BINARY_OP_DOUBLE_EQUALS: return 20;
-        case BINARY_OP_TRIPLE_EQUALS: return 20;
+        case BINARY_OP_SINGLE_EQUAL: return 10;
+        case BINARY_OP_DOUBLE_EQUAL: return 20;
+        case BINARY_OP_TRIPLE_EQUAL: return 20;
+        case BINARY_OP_LESS: return 20;
+        case BINARY_OP_GREATER: return 20;
+        case BINARY_OP_LESS_EQUAL: return 20;
+        case BINARY_OP_GREATER_EQUAL: return 20;
+        case BINARY_OP_NOT_EQUAL: return 20;
+        case BINARY_OP_DOUBLE_NOT_EQUAL: return 20;
         case BINARY_OP_PLUS: return 50;
         case BINARY_OP_MINUS: return 50;
         case BINARY_OP_STAR: return 60;
@@ -17,28 +23,34 @@ static inline int binary_op_get_precedence(BinaryOp op) {
     UNREACHABLE;
 }
 
-static inline const char* binary_op_get_str(BinaryOp op) {
+static inline csview binary_op_get_sv(BinaryOp op) {
     switch (op) {
-        case BINARY_OP_PLUS: return "+";
-        case BINARY_OP_MINUS: return "-";
-        case BINARY_OP_STAR: return "*";
-        case BINARY_OP_SLASH: return "/";
-        case BINARY_OP_SINGLE_EQUALS: return "=";
-        case BINARY_OP_DOUBLE_EQUALS: return "==";
-        case BINARY_OP_TRIPLE_EQUALS: return "===";
+        case BINARY_OP_PLUS: return c_sv("+");
+        case BINARY_OP_MINUS: return c_sv("-");
+        case BINARY_OP_STAR: return c_sv("*");
+        case BINARY_OP_SLASH: return c_sv("/");
+        case BINARY_OP_SINGLE_EQUAL: return c_sv("=");
+        case BINARY_OP_DOUBLE_EQUAL: return c_sv("==");
+        case BINARY_OP_TRIPLE_EQUAL: return c_sv("===");
+        case BINARY_OP_LESS: return c_sv("<");
+        case BINARY_OP_GREATER: return c_sv(">");
+        case BINARY_OP_LESS_EQUAL: return c_sv("<=");
+        case BINARY_OP_GREATER_EQUAL: return c_sv(">=");
+        case BINARY_OP_NOT_EQUAL: return c_sv("!=");
+        case BINARY_OP_DOUBLE_NOT_EQUAL: return c_sv("!==");
     }
     UNREACHABLE;
 }
 
-static inline const char* unary_op_get_str(UnaryOp op) {
+static inline csview unary_op_get_sv(UnaryOp op) {
     switch (op) {
-        case UNARY_OP_BANG: return "!";
-        case UNARY_OP_PLUS: return "+";
-        case UNARY_OP_MINUS: return "-";
-        case UNARY_OP_LEFT_PLUS_PLUS: return "++";
-        case UNARY_OP_LEFT_MINUS_MINUS: return "--";
-        case UNARY_OP_RIGHT_PLUS_PLUS: return "++";
-        case UNARY_OP_RIGHT_MINUS_MINUS: return "--";
+        case UNARY_OP_BANG: return c_sv("!");
+        case UNARY_OP_PLUS: return c_sv("+");
+        case UNARY_OP_MINUS: return c_sv("-");
+        case UNARY_OP_LEFT_PLUS_PLUS: return c_sv("++");
+        case UNARY_OP_LEFT_MINUS_MINUS: return c_sv("--");
+        case UNARY_OP_RIGHT_PLUS_PLUS: return c_sv("++");
+        case UNARY_OP_RIGHT_MINUS_MINUS: return c_sv("--");
     }
     UNREACHABLE;
 }
@@ -82,122 +94,100 @@ void Expr_drop(Expr* self) {
     }
 }
 
-cstr Expr_to_cstr(Expr const* self, int indent) {
+void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
     switch (self->tag) {
-        case EXPR_LITERAL:
-            return Value_to_cstr_debug(&self->data.literal, indent);
+        case EXPR_LITERAL: cstr_append_value_debug(target, &self->data.literal, indent); break;
 
-        case EXPR_IDENTIFIER: {
-            cstr ret = cstr_lit(CLR_NAME);
-            cstr_append_s(&ret, self->data.identifier);
-            cstr_append(&ret, CLR0);
-            return ret;
-        }
+        case EXPR_IDENTIFIER:
+            cstr_append_sv(target, c_sv(CLR_NAME));
+            cstr_append_s(target, self->data.identifier);
+            cstr_append_sv(target, c_sv(CLR0));
+            break;
 
         case EXPR_BINARY_OP: {
-            cstr ret = cstr_null;
             if (self->data.binary_op->parenthesized) {
-                cstr_append(&ret, "(");
+                cstr_append_sv(target, c_sv("("));
             } else {
-                cstr_append(&ret, CLR_IMPLICIT "(" CLR0);
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
-            cstr a = Expr_to_cstr(&self->data.binary_op->left, indent);
-            cstr b = Expr_to_cstr(&self->data.binary_op->right, indent);
-            cstr_append_s(&ret, a);
-            cstr_append(&ret, " ");
-            cstr_append(&ret, binary_op_get_str(self->data.binary_op->op));
-            cstr_append(&ret, " ");
-            cstr_append_s(&ret, b);
+            cstr_append_expr_debug(target, &self->data.binary_op->left, indent);
+            cstr_append_sv(target, c_sv(" "));
+            cstr_append_sv(target, binary_op_get_sv(self->data.binary_op->op));
+            cstr_append_sv(target, c_sv(" "));
+            cstr_append_expr_debug(target, &self->data.binary_op->right, indent);
             if (self->data.binary_op->parenthesized) {
-                cstr_append(&ret, ")");
+                cstr_append_sv(target, c_sv(")"));
             } else {
-                cstr_append(&ret, CLR_IMPLICIT ")" CLR0);
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
-            cstr_drop(&a);
-            cstr_drop(&b);
-            return ret;
-        }
+        }   break;
 
         case EXPR_UNARY_OP: {
-            cstr ret = cstr_null;
             if (self->data.unary_op->parenthesized) {
-                cstr_append(&ret, "(");
+                cstr_append_sv(target, c_sv("("));
             } else {
-                cstr_append(&ret, CLR_IMPLICIT "(" CLR0);
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
             UnaryOp op = self->data.unary_op->op;
-            cstr expr = Expr_to_cstr(&self->data.unary_op->expr, indent);
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
-                cstr_append(&ret, unary_op_get_str(op));
+                cstr_append_sv(target, unary_op_get_sv(op));
             }
-            cstr_append_s(&ret, expr);
+            cstr_append_expr_debug(target, &self->data.unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
-                cstr_append(&ret, unary_op_get_str(op));
+                cstr_append_sv(target, unary_op_get_sv(op));
             }
             if (self->data.unary_op->parenthesized) {
-                cstr_append(&ret, ")");
+                cstr_append_sv(target, c_sv(")"));
             } else {
-                cstr_append(&ret, CLR_IMPLICIT ")" CLR0);
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
-            cstr_drop(&expr);
-            return ret;
-        }
+        }   break;
 
         case EXPR_DOT_PROP: {
-            cstr ret = Expr_to_cstr(&self->data.dot_prop->expr, indent);
-            cstr_append(&ret, ".");
-            cstr_append_s(&ret, self->data.dot_prop->prop);
-            return ret;
-        }
+            cstr_append_expr_debug(target, &self->data.dot_prop->expr, indent);
+            cstr_append_sv(target, c_sv("."));
+            cstr_append_s(target, self->data.dot_prop->prop);
+        }   break;
 
         case EXPR_CALL: {
-            cstr ret = Expr_to_cstr(&self->data.call->callable, indent);
+            cstr_append_expr_debug(target, &self->data.call->callable, indent);
             if (vec_Expr_empty(&self->data.call->args)) {
-                cstr_append(&ret, "()");
+                cstr_append_sv(target, c_sv("()"));
             } else {
-                cstr_append(&ret, "(");
+                cstr_append_sv(target, c_sv("("));
                 c_foreach(i, vec_Expr, self->data.call->args) {
-                    cstr arg_str = Expr_to_cstr(i.ref, indent + 1);
-                    cstr_append_s(&ret, arg_str);
-                    cstr_drop(&arg_str);
+                    cstr_append_expr_debug(target, i.ref, indent + 1);
                     if (i.ref < i.end - 1) {
-                        cstr_append(&ret, ", ");
+                        cstr_append_sv(target, c_sv(", "));
                     }
                 }
-                cstr_append_sv(&ret, c_sv(")"));
+                cstr_append_sv(target, c_sv(")"));
             }
-            return ret;
-        }
+        }   break;
 
         case EXPR_OBJECT: {
-            cstr ret = cstr_lit("{");
+            cstr_append_sv(target, c_sv("{"));
             int size = vec_ObjectExprItem_size(&self->data.object);
             if (size > 1) {
-                cstr_append(&ret, "\n");
+                cstr_append_sv(target, c_sv("\n"));
                 c_foreach(i, vec_ObjectExprItem, self->data.object) {
-                    APPEND_INDENT(&ret, indent + 1);
-                    cstr_append_s(&ret, i.ref->name);
-                    cstr_append(&ret, ": ");
-                    cstr item = Expr_to_cstr(&i.ref->value, indent);
-                    cstr_append_s(&ret, item);
-                    cstr_drop(&item);
-                    cstr_append(&ret, ",\n");
+                    APPEND_INDENT(target, indent + 1);
+                    cstr_append_s(target, i.ref->name);
+                    cstr_append_sv(target, c_sv(": "));
+                    cstr_append_expr_debug(target, &i.ref->value, indent);
+                    cstr_append_sv(target, c_sv(",\n"));
                 }
-                APPEND_INDENT(&ret, indent);
+                APPEND_INDENT(target, indent);
             } else if (size == 1) {
-                cstr_append(&ret, " ");
-                cstr_append_s(&ret, vec_ObjectExprItem_at(&self->data.object, 0)->name);
-                cstr_append(&ret, ": ");
-                cstr item = Expr_to_cstr(&vec_ObjectExprItem_at(&self->data.object, 0)->value, indent);
-                cstr_append_s(&ret, item);
-                cstr_drop(&item);
-                cstr_append(&ret, " ");
+                cstr_append_sv(target, c_sv(" "));
+                cstr_append_s(target, vec_ObjectExprItem_at(&self->data.object, 0)->name);
+                cstr_append_sv(target, c_sv(": "));
+                cstr_append_expr_debug(target, &vec_ObjectExprItem_at(&self->data.object, 0)->value, indent);
+                cstr_append_sv(target, c_sv(" "));
             }
-            cstr_append(&ret, "}");
-            return ret;
-        }
+            cstr_append_sv(target, c_sv("}"));
+        }   break;
     }
-    UNREACHABLE;
 }
 
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
@@ -237,14 +227,20 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                     }
                     break;
 
-                case BINARY_OP_SINGLE_EQUALS:
+                case BINARY_OP_SINGLE_EQUAL:
                     // TODO: typecheck
                     ret = type_a;
                     type_a = Type_any;
                     break;
 
-                case BINARY_OP_DOUBLE_EQUALS:
-                case BINARY_OP_TRIPLE_EQUALS:
+                case BINARY_OP_DOUBLE_EQUAL:
+                case BINARY_OP_TRIPLE_EQUAL:
+                case BINARY_OP_LESS:
+                case BINARY_OP_GREATER:
+                case BINARY_OP_LESS_EQUAL:
+                case BINARY_OP_GREATER_EQUAL:
+                case BINARY_OP_NOT_EQUAL:
+                case BINARY_OP_DOUBLE_NOT_EQUAL:
                     // TODO: typecheck
                     ret = Type_boolean;
             }

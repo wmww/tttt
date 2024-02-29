@@ -36,18 +36,17 @@ void Type_drop(Type* self) {
     self->tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
-cstr Type_to_cstr(Type* self, int indent) {
+void cstr_append_type_debug(cstr* target, Type* self, int indent) {
     switch (self->tag) {
-        case TYPE_ANY: return cstr_lit(CLR_TYPE "any" CLR0);
-        case TYPE_VOID: return cstr_lit(CLR_TYPE "void" CLR0);
-        case TYPE_BOOLEAN: return cstr_lit(CLR_TYPE "boolean" CLR0);
-        case TYPE_NUMBER: return cstr_lit(CLR_TYPE "number" CLR0);
-        case TYPE_STRING: return cstr_lit(CLR_TYPE "string" CLR0);
-        case TYPE_VALUE: return Value_to_cstr_debug(&self->data.value, indent);
-        case TYPE_INTERFACE: return Interface_to_cstr(&self->data.interface, indent);
-        case TYPE_TERNARY: return TernaryType_to_cstr(self->data.ternary, indent);
+        case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
+        case TYPE_VOID: cstr_append_sv(target, c_sv(CLR_TYPE "void" CLR0)); break;
+        case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
+        case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
+        case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
+        case TYPE_VALUE: cstr_append_value_debug(target, &self->data.value, indent); break;
+        case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->data.interface, indent); break;
+        case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->data.ternary, indent); break;
     }
-    UNREACHABLE;
 }
 
 Type Type_clone(Type self) {

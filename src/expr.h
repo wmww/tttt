@@ -66,7 +66,7 @@ static inline Expr Expr_object_new(ObjectExpr object) {
 }
 
 void Expr_drop(Expr* self);
-cstr Expr_to_cstr(Expr const* self, int indent);
+void cstr_append_expr_debug(cstr* target, Expr const* self, int indent);
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
 #define i_key_class Expr
@@ -80,9 +80,15 @@ typedef enum BinaryOp {
     BINARY_OP_MINUS,
     BINARY_OP_STAR,
     BINARY_OP_SLASH,
-    BINARY_OP_SINGLE_EQUALS,
-    BINARY_OP_DOUBLE_EQUALS,
-    BINARY_OP_TRIPLE_EQUALS,
+    BINARY_OP_SINGLE_EQUAL,
+    BINARY_OP_DOUBLE_EQUAL,
+    BINARY_OP_TRIPLE_EQUAL,
+    BINARY_OP_LESS,
+    BINARY_OP_GREATER,
+    BINARY_OP_LESS_EQUAL,
+    BINARY_OP_GREATER_EQUAL,
+    BINARY_OP_NOT_EQUAL,
+    BINARY_OP_DOUBLE_NOT_EQUAL,
 } BinaryOp;
 
 // (BINARY_OP_STAR, BINARY_OP_PLUS) => 1

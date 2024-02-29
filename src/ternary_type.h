@@ -10,6 +10,6 @@ typedef struct TernaryType {
 
 void TernaryType_drop(TernaryType* self);
 TernaryType TernaryType_clone(TernaryType self);
-cstr TernaryType_to_cstr(TernaryType* self, int indent);
+void cstr_append_ternary_type_debug(cstr* target, TernaryType* self, int indent);
 // Does not return ownership to the returned type
 Type* TernaryType_resolve(TernaryType* self);

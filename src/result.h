@@ -7,6 +7,7 @@ typedef struct Result {
         RESULT_OK = 0,
         RESULT_ERR,
         RESULT_RETURN,
+        RESULT_BREAK,
     } tag;
     Value value;
 } Result;
@@ -35,6 +36,13 @@ static inline Result Result_return(Value value) {
     return (Result) {
         .tag = RESULT_RETURN,
         .value = value,
+    };
+}
+
+static inline Result Result_break() {
+    return (Result) {
+        .tag = RESULT_BREAK,
+        .value = Value_undefined,
     };
 }
 

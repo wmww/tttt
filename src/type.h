@@ -50,7 +50,7 @@ static inline Type Type_ternary_new(TernaryType* ternary) {
 }
 
 void Type_drop(Type* self);
-cstr Type_to_cstr(Type* self, int indent);
+void cstr_append_type_debug(cstr* target, Type* self, int indent);
 Type Type_clone(Type self);
 Type Type_move(Type* self);
 

@@ -439,11 +439,23 @@ static bool parse_binary_op_expr(const char** src, BinaryOp* op, Expr* right, Er
     } else if (hop_start(src, "/")) {
         *op = BINARY_OP_SLASH;
     } else if (hop_start(src, "===")) {
-        *op = BINARY_OP_TRIPLE_EQUALS;
+        *op = BINARY_OP_TRIPLE_EQUAL;
     } else if (hop_start(src, "==")) {
-        *op = BINARY_OP_DOUBLE_EQUALS;
+        *op = BINARY_OP_DOUBLE_EQUAL;
     } else if (hop_start(src, "=")) {
-        *op = BINARY_OP_SINGLE_EQUALS;
+        *op = BINARY_OP_SINGLE_EQUAL;
+    } else if (hop_start(src, "<")) {
+        *op = BINARY_OP_LESS;
+    } else if (hop_start(src, ">")) {
+        *op = BINARY_OP_GREATER;
+    } else if (hop_start(src, "<=")) {
+        *op = BINARY_OP_LESS_EQUAL;
+    } else if (hop_start(src, ">=")) {
+        *op = BINARY_OP_GREATER_EQUAL;
+    } else if (hop_start(src, "!==")) {
+        *op = BINARY_OP_DOUBLE_NOT_EQUAL;
+    } else if (hop_start(src, "!=")) {
+        *op = BINARY_OP_NOT_EQUAL;
     } else {
         return false;
     }
@@ -701,6 +713,7 @@ static bool parse_if_arm(const char** src, Expr* condition, Statement* statement
     hop_whitespace(src);
     if (!parse_expr(src, condition, errs)) {
         ErrorCtx_parse_error(errs, *src, "invalid if condition");
+        *condition = Expr_literal_new(Value_boolean(false));
     }
     hop_whitespace(src);
     if (!hop_start(src, ")")) {
@@ -709,11 +722,12 @@ static bool parse_if_arm(const char** src, Expr* condition, Statement* statement
     hop_whitespace(src);
     if (!parse_statement(src, statement, errs)) {
         ErrorCtx_parse_error(errs, *src, "invalid if body");
+        *statement = Statement_noop;
     }
     return true;
 }
 
-static bool parse_if_else(const char** src, IfStatement* if_else, ErrorCtx* errs) {
+static bool parse_if_else(const char** src, IfStatement* ret, ErrorCtx* errs) {
     vec_Expr conditions = {0};
     vec_Statement statements = {0};
     while (true) {
@@ -736,20 +750,65 @@ static bool parse_if_else(const char** src, IfStatement* if_else, ErrorCtx* errs
             break;
         }
     }
-    *if_else = (IfStatement){
+    *ret = (IfStatement){
         .conditions = conditions,
         .statements = statements,
     };
     return true;
 }
 
-static bool parse_return(const char** src, Expr* expr, ErrorCtx* errs) {
+static bool parse_for_loop(const char** src, LoopStatement* ret, ErrorCtx* errs) {
+    if (!hop_start_if_ends_on_word_break(src, "for")) {
+        return false;
+    }
+    hop_whitespace(src);
+    if (!hop_start(src, "(")) {
+        ErrorCtx_parse_error(errs, *src, "expected '(' after for");
+    }
+    hop_whitespace(src);
+    Statement initialization = Statement_noop;
+    Expr condition = Expr_literal_new(Value_boolean(true));
+    Statement afterthought = Statement_noop;
+    Statement body = Statement_noop;
+    parse_statement(src, &initialization, errs); // It's fine if it doesn't parse anything
+    hop_whitespace(src);
+    if (!hop_start(src, ";")) {
+        ErrorCtx_parse_error(errs, *src, "expected ';' in for header");
+        (*src)++;
+    }
+    hop_whitespace(src);
+    parse_expr(src, &condition, errs); // It's fine if it doesn't parse anything
+    hop_whitespace(src);
+    if (!hop_start(src, ";")) {
+        ErrorCtx_parse_error(errs, *src, "expected ';' in for header");
+        (*src)++;
+    }
+    hop_whitespace(src);
+    parse_statement(src, &afterthought, errs); // It's fine if it doesn't parse anything
+    hop_whitespace(src);
+    if (!hop_start(src, ")")) {
+        ErrorCtx_parse_error(errs, *src, "expected ')' at end of for header");
+    }
+    hop_whitespace(src);
+    if (!parse_statement(src, &body, errs)) {
+        ErrorCtx_parse_error(errs, *src, "expected for loop body");
+    }
+    *ret = (LoopStatement) {
+        .initialization = initialization,
+        .condition = condition,
+        .afterthought = afterthought,
+        .body = body,
+    };
+    return true;
+}
+
+static bool parse_return(const char** src, Expr* ret, ErrorCtx* errs) {
     if (!hop_start_if_ends_on_word_break(src, "return")) {
         return false;
     }
     hop_whitespace(src);
-    if (!parse_expr(src, expr, errs)) {
-        *expr = Expr_default;
+    if (!parse_expr(src, ret, errs)) {
+        *ret = Expr_default;
     }
     return true;
 }
@@ -811,6 +870,7 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
 
 static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     hop_whitespace(src);
+    LoopStatement loop;
     if (parse_named_interface(src, &ret->data.interface, errs)) {
         ret->tag = STATEMENT_INTERFACE;
         return true;
@@ -823,13 +883,13 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     } else if (parse_if_else(src, &ret->data.if_else, errs)) {
         ret->tag = STATEMENT_IF_ELSE;
         return true;
-    } /*else if (parse_for_loop(src, &ret->data.loop, errs)) {
-        ret->tag = STATEMENT_LOOP;
+    } else if (parse_for_loop(src, &loop, errs)) {
+        *ret = (Statement){
+            .tag = STATEMENT_LOOP,
+            .data.loop = c_new(LoopStatement, loop),
+        };
         return true;
-    } else if (parse_while_loop(src, &ret->data.loop, errs)) {
-        ret->tag = STATEMENT_LOOP;
-        return true;
-    } else if (parse_do_while_loop(src, &ret->data.loop, errs)) {
+    } /*else if (parse_while_loop(src, &ret->data.loop, errs)) {
         ret->tag = STATEMENT_LOOP;
         return true;
     }*/ else if (hop_start_if_ends_on_word_break(src, "break")) {

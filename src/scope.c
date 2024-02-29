@@ -5,18 +5,15 @@ void Scope_drop(Scope* self) {
     vec_Statement_drop(&self->statements);
 }
 
-cstr Scope_to_cstr(Scope* self, int indent) {
-    cstr ret = cstr_lit("{\n");
+void cstr_append_scope_debug(cstr* target, Scope* self, int indent) {
+    cstr_append_sv(target, c_sv("{\n"));
     c_foreach(i, vec_Statement, self->statements) {
-        APPEND_INDENT(&ret, indent + 1);
-        cstr statement = Statement_to_cstr(i.ref, indent + 1);
-        cstr_append_s(&ret, statement);
-        cstr_drop(&statement);
-        cstr_append(&ret, "\n");
+        APPEND_INDENT(target, indent + 1);
+        cstr_append_statement_debug(target, i.ref, indent + 1);
+        cstr_append_sv(target, c_sv("\n"));
     }
-    APPEND_INDENT(&ret, indent);
-    cstr_append_sv(&ret, c_sv("}"));
-    return ret;
+    APPEND_INDENT(target, indent);
+    cstr_append_sv(target, c_sv("}"));
 }
 
 void Scope_typecheck(Scope* self, ErrorCtx* errs) {

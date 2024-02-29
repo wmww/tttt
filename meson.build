@@ -13,6 +13,7 @@ add_project_arguments([
     '-Wno-error=unused-variable',
     '-Wno-error=unused-parameter',
     '-Wno-error=unused-function',
+    '-Winfinite-recursion',
     '-Werror=implicit-function-declaration',
     '-Werror=return-type',
     '-Werror=incompatible-pointer-types',

@@ -79,7 +79,7 @@ double Value_to_number(Value const* self) {
                 return 0;
             } else if (len == 1) {
                 cstr str = cstr_null;
-                Value_append_to_string(vec_Value_at(&self->data.array.get->vec, 0), &str);
+                cstr_append_value_js(&str, vec_Value_at(&self->data.array.get->vec, 0));
                 double ret = string_to_num(cstr_str(&str));
                 cstr_drop(&str);
                 return ret;
@@ -91,7 +91,7 @@ double Value_to_number(Value const* self) {
     UNREACHABLE;
 }
 
-void Value_append_to_string(Value const* self, cstr* target) {
+void cstr_append_value_js(cstr* target, Value const* self) {
     switch (self->tag) {
         case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv("undefined")); break;
@@ -120,7 +120,7 @@ void Value_append_to_string(Value const* self, cstr* target) {
 
         case VALUE_ARRAY:
             c_foreach(i, vec_Value, self->data.array.get->vec) {
-                Value_append_to_string(i.ref, target);
+                cstr_append_value_js(target, i.ref);
                 if (i.ref < i.end - 1) {
                     cstr_append_sv(target, c_sv(","));
                 }
@@ -129,77 +129,83 @@ void Value_append_to_string(Value const* self, cstr* target) {
     }
 }
 
-cstr Value_to_cstr_debug(Value const* self, int indent) {
+void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
     (void)indent;
     switch (self->tag) {
-        case VALUE_NULL: return cstr_lit(CLR_VALUE "null" CLR0);
-        case VALUE_UNDEFINED: return cstr_lit(CLR_VALUE "undefined" CLR0);
-        case VALUE_BOOLEAN: return self->data.boolean
-            ? cstr_lit(CLR_VALUE "true" CLR0)
-            : cstr_lit(CLR_VALUE "false" CLR0);
-        case VALUE_NUMBER: return round(self->data.number) == self->data.number
-            ? cstr_from_fmt(CLR_NUM "%ld" CLR0, (long)self->data.number)
-            : cstr_from_fmt(CLR_NUM "%f" CLR0, self->data.number);
+        case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
+        case VALUE_UNDEFINED: cstr_append_sv(target, c_sv(CLR_VALUE "undefined" CLR0)); break;
+
+        case VALUE_BOOLEAN:
+            if (self->data.boolean) {
+                cstr_append_sv(target, c_sv(CLR_VALUE "true" CLR0));
+            } else {
+                cstr_append_sv(target, c_sv(CLR_VALUE "false" CLR0));
+            }
+            break;
+
+        case VALUE_NUMBER:
+            if (round(self->data.number) == self->data.number) {
+                cstr_append_fmt(target, CLR_NUM "%ld" CLR0, (long)self->data.number);
+            } else {
+                cstr_append_fmt(target, CLR_NUM "%f" CLR0, self->data.number);
+            }
+            break;
+
         case VALUE_STRING:
             // TODO: escape string contents
-            return cstr_from_fmt(CLR_STR "'%s'" CLR0, cstr_str(&self->data.string));
+            cstr_append_sv(target, c_sv(CLR_STR "'"));
+            cstr_append_s(target, self->data.string);
+            cstr_append_sv(target, c_sv("'" CLR0));
+            break;
+
         case VALUE_OBJECT: {
-            cstr ret = cstr_lit("{");
+            cstr_append_sv(target, c_sv("{"));
             vec_ObjectItemRef items = ObjectValue_sorted_items(self->data.object.get);
             int size = vec_ObjectItemRef_size(&items);
             if (size > 1) {
-                cstr_append(&ret, "\n");
+                cstr_append_sv(target, c_sv("\n"));
                 c_foreach(i, vec_ObjectItemRef, items) {
-                    APPEND_INDENT(&ret, indent + 1);
-                    cstr_append_s(&ret, *i.ref->name);
-                    cstr_append(&ret, ": ");
-                    cstr item = Value_to_cstr_debug(&i.ref->item->value, indent);
-                    cstr_append_s(&ret, item);
-                    cstr_drop(&item);
-                    cstr_append(&ret, ",\n");
+                    APPEND_INDENT(target, indent + 1);
+                    cstr_append_s(target, *i.ref->name);
+                    cstr_append_sv(target, c_sv(": "));
+                    cstr_append_value_debug(target, &i.ref->item->value, indent);
+                    cstr_append_sv(target, c_sv(",\n"));
                 }
-                APPEND_INDENT(&ret, indent);
+                APPEND_INDENT(target, indent);
             } else if (size == 1) {
-                cstr_append(&ret, " ");
-                cstr_append_s(&ret, *vec_ObjectItemRef_at(&items, 0)->name);
-                cstr_append(&ret, ": ");
-                cstr item = Value_to_cstr_debug(&vec_ObjectItemRef_at(&items, 0)->item->value, indent);
-                cstr_append_s(&ret, item);
-                cstr_drop(&item);
-                cstr_append(&ret, " ");
+                cstr_append_sv(target, c_sv(" "));
+                cstr_append_s(target, *vec_ObjectItemRef_at(&items, 0)->name);
+                cstr_append_sv(target, c_sv(": "));
+                cstr_append_value_debug(target, &vec_ObjectItemRef_at(&items, 0)->item->value, indent);
+                cstr_append_sv(target, c_sv(" "));
             }
-            cstr_append(&ret, "}");
+            cstr_append_sv(target, c_sv("}"));
             vec_ObjectItemRef_drop(&items);
-            return ret;
-        }
+        }   break;
+
         case VALUE_ARRAY: {
-            cstr ret = cstr_lit("[");
+            cstr_append_sv(target, c_sv("["));
             ArrayValue* value = self->data.array.get;
             int size = vec_Value_size(&value->vec);
             if (size > 1) {
-                cstr_append(&ret, "\n");
+                cstr_append_sv(target, c_sv("\n"));
                 c_foreach(i, vec_Value, value->vec) {
-                    APPEND_INDENT(&ret, indent + 1);
-                    cstr item = Value_to_cstr_debug(i.ref, indent);
-                    cstr_append_s(&ret, item);
-                    cstr_drop(&item);
-                    cstr_append(&ret, ",\n");
+                    APPEND_INDENT(target, indent + 1);
+                    cstr_append_value_debug(target, i.ref, indent);
+                    cstr_append_sv(target, c_sv(",\n"));
                 }
-                APPEND_INDENT(&ret, indent);
+                APPEND_INDENT(target, indent);
             } else if (size == 1) {
-                cstr_append(&ret, " ");
-                cstr item = Value_to_cstr_debug(vec_Value_at(&value->vec, 0), indent);
-                cstr_append_s(&ret, item);
-                cstr_drop(&item);
-                cstr_append(&ret, " ");
+                cstr_append_sv(target, c_sv(" "));
+                cstr_append_value_debug(target, vec_Value_at(&value->vec, 0), indent);
+                cstr_append_sv(target, c_sv(" "));
             }
-            cstr_append(&ret, "]");
-            return ret;
-        }
-        case VALUE_JS_FUNC: return cstr_lit("[javascript function]");
-        case VALUE_NATIVE_FUNC: return cstr_lit("[native function]");
+            cstr_append_sv(target, c_sv("]"));
+        }   break;
+
+        case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
+        case VALUE_NATIVE_FUNC: cstr_append_sv(target, c_sv("[native function]")); break;
     }
-    UNREACHABLE;
 }
 
 bool Value_loose_eq(Value const* a, Value const* b) {
@@ -217,8 +223,8 @@ bool Value_loose_eq(Value const* a, Value const* b) {
         // TODO: there's complicated rules for this, see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality
         cstr as = cstr_null;
         cstr bs = cstr_null;
-        Value_append_to_string(a, &as);
-        Value_append_to_string(a, &bs);
+        cstr_append_value_js(&as, a);
+        cstr_append_value_js(&bs, b);
         bool ret = cstr_eq(&as, &bs);
         cstr_drop(&as);
         cstr_drop(&bs);
@@ -289,6 +295,10 @@ Result ObjectValue_get(ObjectValue* self, csview key) {
     } else {
         return Result_err(Value_undefined);
     }
+}
+
+bool ObjectValue_has(ObjectValue* self, csview key) {
+    return hmap_str_ObjectValueItem_get(&self->items, key) != nullptr;
 }
 
 void ArrayValue_drop(ArrayValue* self) {

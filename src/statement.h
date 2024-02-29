@@ -6,6 +6,7 @@
 #include "type.h"
 
 typedef struct ErrorCtx ErrorCtx;
+typedef struct LoopStatement LoopStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
 
@@ -18,7 +19,7 @@ typedef struct NameInitData {
 } NameInitData;
 
 void NameInitData_drop(NameInitData* self);
-cstr NameInitData_to_cstr(NameInitData* self, int indent);
+void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent);
 Type NameInitData_get_type_and_typecheck(NameInitData* self, ErrorCtx* errs);
 
 // Variable initialization
@@ -33,7 +34,7 @@ typedef struct VarInitStatement {
 } VarInitStatement;
 
 void VarInitStatement_drop(VarInitStatement* self);
-cstr VarInitStatement_to_cstr(VarInitStatement* self, int indent);
+void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent);
 
 // Function declaration
 
@@ -57,7 +58,7 @@ typedef struct FunctionStatement {
 } FunctionStatement;
 
 void FunctionStatement_drop(FunctionStatement* self);
-cstr FunctionStatement_to_cstr(FunctionStatement* self, int indent);
+void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent);
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs);
 
 // If statements
@@ -68,16 +69,11 @@ typedef struct IfStatement {
     vec_Statement statements;
 } IfStatement;
 
-// Loop statements
-
-typedef struct LoopStatement {
-    Scope scope;
-} LoopStatement;
-
 // Statements
 
 typedef struct Statement {
     enum {
+        STATEMENT_NOOP,
         STATEMENT_INTERFACE,
         STATEMENT_SCOPE,
         STATEMENT_EXPR,
@@ -96,15 +92,26 @@ typedef struct Statement {
         VarInitStatement var_init;
         FunctionStatement function;
         IfStatement if_else;
-        LoopStatement loop;
+        LoopStatement* loop;
     } data;
 } Statement;
 
+#define Statement_noop ((Statement){ .tag = STATEMENT_NOOP })
+
 void Statement_drop(Statement* self);
-cstr Statement_to_cstr(Statement* self, int indent);
+void cstr_append_statement_debug(cstr* target, Statement* self, int indent);
 void Statement_typecheck(Statement* self, ErrorCtx* errs);
 
 #define i_key_class Statement
 #define i_is_forward
 #define i_no_clone
 #include "stc/vec.h"
+
+// Loop statements
+
+typedef struct LoopStatement {
+    Statement initialization; // initialization happens only once, but in the same stack frame as the body
+    Expr condition;
+    Statement afterthought;
+    Statement body;
+} LoopStatement;

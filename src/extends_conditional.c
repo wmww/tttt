@@ -12,13 +12,10 @@ ExtendsConditional ExtendsConditional_clone(ExtendsConditional self) {
     };
 }
 
-cstr ExtendsConditional_to_cstr(ExtendsConditional* self, int indent) {
-    cstr subType = Type_to_cstr(&self->maybeSub, indent);
-    cstr superType = Type_to_cstr(&self->maybeSuper, indent);
-    cstr ret = cstr_from_fmt("%s extends %s", cstr_str(&subType), cstr_str(&superType));
-    cstr_drop(&subType);
-    cstr_drop(&superType);
-    return ret;
+void cstr_append_extends_conditional_debug(cstr* target, ExtendsConditional* self, int indent) {
+    cstr_append_type_debug(target, &self->maybeSub, indent);
+    cstr_append_sv(target, c_sv(" extends "));
+    cstr_append_type_debug(target, &self->maybeSuper, indent);
 }
 
 bool ExtendsConditional_eval(ExtendsConditional* self) {

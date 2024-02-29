@@ -65,10 +65,10 @@ static inline void Value_drop(Value* self) {
     self->tag = VALUE_NULL; // Makes repeated calls to drop safe
 }
 Value Value_clone(Value self);
-void Value_append_to_string(Value const* self, cstr* target);
 bool Value_to_boolean(Value const* self);
 double Value_to_number(Value const* self);
-cstr Value_to_cstr_debug(Value const* self, int indent);
+void cstr_append_value_js(cstr* target, Value const* self);
+void cstr_append_value_debug(cstr* target, Value const* self, int indent);
 bool Value_loose_eq(Value const* a, Value const* b);
 bool Value_strict_eq(Value const* a, Value const* b);
 
@@ -113,6 +113,7 @@ void ObjectValue_set(ObjectValue* self, cstr key, Value val);
 // On err .value is set to undefined, so you can ignore .is_err if you want the normal javascript behavior
 // Also means result doesn't need to be dropped as long as value is handled in the ok case
 Result ObjectValue_get(ObjectValue* self, csview key);
+bool ObjectValue_has(ObjectValue* self, csview key);
 
 #define i_type hmap_str_ObjectValueItem
 #define i_key_ssv

@@ -7,23 +7,18 @@ void NameInitData_drop(NameInitData* self) {
     Expr_drop(&self->value);
 }
 
-cstr NameInitData_to_cstr(NameInitData* self, int indent) {
-    cstr ret = cstr_lit(CLR_NAME);
-    cstr_append_s(&ret, self->name);
-    cstr_append(&ret, CLR0);
+void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent) {
+    cstr_append_sv(target, c_sv(CLR_NAME));
+    cstr_append_s(target, self->name);
+    cstr_append_sv(target, c_sv(CLR0));
     if (self->has_type) {
-        cstr_append(&ret, CLR_TYPE ": " CLR0);
-        cstr type = Type_to_cstr(&self->type, indent);
-        cstr_append_s(&ret, type);
-        cstr_drop(&type);
+        cstr_append_sv(target, c_sv(CLR_TYPE ": " CLR0));
+        cstr_append_type_debug(target, &self->type, indent);
     }
     if (self->has_value) {
-        cstr_append(&ret, " = ");
-        cstr value = Expr_to_cstr(&self->value, indent);
-        cstr_append_s(&ret, value);
-        cstr_drop(&value);
+        cstr_append_sv(target, c_sv(" = "));
+        cstr_append_expr_debug(target, &self->value, indent);
     }
-    return ret;
 }
 
 Type NameInitData_get_type_and_typecheck(NameInitData* self, ErrorCtx* errs) {
@@ -47,18 +42,14 @@ void VarInitStatement_drop(VarInitStatement* self) {
     NameInitData_drop(&self->data);
 }
 
-cstr VarInitStatement_to_cstr(VarInitStatement* self, int indent) {
-    cstr ret = cstr_null;
+void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent) {
     switch (self->keyword) {
-        case VAR_INIT_VAR: ret = cstr_lit("var "); break;
-        case VAR_INIT_LET: ret = cstr_lit("let "); break;
-        case VAR_INIT_CONST: ret = cstr_lit("const "); break;
+        case VAR_INIT_VAR: cstr_append_sv(target, c_sv("var ")); break;
+        case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
+        case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
     }
-    cstr data_str = NameInitData_to_cstr(&self->data, indent);
-    cstr_append_s(&ret, data_str);
-    cstr_drop(&data_str);
-    cstr_append(&ret, ";");
-    return ret;
+    cstr_append_name_init_data_debug(target, &self->data, indent);
+    cstr_append_sv(target, c_sv(";"));
 }
 
 void FunctionStatementArg_drop(FunctionStatementArg* self) {
@@ -72,30 +63,23 @@ void FunctionStatement_drop(FunctionStatement* self) {
     Scope_drop(&self->body);
 }
 
-cstr FunctionStatement_to_cstr(FunctionStatement* self, int indent) {
-    cstr ret = cstr_lit("function " CLR_NAME);
-    cstr_append_s(&ret, self->name);
-    cstr_append(&ret, CLR0"(");
+void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent) {
+    cstr_append_sv(target, c_sv("function " CLR_NAME));
+    cstr_append_s(target, self->name);
+    cstr_append_sv(target, c_sv(CLR0 "("));
     c_foreach(i, vec_FunctionStatementArg, self->args) {
-        cstr data_str = NameInitData_to_cstr(&i.ref->data, indent);
-        cstr_append_s(&ret, data_str);
-        cstr_drop(&data_str);
+        cstr_append_name_init_data_debug(target, &i.ref->data, indent);
         if (i.ref < i.end - 1) {
-            cstr_append(&ret, ", ");
+            cstr_append_sv(target, c_sv(", "));
         }
     }
-    cstr_append(&ret, ")");
+    cstr_append_sv(target, c_sv(")"));
     if (self->has_return_type) {
-        cstr_append(&ret, CLR_TYPE ": " CLR0);
-        cstr return_type_str = Type_to_cstr(&self->return_type, indent);
-        cstr_append_s(&ret, return_type_str);
-        cstr_drop(&return_type_str);
+        cstr_append_sv(target, c_sv(CLR_TYPE ": " CLR0));
+        cstr_append_type_debug(target, &self->return_type, indent);
     }
-    cstr_append(&ret, " ");
-    cstr scope_str = Scope_to_cstr(&self->body, indent);
-    cstr_append_s(&ret, scope_str);
-    cstr_drop(&scope_str);
-    return ret;
+    cstr_append_sv(target, c_sv(" "));
+    cstr_append_scope_debug(target, &self->body, indent);
 }
 
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs) {
@@ -109,6 +93,8 @@ void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs) {
 
 void Statement_drop(Statement* self) {
     switch (self->tag) {
+        case STATEMENT_NOOP: break;
+
         case STATEMENT_INTERFACE:
             NamedInterface_drop(&self->data.interface);
             break;
@@ -139,79 +125,78 @@ void Statement_drop(Statement* self) {
             break;
 
         case STATEMENT_LOOP:
-            Scope_drop(&self->data.loop.scope);
+            Statement_drop(&self->data.loop->initialization);
+            Expr_drop(&self->data.loop->condition);
+            Statement_drop(&self->data.loop->afterthought);
+            Statement_drop(&self->data.loop->body);
+            free(self->data.loop);
             break;
 
         case STATEMENT_BREAK: break; // nice
     }
 }
 
-cstr Statement_to_cstr(Statement* self, int indent) {
+void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
     switch (self->tag) {
-        case STATEMENT_INTERFACE:
-            return NamedInterface_to_cstr(&self->data.interface, indent);
+        case STATEMENT_NOOP: cstr_append_sv(target, c_sv(";")); break;
+        case STATEMENT_INTERFACE: cstr_append_named_interface_debug(target, &self->data.interface, indent); break;
+        case STATEMENT_SCOPE: cstr_append_scope_debug(target, &self->data.scope, indent); break;
 
-        case STATEMENT_SCOPE:
-            return Scope_to_cstr(&self->data.scope, indent);
+        case STATEMENT_EXPR:
+            cstr_append_expr_debug(target, &self->data.expr, indent);
+            cstr_append_sv(target, c_sv(";"));
+            break;
 
-        case STATEMENT_EXPR: {
-            cstr ret = Expr_to_cstr(&self->data.expr, indent);
-            cstr_append(&ret, ";");
-            return ret;
-        }
+        case STATEMENT_RETURN:
+            cstr_append_sv(target, c_sv("return "));
+            cstr_append_expr_debug(target, &self->data.expr, indent);
+            cstr_append_sv(target, c_sv(";"));
+            break;
 
-        case STATEMENT_RETURN: {
-            cstr ret = cstr_lit("return ");
-            cstr expr = Expr_to_cstr(&self->data.return_expr, indent);
-            cstr_append_s(&ret, expr);
-            cstr_drop(&expr);
-            cstr_append(&ret, ";");
-            return ret;
-        }
-
-        case STATEMENT_VAR_INIT:
-            return VarInitStatement_to_cstr(&self->data.var_init, indent);
-
-        case STATEMENT_FUNCTION:
-            return FunctionStatement_to_cstr(&self->data.function, indent);
+        case STATEMENT_VAR_INIT: cstr_append_var_init_statement_debug(target, &self->data.var_init, indent); break;
+        case STATEMENT_FUNCTION: cstr_append_function_statement_debug(target, &self->data.function, indent); break;
 
         case STATEMENT_IF_ELSE: {
-            cstr ret = cstr_null;
             int statement_size = vec_Statement_size(&self->data.if_else.statements);
             int cond_size = vec_Expr_size(&self->data.if_else.conditions);
             for (int i = 0; i < statement_size; i++) {
                 if (i < cond_size) {
-                    cstr_append(&ret, "if (");
-                    cstr expr = Expr_to_cstr(vec_Expr_at(&self->data.if_else.conditions, i), indent);
-                    cstr_append_s(&ret, expr);
-                    cstr_drop(&expr);
-                    cstr_append(&ret, ") ");
+                    cstr_append_sv(target, c_sv("if ("));
+                    cstr_append_expr_debug(target, vec_Expr_at(&self->data.if_else.conditions, i), indent);
+                    cstr_append_sv(target, c_sv(") "));
                 }
-                cstr stmt = Statement_to_cstr(vec_Statement_at_mut(&self->data.if_else.statements, i), indent);
-                cstr_append_s(&ret, stmt);
-                cstr_drop(&stmt);
+                cstr_append_statement_debug(target, vec_Statement_at_mut(&self->data.if_else.statements, i), indent);
                 if (i < statement_size - 1) {
-                    cstr_append(&ret, " else ");
+                    cstr_append_sv(target, c_sv(" else "));
                 }
             }
-            return ret;
-        }
+        }   break;
 
-        case STATEMENT_LOOP: {
-            cstr ret = cstr_lit("while (true) ");
-            cstr scope = Scope_to_cstr(&self->data.loop.scope, indent);
-            cstr_append_s(&ret, scope);
-            cstr_drop(&scope);
-            return ret;
-        }
+        case STATEMENT_LOOP:
+            cstr_append_sv(target, c_sv("for ("));
+            cstr_append_statement_debug(target, &self->data.loop->initialization, indent);
+            if (cstr_str(target)[cstr_size(target) - 1] != ';') {
+                cstr_append_sv(target, c_sv(";"));
+            }
+            cstr_append_sv(target, c_sv(" "));
+            cstr_append_expr_debug(target, &self->data.loop->condition, indent);
+            cstr_append_sv(target, c_sv("; "));
+            cstr_append_statement_debug(target, &self->data.loop->afterthought, indent);
+            if (cstr_str(target)[cstr_size(target) - 1] != ';') {
+                cstr_append_sv(target, c_sv(";"));
+            }
+            cstr_append_sv(target, c_sv(") "));
+            cstr_append_statement_debug(target, &self->data.loop->body, indent);
+            break;
 
-        case STATEMENT_BREAK: return cstr_lit("break;");
+        case STATEMENT_BREAK: cstr_append_sv(target, c_sv("break;")); break;
     }
-    UNREACHABLE;
 }
 
 void Statement_typecheck(Statement* self, ErrorCtx* errs) {
     switch (self->tag) {
+        case STATEMENT_NOOP: break;
+
         case STATEMENT_INTERFACE: break;
 
         case STATEMENT_SCOPE:
@@ -257,7 +242,11 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
         }
 
         case STATEMENT_LOOP: {
-            Scope_typecheck(&self->data.loop.scope, errs);
+            Statement_typecheck(&self->data.loop->initialization, errs);
+            Type t = Expr_get_type_and_typecheck(&self->data.loop->condition, errs);
+            Type_drop(&t);
+            Statement_typecheck(&self->data.loop->afterthought, errs);
+            Statement_typecheck(&self->data.loop->body, errs);
             break;
         }
 

@@ -11,7 +11,7 @@ typedef struct Interface {
 
 void Interface_drop(Interface* self);
 Interface Interface_clone(Interface self);
-cstr Interface_to_cstr(Interface* self, int indent);
+void cstr_append_interface_debug(cstr* target, Interface* self, int indent);
 
 typedef struct NamedInterface {
     cstr name;
@@ -19,4 +19,4 @@ typedef struct NamedInterface {
 } NamedInterface;
 
 void NamedInterface_drop(NamedInterface* self);
-cstr NamedInterface_to_cstr(NamedInterface* self, int indent);
+void cstr_append_named_interface_debug(cstr* target, NamedInterface* self, int indent);

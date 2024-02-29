@@ -28,7 +28,8 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    cstr parsed_str = Scope_to_cstr(&parsed, 0);
+    cstr parsed_str = cstr_null;
+    cstr_append_scope_debug(&parsed_str, &parsed, 0);
     printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
 
