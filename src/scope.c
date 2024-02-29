@@ -1,3 +1,4 @@
+#include "scope.h"
 #include "statement.h"
 
 void Scope_drop(Scope* self) {

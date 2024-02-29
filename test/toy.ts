@@ -17,11 +17,13 @@ let g = +a++;
 let h = ((10 + 10) / 2) + 'abc';
 let i = someFunc('hello', 2 + 3);
 
-function foo(a, b: number): void {
-    String(a)
+function show(a, b: number): void {
+    console.log(a);
+    console.log(b);
 }
 
 let j = {};
 let k = {x: 1, y: {null_: null, three: 3}};
+show(a, b);
 k.x;
 k.y.three;

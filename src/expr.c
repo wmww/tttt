@@ -189,6 +189,7 @@ cstr Expr_to_cstr(Expr const* self, int indent) {
                 cstr_append_s(&ret, vec_ObjectExprItem_at(&self->data.object, 0)->name);
                 cstr_append(&ret, ": ");
                 cstr item = Expr_to_cstr(&vec_ObjectExprItem_at(&self->data.object, 0)->value, indent);
+                cstr_append_s(&ret, item);
                 cstr_drop(&item);
                 cstr_append(&ret, " ");
             }

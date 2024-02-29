@@ -3,6 +3,7 @@
 #include "scope.h"
 #include "filesystem.h"
 #include "error.h"
+#include "engine.h"
 
 int main(int argc, const char** argv) {
     if (argc > 2) {
@@ -40,7 +41,11 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    printf(CLR_GOOD "Typecheck passed\n" CLR0);
+    printf(CLR_GOOD "Typecheck passed, running...\n" CLR0);
+
+    eval_program(&parsed);
+
+    printf(CLR_GOOD "Run succeeded\n" CLR0);
 
     ErrorCtx_drop(&errs);
     Scope_drop(&parsed);

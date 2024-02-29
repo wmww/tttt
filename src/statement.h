@@ -38,6 +38,7 @@ typedef struct FunctionStatementArg {
 void FunctionStatementArg_drop(FunctionStatementArg* self);
 
 #define i_key_class FunctionStatementArg
+#define i_is_forward
 #define i_no_clone
 #include "stc/vec.h"
 

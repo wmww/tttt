@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <stc/cstr.h>
+#include "stc/csview.h"
 #include <stc/types.h>
 
 __attribute__((noreturn))
@@ -12,6 +13,8 @@ void panic(const char* file, int line, const char* fmt, ...) __attribute__ ((for
 
 #define INDENT "  "
 #define APPEND_INDENT(str, level) for (int indent_i = 0; indent_i < level; indent_i++) cstr_append(str, INDENT);
+
+#define MUST_USE __attribute__((warn_unused_result))
 
 #define CLR0 "\x1b[0m"
 #define CLR_ERR "\x1b[31m"

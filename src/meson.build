@@ -13,4 +13,5 @@ src_files = files(
     'parser.c',
     'error.c',
     'filesystem.c',
+    'engine.c',
 )

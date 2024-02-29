@@ -461,17 +461,17 @@ static bool parse_string(const char** src, cstr* ret, ErrorCtx* errs) {
 }
 
 static bool parse_type_compat_literal(const char** src, Value* ret, ErrorCtx* errs) {
-    if (hop_start_if_ends_on_word_break(src, "null")) {
-        *ret = Value_null_new();
+    if (hop_start_if_ends_on_word_break(src, "undefined")) {
+        *ret = Value_undefined;
         return true;
-    } else if (hop_start_if_ends_on_word_break(src, "undefined")) {
-        *ret = Value_undefined_new();
+    } else if (hop_start_if_ends_on_word_break(src, "null")) {
+        *ret = Value_null;
         return true;
     } else if (hop_start_if_ends_on_word_break(src, "true")) {
-        *ret = Value_boolean_new(true);
+        *ret = Value_boolean(true);
         return true;
     } else if (hop_start_if_ends_on_word_break(src, "false")) {
-        *ret = Value_boolean_new(false);
+        *ret = Value_boolean(false);
         return true;
     } else if (parse_number(src, &ret->data.number, errs)) {
         ret->tag = VALUE_NUMBER;

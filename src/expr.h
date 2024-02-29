@@ -30,7 +30,7 @@ typedef struct Expr {
         UnaryOpExpr* unary_op;
         DotPropExpr* dot_prop;
         CallExpr* call;
-        // TODO: perhaps optimize lookup somehow?
+        // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
     } data;
 } Expr;
