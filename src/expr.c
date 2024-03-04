@@ -2,7 +2,7 @@
 #include "type.h"
 #include "error.h"
 
-const Expr Expr_default = { .tag = EXPR_LITERAL, .data.literal = { .tag = VALUE_UNDEFINED } };
+const Expr Expr_default = { .tag = EXPR_LITERAL, .literal = { .tag = VALUE_UNDEFINED } };
 
 static inline int binary_op_get_precedence(BinaryOp op) {
     switch (op) {
@@ -58,64 +58,64 @@ static inline csview unary_op_get_sv(UnaryOp op) {
 void Expr_drop(Expr* self) {
     switch (self->tag) {
         case EXPR_LITERAL:
-            Value_drop(&self->data.literal);
+            Value_drop(&self->literal);
             break;
 
         case EXPR_IDENTIFIER:
-            cstr_drop(&self->data.identifier);
+            cstr_drop(&self->identifier);
             break;
 
         case EXPR_BINARY_OP:
-            Expr_drop(&self->data.binary_op->left);
-            Expr_drop(&self->data.binary_op->right);
-            free(self->data.binary_op);
+            Expr_drop(&self->binary_op->left);
+            Expr_drop(&self->binary_op->right);
+            free(self->binary_op);
             break;
 
         case EXPR_UNARY_OP:
-            Expr_drop(&self->data.unary_op->expr);
-            free(self->data.unary_op);
+            Expr_drop(&self->unary_op->expr);
+            free(self->unary_op);
             break;
 
         case EXPR_DOT_PROP:
-            Expr_drop(&self->data.dot_prop->expr);
-            cstr_drop(&self->data.dot_prop->prop);
-            free(self->data.dot_prop);
+            Expr_drop(&self->dot_prop->expr);
+            cstr_drop(&self->dot_prop->prop);
+            free(self->dot_prop);
             break;
 
         case EXPR_CALL:
-            Expr_drop(&self->data.call->callable);
-            vec_Expr_drop(&self->data.call->args);
-            free(self->data.call);
+            Expr_drop(&self->call->callable);
+            vec_Expr_drop(&self->call->args);
+            free(self->call);
             break;
 
         case EXPR_OBJECT:
-            vec_ObjectExprItem_drop(&self->data.object);
+            vec_ObjectExprItem_drop(&self->object);
             break;
     }
 }
 
 void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
     switch (self->tag) {
-        case EXPR_LITERAL: cstr_append_value_debug(target, &self->data.literal, indent); break;
+        case EXPR_LITERAL: cstr_append_value_debug(target, &self->literal, indent); break;
 
         case EXPR_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_s(target, self->data.identifier);
+            cstr_append_s(target, self->identifier);
             cstr_append_sv(target, c_sv(CLR0));
             break;
 
         case EXPR_BINARY_OP: {
-            if (self->data.binary_op->parenthesized) {
+            if (self->binary_op->parenthesized) {
                 cstr_append_sv(target, c_sv("("));
             } else {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
-            cstr_append_expr_debug(target, &self->data.binary_op->left, indent);
+            cstr_append_expr_debug(target, &self->binary_op->left, indent);
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_sv(target, binary_op_get_sv(self->data.binary_op->op));
+            cstr_append_sv(target, binary_op_get_sv(self->binary_op->op));
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_expr_debug(target, &self->data.binary_op->right, indent);
-            if (self->data.binary_op->parenthesized) {
+            cstr_append_expr_debug(target, &self->binary_op->right, indent);
+            if (self->binary_op->parenthesized) {
                 cstr_append_sv(target, c_sv(")"));
             } else {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
@@ -123,20 +123,20 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
         }   break;
 
         case EXPR_UNARY_OP: {
-            if (self->data.unary_op->parenthesized) {
+            if (self->unary_op->parenthesized) {
                 cstr_append_sv(target, c_sv("("));
             } else {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
-            UnaryOp op = self->data.unary_op->op;
+            UnaryOp op = self->unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, unary_op_get_sv(op));
             }
-            cstr_append_expr_debug(target, &self->data.unary_op->expr, indent);
+            cstr_append_expr_debug(target, &self->unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, unary_op_get_sv(op));
             }
-            if (self->data.unary_op->parenthesized) {
+            if (self->unary_op->parenthesized) {
                 cstr_append_sv(target, c_sv(")"));
             } else {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
@@ -144,18 +144,18 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
         }   break;
 
         case EXPR_DOT_PROP: {
-            cstr_append_expr_debug(target, &self->data.dot_prop->expr, indent);
+            cstr_append_expr_debug(target, &self->dot_prop->expr, indent);
             cstr_append_sv(target, c_sv("."));
-            cstr_append_s(target, self->data.dot_prop->prop);
+            cstr_append_s(target, self->dot_prop->prop);
         }   break;
 
         case EXPR_CALL: {
-            cstr_append_expr_debug(target, &self->data.call->callable, indent);
-            if (vec_Expr_empty(&self->data.call->args)) {
+            cstr_append_expr_debug(target, &self->call->callable, indent);
+            if (vec_Expr_empty(&self->call->args)) {
                 cstr_append_sv(target, c_sv("()"));
             } else {
                 cstr_append_sv(target, c_sv("("));
-                c_foreach(i, vec_Expr, self->data.call->args) {
+                c_foreach(i, vec_Expr, self->call->args) {
                     cstr_append_expr_debug(target, i.ref, indent + 1);
                     if (i.ref < i.end - 1) {
                         cstr_append_sv(target, c_sv(", "));
@@ -167,10 +167,10 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_OBJECT: {
             cstr_append_sv(target, c_sv("{"));
-            int size = vec_ObjectExprItem_size(&self->data.object);
+            int size = vec_ObjectExprItem_size(&self->object);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
-                c_foreach(i, vec_ObjectExprItem, self->data.object) {
+                c_foreach(i, vec_ObjectExprItem, self->object) {
                     APPEND_INDENT(target, indent + 1);
                     cstr_append_s(target, i.ref->name);
                     cstr_append_sv(target, c_sv(": "));
@@ -180,9 +180,9 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
                 APPEND_INDENT(target, indent);
             } else if (size == 1) {
                 cstr_append_sv(target, c_sv(" "));
-                cstr_append_s(target, vec_ObjectExprItem_at(&self->data.object, 0)->name);
+                cstr_append_s(target, vec_ObjectExprItem_at(&self->object, 0)->name);
                 cstr_append_sv(target, c_sv(": "));
-                cstr_append_expr_debug(target, &vec_ObjectExprItem_at(&self->data.object, 0)->value, indent);
+                cstr_append_expr_debug(target, &vec_ObjectExprItem_at(&self->object, 0)->value, indent);
                 cstr_append_sv(target, c_sv(" "));
             }
             cstr_append_sv(target, c_sv("}"));
@@ -193,14 +193,14 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
     switch (self->tag) {
         case EXPR_LITERAL:
-            return Type_value(Value_clone(self->data.literal));
+            return Type_value(Value_clone(self->literal));
 
         case EXPR_IDENTIFIER:
             // TODO
             return Type_any;
 
         case EXPR_BINARY_OP: {
-            BinaryOpExpr* bin = self->data.binary_op;
+            BinaryOpExpr* bin = self->binary_op;
             Type type_a = Expr_get_type_and_typecheck(&bin->left, errs);
             Type type_b = Expr_get_type_and_typecheck(&bin->right, errs);
             Type ret = {0};
@@ -250,7 +250,7 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
         }
 
         case EXPR_UNARY_OP: {
-            UnaryOpExpr* una = self->data.unary_op;
+            UnaryOpExpr* una = self->unary_op;
             Type type = Expr_get_type_and_typecheck(&una->expr, errs);
             Type ret = {0};
             switch (una->op) {

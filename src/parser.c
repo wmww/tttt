@@ -249,9 +249,9 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
         type = Type_number;
     } else if (hop_start_if_ends_on_word_break(src, "string")) {
         type = Type_string;
-    } else if (parse_type_compat_literal(src, &type.data.value, errs)) {
+    } else if (parse_type_compat_literal(src, &type.value, errs)) {
         type.tag = TYPE_VALUE;
-    } else if (parse_interface(src, &type.data.interface, errs)) {
+    } else if (parse_interface(src, &type.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
         ErrorCtx_parse_error(errs, *src, "did not find type");
@@ -546,10 +546,10 @@ static bool parse_type_compat_literal(const char** src, Value* ret, ErrorCtx* er
     } else if (hop_start_if_ends_on_word_break(src, "false")) {
         *ret = Value_boolean(false);
         return true;
-    } else if (parse_number(src, &ret->data.number, errs)) {
+    } else if (parse_number(src, &ret->number, errs)) {
         ret->tag = VALUE_NUMBER;
         return true;
-    } else if (parse_string(src, &ret->data.string, errs)) {
+    } else if (parse_string(src, &ret->string, errs)) {
         ret->tag = VALUE_STRING;
         return true;
     } else {
@@ -563,9 +563,9 @@ static bool parse_literal(const char** src, Value* ret, ErrorCtx* errs) {
 
 static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
     cstr name = cstr_null;
-    if (parse_literal(src, &ret->data.literal, errs)) {
+    if (parse_literal(src, &ret->literal, errs)) {
         ret->tag = EXPR_LITERAL;
-    } else if (parse_object(src, &ret->data.object, errs)) {
+    } else if (parse_object(src, &ret->object, errs)) {
         ret->tag = EXPR_OBJECT;
     } else if (parse_left_unary_op_expr(src, ret, errs)) {
     } else if (parse_identifier(src, &name)) {
@@ -576,8 +576,8 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
             ErrorCtx_parse_error(errs, *src, "expected ')'");
         }
         switch (ret->tag) {
-            case EXPR_BINARY_OP: ret->data.binary_op->parenthesized = true; break;
-            case EXPR_UNARY_OP: ret->data.unary_op->parenthesized = true; break;
+            case EXPR_BINARY_OP: ret->binary_op->parenthesized = true; break;
+            case EXPR_UNARY_OP: ret->unary_op->parenthesized = true; break;
             default: break;
         }
     } else {
@@ -620,13 +620,13 @@ static bool parse_expr(const char** src, Expr* ret, ErrorCtx* errs) {
         BinaryOp binary = 0;
         if (parse_binary_op_expr(src, &binary, &right, errs)) {
             if (right.tag == EXPR_BINARY_OP &&
-                !right.data.binary_op->parenthesized &&
-                BinaryOp_cmp_precedence(binary, right.data.binary_op->op) >= 0
+                !right.binary_op->parenthesized &&
+                BinaryOp_cmp_precedence(binary, right.binary_op->op) >= 0
             ) {
-                right.data.binary_op->left = Expr_binary_op_new(c_new(BinaryOpExpr, {
+                right.binary_op->left = Expr_binary_op_new(c_new(BinaryOpExpr, {
                     .left = *ret,
                     .op = binary,
-                    .right = right.data.binary_op->left,
+                    .right = right.binary_op->left,
                 }));
                 *ret = right;
             } else {
@@ -902,41 +902,41 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
 static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     hop_whitespace(src);
     LoopStatement loop;
-    if (parse_named_interface(src, &ret->data.interface, errs)) {
+    if (parse_named_interface(src, &ret->interface, errs)) {
         ret->tag = STATEMENT_INTERFACE;
         return true;
-    } else if (parse_scope(src, &ret->data.scope, errs)) {
+    } else if (parse_scope(src, &ret->scope, errs)) {
         ret->tag = STATEMENT_SCOPE;
         return true;
-    } else if (parse_var_init(src, &ret->data.var_init, errs)) {
+    } else if (parse_var_init(src, &ret->var_init, errs)) {
         ret->tag = STATEMENT_VAR_INIT;
         return true;
-    } else if (parse_if_else(src, &ret->data.if_else, errs)) {
+    } else if (parse_if_else(src, &ret->if_else, errs)) {
         ret->tag = STATEMENT_IF_ELSE;
         return true;
     } else if (parse_for_loop(src, &loop, errs)) {
         *ret = (Statement){
             .tag = STATEMENT_LOOP,
-            .data.loop = c_new(LoopStatement, loop),
+            .loop = c_new(LoopStatement, loop),
         };
         return true;
     } else if (parse_while_loop(src, &loop, errs)) {
         *ret = (Statement){
             .tag = STATEMENT_LOOP,
-            .data.loop = c_new(LoopStatement, loop),
+            .loop = c_new(LoopStatement, loop),
         };
         return true;
         return true;
     } else if (hop_start_if_ends_on_word_break(src, "break")) {
         ret->tag = STATEMENT_BREAK;
         return true;
-    } else if (parse_return(src, &ret->data.return_expr, errs)) {
+    } else if (parse_return(src, &ret->return_expr, errs)) {
         ret->tag = STATEMENT_RETURN;
         return true;
-    } else if (parse_function(src, &ret->data.function, errs)) {
+    } else if (parse_function(src, &ret->function, errs)) {
         ret->tag = STATEMENT_FUNCTION;
         return true;
-    } else if (parse_expr(src, &ret->data.expr, errs)) {
+    } else if (parse_expr(src, &ret->expr, errs)) {
         ret->tag = STATEMENT_EXPR;
         return true;
     } else {

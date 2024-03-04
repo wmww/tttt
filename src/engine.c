@@ -9,7 +9,7 @@ typedef arc_Object StackFrame;
 #define StackFrame_drop arc_Object_drop
 #define StackFrame_clone arc_Object_clone
 
-static inline StackFrame StackFrame_new() { return Value_object_empty().data.object; }
+static inline StackFrame StackFrame_new() { return Value_object_empty().object; }
 
 #define i_key_class StackFrame
 #include "stc/vec.h"
@@ -73,10 +73,10 @@ static Result MUST_USE Engine_assign_identifier(Engine* self, csview identifier,
 // Returns Result_ok_undefined on success, not the value. Consumes value.
 static Result MUST_USE Engine_assign(Engine* self, Expr const* target, Value value) {
     switch (target->tag) {
-        case EXPR_IDENTIFIER: return Engine_assign_identifier(self, cstr_sv(&target->data.identifier), value);
+        case EXPR_IDENTIFIER: return Engine_assign_identifier(self, cstr_sv(&target->identifier), value);
 
         case EXPR_DOT_PROP: {
-            TRY_THROW(target_value, Engine_eval_expr(self, &target->data.dot_prop->expr));
+            TRY_THROW(target_value, Engine_eval_expr(self, &target->dot_prop->expr));
             switch (target_value.tag) {
                 case VALUE_UNDEFINED:
                 case VALUE_NULL:
@@ -101,7 +101,7 @@ static Result MUST_USE Engine_assign(Engine* self, Expr const* target, Value val
                     return Result_ok_undefined;
 
                 case VALUE_OBJECT:
-                    ObjectValue_set(target_value.data.object.get, cstr_clone(target->data.identifier), value);
+                    ObjectValue_set(target_value.object.get, cstr_clone(target->identifier), value);
                     return Result_ok_undefined;
             }
             UNREACHABLE;
@@ -127,7 +127,7 @@ static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* o
     switch (op_expr->op) {
         case BINARY_OP_PLUS:
             if (left.tag == VALUE_NUMBER && right.tag == VALUE_NUMBER) {
-                ret = Value_number(left.data.number + right.data.number);
+                ret = Value_number(left.number + right.number);
             } else {
                 cstr str = cstr_null;
                 cstr_append_value_js(&str, &left);
@@ -195,13 +195,13 @@ static Result MUST_USE Engine_eval_dot_prop(Engine* self, DotPropExpr const* pro
         case VALUE_NATIVE_FUNC: ret.value = Value_undefined; break;
 
         case VALUE_OBJECT:
-            ret = ObjectValue_get(value.data.object.get, cstr_sv(&prop_expr->prop));
+            ret = ObjectValue_get(value.object.get, cstr_sv(&prop_expr->prop));
             ret.tag = RESULT_OK; // undefined is fine if key is not found
             break;
 
         case VALUE_ARRAY:
             if (strcmp(cstr_str(&prop_expr->prop), "length") == 0) {
-                ret.value = Value_number(vec_Value_size(&value.data.array.get->vec));
+                ret.value = Value_number(vec_Value_size(&value.array.get->vec));
             } else {
                 // TODO: support arbitrary properties on arrays
                 ret.value = Value_undefined;
@@ -260,11 +260,11 @@ static Result MUST_USE Engine_eval_call(Engine* self, CallExpr const* call_expr)
     Result ret = Result_ok_undefined;
     switch (callable.tag) {
         case VALUE_JS_FUNC:
-            ret = Engine_eval_js_func(self, callable.data.js_func.get, &given_args);
+            ret = Engine_eval_js_func(self, callable.js_func.get, &given_args);
             break;
 
         case VALUE_NATIVE_FUNC:
-            ret = Engine_eval_native_func(self, callable.data.native_func.get, &given_args);
+            ret = Engine_eval_native_func(self, callable.native_func.get, &given_args);
             break;
 
         default: {
@@ -290,20 +290,20 @@ static Result MUST_USE Engine_eval_object(Engine* self, ObjectExpr const* obj_ex
             Value_drop(&ret);
             return res_err;
         });
-        ObjectValue_set(ret.data.object.get, cstr_clone(i.ref->name), value);
+        ObjectValue_set(ret.object.get, cstr_clone(i.ref->name), value);
     }
     return Result_ok(ret);
 }
 
 static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
     switch (expr->tag) {
-        case EXPR_LITERAL: return Result_ok(Value_clone(expr->data.literal));
-        case EXPR_IDENTIFIER: return Engine_eval_identifier(self, cstr_sv(&expr->data.identifier));
-        case EXPR_BINARY_OP: return Engine_eval_binary_op(self, expr->data.binary_op);
-        case EXPR_UNARY_OP: return Engine_eval_unary_op(self, expr->data.unary_op);
-        case EXPR_DOT_PROP: return Engine_eval_dot_prop(self, expr->data.dot_prop);
-        case EXPR_CALL: return Engine_eval_call(self, expr->data.call);
-        case EXPR_OBJECT: return Engine_eval_object(self, &expr->data.object);
+        case EXPR_LITERAL: return Result_ok(Value_clone(expr->literal));
+        case EXPR_IDENTIFIER: return Engine_eval_identifier(self, cstr_sv(&expr->identifier));
+        case EXPR_BINARY_OP: return Engine_eval_binary_op(self, expr->binary_op);
+        case EXPR_UNARY_OP: return Engine_eval_unary_op(self, expr->unary_op);
+        case EXPR_DOT_PROP: return Engine_eval_dot_prop(self, expr->dot_prop);
+        case EXPR_CALL: return Engine_eval_call(self, expr->call);
+        case EXPR_OBJECT: return Engine_eval_object(self, &expr->object);
     }
     UNREACHABLE;
 }
@@ -315,53 +315,53 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
         case STATEMENT_INTERFACE: break;
 
         case STATEMENT_SCOPE: {
-            TRY_THROW_DROP(Engine_run_scope_in_stack_frame(self, &statement->data.scope));
+            TRY_THROW_DROP(Engine_run_scope_in_stack_frame(self, &statement->scope));
         }   break;
 
         case STATEMENT_EXPR: {
-            TRY_THROW_DROP(Engine_eval_expr(self, &statement->data.expr));
+            TRY_THROW_DROP(Engine_eval_expr(self, &statement->expr));
         }   break;
 
         case STATEMENT_RETURN: {
-            TRY_THROW(value, Engine_eval_expr(self, &statement->data.return_expr));
+            TRY_THROW(value, Engine_eval_expr(self, &statement->return_expr));
             return Result_return(value);
         }
 
         case STATEMENT_VAR_INIT: {
             // TODO: respect keyword (let, const, var)
-            TRY_THROW(value, Engine_eval_expr(self, &statement->data.var_init.data.value));
-            cstr name = cstr_clone(statement->data.var_init.data.name);
+            TRY_THROW(value, Engine_eval_expr(self, &statement->var_init.data.value));
+            cstr name = cstr_clone(statement->var_init.data.name);
             ObjectValue* locals = Engine_get_locals(self);
             ObjectValue_set(locals, name, value);
         }   break;
 
         case STATEMENT_FUNCTION: {
-            cstr name = cstr_clone(statement->data.function.name);
+            cstr name = cstr_clone(statement->function.name);
             Value value = Value_js_func(
-                &statement->data.function.args,
-                &statement->data.function.body
+                &statement->function.args,
+                &statement->function.body
             );
             ObjectValue* locals = Engine_get_locals(self);
             ObjectValue_set(locals, name, value);
         }   break;
 
         case STATEMENT_IF_ELSE: {
-            int statement_size = vec_Statement_size(&statement->data.if_else.statements);
-            int cond_size = vec_Expr_size(&statement->data.if_else.conditions);
+            int statement_size = vec_Statement_size(&statement->if_else.statements);
+            int cond_size = vec_Expr_size(&statement->if_else.conditions);
             if (statement_size != cond_size && statement_size != cond_size + 1) {
                 PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
             }
             for (int i = 0; i < statement_size; i++) {
                 bool cond_true = true;
                 if (i < cond_size) {
-                    TRY_THROW(condition, Engine_eval_expr(self, vec_Expr_at(&statement->data.if_else.conditions, i)));
+                    TRY_THROW(condition, Engine_eval_expr(self, vec_Expr_at(&statement->if_else.conditions, i)));
                     cond_true = Value_to_boolean(&condition);
                     Value_drop(&condition);
                 }
                 if (cond_true) {
                     TRY_THROW_DROP(Engine_run_statement(
                         self,
-                        vec_Statement_at(&statement->data.if_else.statements, i)
+                        vec_Statement_at(&statement->if_else.statements, i)
                     ));
                     break;
                 }
@@ -370,19 +370,19 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
 
         case STATEMENT_LOOP: {
             vec_StackFrame_push(&self->stack, StackFrame_new());
-            TRY_CATCH_DROP(Engine_run_statement(self, &statement->data.loop->initialization), res_err, {
+            TRY_CATCH_DROP(Engine_run_statement(self, &statement->loop->initialization), res_err, {
                 vec_StackFrame_pop(&self->stack);
                 return res_err;
             });
             while (true) {
-                TRY_CATCH(keep_going, Engine_eval_expr(self, &statement->data.loop->condition), res_err, {
+                TRY_CATCH(keep_going, Engine_eval_expr(self, &statement->loop->condition), res_err, {
                     vec_StackFrame_pop(&self->stack);
                     return res_err;
                 });
                 if (!Value_to_boolean(&keep_going)) {
                     break;
                 }
-                TRY_CATCH_DROP(Engine_run_statement(self, &statement->data.loop->body), res_err, {
+                TRY_CATCH_DROP(Engine_run_statement(self, &statement->loop->body), res_err, {
                     vec_StackFrame_pop(&self->stack);
                     if (res_err.tag == RESULT_BREAK) {
                         return Result_ok_undefined;
@@ -390,7 +390,7 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
                         return res_err;
                     }
                 });
-                TRY_CATCH_DROP(Engine_run_statement(self, &statement->data.loop->afterthought), res_err, {
+                TRY_CATCH_DROP(Engine_run_statement(self, &statement->loop->afterthought), res_err, {
                     vec_StackFrame_pop(&self->stack);
                     return res_err;
                 });
@@ -464,7 +464,7 @@ void eval_program(Scope const* scope) {
                 {"String", Value_native_func(string_impl, nullptr, nullptr)},
                 {"Number", Value_native_func(number_impl, nullptr, nullptr)},
                 {"Boolean", Value_native_func(boolean_impl, nullptr, nullptr)},
-            }).data.object,
+            }).object,
         }),
     };
     Result res = Engine_run_scope(&engine, scope);

@@ -23,7 +23,7 @@ typedef struct Type {
         cstr identifier;
         Interface interface;
         TernaryType* ternary;
-    } data;
+    };
 } Type;
 
 extern const Type Type_any;
@@ -35,25 +35,25 @@ extern const Type Type_string;
 static inline Type Type_value(Value value) {
     return (Type){
         .tag = TYPE_VALUE,
-        .data.value = value,
+        .value = value,
     };
 }
 static inline Type Type_identifier(cstr identifier) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
-        .data.identifier = identifier,
+        .identifier = identifier,
     };
 }
 static inline Type Type_interface(Interface interface) {
     return (Type){
         .tag = TYPE_INTERFACE,
-        .data.interface = interface,
+        .interface = interface,
     };
 }
 static inline Type Type_ternary(TernaryType* ternary) {
     return (Type){
         .tag = TYPE_TERNARY,
-        .data.ternary = ternary,
+        .ternary = ternary,
     };
 }
 

@@ -9,11 +9,11 @@ void Value_drop_internal(Value* self) {
         case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
-        case VALUE_STRING: cstr_drop(&self->data.string); break;
-        case VALUE_OBJECT: arc_Object_drop(&self->data.object); break;
-        case VALUE_ARRAY: arc_Array_drop(&self->data.array); break;
-        case VALUE_JS_FUNC: arc_JsFunc_drop(&self->data.js_func); break;
-        case VALUE_NATIVE_FUNC: arc_NativeFunc_drop(&self->data.native_func); break;
+        case VALUE_STRING: cstr_drop(&self->string); break;
+        case VALUE_OBJECT: arc_Object_drop(&self->object); break;
+        case VALUE_ARRAY: arc_Array_drop(&self->array); break;
+        case VALUE_JS_FUNC: arc_JsFunc_drop(&self->js_func); break;
+        case VALUE_NATIVE_FUNC: arc_NativeFunc_drop(&self->native_func); break;
     }
 }
 
@@ -23,11 +23,11 @@ Value Value_clone(Value self) {
         case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
-        case VALUE_STRING: self.data.string = cstr_clone(self.data.string); break;
-        case VALUE_OBJECT: self.data.object = arc_Object_clone(self.data.object); break;
-        case VALUE_ARRAY: self.data.array = arc_Array_clone(self.data.array); break;
-        case VALUE_JS_FUNC: self.data.js_func = arc_JsFunc_clone(self.data.js_func); break;
-        case VALUE_NATIVE_FUNC: self.data.native_func = arc_NativeFunc_clone(self.data.native_func); break;
+        case VALUE_STRING: self.string = cstr_clone(self.string); break;
+        case VALUE_OBJECT: self.object = arc_Object_clone(self.object); break;
+        case VALUE_ARRAY: self.array = arc_Array_clone(self.array); break;
+        case VALUE_JS_FUNC: self.js_func = arc_JsFunc_clone(self.js_func); break;
+        case VALUE_NATIVE_FUNC: self.native_func = arc_NativeFunc_clone(self.native_func); break;
     }
     return self;
 }
@@ -49,9 +49,9 @@ bool Value_to_boolean(Value const* self) {
     switch (self->tag) {
         case VALUE_UNDEFINED: return false;
         case VALUE_NULL: return false;
-        case VALUE_BOOLEAN: return self->data.boolean;
-        case VALUE_NUMBER: return self->data.number != 0;
-        case VALUE_STRING: return !cstr_empty(&self->data.string);
+        case VALUE_BOOLEAN: return self->boolean;
+        case VALUE_NUMBER: return self->number != 0;
+        case VALUE_STRING: return !cstr_empty(&self->string);
         case VALUE_OBJECT: return true;
         case VALUE_ARRAY: return true;
         case VALUE_JS_FUNC: return true;
@@ -69,17 +69,17 @@ double Value_to_number(Value const* self) {
             return NAN;
 
         case VALUE_NULL: return 0;
-        case VALUE_BOOLEAN: return self->data.boolean ? 1 : 0;
-        case VALUE_NUMBER: return self->data.number;
-        case VALUE_STRING: return string_to_num(cstr_str(&self->data.string));
+        case VALUE_BOOLEAN: return self->boolean ? 1 : 0;
+        case VALUE_NUMBER: return self->number;
+        case VALUE_STRING: return string_to_num(cstr_str(&self->string));
 
         case VALUE_ARRAY: {
-            int len = vec_Value_size(&self->data.array.get->vec);
+            int len = vec_Value_size(&self->array.get->vec);
             if (len == 0) {
                 return 0;
             } else if (len == 1) {
                 cstr str = cstr_null;
-                cstr_append_value_js(&str, vec_Value_at(&self->data.array.get->vec, 0));
+                cstr_append_value_js(&str, vec_Value_at(&self->array.get->vec, 0));
                 double ret = string_to_num(cstr_str(&str));
                 cstr_drop(&str);
                 return ret;
@@ -95,13 +95,13 @@ void cstr_append_value_js(cstr* target, Value const* self) {
     switch (self->tag) {
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv("undefined")); break;
         case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
-        case VALUE_STRING: cstr_append_s(target, self->data.string); break;
+        case VALUE_STRING: cstr_append_s(target, self->string); break;
         case VALUE_OBJECT: cstr_append_sv(target, c_sv("[object Object]")); break;
         case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
         case VALUE_NATIVE_FUNC: cstr_append_sv(target, c_sv("[native function]")); break;
 
         case VALUE_BOOLEAN:
-            if (self->data.boolean) {
+            if (self->boolean) {
                 cstr_append_sv(target, c_sv("true"));
             } else {
                 cstr_append_sv(target, c_sv("false"));
@@ -109,17 +109,17 @@ void cstr_append_value_js(cstr* target, Value const* self) {
             break;
 
         case VALUE_NUMBER:
-            if (round(self->data.number) == self->data.number) {
-                cstr_append_fmt(target, "%ld", (long)self->data.number);
-            } else if (isnan(self->data.number)) {
+            if (round(self->number) == self->number) {
+                cstr_append_fmt(target, "%ld", (long)self->number);
+            } else if (isnan(self->number)) {
                 cstr_append_sv(target, c_sv("NaN"));
             } else {
-                cstr_append_fmt(target, "%f", self->data.number);
+                cstr_append_fmt(target, "%f", self->number);
             }
             break;
 
         case VALUE_ARRAY:
-            c_foreach(i, vec_Value, self->data.array.get->vec) {
+            c_foreach(i, vec_Value, self->array.get->vec) {
                 cstr_append_value_js(target, i.ref);
                 if (i.ref < i.end - 1) {
                     cstr_append_sv(target, c_sv(","));
@@ -136,7 +136,7 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
         case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
 
         case VALUE_BOOLEAN:
-            if (self->data.boolean) {
+            if (self->boolean) {
                 cstr_append_sv(target, c_sv(CLR_VALUE "true" CLR0));
             } else {
                 cstr_append_sv(target, c_sv(CLR_VALUE "false" CLR0));
@@ -144,23 +144,23 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
             break;
 
         case VALUE_NUMBER:
-            if (round(self->data.number) == self->data.number) {
-                cstr_append_fmt(target, CLR_NUM "%ld" CLR0, (long)self->data.number);
+            if (round(self->number) == self->number) {
+                cstr_append_fmt(target, CLR_NUM "%ld" CLR0, (long)self->number);
             } else {
-                cstr_append_fmt(target, CLR_NUM "%f" CLR0, self->data.number);
+                cstr_append_fmt(target, CLR_NUM "%f" CLR0, self->number);
             }
             break;
 
         case VALUE_STRING:
             // TODO: escape string contents
             cstr_append_sv(target, c_sv(CLR_STR "'"));
-            cstr_append_s(target, self->data.string);
+            cstr_append_s(target, self->string);
             cstr_append_sv(target, c_sv("'" CLR0));
             break;
 
         case VALUE_OBJECT: {
             cstr_append_sv(target, c_sv("{"));
-            vec_ObjectItemRef items = ObjectValue_sorted_items(self->data.object.get);
+            vec_ObjectItemRef items = ObjectValue_sorted_items(self->object.get);
             int size = vec_ObjectItemRef_size(&items);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
@@ -185,7 +185,7 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
 
         case VALUE_ARRAY: {
             cstr_append_sv(target, c_sv("["));
-            ArrayValue* value = self->data.array.get;
+            ArrayValue* value = self->array.get;
             int size = vec_Value_size(&value->vec);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
@@ -239,13 +239,13 @@ bool Value_strict_eq(Value const* a, Value const* b) {
     switch (a->tag) {
         case VALUE_UNDEFINED: return true;
         case VALUE_NULL: return true;
-        case VALUE_BOOLEAN: return a->data.boolean == b->data.boolean;
-        case VALUE_NUMBER: return a->data.number == b->data.number;
-        case VALUE_STRING: return cstr_eq(&a->data.string, &b->data.string);
-        case VALUE_OBJECT: return a->data.object.get == b->data.object.get;
-        case VALUE_ARRAY: return a->data.array.get == b->data.array.get;
-        case VALUE_JS_FUNC: return a->data.js_func.get == b->data.js_func.get;
-        case VALUE_NATIVE_FUNC: return a->data.native_func.get == b->data.native_func.get;
+        case VALUE_BOOLEAN: return a->boolean == b->boolean;
+        case VALUE_NUMBER: return a->number == b->number;
+        case VALUE_STRING: return cstr_eq(&a->string, &b->string);
+        case VALUE_OBJECT: return a->object.get == b->object.get;
+        case VALUE_ARRAY: return a->array.get == b->array.get;
+        case VALUE_JS_FUNC: return a->js_func.get == b->js_func.get;
+        case VALUE_NATIVE_FUNC: return a->native_func.get == b->native_func.get;
     }
     UNREACHABLE;
 }

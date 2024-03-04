@@ -93,7 +93,7 @@ typedef struct Statement {
         FunctionStatement function;
         IfStatement if_else;
         LoopStatement* loop;
-    } data;
+    };
 } Statement;
 
 #define Statement_noop ((Statement){ .tag = STATEMENT_NOOP })

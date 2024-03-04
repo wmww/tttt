@@ -21,20 +21,20 @@ void Type_drop(Type* self) {
             break;
 
         case TYPE_VALUE:
-            Value_drop(&self->data.value);
+            Value_drop(&self->value);
             break;
 
         case TYPE_IDENTIFIER:
-            cstr_drop(&self->data.identifier);
+            cstr_drop(&self->identifier);
             break;
 
         case TYPE_INTERFACE:
-            Interface_drop(&self->data.interface);
+            Interface_drop(&self->interface);
             break;
 
         case TYPE_TERNARY:
-            TernaryType_drop(self->data.ternary);
-            free(self->data.ternary);
+            TernaryType_drop(self->ternary);
+            free(self->ternary);
             break;
     }
     self->tag = TYPE_ANY; // Makes repeated calls to drop safe
@@ -47,14 +47,14 @@ void cstr_append_type_debug(cstr* target, Type* self, int indent) {
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
         case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
-        case TYPE_VALUE: cstr_append_value_debug(target, &self->data.value, indent); break;
+        case TYPE_VALUE: cstr_append_value_debug(target, &self->value, indent); break;
         case TYPE_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_TYPE));
-            cstr_append_s(target, self->data.identifier);
+            cstr_append_s(target, self->identifier);
             cstr_append_sv(target, c_sv(CLR0));
             break;
-        case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->data.interface, indent); break;
-        case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->data.ternary, indent); break;
+        case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->interface, indent); break;
+        case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->ternary, indent); break;
     }
 }
 
@@ -65,10 +65,10 @@ Type Type_clone(Type self) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING: return self;
-        case TYPE_VALUE: return Type_value(Value_clone(self.data.value));
-        case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.data.identifier));
-        case TYPE_INTERFACE: return Type_interface(Interface_clone(self.data.interface));
-        case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.data.ternary)));
+        case TYPE_VALUE: return Type_value(Value_clone(self.value));
+        case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.identifier));
+        case TYPE_INTERFACE: return Type_interface(Interface_clone(self.interface));
+        case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.ternary)));
     }
     UNREACHABLE;
 }
@@ -82,7 +82,7 @@ Type Type_move(Type* self) {
 bool Type_extends(Type const* sub, Type const* super) {
     switch (sub->tag) {
         case TYPE_ANY: return true;
-        case TYPE_TERNARY: Type_extends(TernaryType_resolve(sub->data.ternary), super);
+        case TYPE_TERNARY: Type_extends(TernaryType_resolve(sub->ternary), super);
         default: break;
     }
 
@@ -94,19 +94,19 @@ bool Type_extends(Type const* sub, Type const* super) {
             return sub->tag == TYPE_VOID;
 
         case TYPE_BOOLEAN:
-            return sub->tag == TYPE_BOOLEAN || (sub->tag == TYPE_VALUE && sub->data.value.tag == VALUE_BOOLEAN);
+            return sub->tag == TYPE_BOOLEAN || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_BOOLEAN);
 
         case TYPE_NUMBER:
-            return sub->tag == TYPE_NUMBER || (sub->tag == TYPE_VALUE && sub->data.value.tag == VALUE_NUMBER);
+            return sub->tag == TYPE_NUMBER || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_NUMBER);
 
         case TYPE_STRING:
-            return sub->tag == TYPE_STRING || (sub->tag == TYPE_VALUE && sub->data.value.tag == VALUE_STRING);
+            return sub->tag == TYPE_STRING || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_STRING);
 
         case TYPE_VALUE:
             if (sub->tag != TYPE_VALUE) {
                 return false;
             }
-            return Value_strict_eq(&sub->data.value, &super->data.value);
+            return Value_strict_eq(&sub->value, &super->value);
             break;
 
         case TYPE_IDENTIFIER:
@@ -117,7 +117,7 @@ bool Type_extends(Type const* sub, Type const* super) {
             PANIC("extends(TYPE_INTERFACE, ...) not implemented");
             break;
 
-        case TYPE_TERNARY: return Type_extends(sub, TernaryType_resolve(super->data.ternary));
+        case TYPE_TERNARY: return Type_extends(sub, TernaryType_resolve(super->ternary));
     }
     UNREACHABLE;
 }

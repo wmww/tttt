@@ -32,37 +32,37 @@ typedef struct Expr {
         CallExpr* call;
         // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
-    } data;
+    };
 } Expr;
 
 extern const Expr Expr_default;
 
 static inline Expr Expr_literal_new(Value value) {
-    return (Expr){ .tag = EXPR_LITERAL, .data.literal = value };
+    return (Expr){ .tag = EXPR_LITERAL, .literal = value };
 }
 
 static inline Expr Expr_indentifier_new(cstr identifier) {
-    return (Expr){ .tag = EXPR_IDENTIFIER, .data.identifier = identifier };
+    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier = identifier };
 }
 
 static inline Expr Expr_binary_op_new(BinaryOpExpr* op) {
-    return (Expr){ .tag = EXPR_BINARY_OP, .data.binary_op = op };
+    return (Expr){ .tag = EXPR_BINARY_OP, .binary_op = op };
 }
 
 static inline Expr Expr_unary_op_new(UnaryOpExpr* op) {
-    return (Expr){ .tag = EXPR_UNARY_OP, .data.unary_op = op };
+    return (Expr){ .tag = EXPR_UNARY_OP, .unary_op = op };
 }
 
 static inline Expr Expr_dot_prop_new(DotPropExpr* dot_prop) {
-    return (Expr){ .tag = EXPR_DOT_PROP, .data.dot_prop = dot_prop };
+    return (Expr){ .tag = EXPR_DOT_PROP, .dot_prop = dot_prop };
 }
 
 static inline Expr Expr_call_new(CallExpr* call) {
-    return (Expr){ .tag = EXPR_CALL, .data.call = call };
+    return (Expr){ .tag = EXPR_CALL, .call = call };
 }
 
 static inline Expr Expr_object_new(ObjectExpr object) {
-    return (Expr){ .tag = EXPR_OBJECT, .data.object = object };
+    return (Expr){ .tag = EXPR_OBJECT, .object = object };
 }
 
 void Expr_drop(Expr* self);

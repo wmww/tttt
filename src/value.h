@@ -42,7 +42,7 @@ typedef struct Value {
         arc_Array array;
         arc_JsFunc js_func;
         arc_NativeFunc native_func;
-    } data;
+    };
 } Value;
 
 void Value_drop_internal(Value* self);
@@ -185,9 +185,9 @@ void NativeFuncValue_drop(NativeFuncValue* self);
 
 #define Value_undefined ((Value){ .tag = VALUE_UNDEFINED })
 #define Value_null ((Value){ .tag = VALUE_NULL })
-static inline Value Value_boolean(bool value) { return (Value){ .tag = VALUE_BOOLEAN, .data.boolean = value }; }
-static inline Value Value_number(double value) { return (Value){ .tag = VALUE_NUMBER, .data.number = value }; }
-static inline Value Value_string(cstr value) { return (Value){ .tag = VALUE_STRING, .data.string = value }; }
+static inline Value Value_boolean(bool value) { return (Value){ .tag = VALUE_BOOLEAN, .boolean = value }; }
+static inline Value Value_number(double value) { return (Value){ .tag = VALUE_NUMBER, .number = value }; }
+static inline Value Value_string(cstr value) { return (Value){ .tag = VALUE_STRING, .string = value }; }
 static inline Value Value_object_from_n(ObjectItemInit* items, int n) {
     ObjectValue data = {
         .items = hmap_str_ObjectValueItem_init(),
@@ -204,7 +204,7 @@ static inline Value Value_object_from_n(ObjectItemInit* items, int n) {
     }
     return (Value){
         .tag = VALUE_OBJECT,
-        .data.object = arc_Object_make(data),
+        .object = arc_Object_make(data),
     };
 }
 static inline Value Value_object_empty() {
@@ -215,7 +215,7 @@ static inline Value Value_object_empty() {
 static inline Value Value_js_func(vec_FunctionStatementArg const* args, Scope const* code) {
     return (Value){
         .tag = VALUE_JS_FUNC,
-        .data.js_func = arc_JsFunc_make((JsFuncValue){
+        .js_func = arc_JsFunc_make((JsFuncValue){
             .args = args,
             .code = code,
         }),
@@ -228,7 +228,7 @@ static inline Value Value_native_func(
 ) {
     return (Value){
         .tag = VALUE_NATIVE_FUNC,
-        .data.native_func = arc_NativeFunc_make((NativeFuncValue){
+        .native_func = arc_NativeFunc_make((NativeFuncValue){
             .func = func,
             .drop = drop,
             .data = data,
