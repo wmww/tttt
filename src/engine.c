@@ -185,8 +185,8 @@ static Result MUST_USE Engine_eval_dot_prop(Engine* self, DotPropExpr const* pro
     TRY_THROW(value, Engine_eval_expr(self, &prop_expr->expr));
     Result ret = {0};
     switch (value.tag) {
-        case VALUE_NULL: ret = Result_err(Value_string(cstr_lit("TypeError: null has no properties"))); break;
         case VALUE_UNDEFINED: ret = Result_err(Value_string(cstr_lit("TypeError: undefined has no properties"))); break;
+        case VALUE_NULL: ret = Result_err(Value_string(cstr_lit("TypeError: null has no properties"))); break;
 
         case VALUE_BOOLEAN:
         case VALUE_NUMBER:

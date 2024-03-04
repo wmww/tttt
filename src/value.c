@@ -5,8 +5,8 @@
 
 void Value_drop_internal(Value* self) {
     switch (self->tag) {
-        case VALUE_NULL:
         case VALUE_UNDEFINED:
+        case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: cstr_drop(&self->data.string); break;
@@ -19,8 +19,8 @@ void Value_drop_internal(Value* self) {
 
 Value Value_clone(Value self) {
     switch (self.tag) {
-        case VALUE_NULL:
         case VALUE_UNDEFINED:
+        case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: self.data.string = cstr_clone(self.data.string); break;
@@ -47,8 +47,8 @@ static double string_to_num(const char* start) {
 
 bool Value_to_boolean(Value const* self) {
     switch (self->tag) {
-        case VALUE_NULL: return false;
         case VALUE_UNDEFINED: return false;
+        case VALUE_NULL: return false;
         case VALUE_BOOLEAN: return self->data.boolean;
         case VALUE_NUMBER: return self->data.number != 0;
         case VALUE_STRING: return !cstr_empty(&self->data.string);
@@ -93,8 +93,8 @@ double Value_to_number(Value const* self) {
 
 void cstr_append_value_js(cstr* target, Value const* self) {
     switch (self->tag) {
-        case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv("undefined")); break;
+        case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
         case VALUE_STRING: cstr_append_s(target, self->data.string); break;
         case VALUE_OBJECT: cstr_append_sv(target, c_sv("[object Object]")); break;
         case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
@@ -132,8 +132,8 @@ void cstr_append_value_js(cstr* target, Value const* self) {
 void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
     (void)indent;
     switch (self->tag) {
-        case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv(CLR_VALUE "undefined" CLR0)); break;
+        case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
 
         case VALUE_BOOLEAN:
             if (self->data.boolean) {
@@ -237,8 +237,8 @@ bool Value_strict_eq(Value const* a, Value const* b) {
         return false;
     }
     switch (a->tag) {
-        case VALUE_NULL: return true;
         case VALUE_UNDEFINED: return true;
+        case VALUE_NULL: return true;
         case VALUE_BOOLEAN: return a->data.boolean == b->data.boolean;
         case VALUE_NUMBER: return a->data.number == b->data.number;
         case VALUE_STRING: return cstr_eq(&a->data.string, &b->data.string);
