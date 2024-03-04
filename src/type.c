@@ -24,6 +24,10 @@ void Type_drop(Type* self) {
             Value_drop(&self->data.value);
             break;
 
+        case TYPE_IDENTIFIER:
+            cstr_drop(&self->data.identifier);
+            break;
+
         case TYPE_INTERFACE:
             Interface_drop(&self->data.interface);
             break;
@@ -44,6 +48,11 @@ void cstr_append_type_debug(cstr* target, Type* self, int indent) {
         case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
         case TYPE_VALUE: cstr_append_value_debug(target, &self->data.value, indent); break;
+        case TYPE_IDENTIFIER:
+            cstr_append_sv(target, c_sv(CLR_TYPE));
+            cstr_append_s(target, self->data.identifier);
+            cstr_append_sv(target, c_sv(CLR0));
+            break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->data.interface, indent); break;
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->data.ternary, indent); break;
     }
@@ -56,9 +65,10 @@ Type Type_clone(Type self) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING: return self;
-        case TYPE_VALUE: return Type_value_new(Value_clone(self.data.value));
-        case TYPE_INTERFACE: return Type_interface_new(Interface_clone(self.data.interface));
-        case TYPE_TERNARY: return Type_ternary_new(c_new(TernaryType, TernaryType_clone(*self.data.ternary)));
+        case TYPE_VALUE: return Type_value(Value_clone(self.data.value));
+        case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.data.identifier));
+        case TYPE_INTERFACE: return Type_interface(Interface_clone(self.data.interface));
+        case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.data.ternary)));
     }
     UNREACHABLE;
 }
@@ -97,6 +107,10 @@ bool Type_extends(Type const* sub, Type const* super) {
                 return false;
             }
             return Value_strict_eq(&sub->data.value, &super->data.value);
+            break;
+
+        case TYPE_IDENTIFIER:
+            PANIC("identifier extends not yet implemented");
             break;
 
         case TYPE_INTERFACE:

@@ -14,11 +14,13 @@ typedef struct Type {
         TYPE_NUMBER,
         TYPE_STRING,
         TYPE_VALUE,
+        TYPE_IDENTIFIER,
         TYPE_INTERFACE,
         TYPE_TERNARY,
     } tag;
     union {
         Value value;
+        cstr identifier;
         Interface interface;
         TernaryType* ternary;
     } data;
@@ -30,19 +32,25 @@ extern const Type Type_boolean;
 extern const Type Type_number;
 extern const Type Type_string;
 #undef TYPE_NEW_DECL
-static inline Type Type_value_new(Value value) {
+static inline Type Type_value(Value value) {
     return (Type){
         .tag = TYPE_VALUE,
         .data.value = value,
     };
 }
-static inline Type Type_interface_new(Interface interface) {
+static inline Type Type_identifier(cstr identifier) {
+    return (Type){
+        .tag = TYPE_IDENTIFIER,
+        .data.identifier = identifier,
+    };
+}
+static inline Type Type_interface(Interface interface) {
     return (Type){
         .tag = TYPE_INTERFACE,
         .data.interface = interface,
     };
 }
-static inline Type Type_ternary_new(TernaryType* ternary) {
+static inline Type Type_ternary(TernaryType* ternary) {
     return (Type){
         .tag = TYPE_TERNARY,
         .data.ternary = ternary,

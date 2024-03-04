@@ -193,7 +193,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
     switch (self->tag) {
         case EXPR_LITERAL:
-            return Type_value_new(Value_clone(self->data.literal));
+            return Type_value(Value_clone(self->data.literal));
 
         case EXPR_IDENTIFIER:
             // TODO

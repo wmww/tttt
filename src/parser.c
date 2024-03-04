@@ -259,7 +259,7 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     }
     TernaryType ternary;
     if (parse_ternary_type(src, type, &ternary, errs)) {
-        *ret = Type_ternary_new(c_new(TernaryType, ternary));
+        *ret = Type_ternary(c_new(TernaryType, ternary));
         return true;
     } else {
         *ret = type;
