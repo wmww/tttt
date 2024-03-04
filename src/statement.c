@@ -56,8 +56,15 @@ void FunctionStatementArg_drop(FunctionStatementArg* self) {
     NameInitData_drop(&self->data);
 }
 
+void FunctionStatementGeneric_drop(FunctionStatementGeneric* self) {
+    cstr_drop(&self->name);
+    Type_drop(&self->extends);
+    Type_drop(&self->fallback);
+}
+
 void FunctionStatement_drop(FunctionStatement* self) {
     cstr_drop(&self->name);
+    vec_FunctionStatementGeneric_drop(&self->generics);
     vec_FunctionStatementArg_drop(&self->args);
     Type_drop(&self->return_type);
     Scope_drop(&self->body);

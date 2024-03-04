@@ -251,6 +251,8 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
         type = Type_string;
     } else if (parse_type_compat_literal(src, &type.value, errs)) {
         type.tag = TYPE_VALUE;
+    } else if (parse_identifier(src, &type.identifier)) {
+        type.tag = TYPE_IDENTIFIER;
     } else if (parse_interface(src, &type.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
@@ -652,7 +654,7 @@ static bool parse_name_init(const char** src, NameInitData* ret, ErrorCtx* errs)
     hop_whitespace(&s);
     Type type = {0};
     bool has_type = false;
-    if (hop_start_if_ends_on_word_break(&s, ":")) {
+    if (hop_start(&s, ":")) {
         hop_whitespace(&s);
         if (parse_type(&s, &type, errs)) {
             has_type = true;
@@ -661,7 +663,7 @@ static bool parse_name_init(const char** src, NameInitData* ret, ErrorCtx* errs)
     }
     Expr value = {0};
     bool has_value = false;
-    if (hop_start_if_ends_on_word_break(&s, "=")) {
+    if (hop_start(&s, "=")) {
         hop_whitespace(&s);
         if (parse_expr(&s, &value, errs)) {
             has_value = true;
@@ -844,6 +846,37 @@ static bool parse_return(const char** src, Expr* ret, ErrorCtx* errs) {
     return true;
 }
 
+static bool parse_function_generic(const char** src, void* data, ErrorCtx* errs) {
+    vec_FunctionStatementGeneric* generics = data;
+
+    cstr name = cstr_null;
+    if (!parse_identifier(src, &name)) {
+        ErrorCtx_parse_error(errs, *src, "missing gemeric name");
+    }
+    hop_whitespace(src);
+    Type extends = Type_any;
+    if (hop_start_if_ends_on_word_break(src, "extends")) {
+        hop_whitespace(src);
+        parse_type(src, &extends, errs);
+        hop_whitespace(src);
+    }
+    Type fallback = {0};
+    bool has_fallback = false;
+    if (hop_start(src, "=")) {
+        hop_whitespace(src);
+        if (parse_type(src, &fallback, errs)) {
+            has_fallback = true;
+        }
+    }
+    vec_FunctionStatementGeneric_push(generics, (FunctionStatementGeneric){
+        .name = name,
+        .extends = extends,
+        .has_fallback = has_fallback,
+        .fallback = fallback,
+    });
+    return true;
+}
+
 static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
     vec_FunctionStatementArg* args = data;
     FunctionStatementArg arg = {0};
@@ -863,6 +896,13 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
     cstr name = cstr_null;
     if (!parse_identifier(&s, &name)) {
         ErrorCtx_parse_error(&local_errs, s, "missing function name");
+    }
+    hop_whitespace(&s);
+    vec_FunctionStatementGeneric generics = {0};
+    if (!parse_sequence(&s, "<", SEQUENCE_SEP_COMMA, '>', parse_function_generic, &generics, &local_errs)) {
+        ErrorCtx_drop(&local_errs);
+        cstr_drop(&name);
+        return false;
     }
     hop_whitespace(&s);
     vec_FunctionStatementArg args = {0};
@@ -889,6 +929,7 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
     }
     *ret = (FunctionStatement) {
         .name = name,
+        .generics = generics,
         .args = args,
         .has_return_type = has_return_type,
         .return_type = return_type,

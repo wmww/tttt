@@ -49,8 +49,22 @@ void FunctionStatementArg_drop(FunctionStatementArg* self);
 #define i_no_clone
 #include "stc/vec.h"
 
+typedef struct FunctionStatementGeneric {
+    cstr name;
+    Type extends; // any if unspecified
+    bool has_fallback;
+    Type fallback;
+} FunctionStatementGeneric;
+
+void FunctionStatementGeneric_drop(FunctionStatementGeneric* self);
+
+#define i_key_class FunctionStatementGeneric
+#define i_no_clone
+#include "stc/vec.h"
+
 typedef struct FunctionStatement {
     cstr name;
+    vec_FunctionStatementGeneric generics;
     vec_FunctionStatementArg args;
     bool has_return_type;
     Type return_type;
