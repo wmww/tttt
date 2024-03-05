@@ -5,6 +5,7 @@
 #include "value.h"
 
 typedef struct TernaryType TernaryType;
+typedef struct CallableType CallableType;
 
 typedef struct Type {
     enum {
@@ -15,6 +16,7 @@ typedef struct Type {
         TYPE_STRING,
         TYPE_VALUE,
         TYPE_IDENTIFIER,
+        TYPE_CALLABLE,
         TYPE_INTERFACE,
         TYPE_TERNARY,
     } tag;
@@ -22,6 +24,7 @@ typedef struct Type {
         Value value;
         cstr identifier;
         Interface interface;
+        CallableType* callable;
         TernaryType* ternary;
     };
 } Type;
@@ -42,6 +45,12 @@ static inline Type Type_identifier(cstr identifier) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier = identifier,
+    };
+}
+static inline Type Type_callable(CallableType* callable) {
+    return (Type){
+        .tag = TYPE_CALLABLE,
+        .callable = callable,
     };
 }
 static inline Type Type_interface(Interface interface) {

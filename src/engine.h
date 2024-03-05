@@ -1,5 +1,5 @@
 #pragma once
 
-typedef struct Scope Scope;
+typedef struct Block Block;
 
-void eval_program(Scope const* scope);
+void eval_program(Block const* scope);

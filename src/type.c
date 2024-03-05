@@ -2,6 +2,7 @@
 #include "interface.h"
 #include "interface_member.h"
 #include "ternary_type.h"
+#include "callable_type.h"
 #include "extends_conditional.h"
 #include "value.h"
 
@@ -26,6 +27,11 @@ void Type_drop(Type* self) {
 
         case TYPE_IDENTIFIER:
             cstr_drop(&self->identifier);
+            break;
+
+        case TYPE_CALLABLE:
+            CallableType_drop(self->callable);
+            free(self->callable);
             break;
 
         case TYPE_INTERFACE:
@@ -53,6 +59,7 @@ void cstr_append_type_debug(cstr* target, Type* self, int indent) {
             cstr_append_s(target, self->identifier);
             cstr_append_sv(target, c_sv(CLR0));
             break;
+        case TYPE_CALLABLE: cstr_append_callable_type_debug(target, self->callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->interface, indent); break;
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->ternary, indent); break;
     }
@@ -67,6 +74,7 @@ Type Type_clone(Type self) {
         case TYPE_STRING: return self;
         case TYPE_VALUE: return Type_value(Value_clone(self.value));
         case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.identifier));
+        case TYPE_CALLABLE: return Type_callable(c_new(CallableType, CallableType_clone(*self.callable)));
         case TYPE_INTERFACE: return Type_interface(Interface_clone(self.interface));
         case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.ternary)));
     }
@@ -111,6 +119,10 @@ bool Type_extends(Type const* sub, Type const* super) {
 
         case TYPE_IDENTIFIER:
             PANIC("identifier extends not yet implemented");
+            break;
+
+        case TYPE_CALLABLE:
+            PANIC("callable extends not yet implemented");
             break;
 
         case TYPE_INTERFACE:

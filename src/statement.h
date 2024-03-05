@@ -1,9 +1,10 @@
 #pragma once
 
-#include "scope.h"
+#include "block.h"
 #include "expr.h"
 #include "interface.h"
 #include "type.h"
+#include "callable_type.h"
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct LoopStatement LoopStatement;
@@ -12,9 +13,9 @@ typedef struct LoopStatement LoopStatement;
 
 typedef struct NameInitData {
     cstr name;
-    bool has_type;
+    bool explicit_type;
     Type type;
-    bool has_value;
+    bool explicit_value;
     Expr value;
 } NameInitData;
 
@@ -49,26 +50,13 @@ void FunctionStatementArg_drop(FunctionStatementArg* self);
 #define i_no_clone
 #include "stc/vec.h"
 
-typedef struct FunctionStatementGeneric {
-    cstr name;
-    Type extends; // any if unspecified
-    bool has_fallback;
-    Type fallback;
-} FunctionStatementGeneric;
-
-void FunctionStatementGeneric_drop(FunctionStatementGeneric* self);
-
-#define i_key_class FunctionStatementGeneric
-#define i_no_clone
-#include "stc/vec.h"
-
 typedef struct FunctionStatement {
     cstr name;
-    vec_FunctionStatementGeneric generics;
+    vec_CallableTypeGeneric generics;
     vec_FunctionStatementArg args;
     bool has_return_type;
     Type return_type;
-    Scope body;
+    Block body;
 } FunctionStatement;
 
 void FunctionStatement_drop(FunctionStatement* self);
@@ -89,7 +77,7 @@ typedef struct Statement {
     enum {
         STATEMENT_NOOP,
         STATEMENT_INTERFACE,
-        STATEMENT_SCOPE,
+        STATEMENT_BLOCK,
         STATEMENT_EXPR,
         STATEMENT_RETURN,
         STATEMENT_VAR_INIT,
@@ -100,7 +88,7 @@ typedef struct Statement {
     } tag;
     union {
         NamedInterface interface;
-        Scope scope;
+        Block block;
         Expr expr;
         Expr return_expr;
         VarInitStatement var_init;

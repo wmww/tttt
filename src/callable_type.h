@@ -1,0 +1,38 @@
+#pragma once
+
+#include "type.h"
+
+typedef struct CallableTypeGeneric {
+    cstr name;
+    Type extends;
+    bool explicit_fallback;
+    Type fallback;
+} CallableTypeGeneric;
+
+void CallableTypeGeneric_drop(CallableTypeGeneric* self);
+CallableTypeGeneric CallableTypeGeneric_clone(CallableTypeGeneric self);
+
+#define i_key_class CallableTypeGeneric
+#include "stc/vec.h"
+
+void cstr_append_vec_callable_type_generic(cstr* target, vec_CallableTypeGeneric* generics, int indent);
+
+typedef struct CallableTypeArg {
+    cstr name;
+    Type type;
+} CallableTypeArg;
+
+void CallableTypeArg_drop(CallableTypeArg* self);
+CallableTypeArg CallableTypeArg_clone(CallableTypeArg self);
+
+#define i_key_class CallableTypeArg
+#include "stc/vec.h"
+
+typedef struct CallableType {
+    vec_CallableTypeArg args;
+    Type ret;
+} CallableType;
+
+void CallableType_drop(CallableType* self);
+CallableType CallableType_clone(CallableType self);
+void cstr_append_callable_type_debug(cstr* target, CallableType* self, int indent);

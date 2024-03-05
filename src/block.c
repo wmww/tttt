@@ -1,11 +1,11 @@
-#include "scope.h"
+#include "block.h"
 #include "statement.h"
 
-void Scope_drop(Scope* self) {
+void Block_drop(Block* self) {
     vec_Statement_drop(&self->statements);
 }
 
-void cstr_append_scope_debug(cstr* target, Scope* self, int indent) {
+void cstr_append_block_debug(cstr* target, Block* self, int indent) {
     cstr_append_sv(target, c_sv("{\n"));
     c_foreach(i, vec_Statement, self->statements) {
         APPEND_INDENT(target, indent + 1);
@@ -16,7 +16,7 @@ void cstr_append_scope_debug(cstr* target, Scope* self, int indent) {
     cstr_append_sv(target, c_sv("}"));
 }
 
-void Scope_typecheck(Scope* self, ErrorCtx* errs) {
+void Block_typecheck(Block* self, ErrorCtx* errs) {
     c_foreach(i, vec_Statement, self->statements) {
         Statement_typecheck(i.ref, errs);
     }

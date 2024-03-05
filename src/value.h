@@ -3,7 +3,7 @@
 #include "prelude.h"
 
 typedef struct Type Type;
-typedef struct Scope Scope;
+typedef struct Block Block;
 typedef struct FunctionStatementArg FunctionStatementArg;
 typedef struct Value Value;
 typedef struct Engine Engine;
@@ -152,7 +152,7 @@ ArrayValue ArrayValue_clone(ArrayValue self);
 
 typedef struct JsFuncValue {
     vec_FunctionStatementArg const* args;
-    Scope const* code;
+    Block const* code;
 } JsFuncValue;
 
 void JsFuncValue_drop(JsFuncValue* self);
@@ -212,7 +212,7 @@ static inline Value Value_object_empty() {
 }
 #define Value_object_init(...) \
     Value_object_from_n((ObjectItemInit[])__VA_ARGS__, c_arraylen(((ObjectItemInit[])__VA_ARGS__)))
-static inline Value Value_js_func(vec_FunctionStatementArg const* args, Scope const* code) {
+static inline Value Value_js_func(vec_FunctionStatementArg const* args, Block const* code) {
     return (Value){
         .tag = VALUE_JS_FUNC,
         .js_func = arc_JsFunc_make((JsFuncValue){

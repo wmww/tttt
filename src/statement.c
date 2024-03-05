@@ -11,20 +11,20 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int inde
     cstr_append_sv(target, c_sv(CLR_NAME));
     cstr_append_s(target, self->name);
     cstr_append_sv(target, c_sv(CLR0));
-    if (self->has_type) {
-        cstr_append_sv(target, c_sv(CLR_TYPE ": " CLR0));
+    if (self->explicit_type) {
+        cstr_append_sv(target, c_sv(": "));
         cstr_append_type_debug(target, &self->type, indent);
     }
-    if (self->has_value) {
+    if (self->explicit_value) {
         cstr_append_sv(target, c_sv(" = "));
         cstr_append_expr_debug(target, &self->value, indent);
     }
 }
 
 Type NameInitData_get_type_and_typecheck(NameInitData* self, ErrorCtx* errs) {
-    if (self->has_value) {
+    if (self->explicit_value) {
         Type expr_type = Expr_get_type_and_typecheck(&self->value, errs);
-        if (self->has_type) {
+        if (self->explicit_type) {
             if (!Type_extends(&expr_type, &self->type)) {
                 ErrorCtx_type_error(errs, "invalid variable initialization type");
             }
@@ -56,24 +56,20 @@ void FunctionStatementArg_drop(FunctionStatementArg* self) {
     NameInitData_drop(&self->data);
 }
 
-void FunctionStatementGeneric_drop(FunctionStatementGeneric* self) {
-    cstr_drop(&self->name);
-    Type_drop(&self->extends);
-    Type_drop(&self->fallback);
-}
-
 void FunctionStatement_drop(FunctionStatement* self) {
     cstr_drop(&self->name);
-    vec_FunctionStatementGeneric_drop(&self->generics);
+    vec_CallableTypeGeneric_drop(&self->generics);
     vec_FunctionStatementArg_drop(&self->args);
     Type_drop(&self->return_type);
-    Scope_drop(&self->body);
+    Block_drop(&self->body);
 }
 
 void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent) {
     cstr_append_sv(target, c_sv("function " CLR_NAME));
     cstr_append_s(target, self->name);
-    cstr_append_sv(target, c_sv(CLR0 "("));
+    cstr_append_sv(target, c_sv(CLR0));
+    cstr_append_vec_callable_type_generic(target, &self->generics, indent);
+    cstr_append_sv(target, c_sv("("));
     c_foreach(i, vec_FunctionStatementArg, self->args) {
         cstr_append_name_init_data_debug(target, &i.ref->data, indent);
         if (i.ref < i.end - 1) {
@@ -82,11 +78,11 @@ void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self,
     }
     cstr_append_sv(target, c_sv(")"));
     if (self->has_return_type) {
-        cstr_append_sv(target, c_sv(CLR_TYPE ": " CLR0));
+        cstr_append_sv(target, c_sv(": "));
         cstr_append_type_debug(target, &self->return_type, indent);
     }
     cstr_append_sv(target, c_sv(" "));
-    cstr_append_scope_debug(target, &self->body, indent);
+    cstr_append_block_debug(target, &self->body, indent);
 }
 
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs) {
@@ -94,7 +90,7 @@ void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs) {
         Type tmp = NameInitData_get_type_and_typecheck(&i.ref->data, errs);
         Type_drop(&tmp);
     }
-    Scope_typecheck(&self->body, errs);
+    Block_typecheck(&self->body, errs);
     // TODO: check that return is compatible with return type
 }
 
@@ -106,8 +102,8 @@ void Statement_drop(Statement* self) {
             NamedInterface_drop(&self->interface);
             break;
 
-        case STATEMENT_SCOPE:
-            Scope_drop(&self->scope);
+        case STATEMENT_BLOCK:
+            Block_drop(&self->block);
             break;
 
         case STATEMENT_EXPR:
@@ -147,7 +143,7 @@ void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
     switch (self->tag) {
         case STATEMENT_NOOP: cstr_append_sv(target, c_sv(";")); break;
         case STATEMENT_INTERFACE: cstr_append_named_interface_debug(target, &self->interface, indent); break;
-        case STATEMENT_SCOPE: cstr_append_scope_debug(target, &self->scope, indent); break;
+        case STATEMENT_BLOCK: cstr_append_block_debug(target, &self->block, indent); break;
 
         case STATEMENT_EXPR:
             cstr_append_expr_debug(target, &self->expr, indent);
@@ -206,8 +202,8 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
 
         case STATEMENT_INTERFACE: break;
 
-        case STATEMENT_SCOPE:
-            Scope_typecheck(&self->scope, errs);
+        case STATEMENT_BLOCK:
+            Block_typecheck(&self->block, errs);
             break;
 
         case STATEMENT_EXPR: {
@@ -228,7 +224,7 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
 
         case STATEMENT_FUNCTION:
             // TODO: typecheck args? return type?
-            Scope_typecheck(&self->function.body, errs);
+            Block_typecheck(&self->function.body, errs);
             break;
 
         case STATEMENT_IF_ELSE: {

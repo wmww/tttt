@@ -1,5 +1,5 @@
 #include "parser.h"
-#include "scope.h"
+#include "block.h"
 #include "interface.h"
 #include "interface_member.h"
 #include "statement.h"
@@ -8,7 +8,7 @@
 #include "type.h"
 #include "error.h"
 
-static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs);
+static bool parse_block(const char** src, Block* ret, ErrorCtx* errs);
 static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs);
 static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs);
 static bool parse_type(const char** src, Type* type, ErrorCtx* errs);
@@ -652,28 +652,28 @@ static bool parse_name_init(const char** src, NameInitData* ret, ErrorCtx* errs)
         ErrorCtx_parse_error(errs, *src, "missing name");
     }
     hop_whitespace(&s);
-    Type type = {0};
-    bool has_type = false;
+    Type type = Type_any;
+    bool explicit_type = false;
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
         if (parse_type(&s, &type, errs)) {
-            has_type = true;
+            explicit_type = true;
         }
         hop_whitespace(&s);
     }
-    Expr value = {0};
-    bool has_value = false;
+    Expr value = Expr_default;
+    bool explicit_value = false;
     if (hop_start(&s, "=")) {
         hop_whitespace(&s);
         if (parse_expr(&s, &value, errs)) {
-            has_value = true;
+            explicit_value = true;
         }
     }
     *ret = (NameInitData) {
         .name = name,
-        .has_type = has_type,
+        .explicit_type = explicit_type,
         .type = type,
-        .has_value = has_value,
+        .explicit_value = explicit_value,
         .value = value,
     };
     *src = s;
@@ -847,43 +847,46 @@ static bool parse_return(const char** src, Expr* ret, ErrorCtx* errs) {
 }
 
 static bool parse_function_generic(const char** src, void* data, ErrorCtx* errs) {
-    vec_FunctionStatementGeneric* generics = data;
+    FunctionStatement* function = data;
 
     cstr name = cstr_null;
     if (!parse_identifier(src, &name)) {
-        ErrorCtx_parse_error(errs, *src, "missing gemeric name");
+        ErrorCtx_parse_error(errs, *src, "missing generic name");
     }
     hop_whitespace(src);
+
     Type extends = Type_any;
     if (hop_start_if_ends_on_word_break(src, "extends")) {
         hop_whitespace(src);
         parse_type(src, &extends, errs);
         hop_whitespace(src);
     }
-    Type fallback = {0};
-    bool has_fallback = false;
+
+    Type fallback = Type_any;
+    bool explicit_fallback = false;
     if (hop_start(src, "=")) {
         hop_whitespace(src);
         if (parse_type(src, &fallback, errs)) {
-            has_fallback = true;
+            explicit_fallback = true;
         }
     }
-    vec_FunctionStatementGeneric_push(generics, (FunctionStatementGeneric){
+
+    vec_CallableTypeGeneric_push(&function->generics, (CallableTypeGeneric){
         .name = name,
         .extends = extends,
-        .has_fallback = has_fallback,
+        .explicit_fallback = explicit_fallback,
         .fallback = fallback,
     });
     return true;
 }
 
 static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
-    vec_FunctionStatementArg* args = data;
+    FunctionStatement* function = data;
     FunctionStatementArg arg = {0};
     if (!parse_name_init(src, &arg.data, errs)) {
         return false;
     }
-    vec_FunctionStatementArg_push(args, arg);
+    vec_FunctionStatementArg_push(&function->args, arg);
     return true;
 }
 
@@ -893,48 +896,32 @@ static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* e
     if (!hop_start_and_required_whitespace(&s, "function")) {
         return false;
     }
-    cstr name = cstr_null;
-    if (!parse_identifier(&s, &name)) {
+    if (!parse_identifier(&s, &ret->name)) {
         ErrorCtx_parse_error(&local_errs, s, "missing function name");
     }
     hop_whitespace(&s);
-    vec_FunctionStatementGeneric generics = {0};
-    if (!parse_sequence(&s, "<", SEQUENCE_SEP_COMMA, '>', parse_function_generic, &generics, &local_errs)) {
+    if (parse_sequence(&s, "<", SEQUENCE_SEP_COMMA, '>', parse_function_generic, ret, &local_errs)) {
+        hop_whitespace(&s);
+    }
+    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret, &local_errs)) {
         ErrorCtx_drop(&local_errs);
-        cstr_drop(&name);
+        FunctionStatement_drop(ret);
+        *ret = (FunctionStatement){0};
         return false;
     }
     hop_whitespace(&s);
-    vec_FunctionStatementArg args = {0};
-    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, &args, &local_errs)) {
-        ErrorCtx_drop(&local_errs);
-        cstr_drop(&name);
-        return false;
-    }
-    hop_whitespace(&s);
-    bool has_return_type = false;
-    Type return_type = Type_any;
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
-        if (parse_type(&s, &return_type, &local_errs)) {
-            has_return_type = true;
+        if (parse_type(&s, &ret->return_type, &local_errs)) {
+            ret->has_return_type = true;
         } else {
             ErrorCtx_parse_error(&local_errs, s, "invalid return type");
         }
     }
     hop_whitespace(&s);
-    Scope body = {0};
-    if (!parse_scope(&s, &body, &local_errs)) {
+    if (!parse_block(&s, &ret->body, &local_errs)) {
         ErrorCtx_parse_error(&local_errs, s, "invalid function body");
     }
-    *ret = (FunctionStatement) {
-        .name = name,
-        .generics = generics,
-        .args = args,
-        .has_return_type = has_return_type,
-        .return_type = return_type,
-        .body = body,
-    };
     ErrorCtx_append_consume(errs, local_errs);
     *src = s;
     return true;
@@ -946,8 +933,8 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     if (parse_named_interface(src, &ret->interface, errs)) {
         ret->tag = STATEMENT_INTERFACE;
         return true;
-    } else if (parse_scope(src, &ret->scope, errs)) {
-        ret->tag = STATEMENT_SCOPE;
+    } else if (parse_block(src, &ret->block, errs)) {
+        ret->tag = STATEMENT_BLOCK;
         return true;
     } else if (parse_var_init(src, &ret->var_init, errs)) {
         ret->tag = STATEMENT_VAR_INIT;
@@ -985,12 +972,12 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     }
 }
 
-static void parse_scope_inner(const char** src, Scope* ret, ErrorCtx* errs) {
+static void parse_block_inner(const char** src, Block* ret, ErrorCtx* errs) {
     const char* s = *src;
     vec_Statement statements = {0};
     hop_whitespace(&s);
     while(*s && *s != '}') {
-        Statement statement;
+        Statement statement = {0};
         if (*s == ';') {
             s++;
         } else if (parse_statement(&s, &statement, errs)) {
@@ -1001,16 +988,16 @@ static void parse_scope_inner(const char** src, Scope* ret, ErrorCtx* errs) {
         }
         hop_whitespace(&s);
     }
-    *ret = (Scope){
+    *ret = (Block){
         .statements = statements,
     };
     *src = s;
 }
 
-static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs) {
+static bool parse_block(const char** src, Block* ret, ErrorCtx* errs) {
     const char* s = *src;
     if (!hop_char(&s, '{')) return false;
-    parse_scope_inner(&s, ret, errs);
+    parse_block_inner(&s, ret, errs);
     hop_whitespace(&s);
     if (!hop_char(&s, '}')) {
         ErrorCtx_parse_error(errs, *src, "expected '}'");
@@ -1019,10 +1006,10 @@ static bool parse_scope(const char** src, Scope* ret, ErrorCtx* errs) {
     return true;
 }
 
-Scope parse_file(const char* src, ErrorCtx* errs) {
+Block parse_file(const char* src, ErrorCtx* errs) {
     hop_whitespace(&src);
-    Scope scope;
-    parse_scope_inner(&src, &scope, errs);
+    Block scope;
+    parse_block_inner(&src, &scope, errs);
     if (*src) {
         ErrorCtx_parse_error(errs, src, "unexpected '}'");
     }

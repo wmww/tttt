@@ -1,5 +1,5 @@
 #include "engine.h"
-#include "scope.h"
+#include "block.h"
 #include "statement.h"
 #include "expr.h"
 #include "value.h"
@@ -27,8 +27,8 @@ ObjectValue* Engine_get_locals(Engine* self) {
 }
 
 static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr);
-static Result MUST_USE Engine_run_scope(Engine* self, Scope const* scope);
-static Result MUST_USE Engine_run_scope_in_stack_frame(Engine* self, Scope const* scope);
+static Result MUST_USE Engine_run_block(Engine* self, Block const* block);
+static Result MUST_USE Engine_run_block_in_stack_frame(Engine* self, Block const* block);
 
 static bool contains_only_digits(const char* str) {
     if (!*str) {
@@ -228,7 +228,8 @@ static Result MUST_USE Engine_eval_js_func(Engine* self, JsFuncValue const* func
         if (i < given_arg_num) {
             // TODO: don't clone all args
             value = Value_clone(*vec_Value_at(args, i));
-        } else if (defined->data.has_value) {
+        }
+        if (value.tag == VALUE_UNDEFINED && defined->data.explicit_value) {
             TRY_CATCH(default_value, Engine_eval_expr(self, &defined->data.value), res_err, {
                 cstr_drop(&name);
                 vec_StackFrame_pop(&self->stack);
@@ -238,7 +239,7 @@ static Result MUST_USE Engine_eval_js_func(Engine* self, JsFuncValue const* func
         }
         ObjectValue_set(locals, name, value);
     }
-    Result res = Engine_run_scope(self, func->code);
+    Result res = Engine_run_block(self, func->code);
     vec_StackFrame_pop(&self->stack);
     return res;
 }
@@ -314,8 +315,8 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
         case STATEMENT_NOOP: break;
         case STATEMENT_INTERFACE: break;
 
-        case STATEMENT_SCOPE: {
-            TRY_THROW_DROP(Engine_run_scope_in_stack_frame(self, &statement->scope));
+        case STATEMENT_BLOCK: {
+            TRY_THROW_DROP(Engine_run_block_in_stack_frame(self, &statement->block));
         }   break;
 
         case STATEMENT_EXPR: {
@@ -402,16 +403,16 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
     return Result_ok_undefined;
 }
 
-static Result MUST_USE Engine_run_scope(Engine* self, Scope const* scope) {
-    c_foreach(i, vec_Statement, scope->statements) {
+static Result MUST_USE Engine_run_block(Engine* self, Block const* block) {
+    c_foreach(i, vec_Statement, block->statements) {
         TRY_THROW_DROP(Engine_run_statement(self, i.ref));
     }
     return Result_ok_undefined;
 }
 
-static Result MUST_USE Engine_run_scope_in_stack_frame(Engine* self, Scope const* scope) {
+static Result MUST_USE Engine_run_block_in_stack_frame(Engine* self, Block const* block) {
     vec_StackFrame_push(&self->stack, StackFrame_new());
-    TRY_CATCH_DROP(Engine_run_scope(self, scope), res_err, {
+    TRY_CATCH_DROP(Engine_run_block(self, block), res_err, {
         vec_StackFrame_pop(&self->stack);
         return res_err;
     });
@@ -454,7 +455,7 @@ static Result boolean_impl(Engine* engine, int argc, Value const argv[], void* d
     return Result_ok(Value_boolean(argc > 0 ? Value_to_boolean(argv) : false));
 }
 
-void eval_program(Scope const* scope) {
+void eval_program(Block const* scope) {
     Engine engine = {
         .stack = c_init(vec_StackFrame, {
             Value_object_init({
@@ -467,7 +468,7 @@ void eval_program(Scope const* scope) {
             }).object,
         }),
     };
-    Result res = Engine_run_scope(&engine, scope);
+    Result res = Engine_run_block(&engine, scope);
     if (res.tag == RESULT_ERR) {
         cstr err = cstr_null;
         cstr_append_value_js(&err, &res.value);

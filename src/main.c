@@ -1,6 +1,6 @@
 #include "type.h"
 #include "parser.h"
-#include "scope.h"
+#include "block.h"
 #include "filesystem.h"
 #include "error.h"
 #include "engine.h"
@@ -18,27 +18,27 @@ int main(int argc, const char** argv) {
     }
 
     ErrorCtx errs = {0};
-    Scope parsed = parse_file(cstr_str(&contents), &errs);
+    Block parsed = parse_file(cstr_str(&contents), &errs);
 
     if (!ErrorCtx_empty(&errs)) {
         ErrorCtx_display(&errs, cstr_str(&contents));
         ErrorCtx_drop(&errs);
-        Scope_drop(&parsed);
+        Block_drop(&parsed);
         cstr_drop(&contents);
         return 1;
     }
 
     cstr parsed_str = cstr_null;
-    cstr_append_scope_debug(&parsed_str, &parsed, 0);
+    cstr_append_block_debug(&parsed_str, &parsed, 0);
     printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
 
-    Scope_typecheck(&parsed, &errs);
+    Block_typecheck(&parsed, &errs);
 
     if (!ErrorCtx_empty(&errs)) {
         ErrorCtx_display(&errs, cstr_str(&contents));
         ErrorCtx_drop(&errs);
-        Scope_drop(&parsed);
+        Block_drop(&parsed);
         cstr_drop(&contents);
         return 1;
     }
@@ -51,6 +51,6 @@ int main(int argc, const char** argv) {
 
     cstr_drop(&contents);
     ErrorCtx_drop(&errs);
-    Scope_drop(&parsed);
+    Block_drop(&parsed);
     return 0;
 }
