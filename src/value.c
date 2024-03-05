@@ -33,7 +33,7 @@ Value Value_clone(Value self) {
 }
 
 static double string_to_num(const char* start) {
-    if (*start) {
+    if (!*start) {
         return 0;
     }
     char* end = (char*)start;

@@ -770,7 +770,7 @@ static bool parse_for_loop(const char** src, LoopStatement* ret, ErrorCtx* errs)
     hop_whitespace(src);
     Statement initialization = Statement_noop;
     Expr condition = Expr_literal_new(Value_boolean(true));
-    Statement afterthought = Statement_noop;
+    Expr afterthought = Expr_default;
     Statement body = Statement_noop;
     parse_statement(src, &initialization, errs); // It's fine if it doesn't parse anything
     hop_whitespace(src);
@@ -786,7 +786,7 @@ static bool parse_for_loop(const char** src, LoopStatement* ret, ErrorCtx* errs)
         (*src)++;
     }
     hop_whitespace(src);
-    parse_statement(src, &afterthought, errs); // It's fine if it doesn't parse anything
+    parse_expr(src, &afterthought, errs); // It's fine if it doesn't parse anything
     hop_whitespace(src);
     if (!hop_start(src, ")")) {
         ErrorCtx_parse_error(errs, *src, "expected ')' at end of for header");
@@ -829,7 +829,7 @@ static bool parse_while_loop(const char** src, LoopStatement* ret, ErrorCtx* err
     *ret = (LoopStatement) {
         .initialization = Statement_noop,
         .condition = condition,
-        .afterthought = Statement_noop,
+        .afterthought = Expr_default,
         .body = body,
     };
     return true;

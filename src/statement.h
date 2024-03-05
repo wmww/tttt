@@ -114,6 +114,6 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs);
 typedef struct LoopStatement {
     Statement initialization; // initialization happens only once, but in the same stack frame as the body
     Expr condition;
-    Statement afterthought;
+    Expr afterthought;
     Statement body;
 } LoopStatement;

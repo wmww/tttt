@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "value.h"
 #include "result.h"
+#include "math.h"
 
 typedef arc_Object StackFrame;
 #define StackFrame_drop arc_Object_drop
@@ -29,6 +30,7 @@ ObjectValue* Engine_get_locals(Engine* self) {
 static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr);
 static Result MUST_USE Engine_run_block(Engine* self, Block const* block);
 static Result MUST_USE Engine_run_block_in_stack_frame(Engine* self, Block const* block);
+static Result MUST_USE Engine_run_statement(Engine* self, Statement const* statement);
 
 static bool contains_only_digits(const char* str) {
     if (!*str) {
@@ -309,19 +311,59 @@ static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
     UNREACHABLE;
 }
 
+static Result MUST_USE Engine_run_if_else(Engine* self, IfStatement const* if_else) {
+    int statement_size = vec_Statement_size(&if_else->statements);
+    int cond_size = vec_Expr_size(&if_else->conditions);
+    for (int i = 0; i < statement_size; i++) {
+        bool cond_true = true;
+        if (i < cond_size) {
+            TRY_THROW(condition, Engine_eval_expr(self, vec_Expr_at(&if_else->conditions, i)));
+            cond_true = Value_to_boolean(&condition);
+            Value_drop(&condition);
+        }
+        if (cond_true) {
+            TRY_THROW_DROP(Engine_run_statement(
+                self,
+                vec_Statement_at(&if_else->statements, i)
+            ));
+            break;
+        }
+    }
+    return Result_ok_undefined;
+}
+
+static Result MUST_USE Engine_run_loop(Engine* self, LoopStatement const* loop) {
+    TRY_THROW_DROP(Engine_run_statement(self, &loop->initialization));
+    while (true) {
+        TRY_THROW(keep_going, Engine_eval_expr(self, &loop->condition));
+        if (!Value_to_boolean(&keep_going)) {
+            break;
+        }
+        TRY_CATCH_DROP(Engine_run_statement(self, &loop->body), res_err, {
+            if (res_err.tag == RESULT_BREAK) {
+                return Result_ok_undefined;
+            } else {
+                return res_err;
+            }
+        });
+        TRY_THROW_DROP(Engine_eval_expr(self, &loop->afterthought));
+    }
+    return Result_ok_undefined;
+}
+
 // Only return statements return ok with a value, caller has to check statement tag to notice undefined returns
 static Result MUST_USE Engine_run_statement(Engine* self, Statement const* statement) {
     switch (statement->tag) {
-        case STATEMENT_NOOP: break;
-        case STATEMENT_INTERFACE: break;
+        case STATEMENT_NOOP: return Result_ok_undefined;
+        case STATEMENT_INTERFACE: return Result_ok_undefined;
 
-        case STATEMENT_BLOCK: {
+        case STATEMENT_BLOCK:
             TRY_THROW_DROP(Engine_run_block_in_stack_frame(self, &statement->block));
-        }   break;
+            return Result_ok_undefined;
 
-        case STATEMENT_EXPR: {
+        case STATEMENT_EXPR:
             TRY_THROW_DROP(Engine_eval_expr(self, &statement->expr));
-        }   break;
+            return Result_ok_undefined;
 
         case STATEMENT_RETURN: {
             TRY_THROW(value, Engine_eval_expr(self, &statement->return_expr));
@@ -334,7 +376,8 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
             cstr name = cstr_clone(statement->var_init.data.name);
             ObjectValue* locals = Engine_get_locals(self);
             ObjectValue_set(locals, name, value);
-        }   break;
+            return Result_ok_undefined;
+        }
 
         case STATEMENT_FUNCTION: {
             cstr name = cstr_clone(statement->function.name);
@@ -344,63 +387,21 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
             );
             ObjectValue* locals = Engine_get_locals(self);
             ObjectValue_set(locals, name, value);
-        }   break;
+            return Result_ok_undefined;
+        }
 
-        case STATEMENT_IF_ELSE: {
-            int statement_size = vec_Statement_size(&statement->if_else.statements);
-            int cond_size = vec_Expr_size(&statement->if_else.conditions);
-            if (statement_size != cond_size && statement_size != cond_size + 1) {
-                PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
-            }
-            for (int i = 0; i < statement_size; i++) {
-                bool cond_true = true;
-                if (i < cond_size) {
-                    TRY_THROW(condition, Engine_eval_expr(self, vec_Expr_at(&statement->if_else.conditions, i)));
-                    cond_true = Value_to_boolean(&condition);
-                    Value_drop(&condition);
-                }
-                if (cond_true) {
-                    TRY_THROW_DROP(Engine_run_statement(
-                        self,
-                        vec_Statement_at(&statement->if_else.statements, i)
-                    ));
-                    break;
-                }
-            }
-        }   break;
+        case STATEMENT_IF_ELSE: return Engine_run_if_else(self, &statement->if_else);
 
         case STATEMENT_LOOP: {
             vec_StackFrame_push(&self->stack, StackFrame_new());
-            TRY_CATCH_DROP(Engine_run_statement(self, &statement->loop->initialization), res_err, {
-                vec_StackFrame_pop(&self->stack);
-                return res_err;
-            });
-            while (true) {
-                TRY_CATCH(keep_going, Engine_eval_expr(self, &statement->loop->condition), res_err, {
-                    vec_StackFrame_pop(&self->stack);
-                    return res_err;
-                });
-                if (!Value_to_boolean(&keep_going)) {
-                    break;
-                }
-                TRY_CATCH_DROP(Engine_run_statement(self, &statement->loop->body), res_err, {
-                    vec_StackFrame_pop(&self->stack);
-                    if (res_err.tag == RESULT_BREAK) {
-                        return Result_ok_undefined;
-                    } else {
-                        return res_err;
-                    }
-                });
-                TRY_CATCH_DROP(Engine_run_statement(self, &statement->loop->afterthought), res_err, {
-                    vec_StackFrame_pop(&self->stack);
-                    return res_err;
-                });
-            }
-        }   break;
+            Result res = Engine_run_loop(self, statement->loop);
+            vec_StackFrame_pop(&self->stack);
+            return res;
+        }
 
         case STATEMENT_BREAK: return Result_break();
     }
-    return Result_ok_undefined;
+    UNREACHABLE;
 }
 
 static Result MUST_USE Engine_run_block(Engine* self, Block const* block) {
@@ -465,6 +466,7 @@ void eval_program(Block const* scope) {
                 {"String", Value_native_func(string_impl, nullptr, nullptr)},
                 {"Number", Value_native_func(number_impl, nullptr, nullptr)},
                 {"Boolean", Value_native_func(boolean_impl, nullptr, nullptr)},
+                {"NaN", Value_number(NAN)},
             }).object,
         }),
     };
@@ -476,5 +478,11 @@ void eval_program(Block const* scope) {
         cstr_drop(&err);
     }
     Result_drop(&res);
+    if (vec_StackFrame_size(&engine.stack) != 1) {
+        PANIC(
+            "Stack mismanaged. Ended up with %ld stack frames, should have been 1\n",
+            vec_StackFrame_size(&engine.stack)
+        );
+    }
     Engine_drop(&engine);
 }

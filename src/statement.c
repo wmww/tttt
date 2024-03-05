@@ -130,7 +130,7 @@ void Statement_drop(Statement* self) {
         case STATEMENT_LOOP:
             Statement_drop(&self->loop->initialization);
             Expr_drop(&self->loop->condition);
-            Statement_drop(&self->loop->afterthought);
+            Expr_drop(&self->loop->afterthought);
             Statement_drop(&self->loop->body);
             free(self->loop);
             break;
@@ -184,10 +184,7 @@ void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
             cstr_append_sv(target, c_sv(" "));
             cstr_append_expr_debug(target, &self->loop->condition, indent);
             cstr_append_sv(target, c_sv("; "));
-            cstr_append_statement_debug(target, &self->loop->afterthought, indent);
-            if (cstr_str(target)[cstr_size(target) - 1] != ';') {
-                cstr_append_sv(target, c_sv(";"));
-            }
+            cstr_append_expr_debug(target, &self->loop->afterthought, indent);
             cstr_append_sv(target, c_sv(") "));
             cstr_append_statement_debug(target, &self->loop->body, indent);
             break;
@@ -248,7 +245,8 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
             Statement_typecheck(&self->loop->initialization, errs);
             Type t = Expr_get_type_and_typecheck(&self->loop->condition, errs);
             Type_drop(&t);
-            Statement_typecheck(&self->loop->afterthought, errs);
+            t = Expr_get_type_and_typecheck(&self->loop->afterthought, errs);
+            Type_drop(&t);
             Statement_typecheck(&self->loop->body, errs);
             break;
         }
