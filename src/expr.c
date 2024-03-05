@@ -1,6 +1,8 @@
 #include "expr.h"
 #include "type.h"
 #include "error.h"
+#include "name_stack.h"
+#include "callable_type.h"
 
 const Expr Expr_default = { .tag = EXPR_LITERAL, .literal = { .tag = VALUE_UNDEFINED } };
 
@@ -62,7 +64,7 @@ void Expr_drop(Expr* self) {
             break;
 
         case EXPR_IDENTIFIER:
-            cstr_drop(&self->identifier);
+            cstr_drop(&self->identifier.name);
             break;
 
         case EXPR_BINARY_OP:
@@ -100,7 +102,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_s(target, self->identifier);
+            cstr_append_s(target, self->identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
 
@@ -190,14 +192,63 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
     }
 }
 
+void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
+    switch (self->tag) {
+        case EXPR_LITERAL:
+            break;
+
+        case EXPR_IDENTIFIER:
+            c_foreach_rev(i, vec_NameStackFrame, names->stack) {
+                hmap_str_CTypePtr_value const* result = hmap_str_CTypePtr_get(
+                    &i.ref->values,
+                    cstr_sv(&self->identifier.name)
+                );
+                if (result) {
+                    self->identifier.type = result->second;
+                }
+            }
+            break;
+
+        case EXPR_BINARY_OP:
+            Expr_resolve_names(&self->binary_op->left, names, errs);
+            Expr_resolve_names(&self->binary_op->right, names, errs);
+            break;
+
+        case EXPR_UNARY_OP:
+            Expr_resolve_names(&self->unary_op->expr, names, errs);
+            break;
+
+        case EXPR_DOT_PROP:
+            Expr_resolve_names(&self->dot_prop->expr, names, errs);
+            // TODO: resolve name of prop
+            break;
+
+        case EXPR_CALL:
+            Expr_resolve_names(&self->call->callable, names, errs);
+            c_foreach(i, vec_Expr, self->call->args) {
+                Expr_resolve_names(i.ref, names, errs);
+            }
+            break;
+
+        case EXPR_OBJECT:
+            c_foreach(i, vec_ObjectExprItem, self->object) {
+                Expr_resolve_names(&i.ref->value, names, errs);
+            }
+            break;
+    }
+}
+
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
     switch (self->tag) {
         case EXPR_LITERAL:
             return Type_value(Value_clone(self->literal));
 
         case EXPR_IDENTIFIER:
-            // TODO
-            return Type_any;
+            if (self->identifier.type) {
+                return Type_clone(*self->identifier.type);
+            } else {
+                return Type_any;
+            }
 
         case EXPR_BINARY_OP: {
             BinaryOpExpr* bin = self->binary_op;
@@ -273,8 +324,34 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
         }
 
         case EXPR_CALL: {
-            // TODO: add typechecking
-            return Type_any;
+            Type ret = Type_any;
+            Type callable = Expr_get_type_and_typecheck(&self->call->callable, errs);
+            long given_arg_count = vec_Expr_size(&self->call->args);
+            long callable_arg_count = 0;
+            if (callable.tag == TYPE_CALLABLE) {
+                callable_arg_count = vec_CallableTypeArg_size(&callable.callable->args);
+                // TODO: handle optional and variadic arguments
+                if (callable_arg_count != given_arg_count) {
+                    ErrorCtx_type_error(errs, "wrong number of arguments");
+                }
+                ret = Type_clone(callable.callable->ret);
+            } else if (callable.tag != TYPE_ANY) {
+                ErrorCtx_type_error(errs, "value is not callable");
+            }
+            for (long i = 0; i < given_arg_count; i++) {
+                Type arg_type = Expr_get_type_and_typecheck(
+                    vec_Expr_at_mut(&self->call->args, i),
+                    errs
+                );
+                if (i < callable_arg_count) {
+                    if (!Type_extends(&arg_type, &vec_CallableTypeArg_at(&callable.callable->args, i)->type)) {
+                        ErrorCtx_type_error(errs, "bad argument type");
+                    }
+                }
+                Type_drop(&arg_type);
+            }
+            Type_drop(&callable);
+            return ret;
         }
 
         case EXPR_OBJECT: {

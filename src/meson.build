@@ -13,6 +13,7 @@ src_files = files(
     'statement.c',
     'parser.c',
     'error.c',
+    'name_stack.c',
     'filesystem.c',
     'engine.c',
 )

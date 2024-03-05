@@ -6,6 +6,8 @@
 
 typedef struct TernaryType TernaryType;
 typedef struct CallableType CallableType;
+typedef struct ErrorCtx ErrorCtx;
+typedef struct NameStack NameStack;
 
 typedef struct Type {
     enum {
@@ -22,7 +24,10 @@ typedef struct Type {
     } tag;
     union {
         Value value;
-        cstr identifier;
+        struct {
+            cstr name;
+            Type const* type;
+        } identifier;
         Interface interface;
         CallableType* callable;
         TernaryType* ternary;
@@ -41,10 +46,11 @@ static inline Type Type_value(Value value) {
         .value = value,
     };
 }
-static inline Type Type_identifier(cstr identifier) {
+static inline Type Type_identifier(cstr identifier, Type const* type) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
-        .identifier = identifier,
+        .identifier.name = identifier,
+        .identifier.type = type,
     };
 }
 static inline Type Type_callable(CallableType* callable) {
@@ -71,4 +77,5 @@ void cstr_append_type_debug(cstr* target, Type* self, int indent);
 Type Type_clone(Type self);
 Type Type_move(Type* self);
 
+void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs);
 bool Type_extends(Type const* sub, Type const* super);

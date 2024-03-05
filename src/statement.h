@@ -13,15 +13,14 @@ typedef struct LoopStatement LoopStatement;
 
 typedef struct NameInitData {
     cstr name;
-    bool explicit_type;
+    bool type_explicit;
     Type type;
-    bool explicit_value;
+    bool value_explicit;
     Expr value;
 } NameInitData;
 
 void NameInitData_drop(NameInitData* self);
 void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent);
-Type NameInitData_get_type_and_typecheck(NameInitData* self, ErrorCtx* errs);
 
 // Variable initialization
 
@@ -36,11 +35,14 @@ typedef struct VarInitStatement {
 
 void VarInitStatement_drop(VarInitStatement* self);
 void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent);
+void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs);
 
 // Function declaration
 
 typedef struct FunctionStatementArg {
-    NameInitData data;
+    cstr name;
+    bool value_explicit;
+    Expr value;
 } FunctionStatementArg;
 
 void FunctionStatementArg_drop(FunctionStatementArg* self);
@@ -52,16 +54,25 @@ void FunctionStatementArg_drop(FunctionStatementArg* self);
 
 typedef struct FunctionStatement {
     cstr name;
-    vec_CallableTypeGeneric generics;
+    Type type;
     vec_FunctionStatementArg args;
-    bool has_return_type;
-    Type return_type;
     Block body;
 } FunctionStatement;
 
 void FunctionStatement_drop(FunctionStatement* self);
+long FunctionStatement_arg_count(FunctionStatement* self);
 void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent);
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs);
+
+// Interface statements
+
+typedef struct InterfaceStatement {
+    cstr name;
+    Type type;
+} InterfaceStatement;
+
+void InterfaceStatement_drop(InterfaceStatement* self);
+void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* self, int indent);
 
 // If statements
 
@@ -76,23 +87,22 @@ typedef struct IfStatement {
 typedef struct Statement {
     enum {
         STATEMENT_NOOP,
-        STATEMENT_INTERFACE,
         STATEMENT_BLOCK,
         STATEMENT_EXPR,
-        STATEMENT_RETURN,
+        STATEMENT_RETURN, // also uses expr union member
         STATEMENT_VAR_INIT,
         STATEMENT_FUNCTION,
+        STATEMENT_INTERFACE,
         STATEMENT_IF_ELSE,
         STATEMENT_LOOP,
         STATEMENT_BREAK,
     } tag;
     union {
-        NamedInterface interface;
         Block block;
         Expr expr;
-        Expr return_expr;
         VarInitStatement var_init;
         FunctionStatement function;
+        InterfaceStatement interface;
         IfStatement if_else;
         LoopStatement* loop;
     };
@@ -102,6 +112,8 @@ typedef struct Statement {
 
 void Statement_drop(Statement* self);
 void cstr_append_statement_debug(cstr* target, Statement* self, int indent);
+void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs);
+void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs);
 void Statement_typecheck(Statement* self, ErrorCtx* errs);
 
 #define i_key_class Statement

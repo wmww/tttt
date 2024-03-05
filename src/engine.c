@@ -75,7 +75,7 @@ static Result MUST_USE Engine_assign_identifier(Engine* self, csview identifier,
 // Returns Result_ok_undefined on success, not the value. Consumes value.
 static Result MUST_USE Engine_assign(Engine* self, Expr const* target, Value value) {
     switch (target->tag) {
-        case EXPR_IDENTIFIER: return Engine_assign_identifier(self, cstr_sv(&target->identifier), value);
+        case EXPR_IDENTIFIER: return Engine_assign_identifier(self, cstr_sv(&target->identifier.name), value);
 
         case EXPR_DOT_PROP: {
             TRY_THROW(target_value, Engine_eval_expr(self, &target->dot_prop->expr));
@@ -103,7 +103,7 @@ static Result MUST_USE Engine_assign(Engine* self, Expr const* target, Value val
                     return Result_ok_undefined;
 
                 case VALUE_OBJECT:
-                    ObjectValue_set(target_value.object.get, cstr_clone(target->identifier), value);
+                    ObjectValue_set(target_value.object.get, cstr_clone(target->identifier.name), value);
                     return Result_ok_undefined;
             }
             UNREACHABLE;
@@ -225,14 +225,14 @@ static Result MUST_USE Engine_eval_js_func(Engine* self, JsFuncValue const* func
     ObjectValue* locals = Engine_get_locals(self);
     for (int i = 0; i < defined_arg_num; i++) {
         FunctionStatementArg const* defined = vec_FunctionStatementArg_at(func->args, i);
-        cstr name = cstr_clone(defined->data.name);
+        cstr name = cstr_clone(defined->name);
         Value value = Value_undefined;
         if (i < given_arg_num) {
             // TODO: don't clone all args
             value = Value_clone(*vec_Value_at(args, i));
         }
-        if (value.tag == VALUE_UNDEFINED && defined->data.explicit_value) {
-            TRY_CATCH(default_value, Engine_eval_expr(self, &defined->data.value), res_err, {
+        if (value.tag == VALUE_UNDEFINED && defined->value_explicit) {
+            TRY_CATCH(default_value, Engine_eval_expr(self, &defined->value), res_err, {
                 cstr_drop(&name);
                 vec_StackFrame_pop(&self->stack);
                 return res_err;
@@ -301,7 +301,7 @@ static Result MUST_USE Engine_eval_object(Engine* self, ObjectExpr const* obj_ex
 static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
     switch (expr->tag) {
         case EXPR_LITERAL: return Result_ok(Value_clone(expr->literal));
-        case EXPR_IDENTIFIER: return Engine_eval_identifier(self, cstr_sv(&expr->identifier));
+        case EXPR_IDENTIFIER: return Engine_eval_identifier(self, cstr_sv(&expr->identifier.name));
         case EXPR_BINARY_OP: return Engine_eval_binary_op(self, expr->binary_op);
         case EXPR_UNARY_OP: return Engine_eval_unary_op(self, expr->unary_op);
         case EXPR_DOT_PROP: return Engine_eval_dot_prop(self, expr->dot_prop);
@@ -366,7 +366,7 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
             return Result_ok_undefined;
 
         case STATEMENT_RETURN: {
-            TRY_THROW(value, Engine_eval_expr(self, &statement->return_expr));
+            TRY_THROW(value, Engine_eval_expr(self, &statement->expr));
             return Result_return(value);
         }
 

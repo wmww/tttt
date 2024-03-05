@@ -251,8 +251,9 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
         type = Type_string;
     } else if (parse_type_compat_literal(src, &type.value, errs)) {
         type.tag = TYPE_VALUE;
-    } else if (parse_identifier(src, &type.identifier)) {
+    } else if (parse_identifier(src, &type.identifier.name)) {
         type.tag = TYPE_IDENTIFIER;
+        type.identifier.type = nullptr;
     } else if (parse_interface(src, &type.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
@@ -311,7 +312,7 @@ static bool parse_interface(const char** src, Interface* ret, ErrorCtx* errs) {
     return true;
 }
 
-static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCtx* errs) {
+static bool parse_named_interface(const char** src, InterfaceStatement* ret, ErrorCtx* errs) {
     const char* s = *src;
     if (!hop_start_and_required_whitespace(&s, "interface")) {
         return false;
@@ -329,9 +330,9 @@ static bool parse_named_interface(const char** src, NamedInterface* ret, ErrorCt
         return false;
     }
     ErrorCtx_append_consume(errs, local_errs);
-    *ret = (NamedInterface) {
+    *ret = (InterfaceStatement) {
         .name = name,
-        .content = interface,
+        .type = Type_interface(interface),
     };
     *src = s;
     return true;
@@ -653,27 +654,27 @@ static bool parse_name_init(const char** src, NameInitData* ret, ErrorCtx* errs)
     }
     hop_whitespace(&s);
     Type type = Type_any;
-    bool explicit_type = false;
+    bool type_explicit = false;
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
         if (parse_type(&s, &type, errs)) {
-            explicit_type = true;
+            type_explicit = true;
         }
         hop_whitespace(&s);
     }
     Expr value = Expr_default;
-    bool explicit_value = false;
+    bool value_explicit = false;
     if (hop_start(&s, "=")) {
         hop_whitespace(&s);
         if (parse_expr(&s, &value, errs)) {
-            explicit_value = true;
+            value_explicit = true;
         }
     }
     *ret = (NameInitData) {
         .name = name,
-        .explicit_type = explicit_type,
+        .type_explicit = type_explicit,
         .type = type,
-        .explicit_value = explicit_value,
+        .value_explicit = value_explicit,
         .value = value,
     };
     *src = s;
@@ -846,8 +847,18 @@ static bool parse_return(const char** src, Expr* ret, ErrorCtx* errs) {
     return true;
 }
 
+typedef struct ParseFunctionCtx {
+    CallableType type;
+    FunctionStatement statement;
+} ParseFunctionCtx;
+
+static void ParseFunctionCtx_drop(ParseFunctionCtx* self) {
+    CallableType_drop(&self->type);
+    FunctionStatement_drop(&self->statement);
+}
+
 static bool parse_function_generic(const char** src, void* data, ErrorCtx* errs) {
-    FunctionStatement* function = data;
+    ParseFunctionCtx* ctx = data;
 
     cstr name = cstr_null;
     if (!parse_identifier(src, &name)) {
@@ -863,66 +874,89 @@ static bool parse_function_generic(const char** src, void* data, ErrorCtx* errs)
     }
 
     Type fallback = Type_any;
-    bool explicit_fallback = false;
+    bool fallback_explicit = false;
     if (hop_start(src, "=")) {
         hop_whitespace(src);
         if (parse_type(src, &fallback, errs)) {
-            explicit_fallback = true;
+            fallback_explicit = true;
         }
     }
 
-    vec_CallableTypeGeneric_push(&function->generics, (CallableTypeGeneric){
+    vec_CallableTypeGeneric_push(&ctx->type.generics, (CallableTypeGeneric){
         .name = name,
         .extends = extends,
-        .explicit_fallback = explicit_fallback,
+        .fallback_explicit = fallback_explicit,
         .fallback = fallback,
     });
     return true;
 }
 
 static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
-    FunctionStatement* function = data;
-    FunctionStatementArg arg = {0};
-    if (!parse_name_init(src, &arg.data, errs)) {
+    ParseFunctionCtx* ctx = data;
+
+    NameInitData name_init = {0};
+    if (!parse_name_init(src, &name_init, errs)) {
         return false;
     }
-    vec_FunctionStatementArg_push(&function->args, arg);
+
+    vec_FunctionStatementArg_push(&ctx->statement.args, (FunctionStatementArg){
+        .name = cstr_clone(name_init.name),
+        .value_explicit = name_init.value_explicit,
+        .value = name_init.value,
+    });
+
+    vec_CallableTypeArg_push(&ctx->type.args, (CallableTypeArg){
+        .name = name_init.name,
+        .type_explicit = name_init.type_explicit,
+        .type = name_init.type,
+    });
+
     return true;
 }
 
 static bool parse_function(const char** src, FunctionStatement* ret, ErrorCtx* errs) {
     const char* s = *src;
     ErrorCtx local_errs = {0};
+
     if (!hop_start_and_required_whitespace(&s, "function")) {
         return false;
     }
-    if (!parse_identifier(&s, &ret->name)) {
+
+    ParseFunctionCtx ctx = {0};
+
+    if (!parse_identifier(&s, &ctx.statement.name)) {
         ErrorCtx_parse_error(&local_errs, s, "missing function name");
     }
     hop_whitespace(&s);
-    if (parse_sequence(&s, "<", SEQUENCE_SEP_COMMA, '>', parse_function_generic, ret, &local_errs)) {
+
+    if (parse_sequence(&s, "<", SEQUENCE_SEP_COMMA, '>', parse_function_generic, &ctx, &local_errs)) {
         hop_whitespace(&s);
     }
-    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret, &local_errs)) {
+
+    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, &ctx, &local_errs)) {
         ErrorCtx_drop(&local_errs);
-        FunctionStatement_drop(ret);
-        *ret = (FunctionStatement){0};
+        ParseFunctionCtx_drop(&ctx);
         return false;
     }
     hop_whitespace(&s);
+
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
-        if (parse_type(&s, &ret->return_type, &local_errs)) {
-            ret->has_return_type = true;
+        if (parse_type(&s, &ctx.type.ret, &local_errs)) {
+            ctx.type.ret_explicit = true;
         } else {
             ErrorCtx_parse_error(&local_errs, s, "invalid return type");
         }
     }
     hop_whitespace(&s);
-    if (!parse_block(&s, &ret->body, &local_errs)) {
+
+    if (!parse_block(&s, &ctx.statement.body, &local_errs)) {
         ErrorCtx_parse_error(&local_errs, s, "invalid function body");
     }
+
     ErrorCtx_append_consume(errs, local_errs);
+    ctx.statement.type = Type_callable(c_new(CallableType, ctx.type));
+    *ret = ctx.statement;
     *src = s;
     return true;
 }
@@ -958,7 +992,7 @@ static bool parse_statement(const char** src, Statement* ret, ErrorCtx* errs) {
     } else if (hop_start_if_ends_on_word_break(src, "break")) {
         ret->tag = STATEMENT_BREAK;
         return true;
-    } else if (parse_return(src, &ret->return_expr, errs)) {
+    } else if (parse_return(src, &ret->expr, errs)) {
         ret->tag = STATEMENT_RETURN;
         return true;
     } else if (parse_function(src, &ret->function, errs)) {

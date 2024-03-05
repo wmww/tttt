@@ -10,6 +10,7 @@ typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_ObjectExprItem ObjectExpr;
 typedef struct ErrorCtx ErrorCtx;
+typedef struct NameStack NameStack;
 
 forward_vec(vec_ObjectExprItem, ObjectExprItem);
 
@@ -25,7 +26,10 @@ typedef struct Expr {
     } tag;
     union {
         Value literal;
-        cstr identifier;
+        struct {
+            cstr name;
+            Type const* type;
+        } identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
         DotPropExpr* dot_prop;
@@ -42,7 +46,7 @@ static inline Expr Expr_literal_new(Value value) {
 }
 
 static inline Expr Expr_indentifier_new(cstr identifier) {
-    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier = identifier };
+    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier.name = identifier };
 }
 
 static inline Expr Expr_binary_op_new(BinaryOpExpr* op) {
@@ -67,6 +71,7 @@ static inline Expr Expr_object_new(ObjectExpr object) {
 
 void Expr_drop(Expr* self);
 void cstr_append_expr_debug(cstr* target, Expr const* self, int indent);
+void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs);
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
 #define i_key_class Expr

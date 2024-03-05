@@ -1,5 +1,6 @@
 #include "statement.h"
 #include "error.h"
+#include "name_stack.h"
 
 void NameInitData_drop(NameInitData* self) {
     cstr_drop(&self->name);
@@ -11,30 +12,13 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int inde
     cstr_append_sv(target, c_sv(CLR_NAME));
     cstr_append_s(target, self->name);
     cstr_append_sv(target, c_sv(CLR0));
-    if (self->explicit_type) {
+    if (self->type_explicit) {
         cstr_append_sv(target, c_sv(": "));
         cstr_append_type_debug(target, &self->type, indent);
     }
-    if (self->explicit_value) {
+    if (self->value_explicit) {
         cstr_append_sv(target, c_sv(" = "));
         cstr_append_expr_debug(target, &self->value, indent);
-    }
-}
-
-Type NameInitData_get_type_and_typecheck(NameInitData* self, ErrorCtx* errs) {
-    if (self->explicit_value) {
-        Type expr_type = Expr_get_type_and_typecheck(&self->value, errs);
-        if (self->explicit_type) {
-            if (!Type_extends(&expr_type, &self->type)) {
-                ErrorCtx_type_error(errs, "invalid variable initialization type");
-            }
-            Type_drop(&expr_type);
-            return Type_clone(self->type);
-        } else {
-            return expr_type;
-        }
-    } else {
-        return Type_any;
     }
 }
 
@@ -52,46 +36,100 @@ void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, 
     cstr_append_sv(target, c_sv(";"));
 }
 
+void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
+    if (self->data.value_explicit) {
+        Type expr_type = Expr_get_type_and_typecheck(&self->data.value, errs);
+        if (self->data.type_explicit && !Type_extends(&expr_type, &self->data.type)) {
+            ErrorCtx_type_error(errs, "invalid variable initialization type");
+        }
+        Type_drop(&expr_type);
+    }
+}
+
 void FunctionStatementArg_drop(FunctionStatementArg* self) {
-    NameInitData_drop(&self->data);
+    cstr_drop(&self->name);
+    Expr_drop(&self->value);
 }
 
 void FunctionStatement_drop(FunctionStatement* self) {
     cstr_drop(&self->name);
-    vec_CallableTypeGeneric_drop(&self->generics);
+    Type_drop(&self->type);
     vec_FunctionStatementArg_drop(&self->args);
-    Type_drop(&self->return_type);
     Block_drop(&self->body);
 }
 
+long FunctionStatement_arg_count(FunctionStatement* self) {
+    if (self->type.tag != TYPE_CALLABLE) {
+        PANIC("function type is not callable");
+    }
+    int arg_count = vec_CallableTypeArg_size(&self->type.callable->args);
+    if (vec_FunctionStatementArg_size(&self->args) != arg_count) {
+        PANIC("function type has different number of args than function");
+    }
+    return arg_count;
+}
+
 void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent) {
+    int arg_count = FunctionStatement_arg_count(self);
     cstr_append_sv(target, c_sv("function " CLR_NAME));
     cstr_append_s(target, self->name);
     cstr_append_sv(target, c_sv(CLR0));
-    cstr_append_vec_callable_type_generic(target, &self->generics, indent);
+    cstr_append_vec_callable_type_generic(target, &self->type.callable->generics, indent);
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, vec_FunctionStatementArg, self->args) {
-        cstr_append_name_init_data_debug(target, &i.ref->data, indent);
-        if (i.ref < i.end - 1) {
+    for (int i = 0; i < arg_count; i++) {
+        FunctionStatementArg* statement_arg = vec_FunctionStatementArg_at_mut(&self->args, i);
+        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&self->type.callable->args, i);
+        cstr_append_sv(target, c_sv(CLR_NAME));
+        cstr_append_s(target, statement_arg->name);
+        cstr_append_sv(target, c_sv(CLR0));
+        if (type_arg->type_explicit) {
+            cstr_append_sv(target, c_sv(": "));
+            cstr_append_type_debug(target, &type_arg->type, indent);
+        }
+        if (statement_arg->value_explicit) {
+            cstr_append_sv(target, c_sv(" = "));
+            cstr_append_expr_debug(target, &statement_arg->value, indent);
+        }
+        if (i < arg_count - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
     }
     cstr_append_sv(target, c_sv(")"));
-    if (self->has_return_type) {
+    if (self->type.callable->ret_explicit) {
         cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &self->return_type, indent);
+        cstr_append_type_debug(target, &self->type.callable->ret, indent);
     }
     cstr_append_sv(target, c_sv(" "));
     cstr_append_block_debug(target, &self->body, indent);
 }
 
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs) {
-    c_foreach(i, vec_FunctionStatementArg, self->args) {
-        Type tmp = NameInitData_get_type_and_typecheck(&i.ref->data, errs);
-        Type_drop(&tmp);
+    int arg_count = FunctionStatement_arg_count(self);
+    for (int i = 0; i < arg_count; i++) {
+        FunctionStatementArg* statement_arg = vec_FunctionStatementArg_at_mut(&self->args, i);
+        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&self->type.callable->args, i);
+        if (statement_arg->value_explicit && type_arg->type_explicit) {
+            Type expr_type = Expr_get_type_and_typecheck(&statement_arg->value, errs);
+            if (!Type_extends(&expr_type, &type_arg->type)) {
+                ErrorCtx_type_error(errs, "invalid argument initialization type");
+            }
+            Type_drop(&expr_type);
+        }
     }
     Block_typecheck(&self->body, errs);
     // TODO: check that return is compatible with return type
+}
+
+void InterfaceStatement_drop(InterfaceStatement* self) {
+    cstr_drop(&self->name);
+    Type_drop(&self->type);
+}
+
+void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* self, int indent) {
+    cstr_append_sv(target, c_sv("interface " CLR_NAME));
+    cstr_append_s(target, self->name);
+    cstr_append_sv(target, c_sv(CLR0 " "));
+    cstr_append_type_debug(target, &self->type, indent);
 }
 
 void Statement_drop(Statement* self) {
@@ -99,7 +137,7 @@ void Statement_drop(Statement* self) {
         case STATEMENT_NOOP: break;
 
         case STATEMENT_INTERFACE:
-            NamedInterface_drop(&self->interface);
+            InterfaceStatement_drop(&self->interface);
             break;
 
         case STATEMENT_BLOCK:
@@ -107,11 +145,8 @@ void Statement_drop(Statement* self) {
             break;
 
         case STATEMENT_EXPR:
-            Expr_drop(&self->expr);
-            break;
-
         case STATEMENT_RETURN:
-            Expr_drop(&self->return_expr);
+            Expr_drop(&self->expr);
             break;
 
         case STATEMENT_VAR_INIT:
@@ -142,7 +177,7 @@ void Statement_drop(Statement* self) {
 void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
     switch (self->tag) {
         case STATEMENT_NOOP: cstr_append_sv(target, c_sv(";")); break;
-        case STATEMENT_INTERFACE: cstr_append_named_interface_debug(target, &self->interface, indent); break;
+        case STATEMENT_INTERFACE: cstr_append_interface_statement_debug(target, &self->interface, indent); break;
         case STATEMENT_BLOCK: cstr_append_block_debug(target, &self->block, indent); break;
 
         case STATEMENT_EXPR:
@@ -193,6 +228,106 @@ void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
     }
 }
 
+void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs) {
+    switch (self->tag) {
+        case STATEMENT_VAR_INIT: {
+            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+                &vec_NameStackFrame_back(&names->stack)->values,
+                cstr_clone(self->var_init.data.name),
+                &self->var_init.data.type
+            );
+            if (!result.inserted) {
+                // name is cstr_str(&result.ref->first)
+                ErrorCtx_type_error(errs, "multiple values declared with same name");
+            }
+        }   break;
+
+        case STATEMENT_FUNCTION: {
+            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+                &vec_NameStackFrame_back(&names->stack)->values,
+                cstr_clone(self->function.name),
+                &self->function.type
+            );
+            if (!result.inserted) {
+                // name is cstr_str(&result.ref->first)
+                ErrorCtx_type_error(errs, "multiple values declared with same name");
+            }
+        }   break;
+
+        case STATEMENT_INTERFACE: {
+            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+                &vec_NameStackFrame_back(&names->stack)->types,
+                cstr_clone(self->interface.name),
+                &self->interface.type
+            );
+            if (!result.inserted) {
+                // name is cstr_str(&result.ref->first)
+                ErrorCtx_type_error(errs, "multiple values declared with same name");
+            }
+        }   break;
+
+        case STATEMENT_NOOP:
+        case STATEMENT_BLOCK:
+        case STATEMENT_EXPR:
+        case STATEMENT_RETURN:
+        case STATEMENT_IF_ELSE:
+        case STATEMENT_LOOP:
+        case STATEMENT_BREAK:
+            break;
+    }
+}
+
+void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) {
+    switch (self->tag) {
+        case STATEMENT_BLOCK:
+            Block_resolve_names(&self->block, names, errs);
+            break;
+
+        case STATEMENT_EXPR:
+        case STATEMENT_RETURN:
+            Expr_resolve_names(&self->expr, names, errs);
+            break;
+
+        case STATEMENT_VAR_INIT:
+            Type_resolve_names(&self->var_init.data.type, names, errs);
+            Expr_resolve_names(&self->var_init.data.value, names, errs);
+            break;
+
+        case STATEMENT_FUNCTION:
+            Type_resolve_names(&self->function.type, names, errs);
+            c_foreach(i, vec_FunctionStatementArg, self->function.args) {
+                Expr_resolve_names(&i.ref->value, names, errs);
+            }
+            Block_resolve_names(&self->function.body, names, errs);
+            break;
+
+        case STATEMENT_INTERFACE:
+            Type_resolve_names(&self->interface.type, names, errs);
+            break;
+
+        case STATEMENT_IF_ELSE:
+            c_foreach(i, vec_Expr, self->if_else.conditions) {
+                Expr_resolve_names(i.ref, names, errs);
+            }
+            c_foreach(i, vec_Statement, self->if_else.statements) {
+                Statement_resolve_names(i.ref, names, errs);
+            }
+            break;
+
+        case STATEMENT_LOOP:
+            NameStack_push_frame(names);
+            Statement_resolve_names(&self->loop->initialization, names, errs);
+            Expr_resolve_names(&self->loop->condition, names, errs);
+            Expr_resolve_names(&self->loop->afterthought, names, errs);
+            Statement_resolve_names(&self->loop->body, names, errs);
+            NameStack_pop_frame(names);
+
+        case STATEMENT_NOOP:
+        case STATEMENT_BREAK:
+            break;
+    }
+}
+
 void Statement_typecheck(Statement* self, ErrorCtx* errs) {
     switch (self->tag) {
         case STATEMENT_NOOP: break;
@@ -210,18 +345,16 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
 
         case STATEMENT_RETURN: {
             // TODO: typecheck
-            Type t = Expr_get_type_and_typecheck(&self->return_expr, errs);
+            Type t = Expr_get_type_and_typecheck(&self->expr, errs);
             Type_drop(&t);
         }   break;
 
-        case STATEMENT_VAR_INIT: {
-            Type tmp = NameInitData_get_type_and_typecheck(&self->var_init.data, errs);
-            Type_drop(&tmp);
-        }   break;
+        case STATEMENT_VAR_INIT:
+            VarInitStatement_typecheck(&self->var_init, errs);
+            break;
 
         case STATEMENT_FUNCTION:
-            // TODO: typecheck args? return type?
-            Block_typecheck(&self->function.body, errs);
+            FunctionStatement_typecheck(&self->function, errs);
             break;
 
         case STATEMENT_IF_ELSE: {

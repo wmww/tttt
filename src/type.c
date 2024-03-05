@@ -5,6 +5,7 @@
 #include "callable_type.h"
 #include "extends_conditional.h"
 #include "value.h"
+#include "name_stack.h"
 
 const Type Type_any = { .tag = TYPE_ANY };
 const Type Type_void = { .tag = TYPE_VOID };
@@ -26,7 +27,7 @@ void Type_drop(Type* self) {
             break;
 
         case TYPE_IDENTIFIER:
-            cstr_drop(&self->identifier);
+            cstr_drop(&self->identifier.name);
             break;
 
         case TYPE_CALLABLE:
@@ -56,7 +57,7 @@ void cstr_append_type_debug(cstr* target, Type* self, int indent) {
         case TYPE_VALUE: cstr_append_value_debug(target, &self->value, indent); break;
         case TYPE_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_TYPE));
-            cstr_append_s(target, self->identifier);
+            cstr_append_s(target, self->identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, self->callable, indent); break;
@@ -73,7 +74,7 @@ Type Type_clone(Type self) {
         case TYPE_NUMBER:
         case TYPE_STRING: return self;
         case TYPE_VALUE: return Type_value(Value_clone(self.value));
-        case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.identifier));
+        case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.identifier.name), self.identifier.type);
         case TYPE_CALLABLE: return Type_callable(c_new(CallableType, CallableType_clone(*self.callable)));
         case TYPE_INTERFACE: return Type_interface(Interface_clone(self.interface));
         case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.ternary)));
@@ -87,10 +88,64 @@ Type Type_move(Type* self) {
     return ret;
 }
 
+void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
+    switch (self->tag) {
+        case TYPE_ANY:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_VALUE:
+            break;
+
+        case TYPE_IDENTIFIER:
+            c_foreach_rev(i, vec_NameStackFrame, names->stack) {
+                hmap_str_CTypePtr_value const* result = hmap_str_CTypePtr_get(
+                    &i.ref->types,
+                    cstr_sv(&self->identifier.name)
+                );
+                if (result) {
+                    self->identifier.type = result->second;
+                }
+            }
+            break;
+
+        case TYPE_CALLABLE:
+            // TODO: handle generics
+            c_foreach(i, vec_CallableTypeArg, self->callable->args) {
+                Type_resolve_names(&i.ref->type, names, errs);
+            }
+            Type_resolve_names(&self->callable->ret, names, errs);
+            break;
+
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_InterfaceMember, self->interface.members) {
+                Type_resolve_names(&i.ref->type, names, errs);
+            }
+            break;
+
+        case TYPE_TERNARY:
+            Type_resolve_names(&self->ternary->conditional.maybeSub, names, errs);
+            Type_resolve_names(&self->ternary->conditional.maybeSuper, names, errs);
+            Type_resolve_names(&self->ternary->trueType, names, errs);
+            Type_resolve_names(&self->ternary->falseType, names, errs);
+            break;
+
+    }
+}
+
 bool Type_extends(Type const* sub, Type const* super) {
     switch (sub->tag) {
         case TYPE_ANY: return true;
-        case TYPE_TERNARY: Type_extends(TernaryType_resolve(sub->ternary), super);
+
+        case TYPE_IDENTIFIER:
+            if (sub->identifier.type) {
+                return Type_extends(sub->identifier.type, super);
+            }
+            return true;
+
+        case TYPE_TERNARY: return Type_extends(TernaryType_resolve(sub->ternary), super);
+
         default: break;
     }
 
@@ -115,11 +170,12 @@ bool Type_extends(Type const* sub, Type const* super) {
                 return false;
             }
             return Value_strict_eq(&sub->value, &super->value);
-            break;
 
         case TYPE_IDENTIFIER:
-            PANIC("identifier extends not yet implemented");
-            break;
+            if (super->identifier.type) {
+                return Type_extends(sub, super->identifier.type);
+            }
+            return true;
 
         case TYPE_CALLABLE:
             PANIC("callable extends not yet implemented");

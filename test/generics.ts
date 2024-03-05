@@ -5,4 +5,7 @@ function foo<T>(t: T): T {
 function baz() {
     return foo;
 }
+
 let x = baz()(7);
+x = 'hello'
+
