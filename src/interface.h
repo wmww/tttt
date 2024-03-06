@@ -11,4 +11,4 @@ typedef struct Interface {
 
 void Interface_drop(Interface* self);
 Interface Interface_clone(Interface self);
-void cstr_append_interface_debug(cstr* target, Interface* self, int indent);
+void cstr_append_interface_debug(cstr* target, Interface const* self, int indent);

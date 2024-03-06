@@ -30,3 +30,9 @@ k.y.three;
 
 let l = () => 'arrow func';
 console.log(l());
+
+let m: (a: number) => void;
+let n: <T>(a: T) => void;
+let o: (x: any, y: number) => void = show;
+let p: (a: 0) => string = (a: number) => 'foobar';
+console.log(p(0));

@@ -4,5 +4,3 @@ function foo<T>(t: T): T {
 
 let x = foo(0);
 x = 'hello';
-let a: (a: number) => void;
-let b: <T>(a: T) => void;

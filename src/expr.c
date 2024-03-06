@@ -392,7 +392,7 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
 
         case EXPR_FUNCTION:
             FunctionImpl_typecheck(self->function, errs);
-            return Type_clone(self->function->type.callable->ret);
+            return Type_clone(self->function->type);
 
         case EXPR_OBJECT: {
             // TODO: add typechecking

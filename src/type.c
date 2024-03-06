@@ -53,7 +53,7 @@ void Type_drop(Type* self) {
     self->tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
-void cstr_append_type_debug(cstr* target, Type* self, int indent) {
+void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
     switch (self->tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
         case TYPE_VOID: cstr_append_sv(target, c_sv(CLR_TYPE "void" CLR0)); break;
@@ -195,8 +195,27 @@ bool Type_extends(Type const* sub, Type const* super) {
             break;
 
         case TYPE_CALLABLE:
-            PANIC("callable extends not yet implemented");
-            break;
+            if (sub->tag == TYPE_GENERIC) {
+                PANIC("generic extends not yet implemented");
+            } else if (sub->tag == TYPE_CALLABLE) {
+                long arg_count = vec_CallableTypeArg_size(&super->callable->args);
+                if (vec_CallableTypeArg_size(&sub->callable->args) != arg_count) {
+                    return false;
+                }
+                for (int i = 0; i < arg_count; i++) {
+                    // Order is flipped for arguments
+                    if (!Type_extends(
+                        &vec_CallableTypeArg_at(&super->callable->args, i)->type,
+                        &vec_CallableTypeArg_at(&sub->callable->args, i)->type
+                    )) {
+                        return false;
+                    }
+                }
+                // Order is not flipped for return
+                return Type_extends(&sub->callable->ret, &super->callable->ret);
+            } else {
+                return false;
+            }
 
         case TYPE_INTERFACE:
             PANIC("extends(TYPE_INTERFACE, ...) not implemented");

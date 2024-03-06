@@ -12,7 +12,7 @@ Interface Interface_clone(Interface self) {
     };
 }
 
-void cstr_append_interface_debug(cstr* target, Interface* self, int indent) {
+void cstr_append_interface_debug(cstr* target, Interface const* self, int indent) {
     cstr_append_sv(target, c_sv("{\n"));
     c_foreach(i, vec_InterfaceMember, self->members) {
         APPEND_INDENT(target, indent + 1);
