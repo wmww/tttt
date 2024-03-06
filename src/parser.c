@@ -209,6 +209,44 @@ static bool parse_sequence(
     return true;
 }
 
+static bool parse_generic_decl_item(const char** src, void* data, ErrorCtx* errs) {
+    vec_GenericItem* ret = data;
+
+    cstr name = cstr_null;
+    if (!parse_identifier(src, &name)) {
+        ErrorCtx_parse_error(errs, *src, "missing generic name");
+    }
+    hop_whitespace(src);
+
+    Type extends = Type_any;
+    if (hop_start_if_ends_on_word_break(src, "extends")) {
+        hop_whitespace(src);
+        parse_type(src, &extends, errs);
+        hop_whitespace(src);
+    }
+
+    Type fallback = Type_any;
+    bool fallback_explicit = false;
+    if (hop_start(src, "=")) {
+        hop_whitespace(src);
+        if (parse_type(src, &fallback, errs)) {
+            fallback_explicit = true;
+        }
+    }
+
+    vec_GenericItem_push(ret, (GenericItem){
+        .name = name,
+        .extends = extends,
+        .fallback_explicit = fallback_explicit,
+        .fallback = fallback,
+    });
+    return true;
+}
+
+static bool parse_generic_decl_list(const char** src, vec_GenericItem* ret, ErrorCtx* errs) {
+    return parse_sequence(src, "<", SEQUENCE_SEP_COMMA, '>', parse_generic_decl_item, ret, errs);
+}
+
 static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, ErrorCtx* errs) {
     const char* s = *src;
     Type maybeSuper = {0};
@@ -244,6 +282,70 @@ static bool parse_ternary_type(const char** src, Type first, TernaryType* ret, E
     return true;
 }
 
+static bool parse_callable_type_arg(const char** src, void* data, ErrorCtx* errs) {
+    CallableType* ret = data;
+
+    NameInitData name_init = {0};
+    if (!parse_name_init(src, &name_init, errs)) {
+        return false;
+    }
+
+    if (name_init.value_explicit) {
+        ErrorCtx_parse_error(errs, *src, "initializer not allowed in function type");
+        Expr_drop(&name_init.value);
+    }
+
+    vec_CallableTypeArg_push(&ret->args, (CallableTypeArg){
+        .name = name_init.name,
+        .type_explicit = name_init.type_explicit,
+        .type = name_init.type,
+    });
+
+    return true;
+}
+
+static bool parse_callable_type(const char** src, Type* ret, ErrorCtx* errs) {
+    const char* s = *src;
+    ErrorCtx local_errs = {0};
+    vec_GenericItem generics = {0};
+    CallableType callable = {0};
+
+    if (parse_generic_decl_list(&s, &generics, &local_errs)) {
+        hop_whitespace(&s);
+    }
+
+    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_callable_type_arg, &callable, &local_errs)) {
+        ErrorCtx_drop(&local_errs);
+        vec_GenericItem_drop(&generics);
+        CallableType_drop(&callable);
+        return false;
+    }
+    hop_whitespace(&s);
+
+    if (!hop_start(&s, "=>")) {
+        ErrorCtx_drop(&local_errs);
+        vec_GenericItem_drop(&generics);
+        CallableType_drop(&callable);
+        return false;
+    }
+    hop_whitespace(&s);
+
+    if (!parse_type(&s, &callable.ret, &local_errs)) {
+        ErrorCtx_parse_error(&local_errs, s, "invalid return type");
+    }
+
+    ErrorCtx_append_consume(errs, local_errs);
+    *ret = Type_callable(c_new(CallableType, callable));
+    if (!vec_GenericItem_empty(&generics)) {
+        *ret = Type_generic(c_new(Generic, {
+            .items = generics,
+            .inner = *ret,
+        }));
+    }
+    *src = s;
+    return true;
+}
+
 static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
@@ -261,6 +363,8 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     } else if (parse_identifier(src, &type.identifier.name)) {
         type.tag = TYPE_IDENTIFIER;
         type.identifier.type = nullptr;
+    } else if (parse_callable_type(src, &type, errs)) {
+        // Tag set to either callable or generic
     } else if (parse_interface(src, &type.interface, errs)) {
         type.tag = TYPE_INTERFACE;
     } else {
@@ -345,67 +449,31 @@ static bool parse_named_interface(const char** src, InterfaceStatement* ret, Err
     return true;
 }
 
-typedef struct ParseFunctionCtx {
-    vec_GenericItem generics;
-    CallableType callable;
-    FunctionImpl function;
-} ParseFunctionCtx;
-
-static void ParseFunctionCtx_drop(ParseFunctionCtx* self) {
-    vec_GenericItem_drop(&self->generics);
-    CallableType_drop(&self->callable);
-    FunctionImpl_drop(&self->function);
-}
-
-static bool parse_function_generic(const char** src, void* data, ErrorCtx* errs) {
-    ParseFunctionCtx* ctx = data;
-
-    cstr name = cstr_null;
-    if (!parse_identifier(src, &name)) {
-        ErrorCtx_parse_error(errs, *src, "missing generic name");
+static CallableType* function_impl_callable(FunctionImpl* function) {
+    if (function->type.tag == 0) {
+        function->type = Type_callable(c_new(CallableType, {0}));
+    } else if (function->type.tag != TYPE_CALLABLE) {
+        PANIC("function type is not default or callable");
     }
-    hop_whitespace(src);
-
-    Type extends = Type_any;
-    if (hop_start_if_ends_on_word_break(src, "extends")) {
-        hop_whitespace(src);
-        parse_type(src, &extends, errs);
-        hop_whitespace(src);
-    }
-
-    Type fallback = Type_any;
-    bool fallback_explicit = false;
-    if (hop_start(src, "=")) {
-        hop_whitespace(src);
-        if (parse_type(src, &fallback, errs)) {
-            fallback_explicit = true;
-        }
-    }
-
-    vec_GenericItem_push(&ctx->generics, (GenericItem){
-        .name = name,
-        .extends = extends,
-        .fallback_explicit = fallback_explicit,
-        .fallback = fallback,
-    });
-    return true;
+    return function->type.callable;
 }
 
 static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
-    ParseFunctionCtx* ctx = data;
+    FunctionImpl* ret = data;
+    CallableType* callable = function_impl_callable(ret);
 
     NameInitData name_init = {0};
     if (!parse_name_init(src, &name_init, errs)) {
         return false;
     }
 
-    vec_FunctionArg_push(&ctx->function.args, (FunctionArg){
+    vec_FunctionArg_push(&ret->args, (FunctionArg){
         .name = cstr_clone(name_init.name),
         .value_explicit = name_init.value_explicit,
         .value = name_init.value,
     });
 
-    vec_CallableTypeArg_push(&ctx->callable.args, (CallableTypeArg){
+    vec_CallableTypeArg_push(&callable->args, (CallableTypeArg){
         .name = name_init.name,
         .type_explicit = name_init.type_explicit,
         .type = name_init.type,
@@ -417,23 +485,26 @@ static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
 static bool parse_function(const char** src, bool require_arrow, FunctionImpl* ret, ErrorCtx* errs) {
     const char* s = *src;
     ErrorCtx local_errs = {0};
-    ParseFunctionCtx ctx = {0};
+    vec_GenericItem generics = {0};
+    *ret = (FunctionImpl){0};
 
-    if (parse_sequence(&s, "<", SEQUENCE_SEP_COMMA, '>', parse_function_generic, &ctx, &local_errs)) {
+    if (parse_generic_decl_list(&s, &generics, &local_errs)) {
         hop_whitespace(&s);
     }
 
-    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, &ctx, &local_errs)) {
+    if (!parse_sequence(&s, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret, &local_errs)) {
         ErrorCtx_drop(&local_errs);
-        ParseFunctionCtx_drop(&ctx);
+        vec_GenericItem_drop(&generics);
+        FunctionImpl_drop(ret);
         return false;
     }
     hop_whitespace(&s);
 
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
-        if (parse_type(&s, &ctx.callable.ret, &local_errs)) {
-            ctx.callable.ret_explicit = true;
+        CallableType* callable = function_impl_callable(ret);
+        if (parse_type(&s, &callable->ret, &local_errs)) {
+            callable->ret_explicit = true;
         } else {
             ErrorCtx_parse_error(&local_errs, s, "invalid return type");
         }
@@ -443,17 +514,18 @@ static bool parse_function(const char** src, bool require_arrow, FunctionImpl* r
     if (require_arrow) {
         if (!hop_start(&s, "=>")) {
             ErrorCtx_drop(&local_errs);
-            ParseFunctionCtx_drop(&ctx);
+            vec_GenericItem_drop(&generics);
+            FunctionImpl_drop(ret);
             return false;
         }
         hop_whitespace(&s);
         Expr expr = {0};
-        if (parse_block(&s, &ctx.function.body, &local_errs)) {
+        if (parse_block(&s, &ret->body, &local_errs)) {
         } else if (parse_expr(&s, &expr, &local_errs)) {
-            ctx.function.body = (Block){
+            ret->body = (Block){
                 .statements = vec_Statement_init(),
             };
-            vec_Statement_push(&ctx.function.body.statements, (Statement){
+            vec_Statement_push(&ret->body.statements, (Statement){
                 .tag = STATEMENT_RETURN,
                 .expr = expr,
             });
@@ -461,20 +533,20 @@ static bool parse_function(const char** src, bool require_arrow, FunctionImpl* r
             ErrorCtx_parse_error(&local_errs, s, "invalid arrow function body");
         }
     } else {
-        if (!parse_block(&s, &ctx.function.body, &local_errs)) {
+        if (!parse_block(&s, &ret->body, &local_errs)) {
             ErrorCtx_parse_error(&local_errs, s, "invalid function body");
         }
     }
 
+    function_impl_callable(ret); // Make sure we create a callable type in case we haven't already
+
     ErrorCtx_append_consume(errs, local_errs);
-    ctx.function.type = Type_callable(c_new(CallableType, ctx.callable));
-    if (!vec_GenericItem_empty(&ctx.generics)) {
-        ctx.function.type = Type_generic(c_new(Generic, {
-            .items = ctx.generics,
-            .inner = ctx.function.type,
+    if (!vec_GenericItem_empty(&generics)) {
+        ret->type = Type_generic(c_new(Generic, {
+            .items = generics,
+            .inner = ret->type,
         }));
     }
-    *ret = ctx.function;
     *src = s;
     return true;
 }
