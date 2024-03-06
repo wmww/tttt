@@ -205,8 +205,10 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
                 );
                 if (result) {
                     self->identifier.type = result->second;
+                    return;
                 }
             }
+            ErrorCtx_type_error(errs, "unkown identifier");
             break;
 
         case EXPR_BINARY_OP:
@@ -279,9 +281,23 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                     break;
 
                 case BINARY_OP_SINGLE_EQUAL:
-                    // TODO: typecheck
-                    ret = type_a;
-                    type_a = Type_any;
+                    switch (bin->left.tag) {
+                        case EXPR_IDENTIFIER:
+                            if (bin->left.identifier.type && !Type_extends(bin->left.identifier.type, &type_b)) {
+                                ErrorCtx_type_error(errs, "wrong type in assignment");
+                            }
+                            break;
+
+                        case EXPR_DOT_PROP:
+                            // TODO
+                            break;
+
+                        default:
+                            ErrorCtx_type_error(errs, "invalid left-hand side of assignment");
+                            break;
+                    }
+                    ret = type_b;
+                    type_b = Type_any;
                     break;
 
                 case BINARY_OP_DOUBLE_EQUAL:

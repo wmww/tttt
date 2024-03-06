@@ -41,6 +41,9 @@ void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
         Type expr_type = Expr_get_type_and_typecheck(&self->data.value, errs);
         if (self->data.type_explicit && !Type_extends(&expr_type, &self->data.type)) {
             ErrorCtx_type_error(errs, "invalid variable initialization type");
+        } else {
+            Type_drop(&self->data.type);
+            self->data.type = Type_clone(expr_type);
         }
         Type_drop(&expr_type);
     }
@@ -101,6 +104,55 @@ void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self,
     }
     cstr_append_sv(target, c_sv(" "));
     cstr_append_block_debug(target, &self->body, indent);
+}
+
+void FunctionStatement_resolve_names(FunctionStatement* self, NameStack* names, ErrorCtx* errs) {
+    // First, resolve names in the callable type
+    Type_resolve_names(&self->type, names, errs);
+
+    // Push a stack frame for generics/arguments to live in
+    NameStack_push_frame(names);
+
+    // Loop through generics and add them to the namespace
+    c_foreach(i, vec_CallableTypeGeneric, self->type.callable->generics) {
+        hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+            &vec_NameStackFrame_back(&names->stack)->types,
+            cstr_clone(i.ref->name),
+            &i.ref->extends
+        );
+        if (!result.inserted) {
+            // name is cstr_str(&result.ref->first)
+            ErrorCtx_type_error(errs, "multiple function generics with same name");
+        }
+    }
+
+    // Loop through all arguments and add them to the namespace
+    int arg_count = FunctionStatement_arg_count(self);
+    for (int i = 0; i < arg_count; i++) {
+        FunctionStatementArg* statement_arg = vec_FunctionStatementArg_at_mut(&self->args, i);
+        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&self->type.callable->args, i);
+        hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+            &vec_NameStackFrame_back(&names->stack)->values,
+            cstr_clone(statement_arg->name),
+            &type_arg->type
+        );
+        if (!result.inserted) {
+            // name is cstr_str(&result.ref->first)
+            ErrorCtx_type_error(errs, "multiple function arguments with same name");
+        }
+    }
+
+    // Loop through all arguments and resolve names in the default value expressions
+    c_foreach(i, vec_FunctionStatementArg, self->args) {
+        Expr_resolve_names(&i.ref->value, names, errs);
+    }
+
+    // Resolve names in the function body, don't push a stack frame since the toplevel function body should be the same
+    // namespace as the variables are in.
+    Block_resolve_names_without_stack_frame(&self->body, names, errs);
+
+    // Pop the stack frame we pushed above
+    NameStack_pop_frame(names);
 }
 
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs) {
@@ -294,11 +346,7 @@ void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) 
             break;
 
         case STATEMENT_FUNCTION:
-            Type_resolve_names(&self->function.type, names, errs);
-            c_foreach(i, vec_FunctionStatementArg, self->function.args) {
-                Expr_resolve_names(&i.ref->value, names, errs);
-            }
-            Block_resolve_names(&self->function.body, names, errs);
+            FunctionStatement_resolve_names(&self->function, names, errs);
             break;
 
         case STATEMENT_INTERFACE:

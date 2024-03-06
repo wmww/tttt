@@ -106,16 +106,30 @@ void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
                 );
                 if (result) {
                     self->identifier.type = result->second;
+                    return;
                 }
             }
+            ErrorCtx_type_error(errs, "unkown type");
             break;
 
         case TYPE_CALLABLE:
-            // TODO: handle generics
+            NameStack_push_frame(names);
+            c_foreach(i, vec_CallableTypeGeneric, self->callable->generics) {
+                hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+                    &vec_NameStackFrame_back(&names->stack)->types,
+                    cstr_clone(i.ref->name),
+                    &i.ref->extends
+                );
+                if (!result.inserted) {
+                    // name is cstr_str(&result.ref->first)
+                    ErrorCtx_type_error(errs, "multiple function generics with same name");
+                }
+            }
             c_foreach(i, vec_CallableTypeArg, self->callable->args) {
                 Type_resolve_names(&i.ref->type, names, errs);
             }
             Type_resolve_names(&self->callable->ret, names, errs);
+            NameStack_pop_frame(names);
             break;
 
         case TYPE_INTERFACE:

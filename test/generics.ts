@@ -1,11 +1,6 @@
-function foo<T>(t: T): T {
+function foo<T extends number>(t: T): T {
     return t;
 }
 
-function baz() {
-    return foo;
-}
-
-let x = baz()(7);
+let x = foo(7);
 x = 'hello'
-

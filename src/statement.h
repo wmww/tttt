@@ -62,6 +62,7 @@ typedef struct FunctionStatement {
 void FunctionStatement_drop(FunctionStatement* self);
 long FunctionStatement_arg_count(FunctionStatement* self);
 void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent);
+void FunctionStatement_resolve_names(FunctionStatement* self, NameStack* names, ErrorCtx* errs);
 void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs);
 
 // Interface statements
