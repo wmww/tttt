@@ -1,6 +1,11 @@
-function foo<T extends number>(t: T): T {
+function foo<T>(t: T): T {
     return t;
 }
 
-let x = foo(7);
-x = 'hello'
+type xyz = number;
+let x = (foo) < xyz > (0);
+x = 'hello';
+
+type Baz = <T>(a: T, b: Baz) => void;
+
+function aaa<T>(a: T, b: Baz) {}

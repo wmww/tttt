@@ -220,11 +220,11 @@ static Result MUST_USE Engine_eval_native_func(Engine* self, NativeFuncValue con
 
 static Result MUST_USE Engine_eval_js_func(Engine* self, JsFuncValue const* func, vec_Value const* args) {
     vec_StackFrame_push(&self->stack, StackFrame_new());
-    int defined_arg_num = vec_FunctionStatementArg_size(func->args);
+    int defined_arg_num = vec_FunctionArg_size(func->args);
     int given_arg_num = vec_Value_size(args);
     ObjectValue* locals = Engine_get_locals(self);
     for (int i = 0; i < defined_arg_num; i++) {
-        FunctionStatementArg const* defined = vec_FunctionStatementArg_at(func->args, i);
+        FunctionArg const* defined = vec_FunctionArg_at(func->args, i);
         cstr name = cstr_clone(defined->name);
         Value value = Value_undefined;
         if (i < given_arg_num) {
@@ -306,6 +306,7 @@ static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
         case EXPR_UNARY_OP: return Engine_eval_unary_op(self, expr->unary_op);
         case EXPR_DOT_PROP: return Engine_eval_dot_prop(self, expr->dot_prop);
         case EXPR_CALL: return Engine_eval_call(self, expr->call);
+        case EXPR_FUNCTION: return Result_ok(Value_js_func(&expr->function->args, &expr->function->body));
         case EXPR_OBJECT: return Engine_eval_object(self, &expr->object);
     }
     UNREACHABLE;
@@ -382,8 +383,8 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
         case STATEMENT_FUNCTION: {
             cstr name = cstr_clone(statement->function.name);
             Value value = Value_js_func(
-                &statement->function.args,
-                &statement->function.body
+                &statement->function.impl.args,
+                &statement->function.impl.body
             );
             ObjectValue* locals = Engine_get_locals(self);
             ObjectValue_set(locals, name, value);

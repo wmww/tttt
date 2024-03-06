@@ -3,6 +3,7 @@
 #include "error.h"
 #include "name_stack.h"
 #include "callable_type.h"
+#include "function_impl.h"
 
 const Expr Expr_default = { .tag = EXPR_LITERAL, .literal = { .tag = VALUE_UNDEFINED } };
 
@@ -90,6 +91,11 @@ void Expr_drop(Expr* self) {
             free(self->call);
             break;
 
+        case EXPR_FUNCTION:
+            FunctionImpl_drop(self->function);
+            free(self->function);
+            break;
+
         case EXPR_OBJECT:
             vec_ObjectExprItem_drop(&self->object);
             break;
@@ -167,6 +173,10 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             }
         }   break;
 
+        case EXPR_FUNCTION:
+            cstr_append_function_impl_debug(target, self->function, true, indent);
+            break;
+
         case EXPR_OBJECT: {
             cstr_append_sv(target, c_sv("{"));
             int size = vec_ObjectExprItem_size(&self->object);
@@ -230,6 +240,10 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
             c_foreach(i, vec_Expr, self->call->args) {
                 Expr_resolve_names(i.ref, names, errs);
             }
+            break;
+
+        case EXPR_FUNCTION:
+            FunctionImpl_resolve_names(self->function, names, errs);
             break;
 
         case EXPR_OBJECT:
@@ -352,7 +366,7 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                 }
                 ret = Type_clone(callable.callable->ret);
             } else if (callable.tag != TYPE_ANY) {
-                ErrorCtx_type_error(errs, "value is not callable");
+                ErrorCtx_type_error(errs, "x is not callable");
             }
             for (long i = 0; i < given_arg_count; i++) {
                 Type arg_type = Expr_get_type_and_typecheck(
@@ -369,6 +383,10 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
             Type_drop(&callable);
             return ret;
         }
+
+        case EXPR_FUNCTION:
+            FunctionImpl_typecheck(self->function, errs);
+            return Type_clone(self->function->type.callable->ret);
 
         case EXPR_OBJECT: {
             // TODO: add typechecking

@@ -27,3 +27,6 @@ let k = {x: 1, y: {null_: null, three: 3}};
 show(a, b);
 k.x;
 k.y.three;
+
+let l = () => 'arrow func';
+console.log(l());

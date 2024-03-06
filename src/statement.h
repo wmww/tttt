@@ -5,6 +5,7 @@
 #include "interface.h"
 #include "type.h"
 #include "callable_type.h"
+#include "function_impl.h"
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct LoopStatement LoopStatement;
@@ -37,33 +38,12 @@ void VarInitStatement_drop(VarInitStatement* self);
 void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent);
 void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs);
 
-// Function declaration
-
-typedef struct FunctionStatementArg {
-    cstr name;
-    bool value_explicit;
-    Expr value;
-} FunctionStatementArg;
-
-void FunctionStatementArg_drop(FunctionStatementArg* self);
-
-#define i_key_class FunctionStatementArg
-#define i_is_forward
-#define i_no_clone
-#include "stc/vec.h"
+// Function statements
 
 typedef struct FunctionStatement {
     cstr name;
-    Type type;
-    vec_FunctionStatementArg args;
-    Block body;
+    FunctionImpl impl;
 } FunctionStatement;
-
-void FunctionStatement_drop(FunctionStatement* self);
-long FunctionStatement_arg_count(FunctionStatement* self);
-void cstr_append_function_statement_debug(cstr* target, FunctionStatement* self, int indent);
-void FunctionStatement_resolve_names(FunctionStatement* self, NameStack* names, ErrorCtx* errs);
-void FunctionStatement_typecheck(FunctionStatement* self, ErrorCtx* errs);
 
 // Interface statements
 

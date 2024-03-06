@@ -11,6 +11,7 @@ src_files = files(
     'expr.c',
     'value.c',
     'statement.c',
+    'function_impl.c',
     'parser.c',
     'error.c',
     'name_stack.c',

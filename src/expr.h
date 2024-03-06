@@ -9,6 +9,7 @@ typedef struct DotPropExpr DotPropExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_ObjectExprItem ObjectExpr;
+typedef struct FunctionImpl FunctionImpl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 
@@ -22,6 +23,7 @@ typedef struct Expr {
         EXPR_UNARY_OP,
         EXPR_DOT_PROP,
         EXPR_CALL,
+        EXPR_FUNCTION,
         EXPR_OBJECT,
     } tag;
     union {
@@ -34,6 +36,7 @@ typedef struct Expr {
         UnaryOpExpr* unary_op;
         DotPropExpr* dot_prop;
         CallExpr* call;
+        FunctionImpl* function;
         // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
     };
@@ -63,6 +66,10 @@ static inline Expr Expr_dot_prop_new(DotPropExpr* dot_prop) {
 
 static inline Expr Expr_call_new(CallExpr* call) {
     return (Expr){ .tag = EXPR_CALL, .call = call };
+}
+
+static inline Expr Expr_function_new(FunctionImpl* function) {
+    return (Expr){ .tag = EXPR_FUNCTION, .function = function };
 }
 
 static inline Expr Expr_object_new(ObjectExpr object) {

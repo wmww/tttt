@@ -16,9 +16,9 @@ typedef struct NameStackFrame {
 
 NameStackFrame NameStackFrame_init();
 void NameStackFrame_drop(NameStackFrame* self);
+NameStackFrame NameStackFrame_clone(NameStackFrame self);
 
 #define i_key_class NameStackFrame
-#define i_no_clone
 #include "stc/vec.h"
 
 typedef struct NameStack {

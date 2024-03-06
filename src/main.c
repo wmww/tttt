@@ -30,11 +30,6 @@ int main(int argc, const char** argv) {
         goto cleanup;
     }
 
-    cstr parsed_str = cstr_null;
-    cstr_append_block_debug(&parsed_str, &ast, 0);
-    printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
-    cstr_drop(&parsed_str);
-
     NameStack names = NameStack_init();
     Block_resolve_names(&ast, &names, &errs);
     NameStack_drop(&names);
@@ -45,13 +40,24 @@ int main(int argc, const char** argv) {
     }
 
     Block_typecheck(&ast, &errs);
+    if (ErrorCtx_empty(&errs)) {
+        printf(CLR_GOOD "Typecheck passed" CLR0 "\n");
+    } else {
+        printf(CLR_ERR "Typecheck failed" CLR0 "\n");
+    }
+
+    cstr parsed_str = cstr_null;
+    cstr_append_block_debug(&parsed_str, &ast, 0);
+    printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
+    cstr_drop(&parsed_str);
+
     if (!ErrorCtx_empty(&errs)) {
         ErrorCtx_display(&errs, cstr_str(&contents));
         ret = 1;
         goto cleanup;
     }
 
-    printf(CLR_GOOD "Typecheck passed, running..." CLR0 "\n");
+    printf(CLR_GOOD "Running..." CLR0 "\n");
 
     eval_program(&ast);
 
