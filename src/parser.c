@@ -4,6 +4,8 @@
 #include "interface_member.h"
 #include "statement.h"
 #include "ternary_type.h"
+#include "generic.h"
+#include "callable_type.h"
 #include "extends_conditional.h"
 #include "type.h"
 #include "error.h"
@@ -344,12 +346,14 @@ static bool parse_named_interface(const char** src, InterfaceStatement* ret, Err
 }
 
 typedef struct ParseFunctionCtx {
-    CallableType type;
+    vec_GenericItem generics;
+    CallableType callable;
     FunctionImpl function;
 } ParseFunctionCtx;
 
 static void ParseFunctionCtx_drop(ParseFunctionCtx* self) {
-    CallableType_drop(&self->type);
+    vec_GenericItem_drop(&self->generics);
+    CallableType_drop(&self->callable);
     FunctionImpl_drop(&self->function);
 }
 
@@ -378,7 +382,7 @@ static bool parse_function_generic(const char** src, void* data, ErrorCtx* errs)
         }
     }
 
-    vec_CallableTypeGeneric_push(&ctx->type.generics, (CallableTypeGeneric){
+    vec_GenericItem_push(&ctx->generics, (GenericItem){
         .name = name,
         .extends = extends,
         .fallback_explicit = fallback_explicit,
@@ -401,7 +405,7 @@ static bool parse_function_arg(const char** src, void* data, ErrorCtx* errs) {
         .value = name_init.value,
     });
 
-    vec_CallableTypeArg_push(&ctx->type.args, (CallableTypeArg){
+    vec_CallableTypeArg_push(&ctx->callable.args, (CallableTypeArg){
         .name = name_init.name,
         .type_explicit = name_init.type_explicit,
         .type = name_init.type,
@@ -428,8 +432,8 @@ static bool parse_function(const char** src, bool require_arrow, FunctionImpl* r
 
     if (hop_start(&s, ":")) {
         hop_whitespace(&s);
-        if (parse_type(&s, &ctx.type.ret, &local_errs)) {
-            ctx.type.ret_explicit = true;
+        if (parse_type(&s, &ctx.callable.ret, &local_errs)) {
+            ctx.callable.ret_explicit = true;
         } else {
             ErrorCtx_parse_error(&local_errs, s, "invalid return type");
         }
@@ -463,7 +467,13 @@ static bool parse_function(const char** src, bool require_arrow, FunctionImpl* r
     }
 
     ErrorCtx_append_consume(errs, local_errs);
-    ctx.function.type = Type_callable(c_new(CallableType, ctx.type));
+    ctx.function.type = Type_callable(c_new(CallableType, ctx.callable));
+    if (!vec_GenericItem_empty(&ctx.generics)) {
+        ctx.function.type = Type_generic(c_new(Generic, {
+            .items = ctx.generics,
+            .inner = ctx.function.type,
+        }));
+    }
     *ret = ctx.function;
     *src = s;
     return true;

@@ -1,6 +1,7 @@
 #include "function_impl.h"
 #include "name_stack.h"
 #include "callable_type.h"
+#include "generic.h"
 
 void FunctionArg_drop(FunctionArg* self) {
     cstr_drop(&self->name);
@@ -13,11 +14,26 @@ void FunctionImpl_drop(FunctionImpl* self) {
     Block_drop(&self->body);
 }
 
-long FunctionImpl_arg_count(FunctionImpl* self) {
-    if (self->type.tag != TYPE_CALLABLE) {
-        PANIC("function type is not callable");
+CallableType* FunctionImpl_callable_type(FunctionImpl* self) {
+    if (self->type.tag == TYPE_CALLABLE) {
+        return self->type.callable;
+    } else if (self->type.tag == TYPE_GENERIC && self->type.generic->inner.tag == TYPE_CALLABLE) {
+        return self->type.generic->inner.callable;
+    } else {
+        PANIC("FunctionImpl has invald type type");
     }
-    int arg_count = vec_CallableTypeArg_size(&self->type.callable->args);
+}
+
+Generic* FunctionImpl_generic_or_null(FunctionImpl* self) {
+    if (self->type.tag == TYPE_GENERIC) {
+        return self->type.generic;
+    } else {
+        return nullptr;
+    }
+}
+
+long FunctionImpl_arg_count(FunctionImpl* self) {
+    int arg_count = vec_CallableTypeArg_size(&FunctionImpl_callable_type(self)->args);
     if (vec_FunctionArg_size(&self->args) != arg_count) {
         PANIC("function type has different number of args than function");
     }
@@ -25,12 +41,16 @@ long FunctionImpl_arg_count(FunctionImpl* self) {
 }
 
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* self, bool include_arrow, int indent) {
-    cstr_append_vec_callable_type_generic(target, &self->type.callable->generics, indent);
+    Generic* generic = FunctionImpl_generic_or_null(self);
+    CallableType* callable = FunctionImpl_callable_type(self);
+    if (generic) {
+        cstr_append_vec_generic_item_debug(target, &generic->items, indent);
+    }
     cstr_append_sv(target, c_sv("("));
     int arg_count = FunctionImpl_arg_count(self);
     for (int i = 0; i < arg_count; i++) {
         FunctionArg* value_arg = vec_FunctionArg_at_mut(&self->args, i);
-        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&self->type.callable->args, i);
+        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&callable->args, i);
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, value_arg->name);
         cstr_append_sv(target, c_sv(CLR0));
@@ -47,9 +67,9 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* self, bool incl
         }
     }
     cstr_append_sv(target, c_sv(")"));
-    if (self->type.callable->ret_explicit) {
+    if (callable->ret_explicit) {
         cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &self->type.callable->ret, indent);
+        cstr_append_type_debug(target, &callable->ret, indent);
     }
     cstr_append_sv(target, include_arrow ? c_sv(" => ") : c_sv(" "));
     cstr_append_block_debug(target, &self->body, indent);
@@ -63,23 +83,27 @@ void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* 
     NameStack_push_frame(names);
 
     // Loop through generics and add them to the namespace
-    c_foreach(i, vec_CallableTypeGeneric, self->type.callable->generics) {
-        hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
-            &vec_NameStackFrame_back(&names->stack)->types,
-            cstr_clone(i.ref->name),
-            &i.ref->extends
-        );
-        if (!result.inserted) {
-            // name is cstr_str(&result.ref->first)
-            ErrorCtx_type_error(errs, "multiple function generics with same name");
+    Generic* generic = FunctionImpl_generic_or_null(self);
+    if (generic) {
+        c_foreach(i, vec_GenericItem, generic->items) {
+            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+                &vec_NameStackFrame_back(&names->stack)->types,
+                cstr_clone(i.ref->name),
+                &i.ref->extends
+            );
+            if (!result.inserted) {
+                // name is cstr_str(&result.ref->first)
+                ErrorCtx_type_error(errs, "multiple function generics with same name");
+            }
         }
     }
 
     // Loop through all arguments and add them to the namespace
     int arg_count = FunctionImpl_arg_count(self);
+    CallableType* callable = FunctionImpl_callable_type(self);
     for (int i = 0; i < arg_count; i++) {
         FunctionArg* value_arg = vec_FunctionArg_at_mut(&self->args, i);
-        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&self->type.callable->args, i);
+        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&callable->args, i);
         hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
             &vec_NameStackFrame_back(&names->stack)->values,
             cstr_clone(value_arg->name),
@@ -105,10 +129,11 @@ void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* 
 }
 
 void FunctionImpl_typecheck(FunctionImpl* self, ErrorCtx* errs) {
+    CallableType* callable = FunctionImpl_callable_type(self);
     int arg_count = FunctionImpl_arg_count(self);
     for (int i = 0; i < arg_count; i++) {
         FunctionArg* value_arg = vec_FunctionArg_at_mut(&self->args, i);
-        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&self->type.callable->args, i);
+        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&callable->args, i);
         if (value_arg->value_explicit && type_arg->type_explicit) {
             Type expr_type = Expr_get_type_and_typecheck(&value_arg->value, errs);
             if (!Type_extends(&expr_type, &type_arg->type)) {

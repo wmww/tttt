@@ -4,6 +4,7 @@
 #include "name_stack.h"
 #include "callable_type.h"
 #include "function_impl.h"
+#include "generic.h"
 
 const Expr Expr_default = { .tag = EXPR_LITERAL, .literal = { .tag = VALUE_UNDEFINED } };
 
@@ -356,6 +357,11 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
         case EXPR_CALL: {
             Type ret = Type_any;
             Type callable = Expr_get_type_and_typecheck(&self->call->callable, errs);
+            if (callable.tag == TYPE_GENERIC) {
+                Type inferred = Generic_callable_infer(callable.generic, &self->call->args, errs);
+                Type_drop(&callable);
+                callable = inferred;
+            }
             long given_arg_count = vec_Expr_size(&self->call->args);
             long callable_arg_count = 0;
             if (callable.tag == TYPE_CALLABLE) {
@@ -366,7 +372,7 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                 }
                 ret = Type_clone(callable.callable->ret);
             } else if (callable.tag != TYPE_ANY) {
-                ErrorCtx_type_error(errs, "x is not callable");
+                ErrorCtx_type_error(errs, "expr is not callable");
             }
             for (long i = 0; i < given_arg_count; i++) {
                 Type arg_type = Expr_get_type_and_typecheck(

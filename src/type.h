@@ -6,6 +6,7 @@
 
 typedef struct TernaryType TernaryType;
 typedef struct CallableType CallableType;
+typedef struct Generic Generic;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 
@@ -18,6 +19,7 @@ typedef struct Type {
         TYPE_STRING,
         TYPE_VALUE,
         TYPE_IDENTIFIER,
+        TYPE_GENERIC,
         TYPE_CALLABLE,
         TYPE_INTERFACE,
         TYPE_TERNARY,
@@ -28,6 +30,7 @@ typedef struct Type {
             cstr name;
             Type const* type;
         } identifier;
+        Generic* generic;
         Interface interface;
         CallableType* callable;
         TernaryType* ternary;
@@ -51,6 +54,12 @@ static inline Type Type_identifier(cstr identifier, Type const* type) {
         .tag = TYPE_IDENTIFIER,
         .identifier.name = identifier,
         .identifier.type = type,
+    };
+}
+static inline Type Type_generic(Generic* generic) {
+    return (Type){
+        .tag = TYPE_GENERIC,
+        .generic = generic,
     };
 }
 static inline Type Type_callable(CallableType* callable) {

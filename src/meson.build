@@ -6,6 +6,7 @@ src_files = files(
     'extends_conditional.c',
     'interface_member.c',
     'callable_type.c',
+    'generic.c',
     'ternary_type.c',
     'block.c',
     'expr.c',

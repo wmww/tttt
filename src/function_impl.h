@@ -25,6 +25,8 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void FunctionImpl_drop(FunctionImpl* self);
+CallableType* FunctionImpl_callable_type(FunctionImpl* self);
+Generic* FunctionImpl_generic_or_null(FunctionImpl* self);
 long FunctionImpl_arg_count(FunctionImpl* self);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* self, bool include_arrow, int indent);
 void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* errs);

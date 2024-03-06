@@ -3,6 +3,7 @@
 #include "interface_member.h"
 #include "ternary_type.h"
 #include "callable_type.h"
+#include "generic.h"
 #include "extends_conditional.h"
 #include "value.h"
 #include "name_stack.h"
@@ -28,6 +29,11 @@ void Type_drop(Type* self) {
 
         case TYPE_IDENTIFIER:
             cstr_drop(&self->identifier.name);
+            break;
+
+        case TYPE_GENERIC:
+            Generic_drop(self->generic);
+            free(self->generic);
             break;
 
         case TYPE_CALLABLE:
@@ -60,6 +66,7 @@ void cstr_append_type_debug(cstr* target, Type* self, int indent) {
             cstr_append_s(target, self->identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
+        case TYPE_GENERIC: cstr_append_generic_debug(target, self->generic, indent); break;
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, self->callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->interface, indent); break;
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->ternary, indent); break;
@@ -75,6 +82,7 @@ Type Type_clone(Type self) {
         case TYPE_STRING: return self;
         case TYPE_VALUE: return Type_value(Value_clone(self.value));
         case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.identifier.name), self.identifier.type);
+        case TYPE_GENERIC: return Type_generic(c_new(Generic, Generic_clone(*self.generic)));
         case TYPE_CALLABLE: return Type_callable(c_new(CallableType, CallableType_clone(*self.callable)));
         case TYPE_INTERFACE: return Type_interface(Interface_clone(self.interface));
         case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.ternary)));
@@ -112,24 +120,15 @@ void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
             ErrorCtx_type_error(errs, "unkown type");
             break;
 
+        case TYPE_GENERIC:
+            Generic_resolve_names(self->generic, names, errs);
+            break;
+
         case TYPE_CALLABLE:
-            NameStack_push_frame(names);
-            c_foreach(i, vec_CallableTypeGeneric, self->callable->generics) {
-                hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
-                    &vec_NameStackFrame_back(&names->stack)->types,
-                    cstr_clone(i.ref->name),
-                    &i.ref->extends
-                );
-                if (!result.inserted) {
-                    // name is cstr_str(&result.ref->first)
-                    ErrorCtx_type_error(errs, "multiple function generics with same name");
-                }
-            }
             c_foreach(i, vec_CallableTypeArg, self->callable->args) {
                 Type_resolve_names(&i.ref->type, names, errs);
             }
             Type_resolve_names(&self->callable->ret, names, errs);
-            NameStack_pop_frame(names);
             break;
 
         case TYPE_INTERFACE:
@@ -190,6 +189,10 @@ bool Type_extends(Type const* sub, Type const* super) {
                 return Type_extends(sub, super->identifier.type);
             }
             return true;
+
+        case TYPE_GENERIC:
+            PANIC("generic extends not yet implemented");
+            break;
 
         case TYPE_CALLABLE:
             PANIC("callable extends not yet implemented");

@@ -2,21 +2,6 @@
 
 #include "type.h"
 
-typedef struct CallableTypeGeneric {
-    cstr name;
-    Type extends;
-    bool fallback_explicit;
-    Type fallback;
-} CallableTypeGeneric;
-
-void CallableTypeGeneric_drop(CallableTypeGeneric* self);
-CallableTypeGeneric CallableTypeGeneric_clone(CallableTypeGeneric self);
-
-#define i_key_class CallableTypeGeneric
-#include "stc/vec.h"
-
-void cstr_append_vec_callable_type_generic(cstr* target, vec_CallableTypeGeneric* generics, int indent);
-
 typedef struct CallableTypeArg {
     cstr name;
     bool type_explicit;
@@ -30,7 +15,6 @@ CallableTypeArg CallableTypeArg_clone(CallableTypeArg self);
 #include "stc/vec.h"
 
 typedef struct CallableType {
-    vec_CallableTypeGeneric generics;
     vec_CallableTypeArg args;
     bool ret_explicit;
     Type ret;
