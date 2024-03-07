@@ -87,16 +87,8 @@ void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* 
     Generic* generic = FunctionImpl_generic_or_null(self);
     if (generic) {
         c_foreach(i, vec_GenericItem, generic->items) {
-            hmap_str_NamedType_result result = hmap_str_NamedType_insert(
-                &vec_NameStackFrame_back(&names->stack)->types,
-                cstr_clone(i.ref->name),
-                (NamedType) {
-                    .type = &i.ref->extends,
-                    // This is the function *implementation*, so we treat generic paramaters as regular types
-                    .is_generic = false,
-                }
-            );
-            if (!result.inserted) {
+            // This is the function *implementation*, so we treat generic paramaters as regular types
+            if (!NameStack_add_type(names, cstr_clone(i.ref->name), &i.ref->extends, false, 0)) {
                 // name is cstr_str(&result.ref->first)
                 ErrorCtx_type_error(errs, "multiple function generics with same name");
             }
@@ -107,14 +99,11 @@ void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* 
     int arg_count = FunctionImpl_arg_count(self);
     CallableType* callable = FunctionImpl_callable_type(self);
     for (int i = 0; i < arg_count; i++) {
-        FunctionArg* value_arg = vec_FunctionArg_at_mut(&self->args, i);
-        CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&callable->args, i);
-        hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
-            &vec_NameStackFrame_back(&names->stack)->values,
-            cstr_clone(value_arg->name),
-            &type_arg->type
-        );
-        if (!result.inserted) {
+        if (!NameStack_add_variable(
+            names,
+            cstr_clone(vec_FunctionArg_at_mut(&self->args, i)->name),
+            &vec_CallableTypeArg_at_mut(&callable->args, i)->type
+        )) {
             // name is cstr_str(&result.ref->first)
             ErrorCtx_type_error(errs, "multiple function arguments with same name");
         }

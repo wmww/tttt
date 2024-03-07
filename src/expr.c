@@ -208,19 +208,14 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
         case EXPR_LITERAL:
             break;
 
-        case EXPR_IDENTIFIER:
-            c_foreach_rev(i, vec_NameStackFrame, names->stack) {
-                hmap_str_CTypePtr_value const* result = hmap_str_CTypePtr_get(
-                    &i.ref->values,
-                    cstr_sv(&self->identifier.name)
-                );
-                if (result) {
-                    self->identifier.type = result->second;
-                    return;
-                }
+        case EXPR_IDENTIFIER: {
+            Type const* var_type = NameStack_get_variable(names, cstr_sv(&self->identifier.name));
+            if (var_type) {
+                self->identifier.type = var_type;
+            } else {
+                ErrorCtx_type_error(errs, "unkown identifier");
             }
-            ErrorCtx_type_error(errs, "unkown identifier");
-            break;
+        }   break;
 
         case EXPR_BINARY_OP:
             Expr_resolve_names(&self->binary_op->left, names, errs);

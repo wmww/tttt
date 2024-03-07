@@ -166,44 +166,39 @@ void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
 
 void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs) {
     switch (self->tag) {
-        case STATEMENT_VAR_INIT: {
-            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
-                &vec_NameStackFrame_back(&names->stack)->values,
+        case STATEMENT_VAR_INIT:
+            if (!NameStack_add_variable(
+                names,
                 cstr_clone(self->var_init.data.name),
                 &self->var_init.data.type
-            );
-            if (!result.inserted) {
+            )) {
                 // name is cstr_str(&result.ref->first)
                 ErrorCtx_type_error(errs, "multiple values declared with same name");
             }
-        }   break;
+            break;
 
-        case STATEMENT_FUNCTION: {
-            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
-                &vec_NameStackFrame_back(&names->stack)->values,
+        case STATEMENT_FUNCTION:
+            if (!NameStack_add_variable(
+                names,
                 cstr_clone(self->function.name),
                 &self->function.impl.type
-            );
-            if (!result.inserted) {
+            )) {
                 // name is cstr_str(&result.ref->first)
                 ErrorCtx_type_error(errs, "multiple values declared with same name");
             }
-        }   break;
+            break;
 
-        case STATEMENT_INTERFACE: {
-            hmap_str_NamedType_result result = hmap_str_NamedType_insert(
-                &vec_NameStackFrame_back(&names->stack)->types,
+        case STATEMENT_INTERFACE:
+            if (!NameStack_add_type(
+                names,
                 cstr_clone(self->interface.name),
-                (NamedType){
-                    .type = &self->interface.type,
-                    .is_generic = false,
-                }
-            );
-            if (!result.inserted) {
+                &self->interface.type,
+                false, 0
+            )) {
                 // name is cstr_str(&result.ref->first)
                 ErrorCtx_type_error(errs, "multiple values declared with same name");
             }
-        }   break;
+            break;
 
         case STATEMENT_NOOP:
         case STATEMENT_BLOCK:

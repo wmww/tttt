@@ -67,16 +67,12 @@ void Generic_resolve_names(Generic* self, NameStack* names, ErrorCtx* errs) {
     NameStack_push_frame(names, true);
     long generic_count = vec_GenericItem_size(&self->items);
     for (long i = 0; i < generic_count; i++) {
-        hmap_str_NamedType_result result = hmap_str_NamedType_insert(
-            &vec_NameStackFrame_back(&names->stack)->types,
+        if (!NameStack_add_type(
+            names,
             cstr_clone(vec_GenericItem_at(&self->items, i)->name),
-            (NamedType){
-                .type = &vec_GenericItem_at(&self->items, i)->extends,
-                .is_generic = true,
-                .generic_index = i,
-            }
-        );
-        if (!result.inserted) {
+            &vec_GenericItem_at(&self->items, i)->extends,
+            true, i
+        )) {
             // name is cstr_str(&result.ref->first)
             ErrorCtx_type_error(errs, "multiple function generics with same name");
         }
