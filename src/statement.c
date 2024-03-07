@@ -191,10 +191,13 @@ void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs) {
         }   break;
 
         case STATEMENT_INTERFACE: {
-            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+            hmap_str_NamedType_result result = hmap_str_NamedType_insert(
                 &vec_NameStackFrame_back(&names->stack)->types,
                 cstr_clone(self->interface.name),
-                &self->interface.type
+                (NamedType){
+                    .type = &self->interface.type,
+                    .is_generic = false,
+                }
             );
             if (!result.inserted) {
                 // name is cstr_str(&result.ref->first)
@@ -247,7 +250,7 @@ void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) 
             break;
 
         case STATEMENT_LOOP:
-            NameStack_push_frame(names);
+            NameStack_push_frame(names, false);
             Statement_add_names(&self->loop->initialization, names, errs);
             Statement_resolve_names(&self->loop->initialization, names, errs);
             Expr_resolve_names(&self->loop->condition, names, errs);

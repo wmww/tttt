@@ -80,16 +80,21 @@ void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* 
     Type_resolve_names(&self->type, names, errs);
 
     // Push a stack frame for generics/arguments to live in
-    NameStack_push_frame(names);
+    // This is the function *implementation*, so we do not push a generic stack frame
+    NameStack_push_frame(names, false);
 
     // Loop through generics and add them to the namespace
     Generic* generic = FunctionImpl_generic_or_null(self);
     if (generic) {
         c_foreach(i, vec_GenericItem, generic->items) {
-            hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+            hmap_str_NamedType_result result = hmap_str_NamedType_insert(
                 &vec_NameStackFrame_back(&names->stack)->types,
                 cstr_clone(i.ref->name),
-                &i.ref->extends
+                (NamedType) {
+                    .type = &i.ref->extends,
+                    // This is the function *implementation*, so we treat generic paramaters as regular types
+                    .is_generic = false,
+                }
             );
             if (!result.inserted) {
                 // name is cstr_str(&result.ref->first)

@@ -106,19 +106,25 @@ void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
         case TYPE_VALUE:
             break;
 
-        case TYPE_IDENTIFIER:
+        case TYPE_IDENTIFIER: {
+            int generic_depth = 0;
             c_foreach_rev(i, vec_NameStackFrame, names->stack) {
-                hmap_str_CTypePtr_value const* result = hmap_str_CTypePtr_get(
+                if (i.ref->is_generic) {
+                    generic_depth++;
+                }
+                hmap_str_NamedType_value const* result = hmap_str_NamedType_get(
                     &i.ref->types,
                     cstr_sv(&self->identifier.name)
                 );
                 if (result) {
-                    self->identifier.type = result->second;
+                    self->identifier.type = result->second.type;
+                    self->identifier.generic_depth = result->second.is_generic ? generic_depth : 0;
+                    self->identifier.generic_index = result->second.generic_index;
                     return;
                 }
             }
             ErrorCtx_type_error(errs, "unkown type");
-            break;
+        }   break;
 
         case TYPE_GENERIC:
             Generic_resolve_names(self->generic, names, errs);

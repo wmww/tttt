@@ -64,12 +64,17 @@ void cstr_append_generic_debug(cstr* target, Generic* self, int indent) {
 }
 
 void Generic_resolve_names(Generic* self, NameStack* names, ErrorCtx* errs) {
-    NameStack_push_frame(names);
-    c_foreach(i, vec_GenericItem, self->items) {
-        hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
+    NameStack_push_frame(names, true);
+    long generic_count = vec_GenericItem_size(&self->items);
+    for (long i = 0; i < generic_count; i++) {
+        hmap_str_NamedType_result result = hmap_str_NamedType_insert(
             &vec_NameStackFrame_back(&names->stack)->types,
-            cstr_clone(i.ref->name),
-            &i.ref->extends
+            cstr_clone(vec_GenericItem_at(&self->items, i)->name),
+            (NamedType){
+                .type = &vec_GenericItem_at(&self->items, i)->extends,
+                .is_generic = true,
+                .generic_index = i,
+            }
         );
         if (!result.inserted) {
             // name is cstr_str(&result.ref->first)

@@ -27,7 +27,7 @@ void Block_resolve_names_without_stack_frame(Block* self, NameStack* names, Erro
 }
 
 void Block_resolve_names(Block* self, NameStack* names, ErrorCtx* errs) {
-    NameStack_push_frame(names);
+    NameStack_push_frame(names, false);
     Block_resolve_names_without_stack_frame(self, names, errs);
     NameStack_pop_frame(names);
 }

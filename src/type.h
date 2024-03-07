@@ -29,6 +29,12 @@ typedef struct Type {
         struct {
             cstr name;
             Type const* type;
+            // 0: this identifier is not a generic item
+            // 1: this identifier is the generic_indexth item of the first generic above this type
+            // 2+: there are generics between this type and the generic it is an item of
+            int generic_depth;
+            // Only used if generic_depth != 0
+            int generic_index;
         } identifier;
         Generic* generic;
         Interface interface;
