@@ -25,7 +25,7 @@ int main(int argc, const char** argv) {
 
     ast = parse_file(cstr_str(&contents), &errs);
     if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs, cstr_str(&contents));
+        ErrorCtx_display(&errs);
         ret = 1;
         goto cleanup;
     }
@@ -34,7 +34,7 @@ int main(int argc, const char** argv) {
     Block_resolve_names(&ast, &names, &errs);
     NameStack_drop(&names);
     if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs, cstr_str(&contents));
+        ErrorCtx_display(&errs);
         ret = 1;
         goto cleanup;
     }
@@ -52,7 +52,7 @@ int main(int argc, const char** argv) {
     cstr_drop(&parsed_str);
 
     if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs, cstr_str(&contents));
+        ErrorCtx_display(&errs);
         ret = 1;
         goto cleanup;
     }

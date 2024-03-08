@@ -213,7 +213,7 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
             if (var_type) {
                 self->identifier.type = var_type;
             } else {
-                ErrorCtx_type_error(errs, "unkown identifier");
+                ErrorCtx_error(errs, self->span, 2304, "Cannot find name '%s'.", cstr_str(&self->identifier.name));
             }
         }   break;
 

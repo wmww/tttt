@@ -2,6 +2,7 @@
 
 #include "prelude.h"
 #include "value.h"
+#include "span.h"
 
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
@@ -16,6 +17,7 @@ typedef struct NameStack NameStack;
 forward_vec(vec_ObjectExprItem, ObjectExprItem);
 
 typedef struct Expr {
+    Span span;
     enum {
         EXPR_LITERAL,
         EXPR_IDENTIFIER,
@@ -44,36 +46,36 @@ typedef struct Expr {
 
 extern const Expr Expr_default;
 
-static inline Expr Expr_literal_new(Value value) {
-    return (Expr){ .tag = EXPR_LITERAL, .literal = value };
+static inline Expr Expr_literal_new(Span span, Value value) {
+    return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value };
 }
 
-static inline Expr Expr_indentifier_new(cstr identifier) {
-    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier.name = identifier };
+static inline Expr Expr_identifier_new(Span span, cstr identifier) {
+    return (Expr){ .span = span, .tag = EXPR_IDENTIFIER, .identifier.name = identifier };
 }
 
-static inline Expr Expr_binary_op_new(BinaryOpExpr* op) {
-    return (Expr){ .tag = EXPR_BINARY_OP, .binary_op = op };
+static inline Expr Expr_binary_op_new(Span span, BinaryOpExpr* op) {
+    return (Expr){ .span = span, .tag = EXPR_BINARY_OP, .binary_op = op };
 }
 
-static inline Expr Expr_unary_op_new(UnaryOpExpr* op) {
-    return (Expr){ .tag = EXPR_UNARY_OP, .unary_op = op };
+static inline Expr Expr_unary_op_new(Span span, UnaryOpExpr* op) {
+    return (Expr){ .span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
 }
 
-static inline Expr Expr_dot_prop_new(DotPropExpr* dot_prop) {
-    return (Expr){ .tag = EXPR_DOT_PROP, .dot_prop = dot_prop };
+static inline Expr Expr_dot_prop_new(Span span, DotPropExpr* dot_prop) {
+    return (Expr){ .span = span, .tag = EXPR_DOT_PROP, .dot_prop = dot_prop };
 }
 
-static inline Expr Expr_call_new(CallExpr* call) {
-    return (Expr){ .tag = EXPR_CALL, .call = call };
+static inline Expr Expr_call_new(Span span, CallExpr* call) {
+    return (Expr){ .span = span, .tag = EXPR_CALL, .call = call };
 }
 
-static inline Expr Expr_function_new(FunctionImpl* function) {
-    return (Expr){ .tag = EXPR_FUNCTION, .function = function };
+static inline Expr Expr_function_new(Span span, FunctionImpl* function) {
+    return (Expr){ .span = span, .tag = EXPR_FUNCTION, .function = function };
 }
 
-static inline Expr Expr_object_new(ObjectExpr object) {
-    return (Expr){ .tag = EXPR_OBJECT, .object = object };
+static inline Expr Expr_object_new(Span span, ObjectExpr object) {
+    return (Expr){ .span = span, .tag = EXPR_OBJECT, .object = object };
 }
 
 void Expr_drop(Expr* self);
