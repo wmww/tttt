@@ -85,12 +85,12 @@ NamedType const* NameStack_get_type(NameStack* self, csview name, int* optional_
         *optional_generic_depth = 0;
     }
     c_foreach_rev(i, vec_Namespace, self->stack) {
-        if (*optional_generic_depth && i.ref->is_generic) {
+        if (optional_generic_depth && i.ref->is_generic) {
             (*optional_generic_depth)++;
         }
         hmap_str_NamedType_value const* result = hmap_str_NamedType_get(&i.ref->types, name);
         if (result) {
-            if (*optional_generic_depth && i.ref->is_generic) {
+            if (optional_generic_depth && !i.ref->is_generic) {
                 *optional_generic_depth = 0;
             }
             return &result->second;

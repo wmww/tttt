@@ -1,6 +1,6 @@
 function foo<T>(t: T): T {
-    return t;
+    return t
 }
 
-let x = foo(0);
-x = 'hello';
+let bar = foo(0);
+bar = 'hello'; // error

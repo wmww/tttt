@@ -55,11 +55,13 @@ static inline Type Type_value(Value value) {
         .value = value,
     };
 }
-static inline Type Type_identifier(cstr identifier, Type const* type) {
+static inline Type Type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier.name = identifier,
         .identifier.type = type,
+        .identifier.generic_depth = generic_depth,
+        .identifier.generic_index = generic_index,
     };
 }
 static inline Type Type_generic(Generic* generic) {

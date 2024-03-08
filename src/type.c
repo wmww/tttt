@@ -81,7 +81,12 @@ Type Type_clone(Type self) {
         case TYPE_NUMBER:
         case TYPE_STRING: return self;
         case TYPE_VALUE: return Type_value(Value_clone(self.value));
-        case TYPE_IDENTIFIER: return Type_identifier(cstr_clone(self.identifier.name), self.identifier.type);
+        case TYPE_IDENTIFIER: return Type_identifier(
+            cstr_clone(self.identifier.name),
+            self.identifier.type,
+            self.identifier.generic_depth,
+            self.identifier.generic_index
+        );
         case TYPE_GENERIC: return Type_generic(c_new(Generic, Generic_clone(*self.generic)));
         case TYPE_CALLABLE: return Type_callable(c_new(CallableType, CallableType_clone(*self.callable)));
         case TYPE_INTERFACE: return Type_interface(Interface_clone(self.interface));
