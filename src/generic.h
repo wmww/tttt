@@ -29,4 +29,4 @@ void Generic_drop(Generic* self);
 Generic Generic_clone(Generic self);
 void cstr_append_generic_debug(cstr* target, Generic* self, int indent);
 void Generic_resolve_names(Generic* self, NameStack* names, ErrorCtx* errs);
-Type Generic_callable_infer(Generic const* self, vec_Expr const* args, ErrorCtx* errs);
+Type Generic_callable_infer(Generic const* self, vec_Expr* args, ErrorCtx* errs);
