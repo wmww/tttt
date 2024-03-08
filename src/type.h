@@ -13,6 +13,8 @@ typedef struct NameStack NameStack;
 typedef struct Type {
     enum {
         TYPE_ANY = 0,
+        TYPE_UNKOWN,
+        TYPE_NEVER,
         TYPE_VOID,
         TYPE_BOOLEAN,
         TYPE_NUMBER,
@@ -44,6 +46,8 @@ typedef struct Type {
 } Type;
 
 extern const Type Type_any;
+extern const Type Type_unkown;
+extern const Type Type_never;
 extern const Type Type_void;
 extern const Type Type_boolean;
 extern const Type Type_number;

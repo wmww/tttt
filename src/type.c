@@ -9,6 +9,8 @@
 #include "name_stack.h"
 
 const Type Type_any = { .tag = TYPE_ANY };
+const Type Type_unkown = { .tag = TYPE_UNKOWN };
+const Type Type_never = { .tag = TYPE_NEVER };
 const Type Type_void = { .tag = TYPE_VOID };
 const Type Type_boolean = { .tag = TYPE_BOOLEAN };
 const Type Type_number = { .tag = TYPE_NUMBER };
@@ -17,6 +19,8 @@ const Type Type_string = { .tag = TYPE_STRING };
 void Type_drop(Type* self) {
     switch (self->tag) {
         case TYPE_ANY:
+        case TYPE_UNKOWN:
+        case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
@@ -56,6 +60,8 @@ void Type_drop(Type* self) {
 void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
     switch (self->tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
+        case TYPE_UNKOWN: cstr_append_sv(target, c_sv(CLR_TYPE "unkown" CLR0)); break;
+        case TYPE_NEVER: cstr_append_sv(target, c_sv(CLR_TYPE "never" CLR0)); break;
         case TYPE_VOID: cstr_append_sv(target, c_sv(CLR_TYPE "void" CLR0)); break;
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
         case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
@@ -76,6 +82,8 @@ void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
 Type Type_clone(Type self) {
     switch (self.tag) {
         case TYPE_ANY:
+        case TYPE_UNKOWN:
+        case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
@@ -104,6 +112,8 @@ Type Type_move(Type* self) {
 void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
     switch (self->tag) {
         case TYPE_ANY:
+        case TYPE_UNKOWN:
+        case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
@@ -168,6 +178,10 @@ bool Type_extends(Type const* sub, Type const* super) {
     switch (super->tag) {
         case TYPE_ANY:
             return true;
+
+        case TYPE_UNKOWN:
+        case TYPE_NEVER:
+            return false;
 
         case TYPE_VOID:
             return sub->tag == TYPE_VOID;

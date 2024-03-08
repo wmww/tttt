@@ -350,6 +350,10 @@ static bool parse_type(const char** src, Type* ret, ErrorCtx* errs) {
     Type type;
     if (hop_start_if_ends_on_word_break(src, "any")) {
         type = Type_any;
+    } else if (hop_start_if_ends_on_word_break(src, "unkown")) {
+        type = Type_unkown;
+    } else if (hop_start_if_ends_on_word_break(src, "never")) {
+        type = Type_never;
     } else if (hop_start_if_ends_on_word_break(src, "void")) {
         type = Type_void;
     } else if (hop_start_if_ends_on_word_break(src, "boolean")) {
