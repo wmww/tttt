@@ -5,4 +5,4 @@
 typedef struct Block Block;
 typedef struct ErrorCtx ErrorCtx;
 
-Block parse_file(const char* src, ErrorCtx* errs);
+Block parse_file(const char* source, ErrorCtx* errs);
