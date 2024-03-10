@@ -31,19 +31,11 @@ static inline Parser parser(Parser* parent) {
 }
 
 static inline Span span_from_parsed(Parser* self) {
-    return (Span){
-        .file_start = self->file_start,
-        .offset = self->start - self->file_start,
-        .length = self->pos - self->start,
-    };
+    return span_make(self->file_start, self->start - self->file_start, self->pos - self->start);
 }
 
 static inline Span span_from_pos(Parser* self) {
-    return (Span){
-        .file_start = self->file_start,
-        .offset = self->pos - self->file_start,
-        .length = 0,
-    };
+    return span_make(self->file_start, self->pos - self->file_start, 0);
 }
 
 /// Must not be used on the root parser, always returns true, drops parser
@@ -73,11 +65,7 @@ Anchor span_start(Parser* parser) {
 
 Span span_end(Anchor spanner) {
     const char* file_start = spanner.parser->file_start;
-    return (Span){
-        .file_start = file_start,
-        .offset = spanner.start - file_start,
-        .length = spanner.parser->pos - spanner.start,
-    };
+    return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
 }
 
 static bool parse_block(Parser* parent, Block* ret);
@@ -605,21 +593,23 @@ static bool parse_function_arg(Parser* parent, void* data) {
     return parse_success(&p);
 }
 
-static bool parse_function(Parser* parent, bool require_arrow, FunctionImpl* ret) {
+static bool parse_function(Parser* parent, bool parse_args, bool require_arrow, FunctionImpl* ret) {
     Parser p = parser(parent);
     vec_GenericItem generics = {0};
     *ret = (FunctionImpl){0};
 
-    if (parse_generic_decl_list(&p, &generics)) {
+    if (parse_args) {
+        if (parse_generic_decl_list(&p, &generics)) {
+            hop_whitespace(&p);
+        }
+
+        if (!parse_sequence(&p, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret)) {
+            vec_GenericItem_drop(&generics);
+            FunctionImpl_drop(ret);
+            return parse_fail(&p);
+        }
         hop_whitespace(&p);
     }
-
-    if (!parse_sequence(&p, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret)) {
-        vec_GenericItem_drop(&generics);
-        FunctionImpl_drop(ret);
-        return parse_fail(&p);
-    }
-    hop_whitespace(&p);
 
     if (hop_start(&p, ":")) {
         hop_whitespace(&p);
@@ -963,6 +953,7 @@ static bool parse_expr_right_side(Parser* parent, Anchor a, Expr* left_and_ret) 
             Expr expr;
             BinaryOp op;
         } binary;
+        FunctionImpl function;
     } parsed;
 
     if (parse_call_args(&p, &parsed.args)) {
@@ -996,6 +987,27 @@ static bool parse_expr_right_side(Parser* parent, Anchor a, Expr* left_and_ret) 
             })
         );
         return parse_success(&p);
+    }
+
+    if (!hit_newline && left_and_ret->tag == EXPR_IDENTIFIER) {
+        if (parse_function(&p, false, true, &parsed.function)) {
+            vec_FunctionArg_push(&parsed.function.args, (FunctionArg){
+                .name = cstr_clone(left_and_ret->identifier.name),
+                .value_explicit = false,
+                .value = Expr_default(span_from_pos(&p)),
+            });
+            if (parsed.function.type.tag != TYPE_CALLABLE) {
+                PANIC("Function type is not callable");
+            }
+            vec_CallableTypeArg_push(&parsed.function.type.callable->args, (CallableTypeArg){
+                .name = cstr_clone(left_and_ret->identifier.name),
+                .type_explicit = false,
+                .type = Type_any,
+            });
+            Expr_drop(left_and_ret);
+            *left_and_ret = Expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
+            return parse_success(&p);
+        }
     }
 
     if (!hit_newline) {
@@ -1054,7 +1066,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     } else if (parse_left_unary_op_expr(&p, ret)) {
     } else if (parse_identifier(&p, &name, nullptr)) {
         *ret = Expr_identifier(span_from_parsed(&p), name);
-    } else if (parse_function(&p, true, &function)) {
+    } else if (parse_function(&p, true, true, &function)) {
         *ret = Expr_function(span_from_parsed(&p), c_new(FunctionImpl, function));
     } else if (hop_start(&p, "(")) {
         parse_expr(&p, ret);
@@ -1337,7 +1349,7 @@ static bool parse_function_statement(Parser* parent, FunctionStatement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_function(&p, false, &ret->impl)) {
+    if (!parse_function(&p, true, false, &ret->impl)) {
         cstr_drop(&ret->name);
         return parse_fail(&p);
     }
@@ -1438,6 +1450,11 @@ Block parse_file(const char* source, ErrorCtx* errs) {
         .pos = source,
         .errs = {0},
     };
+
+    if (p.pos[0] == '\xEF' && p.pos[1] == '\xBB' && p.pos[2] == '\xBF') {
+        // Skip Byte Order Mark nonsense
+        p.pos += 3;
+    }
 
     hop_whitespace(&p);
 

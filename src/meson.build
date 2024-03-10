@@ -1,6 +1,6 @@
 src_files = files(
     'prelude.c',
-    'main.c',
+    'span.c',
     'interface.c',
     'type.c',
     'extends_conditional.c',
@@ -18,4 +18,5 @@ src_files = files(
     'name_stack.c',
     'filesystem.c',
     'engine.c',
+    'subprocess.c',
 )

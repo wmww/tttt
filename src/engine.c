@@ -56,8 +56,8 @@ static Result MUST_USE Engine_eval_identifier(Engine* self, csview identifier) {
         // No need to drop the non-ok result since it's value is always undefined
     }
     return Result_err(Value_string(cstr_from_fmt(
-        "ReferenceError: %s is not defined",
-        identifier.buf
+        "ReferenceError: %.*s is not defined",
+        c_SV(identifier)
     )));
 }
 

@@ -51,17 +51,13 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* self) {
     cstr_append_sv(target, c_sv("("));
     c_foreach(i, vec_CallableTypeArg, self->args) {
         cstr_append_s(target, i.ref->name);
-        if (i.ref->type_explicit) {
-            cstr_append_sv(target, c_sv(": "));
-            cstr_append_type_error_msg(target, &i.ref->type);
-        }
+        cstr_append_sv(target, c_sv(": "));
+        cstr_append_type_error_msg(target, &i.ref->type);
         if (i.ref < i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
     }
     cstr_append_sv(target, c_sv(")"));
-    if (self->ret_explicit) {
-        cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_error_msg(target, &self->ret);
-    }
+    cstr_append_sv(target, c_sv(" => "));
+    cstr_append_type_error_msg(target, &self->ret);
 }

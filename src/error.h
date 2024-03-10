@@ -12,6 +12,7 @@ typedef struct Error {
 void Error_drop(Error* self);
 Error Error_clone(Error self);
 void cstr_append_error_debug(cstr* target, Error const* self);
+void cstr_append_error_txt(cstr* target, Error const* self);
 
 #define i_key_class Error
 #include "stc/vec.h"
@@ -22,6 +23,7 @@ typedef struct ErrorCtx {
 
 void ErrorCtx_drop(ErrorCtx* self);
 void ErrorCtx_display(ErrorCtx* self);
+void ErrorCtx_append_errors_txt(ErrorCtx* self, cstr* target);
 bool ErrorCtx_empty(ErrorCtx* self);
 void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other);
 void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message);
