@@ -15,7 +15,9 @@ TernaryType TernaryType_clone(TernaryType self) {
 }
 
 void cstr_append_ternary_type_debug(cstr* target, TernaryType* self, int indent) {
-    cstr_append_extends_conditional_debug(target, &self->conditional, indent);
+    cstr_append_type_debug(target, &self->conditional.maybeSub, indent);
+    cstr_append_sv(target, c_sv(" extends "));
+    cstr_append_type_debug(target, &self->conditional.maybeSuper, indent);
     cstr_append_sv(target, c_sv("\n"));
     APPEND_INDENT(target, indent + 1);
     cstr_append_sv(target, c_sv("? "));
@@ -24,6 +26,16 @@ void cstr_append_ternary_type_debug(cstr* target, TernaryType* self, int indent)
     APPEND_INDENT(target, indent + 1);
     cstr_append_sv(target, c_sv(": "));
     cstr_append_type_debug(target, &self->falseType, indent + 1);
+}
+
+void cstr_append_ternary_type_error_msg(cstr* target, TernaryType* self) {
+    cstr_append_type_error_msg(target, &self->conditional.maybeSub);
+    cstr_append_sv(target, c_sv(" extends "));
+    cstr_append_type_error_msg(target, &self->conditional.maybeSuper);
+    cstr_append_sv(target, c_sv(" ? "));
+    cstr_append_type_error_msg(target, &self->trueType);
+    cstr_append_sv(target, c_sv(" : "));
+    cstr_append_type_error_msg(target, &self->falseType);
 }
 
 Type* TernaryType_resolve(TernaryType* self) {

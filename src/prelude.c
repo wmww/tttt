@@ -7,5 +7,6 @@ void panic(const char* file, int line, const char* fmt, ...) {
     vfprintf(stderr, fmt, va);
     va_end(va);
     fprintf(stderr, "\n");
+    fprintf(stderr, "%p\n", *(void**)nullptr);
     exit(1);
 }

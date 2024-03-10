@@ -4,7 +4,7 @@ function func() {
 }
 
 console.log('Hello, World');
-let a = 2 + 2;
+let a: number = 2 + 2;
 console.log('a:', a);
 let globe = 'global set in global scope'
 func();
@@ -12,12 +12,12 @@ console.log(globe);
 
 // this is a comment
 
-if (1 === 2) {
+if (1 === 2 as any) {
     console.log('if arm');
     /* multiline
      * comment
      */
-} else if ('44' == 44) {
+} else if ('44' == 44 as any) {
     console.log('else if arm');
 } else {
     console.log('else arm');

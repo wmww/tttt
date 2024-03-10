@@ -54,6 +54,28 @@ void cstr_append_vec_generic_item_debug(cstr* target, vec_GenericItem* generics,
     cstr_append_sv(target, c_sv(">"));
 }
 
+void cstr_append_vec_generic_item_error_msg(cstr* target, vec_GenericItem* generics) {
+    if (vec_GenericItem_empty(generics)) {
+        return;
+    }
+    cstr_append_sv(target, c_sv("<"));
+    c_foreach(i, vec_GenericItem, *generics) {
+        cstr_append_s(target, i.ref->name);
+        if (i.ref->extends.tag != TYPE_ANY) {
+            cstr_append_sv(target, c_sv(" extends "));
+            cstr_append_type_error_msg(target, &i.ref->extends);
+        }
+        if (i.ref->fallback_explicit) {
+            cstr_append_sv(target, c_sv(" = "));
+            cstr_append_type_error_msg(target, &i.ref->fallback);
+        }
+        if (i.ref < i.end - 1) {
+            cstr_append_sv(target, c_sv(", "));
+        }
+    }
+    cstr_append_sv(target, c_sv(">"));
+}
+
 void Generic_drop(Generic* self) {
     vec_GenericItem_drop(&self->items);
     Type_drop(&self->inner);
@@ -73,6 +95,16 @@ void cstr_append_generic_debug(cstr* target, Generic* self, int indent) {
     } else {
         cstr_append_type_debug(target, &self->inner, indent);
         cstr_append_vec_generic_item_debug(target, &self->items, indent);
+    }
+}
+
+void cstr_append_generic_error_msg(cstr* target, Generic* self) {
+    if (self->inner.tag == TYPE_CALLABLE) {
+        cstr_append_vec_generic_item_error_msg(target, &self->items);
+        cstr_append_type_error_msg(target, &self->inner);
+    } else {
+        cstr_append_type_error_msg(target, &self->inner);
+        cstr_append_vec_generic_item_error_msg(target, &self->items);
     }
 }
 

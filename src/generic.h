@@ -19,6 +19,7 @@ GenericItem GenericItem_clone(GenericItem self);
 #include "stc/vec.h"
 
 void cstr_append_vec_generic_item_debug(cstr* target, vec_GenericItem* self, int indent);
+void cstr_append_vec_generic_item_error_msg(cstr* target, vec_GenericItem* self);
 
 typedef struct Generic {
     vec_GenericItem items;
@@ -28,5 +29,6 @@ typedef struct Generic {
 void Generic_drop(Generic* self);
 Generic Generic_clone(Generic self);
 void cstr_append_generic_debug(cstr* target, Generic* self, int indent);
+void cstr_append_generic_error_msg(cstr* target, Generic* self);
 void Generic_resolve_names(Generic* self, NameStack* names, ErrorCtx* errs);
 Type Generic_callable_infer(Generic const* self, vec_Expr* args, ErrorCtx* errs);

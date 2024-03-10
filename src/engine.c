@@ -2,6 +2,7 @@
 #include "block.h"
 #include "statement.h"
 #include "expr.h"
+#include "as_type_expr.h"
 #include "value.h"
 #include "result.h"
 #include "math.h"
@@ -305,6 +306,7 @@ static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
         case EXPR_BINARY_OP: return Engine_eval_binary_op(self, expr->binary_op);
         case EXPR_UNARY_OP: return Engine_eval_unary_op(self, expr->unary_op);
         case EXPR_DOT_PROP: return Engine_eval_dot_prop(self, expr->dot_prop);
+        case EXPR_AS_TYPE: return Engine_eval_expr(self, &expr->as_type->expr);
         case EXPR_CALL: return Engine_eval_call(self, expr->call);
         case EXPR_FUNCTION: return Result_ok(Value_js_func(&expr->function->args, &expr->function->body));
         case EXPR_OBJECT: return Engine_eval_object(self, &expr->object);

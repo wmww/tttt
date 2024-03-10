@@ -20,8 +20,19 @@ void cstr_append_interface_debug(cstr* target, Interface const* self, int indent
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0 ": "));
         cstr_append_type_debug(target, &i.ref->type, indent + 1);
-        cstr_append_sv(target, c_sv(",\n"));
+        cstr_append_sv(target, c_sv(";\n"));
     }
     APPEND_INDENT(target, indent);
+    cstr_append_sv(target, c_sv("}"));
+}
+
+void cstr_append_interface_error_msg(cstr* target, Interface const* self) {
+    cstr_append_sv(target, c_sv("{\n"));
+    c_foreach(i, vec_InterfaceMember, self->members) {
+        cstr_append_s(target, i.ref->name);
+        cstr_append_sv(target, c_sv(": "));
+        cstr_append_type_error_msg(target, &i.ref->type);
+        cstr_append_sv(target, c_sv("; "));
+    }
     cstr_append_sv(target, c_sv("}"));
 }

@@ -14,8 +14,10 @@ typedef struct LoopStatement LoopStatement;
 
 typedef struct NameInitData {
     cstr name;
+    Span name_span;
     bool type_explicit;
     Type type;
+    Span type_span;
     bool value_explicit;
     Expr value;
 } NameInitData;

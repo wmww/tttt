@@ -3,6 +3,7 @@
 #include "prelude.h"
 #include "interface.h"
 #include "value.h"
+#include "span.h"
 
 typedef struct TernaryType TernaryType;
 typedef struct CallableType CallableType;
@@ -37,6 +38,7 @@ typedef struct Type {
             int generic_depth;
             // Only used if generic_depth != 0
             int generic_index;
+            Span span;
         } identifier;
         Generic* generic;
         Interface interface;
@@ -59,13 +61,14 @@ static inline Type Type_value(Value value) {
         .value = value,
     };
 }
-static inline Type Type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index) {
+static inline Type Type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index, Span span) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier.name = identifier,
         .identifier.type = type,
         .identifier.generic_depth = generic_depth,
         .identifier.generic_index = generic_index,
+        .identifier.span = span,
     };
 }
 static inline Type Type_generic(Generic* generic) {
@@ -95,8 +98,12 @@ static inline Type Type_ternary(TernaryType* ternary) {
 
 void Type_drop(Type* self);
 void cstr_append_type_debug(cstr* target, Type const* self, int indent);
+void cstr_append_type_error_msg(cstr* target, Type const* self);
 Type Type_clone(Type self);
 Type Type_move(Type* self);
 
 void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs);
 bool Type_extends(Type const* sub, Type const* super);
+void Type_abstract_literals(Type* self); // {a: 7} -> {a: number}
+
+void not_assignable_error(ErrorCtx* errs, Span span, Type const* source, Type const* target);

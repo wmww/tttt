@@ -4,9 +4,8 @@
 #include "name_stack.h"
 #include "callable_type.h"
 #include "function_impl.h"
+#include "as_type_expr.h"
 #include "generic.h"
-
-const Expr Expr_default = { .tag = EXPR_LITERAL, .literal = { .tag = VALUE_UNDEFINED } };
 
 static inline int binary_op_get_precedence(BinaryOp op) {
     switch (op) {
@@ -86,6 +85,12 @@ void Expr_drop(Expr* self) {
             free(self->dot_prop);
             break;
 
+        case EXPR_AS_TYPE:
+            Expr_drop(&self->as_type->expr);
+            Type_drop(&self->as_type->type);
+            free(self->as_type);
+            break;
+
         case EXPR_CALL:
             Expr_drop(&self->call->callable);
             vec_Expr_drop(&self->call->args);
@@ -156,6 +161,14 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             cstr_append_expr_debug(target, &self->dot_prop->expr, indent);
             cstr_append_sv(target, c_sv("."));
             cstr_append_s(target, self->dot_prop->prop);
+        }   break;
+
+        case EXPR_AS_TYPE: {
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            cstr_append_expr_debug(target, &self->as_type->expr, indent);
+            cstr_append_sv(target, c_sv(" as "));
+            cstr_append_type_debug(target, &self->as_type->type, indent);
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
         }   break;
 
         case EXPR_CALL: {
@@ -231,6 +244,11 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
             // TODO: resolve name of prop
             break;
 
+        case EXPR_AS_TYPE:
+            Expr_resolve_names(&self->as_type->expr, names, errs);
+            Type_resolve_names(&self->as_type->type, names, errs);
+            break;
+
         case EXPR_CALL:
             Expr_resolve_names(&self->call->callable, names, errs);
             c_foreach(i, vec_Expr, self->call->args) {
@@ -293,8 +311,8 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                 case BINARY_OP_SINGLE_EQUAL:
                     switch (bin->left.tag) {
                         case EXPR_IDENTIFIER:
-                            if (bin->left.identifier.type && !Type_extends(bin->left.identifier.type, &type_b)) {
-                                ErrorCtx_type_error(errs, "wrong type in assignment");
+                            if (bin->left.identifier.type && !Type_extends(&type_b, bin->left.identifier.type)) {
+                                not_assignable_error(errs, bin->left.span, &type_b, bin->left.identifier.type);
                             }
                             break;
 
@@ -347,6 +365,12 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
         case EXPR_DOT_PROP: {
             // TODO: add typechecking
             return Type_any;
+        }
+
+        case EXPR_AS_TYPE: {
+            // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
+            // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+            return Type_clone(self->as_type->type);
         }
 
         case EXPR_CALL: {

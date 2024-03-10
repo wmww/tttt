@@ -12,12 +12,6 @@ ExtendsConditional ExtendsConditional_clone(ExtendsConditional self) {
     };
 }
 
-void cstr_append_extends_conditional_debug(cstr* target, ExtendsConditional* self, int indent) {
-    cstr_append_type_debug(target, &self->maybeSub, indent);
-    cstr_append_sv(target, c_sv(" extends "));
-    cstr_append_type_debug(target, &self->maybeSuper, indent);
-}
-
 bool ExtendsConditional_eval(ExtendsConditional* self) {
     return Type_extends(&self->maybeSub, &self->maybeSuper);
 }

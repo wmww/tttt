@@ -7,6 +7,7 @@
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
 typedef struct DotPropExpr DotPropExpr;
+typedef struct AsTypeExpr AsTypeExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_ObjectExprItem ObjectExpr;
@@ -24,6 +25,7 @@ typedef struct Expr {
         EXPR_BINARY_OP,
         EXPR_UNARY_OP,
         EXPR_DOT_PROP,
+        EXPR_AS_TYPE,
         EXPR_CALL,
         EXPR_FUNCTION,
         EXPR_OBJECT,
@@ -37,6 +39,7 @@ typedef struct Expr {
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
         DotPropExpr* dot_prop;
+        AsTypeExpr* as_type;
         CallExpr* call;
         FunctionImpl* function;
         // TODO: perhaps optimize lookup somehow? (currently linear)
@@ -44,37 +47,43 @@ typedef struct Expr {
     };
 } Expr;
 
-extern const Expr Expr_default;
+static inline Expr Expr_default(Span span) {
+    return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = Value_undefined };
+}
 
-static inline Expr Expr_literal_new(Span span, Value value) {
+static inline Expr Expr_literal(Span span, Value value) {
     return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value };
 }
 
-static inline Expr Expr_identifier_new(Span span, cstr identifier) {
+static inline Expr Expr_identifier(Span span, cstr identifier) {
     return (Expr){ .span = span, .tag = EXPR_IDENTIFIER, .identifier.name = identifier };
 }
 
-static inline Expr Expr_binary_op_new(Span span, BinaryOpExpr* op) {
+static inline Expr Expr_binary_op(Span span, BinaryOpExpr* op) {
     return (Expr){ .span = span, .tag = EXPR_BINARY_OP, .binary_op = op };
 }
 
-static inline Expr Expr_unary_op_new(Span span, UnaryOpExpr* op) {
+static inline Expr Expr_unary_op(Span span, UnaryOpExpr* op) {
     return (Expr){ .span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
 }
 
-static inline Expr Expr_dot_prop_new(Span span, DotPropExpr* dot_prop) {
+static inline Expr Expr_dot_prop(Span span, DotPropExpr* dot_prop) {
     return (Expr){ .span = span, .tag = EXPR_DOT_PROP, .dot_prop = dot_prop };
 }
 
-static inline Expr Expr_call_new(Span span, CallExpr* call) {
+static inline Expr Expr_as_type(Span span, AsTypeExpr* as_type) {
+    return (Expr){ .span = span, .tag = EXPR_AS_TYPE, .as_type = as_type };
+}
+
+static inline Expr Expr_call(Span span, CallExpr* call) {
     return (Expr){ .span = span, .tag = EXPR_CALL, .call = call };
 }
 
-static inline Expr Expr_function_new(Span span, FunctionImpl* function) {
+static inline Expr Expr_function(Span span, FunctionImpl* function) {
     return (Expr){ .span = span, .tag = EXPR_FUNCTION, .function = function };
 }
 
-static inline Expr Expr_object_new(Span span, ObjectExpr object) {
+static inline Expr Expr_object(Span span, ObjectExpr object) {
     return (Expr){ .span = span, .tag = EXPR_OBJECT, .object = object };
 }
 

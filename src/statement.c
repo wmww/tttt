@@ -40,10 +40,13 @@ void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
     if (self->data.value_explicit) {
         Type expr_type = Expr_get_type_and_typecheck(&self->data.value, errs);
         if (self->data.type_explicit && !Type_extends(&expr_type, &self->data.type)) {
-            ErrorCtx_type_error(errs, "invalid variable initialization type");
+            not_assignable_error(errs, self->data.name_span, &expr_type, &self->data.type);
         } else if (!self->data.type_explicit) {
             Type_drop(&self->data.type);
             self->data.type = Type_clone(expr_type);
+            if (self->keyword != VAR_INIT_CONST) {
+                Type_abstract_literals(&self->data.type);
+            }
         }
         Type_drop(&expr_type);
     }

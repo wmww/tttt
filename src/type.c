@@ -79,6 +79,24 @@ void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
     }
 }
 
+void cstr_append_type_error_msg(cstr* target, Type const* self) {
+    switch (self->tag) {
+        case TYPE_ANY: cstr_append_sv(target, c_sv("any")); break;
+        case TYPE_UNKOWN: cstr_append_sv(target, c_sv("unkown")); break;
+        case TYPE_NEVER: cstr_append_sv(target, c_sv("never")); break;
+        case TYPE_VOID: cstr_append_sv(target, c_sv("void")); break;
+        case TYPE_BOOLEAN: cstr_append_sv(target, c_sv("boolean")); break;
+        case TYPE_NUMBER: cstr_append_sv(target, c_sv("number")); break;
+        case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
+        case TYPE_VALUE: cstr_append_value_js(target, &self->value); break;
+        case TYPE_IDENTIFIER: cstr_append_s(target, self->identifier.name); break;
+        case TYPE_GENERIC: cstr_append_generic_error_msg(target, self->generic); break;
+        case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, self->callable); break;
+        case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &self->interface); break;
+        case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, self->ternary); break;
+    }
+}
+
 Type Type_clone(Type self) {
     switch (self.tag) {
         case TYPE_ANY:
@@ -93,7 +111,8 @@ Type Type_clone(Type self) {
             cstr_clone(self.identifier.name),
             self.identifier.type,
             self.identifier.generic_depth,
-            self.identifier.generic_index
+            self.identifier.generic_index,
+            self.identifier.span
         );
         case TYPE_GENERIC: return Type_generic(c_new(Generic, Generic_clone(*self.generic)));
         case TYPE_CALLABLE: return Type_callable(c_new(CallableType, CallableType_clone(*self.callable)));
@@ -129,7 +148,13 @@ void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
                 self->identifier.generic_depth = result->is_generic ? generic_depth : 0;
                 self->identifier.generic_index = result->generic_index;
             } else {
-                ErrorCtx_type_error(errs, "unkown type");
+                ErrorCtx_error(
+                    errs,
+                    self->identifier.span,
+                    2304,
+                    "Cannot find name '%s'.",
+                    cstr_str(&self->identifier.name)
+                );
             }
         }   break;
 
@@ -241,4 +266,87 @@ bool Type_extends(Type const* sub, Type const* super) {
         case TYPE_TERNARY: return Type_extends(sub, TernaryType_resolve(super->ternary));
     }
     UNREACHABLE;
+}
+
+void Type_abstract_literals(Type* self) {
+    switch (self->tag) {
+        case TYPE_ANY:
+        case TYPE_UNKOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_IDENTIFIER:
+        case TYPE_GENERIC:
+        case TYPE_CALLABLE:
+        case TYPE_INTERFACE:
+        case TYPE_TERNARY:
+            break;
+
+        case TYPE_VALUE:
+            switch (self->value.tag) {
+                case VALUE_UNDEFINED:
+                case VALUE_NULL:
+                    break;
+
+                case VALUE_BOOLEAN:
+                    *self = Type_boolean;
+                    break;
+
+                case VALUE_NUMBER:
+                    *self = Type_number;
+                    break;
+
+                case VALUE_STRING:
+                    Type_drop(self);
+                    *self = Type_string;
+                    break;
+
+                case VALUE_OBJECT: {
+                    Interface interface;
+                    c_foreach(i, hmap_str_ObjectValueItem, self->value.object.get->items) {
+                        InterfaceMember member = InterfaceMember_make(
+                            cstr_clone(i.ref->first),
+                            Type_value(Value_clone(i.ref->second.value))
+                        );
+                        Type_abstract_literals(&member.type);
+                        vec_InterfaceMember_push(&interface.members, member);
+                    }
+                    Type_drop(self);
+                    *self = Type_interface(interface);
+                }   break;
+
+                case VALUE_ARRAY: PANIC("Type_abstract_literals() not implemented for arrays");
+
+                case VALUE_JS_FUNC:
+                case VALUE_NATIVE_FUNC:
+                    Type_drop(self);
+                    *self = Type_any;
+                    break;
+            }
+            break;
+    }
+}
+
+void not_assignable_error(ErrorCtx* errs, Span span, Type const* source, Type const* target) {
+    cstr source_str = cstr_null, target_str = cstr_null;
+    Type source_abstracted = Type_any;
+    if (target->tag != TYPE_VALUE) {
+        source_abstracted = Type_clone(*source);
+        Type_abstract_literals(&source_abstracted);
+        source = &source_abstracted;
+    }
+    cstr_append_type_error_msg(&source_str, source);
+    cstr_append_type_error_msg(&target_str, target);
+    Type_drop(&source_abstracted);
+    ErrorCtx_error(
+        errs,
+        span,
+        2322,
+        "Type '%s' is not assignable to type '%s'.",
+        cstr_str(&source_str),
+        cstr_str(&target_str)
+    );
+    c_drop(cstr, &source_str, &target_str);
 }
