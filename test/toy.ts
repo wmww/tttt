@@ -22,8 +22,6 @@ function show(a, b: number): void {
     console.log(b);
 }
 
-function show hello;
-
 let j = {};
 let k = {x: 1, y: {null_: null, three: 3}};
 show(a, b);

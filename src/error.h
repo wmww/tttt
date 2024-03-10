@@ -26,5 +26,7 @@ bool ErrorCtx_empty(ErrorCtx* self);
 void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other);
 void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message);
 void ErrorCtx_type_error(ErrorCtx* self, const char* static_message);
-void ErrorCtx_add_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message);
+void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message);
 void ErrorCtx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+
+#define TS_CODE_NONE 0

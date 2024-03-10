@@ -32,3 +32,17 @@ while (a > 0) {
     //console.log();
     --a;
 }
+
+a = 0
+let b = 0;
+let c = 0;
+let d = 0;
+
+b = a/*
+*/++
+b
+
+d = c/*  */++
+d
+
+console.log(b, d);

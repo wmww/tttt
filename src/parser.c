@@ -87,12 +87,14 @@ static bool parse_type(Parser* parent, Type* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, Expr* ret);
 
+// TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D
 static inline bool is_identifier_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$';
 }
 
+// TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Continue%7D
 static inline bool is_identifier_start_char(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '$';
 }
 
 static inline bool is_number_char(char c) {
@@ -127,41 +129,73 @@ static bool parse_number_str(Parser* parent, cstr* ret) {
     }
 }
 
-static inline bool hop_whitespace(Parser* parent) {
-    bool ret = false;
+typedef enum WhitespaceRet {
+    WHITESPACE_NONE = 0,
+    WHITESPACE_PARSED,
+    WHITESPACE_NEWLINE,
+} WhitespaceRet;
+
+static inline WhitespaceRet hop_comment(Parser* parent) {
+    if (*parent->pos != '/') {
+        return WHITESPACE_NONE;
+    }
+    switch (*(parent->pos + 1)) {
+        case '/':
+            (parent->pos) += 2;
+            while (*parent->pos && *parent->pos != '\n') {
+                (parent->pos)++;
+            }
+            return WHITESPACE_PARSED;
+
+        case '*': {
+            WhitespaceRet ret = WHITESPACE_PARSED;
+            const char* pos = parent->pos;
+            pos += 2;
+            while (*(pos - 1) != '*' || *pos != '/') {
+                switch (*pos) {
+                    case '\n': ret = WHITESPACE_NEWLINE; break;
+                    case 0: return WHITESPACE_NONE;
+                    default: break;
+                }
+                pos++;
+            }
+            parent->pos = pos;
+            return ret;
+        }
+
+        default: break;
+    }
+    return WHITESPACE_NONE;
+}
+
+static inline WhitespaceRet hop_whitespace(Parser* parent) {
+    // TODO unicode and additional character support: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar
+    WhitespaceRet ret = WHITESPACE_NONE;
     while (true) {
         switch (*parent->pos) {
             case ' ':
             case '\t':
-            case '\n':
             case '\r':
                 break;
 
+            case '\n':
+                ret = WHITESPACE_NEWLINE;
+                break;
+
             case '/':
-                switch (*(parent->pos + 1)) {
-                    case '/':
-                        (parent->pos) += 2;
-                        while (*parent->pos && *parent->pos != '\n') {
-                            (parent->pos)++;
-                        }
-                        break;
-
-                    case '*':
-                        (parent->pos)++;
-                        while (*parent->pos && (*(parent->pos - 1) != '*' || *parent->pos != '/')) {
-                            parent->pos++;
-                        }
-                        break;
-
-                    default:
-                        return ret;
+                switch (hop_comment(parent)) {
+                    case WHITESPACE_NONE: return ret;
+                    case WHITESPACE_PARSED: break;
+                    case WHITESPACE_NEWLINE: ret = WHITESPACE_NEWLINE; break;
                 }
                 break;
 
             default:
                 return ret;
         }
-        ret = true;
+        if (ret == WHITESPACE_NONE) {
+            ret = WHITESPACE_PARSED;
+        }
         parent->pos++;
     }
 }
@@ -748,8 +782,14 @@ static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
     Parser p = parser(parent);
 
     if (hop_start(&p, "+")) {
+        if (*p.pos == '+') {
+            return parse_fail(&p);
+        }
         *op = BINARY_OP_PLUS;
     } else if (hop_start(&p, "-")) {
+        if (*p.pos == '-') {
+            return parse_fail(&p);
+        }
         *op = BINARY_OP_MINUS;
     } else if (hop_start(&p, "*")) {
         *op = BINARY_OP_STAR;
@@ -779,7 +819,7 @@ static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
     hop_whitespace(&p);
 
     if (!parse_expr(&p, right)) {
-        ErrorCtx_parse_error(&p.errs, "expected expression after binary operation");
+        ErrorCtx_error(&p.errs, span_from_pos(&p), 1109, "Expression expected.");
     }
 
     return parse_success(&p);
@@ -887,6 +927,81 @@ static bool parse_literal(Parser* parent, Value* ret) {
     return parse_type_compat_literal(parent, ret);
 }
 
+static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
+    Parser p = parser(parent);
+
+    bool hit_newline = hop_whitespace(&p) == WHITESPACE_NEWLINE;
+
+    vec_Expr args;
+    if (parse_call_args(&p, &args)) {
+        *left_and_ret = Expr_call_new(
+            span_from_parsed(&p),
+            c_new(CallExpr, {
+                .callable = *left_and_ret,
+                .args = args,
+            })
+        );
+        return parse_success(&p);
+    }
+
+    cstr dot_prop = cstr_null;
+    if (parse_dot_prop(&p, &dot_prop)) {
+        *left_and_ret = Expr_dot_prop_new(
+            span_from_parsed(&p),
+            c_new(DotPropExpr, {
+                .expr = *left_and_ret,
+                .prop = dot_prop,
+            })
+        );
+        return parse_success(&p);
+    }
+
+    if (!hit_newline) {
+        UnaryOp right_unary;
+        if (parse_right_unary_op_expr(&p, &right_unary)) {
+            *left_and_ret = Expr_unary_op_new(
+                span_from_parsed(&p),
+                c_new(UnaryOpExpr, {
+                    .op = right_unary,
+                    .expr = *left_and_ret,
+                })
+            );
+            return parse_success(&p);
+        }
+    }
+
+    Expr right = Expr_default;
+    BinaryOp binary = 0;
+    if (parse_binary_op_expr(&p, &binary, &right)) {
+        if (right.tag == EXPR_BINARY_OP &&
+            !right.binary_op->parenthesized &&
+            BinaryOp_cmp_precedence(binary, right.binary_op->op) >= 0
+        ) {
+            right.binary_op->left = Expr_binary_op_new(
+                span_from_parsed(&p),
+                c_new(BinaryOpExpr, {
+                    .left = *left_and_ret,
+                    .op = binary,
+                    .right = right.binary_op->left,
+                })
+            );
+            *left_and_ret = right;
+        } else {
+            *left_and_ret = Expr_binary_op_new(
+                span_from_parsed(&p),
+                c_new(BinaryOpExpr, {
+                    .left = *left_and_ret,
+                    .op = binary,
+                    .right = right,
+                })
+            );
+        }
+        return parse_success(&p);
+    }
+
+    return parse_fail(&p);
+}
+
 static bool parse_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
 
@@ -915,76 +1030,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         return parse_fail(&p);
     }
 
-    bool done = false;
-    while (!done) {
-        done = true;
-        hop_whitespace(&p);
-
-        vec_Expr args;
-        if (parse_call_args(&p, &args)) {
-            *ret = Expr_call_new(
-                span_from_parsed(&p),
-                c_new(CallExpr, {
-                    .callable = *ret,
-                    .args = args,
-                })
-            );
-            done = false;
-        }
-
-        cstr dot_prop = cstr_null;
-        if (parse_dot_prop(&p, &dot_prop)) {
-            *ret = Expr_dot_prop_new(
-                span_from_parsed(&p),
-                c_new(DotPropExpr, {
-                    .expr = *ret,
-                    .prop = dot_prop,
-                })
-            );
-            done = false;
-        }
-
-        UnaryOp right_unary;
-        if (parse_right_unary_op_expr(&p, &right_unary)) {
-            *ret = Expr_unary_op_new(
-                span_from_parsed(&p),
-                c_new(UnaryOpExpr, {
-                    .op = right_unary,
-                    .expr = *ret,
-                })
-            );
-            done = false;
-        }
-
-        Expr right = Expr_default;
-        BinaryOp binary = 0;
-        if (parse_binary_op_expr(&p, &binary, &right)) {
-            if (right.tag == EXPR_BINARY_OP &&
-                !right.binary_op->parenthesized &&
-                BinaryOp_cmp_precedence(binary, right.binary_op->op) >= 0
-            ) {
-                right.binary_op->left = Expr_binary_op_new(
-                    span_from_parsed(&p),
-                    c_new(BinaryOpExpr, {
-                        .left = *ret,
-                        .op = binary,
-                        .right = right.binary_op->left,
-                    })
-                );
-                *ret = right;
-            } else {
-                *ret = Expr_binary_op_new(
-                    span_from_parsed(&p),
-                    c_new(BinaryOpExpr, {
-                        .left = *ret,
-                        .op = binary,
-                        .right = right,
-                    })
-                );
-            }
-            done = false;
-        }
-    }
+    while (parse_expr_right_side(&p, ret)) {}
 
     return parse_success(&p);
 }
@@ -1295,9 +1341,15 @@ static bool parse_block_inner(Parser* parent, Block* ret) {
             p.pos++;
         } else if (parse_statement(&p, &statement)) {
             vec_Statement_push(&statements, statement);
+            if (hop_whitespace(&p) == WHITESPACE_NEWLINE || *p.pos || *p.pos == '}') {}
+            else if (*p.pos == ';') {
+                p.pos++;
+            } else {
+                ErrorCtx_error(&p.errs, span_from_pos(&p), 1005, "';' expected.");
+            }
         } else {
-            ErrorCtx_parse_error(&p.errs, "invalid statement");
-            while (*p.pos && *p.pos != '}' && *p.pos != ';' && *p.pos != '\n') { p.pos++; }
+            ErrorCtx_error(&p.errs, span_from_pos(&p), 1128, "Declaration or statement expected.");
+            p.pos++;
         }
         hop_whitespace(&p);
     }

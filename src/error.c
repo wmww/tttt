@@ -32,15 +32,15 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
 
     cstr_append_fmt(
         target,
-        "%d:%d - " CLR_ERR "error TS%d:" CLR0 " %s",
-        line, col, self->ts_code,
+        "%d - " CLR_ERR "error TS%d:" CLR0 CLR_STR " %s" CLR0,
+        line, self->ts_code,
         cstr_str(&self->message)
     );
 
     if (file_start) {
         cstr_append_fmt(
             target,
-            "\n\n" CLR_STR "%.*s" CLR0 "\n",
+            "\n\n%.*s\n",
             (int)(line_end - line_start), line_start
         );
 
@@ -50,7 +50,7 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
 
         cstr_append_sv(target, c_sv(CLR_ERR));
         for (unsigned i = 0; i < (self->span.length ? self->span.length : 1); i++) {
-            cstr_append_sv(target, c_sv("~"));
+            cstr_append_sv(target, c_sv("-"));
         }
         cstr_append_sv(target, c_sv(CLR0));
     }
@@ -89,7 +89,7 @@ void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message) {
     vec_Error_push(&self->errors, (Error){
         .message = cstr_from(static_message),
         .span = {0},
-        .ts_code = 0,
+        .ts_code = TS_CODE_NONE,
     });
 }
 
@@ -100,11 +100,11 @@ void ErrorCtx_type_error(ErrorCtx* self, const char* static_message) {
     vec_Error_push(&self->errors, (Error){
         .message = cstr_from(static_message),
         .span = {0},
-        .ts_code = 0,
+        .ts_code = TS_CODE_NONE,
     });
 }
 
-void ErrorCtx_add_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message) {
+void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message) {
     vec_Error_push(&self->errors, (Error){
         .message = message,
         .span = span,
@@ -118,5 +118,5 @@ void ErrorCtx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt
     va_start(args, fmt);
     cstr_vfmt(&message, 0, fmt, args);
     va_end(args);
-    ErrorCtx_add_error_s(self, span, ts_code, message);
+    ErrorCtx_error_s(self, span, ts_code, message);
 }
