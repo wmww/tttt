@@ -19,4 +19,5 @@ src_files = files(
     'filesystem.c',
     'engine.c',
     'subprocess.c',
+    'string_helpers.c',
 )

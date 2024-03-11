@@ -41,10 +41,8 @@ void cstr_append_callable_type_debug(cstr* target, CallableType* self, int inden
         }
     }
     cstr_append_sv(target, c_sv(")"));
-    if (self->ret_explicit) {
-        cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &self->ret, indent);
-    }
+    cstr_append_sv(target, c_sv(" => "));
+    cstr_append_type_debug(target, &self->ret, indent);
 }
 
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* self) {

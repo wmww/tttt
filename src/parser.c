@@ -580,6 +580,7 @@ static bool parse_function_arg(Parser* parent, void* data) {
 
     vec_FunctionArg_push(&ret->args, (FunctionArg){
         .name = cstr_clone(name_init.name),
+        .name_span = name_init.name_span,
         .value_explicit = name_init.value_explicit,
         .value = name_init.value,
     });
@@ -993,6 +994,7 @@ static bool parse_expr_right_side(Parser* parent, Anchor a, Expr* left_and_ret) 
         if (parse_function(&p, false, true, &parsed.function)) {
             vec_FunctionArg_push(&parsed.function.args, (FunctionArg){
                 .name = cstr_clone(left_and_ret->identifier.name),
+                .name_span = left_and_ret->span,
                 .value_explicit = false,
                 .value = Expr_default(span_from_pos(&p)),
             });

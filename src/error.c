@@ -1,4 +1,5 @@
 #include "error.h"
+#include "string_helpers.h"
 
 void Error_drop(Error* self) {
     cstr_drop(&self->message);
@@ -10,7 +11,7 @@ Error Error_clone(Error self) {
 }
 
 void cstr_append_error_debug(cstr* target, Error const* self) {
-    unsigned line = span_line_number(&self->span);
+    unsigned line = span_line_index(&self->span) + 1;
 
     cstr_append_fmt(
         target,
@@ -22,7 +23,7 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
     if (self->span.file_start) {
         const char* line_start = span_line_start(&self->span);
         const char* line_end = span_line_end(&self->span);
-        unsigned col = span_start_ptr(&self->span) - line_start + 1;
+        unsigned col = span_col_index(&self->span);
 
         cstr_append_fmt(
             target,
@@ -45,8 +46,8 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
 void cstr_append_error_txt(cstr* target, Error const* self) {
     const char* line_start = span_line_start(&self->span);
     const char* line_end = span_line_end(&self->span);
-    unsigned line = span_line_number(&self->span);
-    unsigned col = span_start_ptr(&self->span) - line_start + 1;
+    unsigned line = span_line_index(&self->span);
+    unsigned col = span_col_index(&self->span);
 
     cstr_append_fmt(
         target,

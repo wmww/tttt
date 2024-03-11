@@ -6,9 +6,6 @@
 #include "stc/csview.h"
 #include <stc/types.h>
 
-// cstr_vfmt seems to be a private API, but including the declaration works. Linking may break on STC update.
-intptr_t cstr_vfmt(cstr* self, intptr_t start, const char* fmt, va_list args);
-
 __attribute__((noreturn))
 void panic(const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 3, 4)));
 #define PANIC(...) panic(__FILE__, __LINE__, __VA_ARGS__)

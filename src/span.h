@@ -24,7 +24,8 @@ static inline const char* span_end_ptr(Span const* self) {
     return self->file_start ? self->file_start + self->offset + self->length : nullptr;
 }
 
-int span_line_number(Span const* span);
-const char* span_line_start(Span const* span);
-const char* span_line_end(Span const* span);
-csview span_sv(Span const* span);
+int span_line_index(Span const* self);
+int span_col_index(Span const* self);
+const char* span_line_start(Span const* self);
+const char* span_line_end(Span const* self);
+csview span_sv(Span const* self);

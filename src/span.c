@@ -1,27 +1,31 @@
 #include "span.h"
 
-int span_line_number(Span const* span) {
-    if (!span->file_start) {
+int span_line_index(Span const* self) {
+    if (!self->file_start) {
         return 1;
     }
-    const char* end = span_start_ptr(span);
-    const char* pos = span->file_start;
-    int count = 1;
+    const char* end = span_start_ptr(self);
+    const char* pos = self->file_start;
+    int line = 0;
     while (pos < end) {
         if (*pos == '\n') {
-            count++;
+            line++;
         }
         pos++;
     }
-    return count;
+    return line;
 }
 
-const char* span_line_start(Span const* span) {
-    if (!span->file_start) {
+int span_col_index(Span const* self) {
+    return span_start_ptr(self) - span_line_start(self);
+}
+
+const char* span_line_start(Span const* self) {
+    if (!self->file_start) {
         return nullptr;
     }
-    const char* pos = span_start_ptr(span);
-    while (pos > span->file_start && *pos != '\n') {
+    const char* pos = span_start_ptr(self);
+    while (pos > self->file_start && *pos != '\n') {
         pos--;
     }
     if (*pos == '\n') {
@@ -30,21 +34,21 @@ const char* span_line_start(Span const* span) {
     return pos;
 }
 
-const char* span_line_end(Span const* span) {
-    if (!span->file_start) {
+const char* span_line_end(Span const* self) {
+    if (!self->file_start) {
         return nullptr;
     }
-    const char* pos = span_start_ptr(span);
+    const char* pos = span_start_ptr(self);
     while (*pos && *pos != '\n') {
         pos++;
     }
     return pos;
 }
 
-csview span_sv(Span const* span) {
-    if (!span->file_start) {
+csview span_sv(Span const* self) {
+    if (!self->file_start) {
         return c_sv("");
     } else {
-        return csview_from_n(span->file_start + span->offset, span->length);
+        return csview_from_n(self->file_start + self->offset, self->length);
     }
 }

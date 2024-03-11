@@ -7,6 +7,7 @@
 
 typedef struct FunctionArg {
     cstr name;
+    Span name_span;
     bool value_explicit;
     Expr value;
 } FunctionArg;
