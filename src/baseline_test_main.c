@@ -4,13 +4,15 @@
 #include "string_helpers.h"
 
 const char* const default_tests_dir = "../TypeScript/tests";
-const char* tests_dir;
+const char* tests_dir = default_tests_dir;
+const char* test_filter = "";
 
 static void show_help(FILE* target) {
     fprintf(target, "tttt test runner\n\n\
-  -h, --help           show this help message\n\n\
-  -d, --dir [PATH]     path to TypeScript tests directory\n\
-                       (%s by default)\n\n\
+  -h, --help                show this help message\n\n\
+  -d, --dir [PATH]          path to TypeScript tests directory\n\
+                            (%s by default)\n\n\
+  -f, --filter [FILTER]     regex of tests to run, case insensitive\n\
 \n", default_tests_dir);
 }
 
@@ -23,6 +25,15 @@ static bool parse_args(int argc, const char** argv) {
             i++;
             if (i < argc && *argv[i] != '-') {
                 tests_dir = argv[i];
+            } else {
+                fprintf(stderr, CLR_ERR "Expected argument after %s\n\n" CLR0, argv[i-1]);
+                show_help(stderr);
+                return false;
+            }
+        } else if (streq(argv[i], "-f") || streq(argv[i], "--filter")) {
+            i++;
+            if (i < argc && *argv[i] != '-') {
+                test_filter = argv[i];
             } else {
                 fprintf(stderr, CLR_ERR "Expected argument after %s\n\n" CLR0, argv[i-1]);
                 show_help(stderr);
@@ -48,7 +59,7 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    box_BaselineTestSuite suite = load_baseline_test_suite(tests_dir);
+    box_BaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter);
     BaselineTestSuite_run(suite.get);
     box_BaselineTestSuite_drop(&suite);
 

@@ -127,13 +127,10 @@ void LineNumberedStr_drop(LineNumberedStr* self) {
     cstr_drop(&self->str);
 }
 
-BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr source_path) {
-    csview name = csview_from(basename_of(cstr_str(&source_path)));
-    ASSERT(csview_ends_with(name, ".ts"));
-    name = csview_substr(name, 0, csview_size(name) - 3);
+BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path) {
     return (BaselineTestCase) {
         .suite = suite,
-        .name = cstr_from_sv(name),
+        .name = name,
         .source_path = source_path,
         .detail = {0}
     };

@@ -30,7 +30,7 @@ typedef struct BaselineTestCase {
     } detail;
 } BaselineTestCase;
 
-BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr source_path);
+BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path);
 void BaselineTestCase_drop(BaselineTestCase* self);
 void BaselineTestCase_clear_detail(BaselineTestCase* self);
 void BaselineTestCase_add_symbol(BaselineTestCase* self, const char* name, Span const* span);
