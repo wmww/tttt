@@ -1,6 +1,7 @@
 #include "type.h"
 #include "parser.h"
 #include "block.h"
+#include "statement.h"
 #include "name_stack.h"
 #include "filesystem.h"
 #include "error.h"
@@ -39,7 +40,10 @@ int main(int argc, const char** argv) {
         goto cleanup;
     }
 
-    Block_typecheck(&ast, &errs);
+    StatementCtx statement_ctx = StatementCtx_toplevel();
+    Block_typecheck(&ast, &statement_ctx, &errs);
+    StatementCtx_drop(&statement_ctx);
+
     if (ErrorCtx_empty(&errs)) {
         printf(CLR_GOOD "Typecheck passed" CLR0 "\n");
     } else {

@@ -329,7 +329,11 @@ void Type_abstract_literals(Type* self) {
     }
 }
 
-void not_assignable_error(ErrorCtx* errs, Span span, Type const* source, Type const* target) {
+void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs) {
+    if (Type_extends(source, target)) {
+        return;
+    }
+
     cstr source_str = cstr_null, target_str = cstr_null;
     Type source_abstracted = Type_any;
     if (target->tag != TYPE_VALUE) {
@@ -337,6 +341,7 @@ void not_assignable_error(ErrorCtx* errs, Span span, Type const* source, Type co
         Type_abstract_literals(&source_abstracted);
         source = &source_abstracted;
     }
+
     cstr_append_type_error_msg(&source_str, source);
     cstr_append_type_error_msg(&target_str, target);
     Type_drop(&source_abstracted);

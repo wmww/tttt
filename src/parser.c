@@ -63,6 +63,13 @@ Anchor span_start(Parser* parser) {
     };
 }
 
+Anchor span_starting_at(Parser* parser, Span start) {
+    return (Anchor) {
+        .parser = parser,
+        .start = parser->file_start + start.offset,
+    };
+}
+
 Span span_end(Anchor spanner) {
     const char* file_start = spanner.parser->file_start;
     return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
@@ -604,11 +611,13 @@ static bool parse_function(Parser* parent, bool parse_args, bool require_arrow, 
             hop_whitespace(&p);
         }
 
+        Anchor args_a = span_start(&p);
         if (!parse_sequence(&p, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret)) {
             vec_GenericItem_drop(&generics);
             FunctionImpl_drop(ret);
             return parse_fail(&p);
         }
+        ret->args_span = span_end(args_a);
         hop_whitespace(&p);
     }
 
@@ -939,9 +948,9 @@ static bool parse_literal(Parser* parent, Value* ret) {
     return parse_type_compat_literal(parent, ret);
 }
 
-static bool parse_expr_right_side(Parser* parent, Anchor a, Expr* left_and_ret) {
+static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
     Parser p = parser(parent);
-    a.parser = &p;
+    Anchor a = span_starting_at(&p, left_and_ret->span);
 
     bool hit_newline = hop_whitespace(&p) == WHITESPACE_NEWLINE;
 
@@ -998,6 +1007,7 @@ static bool parse_expr_right_side(Parser* parent, Anchor a, Expr* left_and_ret) 
                 .value_explicit = false,
                 .value = Expr_default(span_from_pos(&p)),
             });
+            parsed.function.args_span = left_and_ret->span;
             if (parsed.function.type.tag != TYPE_CALLABLE) {
                 PANIC("Function type is not callable");
             }
@@ -1057,7 +1067,7 @@ static bool parse_expr_right_side(Parser* parent, Anchor a, Expr* left_and_ret) 
 
 static bool parse_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
-    Anchor start = span_start(&p);
+    Anchor a = span_start(&p);
 
     cstr name = cstr_null;
     FunctionImpl function = {0};
@@ -1084,7 +1094,9 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         return parse_fail(&p);
     }
 
-    while (parse_expr_right_side(&p, start, ret)) {}
+    ret->span = span_end(a);
+
+    while (parse_expr_right_side(&p, ret)) {}
 
     return parse_success(&p);
 }
@@ -1361,6 +1373,7 @@ static bool parse_function_statement(Parser* parent, FunctionStatement* ret) {
 
 static bool parse_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     LoopStatement loop;
     if (parse_named_interface(&p, &ret->interface)) {
@@ -1383,6 +1396,7 @@ static bool parse_statement(Parser* parent, Statement* ret) {
         };
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
+        ret->break_span = span_end(a);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN;
     } else if (parse_function_statement(&p, &ret->function)) {

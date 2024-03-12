@@ -106,4 +106,7 @@ void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs);
 bool Type_extends(Type const* sub, Type const* super);
 void Type_abstract_literals(Type* self); // {a: 7} -> {a: number}
 
-void not_assignable_error(ErrorCtx* errs, Span span, Type const* source, Type const* target);
+void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
+
+#define i_key_class Type
+#include "stc/vec.h"

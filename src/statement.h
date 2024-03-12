@@ -8,6 +8,7 @@
 #include "function_impl.h"
 
 typedef struct ErrorCtx ErrorCtx;
+typedef struct StatementCtx StatementCtx;
 typedef struct LoopStatement LoopStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
@@ -82,12 +83,13 @@ typedef struct Statement {
     } tag;
     union {
         Block block;
-        Expr expr;
+        Expr expr; // also used for return
         VarInitStatement var_init;
         FunctionStatement function;
         InterfaceStatement interface;
         IfStatement if_else;
         LoopStatement* loop;
+        Span break_span;
     };
 } Statement;
 
@@ -97,7 +99,7 @@ void Statement_drop(Statement* self);
 void cstr_append_statement_debug(cstr* target, Statement* self, int indent);
 void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs);
 void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs);
-void Statement_typecheck(Statement* self, ErrorCtx* errs);
+void Statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs);
 
 #define i_key_class Statement
 #define i_is_forward
@@ -112,3 +114,16 @@ typedef struct LoopStatement {
     Expr afterthought;
     Statement body;
 } LoopStatement;
+
+// Statement context
+
+typedef struct StatementCtx {
+    vec_Type returned_types;
+    Type const* specified_return;
+    bool return_allowed;
+    bool break_allowd;
+} StatementCtx;
+
+StatementCtx StatementCtx_toplevel();
+StatementCtx StatementCtx_function(Type const* specified_return);
+void StatementCtx_drop(StatementCtx* self);

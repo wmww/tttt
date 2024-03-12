@@ -1,5 +1,7 @@
 #include "span.h"
 
+const Span span_null = {0};
+
 int span_line_index(Span const* self) {
     if (!self->file_start) {
         return 1;

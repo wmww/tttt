@@ -22,6 +22,7 @@ void FunctionArg_drop(FunctionArg* self);
 typedef struct FunctionImpl {
     Type type;
     vec_FunctionArg args;
+    Span args_span;
     Block body;
 } FunctionImpl;
 

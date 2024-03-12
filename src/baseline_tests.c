@@ -326,7 +326,9 @@ bool run_test_case(TestCtx* ctx, const char* test_name, const char* test_path) {
     Block_resolve_names(&ast, &names, &errs);
     NameStack_drop(&names);
 
-    Block_typecheck(&ast, &errs);
+    StatementCtx statement_ctx = StatementCtx_toplevel();
+    Block_typecheck(&ast, &statement_ctx, &errs);
+    StatementCtx_drop(&statement_ctx);
 
     Block_compile_test_info(&ast, &case_ctx);
 

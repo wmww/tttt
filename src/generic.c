@@ -9,9 +9,6 @@
 #include "extends_conditional.h"
 #include "expr.h"
 
-#define i_key_class Type
-#include "stc/vec.h"
-
 #define i_key_class vec_Type
 #include "stc/vec.h"
 

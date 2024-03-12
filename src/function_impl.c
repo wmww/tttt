@@ -2,6 +2,7 @@
 #include "name_stack.h"
 #include "callable_type.h"
 #include "generic.h"
+#include "statement.h"
 
 void FunctionArg_drop(FunctionArg* self) {
     cstr_drop(&self->name);
@@ -124,6 +125,7 @@ void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* 
 
 void FunctionImpl_typecheck(FunctionImpl* self, ErrorCtx* errs) {
     CallableType* callable = FunctionImpl_callable_type(self);
+
     int arg_count = FunctionImpl_arg_count(self);
     for (int i = 0; i < arg_count; i++) {
         FunctionArg* value_arg = vec_FunctionArg_at_mut(&self->args, i);
@@ -136,6 +138,22 @@ void FunctionImpl_typecheck(FunctionImpl* self, ErrorCtx* errs) {
             Type_drop(&expr_type);
         }
     }
-    Block_typecheck(&self->body, errs);
-    // TODO: check that return is compatible with return type
+
+    StatementCtx ctx = StatementCtx_function(&callable->ret);
+
+    Block_typecheck(&self->body, &ctx, errs);
+
+    if (!callable->ret_explicit) {
+        int type_count = vec_Type_size(&ctx.returned_types);
+        Type_drop(&callable->ret);
+        if (type_count == 0) {
+            callable->ret = Type_void;
+        } else if (type_count == 1) {
+            callable->ret = vec_Type_pull(&ctx.returned_types);
+        } else {
+            ErrorCtx_error(errs, span_null, TS_CODE_NONE, "Multiple function return types not yet implemented.");
+        }
+    }
+
+    StatementCtx_drop(&ctx);
 }

@@ -311,8 +311,8 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                 case BINARY_OP_SINGLE_EQUAL:
                     switch (bin->left.tag) {
                         case EXPR_IDENTIFIER:
-                            if (bin->left.identifier.type && !Type_extends(&type_b, bin->left.identifier.type)) {
-                                not_assignable_error(errs, bin->left.span, &type_b, bin->left.identifier.type);
+                            if (bin->left.identifier.type) {
+                                check_assignable_or_error(&type_b, bin->left.identifier.type, bin->left.span, errs);
                             }
                             break;
 

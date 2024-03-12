@@ -39,9 +39,9 @@ void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, 
 void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
     if (self->data.value_explicit) {
         Type expr_type = Expr_get_type_and_typecheck(&self->data.value, errs);
-        if (self->data.type_explicit && !Type_extends(&expr_type, &self->data.type)) {
-            not_assignable_error(errs, self->data.name_span, &expr_type, &self->data.type);
-        } else if (!self->data.type_explicit) {
+        if (self->data.type_explicit) {
+            check_assignable_or_error(&expr_type, &self->data.type, self->data.name_span, errs);
+        } else {
             Type_drop(&self->data.type);
             self->data.type = Type_clone(expr_type);
             if (self->keyword != VAR_INIT_CONST) {
@@ -262,14 +262,14 @@ void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) 
     }
 }
 
-void Statement_typecheck(Statement* self, ErrorCtx* errs) {
+void Statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs) {
     switch (self->tag) {
         case STATEMENT_NOOP: break;
 
         case STATEMENT_INTERFACE: break;
 
         case STATEMENT_BLOCK:
-            Block_typecheck(&self->block, errs);
+            Block_typecheck(&self->block, ctx, errs);
             break;
 
         case STATEMENT_EXPR: {
@@ -278,9 +278,18 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
         }   break;
 
         case STATEMENT_RETURN: {
-            // TODO: typecheck
-            Type t = Expr_get_type_and_typecheck(&self->expr, errs);
-            Type_drop(&t);
+            if (ctx->return_allowed) {
+                Type t = Expr_get_type_and_typecheck(&self->expr, errs);
+                check_assignable_or_error(&t, ctx->specified_return, self->expr.span, errs);
+                vec_Type_push(&ctx->returned_types, t);
+            } else {
+                ErrorCtx_error(
+                    errs,
+                    self->break_span,
+                    1108,
+                    "A 'return' statement can only be used within a function body."
+                );
+            }
         }   break;
 
         case STATEMENT_VAR_INIT:
@@ -303,23 +312,48 @@ void Statement_typecheck(Statement* self, ErrorCtx* errs) {
                 Type_drop(&t);
             }
             c_foreach(i, vec_Statement, self->if_else.statements) {
-                Statement_typecheck(i.ref, errs);
+                Statement_typecheck(i.ref, ctx, errs);
             }
             break;
         }
 
         case STATEMENT_LOOP: {
-            Statement_typecheck(&self->loop->initialization, errs);
+            Statement_typecheck(&self->loop->initialization, ctx, errs);
             Type t = Expr_get_type_and_typecheck(&self->loop->condition, errs);
             Type_drop(&t);
             t = Expr_get_type_and_typecheck(&self->loop->afterthought, errs);
             Type_drop(&t);
-            Statement_typecheck(&self->loop->body, errs);
+            bool break_was_allowed = ctx->break_allowd;
+            ctx->break_allowd = true;
+            Statement_typecheck(&self->loop->body, ctx, errs);
+            ctx->break_allowd = break_was_allowed;
             break;
         }
 
         case STATEMENT_BREAK:
-            // TODO: can we check to make sure we're in a loop?
+            if (!ctx->break_allowd) {
+                ErrorCtx_error(
+                    errs,
+                    self->break_span,
+                    1105,
+                    "A 'break' statement can only be used within an enclosing iteration or switch statement."
+                );
+            }
             break;
     }
+}
+
+StatementCtx StatementCtx_toplevel() {
+    return (StatementCtx){0};
+}
+
+StatementCtx StatementCtx_function(Type const* specified_return) {
+    return (StatementCtx){
+        .specified_return = specified_return,
+        .return_allowed = true,
+    };
+}
+
+void StatementCtx_drop(StatementCtx* self) {
+    vec_Type_drop(&self->returned_types);
 }

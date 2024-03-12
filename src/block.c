@@ -32,8 +32,8 @@ void Block_resolve_names(Block* self, NameStack* names, ErrorCtx* errs) {
     NameStack_pop_frame(names);
 }
 
-void Block_typecheck(Block* self, ErrorCtx* errs) {
+void Block_typecheck(Block* self, StatementCtx* ctx, ErrorCtx* errs) {
     c_foreach(i, vec_Statement, self->statements) {
-        Statement_typecheck(i.ref, errs);
+        Statement_typecheck(i.ref, ctx, errs);
     }
 }
