@@ -37,3 +37,15 @@ void Block_typecheck(Block* self, StatementCtx* ctx, ErrorCtx* errs) {
         Statement_typecheck(i.ref, ctx, errs);
     }
 }
+
+void Block_resolve_names_toplevel(Block* self, ErrorCtx* errs) {
+    NameStack names = NameStack_init();
+    Block_resolve_names(self, &names, errs);
+    NameStack_drop(&names);
+}
+
+void Block_typecheck_toplevel(Block* self, ErrorCtx* errs) {
+    StatementCtx statement_ctx = StatementCtx_toplevel();
+    Block_typecheck(self, &statement_ctx, errs);
+    StatementCtx_drop(&statement_ctx);
+}

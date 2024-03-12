@@ -1,4 +1,4 @@
-src_files = files(
+core_files = files(
     'prelude.c',
     'span.c',
     'interface.c',
@@ -20,4 +20,12 @@ src_files = files(
     'engine.c',
     'subprocess.c',
     'string_helpers.c',
+)
+
+main_files = core_files + files('main.c')
+
+baseline_test_files = core_files + files(
+    'baseline_test_suite.c',
+    'baseline_test_case.c',
+    'baseline_test_traversal.c',
 )

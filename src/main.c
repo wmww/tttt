@@ -1,8 +1,6 @@
 #include "type.h"
 #include "parser.h"
 #include "block.h"
-#include "statement.h"
-#include "name_stack.h"
 #include "filesystem.h"
 #include "error.h"
 #include "engine.h"
@@ -31,18 +29,14 @@ int main(int argc, const char** argv) {
         goto cleanup;
     }
 
-    NameStack names = NameStack_init();
-    Block_resolve_names(&ast, &names, &errs);
-    NameStack_drop(&names);
+    Block_resolve_names_toplevel(&ast, &errs);
     if (!ErrorCtx_empty(&errs)) {
         ErrorCtx_display(&errs);
         ret = 1;
         goto cleanup;
     }
 
-    StatementCtx statement_ctx = StatementCtx_toplevel();
-    Block_typecheck(&ast, &statement_ctx, &errs);
-    StatementCtx_drop(&statement_ctx);
+    Block_typecheck_toplevel(&ast, &errs);
 
     if (ErrorCtx_empty(&errs)) {
         printf(CLR_GOOD "Typecheck passed" CLR0 "\n");

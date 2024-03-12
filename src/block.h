@@ -20,3 +20,5 @@ void cstr_append_block_debug(cstr* target, Block* self, int indent);
 void Block_resolve_names_without_stack_frame(Block* self, NameStack* names, ErrorCtx* errs);
 void Block_resolve_names(Block* self, NameStack* names, ErrorCtx* errs);
 void Block_typecheck(Block* self, StatementCtx* ctx, ErrorCtx* errs);
+void Block_resolve_names_toplevel(Block* self, ErrorCtx* errs);
+void Block_typecheck_toplevel(Block* self, ErrorCtx* errs);
