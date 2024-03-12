@@ -11,6 +11,7 @@ static void load_path(void* data, const char* dir_path, const char* name) {
         cstr_drop(&full_path);
     } else if (path_is_reg_file(cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
         vec_BaselineTestCase_push(&self->cases, make_baseline_test_case(self, full_path));
+        printf("\rCollected %ld cases            ", vec_BaselineTestCase_size(&self->cases));
     } else {
         cstr_drop(&full_path);
     }
@@ -25,22 +26,14 @@ static void load_subdir(BaselineTestSuite* self, const char* subdir) {
     cstr_drop(&full_dir);
 }
 
-BaselineTestSuite load_baseline_test_suite(const char* tests_dir) {
-    BaselineTestSuite ret = {
-        .tests_dir = tests_dir,
-        .cases = vec_BaselineTestCase_init(),
-    };
-    load_subdir(&ret, "conformance");
-    load_subdir(&ret, "compiler");
-    return ret;
-}
-
 void BaselineTestSuite_drop(BaselineTestSuite* self) {
     vec_BaselineTestCase_drop(&self->cases);
 }
 
 void BaselineTestSuite_run(BaselineTestSuite* self) {
+    printf(CLR_GOOD "Running tests...\n" CLR0);
     c_foreach(i, vec_BaselineTestCase, self->cases) {
+        i.ref->suite->tests_dir = "../TypeScript/tests/";
         if (BaselineTestCase_run(i.ref, false)) {
             printf("%s " CLR_GOOD "passed\n" CLR0, cstr_str(&i.ref->name));
         } else {
@@ -48,4 +41,17 @@ void BaselineTestSuite_run(BaselineTestSuite* self) {
         }
         BaselineTestCase_clear_detail(i.ref);
     }
+    printf(CLR_GOOD "Done running tests\n" CLR0);
+}
+
+box_BaselineTestSuite load_baseline_test_suite(const char* tests_dir) {
+    printf(CLR_GOOD "Collecting tests...\n" CLR0);
+    box_BaselineTestSuite ret = box_BaselineTestSuite_make((BaselineTestSuite){
+        .tests_dir = tests_dir,
+        .cases = vec_BaselineTestCase_init(),
+    });
+    load_subdir(ret.get, "conformance");
+    load_subdir(ret.get, "compiler");
+    printf("\rCollected %ld cases            \n", vec_BaselineTestCase_size(&ret.get->cases));
+    return ret;
 }

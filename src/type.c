@@ -233,12 +233,13 @@ bool Type_extends(Type const* sub, Type const* super) {
             return true;
 
         case TYPE_GENERIC:
-            PANIC("generic extends not yet implemented");
-            break;
+            NONFATAL("generic extends not yet implemented");
+            return false;
 
         case TYPE_CALLABLE:
             if (sub->tag == TYPE_GENERIC) {
-                PANIC("generic extends not yet implemented");
+                NONFATAL("generic extends not yet implemented");
+                return false;
             } else if (sub->tag == TYPE_CALLABLE) {
                 long arg_count = vec_CallableTypeArg_size(&super->callable->args);
                 if (vec_CallableTypeArg_size(&sub->callable->args) != arg_count) {
@@ -260,8 +261,8 @@ bool Type_extends(Type const* sub, Type const* super) {
             }
 
         case TYPE_INTERFACE:
-            PANIC("extends(TYPE_INTERFACE, ...) not implemented");
-            break;
+            NONFATAL("extends(TYPE_INTERFACE, ...) not implemented");
+            return false;
 
         case TYPE_TERNARY: return Type_extends(sub, TernaryType_resolve(super->ternary));
     }
@@ -317,7 +318,9 @@ void Type_abstract_literals(Type* self) {
                     *self = Type_interface(interface);
                 }   break;
 
-                case VALUE_ARRAY: PANIC("Type_abstract_literals() not implemented for arrays");
+                case VALUE_ARRAY:
+                    NONFATAL("Type_abstract_literals() not implemented for arrays");
+                    break;
 
                 case VALUE_JS_FUNC:
                 case VALUE_NATIVE_FUNC:

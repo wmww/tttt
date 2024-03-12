@@ -4,7 +4,7 @@
 #include "string_helpers.h"
 
 const char* const default_tests_dir = "../TypeScript/tests";
-const char* tests_dir = default_tests_dir;
+const char* tests_dir;
 
 static void show_help(FILE* target) {
     fprintf(target, "tttt test runner\n\n\
@@ -48,11 +48,9 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    BaselineTestSuite suite = load_baseline_test_suite(tests_dir);
-
-    BaselineTestSuite_run(&suite);
-
-    BaselineTestSuite_drop(&suite);
+    box_BaselineTestSuite suite = load_baseline_test_suite(tests_dir);
+    BaselineTestSuite_run(suite.get);
+    box_BaselineTestSuite_drop(&suite);
 
     return 0;
 }

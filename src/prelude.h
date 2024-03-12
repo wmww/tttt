@@ -10,7 +10,12 @@ __attribute__((noreturn))
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 #define PANIC(...) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
 #define ASSERT(cond) if (!(cond)) panic_internal("assertion failed", __FILE__, __LINE__, "%s", #cond)
-#define UNREACHABLE PANIC("unreachable was reached \\x_x/")
+#define UNREACHABLE PANIC("unreachable reached \\x_x/")
+
+void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+#define NONFATAL(...) nonfatal_internal("nonfatal", __FILE__, __LINE__, __VA_ARGS__)
+void inhibit_nonfatals();
+void uninhibit_nonfatals();
 
 #define INDENT "  "
 #define APPEND_INDENT(str, level) for (int indent_i = 0; indent_i < level; indent_i++) cstr_append(str, INDENT);

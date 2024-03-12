@@ -520,8 +520,12 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         Type type;
-        parse_type(&p, &type);
-        vec_InterfaceMember_push(&members, InterfaceMember_make(name, type));
+        if (parse_type(&p, &type)) {
+            vec_InterfaceMember_push(&members, InterfaceMember_make(name, type));
+        } else {
+            ErrorCtx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "expected type");
+            while (*p.pos && *p.pos != '}' && *p.pos != ',' && *p.pos != ';' && *p.pos != '\n') p.pos++;
+        }
         hop_whitespace(&p);
 
         // Typescript accepts EITHER of these in interfaces (or nothing at all). You can MIX them!

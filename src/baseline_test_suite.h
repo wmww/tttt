@@ -12,6 +12,12 @@ typedef struct BaselineTestSuite {
     vec_BaselineTestCase cases;
 } BaselineTestSuite;
 
-BaselineTestSuite load_baseline_test_suite(const char* tests_dir);
 void BaselineTestSuite_drop(BaselineTestSuite* self);
 void BaselineTestSuite_run(BaselineTestSuite* self);
+
+#define i_key_class BaselineTestSuite
+#define i_no_clone
+#define i_no_hash
+#include "stc/box.h"
+
+box_BaselineTestSuite load_baseline_test_suite(const char* tests_dir);

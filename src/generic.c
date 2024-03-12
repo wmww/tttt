@@ -128,7 +128,17 @@ typedef struct TraverseCtx {
     // array of vecs, candidates_len is number of vec_Type
     vec_Type* candidates;
     int candidates_len;
+    ErrorCtx* errs;
 } TraverseCtx;
+
+static inline TraverseCtx TraverseCtx_make(vec_vec_Type* candidates, ErrorCtx* errs) {
+    return (TraverseCtx) {
+        .generic_depth = 1,
+        .candidates = candidates->data,
+        .candidates_len = vec_vec_Type_size(candidates),
+        .errs = errs,
+    };
+}
 
 static void collect_generic_candidates(
     Type const* generic,
@@ -184,14 +194,22 @@ static void collect_generic_candidates(
         }
 
         case TYPE_CALLABLE:
-            PANIC("inferring types of generic with callable not yet implemented");
+            ErrorCtx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with callable not yet implemented"
+            );
+            return;
 
         case TYPE_INTERFACE:
-            PANIC("inferring types of generic with interface not yet implemented");
-            break;
+            ErrorCtx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with interface not yet implemented"
+            );
+            return;
 
         case TYPE_TERNARY:
-            PANIC("inferring types of generic with ternary not yet implemented");
+            ErrorCtx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with ternary not yet implemented"
+            );
+            return;
     }
     UNREACHABLE;
 }
@@ -281,22 +299,14 @@ Type Generic_callable_infer(Generic const* self, vec_Expr* args, ErrorCtx* errs)
         collect_generic_candidates(
             &vec_CallableTypeArg_at(&self->inner.callable->args, i)->type,
             &call_arg_type,
-            (TraverseCtx){
-                .generic_depth = 1,
-                .candidates = candidates.data,
-                .candidates_len = generic_count,
-            }
+            TraverseCtx_make(&candidates, errs)
         );
         Type_drop(&call_arg_type);
     }
     Type ret = Type_clone(self->inner);
     swap_generics_for_specific_types(
         &ret,
-        (TraverseCtx){
-            .generic_depth = 1,
-            .candidates = candidates.data,
-            .candidates_len = generic_count,
-        }
+        TraverseCtx_make(&candidates, errs)
     );
     vec_vec_Type_drop(&candidates);
     return ret;
