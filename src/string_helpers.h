@@ -17,3 +17,7 @@ void LinesSv_next(LinesSv_iter* self);
 #define LinesCstr_iter LinesSv_iter
 #define LinesCstr_next LinesSv_next
 LinesSv_iter LinesCstr_begin(cstr* str);
+
+static inline bool streq(const char* a, const char* b) {
+    return (a == b || (a && b && strcmp(a, b) == 0));
+}

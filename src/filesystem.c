@@ -42,7 +42,11 @@ bool for_each_item_in_dir(
     }
     struct dirent* item;
     while ((item = readdir(directory))) {
-        callback(data, dir_path, item->d_name);
+        if (*item->d_name != '.' ||
+            (strcmp(item->d_name, ".") != 0 && strcmp(item->d_name, ".."))
+        ) {
+            callback(data, dir_path, item->d_name);
+        }
     }
     if (closedir(directory) < 0) {
         fprintf(stderr, "Could not close %s\n", dir_path);

@@ -127,14 +127,14 @@ void LineNumberedStr_drop(LineNumberedStr* self) {
     cstr_drop(&self->str);
 }
 
-BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, const char* source_path) {
-    csview name = csview_from(basename_of(source_path));
+BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr source_path) {
+    csview name = csview_from(basename_of(cstr_str(&source_path)));
     ASSERT(csview_ends_with(name, ".ts"));
     name = csview_substr(name, 0, csview_size(name) - 3);
     return (BaselineTestCase) {
         .suite = suite,
         .name = cstr_from_sv(name),
-        .source_path = cstr_from(source_path),
+        .source_path = source_path,
         .detail = {0}
     };
 }
@@ -193,13 +193,34 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
     cstr symbols_results = cstr_null;
     cstr types_results = cstr_null;
 
+    // It's ok if errors file doesn't exist
+
+    if (!path_is_reg_file(cstr_str(&symbols_path))) {
+        if (noisy) {
+            fprintf(stderr, CLR_ERR "%s:" CLR0 " %s does not exist\n", name, cstr_str(&symbols_path));
+        }
+        ret = false;
+        goto cleanup;
+    }
+
+    if (!path_is_reg_file(cstr_str(&types_path))) {
+        if (noisy) {
+            fprintf(stderr, CLR_ERR "%s:" CLR0 " %s does not exist\n", name, cstr_str(&types_path));
+        }
+        ret = false;
+        goto cleanup;
+    }
+
     if (cstr_empty(&self->detail.source)) {
         if (noisy) {
             printf("Testing %s\n", cstr_str(&self->source_path));
         }
         self->detail.source = load_test_source(cstr_str(&self->source_path));
         if (cstr_empty(&self->detail.source)) {
-            fprintf(stderr, "%s: Failed to load test case\n", cstr_str(&self->name));
+            if (noisy) {
+                fprintf(stderr, CLR_ERR "%s:" CLR0 " Failed to load test case\n", name);
+            }
+            ret = false;
             goto cleanup;
         }
 
@@ -227,9 +248,9 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         &self->detail.types
     );
 
-    ret &= compare_outputs(cstr_str(&self->name), "errors", cstr_str(&errors_path), cstr_sv(&errors_result), true);
-    ret &= compare_outputs(cstr_str(&self->name), "symbols", cstr_str(&symbols_path), cstr_sv(&symbols_results), true);
-    ret &= compare_outputs(cstr_str(&self->name), "types", cstr_str(&types_path), cstr_sv(&types_results), true);
+    ret &= compare_outputs(name, "errors", cstr_str(&errors_path), cstr_sv(&errors_result), noisy);
+    ret &= compare_outputs(name, "symbols", cstr_str(&symbols_path), cstr_sv(&symbols_results), noisy);
+    ret &= compare_outputs(name, "types", cstr_str(&types_path), cstr_sv(&types_results), noisy);
 
 cleanup:
     c_drop(cstr,
