@@ -60,7 +60,7 @@ bool NameStack_add_variable(NameStack* self, cstr name, Type const* type) {
 bool NameStack_add_type(NameStack* self, cstr name, Type const* type, bool is_generic, int generic_index) {
     hmap_str_NamedType_result result = hmap_str_NamedType_insert(
         &vec_Namespace_back(&self->stack)->types,
-        cstr_clone(name),
+        name,
         (NamedType){
             .type = type,
             .is_generic = is_generic,

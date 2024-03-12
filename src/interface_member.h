@@ -9,8 +9,8 @@ typedef struct InterfaceMember {
 
 static inline InterfaceMember InterfaceMember_make(cstr name, Type type) {
     return (InterfaceMember) {
-        .name = cstr_clone(name),
-        .type = Type_clone(type),
+        .name = name,
+        .type = type,
     };
 }
 

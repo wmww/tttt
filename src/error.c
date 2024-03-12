@@ -31,7 +31,7 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
             (int)(line_end - line_start), line_start
         );
 
-        for (unsigned i = 1; i < col; i++) {
+        for (unsigned i = 0; i < col; i++) {
             cstr_append_sv(target, c_sv(" "));
         }
 
@@ -63,7 +63,7 @@ void cstr_append_error_txt(cstr* target, Error const* self) {
             "\n%.*s\n",
             (int)(line_end - line_start), line_start
         );
-        for (unsigned i = 1; i < col; i++) {
+        for (unsigned i = 0; i < col; i++) {
             cstr_append_sv(target, c_sv(" "));
         }
         for (unsigned i = 0; i < (self->span.length ? self->span.length : 1); i++) {
