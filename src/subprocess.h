@@ -2,5 +2,5 @@
 
 #include "prelude.h"
 
-void show_diff(csview a, csview b);
+void run_diff_subprocess(csview a, csview b);
 int run_subprocess(const char* const* cmd);

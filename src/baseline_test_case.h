@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prelude.h"
+#include "error.h"
 
 typedef struct Span Span;
 typedef struct Type Type;
@@ -18,13 +19,20 @@ void LineNumberedStr_drop(LineNumberedStr* self);
 #include "stc/vec.h"
 
 typedef struct BaselineTestCase {
-    const char* test_path;
-    cstr contents;
-    vec_LineNumberedStr symbols;
-    vec_LineNumberedStr types;
+    BaselineTestSuite* suite;
+    cstr name;
+    cstr source_path;
+    struct {
+        cstr source;
+        ErrorCtx errs;
+        vec_LineNumberedStr symbols;
+        vec_LineNumberedStr types;
+    } detail;
 } BaselineTestCase;
 
+BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, const char* source_path);
 void BaselineTestCase_drop(BaselineTestCase* self);
-void BaselineTestCase_add_symbol(BaselineTestCase* test_case, const char* name, Span const* span);
-void BaselineTestCase_add_type(BaselineTestCase* ctx, Span const* span, Type const* type);
-bool run_baseline_test_case(BaselineTestSuite* suite, const char* test_name, const char* test_path);
+void BaselineTestCase_clear_detail(BaselineTestCase* self);
+void BaselineTestCase_add_symbol(BaselineTestCase* self, const char* name, Span const* span);
+void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, Type const* type);
+bool BaselineTestCase_run(BaselineTestCase* self, bool noisy);

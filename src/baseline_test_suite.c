@@ -5,11 +5,13 @@ int main(int argc, const char** argv) {
     (void)argc;
     (void)argv;
     BaselineTestSuite suite = {
-        .typescript_tests_dir = "/home/code/TypeScript/tests",
+        .tests_dir = "/home/code/TypeScript/tests",
     };
-    return run_baseline_test_case(
+    BaselineTestCase test_case = make_baseline_test_case(
         &suite,
-        "emitArrowFunctionsAsIs",
-        "conformance/es6/arrowFunction/emitArrowFunctionsAsIs.ts"
-    ) ? 1 : 0;
+        "/home/code/TypeScript/tests/cases/conformance/es6/arrowFunction/emitArrowFunctionsAsIs.ts"
+    );
+    bool ret = BaselineTestCase_run(&test_case, false);
+    BaselineTestCase_drop(&test_case);
+    return ret ? 0 : 1;
 }

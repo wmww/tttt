@@ -3,5 +3,5 @@
 #include "prelude.h"
 
 typedef struct BaselineTestSuite {
-    const char* typescript_tests_dir;
+    const char* tests_dir;
 } BaselineTestSuite;

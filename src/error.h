@@ -21,6 +21,7 @@ typedef struct ErrorCtx {
     vec_Error errors;
 } ErrorCtx;
 
+static inline ErrorCtx ErrorCtx_init() { return (ErrorCtx){0}; }
 void ErrorCtx_drop(ErrorCtx* self);
 void ErrorCtx_display(ErrorCtx* self);
 void ErrorCtx_append_errors_txt(ErrorCtx* self, cstr* target);

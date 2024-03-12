@@ -32,7 +32,7 @@ bool path_is_directory(const char* path)
 
 bool for_each_item_in_dir(
     const char* dir_path,
-    void (*callback)(void* data, const char* dir, const char* name),
+    void (*callback)(void* data, const char* dir_path, const char* name),
     void* data
 ) {
     DIR* directory = opendir(dir_path);

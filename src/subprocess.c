@@ -17,7 +17,7 @@ static bool write_sv(int fd, csview sv) {
     return true;
 }
 
-void show_diff(csview a, csview b) {
+void run_diff_subprocess(csview a, csview b) {
     int a_pipe[2] = {-1, -1};
     int b_pipe[2] = {-1, -1};
     cstr a_arg = cstr_null;
