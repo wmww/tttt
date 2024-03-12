@@ -5,6 +5,8 @@
 #include "block.h"
 #include "value.h"
 
+typedef struct CallableTypeArg CallableTypeArg;
+
 typedef struct FunctionArg {
     cstr name;
     Span name_span;
@@ -29,7 +31,7 @@ typedef struct FunctionImpl {
 void FunctionImpl_drop(FunctionImpl* self);
 CallableType* FunctionImpl_callable_type(FunctionImpl* self);
 Generic* FunctionImpl_generic_or_null(FunctionImpl* self);
-long FunctionImpl_arg_count(FunctionImpl* self);
+int FunctionImpl_arg_count(FunctionImpl* self);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* self, bool include_arrow, int indent);
 void FunctionImpl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx* errs);
 void FunctionImpl_typecheck(FunctionImpl* self, ErrorCtx* errs);

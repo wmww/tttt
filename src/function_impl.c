@@ -33,7 +33,7 @@ Generic* FunctionImpl_generic_or_null(FunctionImpl* self) {
     }
 }
 
-long FunctionImpl_arg_count(FunctionImpl* self) {
+int FunctionImpl_arg_count(FunctionImpl* self) {
     int arg_count = vec_CallableTypeArg_size(&FunctionImpl_callable_type(self)->args);
     if (vec_FunctionArg_size(&self->args) != arg_count) {
         PANIC("function type has different number of args than function");
