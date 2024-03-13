@@ -150,6 +150,7 @@ static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* o
         case BINARY_OP_GREATER_EQUAL: ret = Value_boolean(Value_to_number(&left) >= Value_to_number(&right)); break;
         case BINARY_OP_NOT_EQUAL: ret = Value_boolean(!Value_loose_eq(&left, &right)); break;
         case BINARY_OP_DOUBLE_NOT_EQUAL: ret = Value_boolean(!Value_strict_eq(&left, &right)); break;
+        case BINARY_OP_COMMA: ret = right; right = Value_undefined; break;
     }
     Value_drop(&left);
     Value_drop(&right);

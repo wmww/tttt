@@ -1,4 +1,5 @@
 #include "span.h"
+#include "math_helpers.h"
 
 const Span span_null = {0};
 
@@ -53,4 +54,13 @@ csview span_sv(Span const* self) {
     } else {
         return csview_from_n(self->file_start + self->offset, self->length);
     }
+}
+
+Span span_between(Span const* a, Span const* b) {
+    if (a->file_start != b->file_start) {
+        PANIC("Tried to make a span between two different files");
+    }
+    unsigned start = umin(a->offset, b->offset);
+    unsigned end = umax(a->offset + a->length, b->offset + b->length);
+    return span_make(a->file_start, start, end - start);
 }

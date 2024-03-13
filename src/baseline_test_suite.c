@@ -64,11 +64,12 @@ void BaselineTestSuite_drop(BaselineTestSuite* self) {
 void BaselineTestSuite_run(BaselineTestSuite* self) {
     printf(CLR_GOOD "Running tests...\n" CLR0);
     c_foreach(i, vec_BaselineTestCase, self->cases) {
-        i.ref->suite->tests_dir = "../TypeScript/tests/";
+        printf("%s... ", cstr_str(&i.ref->name));
+        fflush(stdout);
         if (BaselineTestCase_run(i.ref, false)) {
-            printf("%s " CLR_GOOD "passed\n" CLR0, cstr_str(&i.ref->name));
+            printf(CLR_GOOD "passed\n" CLR0);
         } else {
-            printf("%s " CLR_ERR "failed\n" CLR0, cstr_str(&i.ref->name));
+            printf(CLR_ERR "failed\n" CLR0);
         }
         BaselineTestCase_clear_detail(i.ref);
     }

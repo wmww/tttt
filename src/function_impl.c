@@ -132,11 +132,28 @@ void FunctionImpl_typecheck(FunctionImpl* self, ErrorCtx* errs) {
         CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&callable->args, i);
         if (value_arg->value_explicit && type_arg->type_explicit) {
             Type expr_type = Expr_get_type_and_typecheck(&value_arg->value, errs);
-            if (!Type_extends(&expr_type, &type_arg->type)) {
-                ErrorCtx_type_error(errs, "invalid argument initialization type");
-            }
+            check_assignable_or_error(
+                &expr_type,
+                &type_arg->type,
+                span_between(&value_arg->name_span, &value_arg->value.span),
+                errs
+            );
             Type_drop(&expr_type);
         }
+        // TODO: only run this check in strict mode
+        if (!type_arg->type_explicit) {
+            ErrorCtx_error(
+                errs,
+                value_arg->name_span,
+                7006,
+                "Parameter '%s' implicitly has an 'any' type.",
+                cstr_str(&value_arg->name)
+            );
+        }
+    }
+
+    if (self->newline_before_arrow) {
+        ErrorCtx_error(errs, self->arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
     StatementCtx ctx = StatementCtx_function(&callable->ret);

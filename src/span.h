@@ -29,5 +29,6 @@ int span_col_index(Span const* self);
 const char* span_line_start(Span const* self);
 const char* span_line_end(Span const* self);
 csview span_sv(Span const* self);
+Span span_between(Span const* a, Span const* b);
 
 extern const Span span_null;

@@ -11,7 +11,7 @@ Error Error_clone(Error self) {
 }
 
 void cstr_append_error_debug(cstr* target, Error const* self) {
-    unsigned line = span_line_index(&self->span) + 1;
+    int line = span_line_index(&self->span) + 1;
 
     cstr_append_fmt(
         target,
@@ -23,7 +23,7 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
     if (self->span.file_start) {
         const char* line_start = span_line_start(&self->span);
         const char* line_end = span_line_end(&self->span);
-        unsigned col = span_col_index(&self->span);
+        int col = span_col_index(&self->span);
 
         cstr_append_fmt(
             target,
@@ -31,12 +31,12 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
             (int)(line_end - line_start), line_start
         );
 
-        for (unsigned i = 0; i < col; i++) {
+        for (int i = 0; i < col; i++) {
             cstr_append_sv(target, c_sv(" "));
         }
 
         cstr_append_sv(target, c_sv(CLR_ERR));
-        for (unsigned i = 0; i < (self->span.length ? self->span.length : 1); i++) {
+        for (int i = 0; i < (self->span.length ? (int)self->span.length : 1); i++) {
             cstr_append_sv(target, c_sv("-"));
         }
         cstr_append_sv(target, c_sv(CLR0));
@@ -46,8 +46,8 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
 void cstr_append_error_txt(cstr* target, Error const* self) {
     const char* line_start = span_line_start(&self->span);
     const char* line_end = span_line_end(&self->span);
-    unsigned line = span_line_index(&self->span);
-    unsigned col = span_col_index(&self->span);
+    int line = span_line_index(&self->span);
+    int col = span_col_index(&self->span);
 
     cstr_append_fmt(
         target,
@@ -63,10 +63,10 @@ void cstr_append_error_txt(cstr* target, Error const* self) {
             "\n%.*s\n",
             (int)(line_end - line_start), line_start
         );
-        for (unsigned i = 0; i < col; i++) {
+        for (int i = 0; i < col; i++) {
             cstr_append_sv(target, c_sv(" "));
         }
-        for (unsigned i = 0; i < (self->span.length ? self->span.length : 1); i++) {
+        for (int i = 0; i < (self->span.length ? (int)self->span.length : 1); i++) {
             cstr_append_sv(target, c_sv("~"));
         }
     }

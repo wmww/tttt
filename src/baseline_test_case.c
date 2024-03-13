@@ -221,6 +221,10 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
             goto cleanup;
         }
 
+        if (!noisy) {
+            inhibit_nonfatals();
+        }
+
         Block ast = parse_file(cstr_str(&self->detail.source), &self->detail.errs);
 
         NameStack names = NameStack_init();
@@ -229,6 +233,10 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
 
         Block_typecheck_toplevel(&ast, &self->detail.errs);
         Block_compile_test_info(&ast, self);
+
+        if (!noisy) {
+            uninhibit_nonfatals();
+        }
 
         Block_drop(&ast);
     }

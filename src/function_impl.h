@@ -25,6 +25,9 @@ typedef struct FunctionImpl {
     Type type;
     vec_FunctionArg args;
     Span args_span;
+    // needed because TS1200 needs to be inserted in the typecheck phase for some reason
+    bool newline_before_arrow;
+    Span arrow_span;
     Block body;
 } FunctionImpl;
 

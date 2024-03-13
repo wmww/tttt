@@ -20,6 +20,19 @@ typedef struct Parser {
     ErrorCtx errs;
 } Parser;
 
+static bool hop_token(Parser* parent);
+static bool parse_literal(Parser* parent, Value* ret);
+static bool parse_binary_op(Parser* parent, BinaryOp* op);
+static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
+static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
+static bool parse_block(Parser* parent, Block* ret);
+static bool parse_interface(Parser* parent, Interface* ret);
+static bool parse_name_init(Parser* parent, NameInitData* ret);
+static bool parse_statement(Parser* parent, Statement* ret);
+static bool parse_type(Parser* parent, Type* ret);
+static bool parse_type_compat_literal(Parser* parent, Value* ret);
+static bool parse_expr(Parser* parent, Expr* ret);
+
 static inline Parser parser(Parser* parent) {
     return (Parser){
         .parent = parent,
@@ -28,14 +41,6 @@ static inline Parser parser(Parser* parent) {
         .pos = parent->pos,
         .errs = {0},
     };
-}
-
-static inline Span span_from_parsed(Parser* self) {
-    return span_make(self->file_start, self->start - self->file_start, self->pos - self->start);
-}
-
-static inline Span span_from_pos(Parser* self) {
-    return span_make(self->file_start, self->pos - self->file_start, 0);
 }
 
 /// Must not be used on the root parser, always returns true, drops parser
@@ -75,13 +80,25 @@ Span span_end(Anchor spanner) {
     return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
 }
 
-static bool parse_block(Parser* parent, Block* ret);
-static bool parse_interface(Parser* parent, Interface* ret);
-static bool parse_name_init(Parser* parent, NameInitData* ret);
-static bool parse_statement(Parser* parent, Statement* ret);
-static bool parse_type(Parser* parent, Type* ret);
-static bool parse_type_compat_literal(Parser* parent, Value* ret);
-static bool parse_expr(Parser* parent, Expr* ret);
+static inline Span span_from_parsed(Parser* self) {
+    return span_make(self->file_start, self->start - self->file_start, self->pos - self->start);
+}
+
+static inline Span span_from_pos(Parser* self) {
+    return span_make(self->file_start, self->pos - self->file_start, 0);
+}
+
+static inline Span span_from_previous_char(Parser* self) {
+    return span_make(self->file_start, self->pos - self->file_start - 1, 1);
+}
+
+static Span span_from_token(Parser* self) {
+    Parser p = parser(self);
+    Anchor a = span_start(&p);
+    hop_token(&p);
+    parse_fail(&p);
+    return span_end(a);
+}
 
 // TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D
 static inline bool is_identifier_char(char c) {
@@ -154,7 +171,7 @@ static inline WhitespaceRet hop_comment(Parser* parent) {
             while (*(pos - 1) != '*' || *pos != '/') {
                 switch (*pos) {
                     case '\n': ret = WHITESPACE_NEWLINE; break;
-                    case 0: return WHITESPACE_NONE;
+                    case '\0': return WHITESPACE_NONE;
                     default: break;
                 }
                 pos++;
@@ -240,6 +257,53 @@ static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* p
         }
     }
     return parse_fail(&p);
+}
+
+static bool hop_token(Parser* parent) {
+    switch (*parent->pos) {
+        case '\0':
+            return false;
+
+        case '(':
+        case ')':
+        case '{':
+        case '}':
+        case '[':
+        case ']':
+            parent->pos++;
+            return true;
+
+        default: break;
+    }
+
+    union {
+        Value value;
+        BinaryOp bin_op;
+        UnaryOp un_op;
+    } parsed;
+
+    if (parse_literal(parent, &parsed.value)) {
+        Value_drop(&parsed.value);
+        return true;
+    } else if (hop_start(parent, "=>")) {
+        return true;
+    } else if (parse_binary_op(parent, &parsed.bin_op)) {
+        return true;
+    } else if (parse_left_unary_op(parent, &parsed.un_op)) {
+        return true;
+    } else if (parse_right_unary_op(parent, &parsed.un_op)) {
+        return true;
+    } else {
+        // TODO: hop keywords
+        parent->pos++;
+        return true;
+    }
+}
+
+static Span hop_token_get_span(Parser* parent) {
+    Anchor a = span_start(parent);
+    hop_token(parent);
+    return span_end(a);
 }
 
 typedef enum ParseSequenceSep {
@@ -570,45 +634,14 @@ static bool parse_named_interface(Parser* parent, InterfaceStatement* ret) {
     return parse_success(&p);
 }
 
-static CallableType* function_impl_callable(FunctionImpl* function) {
-    if (function->type.tag == 0) {
-        function->type = Type_callable(c_new(CallableType, {0}));
-    } else if (function->type.tag != TYPE_CALLABLE) {
-        PANIC("function type is not default or callable");
-    }
-    return function->type.callable;
-}
-
-static bool parse_function_arg(Parser* parent, void* data) {
-    Parser p = parser(parent);
-    FunctionImpl* ret = data;
-    CallableType* callable = function_impl_callable(ret);
-
-    NameInitData name_init = {0};
-    if (!parse_name_init(&p, &name_init)) {
-        return parse_fail(&p);
-    }
-
-    vec_FunctionArg_push(&ret->args, (FunctionArg){
-        .name = cstr_clone(name_init.name),
-        .name_span = name_init.name_span,
-        .value_explicit = name_init.value_explicit,
-        .value = name_init.value,
-    });
-
-    vec_CallableTypeArg_push(&callable->args, (CallableTypeArg){
-        .name = name_init.name,
-        .type_explicit = name_init.type_explicit,
-        .type = name_init.type,
-    });
-
-    return parse_success(&p);
-}
-
-static bool parse_function(Parser* parent, bool parse_args, bool require_arrow, FunctionImpl* ret) {
+static bool parse_function(Parser* parent, bool parse_args, bool is_expr, FunctionImpl* ret) {
     Parser p = parser(parent);
     vec_GenericItem generics = {0};
+    CallableType callable = {0};
     *ret = (FunctionImpl){0};
+    bool just_passed_newline = false;
+    bool is_definitely_function = false;
+    bool first_arg = true;
 
     if (parse_args) {
         if (parse_generic_decl_list(&p, &generics)) {
@@ -616,31 +649,111 @@ static bool parse_function(Parser* parent, bool parse_args, bool require_arrow, 
         }
 
         Anchor args_a = span_start(&p);
-        if (!parse_sequence(&p, "(", SEQUENCE_SEP_COMMA, ')', parse_function_arg, ret)) {
+
+        if (!hop_char(&p, '(')) {
             vec_GenericItem_drop(&generics);
+            CallableType_drop(&callable);
             FunctionImpl_drop(ret);
             return parse_fail(&p);
         }
-        ret->args_span = span_end(args_a);
-        hop_whitespace(&p);
-    }
 
-    if (hop_start(&p, ":")) {
-        hop_whitespace(&p);
-        CallableType* callable = function_impl_callable(ret);
-        if (parse_type(&p, &callable->ret)) {
-            callable->ret_explicit = true;
-        } else {
-            ErrorCtx_parse_error(&p.errs, "invalid return type");
+        while (*p.pos && *p.pos != ')') {
+            if (hop_char(&p, ',')) {
+                ErrorCtx_error(&p.errs, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
+            } else {
+                NameInitData name_init = {0};
+                const char* before_param = p.pos;
+
+                if (!parse_name_init(&p, &name_init)) {
+                    vec_GenericItem_drop(&generics);
+                    CallableType_drop(&callable);
+                    FunctionImpl_drop(ret);
+                    return parse_fail(&p);
+                }
+
+                if (first_arg && name_init.type_explicit) {
+                    is_definitely_function = true;
+                }
+
+                vec_FunctionArg_push(&ret->args, (FunctionArg){
+                    .name = cstr_clone(name_init.name),
+                    .name_span = name_init.name_span,
+                    .value_explicit = name_init.value_explicit,
+                    .value = name_init.value,
+                });
+
+                vec_CallableTypeArg_push(&callable.args, (CallableTypeArg){
+                    .name = name_init.name,
+                    .type_explicit = name_init.type_explicit,
+                    .type = name_init.type,
+                });
+
+                if (p.pos == before_param) {
+                    if (is_definitely_function) {
+                        // parse_name_init already added error
+                        hop_token(&p);
+                    } else {
+                        vec_GenericItem_drop(&generics);
+                        CallableType_drop(&callable);
+                        FunctionImpl_drop(ret);
+                        return parse_fail(&p);
+                    }
+                } else {
+                    hop_whitespace(&p);
+
+                    if (*p.pos != ')' && !hop_char(&p, ',')) {
+                        ErrorCtx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+                    }
+                }
+            }
+
+            hop_whitespace(&p);
+            first_arg = false;
         }
-        hop_whitespace(&p);
+
+        if (!hop_char(&p, ')')) {
+            vec_GenericItem_drop(&generics);
+            CallableType_drop(&callable);
+            FunctionImpl_drop(ret);
+            *ret = (FunctionImpl){0};
+            ErrorCtx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
+            return parse_success(&p);
+        }
+        just_passed_newline = hop_whitespace(&p) == WHITESPACE_NEWLINE;
+
+        if (hop_start(&p, ":")) {
+            hop_whitespace(&p);
+            if (parse_type(&p, &callable.ret)) {
+                callable.ret_explicit = true;
+            } else {
+                Span span = hop_token_get_span(&p);
+                ErrorCtx_error(&p.errs, span, 1110, "Type expected.");
+            }
+            just_passed_newline = hop_whitespace(&p) == WHITESPACE_NEWLINE;
+        }
+
+        ret->args_span = span_end(args_a);
     }
 
-    if (require_arrow) {
+    if (is_expr) {
+        Anchor arrow_a = span_start(&p);
         if (!hop_start(&p, "=>")) {
             vec_GenericItem_drop(&generics);
+            CallableType_drop(&callable);
             FunctionImpl_drop(ret);
-            return parse_fail(&p);
+            if (is_definitely_function) {
+                *ret = (FunctionImpl){0};
+                ErrorCtx_error(&p.errs, span_from_token(&p), 1005, "'=>' expected.");
+                return parse_success(&p);
+            } else {
+                return parse_fail(&p);
+            }
+        }
+        ret->arrow_span = span_end(arrow_a);
+
+        if (just_passed_newline) {
+            // This will generate an error in the typecheck phase, why it's not a parse error I have no idea.
+            ret->newline_before_arrow = true;
         }
         hop_whitespace(&p);
 
@@ -655,22 +768,24 @@ static bool parse_function(Parser* parent, bool parse_args, bool require_arrow, 
                 .expr = expr,
             });
         } else {
-            ErrorCtx_parse_error(&p.errs, "invalid arrow function body");
+            ErrorCtx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         }
+    } else if (*p.pos == ';') {
+        // TODO: handle prototypes special
     } else {
         if (!parse_block(&p, &ret->body)) {
-            ErrorCtx_parse_error(&p.errs, "invalid function body");
+            ErrorCtx_error(&p.errs, span_from_token(&p), 1144, "'{' or ';' expected.");
         }
     }
 
-    function_impl_callable(ret); // Make sure we create a callable type in case we haven't already
-
+    ret->type = Type_callable(c_new(CallableType, callable));
     if (!vec_GenericItem_empty(&generics)) {
         ret->type = Type_generic(c_new(Generic, {
             .items = generics,
             .inner = ret->type,
         }));
     }
+
     return parse_success(&p);
 }
 
@@ -692,6 +807,7 @@ static bool parse_object_item(Parser* parent, void* data) {
     Expr value;
     if (!parse_expr(&p, &value)) {
         ErrorCtx_parse_error(&p.errs, "bad expression in object");
+        value = Expr_default(span_from_pos(&p));
     }
 
     vec_ObjectExprItem_push(ret, (ObjectExprItem){
@@ -755,7 +871,7 @@ static bool parse_call_args(Parser* parent, vec_Expr* args) {
     return parse_success(&p);
 }
 
-static bool parse_right_unary_op_expr(Parser* parent, UnaryOp* op) {
+static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
     Parser p = parser(parent);
 
     if (hop_start(&p, "++")) {
@@ -794,16 +910,17 @@ static bool parse_as_type(Parser* parent, Type* ret) {
     hop_whitespace(&p);
 
     if (!parse_type(&p, ret)) {
-        ErrorCtx_error(&p.errs, span_from_pos(&p), 1110, "Type expected.");
+        ErrorCtx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
         *ret = Type_any;
     }
 
     return parse_success(&p);
 }
 
-static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
+static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     Parser p = parser(parent);
 
+    // TODO: transform this into a big switch
     if (hop_start(&p, "+")) {
         if (*p.pos == '+') {
             return parse_fail(&p);
@@ -822,6 +939,8 @@ static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
         *op = BINARY_OP_TRIPLE_EQUAL;
     } else if (hop_start(&p, "==")) {
         *op = BINARY_OP_DOUBLE_EQUAL;
+    } else if (hop_start(&p, "=>")) {
+        return parse_fail(&p);
     } else if (hop_start(&p, "=")) {
         *op = BINARY_OP_SINGLE_EQUAL;
     } else if (hop_start(&p, "<=")) {
@@ -839,14 +958,41 @@ static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
     } else {
         return parse_fail(&p);
     }
+
+    return parse_success(&p);
+}
+
+static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
+    Parser p = parser(parent);
+
+    if (!parse_binary_op(&p, op)) {
+        return parse_fail(&p);
+    }
     hop_whitespace(&p);
 
     if (!parse_expr(&p, right)) {
-        ErrorCtx_error(&p.errs, span_from_pos(&p), 1109, "Expression expected.");
+        ErrorCtx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         *right = Expr_default(span_from_pos(&p));
     }
 
     return parse_success(&p);
+}
+
+static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
+    if (hop_start(parent, "!")) {
+        *op = UNARY_OP_BANG;
+    } else if (hop_start(parent, "++")) {
+        *op = UNARY_OP_LEFT_PLUS_PLUS;
+    } else if (hop_start(parent, "--")) {
+        *op = UNARY_OP_LEFT_MINUS_MINUS;
+    } else if (hop_start(parent, "+")) {
+        *op = UNARY_OP_PLUS;
+    } else if (hop_start(parent, "-")) {
+        *op = UNARY_OP_MINUS;
+    } else {
+        return false;
+    }
+    return true;
 }
 
 static bool parse_left_unary_op_expr(Parser* parent, Expr* ret) {
@@ -854,17 +1000,7 @@ static bool parse_left_unary_op_expr(Parser* parent, Expr* ret) {
 
     Anchor a = span_start(&p);
     UnaryOp op = 0;
-    if (hop_start(&p, "!")) {
-        op = UNARY_OP_BANG;
-    } else if (hop_start(&p, "++")) {
-        op = UNARY_OP_LEFT_PLUS_PLUS;
-    } else if (hop_start(&p, "--")) {
-        op = UNARY_OP_LEFT_MINUS_MINUS;
-    } else if (hop_start(&p, "+")) {
-        op = UNARY_OP_PLUS;
-    } else if (hop_start(&p, "-")) {
-        op = UNARY_OP_MINUS;
-    } else {
+    if (!parse_left_unary_op(&p, &op)) {
         return parse_fail(&p);
     }
     Span op_span = span_end(a);
@@ -913,15 +1049,19 @@ static bool parse_string(Parser* parent, cstr* ret) {
     p.pos++;
     const char* start = p.pos;
     // TODO: remotely correct string parsing
-    while (*p.pos != quote) {
-        if (*p.pos == '\\') {
+    while (*p.pos && *p.pos != '\n' && *p.pos != quote) {
+        if (*p.pos == '\\' && *(p.pos + 1)) {
             p.pos += 2;
         } else {
             p.pos++;
         }
     }
     *ret = cstr_from_n(start, p.pos - start);
-    p.pos++;
+    if (*p.pos == quote) {
+        p.pos++;
+    } else {
+        ErrorCtx_error(&p.errs, span_from_pos(&p), 1002, "Unterminated string literal.");
+    }
 
     return parse_success(&p);
 }
@@ -1027,7 +1167,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
     }
 
     if (!hit_newline) {
-        if (parse_right_unary_op_expr(&p, &parsed.unary)) {
+        if (parse_right_unary_op(&p, &parsed.unary)) {
             *left_and_ret = Expr_unary_op(
                 span_end(a),
                 c_new(UnaryOpExpr, {
@@ -1069,6 +1209,35 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
     return parse_fail(&p);
 }
 
+static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
+    Parser p = parser(parent);
+    Anchor a = span_starting_at(&p, left_and_ret->span);
+    Expr expr;
+    bool parsed_commas = false;
+
+    hop_whitespace(&p);
+
+    while (hop_char(&p, ',')) {
+        parsed_commas = true;
+        hop_whitespace(&p);
+
+        if (!parse_expr(&p, &expr)) {
+            ErrorCtx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+            return parse_success(&p);
+        }
+
+        *left_and_ret = Expr_binary_op(
+            span_end(a),
+            c_new(BinaryOpExpr, {
+                .left = *left_and_ret,
+                .op = BINARY_OP_COMMA,
+                .right = expr,
+            })
+        );
+    }
+    return parsed_commas ? parse_success(&p) : parse_fail(&p);
+}
+
 static bool parse_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
@@ -1084,10 +1253,15 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         *ret = Expr_identifier(span_from_parsed(&p), name);
     } else if (parse_function(&p, true, true, &function)) {
         *ret = Expr_function(span_from_parsed(&p), c_new(FunctionImpl, function));
-    } else if (hop_start(&p, "(")) {
-        parse_expr(&p, ret);
-        if (!hop_start(&p, ")")) {
-            ErrorCtx_parse_error(&p.errs, "expected ')'");
+    } else if (hop_char(&p, '(')) {
+        if (!parse_expr(&p, ret)) {
+            return parse_fail(&p);
+        }
+        parse_comma_ops_right_side(&p, ret);
+        hop_whitespace(&p);
+        if (!hop_char(&p, ')')) {
+            Span span = hop_token_get_span(&p);
+            ErrorCtx_error(&p.errs, span, 1005, "')' expected.");
         }
         switch (ret->tag) {
             case EXPR_BINARY_OP: ret->binary_op->parenthesized = true; break;
@@ -1111,8 +1285,8 @@ static bool parse_name_init(Parser* parent, NameInitData* ret) {
     cstr name = cstr_null;
     Span name_span;
     if (!parse_identifier(&p, &name, &name_span)) {
-        ErrorCtx_parse_error(&p.errs, "missing name");
         name_span = span_from_pos(&p);
+        ErrorCtx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
     }
     hop_whitespace(&p);
 
@@ -1407,6 +1581,7 @@ static bool parse_statement(Parser* parent, Statement* ret) {
         ret->tag = STATEMENT_FUNCTION;
     } else if (parse_expr(&p, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
+        parse_comma_ops_right_side(&p, &ret->expr);
     } else {
         return parse_fail(&p);
     }
@@ -1424,15 +1599,16 @@ static bool parse_block_inner(Parser* parent, Block* ret) {
             p.pos++;
         } else if (parse_statement(&p, &statement)) {
             vec_Statement_push(&statements, statement);
-            if (hop_whitespace(&p) == WHITESPACE_NEWLINE || *p.pos || *p.pos == '}') {}
-            else if (*p.pos == ';') {
+            if (hop_whitespace(&p) == WHITESPACE_NEWLINE || !*p.pos || *p.pos == '}') {
+            } else if (*p.pos == ';') {
                 p.pos++;
-            } else {
-                ErrorCtx_error(&p.errs, span_from_pos(&p), 1005, "';' expected.");
+            } else if (*p.pos) {
+                Span span = hop_token_get_span(&p);
+                ErrorCtx_error(&p.errs, span, 1005, "';' expected.");
             }
         } else {
-            ErrorCtx_error(&p.errs, span_from_pos(&p), 1128, "Declaration or statement expected.");
-            p.pos++;
+            Span span = hop_token_get_span(&p);
+            ErrorCtx_error(&p.errs, span, 1128, "Declaration or statement expected.");
         }
         hop_whitespace(&p);
     }

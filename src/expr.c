@@ -9,6 +9,7 @@
 
 static inline int binary_op_get_precedence(BinaryOp op) {
     switch (op) {
+        case BINARY_OP_COMMA: return 5;
         case BINARY_OP_SINGLE_EQUAL: return 10;
         case BINARY_OP_DOUBLE_EQUAL: return 20;
         case BINARY_OP_TRIPLE_EQUAL: return 20;
@@ -41,6 +42,7 @@ static inline csview binary_op_get_sv(BinaryOp op) {
         case BINARY_OP_GREATER_EQUAL: return c_sv(">=");
         case BINARY_OP_NOT_EQUAL: return c_sv("!=");
         case BINARY_OP_DOUBLE_NOT_EQUAL: return c_sv("!==");
+        case BINARY_OP_COMMA: return c_sv(",");
     }
     UNREACHABLE;
 }
@@ -338,6 +340,13 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                 case BINARY_OP_DOUBLE_NOT_EQUAL:
                     // TODO: typecheck
                     ret = Type_boolean;
+                    break;
+
+                case BINARY_OP_COMMA:
+                    // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
+                    ret = type_b;
+                    type_b = Type_any;
+                    break;
             }
             Type_drop(&type_a);
             Type_drop(&type_b);
