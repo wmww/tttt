@@ -20,8 +20,11 @@ CallableType* FunctionImpl_callable_type(FunctionImpl* self) {
         return self->type.callable;
     } else if (self->type.tag == TYPE_GENERIC && self->type.generic->inner.tag == TYPE_CALLABLE) {
         return self->type.generic->inner.callable;
+    } else if (self->type.tag == 0) {
+        self->type = Type_callable(c_new(CallableType, {0}));
+        return self->type.callable;
     } else {
-        PANIC("FunctionImpl has invald type type");
+        PANIC("FunctionImpl has invald type type %d", self->type.tag);
     }
 }
 

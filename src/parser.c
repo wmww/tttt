@@ -11,12 +11,32 @@
 #include "type.h"
 #include "error.h"
 
+#define i_key uint8_t
+#define i_type vec_u8
+#include "stc/vec.h"
+
+typedef struct ParseerShared {
+    const char* const file_start;
+    const char* fail_cache_start;
+    vec_u8 fail_cache;
+} ParseerShared;
+
+void ParseerShared_drop(ParseerShared* self) {
+    vec_u8_drop(&self->fail_cache);
+}
+
+typedef enum FailCacheFlag {
+    FAIL_CACHE_EXPR = 1 << 0,
+    FAIL_CACHE_EXPR_FUNCTION = 1 << 1,
+    FAIL_CACHE_TYPE = 1 << 2,
+} FailCacheFlag;
+
 typedef struct Parser Parser;
 typedef struct Parser {
+    ParseerShared* shared;
     Parser* parent; // the parser this parser was created from (and will merge it's result into on success)
-    const char* const file_start; // needed to build spans
-    const char* const start; // position this parser started at
     const char* pos; // current position in the code
+    uint8_t fail_cache_flag;
     ErrorCtx errs;
 } Parser;
 
@@ -35,9 +55,8 @@ static bool parse_expr(Parser* parent, Expr* ret);
 
 static inline Parser parser(Parser* parent) {
     return (Parser){
+        .shared = parent->shared,
         .parent = parent,
-        .file_start = parent->file_start,
-        .start = parent->pos,
         .pos = parent->pos,
         .errs = {0},
     };
@@ -53,7 +72,41 @@ static inline bool parse_success(Parser* self) {
 /// Must not be used on the root parser, always returns false, drops parser
 static inline bool parse_fail(Parser* self) {
     ErrorCtx_drop(&self->errs);
+    if (self->fail_cache_flag &&
+        self->shared->fail_cache_start &&
+        self->parent->pos >= self->shared->fail_cache_start
+    ) {
+        intptr_t index = self->parent->pos - self->shared->fail_cache_start;
+        if (vec_u8_size(&self->shared->fail_cache) <= index) {
+            vec_u8_resize(&self->shared->fail_cache, index + 1, 0);
+        }
+        *vec_u8_at_mut(&self->shared->fail_cache, index) |= self->fail_cache_flag;
+    }
     return false;
+}
+
+// Returns true if this position has already failed for this flag
+static bool fail_cache_register_and_check(Parser* parser, FailCacheFlag flag) {
+    // TODO: only activate fail cache once a threashold number of failures has been hit
+    if (!parser->shared->fail_cache_start) {
+        parser->shared->fail_cache_start = parser->pos;
+    }
+    if (parser->pos >= parser->shared->fail_cache_start &&
+        parser->pos - parser->shared->fail_cache_start < vec_u8_size(&parser->shared->fail_cache) &&
+        *vec_u8_at(&parser->shared->fail_cache, parser->pos - parser->shared->fail_cache_start) & flag
+    ) {
+        return true;
+    } else {
+        parser->fail_cache_flag = flag;
+        return false;
+    }
+}
+#define FAIL_CACHE_HOOK(parser, flag) if (fail_cache_register_and_check(parser, flag)) return false
+
+static void reset_fail_cache(Parser* self) {
+    self->shared->fail_cache_start = nullptr;
+    // _clear() loops in order to drop. there's no drop work, so the loop is not required. this should be safe.
+    self->shared->fail_cache._len = 0;
 }
 
 typedef struct Anchor {
@@ -71,25 +124,21 @@ Anchor span_start(Parser* parser) {
 Anchor span_starting_at(Parser* parser, Span start) {
     return (Anchor) {
         .parser = parser,
-        .start = parser->file_start + start.offset,
+        .start = parser->shared->file_start + start.offset,
     };
 }
 
 Span span_end(Anchor spanner) {
-    const char* file_start = spanner.parser->file_start;
+    const char* file_start = spanner.parser->shared->file_start;
     return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
 }
 
-static inline Span span_from_parsed(Parser* self) {
-    return span_make(self->file_start, self->start - self->file_start, self->pos - self->start);
-}
-
 static inline Span span_from_pos(Parser* self) {
-    return span_make(self->file_start, self->pos - self->file_start, 0);
+    return span_make(self->shared->file_start, self->pos - self->shared->file_start, 0);
 }
 
 static inline Span span_from_previous_char(Parser* self) {
-    return span_make(self->file_start, self->pos - self->file_start - 1, 1);
+    return span_make(self->shared->file_start, self->pos - self->shared->file_start - 1, 1);
 }
 
 static Span span_from_token(Parser* self) {
@@ -636,14 +685,16 @@ static bool parse_named_interface(Parser* parent, InterfaceStatement* ret) {
 
 static bool parse_function(Parser* parent, bool parse_args, bool is_expr, FunctionImpl* ret) {
     Parser p = parser(parent);
-    vec_GenericItem generics = {0};
-    CallableType callable = {0};
+    FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR_FUNCTION);
     *ret = (FunctionImpl){0};
     bool just_passed_newline = false;
     bool is_definitely_function = false;
     bool first_arg = true;
 
     if (parse_args) {
+        vec_GenericItem generics = {0};
+        CallableType callable = {0};
+
         if (parse_generic_decl_list(&p, &generics)) {
             hop_whitespace(&p);
         }
@@ -733,13 +784,19 @@ static bool parse_function(Parser* parent, bool parse_args, bool is_expr, Functi
         }
 
         ret->args_span = span_end(args_a);
+        ret->type = Type_callable(c_new(CallableType, callable));
+        if (!vec_GenericItem_empty(&generics)) {
+            ret->type = Type_generic(c_new(Generic, {
+                .items = generics,
+                .inner = ret->type,
+            }));
+        }
     }
+
 
     if (is_expr) {
         Anchor arrow_a = span_start(&p);
         if (!hop_start(&p, "=>")) {
-            vec_GenericItem_drop(&generics);
-            CallableType_drop(&callable);
             FunctionImpl_drop(ret);
             if (is_definitely_function) {
                 *ret = (FunctionImpl){0};
@@ -776,14 +833,6 @@ static bool parse_function(Parser* parent, bool parse_args, bool is_expr, Functi
         if (!parse_block(&p, &ret->body)) {
             ErrorCtx_error(&p.errs, span_from_token(&p), 1144, "'{' or ';' expected.");
         }
-    }
-
-    ret->type = Type_callable(c_new(CallableType, callable));
-    if (!vec_GenericItem_empty(&generics)) {
-        ret->type = Type_generic(c_new(Generic, {
-            .items = generics,
-            .inner = ret->type,
-        }));
     }
 
     return parse_success(&p);
@@ -1035,6 +1084,7 @@ static bool parse_number(Parser* parent, double* ret) {
         if (end != cstr_str(&number_str) + cstr_size(&number_str)) {
             ErrorCtx_parse_error(&p.errs, "invalid number");
         }
+        cstr_drop(&number_str);
         return parse_success(&p);
     }
 }
@@ -1151,11 +1201,9 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
                 .value_explicit = false,
                 .value = Expr_default(span_from_pos(&p)),
             });
+            CallableType* callable = FunctionImpl_callable_type(&parsed.function);
             parsed.function.args_span = left_and_ret->span;
-            if (parsed.function.type.tag != TYPE_CALLABLE) {
-                PANIC("Function type is not callable");
-            }
-            vec_CallableTypeArg_push(&parsed.function.type.callable->args, (CallableTypeArg){
+            vec_CallableTypeArg_push(&callable->args, (CallableTypeArg){
                 .name = cstr_clone(left_and_ret->identifier.name),
                 .type_explicit = false,
                 .type = Type_any,
@@ -1241,6 +1289,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
 static bool parse_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
+    FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
 
     cstr name = cstr_null;
     FunctionImpl function = {0};
@@ -1250,9 +1299,9 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         ret->tag = EXPR_OBJECT;
     } else if (parse_left_unary_op_expr(&p, ret)) {
     } else if (parse_identifier(&p, &name, nullptr)) {
-        *ret = Expr_identifier(span_from_parsed(&p), name);
+        *ret = Expr_identifier(span_end(a), name);
     } else if (parse_function(&p, true, true, &function)) {
-        *ret = Expr_function(span_from_parsed(&p), c_new(FunctionImpl, function));
+        *ret = Expr_function(span_end(a), c_new(FunctionImpl, function));
     } else if (hop_char(&p, '(')) {
         if (!parse_expr(&p, ret)) {
             return parse_fail(&p);
@@ -1439,7 +1488,7 @@ static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
 
     if (!hop_start(&p, ";")) {
         ErrorCtx_parse_error(&p.errs, "expected ';' in for header");
-        p.pos++;
+        hop_token(&p);
     }
     hop_whitespace(&p);
 
@@ -1449,7 +1498,7 @@ static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
 
     if (!hop_start(&p, ";")) {
         ErrorCtx_parse_error(&p.errs, "expected ';' in for header");
-        p.pos++;
+        hop_token(&p);
     }
     hop_whitespace(&p);
 
@@ -1516,6 +1565,7 @@ static bool parse_while_loop(Parser* parent, LoopStatement* ret) {
 
 static bool parse_return(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "return")) {
         return parse_fail(&p);
@@ -1523,7 +1573,7 @@ static bool parse_return(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
 
     if (!parse_expr(&p, ret)) {
-        *ret = Expr_default(span_from_parsed(&p));
+        *ret = Expr_default(span_end(a));
     }
 
     return parse_success(&p);
@@ -1586,6 +1636,7 @@ static bool parse_statement(Parser* parent, Statement* ret) {
         return parse_fail(&p);
     }
 
+    reset_fail_cache(&p);
     return parse_success(&p);
 }
 
@@ -1639,10 +1690,14 @@ static bool parse_block(Parser* parent, Block* ret) {
 }
 
 Block parse_file(const char* source, ErrorCtx* errs) {
-    Parser p = {
-        .parent = nullptr,
+    ParseerShared shared = {
         .file_start = source,
-        .start = source,
+        .fail_cache_start = source,
+    };
+
+    Parser p = {
+        .shared = &shared,
+        .parent = nullptr,
         .pos = source,
         .errs = {0},
     };
@@ -1659,6 +1714,8 @@ Block parse_file(const char* source, ErrorCtx* errs) {
     if (*p.pos) {
         ErrorCtx_parse_error(&p.errs, "unexpected '}'");
     }
+
+    ParseerShared_drop(&shared);
 
     ErrorCtx_append_consume(errs, p.errs);
     return scope;

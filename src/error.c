@@ -78,10 +78,17 @@ void ErrorCtx_drop(ErrorCtx* self) {
 
 void ErrorCtx_display(ErrorCtx* self) {
     cstr str = cstr_null;
-    c_foreach(i, vec_Error, self->errors) {
+    const int max_display = 10;
+    c_foreach_n(i, vec_Error, self->errors, max_display) {
         cstr_append_error_debug(&str, i.ref);
         printf("%s\n\n", cstr_str(&str));
         cstr_clear(&str);
+    }
+    if (vec_Error_size(&self->errors) > max_display) {
+        printf(
+            CLR_ERR "  %ld additional errors not shown\n\n" CLR0,
+            vec_Error_size(&self->errors) - max_display
+        );
     }
     cstr_drop(&str);
 }

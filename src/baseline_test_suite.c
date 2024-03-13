@@ -63,17 +63,20 @@ void BaselineTestSuite_drop(BaselineTestSuite* self) {
 
 void BaselineTestSuite_run(BaselineTestSuite* self) {
     printf(CLR_GOOD "Running tests...\n" CLR0);
+    int passed = 0, failed = 0;
     c_foreach(i, vec_BaselineTestCase, self->cases) {
         printf("%s... ", cstr_str(&i.ref->name));
         fflush(stdout);
         if (BaselineTestCase_run(i.ref, false)) {
             printf(CLR_GOOD "passed\n" CLR0);
+            passed++;
         } else {
             printf(CLR_ERR "failed\n" CLR0);
+            failed++;
         }
         BaselineTestCase_clear_detail(i.ref);
     }
-    printf(CLR_GOOD "Done running tests\n" CLR0);
+    printf("\n  " CLR_GOOD "%d" CLR0 " passed, " CLR_ERR "%d" CLR0 " failed\n\n", passed, failed);
 }
 
 box_BaselineTestSuite load_baseline_test_suite(const char* tests_dir, const char* filter_re) {
