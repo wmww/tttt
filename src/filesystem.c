@@ -141,7 +141,9 @@ bool read_entire_file(const char* path, bool debug_on_fail, cstr* ret) {
     }
     fclose(f);
     f = nullptr;
+    *ret = cstr_null;
     cstr_take(ret, target);
+    target = cstr_null;
     return true;
 
 err:

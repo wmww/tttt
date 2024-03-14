@@ -23,12 +23,14 @@ void uninhibit_nonfatals();
 #define MUST_USE __attribute__((warn_unused_result))
 
 #define CLR0 "\x1b[0m"
-#define CLR_ERR "\x1b[31;1m"
-#define CLR_GOOD "\x1b[32;1m"
-#define CLR_PATH "\x1b[35m"
-#define CLR_VALUE "\x1b[36m"
-#define CLR_STR "\x1b[33m"
-#define CLR_NUM "\x1b[34m"
-#define CLR_TYPE "\x1b[32m"
-#define CLR_NAME "\x1b[35m"
-#define CLR_IMPLICIT "\x1b[37m"
+#define CLR_ERR "\x1b[1;31m"
+#define CLR_GOOD "\x1b[1;32m"
+#define CLR_PATH "\x1b[0;35m"
+#define CLR_STATUS "\x1b[0;94m"
+
+#define CLR_VALUE "\x1b[0;36m"
+#define CLR_STR "\x1b[0;33m"
+#define CLR_NUM "\x1b[0;34m"
+#define CLR_TYPE "\x1b[0;32m"
+#define CLR_NAME "\x1b[0;35m"
+#define CLR_IMPLICIT "\x1b[0;37m"

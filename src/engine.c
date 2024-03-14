@@ -460,19 +460,19 @@ static Result boolean_impl(Engine* engine, int argc, Value const argv[], void* d
     return Result_ok(Value_boolean(argc > 0 ? Value_to_boolean(argv) : false));
 }
 
-void eval_program(Block const* scope) {
+void eval_program(Block const* scope, arc_Object root) {
+    if (!root.get) {
+        root = arc_Object_make((ObjectValue){0});
+    }
+    ObjectValue_set(root.get, cstr_lit("console"), Value_object_init({
+        {"log", Value_native_func(console_log_impl, nullptr, nullptr)}
+    }));
+    ObjectValue_set(root.get, cstr_lit("String"), Value_native_func(string_impl, nullptr, nullptr));
+    ObjectValue_set(root.get, cstr_lit("Number"), Value_native_func(number_impl, nullptr, nullptr));
+    ObjectValue_set(root.get, cstr_lit("Boolean"), Value_native_func(boolean_impl, nullptr, nullptr));
+    ObjectValue_set(root.get, cstr_lit("NaN"), Value_number(NAN));
     Engine engine = {
-        .stack = c_init(vec_StackFrame, {
-            Value_object_init({
-                {"console", Value_object_init({
-                    {"log", Value_native_func(console_log_impl, nullptr, nullptr)}
-                })},
-                {"String", Value_native_func(string_impl, nullptr, nullptr)},
-                {"Number", Value_native_func(number_impl, nullptr, nullptr)},
-                {"Boolean", Value_native_func(boolean_impl, nullptr, nullptr)},
-                {"NaN", Value_number(NAN)},
-            }).object,
-        }),
+        .stack = c_init(vec_StackFrame, {root}),
     };
     Result res = Engine_run_block(&engine, scope);
     if (res.tag == RESULT_ERR) {

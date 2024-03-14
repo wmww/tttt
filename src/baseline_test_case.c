@@ -8,6 +8,8 @@
 #include "block.h"
 #include "parser.h"
 #include "name_stack.h"
+#include "value.h"
+#include "result.h"
 
 static bool compare_outputs(
     const char* test_name,
@@ -94,11 +96,11 @@ static cstr render_lines_woven_with_file(
     return ret;
 }
 
-static cstr load_test_source(const char* path) {
+static cstr load_test_source(const char* path, bool noisy) {
     cstr contents_s = cstr_null;
     cstr ret = cstr_null;
 
-    if (!read_entire_file(path, true, &contents_s)) {
+    if (!read_entire_file(path, noisy, &contents_s)) {
         return cstr_null;
     }
 
@@ -127,13 +129,33 @@ void LineNumberedStr_drop(LineNumberedStr* self) {
     cstr_drop(&self->str);
 }
 
-BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path) {
-    return (BaselineTestCase) {
+BaselineTestCase make_baseline_test_case(
+    BaselineTestSuite* suite,
+    cstr name,
+    cstr source_path,
+    ObjectValue* previous
+) {
+    Result errors_prev  = previous ? ObjectValue_get(previous, c_sv("errors"))  : Result_ok(Value_boolean(true));
+    Result symbols_prev = previous ? ObjectValue_get(previous, c_sv("symbols")) : Result_ok(Value_boolean(true));
+    Result types_prev   = previous ? ObjectValue_get(previous, c_sv("types"))   : Result_ok(Value_boolean(true));
+
+    BaselineTestCase ret = {
         .suite = suite,
         .name = name,
         .source_path = source_path,
+        .has_run = false,
+        .has_prev = previous != nullptr,
+        .errors_prev = Value_to_boolean(&errors_prev.value),
+        .symbols_prev = Value_to_boolean(&symbols_prev.value),
+        .types_prev = Value_to_boolean(&types_prev.value),
+        .errors_passed = false,
+        .symbols_passed = false,
+        .types_passed = false,
         .detail = {0}
     };
+
+    c_drop(Result, &errors_prev, &symbols_prev, &types_prev);
+    return ret;
 }
 
 void BaselineTestCase_drop(BaselineTestCase* self) {
@@ -178,8 +200,7 @@ void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, Type co
     });
 }
 
-bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
-    bool ret = true;
+void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
     const char* name = cstr_str(&self->name);
     const char* dir = self->suite->tests_dir;
     cstr errors_path = cstr_from_fmt("%s/baselines/reference/%s.errors.txt", dir, name);
@@ -196,7 +217,6 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         if (noisy) {
             fprintf(stderr, CLR_ERR "%s:" CLR0 " %s does not exist\n", name, cstr_str(&symbols_path));
         }
-        ret = false;
         goto cleanup;
     }
 
@@ -204,7 +224,6 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         if (noisy) {
             fprintf(stderr, CLR_ERR "%s:" CLR0 " %s does not exist\n", name, cstr_str(&types_path));
         }
-        ret = false;
         goto cleanup;
     }
 
@@ -212,12 +231,11 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         if (noisy) {
             printf("Testing %s\n", cstr_str(&self->source_path));
         }
-        self->detail.source = load_test_source(cstr_str(&self->source_path));
+        self->detail.source = load_test_source(cstr_str(&self->source_path), noisy);
         if (cstr_empty(&self->detail.source)) {
             if (noisy) {
                 fprintf(stderr, CLR_ERR "%s:" CLR0 " Failed to load test case\n", name);
             }
-            ret = false;
             goto cleanup;
         }
 
@@ -253,9 +271,31 @@ bool BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         &self->detail.types
     );
 
-    ret &= compare_outputs(name, "errors", cstr_str(&errors_path), cstr_sv(&errors_result), noisy);
-    ret &= compare_outputs(name, "symbols", cstr_str(&symbols_path), cstr_sv(&symbols_results), noisy);
-    ret &= compare_outputs(name, "types", cstr_str(&types_path), cstr_sv(&types_results), noisy);
+    self->errors_passed = compare_outputs(
+        name,
+        "errors",
+        cstr_str(&errors_path),
+        cstr_sv(&errors_result),
+        noisy
+    );
+
+    self->symbols_passed = compare_outputs(
+        name,
+        "symbols",
+        cstr_str(&symbols_path),
+        cstr_sv(&symbols_results),
+        noisy
+    );
+
+    self->types_passed = compare_outputs(
+        name,
+        "types",
+        cstr_str(&types_path),
+        cstr_sv(&types_results),
+        noisy
+    );
+
+    self->has_run = true;
 
 cleanup:
     c_drop(cstr,
@@ -267,5 +307,20 @@ cleanup:
         &symbols_results,
         &types_results
     );
-    return ret;
+}
+
+bool BaselineTestCase_is_pass(BaselineTestCase const* self) {
+    return self->errors_passed && self->symbols_passed && self->types_passed;
+}
+
+bool BaselineTestCase_has_new_pass(BaselineTestCase const* self) {
+    return (self->errors_passed  && (!self->has_prev || !self->errors_prev )) ||
+           (self->symbols_passed && (!self->has_prev || !self->symbols_prev)) ||
+           (self->types_passed   && (!self->has_prev || !self->types_prev  ));
+}
+
+bool BaselineTestCase_has_new_fail(BaselineTestCase const* self) {
+    return (!self->errors_passed  && self->errors_prev ) ||
+           (!self->symbols_passed && self->symbols_prev) ||
+           (!self->types_passed   && self->types_prev  );
 }

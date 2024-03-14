@@ -59,7 +59,7 @@ int main(int argc, const char** argv) {
 
     printf(CLR_GOOD "Running..." CLR0 "\n");
 
-    eval_program(&ast);
+    eval_program(&ast, arc_Object_init());
 
     printf(CLR_GOOD "Run succeeded" CLR0 "\n");
 

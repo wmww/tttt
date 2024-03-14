@@ -842,8 +842,18 @@ static bool parse_object_item(Parser* parent, void* data) {
     Parser p = parser(parent);
     vec_ObjectExprItem* ret = data;
     cstr name;
+    Value name_value;
 
-    if (!parse_identifier(&p, &name, nullptr)) {
+    if (parse_identifier(&p, &name, nullptr)) {
+    } else if (parse_literal(&p, &name_value)) {
+        if (name_value.tag == VALUE_STRING) {
+            name = name_value.string;
+        } else {
+            name = cstr_null;
+            cstr_append_value_js(&name, &name_value);
+            Value_drop(&name_value);
+        }
+    } else {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
