@@ -51,7 +51,7 @@ void NameStack_pop_frame(NameStack* self) {
 bool NameStack_add_variable(NameStack* self, cstr name, Type const* type) {
     hmap_str_CTypePtr_result result = hmap_str_CTypePtr_insert(
         &vec_Namespace_back(&self->stack)->variables,
-        cstr_clone(name),
+        name,
         type
     );
     return result.inserted;

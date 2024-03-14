@@ -1,7 +1,6 @@
 #include "baseline_test_suite.h"
 #include "baseline_test_case.h"
 #include "filesystem.h"
-#include "string_helpers.h"
 #include "stc/cregex.h"
 
 static cstr test_name_from_path(const char* path) {

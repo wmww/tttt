@@ -12,9 +12,11 @@ int main(int argc, const char** argv) {
     int ret = 0;
 
     if (argc > 2) {
-        PANIC("too many arguments");
+        printf(CLR_ERR "too many arguments\n" CLR0);
+        return 1;
     } else if (argc < 2) {
-        PANIC("too few arguments");
+        printf(CLR_ERR "too few arguments\n" CLR0);
+        return 1;
     }
 
     if (!read_entire_file(argv[1], true, &contents)) {
