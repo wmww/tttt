@@ -123,7 +123,7 @@ void BaselineTestSuite_run(BaselineTestSuite* self) {
 
         cstr_clear(&display);
         cstr_append_fmt(&display, "%ld%%", index * 100 / test_count);
-        printf("         \x1b[1;44m %4s " CLR0 " %s", cstr_str(&display), cstr_str(&i.ref->name));
+        printf("        \x1b[1;44m%5s " CLR0 "  %s", cstr_str(&display), cstr_str(&i.ref->name));
         fflush(stdout);
 
         BaselineTestCase_run(i.ref, false);

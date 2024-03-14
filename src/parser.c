@@ -636,6 +636,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         if (parse_type(&p, &type)) {
             vec_InterfaceMember_push(&members, InterfaceMember_make(name, type));
         } else {
+            cstr_drop(&name);
             ErrorCtx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "expected type");
             while (*p.pos && *p.pos != '}' && *p.pos != ',' && *p.pos != ';' && *p.pos != '\n') p.pos++;
         }
@@ -841,7 +842,7 @@ static bool parse_function(Parser* parent, bool parse_args, bool is_expr, Functi
 static bool parse_object_item(Parser* parent, void* data) {
     Parser p = parser(parent);
     vec_ObjectExprItem* ret = data;
-    cstr name;
+    cstr name = cstr_null;
     Value name_value;
 
     if (parse_identifier(&p, &name, nullptr)) {
@@ -859,6 +860,7 @@ static bool parse_object_item(Parser* parent, void* data) {
     hop_whitespace(&p);
 
     if (!hop_start(&p, ":")) {
+        cstr_drop(&name);
         return parse_fail(&p);
     }
     hop_whitespace(&p);
