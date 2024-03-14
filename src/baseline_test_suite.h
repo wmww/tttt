@@ -21,7 +21,7 @@ typedef struct BaselineTestSuite {
 } BaselineTestSuite;
 
 void BaselineTestSuite_drop(BaselineTestSuite* self);
-void BaselineTestSuite_run(BaselineTestSuite* self);
+void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy);
 void BaselineTestSuite_save_results(BaselineTestSuite* self, const char* results_path);
 
 #define i_key_class BaselineTestSuite

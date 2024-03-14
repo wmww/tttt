@@ -30,6 +30,11 @@ void Type_compile_test_info(Type* self, BaselineTestCase* ctx) {
 
         case TYPE_CALLABLE: break;
         case TYPE_INTERFACE: break;
+
+        case TYPE_ARRAY:
+            Type_compile_test_info(self->array, ctx);
+            break;
+
         case TYPE_TERNARY: break;
     }
 }
@@ -87,6 +92,12 @@ void Expr_compile_test_info(Expr* self, BaselineTestCase* ctx) {
         case EXPR_OBJECT:
             c_foreach(i, vec_ObjectExprItem, self->object) {
                 Expr_compile_test_info(&i.ref->value, ctx);
+            }
+            break;
+
+        case EXPR_ARRAY:
+            c_foreach(i, vec_Expr, self->array) {
+                Expr_compile_test_info(i.ref, ctx);
             }
             break;
     }

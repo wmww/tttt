@@ -205,6 +205,12 @@ static void collect_generic_candidates(
             );
             return;
 
+        case TYPE_ARRAY:
+            ErrorCtx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with array not yet implemented"
+            );
+            return;
+
         case TYPE_TERNARY:
             ErrorCtx_error(ctx.errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with ternary not yet implemented"
@@ -272,6 +278,10 @@ static void swap_generics_for_specific_types(Type* self, TraverseCtx ctx) {
             c_foreach(i, vec_InterfaceMember, self->interface.members) {
                 swap_generics_for_specific_types(&i.ref->type, ctx);
             }
+            return;
+
+        case TYPE_ARRAY:
+            swap_generics_for_specific_types(self->array, ctx);
             return;
 
         case TYPE_TERNARY:

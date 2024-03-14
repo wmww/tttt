@@ -891,6 +891,39 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_array(Parser* parent, vec_Expr* ret) {
+    Parser p = parser(parent);
+    *ret = vec_Expr_init();
+
+    if (!hop_start(&p, "[")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    while (*p.pos && *p.pos != ']') {
+        Expr expr;
+        if (parse_expr(&p, &expr)) {
+            vec_Expr_push(ret, expr);
+        } else if (*p.pos == ',') {
+            vec_Expr_push(ret, Expr_default(span_from_pos(&p)));
+        } else {
+            break;
+        }
+        hop_whitespace(&p);
+
+        if (!hop_char(&p, ',') && *p.pos != ']') {
+            ErrorCtx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+        }
+        hop_whitespace(&p);
+    }
+
+    if (!hop_char(&p, ']')) {
+        ErrorCtx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_call_args(Parser* parent, vec_Expr* args) {
     Parser p = parser(parent);
 
@@ -1309,6 +1342,8 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         ret->tag = EXPR_LITERAL;
     } else if (parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
+    } else if (parse_array(&p, &ret->array)) {
+        ret->tag = EXPR_ARRAY;
     } else if (parse_left_unary_op_expr(&p, ret)) {
     } else if (parse_identifier(&p, &name, nullptr)) {
         *ret = Expr_identifier(span_end(a), name);

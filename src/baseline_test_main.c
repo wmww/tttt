@@ -7,6 +7,7 @@ const char* tests_dir = default_tests_dir;
 const char* test_filter = "";
 const char* const default_results_path = "test/baseline_results.ts";
 const char* results_path = default_results_path;
+bool show_diffs = false;
 bool save_results = false;
 
 // TODO: expose as command line argument
@@ -14,9 +15,10 @@ bool save_results = false;
 static void show_help(FILE* target) {
     fprintf(target, "tttt test runner\n\n\
   -h, --help                show this help message\n\n\
-  -d, --dir [PATH]          path to TypeScript tests directory\n\
+  --dir [PATH]              path to TypeScript tests directory\n\
                             (default = %s)\n\n\
   -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n\
+  -d, --diffs               if to show diffs for failing tests\n\n\
   -s, --save                save test results to results path\n\n\
   --results-path [PATH]     path to file where test results are loaded/saved\n\n\
                             (default = %s)\n\n\
@@ -28,7 +30,7 @@ static bool parse_args(int argc, const char** argv) {
         if (streq(argv[i], "-h") || streq(argv[i], "--help")) {
             show_help(stdout);
             exit(0);
-        } else if (streq(argv[i], "-d") || streq(argv[i], "--dir")) {
+        } else if (streq(argv[i], "--dir")) {
             i++;
             if (i < argc && *argv[i] != '-') {
                 tests_dir = argv[i];
@@ -46,6 +48,8 @@ static bool parse_args(int argc, const char** argv) {
                 show_help(stderr);
                 return false;
             }
+        } else if (streq(argv[i], "-d") || streq(argv[i], "--diffs")) {
+            show_diffs = true;
         } else if (streq(argv[i], "--results-path")) {
             i++;
             if (i < argc && *argv[i] != '-') {
@@ -82,7 +86,7 @@ int main(int argc, const char** argv) {
     }
 
     box_BaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter, results_path);
-    BaselineTestSuite_run(suite.get);
+    BaselineTestSuite_run(suite.get, show_diffs);
 
     if (save_results) {
         BaselineTestSuite_save_results(suite.get, results_path);

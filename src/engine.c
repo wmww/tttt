@@ -300,6 +300,18 @@ static Result MUST_USE Engine_eval_object(Engine* self, ObjectExpr const* obj_ex
     return Result_ok(ret);
 }
 
+static Result MUST_USE Engine_eval_array(Engine* self, vec_Expr const* array_expr) {
+    Value ret = Value_array_empty();
+    c_foreach(i, vec_Expr, *array_expr) {
+        TRY_CATCH(value, Engine_eval_expr(self, i.ref), res_err, {
+            Value_drop(&ret);
+            return res_err;
+        });
+        vec_Value_push(&ret.array.get->vec, value);
+    }
+    return Result_ok(ret);
+}
+
 static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
     switch (expr->tag) {
         case EXPR_LITERAL: return Result_ok(Value_clone(expr->literal));
@@ -311,6 +323,7 @@ static Result MUST_USE Engine_eval_expr(Engine* self, Expr const* expr) {
         case EXPR_CALL: return Engine_eval_call(self, expr->call);
         case EXPR_FUNCTION: return Result_ok(Value_js_func(&expr->function->args, &expr->function->body));
         case EXPR_OBJECT: return Engine_eval_object(self, &expr->object);
+        case EXPR_ARRAY: return Engine_eval_array(self, &expr->array);
     }
     UNREACHABLE;
 }

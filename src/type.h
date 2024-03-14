@@ -1,6 +1,5 @@
 #pragma once
 
-#include "prelude.h"
 #include "interface.h"
 #include "value.h"
 #include "span.h"
@@ -25,6 +24,7 @@ typedef struct Type {
         TYPE_GENERIC,
         TYPE_CALLABLE,
         TYPE_INTERFACE,
+        TYPE_ARRAY,
         TYPE_TERNARY,
     } tag;
     union {
@@ -41,8 +41,9 @@ typedef struct Type {
             Span span;
         } identifier;
         Generic* generic;
-        Interface interface;
         CallableType* callable;
+        Interface interface;
+        Type* array;
         TernaryType* ternary;
     };
 } Type;
@@ -55,12 +56,14 @@ extern const Type Type_boolean;
 extern const Type Type_number;
 extern const Type Type_string;
 #undef TYPE_NEW_DECL
+
 static inline Type Type_value(Value value) {
     return (Type){
         .tag = TYPE_VALUE,
         .value = value,
     };
 }
+
 static inline Type Type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index, Span span) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
@@ -71,24 +74,35 @@ static inline Type Type_identifier(cstr identifier, Type const* type, int generi
         .identifier.span = span,
     };
 }
+
 static inline Type Type_generic(Generic* generic) {
     return (Type){
         .tag = TYPE_GENERIC,
         .generic = generic,
     };
 }
+
 static inline Type Type_callable(CallableType* callable) {
     return (Type){
         .tag = TYPE_CALLABLE,
         .callable = callable,
     };
 }
+
 static inline Type Type_interface(Interface interface) {
     return (Type){
         .tag = TYPE_INTERFACE,
         .interface = interface,
     };
 }
+
+static inline Type Type_array(Type* member) {
+    return (Type){
+        .tag = TYPE_ARRAY,
+        .array = member,
+    };
+}
+
 static inline Type Type_ternary(TernaryType* ternary) {
     return (Type){
         .tag = TYPE_TERNARY,

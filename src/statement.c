@@ -47,6 +47,13 @@ void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
             if (self->keyword != VAR_INIT_CONST) {
                 Type_abstract_literals(&self->data.type);
             }
+            if (self->data.type.tag == TYPE_ARRAY &&
+                self->data.type.array->tag == TYPE_VALUE &&
+                self->data.type.array->value.tag == VALUE_UNDEFINED
+            ) {
+                Type_drop(self->data.type.array);
+                *self->data.type.array = Type_any;
+            }
         }
         Type_drop(&expr_type);
     }

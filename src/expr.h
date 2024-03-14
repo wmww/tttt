@@ -1,6 +1,5 @@
 #pragma once
 
-#include "prelude.h"
 #include "value.h"
 #include "span.h"
 
@@ -14,8 +13,10 @@ typedef struct vec_ObjectExprItem ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
+typedef struct Expr Expr;
 
 forward_vec(vec_ObjectExprItem, ObjectExprItem);
+forward_vec(vec_Expr, Expr);
 
 typedef struct Expr {
     Span span;
@@ -29,6 +30,7 @@ typedef struct Expr {
         EXPR_CALL,
         EXPR_FUNCTION,
         EXPR_OBJECT,
+        EXPR_ARRAY,
     } tag;
     union {
         Value literal;
@@ -44,6 +46,7 @@ typedef struct Expr {
         FunctionImpl* function;
         // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
+        vec_Expr array;
     };
 } Expr;
 
@@ -94,6 +97,7 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
 #define i_key_class Expr
 #define i_no_clone
+#define i_is_forward
 #include "stc/vec.h"
 
 // Binary op

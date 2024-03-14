@@ -188,6 +188,7 @@ void NativeFuncValue_drop(NativeFuncValue* self);
 static inline Value Value_boolean(bool value) { return (Value){ .tag = VALUE_BOOLEAN, .boolean = value }; }
 static inline Value Value_number(double value) { return (Value){ .tag = VALUE_NUMBER, .number = value }; }
 static inline Value Value_string(cstr value) { return (Value){ .tag = VALUE_STRING, .string = value }; }
+
 static inline Value Value_object_from_n(ObjectItemInit* items, int n) {
     ObjectValue data = {
         .items = hmap_str_ObjectValueItem_init(),
@@ -207,11 +208,21 @@ static inline Value Value_object_from_n(ObjectItemInit* items, int n) {
         .object = arc_Object_make(data),
     };
 }
+
 static inline Value Value_object_empty() {
     return Value_object_from_n(nullptr, 0);
 }
+
 #define Value_object_init(...) \
     Value_object_from_n((ObjectItemInit[])__VA_ARGS__, c_arraylen(((ObjectItemInit[])__VA_ARGS__)))
+
+static inline Value Value_array_empty() {
+    return (Value){
+        .tag = VALUE_ARRAY,
+        .array = arc_Array_make((ArrayValue){0}),
+    };
+}
+
 static inline Value Value_js_func(vec_FunctionArg const* args, Block const* code) {
     return (Value){
         .tag = VALUE_JS_FUNC,
@@ -221,6 +232,7 @@ static inline Value Value_js_func(vec_FunctionArg const* args, Block const* code
         }),
     };
 }
+
 static inline Value Value_native_func(
     Result (*func)(Engine*, int, Value const*, void*),
     void (*drop)(void*),

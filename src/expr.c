@@ -107,6 +107,10 @@ void Expr_drop(Expr* self) {
         case EXPR_OBJECT:
             vec_ObjectExprItem_drop(&self->object);
             break;
+
+        case EXPR_ARRAY:
+            vec_Expr_drop(&self->array);
+            break;
     }
 }
 
@@ -194,26 +198,27 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             break;
 
         case EXPR_OBJECT: {
-            cstr_append_sv(target, c_sv("{"));
-            int size = vec_ObjectExprItem_size(&self->object);
-            if (size > 1) {
-                cstr_append_sv(target, c_sv("\n"));
-                c_foreach(i, vec_ObjectExprItem, self->object) {
-                    APPEND_INDENT(target, indent + 1);
-                    cstr_append_s(target, i.ref->name);
-                    cstr_append_sv(target, c_sv(": "));
-                    cstr_append_expr_debug(target, &i.ref->value, indent);
-                    cstr_append_sv(target, c_sv(",\n"));
-                }
-                APPEND_INDENT(target, indent);
-            } else if (size == 1) {
-                cstr_append_sv(target, c_sv(" "));
-                cstr_append_s(target, vec_ObjectExprItem_at(&self->object, 0)->name);
+            cstr_append_sv(target, c_sv("{\n"));
+            c_foreach(i, vec_ObjectExprItem, self->object) {
+                APPEND_INDENT(target, indent + 1);
+                cstr_append_s(target, i.ref->name);
                 cstr_append_sv(target, c_sv(": "));
-                cstr_append_expr_debug(target, &vec_ObjectExprItem_at(&self->object, 0)->value, indent);
-                cstr_append_sv(target, c_sv(" "));
+                cstr_append_expr_debug(target, &i.ref->value, indent + 1);
+                cstr_append_sv(target, c_sv(",\n"));
             }
+            APPEND_INDENT(target, indent);
             cstr_append_sv(target, c_sv("}"));
+        }   break;
+
+        case EXPR_ARRAY: {
+            cstr_append_sv(target, c_sv("[\n"));
+            c_foreach(i, vec_Expr, self->array) {
+                APPEND_INDENT(target, indent + 1);
+                cstr_append_expr_debug(target, i.ref, indent + 1);
+                cstr_append_sv(target, c_sv(",\n"));
+            }
+            APPEND_INDENT(target, indent);
+            cstr_append_sv(target, c_sv("]"));
         }   break;
     }
 }
@@ -265,6 +270,12 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
         case EXPR_OBJECT:
             c_foreach(i, vec_ObjectExprItem, self->object) {
                 Expr_resolve_names(&i.ref->value, names, errs);
+            }
+            break;
+
+        case EXPR_ARRAY:
+            c_foreach(i, vec_Expr, self->array) {
+                Expr_resolve_names(i.ref, names, errs);
             }
             break;
     }
@@ -425,6 +436,25 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
         case EXPR_OBJECT: {
             // TODO: add typechecking
             return Type_any;
+        }
+
+        case EXPR_ARRAY: {
+            Type array_type = Type_value(Value_undefined);
+            c_foreach(i, vec_Expr, self->array) {
+                Type t = Expr_get_type_and_typecheck(i.ref, errs);
+                if (array_type.tag == TYPE_VALUE && array_type.value.tag == VALUE_UNDEFINED) {
+                    Type_abstract_literals(&t);
+                    Type_drop(&array_type);
+                    array_type = t;
+                } else if (Type_extends(&t, &array_type)) {
+                    Type_drop(&t);
+                } else {
+                    Type_drop(&t);
+                    Type_drop(&array_type);
+                    array_type = Type_any;
+                }
+            }
+            return Type_array(c_new(Type, array_type));
         }
     }
     UNREACHABLE;

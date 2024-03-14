@@ -49,6 +49,11 @@ void Type_drop(Type* self) {
             Interface_drop(&self->interface);
             break;
 
+        case TYPE_ARRAY:
+            Type_drop(self->array);
+            free(self->array);
+            break;
+
         case TYPE_TERNARY:
             TernaryType_drop(self->ternary);
             free(self->ternary);
@@ -75,6 +80,10 @@ void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
         case TYPE_GENERIC: cstr_append_generic_debug(target, self->generic, indent); break;
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, self->callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->interface, indent); break;
+        case TYPE_ARRAY:
+            cstr_append_type_debug(target, self->array, indent);
+            cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
+            break;
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->ternary, indent); break;
     }
 }
@@ -93,6 +102,10 @@ void cstr_append_type_error_msg(cstr* target, Type const* self) {
         case TYPE_GENERIC: cstr_append_generic_error_msg(target, self->generic); break;
         case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, self->callable); break;
         case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &self->interface); break;
+        case TYPE_ARRAY:
+            cstr_append_type_error_msg(target, self->array);
+            cstr_append_sv(target, c_sv("[]"));
+            break;
         case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, self->ternary); break;
     }
 }
@@ -117,6 +130,7 @@ Type Type_clone(Type self) {
         case TYPE_GENERIC: return Type_generic(c_new(Generic, Generic_clone(*self.generic)));
         case TYPE_CALLABLE: return Type_callable(c_new(CallableType, CallableType_clone(*self.callable)));
         case TYPE_INTERFACE: return Type_interface(Interface_clone(self.interface));
+        case TYPE_ARRAY: return Type_array(c_new(Type, Type_clone(*self.array)));
         case TYPE_TERNARY: return Type_ternary(c_new(TernaryType, TernaryType_clone(*self.ternary)));
     }
     UNREACHABLE;
@@ -173,6 +187,10 @@ void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
             c_foreach(i, vec_InterfaceMember, self->interface.members) {
                 Type_resolve_names(&i.ref->type, names, errs);
             }
+            break;
+
+        case TYPE_ARRAY:
+            Type_resolve_names(self->array, names, errs);
             break;
 
         case TYPE_TERNARY:
@@ -260,6 +278,9 @@ bool Type_extends(Type const* sub, Type const* super) {
                 return false;
             }
 
+        case TYPE_ARRAY:
+            return sub->tag == TYPE_ARRAY && Type_extends(sub->array, super->array);
+
         case TYPE_INTERFACE:
             NONFATAL("extends(TYPE_INTERFACE, ...) not implemented");
             return false;
@@ -282,6 +303,7 @@ void Type_abstract_literals(Type* self) {
         case TYPE_GENERIC:
         case TYPE_CALLABLE:
         case TYPE_INTERFACE:
+        case TYPE_ARRAY:
         case TYPE_TERNARY:
             break;
 
