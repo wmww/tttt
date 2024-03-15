@@ -1711,6 +1711,9 @@ static bool parse_block_inner(Parser* parent, Block* ret) {
                 Span span = hop_token_get_span(&p);
                 ErrorCtx_error(&p.errs, span, 1005, "';' expected.");
             }
+        } else if (*p.pos == '\\') {
+            ErrorCtx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
+            p.pos++;
         } else {
             Span span = hop_token_get_span(&p);
             ErrorCtx_error(&p.errs, span, 1128, "Declaration or statement expected.");

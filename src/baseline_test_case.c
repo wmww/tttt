@@ -65,6 +65,8 @@ static const char* relative_test_path(const char* test_path) {
 
 static cstr render_lines_woven_with_file(
     const char* source_path,
+    bool include_header,
+    const char* line_indent,
     csview source_contents,
     vec_LineNumberedStr const* lines
 ) {
@@ -73,10 +75,19 @@ static cstr render_lines_woven_with_file(
     int index = 0;
     int vec_size = vec_LineNumberedStr_size(lines);
     const char* relative_path = relative_test_path(source_path);
-    cstr_append_fmt(&ret, "//// [%s] ////\r\n", relative_path);
-    cstr_append(&ret, "\r\n");
-    cstr_append_fmt(&ret, "=== %s ===\r\n", basename_of(source_path));
+    if (include_header) {
+        cstr_append_fmt(&ret, "//// [%s] ////\r\n", relative_path);
+        cstr_append(&ret, "\r\n");
+        cstr_append_fmt(&ret, "=== %s ===\r\n", basename_of(source_path));
+        if (!vec_size &&
+            !csview_starts_with(source_contents, " ") &&
+            !csview_starts_with(source_contents, "{")
+        ) {
+            cstr_append(&ret, "\r\n");
+        }
+    }
     c_foreach(i, LinesSv, source_contents) {
+        cstr_append(&ret, line_indent);
         cstr_append_sv(&ret, i.line);
         if (csview_size(i.line)) {
             cstr_append(&ret, "\r\n");
@@ -84,17 +95,61 @@ static cstr render_lines_woven_with_file(
         bool lines_added = false;
         while (index < vec_size && vec_LineNumberedStr_at(lines, index)->line <= line) {
             cstr_append_s(&ret, vec_LineNumberedStr_at(lines, index)->str);
-            cstr_append(&ret, "\r\n");
+            if (include_header) {
+                cstr_append(&ret, "\r\n");
+            }
             lines_added = true;
             index++;
         }
-        if (lines_added) {
+        if (include_header && lines_added) {
             cstr_append(&ret, "\r\n");
         }
         line++;
     }
     return ret;
 }
+
+static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, vec_LineNumberedStr* lines) {
+    c_foreach(i, vec_Error, errs->errors) {
+        int line = span_line_index(&i.ref->span);
+        int col = span_col_index(&i.ref->span);
+
+        cstr_append_fmt(
+            header,
+            "%s(%d,%d): error TS%d: %s\r\n",
+            filename, line + 1, col + 1,
+            i.ref->ts_code,
+            cstr_str(&i.ref->message)
+        );
+
+        LineNumberedStr item = {
+            .line = line,
+            .str = cstr_null,
+        };
+
+        if (i.ref->span.file_start) {
+            for (int j = 0; j < col + 4; j++) {
+                cstr_append_sv(&item.str, c_sv(" "));
+            }
+            for (unsigned j = 0; j < i.ref->span.length; j++) {
+                cstr_append_sv(&item.str, c_sv("~"));
+            }
+            cstr_append(&item.str, "\r\n");
+        } else {
+            cstr_append(&item.str, "<NO SPAN>\r\n");
+        }
+
+        cstr_append_fmt(
+            &item.str,
+            "!!! error TS%d: %s",
+            i.ref->ts_code,
+            cstr_str(&i.ref->message)
+        );
+
+        vec_LineNumberedStr_push(lines, item);
+    }
+}
+
 
 static cstr load_test_source(const char* path, bool noisy) {
     cstr contents_s = cstr_null;
@@ -259,14 +314,41 @@ void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         Block_drop(&ast);
     }
 
-    ErrorCtx_append_errors_txt(&self->detail.errs, &errors_result);
+    errors_result = cstr_null;
+    if (!ErrorCtx_empty(&self->detail.errs)) {
+        const char* source_basename = basename_of(cstr_str(&self->source_path));
+        vec_LineNumberedStr error_lines = vec_LineNumberedStr_init();
+        render_errros(&self->detail.errs, source_basename, &errors_result, &error_lines);
+        cstr_append_fmt(
+            &errors_result,
+            "\r\n\r\n==== %s (%ld errors) ====\r\n",
+            source_basename,
+            vec_Error_size(&self->detail.errs.errors)
+        );
+        cstr errors_body = render_lines_woven_with_file(
+            cstr_str(&self->source_path),
+            false,
+            "    ",
+            cstr_sv(&self->detail.source),
+            &error_lines
+        );
+        cstr_append_s(&errors_result, errors_body);
+        cstr_drop(&errors_body);
+        vec_LineNumberedStr_drop(&error_lines);
+    }
+
     symbols_results = render_lines_woven_with_file(
         cstr_str(&self->source_path),
+        true,
+        "",
         cstr_sv(&self->detail.source),
         &self->detail.symbols
     );
+
     types_results = render_lines_woven_with_file(
         cstr_str(&self->source_path),
+        true,
+        "",
         cstr_sv(&self->detail.source),
         &self->detail.types
     );

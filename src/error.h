@@ -24,7 +24,6 @@ typedef struct ErrorCtx {
 static inline ErrorCtx ErrorCtx_init() { return (ErrorCtx){0}; }
 void ErrorCtx_drop(ErrorCtx* self);
 void ErrorCtx_display(ErrorCtx* self);
-void ErrorCtx_append_errors_txt(ErrorCtx* self, cstr* target);
 bool ErrorCtx_empty(ErrorCtx* self);
 void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other);
 void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message);

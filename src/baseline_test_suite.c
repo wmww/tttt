@@ -251,7 +251,7 @@ box_BaselineTestSuite load_baseline_test_suite(
     box_BaselineTestSuite ret = box_BaselineTestSuite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
         .has_filter = filter_re != nullptr,
-        .filter = filter_re ? cregex_from(filter_re, CREG_ICASE) : cregex_init(),
+        .filter = filter_re ? cregex_from(filter_re, CREG_ICASE | CREG_FULLMATCH) : cregex_init(),
         .prev_results = prev_results,
         .cases = vec_BaselineTestCase_init(),
     });
