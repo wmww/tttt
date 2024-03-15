@@ -2,6 +2,7 @@
 #include "block.h"
 #include "interface.h"
 #include "interface_member.h"
+#include "src/span.h"
 #include "statement.h"
 #include "ternary_type.h"
 #include "generic.h"
@@ -168,15 +169,18 @@ static inline bool is_number_start_char(char c) {
 }
 
 static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
-    const char* start = parent->pos;
     Anchor a = span_start(parent);
     if (is_identifier_start_char(*parent->pos)) {
         parent->pos++;
         while (is_identifier_char(*parent->pos)) parent->pos++;
-        *ret = cstr_from_n(start, parent->pos - start);
         if (span) {
             *span = span_end(a);
         }
+        csview sv = csview_from_n(a.start, parent->pos - a.start);
+        if (csview_cmp(&sv, &c_sv("return")) == 0) {
+            return false; // TODO: check for all keywords efficiently
+        }
+        *ret = cstr_from_sv(sv);
         return true;
     } else {
         return false;
@@ -1342,6 +1346,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
+    ret->peren_depth = 0;
 
     cstr name = cstr_null;
     FunctionImpl function = {0};
@@ -1439,14 +1444,39 @@ static bool parse_var_init(Parser* parent, VarInitStatement* ret) {
         return parse_fail(&p);
     }
 
+    Span comma_span = span_null;
     NameInitData data;
-    if (!parse_name_init(&p, &data)) {
-        return parse_fail(&p);
+    vec_NameInitData vars = vec_NameInitData_init();
+    while (true) {
+        Parser sub = parser(&p);
+        if (!parse_name_init(&sub, &data)) {
+            ErrorCtx_error(&p.errs, span_from_token(&p), 1134, "Variable declaration expected.");
+            parse_fail(&sub);
+            break;
+        }
+        if (cstr_empty(&data.name) && comma_span.file_start) {
+            ErrorCtx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
+            NameInitData_drop(&data);
+            parse_fail(&sub);
+            p.pos = span_end_ptr(&comma_span);
+            break;
+        }
+        parse_success(&sub);
+        vec_NameInitData_push(&vars, data);
+        const char* end_of_name_init = p.pos;
+        hop_whitespace(&p);
+
+        if (!hop_char(&p, ',')) {
+            p.pos = end_of_name_init;
+            break;
+        }
+        comma_span = span_from_previous_char(&p);
+        hop_whitespace(&p);
     }
 
     *ret = (VarInitStatement) {
         .keyword = keyword,
-        .data = data,
+        .vars = vars,
     };
     return parse_success(&p);
 }

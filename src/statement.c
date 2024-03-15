@@ -23,7 +23,7 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int inde
 }
 
 void VarInitStatement_drop(VarInitStatement* self) {
-    NameInitData_drop(&self->data);
+    vec_NameInitData_drop(&self->vars);
 }
 
 void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent) {
@@ -32,30 +32,37 @@ void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, 
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
         case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
     }
-    cstr_append_name_init_data_debug(target, &self->data, indent);
+    c_foreach(i, vec_NameInitData, self->vars) {
+        cstr_append_name_init_data_debug(target, i.ref, indent);
+        if (i.ref != i.end - 1) {
+            cstr_append_sv(target, c_sv(", "));
+        }
+    }
     cstr_append_sv(target, c_sv(";"));
 }
 
 void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
-    if (self->data.value_explicit) {
-        Type expr_type = Expr_get_type_and_typecheck(&self->data.value, errs);
-        if (self->data.type_explicit) {
-            check_assignable_or_error(&expr_type, &self->data.type, self->data.name_span, errs);
-        } else {
-            Type_drop(&self->data.type);
-            self->data.type = Type_clone(expr_type);
-            if (self->keyword != VAR_INIT_CONST) {
-                Type_abstract_literals(&self->data.type);
+    c_foreach(i, vec_NameInitData, self->vars) {
+        if (i.ref->value_explicit) {
+            Type expr_type = Expr_get_type_and_typecheck(&i.ref->value, errs);
+            if (i.ref->type_explicit) {
+                check_assignable_or_error(&expr_type, &i.ref->type, i.ref->name_span, errs);
+            } else {
+                Type_drop(&i.ref->type);
+                i.ref->type = Type_clone(expr_type);
+                if (self->keyword != VAR_INIT_CONST) {
+                    Type_abstract_literals(&i.ref->type);
+                }
+                if (i.ref->type.tag == TYPE_ARRAY &&
+                    i.ref->type.array->tag == TYPE_VALUE &&
+                    i.ref->type.array->value.tag == VALUE_UNDEFINED
+                ) {
+                    Type_drop(i.ref->type.array);
+                    *i.ref->type.array = Type_any;
+                }
             }
-            if (self->data.type.tag == TYPE_ARRAY &&
-                self->data.type.array->tag == TYPE_VALUE &&
-                self->data.type.array->value.tag == VALUE_UNDEFINED
-            ) {
-                Type_drop(self->data.type.array);
-                *self->data.type.array = Type_any;
-            }
+            Type_drop(&expr_type);
         }
-        Type_drop(&expr_type);
     }
 }
 
@@ -177,13 +184,15 @@ void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
 void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs) {
     switch (self->tag) {
         case STATEMENT_VAR_INIT:
-            if (!NameStack_add_variable(
-                names,
-                cstr_clone(self->var_init.data.name),
-                &self->var_init.data.type
-            )) {
-                // name is cstr_str(&result.ref->first)
-                ErrorCtx_type_error(errs, "multiple values declared with same name");
+            c_foreach(i, vec_NameInitData, self->var_init.vars) {
+                if (!NameStack_add_variable(
+                    names,
+                    cstr_clone(i.ref->name),
+                    &i.ref->type
+                )) {
+                    // name is cstr_str(&result.ref->first)
+                    ErrorCtx_type_error(errs, "multiple values declared with same name");
+                }
             }
             break;
 
@@ -233,8 +242,10 @@ void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) 
             break;
 
         case STATEMENT_VAR_INIT:
-            Type_resolve_names(&self->var_init.data.type, names, errs);
-            Expr_resolve_names(&self->var_init.data.value, names, errs);
+            c_foreach(i, vec_NameInitData, self->var_init.vars) {
+                Type_resolve_names(&i.ref->type, names, errs);
+                Expr_resolve_names(&i.ref->value, names, errs);
+            }
             break;
 
         case STATEMENT_FUNCTION:

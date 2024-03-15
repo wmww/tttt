@@ -26,6 +26,10 @@ typedef struct NameInitData {
 void NameInitData_drop(NameInitData* self);
 void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent);
 
+#define i_key_class NameInitData
+#define i_no_clone
+#include "stc/vec.h"
+
 // Variable initialization
 
 typedef struct VarInitStatement {
@@ -34,7 +38,7 @@ typedef struct VarInitStatement {
         VAR_INIT_LET,
         VAR_INIT_CONST,
     } keyword;
-    NameInitData data;
+    vec_NameInitData vars;
 } VarInitStatement;
 
 void VarInitStatement_drop(VarInitStatement* self);

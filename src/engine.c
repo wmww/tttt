@@ -393,10 +393,12 @@ static Result MUST_USE Engine_run_statement(Engine* self, Statement const* state
 
         case STATEMENT_VAR_INIT: {
             // TODO: respect keyword (let, const, var)
-            TRY_THROW(value, Engine_eval_expr(self, &statement->var_init.data.value));
-            cstr name = cstr_clone(statement->var_init.data.name);
-            ObjectValue* locals = Engine_get_locals(self);
-            ObjectValue_set(locals, name, value);
+            c_foreach(i, vec_NameInitData, statement->var_init.vars) {
+                TRY_THROW(value, Engine_eval_expr(self, &i.ref->value));
+                cstr name = cstr_clone(i.ref->name);
+                ObjectValue* locals = Engine_get_locals(self);
+                ObjectValue_set(locals, name, value);
+            }
             return Result_ok_undefined;
         }
 

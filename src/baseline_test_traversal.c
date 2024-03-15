@@ -117,10 +117,14 @@ void Statement_compile_test_info(Statement* self, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_VAR_INIT:
-            BaselineTestCase_add_symbol(ctx, cstr_str(&self->var_init.data.name), &self->var_init.data.name_span);
-            BaselineTestCase_add_type(ctx, &self->var_init.data.name_span, 0, &self->var_init.data.type);
-            Type_compile_test_info(&self->var_init.data.type, ctx);
-            Expr_compile_test_info(&self->var_init.data.value, ctx);
+            c_foreach(i, vec_NameInitData, self->var_init.vars) {
+                BaselineTestCase_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span);
+                BaselineTestCase_add_type(ctx, &i.ref->name_span, 0, &i.ref->type);
+                Type_compile_test_info(&i.ref->type, ctx);
+                //if (i.ref->value_explicit) {
+                    Expr_compile_test_info(&i.ref->value, ctx);
+                //}
+            }
             break;
 
         case STATEMENT_FUNCTION:

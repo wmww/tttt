@@ -1250,9 +1250,9 @@ const baselines = {
         types: true,
     },
     'arrayLiteral2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'arrayLiteralAndArrayConstructorEquivalence1': {
         errors: false,
@@ -5355,8 +5355,8 @@ const baselines = {
         types: false,
     },
     'constDeclarations-es5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'constDeclarations-invalidContexts': {
@@ -5390,7 +5390,7 @@ const baselines = {
         types: false,
     },
     'constDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6885,7 +6885,7 @@ const baselines = {
         types: false,
     },
     'declFileForVarList': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18310,8 +18310,8 @@ const baselines = {
         types: false,
     },
     'letDeclarations-es5-1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'letDeclarations-es5': {
@@ -21965,7 +21965,7 @@ const baselines = {
         types: false,
     },
     'objectLiteral2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25900,7 +25900,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationVariables': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34160,7 +34160,7 @@ const baselines = {
         types: false,
     },
     'nullPropertyName': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -45145,7 +45145,7 @@ const baselines = {
         types: false,
     },
     'asiPreventsParsingAsInterface01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46185,7 +46185,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsFunctionKeywordPropExhaustive': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46970,7 +46970,7 @@ const baselines = {
         types: false,
     },
     'jsdocVariableDeclarationWithTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49100,7 +49100,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_VariableList1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49110,22 +49110,22 @@ const baselines = {
         types: false,
     },
     'parserVariableStatement1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserVariableStatement2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserVariableStatement3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserVariableStatement4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49440,17 +49440,17 @@ const baselines = {
         types: true,
     },
     'parserAmbiguityWithBinaryOperator1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserAmbiguityWithBinaryOperator2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserAmbiguityWithBinaryOperator3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51437,15 +51437,15 @@ const baselines = {
     'parserVariableDeclaration1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserVariableDeclaration10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserVariableDeclaration11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -51470,7 +51470,7 @@ const baselines = {
         types: false,
     },
     'parserVariableDeclaration5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -51480,7 +51480,7 @@ const baselines = {
         types: false,
     },
     'parserVariableDeclaration7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
