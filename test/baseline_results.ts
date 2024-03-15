@@ -2337,12 +2337,12 @@ const baselines = {
     'binaryArithmatic2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'binaryArithmatic3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'binaryArithmatic4': {
         errors: false,
@@ -5875,7 +5875,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeLogicalOr': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6305,7 +6305,7 @@ const baselines = {
         types: false,
     },
     'contextuallyTypingOrOperator3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6540,7 +6540,7 @@ const baselines = {
         types: false,
     },
     'controlFlowManyCallExpressionStatementsPerf': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25855,7 +25855,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationIfElse': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28832,7 +28832,7 @@ const baselines = {
     'unaryOperators1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unaryOperatorsInStrictMode': {
         errors: false,
@@ -41090,17 +41090,17 @@ const baselines = {
         types: false,
     },
     'emitExponentiationOperator1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitExponentiationOperator2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitExponentiationOperator3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41175,7 +41175,7 @@ const baselines = {
         types: false,
     },
     'exponentiationOperatorWithAnyAndNumber': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41980,7 +41980,7 @@ const baselines = {
         types: false,
     },
     'arithmeticOperatorWithAnyAndNumber': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42230,7 +42230,7 @@ const baselines = {
         types: false,
     },
     'logicalAndOperatorWithTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45810,7 +45810,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocReturnTag1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45850,7 +45850,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocSatisfiesTag2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46810,7 +46810,7 @@ const baselines = {
         types: false,
     },
     'jsdocReturnTag1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49550,19 +49550,19 @@ const baselines = {
         types: false,
     },
     'parserGreaterThanTokenAmbiguity1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity11': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity12': {
         errors: false,
@@ -49587,7 +49587,7 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity16': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity17': {
         errors: false,
@@ -49625,14 +49625,14 @@ const baselines = {
         types: false,
     },
     'parserGreaterThanTokenAmbiguity5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity6': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity7': {
         errors: false,
@@ -53435,7 +53435,7 @@ const baselines = {
         types: false,
     },
     'recursiveInitializer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
