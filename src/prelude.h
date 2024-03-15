@@ -3,7 +3,8 @@
 #include <stdio.h>
 
 #include <stc/cstr.h>
-#include "stc/csview.h"
+#include <stc/csview.h>
+#include <stc/czview.h>
 #include <stc/types.h>
 
 __attribute__((noreturn))

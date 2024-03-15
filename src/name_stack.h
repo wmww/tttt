@@ -36,7 +36,6 @@ typedef struct NameStack {
     vec_Namespace stack;
 } NameStack;
 
-
 NameStack NameStack_init();
 void NameStack_drop(NameStack* self);
 void NameStack_push_frame(NameStack* self, bool is_generic);

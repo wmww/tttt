@@ -116,7 +116,7 @@ static Result MUST_USE Engine_assign(Engine* self, Expr const* target, Value val
 }
 
 static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* op_expr) {
-    if (op_expr->op == BINARY_OP_SINGLE_EQUAL) {
+    if (op_expr->op == BINARY_OP_EQUAL) {
         TRY_THROW(right, Engine_eval_expr(self, &op_expr->right));
         TRY_THROW_DROP(Engine_assign(self, &op_expr->left, right));
         return Result_ok(Value_clone(right));
@@ -141,7 +141,7 @@ static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* o
         case BINARY_OP_MINUS: ret = Value_number(Value_to_number(&left) - Value_to_number(&right)); break;
         case BINARY_OP_STAR: ret = Value_number(Value_to_number(&left) * Value_to_number(&right)); break;
         case BINARY_OP_SLASH: ret = Value_number(Value_to_number(&left) / Value_to_number(&right)); break;
-        case BINARY_OP_SINGLE_EQUAL: UNREACHABLE;
+        case BINARY_OP_EQUAL: UNREACHABLE; // handled above
         case BINARY_OP_DOUBLE_EQUAL: ret = Value_boolean(Value_loose_eq(&left, &right)); break;
         case BINARY_OP_TRIPLE_EQUAL: ret = Value_boolean(Value_strict_eq(&left, &right)); break;
         case BINARY_OP_LESS: ret = Value_boolean(Value_to_number(&left) < Value_to_number(&right)); break;
@@ -149,8 +149,11 @@ static Result MUST_USE Engine_eval_binary_op(Engine* self, BinaryOpExpr const* o
         case BINARY_OP_LESS_EQUAL: ret = Value_boolean(Value_to_number(&left) <= Value_to_number(&right)); break;
         case BINARY_OP_GREATER_EQUAL: ret = Value_boolean(Value_to_number(&left) >= Value_to_number(&right)); break;
         case BINARY_OP_NOT_EQUAL: ret = Value_boolean(!Value_loose_eq(&left, &right)); break;
-        case BINARY_OP_DOUBLE_NOT_EQUAL: ret = Value_boolean(!Value_strict_eq(&left, &right)); break;
+        case BINARY_OP_TRIPLE_NOT_EQUAL: ret = Value_boolean(!Value_strict_eq(&left, &right)); break;
         case BINARY_OP_COMMA: ret = right; right = Value_undefined; break;
+        default:
+            NONFATAL("operator %s not implemented", BinaryOp_get_zv(op_expr->op).str);
+            ret = Value_undefined;
     }
     Value_drop(&left);
     Value_drop(&right);
@@ -174,6 +177,7 @@ static Result MUST_USE Engine_eval_unary_op(Engine* self, UnaryOpExpr const* op_
     Result res = Result_ok_undefined;
     switch (op_expr->op) {
         case UNARY_OP_BANG: res.value = Value_boolean(!Value_to_boolean(&value)); break;
+        case UNARY_OP_TILDE: res.value = Value_number(~(long)Value_to_number(&value)); break;
         case UNARY_OP_PLUS: res.value = Value_number(Value_to_number(&value)); break;
         case UNARY_OP_MINUS: res.value = Value_number(-Value_to_number(&value)); break;
         case UNARY_OP_LEFT_PLUS_PLUS: res = Engine_eval_inc_dec(self, &op_expr->expr, &value, 1, 0); break;

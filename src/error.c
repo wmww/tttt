@@ -135,6 +135,7 @@ void ErrorCtx_type_error(ErrorCtx* self, const char* static_message) {
 
 void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message) {
     if (!self) {
+        cstr_drop(&message);
         return;
     }
     vec_Error_push(&self->errors, (Error){

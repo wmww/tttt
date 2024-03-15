@@ -102,20 +102,59 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
 // Binary op
 
+// Order based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
 typedef enum BinaryOp {
-    BINARY_OP_PLUS,
-    BINARY_OP_MINUS,
+    BINARY_OP_STAR_STAR,
+
     BINARY_OP_STAR,
     BINARY_OP_SLASH,
-    BINARY_OP_SINGLE_EQUAL,
-    BINARY_OP_DOUBLE_EQUAL,
-    BINARY_OP_TRIPLE_EQUAL,
+    BINARY_OP_MOD,
+
+    BINARY_OP_PLUS,
+    BINARY_OP_MINUS,
+
+    BINARY_OP_LESS_LESS,
+    BINARY_OP_GREATER_GREATER,
+    BINARY_OP_GREATER_GREATER_GREATER,
+
     BINARY_OP_LESS,
-    BINARY_OP_GREATER,
     BINARY_OP_LESS_EQUAL,
+    BINARY_OP_GREATER,
     BINARY_OP_GREATER_EQUAL,
+
+    BINARY_OP_DOUBLE_EQUAL,
     BINARY_OP_NOT_EQUAL,
-    BINARY_OP_DOUBLE_NOT_EQUAL,
+    BINARY_OP_TRIPLE_EQUAL,
+    BINARY_OP_TRIPLE_NOT_EQUAL,
+
+    BINARY_OP_AND,
+
+    BINARY_OP_XOR,
+
+    BINARY_OP_OR,
+
+    BINARY_OP_AND_AND,
+
+    BINARY_OP_OR_OR,
+    BINARY_OP_EH_EH,
+
+    BINARY_OP_EQUAL,
+    BINARY_OP_PLUS_EQUAL,
+    BINARY_OP_MINUS_EQUAL,
+    BINARY_OP_STAR_STAR_EQUAL,
+    BINARY_OP_STAR_EQUAL,
+    BINARY_OP_SLASH_EQUAL,
+    BINARY_OP_MOD_EQUAL,
+    BINARY_OP_LESS_LESS_EQUAL,
+    BINARY_OP_GREATER_GREATER_EQUAL,
+    BINARY_OP_GREATER_GREATER_GREATER_EQUAL,
+    BINARY_OP_AND_EQUAL,
+    BINARY_OP_XOR_EQUAL,
+    BINARY_OP_OR_EQUAL,
+    BINARY_OP_AND_AND_EQUAL,
+    BINARY_OP_OR_OR_EQUAL,
+    BINARY_OP_EH_EH_EQUAL,
+
     BINARY_OP_COMMA,
 } BinaryOp;
 
@@ -123,6 +162,7 @@ typedef enum BinaryOp {
 // (BINARY_OP_PLUS, BINARY_OP_STAR) => -1
 // (BINARY_OP_PLUS, BINARY_OP_MINUS) => 0
 signed char BinaryOp_cmp_precedence(BinaryOp a, BinaryOp b);
+czview BinaryOp_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {
     BinaryOp op;
@@ -137,6 +177,7 @@ typedef struct BinaryOpExpr {
 
 typedef enum UnaryOp {
     UNARY_OP_BANG,
+    UNARY_OP_TILDE,
     UNARY_OP_PLUS,
     UNARY_OP_MINUS,
     UNARY_OP_LEFT_PLUS_PLUS,
@@ -144,6 +185,8 @@ typedef enum UnaryOp {
     UNARY_OP_RIGHT_PLUS_PLUS = UNARY_OP_MIN_RIGHT_HAND_OP,
     UNARY_OP_RIGHT_MINUS_MINUS,
 } UnaryOp;
+
+czview UnaryOp_get_zv(UnaryOp op);
 
 typedef struct UnaryOpExpr {
     UnaryOp op;

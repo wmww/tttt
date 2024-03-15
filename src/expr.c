@@ -1,4 +1,5 @@
 #include "expr.h"
+#include "stc/types.h"
 #include "type.h"
 #include "error.h"
 #include "name_stack.h"
@@ -7,55 +8,74 @@
 #include "as_type_expr.h"
 #include "generic.h"
 
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
 static inline int binary_op_get_precedence(BinaryOp op) {
     switch (op) {
-        case BINARY_OP_COMMA: return 5;
-        case BINARY_OP_SINGLE_EQUAL: return 10;
-        case BINARY_OP_DOUBLE_EQUAL: return 20;
-        case BINARY_OP_TRIPLE_EQUAL: return 20;
-        case BINARY_OP_LESS: return 20;
-        case BINARY_OP_GREATER: return 20;
-        case BINARY_OP_LESS_EQUAL: return 20;
-        case BINARY_OP_GREATER_EQUAL: return 20;
-        case BINARY_OP_NOT_EQUAL: return 20;
-        case BINARY_OP_DOUBLE_NOT_EQUAL: return 20;
-        case BINARY_OP_PLUS: return 50;
-        case BINARY_OP_MINUS: return 50;
-        case BINARY_OP_STAR: return 60;
-        case BINARY_OP_SLASH: return 60;
-    }
-    UNREACHABLE;
-}
+        case BINARY_OP_STAR_STAR:
+            return 130;
 
-static inline csview binary_op_get_sv(BinaryOp op) {
-    switch (op) {
-        case BINARY_OP_PLUS: return c_sv("+");
-        case BINARY_OP_MINUS: return c_sv("-");
-        case BINARY_OP_STAR: return c_sv("*");
-        case BINARY_OP_SLASH: return c_sv("/");
-        case BINARY_OP_SINGLE_EQUAL: return c_sv("=");
-        case BINARY_OP_DOUBLE_EQUAL: return c_sv("==");
-        case BINARY_OP_TRIPLE_EQUAL: return c_sv("===");
-        case BINARY_OP_LESS: return c_sv("<");
-        case BINARY_OP_GREATER: return c_sv(">");
-        case BINARY_OP_LESS_EQUAL: return c_sv("<=");
-        case BINARY_OP_GREATER_EQUAL: return c_sv(">=");
-        case BINARY_OP_NOT_EQUAL: return c_sv("!=");
-        case BINARY_OP_DOUBLE_NOT_EQUAL: return c_sv("!==");
-        case BINARY_OP_COMMA: return c_sv(",");
-    }
-    UNREACHABLE;
-}
+        case BINARY_OP_STAR:
+        case BINARY_OP_SLASH:
+        case BINARY_OP_MOD:
+            return 120;
 
-static inline csview unary_op_get_sv(UnaryOp op) {
-    switch (op) {
-        case UNARY_OP_BANG: return c_sv("!");
-        case UNARY_OP_PLUS: return c_sv("+");
-        case UNARY_OP_MINUS: return c_sv("-");
-        case UNARY_OP_LEFT_PLUS_PLUS: return c_sv("++");
-        case UNARY_OP_LEFT_MINUS_MINUS: return c_sv("--");
-        case UNARY_OP_RIGHT_PLUS_PLUS: return c_sv("++");
-        case UNARY_OP_RIGHT_MINUS_MINUS: return c_sv("--");
+        case BINARY_OP_PLUS:
+        case BINARY_OP_MINUS:
+            return 110;
+
+        case BINARY_OP_LESS_LESS:
+        case BINARY_OP_GREATER_GREATER:
+        case BINARY_OP_GREATER_GREATER_GREATER:
+            return 100;
+
+        case BINARY_OP_LESS:
+        case BINARY_OP_LESS_EQUAL:
+        case BINARY_OP_GREATER:
+        case BINARY_OP_GREATER_EQUAL:
+            return 90;
+
+        case BINARY_OP_DOUBLE_EQUAL:
+        case BINARY_OP_NOT_EQUAL:
+        case BINARY_OP_TRIPLE_EQUAL:
+        case BINARY_OP_TRIPLE_NOT_EQUAL:
+            return 80;
+
+        case BINARY_OP_AND:
+            return 70;
+
+        case BINARY_OP_XOR:
+            return 60;
+
+        case BINARY_OP_OR:
+            return 50;
+
+        case BINARY_OP_AND_AND:
+            return 40;
+
+        case BINARY_OP_OR_OR:
+        case BINARY_OP_EH_EH:
+            return 30;
+
+        case BINARY_OP_EQUAL:
+        case BINARY_OP_PLUS_EQUAL:
+        case BINARY_OP_MINUS_EQUAL:
+        case BINARY_OP_STAR_STAR_EQUAL:
+        case BINARY_OP_STAR_EQUAL:
+        case BINARY_OP_SLASH_EQUAL:
+        case BINARY_OP_MOD_EQUAL:
+        case BINARY_OP_LESS_LESS_EQUAL:
+        case BINARY_OP_GREATER_GREATER_EQUAL:
+        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL:
+        case BINARY_OP_AND_EQUAL:
+        case BINARY_OP_XOR_EQUAL:
+        case BINARY_OP_OR_EQUAL:
+        case BINARY_OP_AND_AND_EQUAL:
+        case BINARY_OP_OR_OR_EQUAL:
+        case BINARY_OP_EH_EH_EQUAL:
+            return 20;
+
+        case BINARY_OP_COMMA:
+            return 10;
     }
     UNREACHABLE;
 }
@@ -132,7 +152,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             }
             cstr_append_expr_debug(target, &self->binary_op->left, indent);
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_sv(target, binary_op_get_sv(self->binary_op->op));
+            cstr_append_sv(target, czview_sv(BinaryOp_get_zv(self->binary_op->op)));
             cstr_append_sv(target, c_sv(" "));
             cstr_append_expr_debug(target, &self->binary_op->right, indent);
             if (self->binary_op->parenthesized) {
@@ -150,11 +170,11 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             }
             UnaryOp op = self->unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
-                cstr_append_sv(target, unary_op_get_sv(op));
+                cstr_append_sv(target, czview_sv(UnaryOp_get_zv(op)));
             }
             cstr_append_expr_debug(target, &self->unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
-                cstr_append_sv(target, unary_op_get_sv(op));
+                cstr_append_sv(target, czview_sv(UnaryOp_get_zv(op)));
             }
             if (self->unary_op->parenthesized) {
                 cstr_append_sv(target, c_sv(")"));
@@ -281,6 +301,185 @@ void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
     }
 }
 
+static BinaryOp BinaryOp_without_assignment(BinaryOp op) {
+    switch (op) {
+        case BINARY_OP_PLUS_EQUAL: return BINARY_OP_PLUS; break;
+        case BINARY_OP_STAR_STAR_EQUAL: return BINARY_OP_STAR_STAR; break;
+        case BINARY_OP_STAR_EQUAL: return BINARY_OP_STAR; break;
+        case BINARY_OP_SLASH_EQUAL: return BINARY_OP_SLASH; break;
+        case BINARY_OP_MOD_EQUAL: return BINARY_OP_MOD; break;
+        case BINARY_OP_MINUS_EQUAL: return BINARY_OP_MINUS; break;
+        case BINARY_OP_LESS_LESS_EQUAL: return BINARY_OP_LESS_LESS; break;
+        case BINARY_OP_GREATER_GREATER_EQUAL: return BINARY_OP_GREATER_GREATER; break;
+        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL: return BINARY_OP_GREATER_GREATER_GREATER; break;
+        case BINARY_OP_AND_EQUAL: return BINARY_OP_AND; break;
+        case BINARY_OP_XOR_EQUAL: return BINARY_OP_XOR; break;
+        case BINARY_OP_OR_EQUAL: return BINARY_OP_OR; break;
+        case BINARY_OP_AND_AND_EQUAL: return BINARY_OP_AND_AND; break;
+        case BINARY_OP_OR_OR_EQUAL: return BINARY_OP_OR_OR; break;
+        case BINARY_OP_EH_EH_EQUAL: return BINARY_OP_EH_EH; break;
+        default: PANIC(
+            "BinaryOp_without_assignment() called with non-assignment op %s (%d)",
+            BinaryOp_get_zv(op).str,
+            op
+        );
+    }
+}
+
+static Type BinaryOp_get_type_and_typecheck(
+    Type left,
+    BinaryOp op,
+    Type right,
+    Expr* expr,
+    ErrorCtx* errs
+) {
+    Type ret = Type_any;
+    switch (op) {
+        case BINARY_OP_PLUS:
+            if (Type_extends(&left, &Type_string) || Type_extends(&right, &Type_string)) {
+                ret = Type_string;
+            } else if (Type_extends(&left, &Type_number) && Type_extends(&right, &Type_number)) {
+                ret = Type_number;
+            } else {
+                // TODO: it seems special handling of possibly null or undefined types is needed
+                if (errs) {
+                    cstr message = cstr_lit("Operator '+' cannot be applied to types '");
+                    cstr_append_type_error_msg(&message, &left);
+                    cstr_append_sv(&message, c_sv("' and '"));
+                    cstr_append_type_error_msg(&message, &right);
+                    cstr_append_sv(&message, c_sv("'."));
+                    ErrorCtx_error_s(errs, expr->span, 2365, message);
+                }
+                ret = Type_any;
+            }
+            break;
+
+        case BINARY_OP_STAR_STAR:
+        case BINARY_OP_STAR:
+        case BINARY_OP_SLASH:
+        case BINARY_OP_MOD:
+        case BINARY_OP_MINUS:
+        case BINARY_OP_LESS_LESS:
+        case BINARY_OP_GREATER_GREATER:
+        case BINARY_OP_GREATER_GREATER_GREATER:
+        case BINARY_OP_AND:
+        case BINARY_OP_XOR:
+        case BINARY_OP_OR:
+            if (!Type_extends(&left, &Type_number)) {
+                ErrorCtx_error(
+                    errs,
+                    expr->binary_op->left.span,
+                    2362,
+                    "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
+                );
+            }
+            if (!Type_extends(&right, &Type_number)) {
+                ErrorCtx_error(
+                    errs,
+                    expr->binary_op->right.span,
+                    2363,
+                    "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
+                );
+            }
+            ret = Type_number;
+            break;
+
+        case BINARY_OP_EQUAL:
+            switch (expr->binary_op->left.tag) {
+                case EXPR_IDENTIFIER:
+                    if (expr->binary_op->left.identifier.type) {
+                        check_assignable_or_error(
+                            &right,
+                            expr->binary_op->left.identifier.type,
+                            expr->binary_op->left.span,
+                            errs
+                        );
+                    }
+                    break;
+
+                case EXPR_DOT_PROP:
+                    // TODO
+                    break;
+
+                default:
+                    ErrorCtx_error(
+                        errs,
+                        expr->binary_op->left.span,
+                        2364,
+                        "The left-hand side of an assignment expression must be a variable or a property access."
+                    );
+                    break;
+            }
+            ret = right;
+            right = Type_any;
+            break;
+
+        case BINARY_OP_DOUBLE_EQUAL:
+        case BINARY_OP_TRIPLE_EQUAL:
+        case BINARY_OP_NOT_EQUAL:
+        case BINARY_OP_TRIPLE_NOT_EQUAL:
+            if (!Type_extends(&left, &right) && !Type_extends(&right, &left)) {
+                if (errs) {
+                    cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
+                    cstr_append_type_error_msg(&message, &left);
+                    cstr_append_sv(&message, c_sv("' and '"));
+                    cstr_append_type_error_msg(&message, &right);
+                    cstr_append_sv(&message, c_sv("' have no overlap."));
+                    ErrorCtx_error_s(errs, expr->span, 2367, message);
+                }
+            }
+            ret = Type_boolean;
+            break;
+
+        case BINARY_OP_LESS:
+        case BINARY_OP_GREATER:
+        case BINARY_OP_LESS_EQUAL:
+        case BINARY_OP_GREATER_EQUAL:
+        case BINARY_OP_AND_AND:
+        case BINARY_OP_OR_OR:
+            // TODO: figure out rules and typecheck
+            ret = Type_boolean;
+            break;
+
+        case BINARY_OP_PLUS_EQUAL:
+        case BINARY_OP_STAR_STAR_EQUAL:
+        case BINARY_OP_STAR_EQUAL:
+        case BINARY_OP_SLASH_EQUAL:
+        case BINARY_OP_MOD_EQUAL:
+        case BINARY_OP_MINUS_EQUAL:
+        case BINARY_OP_LESS_LESS_EQUAL:
+        case BINARY_OP_GREATER_GREATER_EQUAL:
+        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL:
+        case BINARY_OP_AND_EQUAL:
+        case BINARY_OP_XOR_EQUAL:
+        case BINARY_OP_OR_EQUAL:
+        case BINARY_OP_AND_AND_EQUAL:
+        case BINARY_OP_OR_OR_EQUAL:
+        case BINARY_OP_EH_EH_EQUAL: {
+            BinaryOp without_assignment = BinaryOp_without_assignment(op);
+            ret = BinaryOp_get_type_and_typecheck(Type_clone(left), without_assignment, right, expr, errs);
+            ret = BinaryOp_get_type_and_typecheck(left, BINARY_OP_EQUAL, ret, expr, errs);
+            left = Type_any;
+            right = Type_any;
+        }   break;
+
+        case BINARY_OP_COMMA:
+            // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
+            ret = right;
+            right = Type_any;
+            break;
+
+        case BINARY_OP_EH_EH:
+            // TODO
+            ret = left;
+            left = Type_any;
+            break;
+    }
+    Type_drop(&left);
+    Type_drop(&right);
+    return ret;
+}
+
 Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
     switch (self->tag) {
         case EXPR_LITERAL:
@@ -293,76 +492,14 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
                 return Type_any;
             }
 
-        case EXPR_BINARY_OP: {
-            BinaryOpExpr* bin = self->binary_op;
-            Type type_a = Expr_get_type_and_typecheck(&bin->left, errs);
-            Type type_b = Expr_get_type_and_typecheck(&bin->right, errs);
-            Type ret = {0};
-            switch (bin->op) {
-                case BINARY_OP_PLUS:
-                    if (Type_extends(&type_a, &Type_string) || Type_extends(&type_b, &Type_string)) {
-                        ret = Type_string;
-                    } else if (Type_extends(&type_a, &Type_number) && Type_extends(&type_b, &Type_number)) {
-                        ret = Type_number;
-                    } else {
-                        ErrorCtx_type_error(errs, "invalid types to operator");
-                        ret = Type_number;
-                    }
-                    break;
-
-                case BINARY_OP_MINUS:
-                case BINARY_OP_STAR:
-                case BINARY_OP_SLASH:
-                    if (Type_extends(&type_a, &Type_number) && Type_extends(&type_b, &Type_number)) {
-                        ret = Type_number;
-                    } else {
-                        ErrorCtx_type_error(errs, "invalid types to operator");
-                        ret = Type_number;
-                    }
-                    break;
-
-                case BINARY_OP_SINGLE_EQUAL:
-                    switch (bin->left.tag) {
-                        case EXPR_IDENTIFIER:
-                            if (bin->left.identifier.type) {
-                                check_assignable_or_error(&type_b, bin->left.identifier.type, bin->left.span, errs);
-                            }
-                            break;
-
-                        case EXPR_DOT_PROP:
-                            // TODO
-                            break;
-
-                        default:
-                            ErrorCtx_type_error(errs, "invalid left-hand side of assignment");
-                            break;
-                    }
-                    ret = type_b;
-                    type_b = Type_any;
-                    break;
-
-                case BINARY_OP_DOUBLE_EQUAL:
-                case BINARY_OP_TRIPLE_EQUAL:
-                case BINARY_OP_LESS:
-                case BINARY_OP_GREATER:
-                case BINARY_OP_LESS_EQUAL:
-                case BINARY_OP_GREATER_EQUAL:
-                case BINARY_OP_NOT_EQUAL:
-                case BINARY_OP_DOUBLE_NOT_EQUAL:
-                    // TODO: typecheck
-                    ret = Type_boolean;
-                    break;
-
-                case BINARY_OP_COMMA:
-                    // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
-                    ret = type_b;
-                    type_b = Type_any;
-                    break;
-            }
-            Type_drop(&type_a);
-            Type_drop(&type_b);
-            return ret;
-        }
+        case EXPR_BINARY_OP:
+            return BinaryOp_get_type_and_typecheck(
+                Expr_get_type_and_typecheck(&self->binary_op->left, errs),
+                self->binary_op->op,
+                Expr_get_type_and_typecheck(&self->binary_op->right, errs),
+                self,
+                errs
+            );
 
         case EXPR_UNARY_OP: {
             UnaryOpExpr* una = self->unary_op;
@@ -371,6 +508,7 @@ Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
             switch (una->op) {
                 // TODO: add typechecking
                 case UNARY_OP_BANG: ret = Type_boolean; break;
+                case UNARY_OP_TILDE: ret = Type_number; break;
                 case UNARY_OP_PLUS: ret = Type_number; break;
                 case UNARY_OP_MINUS: ret = Type_number; break;
                 case UNARY_OP_LEFT_PLUS_PLUS: ret = Type_number; break;
@@ -464,6 +602,68 @@ signed char BinaryOp_cmp_precedence(BinaryOp a, BinaryOp b) {
     int ap = binary_op_get_precedence(a);
     int bp = binary_op_get_precedence(b);
     return ap == bp ? 0 : (ap > bp ? 1 : -1);
+}
+
+czview BinaryOp_get_zv(BinaryOp op) {
+    switch (op) {
+        case BINARY_OP_STAR_STAR: return c_zv("**");
+        case BINARY_OP_STAR: return c_zv("*");
+        case BINARY_OP_SLASH: return c_zv("/");
+        case BINARY_OP_MOD: return c_zv("%");
+        case BINARY_OP_PLUS: return c_zv("+");
+        case BINARY_OP_MINUS: return c_zv("-");
+        case BINARY_OP_LESS_LESS: return c_zv("<<");
+        case BINARY_OP_GREATER_GREATER: return c_zv(">>");
+        case BINARY_OP_GREATER_GREATER_GREATER: return c_zv(">>>");
+        case BINARY_OP_LESS: return c_zv("<");
+        case BINARY_OP_LESS_EQUAL: return c_zv("<=");
+        case BINARY_OP_GREATER: return c_zv(">");
+        case BINARY_OP_GREATER_EQUAL: return c_zv(">=");
+        case BINARY_OP_DOUBLE_EQUAL: return c_zv("==");
+        case BINARY_OP_NOT_EQUAL: return c_zv("!=");
+        case BINARY_OP_TRIPLE_EQUAL: return c_zv("===");
+        case BINARY_OP_TRIPLE_NOT_EQUAL: return c_zv("!==");
+        case BINARY_OP_AND: return c_zv("&");
+        case BINARY_OP_XOR: return c_zv("^");
+        case BINARY_OP_OR: return c_zv("|");
+        case BINARY_OP_AND_AND: return c_zv("&&");
+        case BINARY_OP_OR_OR: return c_zv("||");
+        case BINARY_OP_EH_EH: return c_zv("\?\?");
+        case BINARY_OP_EQUAL: return c_zv("=");
+        case BINARY_OP_PLUS_EQUAL: return c_zv("+=");
+        case BINARY_OP_MINUS_EQUAL: return c_zv("-=");
+        case BINARY_OP_STAR_STAR_EQUAL: return c_zv("**=");
+        case BINARY_OP_STAR_EQUAL: return c_zv("*=");
+        case BINARY_OP_SLASH_EQUAL: return c_zv("/=");
+        case BINARY_OP_MOD_EQUAL: return c_zv("%=");
+        case BINARY_OP_LESS_LESS_EQUAL: return c_zv("<<=");
+        case BINARY_OP_GREATER_GREATER_EQUAL: return c_zv(">>=");
+        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL: return c_zv(">>>=");
+        case BINARY_OP_AND_EQUAL: return c_zv("&=");
+        case BINARY_OP_XOR_EQUAL: return c_zv("^=");
+        case BINARY_OP_OR_EQUAL: return c_zv("|=");
+        case BINARY_OP_AND_AND_EQUAL: return c_zv("&&=");
+        case BINARY_OP_OR_OR_EQUAL: return c_zv("||=");
+        case BINARY_OP_EH_EH_EQUAL: return c_zv("\?\?=");
+        case BINARY_OP_COMMA: return c_zv(",");
+    }
+    NONFATAL("invalid binary operator %d", op);
+    return c_zv("<INVALID_OP>");
+}
+
+czview UnaryOp_get_zv(UnaryOp op) {
+    switch (op) {
+        case UNARY_OP_BANG: return c_zv("!");
+        case UNARY_OP_TILDE: return c_zv("~");
+        case UNARY_OP_PLUS: return c_zv("+");
+        case UNARY_OP_MINUS: return c_zv("-");
+        case UNARY_OP_LEFT_PLUS_PLUS: return c_zv("++");
+        case UNARY_OP_LEFT_MINUS_MINUS: return c_zv("--");
+        case UNARY_OP_RIGHT_PLUS_PLUS: return c_zv("++");
+        case UNARY_OP_RIGHT_MINUS_MINUS: return c_zv("--");
+    }
+    NONFATAL("invalid unary operator %d", op);
+    return c_zv("<INVALID_OP>");
 }
 
 void ObjectExprItem_drop(ObjectExprItem* self) {
