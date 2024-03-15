@@ -1281,7 +1281,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
 
     if (parse_binary_op_expr(&p, &parsed.binary.op, &parsed.binary.expr)) {
         if (parsed.binary.expr.tag == EXPR_BINARY_OP &&
-            !parsed.binary.expr.binary_op->parenthesized &&
+            !parsed.binary.expr.peren_depth &&
             BinaryOp_cmp_precedence(parsed.binary.op, parsed.binary.expr.binary_op->op) >= 0
         ) {
             parsed.binary.expr.binary_op->left = Expr_binary_op(
@@ -1366,11 +1366,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
             Span span = hop_token_get_span(&p);
             ErrorCtx_error(&p.errs, span, 1005, "')' expected.");
         }
-        switch (ret->tag) {
-            case EXPR_BINARY_OP: ret->binary_op->parenthesized = true; break;
-            case EXPR_UNARY_OP: ret->unary_op->parenthesized = true; break;
-            default: break;
-        }
+        ret->peren_depth++;
     } else {
         return parse_fail(&p);
     }

@@ -1327,7 +1327,7 @@ const baselines = {
     'arrowFunctionInExpressionStatement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionInExpressionStatement2': {
         errors: false,
@@ -18222,7 +18222,7 @@ const baselines = {
     'lambdaExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lambdaParamTypes': {
         errors: false,
@@ -28672,7 +28672,7 @@ const baselines = {
     'typecheckCommaExpression': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typecheckIfCondition': {
         errors: false,
@@ -28830,7 +28830,7 @@ const baselines = {
         types: false,
     },
     'unaryOperators1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -40635,7 +40635,7 @@ const baselines = {
         types: false,
     },
     'YieldStarExpression1_es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -41955,7 +41955,7 @@ const baselines = {
         types: false,
     },
     'additionOperatorWithOnlyNullValueOrUndefinedValue': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48397,7 +48397,7 @@ const baselines = {
     'parserArrowFunctionExpression4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserArrowFunctionExpression5': {
         errors: false,
@@ -49292,7 +49292,7 @@ const baselines = {
     'parserAssignmentExpression1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserConditionalExpression1': {
         errors: false,
@@ -49425,19 +49425,19 @@ const baselines = {
         types: false,
     },
     'parserAmbiguity1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserAmbiguity2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserAmbiguity3': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserAmbiguityWithBinaryOperator1': {
         errors: false,
@@ -50625,12 +50625,12 @@ const baselines = {
         types: false,
     },
     'parserSkippedTokens11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserSkippedTokens12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50670,7 +50670,7 @@ const baselines = {
         types: false,
     },
     'parserSkippedTokens2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50680,7 +50680,7 @@ const baselines = {
         types: false,
     },
     'parserSkippedTokens3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51185,7 +51185,7 @@ const baselines = {
         types: false,
     },
     'parserStrictMode1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

@@ -170,6 +170,7 @@ void FunctionImpl_typecheck(FunctionImpl* self, ErrorCtx* errs) {
             callable->ret = Type_void;
         } else if (type_count == 1) {
             callable->ret = vec_Type_pull(&ctx.returned_types);
+            Type_abstract_literals(&callable->ret);
         } else {
             ErrorCtx_error(errs, span_null, TS_CODE_NONE, "Multiple function return types not yet implemented.");
         }

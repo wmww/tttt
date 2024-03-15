@@ -95,7 +95,7 @@ static cstr render_lines_woven_with_file(
         bool lines_added = false;
         while (index < vec_size && vec_LineNumberedStr_at(lines, index)->line <= line) {
             cstr_append_s(&ret, vec_LineNumberedStr_at(lines, index)->str);
-            if (include_header) {
+            if (include_header || index < vec_size - 1) {
                 cstr_append(&ret, "\r\n");
             }
             lines_added = true;
@@ -245,7 +245,7 @@ void BaselineTestCase_add_symbol(BaselineTestCase* self, const char* name, Span 
     });
 }
 
-void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, Type const* type) {
+void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, int paren_depth, Type const* type) {
     unsigned line = span_line_index(span);
     cstr str = cstr_from_fmt(">%.*s : ", c_SV(span_sv(span)));
     cstr_append_type_error_msg(&str, type);
@@ -253,6 +253,19 @@ void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, Type co
         .line = line,
         .str = str,
     });
+    if (paren_depth) {
+        const char* start = span_start_ptr(span);
+        const char* end = span_end_ptr(span);
+        if (start < end && *start == '(' && *(end - 1) == ')') {
+            start++;
+            end--;
+            // If this gets too annoying (ex if we need comments) we can just make the parser emit nested AST nodes
+            while (start < end && (*start == ' ' || *start == '\n' || *start == '\r')) start--;
+            while (start < end && (*end == ' ' || *end == '\n' || *end == '\r')) end--;
+            Span subspan = span_make(span->file_start, start - span->file_start, end - start);
+            BaselineTestCase_add_type(self, &subspan, paren_depth - 1, type);
+        }
+    }
 }
 
 void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {

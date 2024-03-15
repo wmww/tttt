@@ -135,6 +135,9 @@ void Expr_drop(Expr* self) {
 }
 
 void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
+    for (int i = 0; i < self->peren_depth; i++) {
+        cstr_append_sv(target, c_sv("("));
+    }
     switch (self->tag) {
         case EXPR_LITERAL: cstr_append_value_debug(target, &self->literal, indent); break;
 
@@ -145,29 +148,14 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             break;
 
         case EXPR_BINARY_OP: {
-            if (self->binary_op->parenthesized) {
-                cstr_append_sv(target, c_sv("("));
-            } else {
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
-            }
             cstr_append_expr_debug(target, &self->binary_op->left, indent);
             cstr_append_sv(target, c_sv(" "));
             cstr_append_sv(target, czview_sv(BinaryOp_get_zv(self->binary_op->op)));
             cstr_append_sv(target, c_sv(" "));
             cstr_append_expr_debug(target, &self->binary_op->right, indent);
-            if (self->binary_op->parenthesized) {
-                cstr_append_sv(target, c_sv(")"));
-            } else {
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
-            }
         }   break;
 
         case EXPR_UNARY_OP: {
-            if (self->unary_op->parenthesized) {
-                cstr_append_sv(target, c_sv("("));
-            } else {
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
-            }
             UnaryOp op = self->unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(UnaryOp_get_zv(op)));
@@ -175,11 +163,6 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             cstr_append_expr_debug(target, &self->unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(UnaryOp_get_zv(op)));
-            }
-            if (self->unary_op->parenthesized) {
-                cstr_append_sv(target, c_sv(")"));
-            } else {
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
 
@@ -240,6 +223,9 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
             APPEND_INDENT(target, indent);
             cstr_append_sv(target, c_sv("]"));
         }   break;
+    }
+    for (int i = 0; i < self->peren_depth; i++) {
+        cstr_append_sv(target, c_sv(")"));
     }
 }
 

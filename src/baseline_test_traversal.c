@@ -41,7 +41,7 @@ void Type_compile_test_info(Type* self, BaselineTestCase* ctx) {
 
 void Expr_compile_test_info(Expr* self, BaselineTestCase* ctx) {
     Type t = Expr_get_type_and_typecheck(self, nullptr);
-    BaselineTestCase_add_type(ctx, &self->span, &t);
+    BaselineTestCase_add_type(ctx, &self->span, self->peren_depth, &t);
     Type_drop(&t);
 
     switch (self->tag) {
@@ -84,7 +84,7 @@ void Expr_compile_test_info(Expr* self, BaselineTestCase* ctx) {
                 FunctionArg* value_arg = vec_FunctionArg_at_mut(&self->function->args, i);
                 CallableTypeArg* type_arg = vec_CallableTypeArg_at_mut(&callable->args, i);
                 BaselineTestCase_add_symbol(ctx, cstr_str(&value_arg->name), &value_arg->name_span);
-                BaselineTestCase_add_type(ctx, &value_arg->name_span, &type_arg->type);
+                BaselineTestCase_add_type(ctx, &value_arg->name_span, 0, &type_arg->type);
             }
             Block_compile_test_info(&self->function->body, ctx);
         }   break;
@@ -118,7 +118,7 @@ void Statement_compile_test_info(Statement* self, BaselineTestCase* ctx) {
 
         case STATEMENT_VAR_INIT:
             BaselineTestCase_add_symbol(ctx, cstr_str(&self->var_init.data.name), &self->var_init.data.name_span);
-            BaselineTestCase_add_type(ctx, &self->var_init.data.name_span, &self->var_init.data.type);
+            BaselineTestCase_add_type(ctx, &self->var_init.data.name_span, 0, &self->var_init.data.type);
             Type_compile_test_info(&self->var_init.data.type, ctx);
             Expr_compile_test_info(&self->var_init.data.value, ctx);
             break;

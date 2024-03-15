@@ -42,7 +42,7 @@ BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cs
 void BaselineTestCase_drop(BaselineTestCase* self);
 void BaselineTestCase_clear_detail(BaselineTestCase* self);
 void BaselineTestCase_add_symbol(BaselineTestCase* self, const char* name, Span const* span);
-void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, Type const* type);
+void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, int paren_depth, Type const* type);
 void BaselineTestCase_run(BaselineTestCase* self, bool noisy); // returns if test ran successfully, NOT if it passed
 bool BaselineTestCase_is_pass(BaselineTestCase const* self);
 // Both *_has_new_pass() and *_has_new_fail() can be true at once, _has_new_pass() does not imply *_is_pass()

@@ -20,6 +20,7 @@ forward_vec(vec_Expr, Expr);
 
 typedef struct Expr {
     Span span;
+    int peren_depth;
     enum {
         EXPR_LITERAL,
         EXPR_IDENTIFIER,
@@ -168,7 +169,6 @@ typedef struct BinaryOpExpr {
     BinaryOp op;
     Expr left;
     Expr right;
-    bool parenthesized;
 } BinaryOpExpr;
 
 // Unary op
@@ -191,7 +191,6 @@ czview UnaryOp_get_zv(UnaryOp op);
 typedef struct UnaryOpExpr {
     UnaryOp op;
     Expr expr;
-    bool parenthesized;
 } UnaryOpExpr;
 
 // Dot property
