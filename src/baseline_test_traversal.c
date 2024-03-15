@@ -49,7 +49,9 @@ void Expr_compile_test_info(Expr* self, BaselineTestCase* ctx) {
             break;
 
         case EXPR_IDENTIFIER:
-            BaselineTestCase_add_symbol(ctx, cstr_str(&self->identifier.name), &self->span);
+            if (self->identifier.type) {
+                BaselineTestCase_add_symbol(ctx, cstr_str(&self->identifier.name), &self->span);
+            }
             break;
 
         case EXPR_BINARY_OP:
@@ -113,7 +115,9 @@ void Statement_compile_test_info(Statement* self, BaselineTestCase* ctx) {
 
         case STATEMENT_EXPR:
         case STATEMENT_RETURN:
-            Expr_compile_test_info(&self->expr, ctx);
+            if (self->expr.tag != EXPR_LITERAL || self->expr.literal.tag != VALUE_UNDEFINED) {
+                Expr_compile_test_info(&self->expr, ctx);
+            }
             break;
 
         case STATEMENT_VAR_INIT:
@@ -121,9 +125,9 @@ void Statement_compile_test_info(Statement* self, BaselineTestCase* ctx) {
                 BaselineTestCase_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span);
                 BaselineTestCase_add_type(ctx, &i.ref->name_span, 0, &i.ref->type);
                 Type_compile_test_info(&i.ref->type, ctx);
-                //if (i.ref->value_explicit) {
+                if (i.ref->value_explicit) {
                     Expr_compile_test_info(&i.ref->value, ctx);
-                //}
+                }
             }
             break;
 
