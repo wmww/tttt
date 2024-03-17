@@ -1,8 +1,8 @@
 #include "callable_type.h"
 
 void callable_type_arg_drop(CallableTypeArg* me) {
-    cstr_drop(&me->name);
-    type_drop(&me->type);
+    cstr_drop(&my name);
+    type_drop(&my type);
 }
 
 CallableTypeArg callable_type_arg_clone(CallableTypeArg me) {
@@ -14,8 +14,8 @@ CallableTypeArg callable_type_arg_clone(CallableTypeArg me) {
 }
 
 void callable_type_drop(CallableType* me) {
-    vec_callable_type_arg_drop(&me->args);
-    type_drop(&me->ret);
+    vec_callable_type_arg_drop(&my args);
+    type_drop(&my ret);
 }
 
 CallableType callable_type_clone(CallableType me) {
@@ -28,7 +28,7 @@ CallableType callable_type_clone(CallableType me) {
 
 void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent) {
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, vec_callable_type_arg, me->args) {
+    c_foreach(i, vec_callable_type_arg, my args) {
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0));
@@ -42,12 +42,12 @@ void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent)
     }
     cstr_append_sv(target, c_sv(")"));
     cstr_append_sv(target, c_sv(" => "));
-    cstr_append_type_debug(target, &me->ret, indent);
+    cstr_append_type_debug(target, &my ret, indent);
 }
 
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, vec_callable_type_arg, me->args) {
+    c_foreach(i, vec_callable_type_arg, my args) {
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(": "));
         cstr_append_type_error_msg(target, &i.ref->type);
@@ -57,5 +57,5 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
     }
     cstr_append_sv(target, c_sv(")"));
     cstr_append_sv(target, c_sv(" => "));
-    cstr_append_type_error_msg(target, &me->ret);
+    cstr_append_type_error_msg(target, &my ret);
 }

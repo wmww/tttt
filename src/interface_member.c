@@ -2,8 +2,8 @@
 #include "type.h"
 
 void interface_member_drop(InterfaceMember* me) {
-    cstr_drop(&me->name);
-    type_drop(&me->type);
+    cstr_drop(&my name);
+    type_drop(&my type);
 }
 
 InterfaceMember interface_member_clone(InterfaceMember me) {

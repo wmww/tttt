@@ -2,7 +2,7 @@
 #include "string_helpers.h"
 
 void error_drop(Error* me) {
-    cstr_drop(&me->message);
+    cstr_drop(&my message);
 }
 
 Error error_clone(Error me) {
@@ -11,19 +11,19 @@ Error error_clone(Error me) {
 }
 
 void cstr_append_error_debug(cstr* target, Error const* me) {
-    int line = span_line_index(&me->span) + 1;
+    int line = span_line_index(&my span) + 1;
 
     cstr_append_fmt(
         target,
         "%d - " CLR_ERR "error TS%d:" CLR0 CLR_STR " %s" CLR0,
-        line, me->ts_code,
-        cstr_str(&me->message)
+        line, my ts_code,
+        cstr_str(&my message)
     );
 
-    if (me->span.file_start) {
-        const char* line_start = span_line_start(&me->span);
-        const char* line_end = span_line_end(&me->span);
-        int col = span_col_index(&me->span);
+    if (my span.file_start) {
+        const char* line_start = span_line_start(&my span);
+        const char* line_end = span_line_end(&my span);
+        int col = span_col_index(&my span);
 
         cstr_append_fmt(
             target,
@@ -36,7 +36,7 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
         }
 
         cstr_append_sv(target, c_sv(CLR_ERR));
-        for (int i = 0; i < (me->span.length ? (int)me->span.length : 1); i++) {
+        for (int i = 0; i < (my span.length ? (int)my span.length : 1); i++) {
             cstr_append_sv(target, c_sv("-"));
         }
         cstr_append_sv(target, c_sv(CLR0));
@@ -44,33 +44,33 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
 }
 
 void error_ctx_drop(ErrorCtx* me) {
-    vec_error_drop(&me->errors);
+    vec_error_drop(&my errors);
 }
 
 void error_ctx_display(ErrorCtx* me) {
     cstr str = cstr_null;
     const int max_display = 10;
-    c_foreach_n(i, vec_error, me->errors, max_display) {
+    c_foreach_n(i, vec_error, my errors, max_display) {
         cstr_append_error_debug(&str, i.ref);
         printf("%s\n\n", cstr_str(&str));
         cstr_clear(&str);
     }
-    if (vec_error_size(&me->errors) > max_display) {
+    if (vec_error_size(&my errors) > max_display) {
         printf(
             CLR_ERR "  %ld additional errors not shown\n\n" CLR0,
-            vec_error_size(&me->errors) - max_display
+            vec_error_size(&my errors) - max_display
         );
     }
     cstr_drop(&str);
 }
 
 bool error_ctx_empty(ErrorCtx* me) {
-    return vec_error_empty(&me->errors);
+    return vec_error_empty(&my errors);
 }
 
 void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other) {
     c_foreach(i, vec_error, other.errors) {
-        vec_error_push(&me->errors, *i.ref);
+        vec_error_push(&my errors, *i.ref);
         *i.ref = (Error){0};
     }
     error_ctx_drop(&other);
@@ -80,7 +80,7 @@ void error_ctx_parse_error(ErrorCtx* me, const char* static_message) {
     if (!me) {
         return;
     }
-    vec_error_push(&me->errors, (Error){
+    vec_error_push(&my errors, (Error){
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
@@ -91,7 +91,7 @@ void error_ctx_type_error(ErrorCtx* me, const char* static_message) {
     if (!me) {
         return;
     }
-    vec_error_push(&me->errors, (Error){
+    vec_error_push(&my errors, (Error){
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
@@ -103,7 +103,7 @@ void error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) 
         cstr_drop(&message);
         return;
     }
-    vec_error_push(&me->errors, (Error){
+    vec_error_push(&my errors, (Error){
         .message = message,
         .span = span,
         .ts_code = ts_code,

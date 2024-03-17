@@ -1,8 +1,8 @@
 #include "extends_conditional.h"
 
 void extends_conditional_drop(ExtendsConditional* me) {
-    type_drop(&me->MaybeSub);
-    type_drop(&me->MaybeSuper);
+    type_drop(&my MaybeSub);
+    type_drop(&my MaybeSuper);
 }
 
 ExtendsConditional extends_conditional_clone(ExtendsConditional me) {
@@ -13,5 +13,5 @@ ExtendsConditional extends_conditional_clone(ExtendsConditional me) {
 }
 
 bool extends_conditional_eval(ExtendsConditional* me) {
-    return type_extends(&me->MaybeSub, &me->MaybeSuper);
+    return type_extends(&my MaybeSub, &my MaybeSuper);
 }

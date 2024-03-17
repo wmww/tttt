@@ -21,11 +21,11 @@ typedef struct Engine {
 } Engine;
 
 void engine_drop(Engine* me) {
-    vec_stack_frame_drop(&me->stack);
+    vec_stack_frame_drop(&my stack);
 }
 
 JsObject* engine_get_locals(Engine* me) {
-    return vec_stack_frame_back(&me->stack)->get;
+    return vec_stack_frame_back(&my stack)->get;
 }
 
 static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr);
@@ -48,7 +48,7 @@ static bool contains_only_digits(const char* str) {
 }
 
 static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
-    c_foreach_rev(i, vec_stack_frame, me->stack) {
+    c_foreach_rev(i, vec_stack_frame, my stack) {
         Result get_result = js_object_get(i.ref->get, identifier);
         if (get_result.tag == RESULT_OK) {
             return get_result;
@@ -62,14 +62,14 @@ static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
 }
 
 static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, Value value) {
-    c_foreach_rev(i, vec_stack_frame, me->stack) {
+    c_foreach_rev(i, vec_stack_frame, my stack) {
         if (js_object_has(i.ref->get, identifier)) {
             js_object_set(i.ref->get, cstr_from_sv(identifier), value);
             return result_ok_undefined;
         }
     }
     // If we were in strict mode this would be an error
-    js_object_set(vec_stack_frame_back(&me->stack)->get, cstr_from_sv(identifier), value);
+    js_object_set(vec_stack_frame_back(&my stack)->get, cstr_from_sv(identifier), value);
     return result_ok_undefined;
 }
 
@@ -225,7 +225,7 @@ static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const
 }
 
 static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
-    vec_stack_frame_push(&me->stack, stack_frame_new());
+    vec_stack_frame_push(&my stack, stack_frame_new());
     int defined_arg_num = vec_function_arg_size(func->args);
     int given_arg_num = vec_value_size(args);
     JsObject* locals = engine_get_locals(me);
@@ -240,7 +240,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
         if (value.tag == VALUE_UNDEFINED && defined->value_explicit) {
             TRY_CATCH(default_value, engine_eval_expr(me, &defined->value), res_err, {
                 cstr_drop(&name);
-                vec_stack_frame_pop(&me->stack);
+                vec_stack_frame_pop(&my stack);
                 return res_err;
             });
             value = default_value;
@@ -248,7 +248,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
         js_object_set(locals, name, value);
     }
     Result res = engine_run_block(me, func->code);
-    vec_stack_frame_pop(&me->stack);
+    vec_stack_frame_pop(&my stack);
     return res;
 }
 
@@ -416,9 +416,9 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         case STATEMENT_IF_ELSE: return engine_run_if_else(me, &statement->if_else);
 
         case STATEMENT_LOOP: {
-            vec_stack_frame_push(&me->stack, stack_frame_new());
+            vec_stack_frame_push(&my stack, stack_frame_new());
             Result res = engine_run_loop(me, statement->loop);
-            vec_stack_frame_pop(&me->stack);
+            vec_stack_frame_pop(&my stack);
             return res;
         }
 
@@ -435,12 +435,12 @@ static Result MUST_USE engine_run_block(Engine* me, Block const* block) {
 }
 
 static Result MUST_USE engine_run_block_in_stack_frame(Engine* me, Block const* block) {
-    vec_stack_frame_push(&me->stack, stack_frame_new());
+    vec_stack_frame_push(&my stack, stack_frame_new());
     TRY_CATCH_DROP(engine_run_block(me, block), res_err, {
-        vec_stack_frame_pop(&me->stack);
+        vec_stack_frame_pop(&my stack);
         return res_err;
     });
-    vec_stack_frame_pop(&me->stack);
+    vec_stack_frame_pop(&my stack);
     return result_ok_undefined;
 }
 

@@ -8,6 +8,8 @@
 #include <stc/types.h>
 #include "wrap_stc/forward.h"
 
+#define my me->
+
 __attribute__((noreturn))
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 #define PANIC(...) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)

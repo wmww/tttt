@@ -9,8 +9,8 @@ Namespace namespace_init(bool is_generic) {
 }
 
 void namespace_drop(Namespace* me) {
-    hmap_str_named_type_drop(&me->types);
-    hmap_str_c_type_ptr_drop(&me->variables);
+    hmap_str_named_type_drop(&my types);
+    hmap_str_c_type_ptr_drop(&my variables);
 }
 
 Namespace namespace_clone(Namespace me) {
@@ -37,20 +37,20 @@ NameStack name_stack_init() {
 }
 
 void name_stack_drop(NameStack* me) {
-    vec_namespace_drop(&me->stack);
+    vec_namespace_drop(&my stack);
 }
 
 void name_stack_push_frame(NameStack* me, bool is_generic) {
-    vec_namespace_push(&me->stack, namespace_init(is_generic));
+    vec_namespace_push(&my stack, namespace_init(is_generic));
 }
 
 void name_stack_pop_frame(NameStack* me) {
-    vec_namespace_pop(&me->stack);
+    vec_namespace_pop(&my stack);
 }
 
 bool name_stack_add_variable(NameStack* me, cstr name, Type const* type) {
     hmap_str_c_type_ptr_result result = hmap_str_c_type_ptr_insert(
-        &vec_namespace_back(&me->stack)->variables,
+        &vec_namespace_back(&my stack)->variables,
         name,
         type
     );
@@ -59,7 +59,7 @@ bool name_stack_add_variable(NameStack* me, cstr name, Type const* type) {
 
 bool name_stack_add_type(NameStack* me, cstr name, Type const* type, bool is_generic, int generic_index) {
     hmap_str_named_type_result result = hmap_str_named_type_insert(
-        &vec_namespace_back(&me->stack)->types,
+        &vec_namespace_back(&my stack)->types,
         name,
         (NamedType){
             .type = type,
@@ -71,7 +71,7 @@ bool name_stack_add_type(NameStack* me, cstr name, Type const* type, bool is_gen
 }
 
 Type const* name_stack_get_variable(NameStack* me, csview name) {
-    c_foreach_rev(i, vec_namespace, me->stack) {
+    c_foreach_rev(i, vec_namespace, my stack) {
         hmap_str_c_type_ptr_value const* result = hmap_str_c_type_ptr_get(&i.ref->variables, name);
         if (result) {
             return result->second;
@@ -84,7 +84,7 @@ NamedType const* name_stack_get_type(NameStack* me, csview name, int* optional_g
     if (optional_generic_depth) {
         *optional_generic_depth = 0;
     }
-    c_foreach_rev(i, vec_namespace, me->stack) {
+    c_foreach_rev(i, vec_namespace, my stack) {
         if (optional_generic_depth && i.ref->is_generic) {
             (*optional_generic_depth)++;
         }

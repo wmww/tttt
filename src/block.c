@@ -3,12 +3,12 @@
 #include "name_stack.h"
 
 void block_drop(Block* me) {
-    vec_statement_drop(&me->statements);
+    vec_statement_drop(&my statements);
 }
 
 void cstr_append_block_debug(cstr* target, Block* me, int indent) {
     cstr_append_sv(target, c_sv("{\n"));
-    c_foreach(i, vec_statement, me->statements) {
+    c_foreach(i, vec_statement, my statements) {
         APPEND_INDENT(target, indent + 1);
         cstr_append_statement_debug(target, i.ref, indent + 1);
         cstr_append_sv(target, c_sv("\n"));
@@ -18,10 +18,10 @@ void cstr_append_block_debug(cstr* target, Block* me, int indent) {
 }
 
 void block_resolve_names_without_stack_frame(Block* me, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_statement, me->statements) {
+    c_foreach(i, vec_statement, my statements) {
         statement_add_names(i.ref, names, errs);
     }
-    c_foreach(i, vec_statement, me->statements) {
+    c_foreach(i, vec_statement, my statements) {
         statement_resolve_names(i.ref, names, errs);
     }
 }
@@ -33,7 +33,7 @@ void block_resolve_names(Block* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {
-    c_foreach(i, vec_statement, me->statements) {
+    c_foreach(i, vec_statement, my statements) {
         statement_typecheck(i.ref, ctx, errs);
     }
 }

@@ -1,9 +1,9 @@
 #include "ternary_type.h"
 
 void ternary_type_drop(TernaryType* me) {
-    extends_conditional_drop(&me->conditional);
-    type_drop(&me->TrueType);
-    type_drop(&me->FalseType);
+    extends_conditional_drop(&my conditional);
+    type_drop(&my TrueType);
+    type_drop(&my FalseType);
 }
 
 TernaryType ternary_type_clone(TernaryType me) {
@@ -15,33 +15,33 @@ TernaryType ternary_type_clone(TernaryType me) {
 }
 
 void cstr_append_ternary_type_debug(cstr* target, TernaryType* me, int indent) {
-    cstr_append_type_debug(target, &me->conditional.MaybeSub, indent);
+    cstr_append_type_debug(target, &my conditional.MaybeSub, indent);
     cstr_append_sv(target, c_sv(" extends "));
-    cstr_append_type_debug(target, &me->conditional.MaybeSuper, indent);
+    cstr_append_type_debug(target, &my conditional.MaybeSuper, indent);
     cstr_append_sv(target, c_sv("\n"));
     APPEND_INDENT(target, indent + 1);
     cstr_append_sv(target, c_sv("? "));
-    cstr_append_type_debug(target, &me->TrueType, indent + 1);
+    cstr_append_type_debug(target, &my TrueType, indent + 1);
     cstr_append_sv(target, c_sv("\n"));
     APPEND_INDENT(target, indent + 1);
     cstr_append_sv(target, c_sv(": "));
-    cstr_append_type_debug(target, &me->FalseType, indent + 1);
+    cstr_append_type_debug(target, &my FalseType, indent + 1);
 }
 
 void cstr_append_ternary_type_error_msg(cstr* target, TernaryType* me) {
-    cstr_append_type_error_msg(target, &me->conditional.MaybeSub);
+    cstr_append_type_error_msg(target, &my conditional.MaybeSub);
     cstr_append_sv(target, c_sv(" extends "));
-    cstr_append_type_error_msg(target, &me->conditional.MaybeSuper);
+    cstr_append_type_error_msg(target, &my conditional.MaybeSuper);
     cstr_append_sv(target, c_sv(" ? "));
-    cstr_append_type_error_msg(target, &me->TrueType);
+    cstr_append_type_error_msg(target, &my TrueType);
     cstr_append_sv(target, c_sv(" : "));
-    cstr_append_type_error_msg(target, &me->FalseType);
+    cstr_append_type_error_msg(target, &my FalseType);
 }
 
 Type* ternary_type_resolve(TernaryType* me) {
-    if (extends_conditional_eval(&me->conditional)) {
-        return &me->TrueType;
+    if (extends_conditional_eval(&my conditional)) {
+        return &my TrueType;
     } else {
-        return &me->FalseType;
+        return &my FalseType;
     }
 }

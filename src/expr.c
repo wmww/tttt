@@ -81,112 +81,112 @@ static inline int binary_op_get_precedence(BinaryOp op) {
 }
 
 void expr_drop(Expr* me) {
-    switch (me->tag) {
+    switch (my tag) {
         case EXPR_LITERAL:
-            value_drop(&me->literal);
+            value_drop(&my literal);
             break;
 
         case EXPR_IDENTIFIER:
-            cstr_drop(&me->identifier.name);
+            cstr_drop(&my identifier.name);
             break;
 
         case EXPR_BINARY_OP:
-            expr_drop(&me->binary_op->left);
-            expr_drop(&me->binary_op->right);
-            free(me->binary_op);
+            expr_drop(&my binary_op->left);
+            expr_drop(&my binary_op->right);
+            free(my binary_op);
             break;
 
         case EXPR_UNARY_OP:
-            expr_drop(&me->unary_op->expr);
-            free(me->unary_op);
+            expr_drop(&my unary_op->expr);
+            free(my unary_op);
             break;
 
         case EXPR_DOT_PROP:
-            expr_drop(&me->dot_prop->expr);
-            cstr_drop(&me->dot_prop->prop);
-            free(me->dot_prop);
+            expr_drop(&my dot_prop->expr);
+            cstr_drop(&my dot_prop->prop);
+            free(my dot_prop);
             break;
 
         case EXPR_AS_TYPE:
-            expr_drop(&me->as_type->expr);
-            type_drop(&me->as_type->type);
-            free(me->as_type);
+            expr_drop(&my as_type->expr);
+            type_drop(&my as_type->type);
+            free(my as_type);
             break;
 
         case EXPR_CALL:
-            expr_drop(&me->call->callable);
-            vec_expr_drop(&me->call->args);
-            free(me->call);
+            expr_drop(&my call->callable);
+            vec_expr_drop(&my call->args);
+            free(my call);
             break;
 
         case EXPR_FUNCTION:
-            function_impl_drop(me->function);
-            free(me->function);
+            function_impl_drop(my function);
+            free(my function);
             break;
 
         case EXPR_OBJECT:
-            vec_object_expr_item_drop(&me->object);
+            vec_object_expr_item_drop(&my object);
             break;
 
         case EXPR_ARRAY:
-            vec_expr_drop(&me->array);
+            vec_expr_drop(&my array);
             break;
     }
 }
 
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
-    for (int i = 0; i < me->peren_depth; i++) {
+    for (int i = 0; i < my peren_depth; i++) {
         cstr_append_sv(target, c_sv("("));
     }
-    switch (me->tag) {
-        case EXPR_LITERAL: cstr_append_value_debug(target, &me->literal, indent); break;
+    switch (my tag) {
+        case EXPR_LITERAL: cstr_append_value_debug(target, &my literal, indent); break;
 
         case EXPR_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_s(target, me->identifier.name);
+            cstr_append_s(target, my identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
 
         case EXPR_BINARY_OP: {
-            cstr_append_expr_debug(target, &me->binary_op->left, indent);
+            cstr_append_expr_debug(target, &my binary_op->left, indent);
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_sv(target, czview_sv(binary_op_get_zv(me->binary_op->op)));
+            cstr_append_sv(target, czview_sv(binary_op_get_zv(my binary_op->op)));
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_expr_debug(target, &me->binary_op->right, indent);
+            cstr_append_expr_debug(target, &my binary_op->right, indent);
         }   break;
 
         case EXPR_UNARY_OP: {
-            UnaryOp op = me->unary_op->op;
+            UnaryOp op = my unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
             }
-            cstr_append_expr_debug(target, &me->unary_op->expr, indent);
+            cstr_append_expr_debug(target, &my unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
             }
         }   break;
 
         case EXPR_DOT_PROP: {
-            cstr_append_expr_debug(target, &me->dot_prop->expr, indent);
+            cstr_append_expr_debug(target, &my dot_prop->expr, indent);
             cstr_append_sv(target, c_sv("."));
-            cstr_append_s(target, me->dot_prop->prop);
+            cstr_append_s(target, my dot_prop->prop);
         }   break;
 
         case EXPR_AS_TYPE: {
             cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
-            cstr_append_expr_debug(target, &me->as_type->expr, indent);
+            cstr_append_expr_debug(target, &my as_type->expr, indent);
             cstr_append_sv(target, c_sv(" as "));
-            cstr_append_type_debug(target, &me->as_type->type, indent);
+            cstr_append_type_debug(target, &my as_type->type, indent);
             cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
         }   break;
 
         case EXPR_CALL: {
-            cstr_append_expr_debug(target, &me->call->callable, indent);
-            if (vec_expr_empty(&me->call->args)) {
+            cstr_append_expr_debug(target, &my call->callable, indent);
+            if (vec_expr_empty(&my call->args)) {
                 cstr_append_sv(target, c_sv("()"));
             } else {
                 cstr_append_sv(target, c_sv("("));
-                c_foreach(i, vec_expr, me->call->args) {
+                c_foreach(i, vec_expr, my call->args) {
                     cstr_append_expr_debug(target, i.ref, indent + 1);
                     if (i.ref < i.end - 1) {
                         cstr_append_sv(target, c_sv(", "));
@@ -197,12 +197,12 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
         }   break;
 
         case EXPR_FUNCTION:
-            cstr_append_function_impl_debug(target, me->function, true, indent);
+            cstr_append_function_impl_debug(target, my function, true, indent);
             break;
 
         case EXPR_OBJECT: {
             cstr_append_sv(target, c_sv("{\n"));
-            c_foreach(i, vec_object_expr_item, me->object) {
+            c_foreach(i, vec_object_expr_item, my object) {
                 APPEND_INDENT(target, indent + 1);
                 cstr_append_s(target, i.ref->name);
                 cstr_append_sv(target, c_sv(": "));
@@ -215,7 +215,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
 
         case EXPR_ARRAY: {
             cstr_append_sv(target, c_sv("[\n"));
-            c_foreach(i, vec_expr, me->array) {
+            c_foreach(i, vec_expr, my array) {
                 APPEND_INDENT(target, indent + 1);
                 cstr_append_expr_debug(target, i.ref, indent + 1);
                 cstr_append_sv(target, c_sv(",\n"));
@@ -224,63 +224,63 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_sv(target, c_sv("]"));
         }   break;
     }
-    for (int i = 0; i < me->peren_depth; i++) {
+    for (int i = 0; i < my peren_depth; i++) {
         cstr_append_sv(target, c_sv(")"));
     }
 }
 
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
-    switch (me->tag) {
+    switch (my tag) {
         case EXPR_LITERAL:
             break;
 
         case EXPR_IDENTIFIER: {
-            Type const* var_type = name_stack_get_variable(names, cstr_sv(&me->identifier.name));
+            Type const* var_type = name_stack_get_variable(names, cstr_sv(&my identifier.name));
             if (var_type) {
-                me->identifier.type = var_type;
+                my identifier.type = var_type;
             } else {
-                error_ctx_error(errs, me->span, 2304, "Cannot find name '%s'.", cstr_str(&me->identifier.name));
+                error_ctx_error(errs, my span, 2304, "Cannot find name '%s'.", cstr_str(&my identifier.name));
             }
         }   break;
 
         case EXPR_BINARY_OP:
-            expr_resolve_names(&me->binary_op->left, names, errs);
-            expr_resolve_names(&me->binary_op->right, names, errs);
+            expr_resolve_names(&my binary_op->left, names, errs);
+            expr_resolve_names(&my binary_op->right, names, errs);
             break;
 
         case EXPR_UNARY_OP:
-            expr_resolve_names(&me->unary_op->expr, names, errs);
+            expr_resolve_names(&my unary_op->expr, names, errs);
             break;
 
         case EXPR_DOT_PROP:
-            expr_resolve_names(&me->dot_prop->expr, names, errs);
+            expr_resolve_names(&my dot_prop->expr, names, errs);
             // TODO: resolve name of prop
             break;
 
         case EXPR_AS_TYPE:
-            expr_resolve_names(&me->as_type->expr, names, errs);
-            type_resolve_names(&me->as_type->type, names, errs);
+            expr_resolve_names(&my as_type->expr, names, errs);
+            type_resolve_names(&my as_type->type, names, errs);
             break;
 
         case EXPR_CALL:
-            expr_resolve_names(&me->call->callable, names, errs);
-            c_foreach(i, vec_expr, me->call->args) {
+            expr_resolve_names(&my call->callable, names, errs);
+            c_foreach(i, vec_expr, my call->args) {
                 expr_resolve_names(i.ref, names, errs);
             }
             break;
 
         case EXPR_FUNCTION:
-            function_impl_resolve_names(me->function, names, errs);
+            function_impl_resolve_names(my function, names, errs);
             break;
 
         case EXPR_OBJECT:
-            c_foreach(i, vec_object_expr_item, me->object) {
+            c_foreach(i, vec_object_expr_item, my object) {
                 expr_resolve_names(&i.ref->value, names, errs);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, vec_expr, me->array) {
+            c_foreach(i, vec_expr, my array) {
                 expr_resolve_names(i.ref, names, errs);
             }
             break;
@@ -467,28 +467,28 @@ static Type binary_op_get_type_and_typecheck(
 }
 
 Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
-    switch (me->tag) {
+    switch (my tag) {
         case EXPR_LITERAL:
-            return type_value(value_clone(me->literal));
+            return type_value(value_clone(my literal));
 
         case EXPR_IDENTIFIER:
-            if (me->identifier.type) {
-                return type_clone(*me->identifier.type);
+            if (my identifier.type) {
+                return type_clone(*my identifier.type);
             } else {
                 return type_any;
             }
 
         case EXPR_BINARY_OP:
             return binary_op_get_type_and_typecheck(
-                expr_get_type_and_typecheck(&me->binary_op->left, errs),
-                me->binary_op->op,
-                expr_get_type_and_typecheck(&me->binary_op->right, errs),
+                expr_get_type_and_typecheck(&my binary_op->left, errs),
+                my binary_op->op,
+                expr_get_type_and_typecheck(&my binary_op->right, errs),
                 me,
                 errs
             );
 
         case EXPR_UNARY_OP: {
-            UnaryOpExpr* una = me->unary_op;
+            UnaryOpExpr* una = my unary_op;
             Type type = expr_get_type_and_typecheck(&una->expr, errs);
             Type ret = {0};
             switch (una->op) {
@@ -514,18 +514,18 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-            return type_clone(me->as_type->type);
+            return type_clone(my as_type->type);
         }
 
         case EXPR_CALL: {
             Type ret = type_any;
-            Type callable = expr_get_type_and_typecheck(&me->call->callable, errs);
+            Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
             if (callable.tag == TYPE_GENERIC) {
-                Type inferred = generic_callable_infer(callable.generic, &me->call->args, errs);
+                Type inferred = generic_callable_infer(callable.generic, &my call->args, errs);
                 type_drop(&callable);
                 callable = inferred;
             }
-            long given_arg_count = vec_expr_size(&me->call->args);
+            long given_arg_count = vec_expr_size(&my call->args);
             long callable_arg_count = 0;
             if (callable.tag == TYPE_CALLABLE) {
                 callable_arg_count = vec_callable_type_arg_size(&callable.callable->args);
@@ -539,7 +539,7 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
             }
             for (long i = 0; i < given_arg_count; i++) {
                 Type arg_type = expr_get_type_and_typecheck(
-                    vec_expr_at_mut(&me->call->args, i),
+                    vec_expr_at_mut(&my call->args, i),
                     errs
                 );
                 if (i < callable_arg_count) {
@@ -554,8 +554,8 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
         }
 
         case EXPR_FUNCTION:
-            function_impl_typecheck(me->function, errs);
-            return type_clone(me->function->type);
+            function_impl_typecheck(my function, errs);
+            return type_clone(my function->type);
 
         case EXPR_OBJECT: {
             // TODO: add typechecking
@@ -564,7 +564,7 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
 
         case EXPR_ARRAY: {
             Type array_type = type_value(value_undefined);
-            c_foreach(i, vec_expr, me->array) {
+            c_foreach(i, vec_expr, my array) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
                 if (array_type.tag == TYPE_VALUE && array_type.value.tag == VALUE_UNDEFINED) {
                     type_abstract_literals(&t);
@@ -653,8 +653,8 @@ czview unary_op_get_zv(UnaryOp op) {
 }
 
 void object_expr_item_drop(ObjectExprItem* me) {
-    cstr_drop(&me->name);
-    expr_drop(&me->value);
+    cstr_drop(&my name);
+    expr_drop(&my value);
 }
 
 ObjectExprItem* object_expr_get(ObjectExpr* me, const char* name) {

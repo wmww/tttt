@@ -181,7 +181,7 @@ static cstr load_test_source(const char* path, bool noisy) {
 }
 
 void line_numbered_str_drop(LineNumberedStr* me) {
-    cstr_drop(&me->str);
+    cstr_drop(&my str);
 }
 
 BaselineTestCase make_baseline_test_case(
@@ -217,16 +217,16 @@ BaselineTestCase make_baseline_test_case(
 
 void baseline_test_case_drop(BaselineTestCase* me) {
     baseline_test_case_clear_detail(me);
-    cstr_drop(&me->name);
-    cstr_drop(&me->source_path);
+    cstr_drop(&my name);
+    cstr_drop(&my source_path);
 }
 
 void baseline_test_case_clear_detail(BaselineTestCase* me) {
-    cstr_drop(&me->detail.source);
-    error_ctx_drop(&me->detail.errs);
-    vec_line_numbered_str_drop(&me->detail.symbols);
-    vec_line_numbered_str_drop(&me->detail.types);
-    me->detail = (typeof(me->detail)){ 0 };
+    cstr_drop(&my detail.source);
+    error_ctx_drop(&my detail.errs);
+    vec_line_numbered_str_drop(&my detail.symbols);
+    vec_line_numbered_str_drop(&my detail.types);
+    my detail = (typeof(my detail)){ 0 };
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span) {
@@ -236,12 +236,12 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span 
     // The space before the symbol is included in the span. Why? I have no idea.
     while (span_start > line_start && *(span_start - 1) == ' ') span_start--;
     unsigned col = span_start - line_start + 1;
-    vec_line_numbered_str_push(&me->detail.symbols, (LineNumberedStr){
+    vec_line_numbered_str_push(&my detail.symbols, (LineNumberedStr){
         .line = line,
         .str = cstr_from_fmt(
             ">%s : Symbol(%s, Decl(%s, %d, %d))",
             name, name,
-            basename_of(cstr_str(&me->source_path)),
+            basename_of(cstr_str(&my source_path)),
             line, col - 1
         ),
     });
@@ -251,7 +251,7 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, int par
     unsigned line = span_line_index(span);
     cstr str = cstr_from_fmt(">%.*s : ", c_SV(span_sv(span)));
     cstr_append_type_error_msg(&str, type);
-    vec_line_numbered_str_push(&me->detail.types, (LineNumberedStr){
+    vec_line_numbered_str_push(&my detail.types, (LineNumberedStr){
         .line = line,
         .str = str,
     });
@@ -271,8 +271,8 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, int par
 }
 
 void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
-    const char* name = cstr_str(&me->name);
-    const char* dir = me->suite->tests_dir;
+    const char* name = cstr_str(&my name);
+    const char* dir = my suite->tests_dir;
     cstr errors_path = cstr_from_fmt("%s/baselines/reference/%s.errors.txt", dir, name);
     cstr symbols_path = cstr_from_fmt("%s/baselines/reference/%s.symbols", dir, name);
     cstr types_path = cstr_from_fmt("%s/baselines/reference/%s.types", dir, name);
@@ -297,12 +297,12 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         goto cleanup;
     }
 
-    if (cstr_empty(&me->detail.source)) {
+    if (cstr_empty(&my detail.source)) {
         if (noisy) {
-            printf("Testing %s\n", cstr_str(&me->source_path));
+            printf("Testing %s\n", cstr_str(&my source_path));
         }
-        me->detail.source = load_test_source(cstr_str(&me->source_path), noisy);
-        if (cstr_empty(&me->detail.source)) {
+        my detail.source = load_test_source(cstr_str(&my source_path), noisy);
+        if (cstr_empty(&my detail.source)) {
             if (noisy) {
                 fprintf(stderr, CLR_ERR "%s:" CLR0 " Failed to load test case\n", name);
             }
@@ -313,13 +313,13 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
             inhibit_nonfatals();
         }
 
-        Block ast = parse_file(cstr_str(&me->detail.source), &me->detail.errs);
+        Block ast = parse_file(cstr_str(&my detail.source), &my detail.errs);
 
         NameStack names = name_stack_init();
-        block_resolve_names(&ast, &names, &me->detail.errs);
+        block_resolve_names(&ast, &names, &my detail.errs);
         name_stack_drop(&names);
 
-        block_typecheck_toplevel(&ast, &me->detail.errs);
+        block_typecheck_toplevel(&ast, &my detail.errs);
         block_compile_test_info(&ast, me);
 
         if (!noisy) {
@@ -330,21 +330,21 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
     }
 
     errors_result = cstr_null;
-    if (!error_ctx_empty(&me->detail.errs)) {
-        const char* source_basename = basename_of(cstr_str(&me->source_path));
+    if (!error_ctx_empty(&my detail.errs)) {
+        const char* source_basename = basename_of(cstr_str(&my source_path));
         VecLineNumberedStr error_lines = vec_line_numbered_str_init();
-        render_errros(&me->detail.errs, source_basename, &errors_result, &error_lines);
+        render_errros(&my detail.errs, source_basename, &errors_result, &error_lines);
         cstr_append_fmt(
             &errors_result,
             "\r\n\r\n==== %s (%ld errors) ====\r\n",
             source_basename,
-            vec_error_size(&me->detail.errs.errors)
+            vec_error_size(&my detail.errs.errors)
         );
         cstr errors_body = render_lines_woven_with_file(
-            cstr_str(&me->source_path),
+            cstr_str(&my source_path),
             false,
             "    ",
-            cstr_sv(&me->detail.source),
+            cstr_sv(&my detail.source),
             &error_lines
         );
         cstr_append_s(&errors_result, errors_body);
@@ -353,22 +353,22 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
     }
 
     symbols_results = render_lines_woven_with_file(
-        cstr_str(&me->source_path),
+        cstr_str(&my source_path),
         true,
         "",
-        cstr_sv(&me->detail.source),
-        &me->detail.symbols
+        cstr_sv(&my detail.source),
+        &my detail.symbols
     );
 
     types_results = render_lines_woven_with_file(
-        cstr_str(&me->source_path),
+        cstr_str(&my source_path),
         true,
         "",
-        cstr_sv(&me->detail.source),
-        &me->detail.types
+        cstr_sv(&my detail.source),
+        &my detail.types
     );
 
-    me->errors_passed = compare_outputs(
+    my errors_passed = compare_outputs(
         name,
         "errors",
         cstr_str(&errors_path),
@@ -376,7 +376,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         noisy
     );
 
-    me->symbols_passed = compare_outputs(
+    my symbols_passed = compare_outputs(
         name,
         "symbols",
         cstr_str(&symbols_path),
@@ -384,7 +384,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         noisy
     );
 
-    me->types_passed = compare_outputs(
+    my types_passed = compare_outputs(
         name,
         "types",
         cstr_str(&types_path),
@@ -392,7 +392,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         noisy
     );
 
-    me->has_run = true;
+    my has_run = true;
 
 cleanup:
     c_drop(cstr,
@@ -407,17 +407,17 @@ cleanup:
 }
 
 bool baseline_test_case_is_pass(BaselineTestCase const* me) {
-    return me->errors_passed && me->symbols_passed && me->types_passed;
+    return my errors_passed && my symbols_passed && my types_passed;
 }
 
 bool baseline_test_case_has_new_pass(BaselineTestCase const* me) {
-    return (me->errors_passed  && (!me->has_prev || !me->errors_prev )) ||
-           (me->symbols_passed && (!me->has_prev || !me->symbols_prev)) ||
-           (me->types_passed   && (!me->has_prev || !me->types_prev  ));
+    return (my errors_passed  && (!my has_prev || !my errors_prev )) ||
+           (my symbols_passed && (!my has_prev || !my symbols_prev)) ||
+           (my types_passed   && (!my has_prev || !my types_prev  ));
 }
 
 bool baseline_test_case_has_new_fail(BaselineTestCase const* me) {
-    return (!me->errors_passed  && me->errors_prev ) ||
-           (!me->symbols_passed && me->symbols_prev) ||
-           (!me->types_passed   && me->types_prev  );
+    return (!my errors_passed  && my errors_prev ) ||
+           (!my symbols_passed && my symbols_prev) ||
+           (!my types_passed   && my types_prev  );
 }

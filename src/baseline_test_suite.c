@@ -23,13 +23,13 @@ static cstr test_name_from_path(const char* path) {
 }
 
 static bool test_passes_filter(BaselineTestSuite* me, const char* name) {
-    return !me->has_filter || cregex_is_match(&me->filter, name);
+    return !my has_filter || cregex_is_match(&my filter, name);
 }
 
 static void show_collected_test_counts(BaselineTestSuite* me) {
     printf(
         "\rCollected " CLR_GOOD "%ld" CLR0 " tests      ",
-        vec_baseline_test_case_size(&me->cases)
+        vec_baseline_test_case_size(&my cases)
     );
 }
 
@@ -42,17 +42,17 @@ static void load_path(void* data, const char* dir_path, const char* name) {
         cstr_drop(&full_path);
     } else if (path_is_reg_file(cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
         cstr name = test_name_from_path(cstr_str(&full_path));
-        Result prev_result = js_object_get(me->prev_results.get, cstr_sv(&name));
+        Result prev_result = js_object_get(my prev_results.get, cstr_sv(&name));
         JsObject* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
 
         vec_baseline_test_case_push(
-            &me->cases,
+            &my cases,
             make_baseline_test_case(me, name, full_path, prev_obj)
         );
 
         result_drop(&prev_result);
 
-        if (vec_baseline_test_case_size(&me->cases) % 100 == 0) {
+        if (vec_baseline_test_case_size(&my cases) % 100 == 0) {
             show_collected_test_counts(me);
         }
     } else {
@@ -61,7 +61,7 @@ static void load_path(void* data, const char* dir_path, const char* name) {
 }
 
 static void load_subdir(BaselineTestSuite* me, const char* subdir) {
-    cstr full_dir = cstr_from_fmt("%s/cases/%s", me->tests_dir, subdir);
+    cstr full_dir = cstr_from_fmt("%s/cases/%s", my tests_dir, subdir);
     if (path_is_directory(cstr_str(&full_dir))) {
         for_each_item_in_dir(cstr_str(&full_dir), load_path, me);
     } else {
@@ -71,9 +71,9 @@ static void load_subdir(BaselineTestSuite* me, const char* subdir) {
 }
 
 void baseline_test_suite_drop(BaselineTestSuite* me) {
-    arc_js_object_drop(&me->prev_results);
-    cregex_drop(&me->filter);
-    vec_baseline_test_case_drop(&me->cases);
+    arc_js_object_drop(&my prev_results);
+    cregex_drop(&my filter);
+    vec_baseline_test_case_drop(&my cases);
 }
 
 static const char* color_for_state(bool is_pass, bool highlight) {
@@ -109,15 +109,15 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestCase const* tes
 }
 
 void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
-    intptr_t test_count = vec_baseline_test_case_size(&me->cases);
+    intptr_t test_count = vec_baseline_test_case_size(&my cases);
     int passed = 0, failed = 0;
     cstr display = cstr_null;
     VecBaselineTestCaseCPtr newly_failed = vec_baseline_test_case_c_ptr_init();
     VecBaselineTestCaseCPtr newly_passed = vec_baseline_test_case_c_ptr_init();
 
     printf(CLR_STATUS "Running tests...\n\n" CLR0);
-    c_foreach(i, vec_baseline_test_case, me->cases) {
-        intptr_t index = i.ref - me->cases.data;
+    c_foreach(i, vec_baseline_test_case, my cases) {
+        intptr_t index = i.ref - my cases.data;
         if (!test_passes_filter(me, cstr_str(&i.ref->name))) {
             continue;
         }
@@ -192,7 +192,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
     }
     fprintf(f, "const baselines = {\n");
 
-    c_foreach(i, vec_baseline_test_case, me->cases) {
+    c_foreach(i, vec_baseline_test_case, my cases) {
         ASSERT(!strchr(cstr_str(&i.ref->name), '\\') && !strchr(cstr_str(&i.ref->name), '\''));
         fprintf(f, "    '%s': {\n", cstr_str(&i.ref->name));
         fprintf(f, "        errors: %s,\n", i.ref->errors_passed ? "true" : "false");

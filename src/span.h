@@ -17,11 +17,11 @@ static inline Span span_make(const char* file_start, unsigned offset, unsigned l
 }
 
 static inline const char* span_start_ptr(Span const* me) {
-    return me->file_start ? me->file_start + me->offset : nullptr;
+    return my file_start ? my file_start + my offset : nullptr;
 }
 
 static inline const char* span_end_ptr(Span const* me) {
-    return me->file_start ? me->file_start + me->offset + me->length : nullptr;
+    return my file_start ? my file_start + my offset + my length : nullptr;
 }
 
 int span_line_index(Span const* me);

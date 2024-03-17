@@ -24,7 +24,7 @@ typedef struct ParserShared {
 } ParserShared;
 
 void parser_shared_drop(ParserShared* me) {
-    vec_u8_drop(&me->fail_cache);
+    vec_u8_drop(&my fail_cache);
 }
 
 typedef enum FailCacheFlag {
@@ -66,23 +66,23 @@ static inline Parser parser(Parser* parent) {
 
 /// Must not be used on the root parser, always returns true, drops parser
 static inline bool parse_success(Parser* me) {
-    me->parent->pos = me->pos;
-    error_ctx_append_consume(&me->parent->errs, me->errs);
+    my parent->pos = my pos;
+    error_ctx_append_consume(&my parent->errs, my errs);
     return true;
 }
 
 /// Must not be used on the root parser, always returns false, drops parser
 static inline bool parse_fail(Parser* me) {
-    error_ctx_drop(&me->errs);
-    if (me->fail_cache_flag &&
-        me->shared->fail_cache_start &&
-        me->parent->pos >= me->shared->fail_cache_start
+    error_ctx_drop(&my errs);
+    if (my fail_cache_flag &&
+        my shared->fail_cache_start &&
+        my parent->pos >= my shared->fail_cache_start
     ) {
-        intptr_t index = me->parent->pos - me->shared->fail_cache_start;
-        if (vec_u8_size(&me->shared->fail_cache) <= index) {
-            vec_u8_resize(&me->shared->fail_cache, index + 1, 0);
+        intptr_t index = my parent->pos - my shared->fail_cache_start;
+        if (vec_u8_size(&my shared->fail_cache) <= index) {
+            vec_u8_resize(&my shared->fail_cache, index + 1, 0);
         }
-        *vec_u8_at_mut(&me->shared->fail_cache, index) |= me->fail_cache_flag;
+        *vec_u8_at_mut(&my shared->fail_cache, index) |= my fail_cache_flag;
     }
     return false;
 }
@@ -106,9 +106,9 @@ static bool fail_cache_register_and_check(Parser* parser, FailCacheFlag flag) {
 #define FAIL_CACHE_HOOK(parser, flag) if (fail_cache_register_and_check(parser, flag)) return false
 
 static void reset_fail_cache(Parser* me) {
-    me->shared->fail_cache_start = nullptr;
+    my shared->fail_cache_start = nullptr;
     // _clear() loops in order to drop. there's no drop work, so the loop is not required. this should be safe.
-    me->shared->fail_cache._len = 0;
+    my shared->fail_cache._len = 0;
 }
 
 typedef struct Anchor {
@@ -136,11 +136,11 @@ Span span_end(Anchor spanner) {
 }
 
 static inline Span span_from_pos(Parser* me) {
-    return span_make(me->shared->file_start, me->pos - me->shared->file_start, 0);
+    return span_make(my shared->file_start, my pos - my shared->file_start, 0);
 }
 
 static inline Span span_from_previous_char(Parser* me) {
-    return span_make(me->shared->file_start, me->pos - me->shared->file_start - 1, 1);
+    return span_make(my shared->file_start, my pos - my shared->file_start - 1, 1);
 }
 
 static Span span_from_token(Parser* me) {

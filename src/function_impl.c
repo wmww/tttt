@@ -5,32 +5,32 @@
 #include "statement.h"
 
 void function_arg_drop(FunctionArg* me) {
-    cstr_drop(&me->name);
-    expr_drop(&me->value);
+    cstr_drop(&my name);
+    expr_drop(&my value);
 }
 
 void function_impl_drop(FunctionImpl* me) {
-    type_drop(&me->type);
-    vec_function_arg_drop(&me->args);
-    block_drop(&me->body);
+    type_drop(&my type);
+    vec_function_arg_drop(&my args);
+    block_drop(&my body);
 }
 
 CallableType* function_impl_callable_type(FunctionImpl* me) {
-    if (me->type.tag == TYPE_CALLABLE) {
-        return me->type.callable;
-    } else if (me->type.tag == TYPE_GENERIC && me->type.generic->inner.tag == TYPE_CALLABLE) {
-        return me->type.generic->inner.callable;
-    } else if (me->type.tag == 0) {
-        me->type = type_callable(c_new(CallableType, {0}));
-        return me->type.callable;
+    if (my type.tag == TYPE_CALLABLE) {
+        return my type.callable;
+    } else if (my type.tag == TYPE_GENERIC && my type.generic->inner.tag == TYPE_CALLABLE) {
+        return my type.generic->inner.callable;
+    } else if (my type.tag == 0) {
+        my type = type_callable(c_new(CallableType, {0}));
+        return my type.callable;
     } else {
-        PANIC("FunctionImpl has invald type type %d", me->type.tag);
+        PANIC("FunctionImpl has invald type type %d", my type.tag);
     }
 }
 
 Generic* function_impl_generic_or_null(FunctionImpl* me) {
-    if (me->type.tag == TYPE_GENERIC) {
-        return me->type.generic;
+    if (my type.tag == TYPE_GENERIC) {
+        return my type.generic;
     } else {
         return nullptr;
     }
@@ -38,7 +38,7 @@ Generic* function_impl_generic_or_null(FunctionImpl* me) {
 
 int function_impl_arg_count(FunctionImpl* me) {
     int arg_count = vec_callable_type_arg_size(&function_impl_callable_type(me)->args);
-    if (vec_function_arg_size(&me->args) != arg_count) {
+    if (vec_function_arg_size(&my args) != arg_count) {
         PANIC("function type has different number of args than function");
     }
     return arg_count;
@@ -53,7 +53,7 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
     cstr_append_sv(target, c_sv("("));
     int arg_count = function_impl_arg_count(me);
     for (int i = 0; i < arg_count; i++) {
-        FunctionArg* value_arg = vec_function_arg_at_mut(&me->args, i);
+        FunctionArg* value_arg = vec_function_arg_at_mut(&my args, i);
         CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, value_arg->name);
@@ -76,12 +76,12 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
         cstr_append_type_debug(target, &callable->ret, indent);
     }
     cstr_append_sv(target, include_arrow ? c_sv(" => ") : c_sv(" "));
-    cstr_append_block_debug(target, &me->body, indent);
+    cstr_append_block_debug(target, &my body, indent);
 }
 
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
     // First, resolve names in the callable type
-    type_resolve_names(&me->type, names, errs);
+    type_resolve_names(&my type, names, errs);
 
     // Push a stack frame for generics/arguments to live in
     // This is the function *implementation*, so we do not push a generic stack frame
@@ -105,7 +105,7 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     for (int i = 0; i < arg_count; i++) {
         if (!name_stack_add_variable(
             names,
-            cstr_clone(vec_function_arg_at_mut(&me->args, i)->name),
+            cstr_clone(vec_function_arg_at_mut(&my args, i)->name),
             &vec_callable_type_arg_at_mut(&callable->args, i)->type
         )) {
             // name is cstr_str(&result.ref->first)
@@ -114,13 +114,13 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     }
 
     // Loop through all arguments and resolve names in the default value expressions
-    c_foreach(i, vec_function_arg, me->args) {
+    c_foreach(i, vec_function_arg, my args) {
         expr_resolve_names(&i.ref->value, names, errs);
     }
 
     // Resolve names in the function body, don't push a stack frame since the toplevel function body should be the same
     // namespace as the variables are in.
-    block_resolve_names_without_stack_frame(&me->body, names, errs);
+    block_resolve_names_without_stack_frame(&my body, names, errs);
 
     // Pop the stack frame we pushed above
     name_stack_pop_frame(names);
@@ -131,7 +131,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     int arg_count = function_impl_arg_count(me);
     for (int i = 0; i < arg_count; i++) {
-        FunctionArg* value_arg = vec_function_arg_at_mut(&me->args, i);
+        FunctionArg* value_arg = vec_function_arg_at_mut(&my args, i);
         CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
         if (value_arg->value_explicit && type_arg->type_explicit) {
             Type expr_type = expr_get_type_and_typecheck(&value_arg->value, errs);
@@ -155,13 +155,13 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         }
     }
 
-    if (me->newline_before_arrow) {
-        error_ctx_error(errs, me->arrow_span, 1200, "Line terminator not permitted before arrow.");
+    if (my newline_before_arrow) {
+        error_ctx_error(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
     StatementCtx ctx = statement_ctx_function(&callable->ret);
 
-    block_typecheck(&me->body, &ctx, errs);
+    block_typecheck(&my body, &ctx, errs);
 
     if (!callable->ret_explicit) {
         int type_count = vec_type_size(&ctx.returned_types);

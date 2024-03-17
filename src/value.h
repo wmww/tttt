@@ -47,7 +47,7 @@ typedef struct Value {
 
 void value_drop_internal(Value* me);
 static inline void value_drop(Value* me) {
-    switch (me->tag) {
+    switch (my tag) {
         case VALUE_NULL:
         case VALUE_UNDEFINED:
         case VALUE_BOOLEAN:
@@ -62,7 +62,7 @@ static inline void value_drop(Value* me) {
             value_drop_internal(me);
             break;
     }
-    me->tag = VALUE_NULL; // Makes repeated calls to drop safe
+    my tag = VALUE_NULL; // Makes repeated calls to drop safe
 }
 Value value_clone(Value me);
 bool value_to_boolean(Value const* me);
