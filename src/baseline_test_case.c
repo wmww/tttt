@@ -110,7 +110,7 @@ static cstr render_lines_woven_with_file(
 }
 
 static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, vec_LineNumberedStr* lines) {
-    c_foreach(i, vec_Error, errs->errors) {
+    c_foreach(i, vec_error, errs->errors) {
         int line = span_line_index(&i.ref->span);
         int col = span_col_index(&i.ref->span);
 
@@ -336,7 +336,7 @@ void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
             &errors_result,
             "\r\n\r\n==== %s (%ld errors) ====\r\n",
             source_basename,
-            vec_Error_size(&self->detail.errs.errors)
+            vec_error_size(&self->detail.errs.errors)
         );
         cstr errors_body = render_lines_woven_with_file(
             cstr_str(&self->source_path),

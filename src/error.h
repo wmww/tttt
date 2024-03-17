@@ -9,16 +9,16 @@ typedef struct Error {
     unsigned ts_code;
 } Error;
 
-void Error_drop(Error* self);
-Error Error_clone(Error self);
+void error_drop(Error* self);
+Error error_clone(Error self);
 void cstr_append_error_debug(cstr* target, Error const* self);
 void cstr_append_error_txt(cstr* target, Error const* self);
 
-#define i_key_class Error
-#include "stc/vec.h"
+#define i_key_classnames Error, error
+#include "wrap_stc/vec.h"
 
 typedef struct ErrorCtx {
-    vec_Error errors;
+    VecError errors;
 } ErrorCtx;
 
 static inline ErrorCtx ErrorCtx_init() { return (ErrorCtx){0}; }

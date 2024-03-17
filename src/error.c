@@ -44,33 +44,33 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
 }
 
 void ErrorCtx_drop(ErrorCtx* self) {
-    vec_Error_drop(&self->errors);
+    vec_error_drop(&self->errors);
 }
 
 void ErrorCtx_display(ErrorCtx* self) {
     cstr str = cstr_null;
     const int max_display = 10;
-    c_foreach_n(i, vec_Error, self->errors, max_display) {
+    c_foreach_n(i, vec_error, self->errors, max_display) {
         cstr_append_error_debug(&str, i.ref);
         printf("%s\n\n", cstr_str(&str));
         cstr_clear(&str);
     }
-    if (vec_Error_size(&self->errors) > max_display) {
+    if (vec_error_size(&self->errors) > max_display) {
         printf(
             CLR_ERR "  %ld additional errors not shown\n\n" CLR0,
-            vec_Error_size(&self->errors) - max_display
+            vec_error_size(&self->errors) - max_display
         );
     }
     cstr_drop(&str);
 }
 
 bool ErrorCtx_empty(ErrorCtx* self) {
-    return vec_Error_empty(&self->errors);
+    return vec_error_empty(&self->errors);
 }
 
 void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other) {
-    c_foreach(i, vec_Error, other.errors) {
-        vec_Error_push(&self->errors, *i.ref);
+    c_foreach(i, vec_error, other.errors) {
+        vec_error_push(&self->errors, *i.ref);
         *i.ref = (Error){0};
     }
     ErrorCtx_drop(&other);
@@ -80,7 +80,7 @@ void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message) {
     if (!self) {
         return;
     }
-    vec_Error_push(&self->errors, (Error){
+    vec_error_push(&self->errors, (Error){
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
@@ -91,7 +91,7 @@ void ErrorCtx_type_error(ErrorCtx* self, const char* static_message) {
     if (!self) {
         return;
     }
-    vec_Error_push(&self->errors, (Error){
+    vec_error_push(&self->errors, (Error){
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
@@ -103,7 +103,7 @@ void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message)
         cstr_drop(&message);
         return;
     }
-    vec_Error_push(&self->errors, (Error){
+    vec_error_push(&self->errors, (Error){
         .message = message,
         .span = span,
         .ts_code = ts_code,
