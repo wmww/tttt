@@ -7,6 +7,6 @@ typedef struct ExtendsConditional {
     Type MaybeSuper;
 } ExtendsConditional;
 
-void extends_conditional_drop(ExtendsConditional* self);
-ExtendsConditional extends_conditional_clone(ExtendsConditional self);
-bool extends_conditional_eval(ExtendsConditional* self);
+void extends_conditional_drop(ExtendsConditional* me);
+ExtendsConditional extends_conditional_clone(ExtendsConditional me);
+bool extends_conditional_eval(ExtendsConditional* me);

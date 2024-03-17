@@ -8,8 +8,8 @@ typedef struct CallableTypeArg {
     Type type;
 } CallableTypeArg;
 
-void callable_type_arg_drop(CallableTypeArg* self);
-CallableTypeArg callable_type_arg_clone(CallableTypeArg self);
+void callable_type_arg_drop(CallableTypeArg* me);
+CallableTypeArg callable_type_arg_clone(CallableTypeArg me);
 
 #define i_key_class_names CallableTypeArg, callable_type_arg
 #include "wrap_stc/vec.h"
@@ -20,7 +20,7 @@ typedef struct CallableType {
     Type ret;
 } CallableType;
 
-void callable_type_drop(CallableType* self);
-CallableType callable_type_clone(CallableType self);
-void cstr_append_callable_type_debug(cstr* target, CallableType* self, int indent);
-void cstr_append_callable_type_error_msg(cstr* target, CallableType* self);
+void callable_type_drop(CallableType* me);
+CallableType callable_type_clone(CallableType me);
+void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent);
+void cstr_append_callable_type_error_msg(cstr* target, CallableType* me);

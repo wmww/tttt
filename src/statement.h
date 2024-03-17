@@ -23,8 +23,8 @@ typedef struct NameInitData {
     Expr value;
 } NameInitData;
 
-void name_init_data_drop(NameInitData* self);
-void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent);
+void name_init_data_drop(NameInitData* me);
+void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent);
 
 #define i_key_class_names NameInitData, name_init_data
 #define i_no_clone
@@ -41,9 +41,9 @@ typedef struct VarInitStatement {
     VecNameInitData vars;
 } VarInitStatement;
 
-void var_init_statement_drop(VarInitStatement* self);
-void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent);
-void var_init_statement_typecheck(VarInitStatement* self, ErrorCtx* errs);
+void var_init_statement_drop(VarInitStatement* me);
+void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* me, int indent);
+void var_init_statement_typecheck(VarInitStatement* me, ErrorCtx* errs);
 
 // Function statements
 
@@ -59,8 +59,8 @@ typedef struct InterfaceStatement {
     Type type;
 } InterfaceStatement;
 
-void interface_statement_drop(InterfaceStatement* self);
-void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* self, int indent);
+void interface_statement_drop(InterfaceStatement* me);
+void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* me, int indent);
 
 // If statements
 
@@ -99,11 +99,11 @@ typedef struct Statement {
 
 #define statement_noop ((Statement){ .tag = STATEMENT_NOOP })
 
-void statement_drop(Statement* self);
-void cstr_append_statement_debug(cstr* target, Statement* self, int indent);
-void statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs);
-void statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs);
-void statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs);
+void statement_drop(Statement* me);
+void cstr_append_statement_debug(cstr* target, Statement* me, int indent);
+void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs);
+void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs);
+void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs);
 
 #define i_key_class_names Statement, statement
 #define i_is_forward
@@ -130,4 +130,4 @@ typedef struct StatementCtx {
 
 StatementCtx statement_ctx_toplevel();
 StatementCtx statement_ctx_function(Type const* specified_return);
-void statement_ctx_drop(StatementCtx* self);
+void statement_ctx_drop(StatementCtx* me);

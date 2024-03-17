@@ -25,8 +25,8 @@ typedef struct Namespace {
 } Namespace;
 
 Namespace namespace_init(bool is_generic);
-void namespace_drop(Namespace* self);
-Namespace namespace_clone(Namespace self);
+void namespace_drop(Namespace* me);
+Namespace namespace_clone(Namespace me);
 
 #define i_key_class_names Namespace, namespace
 #include "wrap_stc/vec.h"
@@ -36,10 +36,10 @@ typedef struct NameStack {
 } NameStack;
 
 NameStack name_stack_init();
-void name_stack_drop(NameStack* self);
-void name_stack_push_frame(NameStack* self, bool is_generic);
-void name_stack_pop_frame(NameStack* self);
-bool name_stack_add_variable(NameStack* self, cstr name, Type const* type);
-bool name_stack_add_type(NameStack* self, cstr name, Type const* type, bool is_generic, int generic_index);
-Type const* name_stack_get_variable(NameStack* self, csview name);
-NamedType const* name_stack_get_type(NameStack* self, csview name, int* optional_generic_depth);
+void name_stack_drop(NameStack* me);
+void name_stack_push_frame(NameStack* me, bool is_generic);
+void name_stack_pop_frame(NameStack* me);
+bool name_stack_add_variable(NameStack* me, cstr name, Type const* type);
+bool name_stack_add_type(NameStack* me, cstr name, Type const* type, bool is_generic, int generic_index);
+Type const* name_stack_get_variable(NameStack* me, csview name);
+NamedType const* name_stack_get_type(NameStack* me, csview name, int* optional_generic_depth);

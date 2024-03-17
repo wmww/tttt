@@ -45,9 +45,9 @@ typedef struct Value {
     };
 } Value;
 
-void value_drop_internal(Value* self);
-static inline void value_drop(Value* self) {
-    switch (self->tag) {
+void value_drop_internal(Value* me);
+static inline void value_drop(Value* me) {
+    switch (me->tag) {
         case VALUE_NULL:
         case VALUE_UNDEFINED:
         case VALUE_BOOLEAN:
@@ -59,16 +59,16 @@ static inline void value_drop(Value* self) {
         case VALUE_ARRAY:
         case VALUE_JS_FUNC:
         case VALUE_NATIVE_FUNC:
-            value_drop_internal(self);
+            value_drop_internal(me);
             break;
     }
-    self->tag = VALUE_NULL; // Makes repeated calls to drop safe
+    me->tag = VALUE_NULL; // Makes repeated calls to drop safe
 }
-Value value_clone(Value self);
-bool value_to_boolean(Value const* self);
-double value_to_number(Value const* self);
-void cstr_append_value_js(cstr* target, Value const* self);
-void cstr_append_value_debug(cstr* target, Value const* self, int indent);
+Value value_clone(Value me);
+bool value_to_boolean(Value const* me);
+double value_to_number(Value const* me);
+void cstr_append_value_js(cstr* target, Value const* me);
+void cstr_append_value_debug(cstr* target, Value const* me, int indent);
 bool value_loose_eq(Value const* a, Value const* b);
 bool value_strict_eq(Value const* a, Value const* b);
 
@@ -96,24 +96,24 @@ typedef struct ObjectItemInit {
 #include "wrap_stc/vec.h"
 #include "wrap_stc/quicksort.h"
 
-void object_item_drop(ObjectItem* self);
-ObjectItem object_item_clone(ObjectItem self);
+void object_item_drop(ObjectItem* me);
+ObjectItem object_item_clone(ObjectItem me);
 
 typedef struct JsObject {
     HmapStrObjectItem items;
     int total_inserted;
 } JsObject;
 
-void js_object_drop(JsObject* self);
-JsObject js_object_clone(JsObject self);
+void js_object_drop(JsObject* me);
+JsObject js_object_clone(JsObject me);
 // NOTE: returned list is invalidated by changes to object and should be dropped before then
-VecObjectItemRef js_object_sorted_items(JsObject* self);
+VecObjectItemRef js_object_sorted_items(JsObject* me);
 
-void js_object_set(JsObject* self, cstr key, Value val);
+void js_object_set(JsObject* me, cstr key, Value val);
 // On err .value is set to undefined, so you can ignore .is_err if you want the normal javascript behavior
 // Also means result doesn't need to be dropped as long as value is handled in the ok case
-Result js_object_get(JsObject* self, csview key);
-bool js_object_has(JsObject* self, csview key);
+Result js_object_get(JsObject* me, csview key);
+bool js_object_has(JsObject* me, csview key);
 
 #define i_key_ssv
 #define i_val_class_names ObjectItem, object_item
@@ -136,8 +136,8 @@ typedef struct JsArray {
     VecValue vec;
 } JsArray;
 
-void js_array_drop(JsArray* self);
-JsArray js_array_clone(JsArray self);
+void js_array_drop(JsArray* me);
+JsArray js_array_clone(JsArray me);
 
 #define i_key_class_names JsArray, js_array
 #define i_opt c_no_atomic
@@ -152,7 +152,7 @@ typedef struct JsFuncValue {
     Block const* code; // non-owning
 } JsFuncValue;
 
-void js_func_value_drop(JsFuncValue* self);
+void js_func_value_drop(JsFuncValue* me);
 
 #define i_key_class_names JsFuncValue, js_func_value
 #define i_opt c_no_atomic
@@ -168,7 +168,7 @@ typedef struct NativeFuncValue {
     void* data;
 } NativeFuncValue;
 
-void native_func_value_drop(NativeFuncValue* self);
+void native_func_value_drop(NativeFuncValue* me);
 
 #define i_key_class_names NativeFuncValue, native_func_value
 #define i_opt c_no_atomic

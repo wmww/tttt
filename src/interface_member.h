@@ -14,8 +14,8 @@ static inline InterfaceMember interface_member_make(cstr name, Type type) {
     };
 }
 
-void interface_member_drop(InterfaceMember* self);
-InterfaceMember interface_member_clone(InterfaceMember self);
+void interface_member_drop(InterfaceMember* me);
+InterfaceMember interface_member_clone(InterfaceMember me);
 
 #define i_key_class_names InterfaceMember, interface_member
 #define i_is_forward

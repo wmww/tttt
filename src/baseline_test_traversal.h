@@ -8,7 +8,7 @@ typedef struct Statement Statement;
 typedef struct Block Block;
 typedef struct BaselineTestCase BaselineTestCase;
 
-void type_compile_test_info(Type* self, BaselineTestCase* ctx);
-void expr_compile_test_info(Expr* self, BaselineTestCase* ctx);
-void statement_compile_test_info(Statement* self, BaselineTestCase* ctx);
-void block_compile_test_info(Block* self, BaselineTestCase* ctx);
+void type_compile_test_info(Type* me, BaselineTestCase* ctx);
+void expr_compile_test_info(Expr* me, BaselineTestCase* ctx);
+void statement_compile_test_info(Statement* me, BaselineTestCase* ctx);
+void block_compile_test_info(Block* me, BaselineTestCase* ctx);

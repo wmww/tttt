@@ -3,33 +3,33 @@
 #include "type.h"
 #include "result.h"
 
-void value_drop_internal(Value* self) {
-    switch (self->tag) {
+void value_drop_internal(Value* me) {
+    switch (me->tag) {
         case VALUE_UNDEFINED:
         case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
-        case VALUE_STRING: cstr_drop(&self->string); break;
-        case VALUE_OBJECT: arc_js_object_drop(&self->object); break;
-        case VALUE_ARRAY: arc_js_array_drop(&self->array); break;
-        case VALUE_JS_FUNC: arc_js_func_value_drop(&self->js_func); break;
-        case VALUE_NATIVE_FUNC: arc_native_func_value_drop(&self->native_func); break;
+        case VALUE_STRING: cstr_drop(&me->string); break;
+        case VALUE_OBJECT: arc_js_object_drop(&me->object); break;
+        case VALUE_ARRAY: arc_js_array_drop(&me->array); break;
+        case VALUE_JS_FUNC: arc_js_func_value_drop(&me->js_func); break;
+        case VALUE_NATIVE_FUNC: arc_native_func_value_drop(&me->native_func); break;
     }
 }
 
-Value value_clone(Value self) {
-    switch (self.tag) {
+Value value_clone(Value me) {
+    switch (me.tag) {
         case VALUE_UNDEFINED:
         case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
-        case VALUE_STRING: self.string = cstr_clone(self.string); break;
-        case VALUE_OBJECT: self.object = arc_js_object_clone(self.object); break;
-        case VALUE_ARRAY: self.array = arc_js_array_clone(self.array); break;
-        case VALUE_JS_FUNC: self.js_func = arc_js_func_value_clone(self.js_func); break;
-        case VALUE_NATIVE_FUNC: self.native_func = arc_native_func_value_clone(self.native_func); break;
+        case VALUE_STRING: me.string = cstr_clone(me.string); break;
+        case VALUE_OBJECT: me.object = arc_js_object_clone(me.object); break;
+        case VALUE_ARRAY: me.array = arc_js_array_clone(me.array); break;
+        case VALUE_JS_FUNC: me.js_func = arc_js_func_value_clone(me.js_func); break;
+        case VALUE_NATIVE_FUNC: me.native_func = arc_native_func_value_clone(me.native_func); break;
     }
-    return self;
+    return me;
 }
 
 static double string_to_num(const char* start) {
@@ -45,13 +45,13 @@ static double string_to_num(const char* start) {
     }
 }
 
-bool value_to_boolean(Value const* self) {
-    switch (self->tag) {
+bool value_to_boolean(Value const* me) {
+    switch (me->tag) {
         case VALUE_UNDEFINED: return false;
         case VALUE_NULL: return false;
-        case VALUE_BOOLEAN: return self->boolean;
-        case VALUE_NUMBER: return self->number != 0;
-        case VALUE_STRING: return !cstr_empty(&self->string);
+        case VALUE_BOOLEAN: return me->boolean;
+        case VALUE_NUMBER: return me->number != 0;
+        case VALUE_STRING: return !cstr_empty(&me->string);
         case VALUE_OBJECT: return true;
         case VALUE_ARRAY: return true;
         case VALUE_JS_FUNC: return true;
@@ -60,8 +60,8 @@ bool value_to_boolean(Value const* self) {
     UNREACHABLE;
 }
 
-double value_to_number(Value const* self) {
-    switch (self->tag) {
+double value_to_number(Value const* me) {
+    switch (me->tag) {
         case VALUE_UNDEFINED:
         case VALUE_OBJECT:
         case VALUE_JS_FUNC:
@@ -69,17 +69,17 @@ double value_to_number(Value const* self) {
             return NAN;
 
         case VALUE_NULL: return 0;
-        case VALUE_BOOLEAN: return self->boolean ? 1 : 0;
-        case VALUE_NUMBER: return self->number;
-        case VALUE_STRING: return string_to_num(cstr_str(&self->string));
+        case VALUE_BOOLEAN: return me->boolean ? 1 : 0;
+        case VALUE_NUMBER: return me->number;
+        case VALUE_STRING: return string_to_num(cstr_str(&me->string));
 
         case VALUE_ARRAY: {
-            int len = vec_value_size(&self->array.get->vec);
+            int len = vec_value_size(&me->array.get->vec);
             if (len == 0) {
                 return 0;
             } else if (len == 1) {
                 cstr str = cstr_null;
-                cstr_append_value_js(&str, vec_value_at(&self->array.get->vec, 0));
+                cstr_append_value_js(&str, vec_value_at(&me->array.get->vec, 0));
                 double ret = string_to_num(cstr_str(&str));
                 cstr_drop(&str);
                 return ret;
@@ -91,17 +91,17 @@ double value_to_number(Value const* self) {
     UNREACHABLE;
 }
 
-void cstr_append_value_js(cstr* target, Value const* self) {
-    switch (self->tag) {
+void cstr_append_value_js(cstr* target, Value const* me) {
+    switch (me->tag) {
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv("undefined")); break;
         case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
-        case VALUE_STRING: cstr_append_s(target, self->string); break;
+        case VALUE_STRING: cstr_append_s(target, me->string); break;
         case VALUE_OBJECT: cstr_append_sv(target, c_sv("[object Object]")); break;
         case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
         case VALUE_NATIVE_FUNC: cstr_append_sv(target, c_sv("[native function]")); break;
 
         case VALUE_BOOLEAN:
-            if (self->boolean) {
+            if (me->boolean) {
                 cstr_append_sv(target, c_sv("true"));
             } else {
                 cstr_append_sv(target, c_sv("false"));
@@ -109,17 +109,17 @@ void cstr_append_value_js(cstr* target, Value const* self) {
             break;
 
         case VALUE_NUMBER:
-            if (round(self->number) == self->number) {
-                cstr_append_fmt(target, "%ld", (long)self->number);
-            } else if (isnan(self->number)) {
+            if (round(me->number) == me->number) {
+                cstr_append_fmt(target, "%ld", (long)me->number);
+            } else if (isnan(me->number)) {
                 cstr_append_sv(target, c_sv("NaN"));
             } else {
-                cstr_append_fmt(target, "%f", self->number);
+                cstr_append_fmt(target, "%f", me->number);
             }
             break;
 
         case VALUE_ARRAY:
-            c_foreach(i, vec_value, self->array.get->vec) {
+            c_foreach(i, vec_value, me->array.get->vec) {
                 cstr_append_value_js(target, i.ref);
                 if (i.ref < i.end - 1) {
                     cstr_append_sv(target, c_sv(","));
@@ -129,14 +129,14 @@ void cstr_append_value_js(cstr* target, Value const* self) {
     }
 }
 
-void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
+void cstr_append_value_debug(cstr* target, Value const* me, int indent) {
     (void)indent;
-    switch (self->tag) {
+    switch (me->tag) {
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv(CLR_VALUE "undefined" CLR0)); break;
         case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
 
         case VALUE_BOOLEAN:
-            if (self->boolean) {
+            if (me->boolean) {
                 cstr_append_sv(target, c_sv(CLR_VALUE "true" CLR0));
             } else {
                 cstr_append_sv(target, c_sv(CLR_VALUE "false" CLR0));
@@ -144,23 +144,23 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
             break;
 
         case VALUE_NUMBER:
-            if (round(self->number) == self->number) {
-                cstr_append_fmt(target, CLR_NUM "%ld" CLR0, (long)self->number);
+            if (round(me->number) == me->number) {
+                cstr_append_fmt(target, CLR_NUM "%ld" CLR0, (long)me->number);
             } else {
-                cstr_append_fmt(target, CLR_NUM "%f" CLR0, self->number);
+                cstr_append_fmt(target, CLR_NUM "%f" CLR0, me->number);
             }
             break;
 
         case VALUE_STRING:
             // TODO: escape string contents
             cstr_append_sv(target, c_sv(CLR_STR "'"));
-            cstr_append_s(target, self->string);
+            cstr_append_s(target, me->string);
             cstr_append_sv(target, c_sv("'" CLR0));
             break;
 
         case VALUE_OBJECT: {
             cstr_append_sv(target, c_sv("{"));
-            VecObjectItemRef items = js_object_sorted_items(self->object.get);
+            VecObjectItemRef items = js_object_sorted_items(me->object.get);
             int size = vec_object_item_ref_size(&items);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
@@ -185,7 +185,7 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
 
         case VALUE_ARRAY: {
             cstr_append_sv(target, c_sv("["));
-            JsArray* value = self->array.get;
+            JsArray* value = me->array.get;
             int size = vec_value_size(&value->vec);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
@@ -250,27 +250,27 @@ bool value_strict_eq(Value const* a, Value const* b) {
     UNREACHABLE;
 }
 
-void object_item_drop(ObjectItem* self) {
-    value_drop(&self->value);
+void object_item_drop(ObjectItem* me) {
+    value_drop(&me->value);
 }
 
-ObjectItem object_item_clone(ObjectItem self) {
-    self.value = value_clone(self.value);
-    return self;
+ObjectItem object_item_clone(ObjectItem me) {
+    me.value = value_clone(me.value);
+    return me;
 }
 
-void js_object_drop(JsObject* self) {
-    hmap_str_object_item_drop(&self->items);
+void js_object_drop(JsObject* me) {
+    hmap_str_object_item_drop(&me->items);
 }
 
-JsObject js_object_clone(JsObject self) {
-    self.items = hmap_str_object_item_clone(self.items);
-    return self;
+JsObject js_object_clone(JsObject me) {
+    me.items = hmap_str_object_item_clone(me.items);
+    return me;
 }
 
-VecObjectItemRef js_object_sorted_items(JsObject* self) {
-    VecObjectItemRef ret = vec_object_item_ref_with_capacity(self->total_inserted);
-    c_foreach(i, hmap_str_object_item, self->items) {
+VecObjectItemRef js_object_sorted_items(JsObject* me) {
+    VecObjectItemRef ret = vec_object_item_ref_with_capacity(me->total_inserted);
+    c_foreach(i, hmap_str_object_item, me->items) {
         vec_object_item_ref_push(&ret, (ObjectItemRef){
             .name = &i.ref->first,
             .item = &i.ref->second,
@@ -280,16 +280,16 @@ VecObjectItemRef js_object_sorted_items(JsObject* self) {
     return ret;
 }
 
-void js_object_set(JsObject* self, cstr key, Value val) {
-    hmap_str_object_item_insert_or_assign(&self->items, key, (ObjectItem){
+void js_object_set(JsObject* me, cstr key, Value val) {
+    hmap_str_object_item_insert_or_assign(&me->items, key, (ObjectItem){
         .value = val,
-        .position = self->total_inserted,
+        .position = me->total_inserted,
     });
-    self->total_inserted++;
+    me->total_inserted++;
 }
 
-Result js_object_get(JsObject* self, csview key) {
-    hmap_str_object_item_value const* value = hmap_str_object_item_get(&self->items, key);
+Result js_object_get(JsObject* me, csview key) {
+    hmap_str_object_item_value const* value = hmap_str_object_item_get(&me->items, key);
     if (value) {
         return result_ok(value_clone(value->second.value));
     } else {
@@ -297,28 +297,28 @@ Result js_object_get(JsObject* self, csview key) {
     }
 }
 
-bool js_object_has(JsObject* self, csview key) {
-    return hmap_str_object_item_get(&self->items, key) != nullptr;
+bool js_object_has(JsObject* me, csview key) {
+    return hmap_str_object_item_get(&me->items, key) != nullptr;
 }
 
-void array_value_drop(JsArray* self) {
-    js_object_drop(&self->fallback);
-    vec_value_drop(&self->vec);
+void array_value_drop(JsArray* me) {
+    js_object_drop(&me->fallback);
+    vec_value_drop(&me->vec);
 }
 
-JsArray array_value_clone(JsArray self) {
+JsArray array_value_clone(JsArray me) {
     return (JsArray){
-        .fallback = js_object_clone(self.fallback),
-        .vec = vec_value_clone(self.vec),
+        .fallback = js_object_clone(me.fallback),
+        .vec = vec_value_clone(me.vec),
     };
 }
 
-void js_func_value_drop(JsFuncValue* self) {
-    (void)self;
+void js_func_value_drop(JsFuncValue* me) {
+    (void)me;
 }
 
-void native_func_value_drop(NativeFuncValue* self) {
-    if (self->drop) {
-        self->drop(self->data);
+void native_func_value_drop(NativeFuncValue* me) {
+    if (me->drop) {
+        me->drop(me->data);
     }
 }

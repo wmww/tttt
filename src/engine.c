@@ -20,18 +20,18 @@ typedef struct Engine {
     VecStackFrame stack;
 } Engine;
 
-void engine_drop(Engine* self) {
-    vec_stack_frame_drop(&self->stack);
+void engine_drop(Engine* me) {
+    vec_stack_frame_drop(&me->stack);
 }
 
-JsObject* engine_get_locals(Engine* self) {
-    return vec_stack_frame_back(&self->stack)->get;
+JsObject* engine_get_locals(Engine* me) {
+    return vec_stack_frame_back(&me->stack)->get;
 }
 
-static Result MUST_USE engine_eval_expr(Engine* self, Expr const* expr);
-static Result MUST_USE engine_run_block(Engine* self, Block const* block);
-static Result MUST_USE engine_run_block_in_stack_frame(Engine* self, Block const* block);
-static Result MUST_USE engine_run_statement(Engine* self, Statement const* statement);
+static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr);
+static Result MUST_USE engine_run_block(Engine* me, Block const* block);
+static Result MUST_USE engine_run_block_in_stack_frame(Engine* me, Block const* block);
+static Result MUST_USE engine_run_statement(Engine* me, Statement const* statement);
 
 static bool contains_only_digits(const char* str) {
     if (!*str) {
@@ -47,8 +47,8 @@ static bool contains_only_digits(const char* str) {
     return true;
 }
 
-static Result MUST_USE engine_eval_identifier(Engine* self, csview identifier) {
-    c_foreach_rev(i, vec_stack_frame, self->stack) {
+static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
+    c_foreach_rev(i, vec_stack_frame, me->stack) {
         Result get_result = js_object_get(i.ref->get, identifier);
         if (get_result.tag == RESULT_OK) {
             return get_result;
@@ -61,25 +61,25 @@ static Result MUST_USE engine_eval_identifier(Engine* self, csview identifier) {
     )));
 }
 
-static Result MUST_USE engine_assign_identifier(Engine* self, csview identifier, Value value) {
-    c_foreach_rev(i, vec_stack_frame, self->stack) {
+static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, Value value) {
+    c_foreach_rev(i, vec_stack_frame, me->stack) {
         if (js_object_has(i.ref->get, identifier)) {
             js_object_set(i.ref->get, cstr_from_sv(identifier), value);
             return result_ok_undefined;
         }
     }
     // If we were in strict mode this would be an error
-    js_object_set(vec_stack_frame_back(&self->stack)->get, cstr_from_sv(identifier), value);
+    js_object_set(vec_stack_frame_back(&me->stack)->get, cstr_from_sv(identifier), value);
     return result_ok_undefined;
 }
 
 // Returns result_ok_undefined on success, not the value. Consumes value.
-static Result MUST_USE engine_assign(Engine* self, Expr const* target, Value value) {
+static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value) {
     switch (target->tag) {
-        case EXPR_IDENTIFIER: return engine_assign_identifier(self, cstr_sv(&target->identifier.name), value);
+        case EXPR_IDENTIFIER: return engine_assign_identifier(me, cstr_sv(&target->identifier.name), value);
 
         case EXPR_DOT_PROP: {
-            TRY_THROW(target_value, engine_eval_expr(self, &target->dot_prop->expr));
+            TRY_THROW(target_value, engine_eval_expr(me, &target->dot_prop->expr));
             switch (target_value.tag) {
                 case VALUE_UNDEFINED:
                 case VALUE_NULL:
@@ -115,14 +115,14 @@ static Result MUST_USE engine_assign(Engine* self, Expr const* target, Value val
     UNREACHABLE;
 }
 
-static Result MUST_USE engine_eval_binary_op(Engine* self, BinaryOpExpr const* op_expr) {
+static Result MUST_USE engine_eval_binary_op(Engine* me, BinaryOpExpr const* op_expr) {
     if (op_expr->op == BINARY_OP_EQUAL) {
-        TRY_THROW(right, engine_eval_expr(self, &op_expr->right));
-        TRY_THROW_DROP(engine_assign(self, &op_expr->left, right));
+        TRY_THROW(right, engine_eval_expr(me, &op_expr->right));
+        TRY_THROW_DROP(engine_assign(me, &op_expr->left, right));
         return result_ok(value_clone(right));
     }
-    TRY_THROW(left, engine_eval_expr(self, &op_expr->left));
-    TRY_CATCH(right, engine_eval_expr(self, &op_expr->right), res_err, {
+    TRY_THROW(left, engine_eval_expr(me, &op_expr->left));
+    TRY_CATCH(right, engine_eval_expr(me, &op_expr->right), res_err, {
         value_drop(&left);
         return res_err;
     });
@@ -161,36 +161,36 @@ static Result MUST_USE engine_eval_binary_op(Engine* self, BinaryOpExpr const* o
 }
 
 static Result MUST_USE engine_eval_inc_dec(
-    Engine* self,
+    Engine* me,
     Expr const* target,
     Value const* previous,
     int before_ret,
     int after_ret
 ) {
     double num = value_to_number(previous) + before_ret;
-    TRY_THROW_DROP(engine_assign(self, target, value_number(num + after_ret)));
+    TRY_THROW_DROP(engine_assign(me, target, value_number(num + after_ret)));
     return result_ok(value_number(num));
 }
 
-static Result MUST_USE engine_eval_unary_op(Engine* self, UnaryOpExpr const* op_expr) {
-    TRY_THROW(value, engine_eval_expr(self, &op_expr->expr));
+static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_expr) {
+    TRY_THROW(value, engine_eval_expr(me, &op_expr->expr));
     Result res = result_ok_undefined;
     switch (op_expr->op) {
         case UNARY_OP_BANG: res.value = value_boolean(!value_to_boolean(&value)); break;
         case UNARY_OP_TILDE: res.value = value_number(~(long)value_to_number(&value)); break;
         case UNARY_OP_PLUS: res.value = value_number(value_to_number(&value)); break;
         case UNARY_OP_MINUS: res.value = value_number(-value_to_number(&value)); break;
-        case UNARY_OP_LEFT_PLUS_PLUS: res = engine_eval_inc_dec(self, &op_expr->expr, &value, 1, 0); break;
-        case UNARY_OP_LEFT_MINUS_MINUS: res = engine_eval_inc_dec(self, &op_expr->expr, &value, -1, 0); break;
-        case UNARY_OP_RIGHT_PLUS_PLUS: res = engine_eval_inc_dec(self, &op_expr->expr, &value, 0, 1); break;
-        case UNARY_OP_RIGHT_MINUS_MINUS: res = engine_eval_inc_dec(self, &op_expr->expr, &value, 0, -1); break;
+        case UNARY_OP_LEFT_PLUS_PLUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 1, 0); break;
+        case UNARY_OP_LEFT_MINUS_MINUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, -1, 0); break;
+        case UNARY_OP_RIGHT_PLUS_PLUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 0, 1); break;
+        case UNARY_OP_RIGHT_MINUS_MINUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 0, -1); break;
     }
     value_drop(&value);
     return res;
 }
 
-static Result MUST_USE engine_eval_dot_prop(Engine* self, DotPropExpr const* prop_expr) {
-    TRY_THROW(value, engine_eval_expr(self, &prop_expr->expr));
+static Result MUST_USE engine_eval_dot_prop(Engine* me, DotPropExpr const* prop_expr) {
+    TRY_THROW(value, engine_eval_expr(me, &prop_expr->expr));
     Result ret = {0};
     switch (value.tag) {
         case VALUE_UNDEFINED: ret = result_err(value_string(cstr_lit("TypeError: undefined has no properties"))); break;
@@ -220,15 +220,15 @@ static Result MUST_USE engine_eval_dot_prop(Engine* self, DotPropExpr const* pro
     return ret;
 }
 
-static Result MUST_USE engine_eval_native_func(Engine* self, NativeFuncValue const* func, VecValue const* args) {
-    return func->func(self, vec_value_size(args), args->data, func->data);
+static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const* func, VecValue const* args) {
+    return func->func(me, vec_value_size(args), args->data, func->data);
 }
 
-static Result MUST_USE engine_eval_js_func(Engine* self, JsFuncValue const* func, VecValue const* args) {
-    vec_stack_frame_push(&self->stack, stack_frame_new());
+static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
+    vec_stack_frame_push(&me->stack, stack_frame_new());
     int defined_arg_num = vec_function_arg_size(func->args);
     int given_arg_num = vec_value_size(args);
-    JsObject* locals = engine_get_locals(self);
+    JsObject* locals = engine_get_locals(me);
     for (int i = 0; i < defined_arg_num; i++) {
         FunctionArg const* defined = vec_function_arg_at(func->args, i);
         cstr name = cstr_clone(defined->name);
@@ -238,27 +238,27 @@ static Result MUST_USE engine_eval_js_func(Engine* self, JsFuncValue const* func
             value = value_clone(*vec_value_at(args, i));
         }
         if (value.tag == VALUE_UNDEFINED && defined->value_explicit) {
-            TRY_CATCH(default_value, engine_eval_expr(self, &defined->value), res_err, {
+            TRY_CATCH(default_value, engine_eval_expr(me, &defined->value), res_err, {
                 cstr_drop(&name);
-                vec_stack_frame_pop(&self->stack);
+                vec_stack_frame_pop(&me->stack);
                 return res_err;
             });
             value = default_value;
         }
         js_object_set(locals, name, value);
     }
-    Result res = engine_run_block(self, func->code);
-    vec_stack_frame_pop(&self->stack);
+    Result res = engine_run_block(me, func->code);
+    vec_stack_frame_pop(&me->stack);
     return res;
 }
 
-static Result MUST_USE engine_eval_call(Engine* self, CallExpr const* call_expr) {
-    TRY_THROW(callable, engine_eval_expr(self, &call_expr->callable));
+static Result MUST_USE engine_eval_call(Engine* me, CallExpr const* call_expr) {
+    TRY_THROW(callable, engine_eval_expr(me, &call_expr->callable));
 
     int given_arg_num = vec_expr_size(&call_expr->args);
     VecValue given_args = vec_value_with_capacity(given_arg_num);
     c_foreach(i, vec_expr, call_expr->args) {
-        TRY_CATCH(value, engine_eval_expr(self, i.ref), res_err, {
+        TRY_CATCH(value, engine_eval_expr(me, i.ref), res_err, {
             vec_value_drop(&given_args);
             value_drop(&callable);
             return res_err;
@@ -269,11 +269,11 @@ static Result MUST_USE engine_eval_call(Engine* self, CallExpr const* call_expr)
     Result ret = result_ok_undefined;
     switch (callable.tag) {
         case VALUE_JS_FUNC:
-            ret = engine_eval_js_func(self, callable.js_func.get, &given_args);
+            ret = engine_eval_js_func(me, callable.js_func.get, &given_args);
             break;
 
         case VALUE_NATIVE_FUNC:
-            ret = engine_eval_native_func(self, callable.native_func.get, &given_args);
+            ret = engine_eval_native_func(me, callable.native_func.get, &given_args);
             break;
 
         default: {
@@ -292,10 +292,10 @@ static Result MUST_USE engine_eval_call(Engine* self, CallExpr const* call_expr)
     return ret;
 }
 
-static Result MUST_USE engine_eval_object(Engine* self, ObjectExpr const* obj_expr) {
+static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr) {
     Value ret = value_object_empty();
     c_foreach(i, vec_object_expr_item, *obj_expr) {
-        TRY_CATCH(value, engine_eval_expr(self, &i.ref->value), res_err, {
+        TRY_CATCH(value, engine_eval_expr(me, &i.ref->value), res_err, {
             value_drop(&ret);
             return res_err;
         });
@@ -304,10 +304,10 @@ static Result MUST_USE engine_eval_object(Engine* self, ObjectExpr const* obj_ex
     return result_ok(ret);
 }
 
-static Result MUST_USE engine_eval_array(Engine* self, VecExpr const* array_expr) {
+static Result MUST_USE engine_eval_array(Engine* me, VecExpr const* array_expr) {
     Value ret = value_array_empty();
     c_foreach(i, vec_expr, *array_expr) {
-        TRY_CATCH(value, engine_eval_expr(self, i.ref), res_err, {
+        TRY_CATCH(value, engine_eval_expr(me, i.ref), res_err, {
             value_drop(&ret);
             return res_err;
         });
@@ -316,35 +316,35 @@ static Result MUST_USE engine_eval_array(Engine* self, VecExpr const* array_expr
     return result_ok(ret);
 }
 
-static Result MUST_USE engine_eval_expr(Engine* self, Expr const* expr) {
+static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
     switch (expr->tag) {
         case EXPR_LITERAL: return result_ok(value_clone(expr->literal));
-        case EXPR_IDENTIFIER: return engine_eval_identifier(self, cstr_sv(&expr->identifier.name));
-        case EXPR_BINARY_OP: return engine_eval_binary_op(self, expr->binary_op);
-        case EXPR_UNARY_OP: return engine_eval_unary_op(self, expr->unary_op);
-        case EXPR_DOT_PROP: return engine_eval_dot_prop(self, expr->dot_prop);
-        case EXPR_AS_TYPE: return engine_eval_expr(self, &expr->as_type->expr);
-        case EXPR_CALL: return engine_eval_call(self, expr->call);
+        case EXPR_IDENTIFIER: return engine_eval_identifier(me, cstr_sv(&expr->identifier.name));
+        case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);
+        case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
+        case EXPR_DOT_PROP: return engine_eval_dot_prop(me, expr->dot_prop);
+        case EXPR_AS_TYPE: return engine_eval_expr(me, &expr->as_type->expr);
+        case EXPR_CALL: return engine_eval_call(me, expr->call);
         case EXPR_FUNCTION: return result_ok(value_js_func(&expr->function->args, &expr->function->body));
-        case EXPR_OBJECT: return engine_eval_object(self, &expr->object);
-        case EXPR_ARRAY: return engine_eval_array(self, &expr->array);
+        case EXPR_OBJECT: return engine_eval_object(me, &expr->object);
+        case EXPR_ARRAY: return engine_eval_array(me, &expr->array);
     }
     UNREACHABLE;
 }
 
-static Result MUST_USE engine_run_if_else(Engine* self, IfStatement const* if_else) {
+static Result MUST_USE engine_run_if_else(Engine* me, IfStatement const* if_else) {
     int statement_size = vec_statement_size(&if_else->statements);
     int cond_size = vec_expr_size(&if_else->conditions);
     for (int i = 0; i < statement_size; i++) {
         bool cond_true = true;
         if (i < cond_size) {
-            TRY_THROW(condition, engine_eval_expr(self, vec_expr_at(&if_else->conditions, i)));
+            TRY_THROW(condition, engine_eval_expr(me, vec_expr_at(&if_else->conditions, i)));
             cond_true = value_to_boolean(&condition);
             value_drop(&condition);
         }
         if (cond_true) {
             TRY_THROW_DROP(engine_run_statement(
-                self,
+                me,
                 vec_statement_at(&if_else->statements, i)
             ));
             break;
@@ -353,50 +353,50 @@ static Result MUST_USE engine_run_if_else(Engine* self, IfStatement const* if_el
     return result_ok_undefined;
 }
 
-static Result MUST_USE engine_run_loop(Engine* self, LoopStatement const* loop) {
-    TRY_THROW_DROP(engine_run_statement(self, &loop->initialization));
+static Result MUST_USE engine_run_loop(Engine* me, LoopStatement const* loop) {
+    TRY_THROW_DROP(engine_run_statement(me, &loop->initialization));
     while (true) {
-        TRY_THROW(keep_going, engine_eval_expr(self, &loop->condition));
+        TRY_THROW(keep_going, engine_eval_expr(me, &loop->condition));
         if (!value_to_boolean(&keep_going)) {
             break;
         }
-        TRY_CATCH_DROP(engine_run_statement(self, &loop->body), res_err, {
+        TRY_CATCH_DROP(engine_run_statement(me, &loop->body), res_err, {
             if (res_err.tag == RESULT_BREAK) {
                 return result_ok_undefined;
             } else {
                 return res_err;
             }
         });
-        TRY_THROW_DROP(engine_eval_expr(self, &loop->afterthought));
+        TRY_THROW_DROP(engine_eval_expr(me, &loop->afterthought));
     }
     return result_ok_undefined;
 }
 
 // Only return statements return ok with a value, caller has to check statement tag to notice undefined returns
-static Result MUST_USE engine_run_statement(Engine* self, Statement const* statement) {
+static Result MUST_USE engine_run_statement(Engine* me, Statement const* statement) {
     switch (statement->tag) {
         case STATEMENT_NOOP: return result_ok_undefined;
         case STATEMENT_INTERFACE: return result_ok_undefined;
 
         case STATEMENT_BLOCK:
-            TRY_THROW_DROP(engine_run_block_in_stack_frame(self, &statement->block));
+            TRY_THROW_DROP(engine_run_block_in_stack_frame(me, &statement->block));
             return result_ok_undefined;
 
         case STATEMENT_EXPR:
-            TRY_THROW_DROP(engine_eval_expr(self, &statement->expr));
+            TRY_THROW_DROP(engine_eval_expr(me, &statement->expr));
             return result_ok_undefined;
 
         case STATEMENT_RETURN: {
-            TRY_THROW(value, engine_eval_expr(self, &statement->expr));
+            TRY_THROW(value, engine_eval_expr(me, &statement->expr));
             return result_return(value);
         }
 
         case STATEMENT_VAR_INIT: {
             // TODO: respect keyword (let, const, var)
             c_foreach(i, vec_name_init_data, statement->var_init.vars) {
-                TRY_THROW(value, engine_eval_expr(self, &i.ref->value));
+                TRY_THROW(value, engine_eval_expr(me, &i.ref->value));
                 cstr name = cstr_clone(i.ref->name);
-                JsObject* locals = engine_get_locals(self);
+                JsObject* locals = engine_get_locals(me);
                 js_object_set(locals, name, value);
             }
             return result_ok_undefined;
@@ -408,17 +408,17 @@ static Result MUST_USE engine_run_statement(Engine* self, Statement const* state
                 &statement->function.impl.args,
                 &statement->function.impl.body
             );
-            JsObject* locals = engine_get_locals(self);
+            JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);
             return result_ok_undefined;
         }
 
-        case STATEMENT_IF_ELSE: return engine_run_if_else(self, &statement->if_else);
+        case STATEMENT_IF_ELSE: return engine_run_if_else(me, &statement->if_else);
 
         case STATEMENT_LOOP: {
-            vec_stack_frame_push(&self->stack, stack_frame_new());
-            Result res = engine_run_loop(self, statement->loop);
-            vec_stack_frame_pop(&self->stack);
+            vec_stack_frame_push(&me->stack, stack_frame_new());
+            Result res = engine_run_loop(me, statement->loop);
+            vec_stack_frame_pop(&me->stack);
             return res;
         }
 
@@ -427,20 +427,20 @@ static Result MUST_USE engine_run_statement(Engine* self, Statement const* state
     UNREACHABLE;
 }
 
-static Result MUST_USE engine_run_block(Engine* self, Block const* block) {
+static Result MUST_USE engine_run_block(Engine* me, Block const* block) {
     c_foreach(i, vec_statement, block->statements) {
-        TRY_THROW_DROP(engine_run_statement(self, i.ref));
+        TRY_THROW_DROP(engine_run_statement(me, i.ref));
     }
     return result_ok_undefined;
 }
 
-static Result MUST_USE engine_run_block_in_stack_frame(Engine* self, Block const* block) {
-    vec_stack_frame_push(&self->stack, stack_frame_new());
-    TRY_CATCH_DROP(engine_run_block(self, block), res_err, {
-        vec_stack_frame_pop(&self->stack);
+static Result MUST_USE engine_run_block_in_stack_frame(Engine* me, Block const* block) {
+    vec_stack_frame_push(&me->stack, stack_frame_new());
+    TRY_CATCH_DROP(engine_run_block(me, block), res_err, {
+        vec_stack_frame_pop(&me->stack);
         return res_err;
     });
-    vec_stack_frame_pop(&self->stack);
+    vec_stack_frame_pop(&me->stack);
     return result_ok_undefined;
 }
 

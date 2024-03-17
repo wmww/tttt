@@ -23,8 +23,8 @@ typedef struct ParserShared {
     VecU8 fail_cache;
 } ParserShared;
 
-void parser_shared_drop(ParserShared* self) {
-    vec_u8_drop(&self->fail_cache);
+void parser_shared_drop(ParserShared* me) {
+    vec_u8_drop(&me->fail_cache);
 }
 
 typedef enum FailCacheFlag {
@@ -65,24 +65,24 @@ static inline Parser parser(Parser* parent) {
 }
 
 /// Must not be used on the root parser, always returns true, drops parser
-static inline bool parse_success(Parser* self) {
-    self->parent->pos = self->pos;
-    error_ctx_append_consume(&self->parent->errs, self->errs);
+static inline bool parse_success(Parser* me) {
+    me->parent->pos = me->pos;
+    error_ctx_append_consume(&me->parent->errs, me->errs);
     return true;
 }
 
 /// Must not be used on the root parser, always returns false, drops parser
-static inline bool parse_fail(Parser* self) {
-    error_ctx_drop(&self->errs);
-    if (self->fail_cache_flag &&
-        self->shared->fail_cache_start &&
-        self->parent->pos >= self->shared->fail_cache_start
+static inline bool parse_fail(Parser* me) {
+    error_ctx_drop(&me->errs);
+    if (me->fail_cache_flag &&
+        me->shared->fail_cache_start &&
+        me->parent->pos >= me->shared->fail_cache_start
     ) {
-        intptr_t index = self->parent->pos - self->shared->fail_cache_start;
-        if (vec_u8_size(&self->shared->fail_cache) <= index) {
-            vec_u8_resize(&self->shared->fail_cache, index + 1, 0);
+        intptr_t index = me->parent->pos - me->shared->fail_cache_start;
+        if (vec_u8_size(&me->shared->fail_cache) <= index) {
+            vec_u8_resize(&me->shared->fail_cache, index + 1, 0);
         }
-        *vec_u8_at_mut(&self->shared->fail_cache, index) |= self->fail_cache_flag;
+        *vec_u8_at_mut(&me->shared->fail_cache, index) |= me->fail_cache_flag;
     }
     return false;
 }
@@ -105,10 +105,10 @@ static bool fail_cache_register_and_check(Parser* parser, FailCacheFlag flag) {
 }
 #define FAIL_CACHE_HOOK(parser, flag) if (fail_cache_register_and_check(parser, flag)) return false
 
-static void reset_fail_cache(Parser* self) {
-    self->shared->fail_cache_start = nullptr;
+static void reset_fail_cache(Parser* me) {
+    me->shared->fail_cache_start = nullptr;
     // _clear() loops in order to drop. there's no drop work, so the loop is not required. this should be safe.
-    self->shared->fail_cache._len = 0;
+    me->shared->fail_cache._len = 0;
 }
 
 typedef struct Anchor {
@@ -135,16 +135,16 @@ Span span_end(Anchor spanner) {
     return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
 }
 
-static inline Span span_from_pos(Parser* self) {
-    return span_make(self->shared->file_start, self->pos - self->shared->file_start, 0);
+static inline Span span_from_pos(Parser* me) {
+    return span_make(me->shared->file_start, me->pos - me->shared->file_start, 0);
 }
 
-static inline Span span_from_previous_char(Parser* self) {
-    return span_make(self->shared->file_start, self->pos - self->shared->file_start - 1, 1);
+static inline Span span_from_previous_char(Parser* me) {
+    return span_make(me->shared->file_start, me->pos - me->shared->file_start - 1, 1);
 }
 
-static Span span_from_token(Parser* self) {
-    Parser p = parser(self);
+static Span span_from_token(Parser* me) {
+    Parser p = parser(me);
     Anchor a = span_start(&p);
     hop_token(&p);
     parse_fail(&p);

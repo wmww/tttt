@@ -12,7 +12,7 @@ typedef struct LineNumberedStr {
     cstr str;
 } LineNumberedStr;
 
-void line_numbered_str_drop(LineNumberedStr* self);
+void line_numbered_str_drop(LineNumberedStr* me);
 
 #define i_key_class_names LineNumberedStr, line_numbered_str
 #define i_no_clone
@@ -39,12 +39,12 @@ typedef struct BaselineTestCase {
 } BaselineTestCase;
 
 BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path, JsObject* previous);
-void baseline_test_case_drop(BaselineTestCase* self);
-void baseline_test_case_clear_detail(BaselineTestCase* self);
-void baseline_test_case_add_symbol(BaselineTestCase* self, const char* name, Span const* span);
-void baseline_test_case_add_type(BaselineTestCase* self, Span const* span, int paren_depth, Type const* type);
-void baseline_test_case_run(BaselineTestCase* self, bool noisy); // returns if test ran successfully, NOT if it passed
-bool baseline_test_case_is_pass(BaselineTestCase const* self);
+void baseline_test_case_drop(BaselineTestCase* me);
+void baseline_test_case_clear_detail(BaselineTestCase* me);
+void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span);
+void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, int paren_depth, Type const* type);
+void baseline_test_case_run(BaselineTestCase* me, bool noisy); // returns if test ran successfully, NOT if it passed
+bool baseline_test_case_is_pass(BaselineTestCase const* me);
 // Both *_has_new_pass() and *_has_new_fail() can be true at once, _has_new_pass() does not imply *_is_pass()
-bool baseline_test_case_has_new_pass(BaselineTestCase const* self);
-bool baseline_test_case_has_new_fail(BaselineTestCase const* self);
+bool baseline_test_case_has_new_pass(BaselineTestCase const* me);
+bool baseline_test_case_has_new_fail(BaselineTestCase const* me);

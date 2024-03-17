@@ -110,15 +110,15 @@ static inline Type type_ternary(TernaryType* ternary) {
     };
 }
 
-void type_drop(Type* self);
-void cstr_append_type_debug(cstr* target, Type const* self, int indent);
-void cstr_append_type_error_msg(cstr* target, Type const* self);
-Type type_clone(Type self);
-Type type_move(Type* self);
+void type_drop(Type* me);
+void cstr_append_type_debug(cstr* target, Type const* me, int indent);
+void cstr_append_type_error_msg(cstr* target, Type const* me);
+Type type_clone(Type me);
+Type type_move(Type* me);
 
-void type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs);
+void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs);
 bool type_extends(Type const* sub, Type const* super);
-void type_abstract_literals(Type* self); // {a: 7} -> {a: number}
+void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
 

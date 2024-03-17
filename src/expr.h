@@ -91,10 +91,10 @@ static inline Expr expr_object(Span span, ObjectExpr object) {
     return (Expr){ .span = span, .tag = EXPR_OBJECT, .object = object };
 }
 
-void expr_drop(Expr* self);
-void cstr_append_expr_debug(cstr* target, Expr const* self, int indent);
-void expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs);
-Type expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
+void expr_drop(Expr* me);
+void cstr_append_expr_debug(cstr* target, Expr const* me, int indent);
+void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs);
+Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs);
 
 #define i_key_class_names Expr, expr
 #define i_no_clone
@@ -214,8 +214,8 @@ typedef struct ObjectExprItem {
     Expr value;
 } ObjectExprItem;
 
-void object_expr_item_drop(ObjectExprItem* self);
-ObjectExprItem* object_expr_get(ObjectExpr* self, const char* name);
+void object_expr_item_drop(ObjectExprItem* me);
+ObjectExprItem* object_expr_get(ObjectExpr* me, const char* name);
 
 #define i_key_class_names ObjectExprItem, object_expr_item
 #define i_no_clone

@@ -16,8 +16,8 @@ const Type type_boolean = { .tag = TYPE_BOOLEAN };
 const Type type_number = { .tag = TYPE_NUMBER };
 const Type type_string = { .tag = TYPE_STRING };
 
-void type_drop(Type* self) {
-    switch (self->tag) {
+void type_drop(Type* me) {
+    switch (me->tag) {
         case TYPE_ANY:
         case TYPE_UNKOWN:
         case TYPE_NEVER:
@@ -28,42 +28,42 @@ void type_drop(Type* self) {
             break;
 
         case TYPE_VALUE:
-            value_drop(&self->value);
+            value_drop(&me->value);
             break;
 
         case TYPE_IDENTIFIER:
-            cstr_drop(&self->identifier.name);
+            cstr_drop(&me->identifier.name);
             break;
 
         case TYPE_GENERIC:
-            generic_drop(self->generic);
-            free(self->generic);
+            generic_drop(me->generic);
+            free(me->generic);
             break;
 
         case TYPE_CALLABLE:
-            callable_type_drop(self->callable);
-            free(self->callable);
+            callable_type_drop(me->callable);
+            free(me->callable);
             break;
 
         case TYPE_INTERFACE:
-            interface_drop(&self->interface);
+            interface_drop(&me->interface);
             break;
 
         case TYPE_ARRAY:
-            type_drop(self->array);
-            free(self->array);
+            type_drop(me->array);
+            free(me->array);
             break;
 
         case TYPE_TERNARY:
-            ternary_type_drop(self->ternary);
-            free(self->ternary);
+            ternary_type_drop(me->ternary);
+            free(me->ternary);
             break;
     }
-    self->tag = TYPE_ANY; // Makes repeated calls to drop safe
+    me->tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
-void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
-    switch (self->tag) {
+void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
+    switch (me->tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
         case TYPE_UNKOWN: cstr_append_sv(target, c_sv(CLR_TYPE "unkown" CLR0)); break;
         case TYPE_NEVER: cstr_append_sv(target, c_sv(CLR_TYPE "never" CLR0)); break;
@@ -71,25 +71,25 @@ void cstr_append_type_debug(cstr* target, Type const* self, int indent) {
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
         case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
-        case TYPE_VALUE: cstr_append_value_debug(target, &self->value, indent); break;
+        case TYPE_VALUE: cstr_append_value_debug(target, &me->value, indent); break;
         case TYPE_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_TYPE));
-            cstr_append_s(target, self->identifier.name);
+            cstr_append_s(target, me->identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
-        case TYPE_GENERIC: cstr_append_generic_debug(target, self->generic, indent); break;
-        case TYPE_CALLABLE: cstr_append_callable_type_debug(target, self->callable, indent); break;
-        case TYPE_INTERFACE: cstr_append_interface_debug(target, &self->interface, indent); break;
+        case TYPE_GENERIC: cstr_append_generic_debug(target, me->generic, indent); break;
+        case TYPE_CALLABLE: cstr_append_callable_type_debug(target, me->callable, indent); break;
+        case TYPE_INTERFACE: cstr_append_interface_debug(target, &me->interface, indent); break;
         case TYPE_ARRAY:
-            cstr_append_type_debug(target, self->array, indent);
+            cstr_append_type_debug(target, me->array, indent);
             cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
             break;
-        case TYPE_TERNARY: cstr_append_ternary_type_debug(target, self->ternary, indent); break;
+        case TYPE_TERNARY: cstr_append_ternary_type_debug(target, me->ternary, indent); break;
     }
 }
 
-void cstr_append_type_error_msg(cstr* target, Type const* self) {
-    switch (self->tag) {
+void cstr_append_type_error_msg(cstr* target, Type const* me) {
+    switch (me->tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv("any")); break;
         case TYPE_UNKOWN: cstr_append_sv(target, c_sv("unkown")); break;
         case TYPE_NEVER: cstr_append_sv(target, c_sv("never")); break;
@@ -97,53 +97,53 @@ void cstr_append_type_error_msg(cstr* target, Type const* self) {
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv("boolean")); break;
         case TYPE_NUMBER: cstr_append_sv(target, c_sv("number")); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
-        case TYPE_VALUE: cstr_append_value_js(target, &self->value); break;
-        case TYPE_IDENTIFIER: cstr_append_s(target, self->identifier.name); break;
-        case TYPE_GENERIC: cstr_append_generic_error_msg(target, self->generic); break;
-        case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, self->callable); break;
-        case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &self->interface); break;
+        case TYPE_VALUE: cstr_append_value_js(target, &me->value); break;
+        case TYPE_IDENTIFIER: cstr_append_s(target, me->identifier.name); break;
+        case TYPE_GENERIC: cstr_append_generic_error_msg(target, me->generic); break;
+        case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, me->callable); break;
+        case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &me->interface); break;
         case TYPE_ARRAY:
-            cstr_append_type_error_msg(target, self->array);
+            cstr_append_type_error_msg(target, me->array);
             cstr_append_sv(target, c_sv("[]"));
             break;
-        case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, self->ternary); break;
+        case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, me->ternary); break;
     }
 }
 
-Type type_clone(Type self) {
-    switch (self.tag) {
+Type type_clone(Type me) {
+    switch (me.tag) {
         case TYPE_ANY:
         case TYPE_UNKOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
-        case TYPE_STRING: return self;
-        case TYPE_VALUE: return type_value(value_clone(self.value));
+        case TYPE_STRING: return me;
+        case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(
-            cstr_clone(self.identifier.name),
-            self.identifier.type,
-            self.identifier.generic_depth,
-            self.identifier.generic_index,
-            self.identifier.span
+            cstr_clone(me.identifier.name),
+            me.identifier.type,
+            me.identifier.generic_depth,
+            me.identifier.generic_index,
+            me.identifier.span
         );
-        case TYPE_GENERIC: return type_generic(c_new(Generic, generic_clone(*self.generic)));
-        case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*self.callable)));
-        case TYPE_INTERFACE: return type_interface(interface_clone(self.interface));
-        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*self.array)));
-        case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*self.ternary)));
+        case TYPE_GENERIC: return type_generic(c_new(Generic, generic_clone(*me.generic)));
+        case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
+        case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
+        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
+        case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
     }
     UNREACHABLE;
 }
 
-Type type_move(Type* self) {
-    Type ret = *self;
-    self->tag = TYPE_ANY;
+Type type_move(Type* me) {
+    Type ret = *me;
+    me->tag = TYPE_ANY;
     return ret;
 }
 
-void type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
-    switch (self->tag) {
+void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
+    switch (me->tag) {
         case TYPE_ANY:
         case TYPE_UNKOWN:
         case TYPE_NEVER:
@@ -156,48 +156,48 @@ void type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
 
         case TYPE_IDENTIFIER: {
             int generic_depth;
-            NamedType const* result = name_stack_get_type(names, cstr_sv(&self->identifier.name), &generic_depth);
+            NamedType const* result = name_stack_get_type(names, cstr_sv(&me->identifier.name), &generic_depth);
             if (result) {
-                self->identifier.type = result->type;
-                self->identifier.generic_depth = result->is_generic ? generic_depth : 0;
-                self->identifier.generic_index = result->generic_index;
+                me->identifier.type = result->type;
+                me->identifier.generic_depth = result->is_generic ? generic_depth : 0;
+                me->identifier.generic_index = result->generic_index;
             } else {
                 error_ctx_error(
                     errs,
-                    self->identifier.span,
+                    me->identifier.span,
                     2304,
                     "Cannot find name '%s'.",
-                    cstr_str(&self->identifier.name)
+                    cstr_str(&me->identifier.name)
                 );
             }
         }   break;
 
         case TYPE_GENERIC:
-            generic_resolve_names(self->generic, names, errs);
+            generic_resolve_names(me->generic, names, errs);
             break;
 
         case TYPE_CALLABLE:
-            c_foreach(i, vec_callable_type_arg, self->callable->args) {
+            c_foreach(i, vec_callable_type_arg, me->callable->args) {
                 type_resolve_names(&i.ref->type, names, errs);
             }
-            type_resolve_names(&self->callable->ret, names, errs);
+            type_resolve_names(&me->callable->ret, names, errs);
             break;
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, self->interface.members) {
+            c_foreach(i, vec_interface_member, me->interface.members) {
                 type_resolve_names(&i.ref->type, names, errs);
             }
             break;
 
         case TYPE_ARRAY:
-            type_resolve_names(self->array, names, errs);
+            type_resolve_names(me->array, names, errs);
             break;
 
         case TYPE_TERNARY:
-            type_resolve_names(&self->ternary->conditional.MaybeSub, names, errs);
-            type_resolve_names(&self->ternary->conditional.MaybeSuper, names, errs);
-            type_resolve_names(&self->ternary->TrueType, names, errs);
-            type_resolve_names(&self->ternary->FalseType, names, errs);
+            type_resolve_names(&me->ternary->conditional.MaybeSub, names, errs);
+            type_resolve_names(&me->ternary->conditional.MaybeSuper, names, errs);
+            type_resolve_names(&me->ternary->TrueType, names, errs);
+            type_resolve_names(&me->ternary->FalseType, names, errs);
             break;
 
     }
@@ -290,8 +290,8 @@ bool type_extends(Type const* sub, Type const* super) {
     UNREACHABLE;
 }
 
-void type_abstract_literals(Type* self) {
-    switch (self->tag) {
+void type_abstract_literals(Type* me) {
+    switch (me->tag) {
         case TYPE_ANY:
         case TYPE_UNKOWN:
         case TYPE_NEVER:
@@ -308,27 +308,27 @@ void type_abstract_literals(Type* self) {
             break;
 
         case TYPE_VALUE:
-            switch (self->value.tag) {
+            switch (me->value.tag) {
                 case VALUE_UNDEFINED:
                 case VALUE_NULL:
                     break;
 
                 case VALUE_BOOLEAN:
-                    *self = type_boolean;
+                    *me = type_boolean;
                     break;
 
                 case VALUE_NUMBER:
-                    *self = type_number;
+                    *me = type_number;
                     break;
 
                 case VALUE_STRING:
-                    type_drop(self);
-                    *self = type_string;
+                    type_drop(me);
+                    *me = type_string;
                     break;
 
                 case VALUE_OBJECT: {
                     Interface interface;
-                    c_foreach(i, hmap_str_object_item, self->value.object.get->items) {
+                    c_foreach(i, hmap_str_object_item, me->value.object.get->items) {
                         InterfaceMember member = interface_member_make(
                             cstr_clone(i.ref->first),
                             type_value(value_clone(i.ref->second.value))
@@ -336,8 +336,8 @@ void type_abstract_literals(Type* self) {
                         type_abstract_literals(&member.type);
                         vec_interface_member_push(&interface.members, member);
                     }
-                    type_drop(self);
-                    *self = type_interface(interface);
+                    type_drop(me);
+                    *me = type_interface(interface);
                 }   break;
 
                 case VALUE_ARRAY:
@@ -346,8 +346,8 @@ void type_abstract_literals(Type* self) {
 
                 case VALUE_JS_FUNC:
                 case VALUE_NATIVE_FUNC:
-                    type_drop(self);
-                    *self = type_any;
+                    type_drop(me);
+                    *me = type_any;
                     break;
             }
             break;

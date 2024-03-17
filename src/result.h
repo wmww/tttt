@@ -12,9 +12,9 @@ typedef struct Result {
     Value value;
 } Result;
 
-static inline void result_drop(Result* self) {
-    if (self->value.tag != VALUE_UNDEFINED) {
-        value_drop(&self->value);
+static inline void result_drop(Result* me) {
+    if (me->value.tag != VALUE_UNDEFINED) {
+        value_drop(&me->value);
     }
 }
 
