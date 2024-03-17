@@ -3,10 +3,10 @@
 #define NAMES_GET(macro, ...) macro(__VA_ARGS__)
 
 #ifdef i_key_class_names
-    #define i_key_drop c_JOIN(NAMES_GET(NAMES_PREFIX, i_key_class_names), _drop)
+    #define i_keydrop c_JOIN(NAMES_GET(NAMES_PREFIX, i_key_class_names), _drop)
 
     #ifndef i_no_clone
-        #define i_key_clone c_JOIN(NAMES_GET(NAMES_PREFIX, i_key_class_names), _clone)
+        #define i_keyclone c_JOIN(NAMES_GET(NAMES_PREFIX, i_key_class_names), _clone)
     #endif
 
     #define i_key_names i_key_class_names
@@ -25,10 +25,10 @@
 #endif
 
 #ifdef i_val_class_names
-    #define i_val_drop c_JOIN(NAMES_GET(NAMES_PREFIX, i_val_class_names), _drop)
+    #define i_valdrop c_JOIN(NAMES_GET(NAMES_PREFIX, i_val_class_names), _drop)
 
     #ifndef i_no_clone
-        #define i_val_clone c_JOIN(NAMES_GET(NAMES_PREFIX, i_val_class_names), _clone)
+        #define i_valclone c_JOIN(NAMES_GET(NAMES_PREFIX, i_val_class_names), _clone)
     #endif
 
     #define i_val_names i_val_class_names

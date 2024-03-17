@@ -301,12 +301,12 @@ bool js_object_has(JsObject* me, csview key) {
     return hmap_str_object_item_get(&my items, key) != nullptr;
 }
 
-void array_value_drop(JsArray* me) {
+void js_array_drop(JsArray* me) {
     js_object_drop(&my fallback);
     vec_value_drop(&my vec);
 }
 
-JsArray array_value_clone(JsArray me) {
+JsArray js_array_clone(JsArray me) {
     return (JsArray){
         .fallback = js_object_clone(me.fallback),
         .vec = vec_value_clone(me.vec),

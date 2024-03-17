@@ -8,8 +8,8 @@
 #include "math.h"
 
 typedef ArcObject StackFrame;
-#define stack_frame_drop arc_object_drop
-#define stack_frame_clone arc_object_clone
+#define stack_frame_drop arc_js_object_drop
+#define stack_frame_clone arc_js_object_clone
 
 static inline StackFrame stack_frame_new() { return value_object_empty().object; }
 
