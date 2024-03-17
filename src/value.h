@@ -68,6 +68,7 @@ Value value_clone(Value me);
 bool value_to_boolean(Value const* me);
 double value_to_number(Value const* me);
 void cstr_append_value_js(cstr* target, Value const* me);
+void cstr_append_value_error_msg(cstr* target, Value const* me);
 void cstr_append_value_debug(cstr* target, Value const* me, int indent);
 bool value_loose_eq(Value const* a, Value const* b);
 bool value_strict_eq(Value const* a, Value const* b);

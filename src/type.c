@@ -97,7 +97,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv("boolean")); break;
         case TYPE_NUMBER: cstr_append_sv(target, c_sv("number")); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
-        case TYPE_VALUE: cstr_append_value_js(target, &my value); break;
+        case TYPE_VALUE: cstr_append_value_error_msg(target, &my value); break;
         case TYPE_IDENTIFIER: cstr_append_s(target, my identifier.name); break;
         case TYPE_GENERIC: cstr_append_generic_error_msg(target, my generic); break;
         case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, my callable); break;

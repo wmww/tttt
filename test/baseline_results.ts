@@ -1407,7 +1407,7 @@ const baselines = {
     'asiBreak': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asiContinue': {
         errors: false,
@@ -2567,7 +2567,7 @@ const baselines = {
     'breakInIterationOrSwitchStatement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'breakInIterationOrSwitchStatement2': {
         errors: false,
@@ -9312,7 +9312,7 @@ const baselines = {
     'doubleUnderStringLiteralAssignability': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doubleUnderscoreEnumEmit': {
         errors: false,
@@ -12822,7 +12822,7 @@ const baselines = {
     'fromAsIdentifier2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'funClodule': {
         errors: false,
@@ -21082,7 +21082,7 @@ const baselines = {
     'noEmitOnError': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noErrorTruncation': {
         errors: false,
@@ -22292,7 +22292,7 @@ const baselines = {
     'optionsCompositeWithIncrementalFalse': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionsInlineSourceMapMapRoot': {
         errors: false,
@@ -22342,7 +22342,7 @@ const baselines = {
     'optionsTsBuildInfoFileWithoutIncrementalAndComposite': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'orderMattersForSignatureGroupIdentity': {
         errors: false,
@@ -27977,7 +27977,7 @@ const baselines = {
     'typeCheckExportsVariable': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeCheckObjectCreationExpressionWithUndefinedCallResolutionData': {
         errors: false,
@@ -28837,7 +28837,7 @@ const baselines = {
     'unaryOperatorsInStrictMode': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unaryPlus': {
         errors: false,
@@ -30162,7 +30162,7 @@ const baselines = {
     'variableDeclarationInStrictMode1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'variableDeclarationInnerCommentEmit': {
         errors: false,
@@ -40582,7 +40582,7 @@ const baselines = {
     'YieldExpression18_es6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression19_es6': {
         errors: false,
@@ -41867,7 +41867,7 @@ const baselines = {
     'asOperatorNames': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'assignmentGenericLookupTypeNarrowing': {
         errors: false,
@@ -47092,7 +47092,7 @@ const baselines = {
     'seeTag2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'seeTag3': {
         errors: true,
@@ -50717,7 +50717,7 @@ const baselines = {
     'parser_breakInIterationOrSwitchStatement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_breakInIterationOrSwitchStatement2': {
         errors: false,
@@ -51182,7 +51182,7 @@ const baselines = {
     'octalLiteralInStrictModeES3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode1': {
         errors: true,
@@ -51232,7 +51232,7 @@ const baselines = {
     'parserStrictMode2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode3-negative': {
         errors: false,
@@ -51242,12 +51242,12 @@ const baselines = {
     'parserStrictMode3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserStrictMode4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserStrictMode5': {
         errors: false,
@@ -51262,12 +51262,12 @@ const baselines = {
     'parserStrictMode6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserStrictMode7': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserStrictMode8': {
         errors: false,
@@ -55782,7 +55782,7 @@ const baselines = {
     'assignFromStringInterface': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'assignFromStringInterface2': {
         errors: false,
@@ -55812,7 +55812,7 @@ const baselines = {
     'validStringAssignments': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'stringLiteralType': {
         errors: false,
@@ -56312,7 +56312,7 @@ const baselines = {
     'stringLiteralTypesInVariableDeclarations01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesOverloadAssignability01': {
         errors: false,

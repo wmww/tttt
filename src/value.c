@@ -129,6 +129,20 @@ void cstr_append_value_js(cstr* target, Value const* me) {
     }
 }
 
+void cstr_append_value_error_msg(cstr* target, Value const* me) {
+    switch (my tag) {
+        case VALUE_STRING:
+            cstr_append_sv(target, c_sv("\""));
+            cstr_append_s(target, my string);
+            cstr_append_sv(target, c_sv("\""));
+            break;
+
+        default:
+            cstr_append_value_js(target, me);
+            break;
+    }
+}
+
 void cstr_append_value_debug(cstr* target, Value const* me, int indent) {
     (void)indent;
     switch (my tag) {

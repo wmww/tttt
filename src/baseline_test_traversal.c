@@ -149,7 +149,9 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_LOOP:
             statement_compile_test_info(&my loop->initialization, ctx);
             expr_compile_test_info(&my loop->condition, ctx);
-            expr_compile_test_info(&my loop->afterthought, ctx);
+            if (my loop->afterthought.tag != EXPR_LITERAL || my loop->afterthought.literal.tag != VALUE_UNDEFINED) {
+                expr_compile_test_info(&my loop->afterthought, ctx);
+            }
             statement_compile_test_info(&my loop->body, ctx);
             break;
 
