@@ -16,13 +16,13 @@
 #define i_type vec_u8
 #include "stc/vec.h"
 
-typedef struct ParseerShared {
+typedef struct ParserShared {
     const char* const file_start;
     const char* fail_cache_start;
     vec_u8 fail_cache;
-} ParseerShared;
+} ParserShared;
 
-void ParseerShared_drop(ParseerShared* self) {
+void ParserShared_drop(ParserShared* self) {
     vec_u8_drop(&self->fail_cache);
 }
 
@@ -34,7 +34,7 @@ typedef enum FailCacheFlag {
 
 typedef struct Parser Parser;
 typedef struct Parser {
-    ParseerShared* shared;
+    ParserShared* shared;
     Parser* parent; // the parser this parser was created from (and will merge it's result into on success)
     const char* pos; // current position in the code
     uint8_t fail_cache_flag;
@@ -1773,7 +1773,7 @@ static bool parse_block(Parser* parent, Block* ret) {
 }
 
 Block parse_file(const char* source, ErrorCtx* errs) {
-    ParseerShared shared = {
+    ParserShared shared = {
         .file_start = source,
         .fail_cache_start = source,
     };
@@ -1798,7 +1798,7 @@ Block parse_file(const char* source, ErrorCtx* errs) {
         ErrorCtx_parse_error(&p.errs, "unexpected '}'");
     }
 
-    ParseerShared_drop(&shared);
+    ParserShared_drop(&shared);
 
     ErrorCtx_append_consume(errs, p.errs);
     return scope;
