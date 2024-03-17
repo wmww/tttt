@@ -3,13 +3,13 @@
 #include "prelude.h"
 
 typedef struct InterfaceMember InterfaceMember;
-forward_vec(vec_InterfaceMember, InterfaceMember);
+forward_vec(VecInterfaceMember, InterfaceMember);
 
 typedef struct Interface {
-    vec_InterfaceMember members;
+    VecInterfaceMember members;
 } Interface;
 
-void Interface_drop(Interface* self);
-Interface Interface_clone(Interface self);
+void interface_drop(Interface* self);
+Interface interface_clone(Interface self);
 void cstr_append_interface_debug(cstr* target, Interface const* self, int indent);
 void cstr_append_interface_error_msg(cstr* target, Interface const* self);

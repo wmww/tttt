@@ -7,15 +7,15 @@ typedef struct InterfaceMember {
     Type type;
 } InterfaceMember;
 
-static inline InterfaceMember InterfaceMember_make(cstr name, Type type) {
+static inline InterfaceMember interface_member_make(cstr name, Type type) {
     return (InterfaceMember) {
         .name = name,
         .type = type,
     };
 }
 
-void InterfaceMember_drop(InterfaceMember* self);
-InterfaceMember InterfaceMember_clone(InterfaceMember self);
+void interface_member_drop(InterfaceMember* self);
+InterfaceMember interface_member_clone(InterfaceMember self);
 
 #define i_key_class InterfaceMember
 #define i_is_forward

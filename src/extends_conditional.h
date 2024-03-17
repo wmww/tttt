@@ -3,10 +3,10 @@
 #include "type.h"
 
 typedef struct ExtendsConditional {
-    Type maybeSub;
-    Type maybeSuper;
+    Type MaybeSub;
+    Type MaybeSuper;
 } ExtendsConditional;
 
-void ExtendsConditional_drop(ExtendsConditional* self);
-ExtendsConditional ExtendsConditional_clone(ExtendsConditional self);
-bool ExtendsConditional_eval(ExtendsConditional* self);
+void extends_conditional_drop(ExtendsConditional* self);
+ExtendsConditional extends_conditional_clone(ExtendsConditional self);
+bool extends_conditional_eval(ExtendsConditional* self);

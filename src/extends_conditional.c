@@ -1,17 +1,17 @@
 #include "extends_conditional.h"
 
-void ExtendsConditional_drop(ExtendsConditional* self) {
-    Type_drop(&self->maybeSub);
-    Type_drop(&self->maybeSuper);
+void extends_conditional_drop(ExtendsConditional* self) {
+    type_drop(&self->MaybeSub);
+    type_drop(&self->MaybeSuper);
 }
 
-ExtendsConditional ExtendsConditional_clone(ExtendsConditional self) {
+ExtendsConditional extends_conditional_clone(ExtendsConditional self) {
     return (ExtendsConditional) {
-        .maybeSub = Type_clone(self.maybeSub),
-        .maybeSuper = Type_clone(self.maybeSuper),
+        .MaybeSub = type_clone(self.MaybeSub),
+        .MaybeSuper = type_clone(self.MaybeSuper),
     };
 }
 
-bool ExtendsConditional_eval(ExtendsConditional* self) {
-    return Type_extends(&self->maybeSub, &self->maybeSuper);
+bool extends_conditional_eval(ExtendsConditional* self) {
+    return type_extends(&self->MaybeSub, &self->MaybeSuper);
 }

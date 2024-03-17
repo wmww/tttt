@@ -4,13 +4,13 @@
 
 typedef struct TernaryType {
     ExtendsConditional conditional;
-    Type trueType;
-    Type falseType;
+    Type TrueType;
+    Type FalseType;
 } TernaryType;
 
-void TernaryType_drop(TernaryType* self);
-TernaryType TernaryType_clone(TernaryType self);
+void ternary_type_drop(TernaryType* self);
+TernaryType ternary_type_clone(TernaryType self);
 void cstr_append_ternary_type_debug(cstr* target, TernaryType* self, int indent);
 void cstr_append_ternary_type_error_msg(cstr* target, TernaryType* self);
 // Does not return ownership to the returned type
-Type* TernaryType_resolve(TernaryType* self);
+Type* ternary_type_resolve(TernaryType* self);

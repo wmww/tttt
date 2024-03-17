@@ -68,12 +68,12 @@ static cstr render_lines_woven_with_file(
     bool include_header,
     const char* line_indent,
     csview source_contents,
-    vec_LineNumberedStr const* lines
+    VecLineNumberedStr const* lines
 ) {
     cstr ret = cstr_null;
     int line = 0;
     int index = 0;
-    int vec_size = vec_LineNumberedStr_size(lines);
+    int vec_size = vec_line_numbered_str_size(lines);
     const char* relative_path = relative_test_path(source_path);
     if (include_header) {
         cstr_append_fmt(&ret, "//// [%s] ////\r\n", relative_path);
@@ -93,8 +93,8 @@ static cstr render_lines_woven_with_file(
             cstr_append(&ret, "\r\n");
         }
         bool lines_added = false;
-        while (index < vec_size && vec_LineNumberedStr_at(lines, index)->line <= line) {
-            cstr_append_s(&ret, vec_LineNumberedStr_at(lines, index)->str);
+        while (index < vec_size && vec_line_numbered_str_at(lines, index)->line <= line) {
+            cstr_append_s(&ret, vec_line_numbered_str_at(lines, index)->str);
             if (include_header || index < vec_size - 1) {
                 cstr_append(&ret, "\r\n");
             }
@@ -109,7 +109,7 @@ static cstr render_lines_woven_with_file(
     return ret;
 }
 
-static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, vec_LineNumberedStr* lines) {
+static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, VecLineNumberedStr* lines) {
     c_foreach(i, vec_error, errs->errors) {
         int line = span_line_index(&i.ref->span);
         int col = span_col_index(&i.ref->span);
@@ -146,7 +146,7 @@ static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, ve
             cstr_str(&i.ref->message)
         );
 
-        vec_LineNumberedStr_push(lines, item);
+        vec_line_numbered_str_push(lines, item);
     }
 }
 
@@ -180,7 +180,7 @@ static cstr load_test_source(const char* path, bool noisy) {
     return ret;
 }
 
-void LineNumberedStr_drop(LineNumberedStr* self) {
+void line_numbered_str_drop(LineNumberedStr* self) {
     cstr_drop(&self->str);
 }
 
@@ -190,9 +190,9 @@ BaselineTestCase make_baseline_test_case(
     cstr source_path,
     ObjectValue* previous
 ) {
-    Result errors_prev  = previous ? ObjectValue_get(previous, c_sv("errors"))  : Result_ok(Value_boolean(true));
-    Result symbols_prev = previous ? ObjectValue_get(previous, c_sv("symbols")) : Result_ok(Value_boolean(true));
-    Result types_prev   = previous ? ObjectValue_get(previous, c_sv("types"))   : Result_ok(Value_boolean(true));
+    Result errors_prev  = previous ? object_value_get(previous, c_sv("errors"))  : result_ok(value_boolean(true));
+    Result symbols_prev = previous ? object_value_get(previous, c_sv("symbols")) : result_ok(value_boolean(true));
+    Result types_prev   = previous ? object_value_get(previous, c_sv("types"))   : result_ok(value_boolean(true));
 
     BaselineTestCase ret = {
         .suite = suite,
@@ -200,9 +200,9 @@ BaselineTestCase make_baseline_test_case(
         .source_path = source_path,
         .has_run = false,
         .has_prev = previous != nullptr,
-        .errors_prev = Value_to_boolean(&errors_prev.value),
-        .symbols_prev = Value_to_boolean(&symbols_prev.value),
-        .types_prev = Value_to_boolean(&types_prev.value),
+        .errors_prev = value_to_boolean(&errors_prev.value),
+        .symbols_prev = value_to_boolean(&symbols_prev.value),
+        .types_prev = value_to_boolean(&types_prev.value),
         .errors_passed = false,
         .symbols_passed = false,
         .types_passed = false,
@@ -213,28 +213,28 @@ BaselineTestCase make_baseline_test_case(
     return ret;
 }
 
-void BaselineTestCase_drop(BaselineTestCase* self) {
-    BaselineTestCase_clear_detail(self);
+void baseline_test_case_drop(BaselineTestCase* self) {
+    baseline_test_case_clear_detail(self);
     cstr_drop(&self->name);
     cstr_drop(&self->source_path);
 }
 
-void BaselineTestCase_clear_detail(BaselineTestCase* self) {
+void baseline_test_case_clear_detail(BaselineTestCase* self) {
     cstr_drop(&self->detail.source);
-    ErrorCtx_drop(&self->detail.errs);
-    vec_LineNumberedStr_drop(&self->detail.symbols);
-    vec_LineNumberedStr_drop(&self->detail.types);
+    error_ctx_drop(&self->detail.errs);
+    vec_line_numbered_str_drop(&self->detail.symbols);
+    vec_line_numbered_str_drop(&self->detail.types);
     self->detail = (typeof(self->detail)){ 0 };
 }
 
-void BaselineTestCase_add_symbol(BaselineTestCase* self, const char* name, Span const* span) {
+void baseline_test_case_add_symbol(BaselineTestCase* self, const char* name, Span const* span) {
     const char* line_start = span_line_start(span);
     unsigned line = span_line_index(span);
     const char* span_start = span_start_ptr(span);
     // The space before the symbol is included in the span. Why? I have no idea.
     while (span_start > line_start && *(span_start - 1) == ' ') span_start--;
     unsigned col = span_start - line_start + 1;
-    vec_LineNumberedStr_push(&self->detail.symbols, (LineNumberedStr){
+    vec_line_numbered_str_push(&self->detail.symbols, (LineNumberedStr){
         .line = line,
         .str = cstr_from_fmt(
             ">%s : Symbol(%s, Decl(%s, %d, %d))",
@@ -245,11 +245,11 @@ void BaselineTestCase_add_symbol(BaselineTestCase* self, const char* name, Span 
     });
 }
 
-void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, int paren_depth, Type const* type) {
+void baseline_test_case_add_type(BaselineTestCase* self, Span const* span, int paren_depth, Type const* type) {
     unsigned line = span_line_index(span);
     cstr str = cstr_from_fmt(">%.*s : ", c_SV(span_sv(span)));
     cstr_append_type_error_msg(&str, type);
-    vec_LineNumberedStr_push(&self->detail.types, (LineNumberedStr){
+    vec_line_numbered_str_push(&self->detail.types, (LineNumberedStr){
         .line = line,
         .str = str,
     });
@@ -263,12 +263,12 @@ void BaselineTestCase_add_type(BaselineTestCase* self, Span const* span, int par
             while (start < end && (*start == ' ' || *start == '\n' || *start == '\r')) start--;
             while (start < end && (*end == ' ' || *end == '\n' || *end == '\r')) end--;
             Span subspan = span_make(span->file_start, start - span->file_start, end - start);
-            BaselineTestCase_add_type(self, &subspan, paren_depth - 1, type);
+            baseline_test_case_add_type(self, &subspan, paren_depth - 1, type);
         }
     }
 }
 
-void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
+void baseline_test_case_run(BaselineTestCase* self, bool noisy) {
     const char* name = cstr_str(&self->name);
     const char* dir = self->suite->tests_dir;
     cstr errors_path = cstr_from_fmt("%s/baselines/reference/%s.errors.txt", dir, name);
@@ -313,24 +313,24 @@ void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
 
         Block ast = parse_file(cstr_str(&self->detail.source), &self->detail.errs);
 
-        NameStack names = NameStack_init();
-        Block_resolve_names(&ast, &names, &self->detail.errs);
-        NameStack_drop(&names);
+        NameStack names = name_stack_init();
+        block_resolve_names(&ast, &names, &self->detail.errs);
+        name_stack_drop(&names);
 
-        Block_typecheck_toplevel(&ast, &self->detail.errs);
-        Block_compile_test_info(&ast, self);
+        block_typecheck_toplevel(&ast, &self->detail.errs);
+        block_compile_test_info(&ast, self);
 
         if (!noisy) {
             uninhibit_nonfatals();
         }
 
-        Block_drop(&ast);
+        block_drop(&ast);
     }
 
     errors_result = cstr_null;
-    if (!ErrorCtx_empty(&self->detail.errs)) {
+    if (!error_ctx_empty(&self->detail.errs)) {
         const char* source_basename = basename_of(cstr_str(&self->source_path));
-        vec_LineNumberedStr error_lines = vec_LineNumberedStr_init();
+        VecLineNumberedStr error_lines = vec_line_numbered_str_init();
         render_errros(&self->detail.errs, source_basename, &errors_result, &error_lines);
         cstr_append_fmt(
             &errors_result,
@@ -347,7 +347,7 @@ void BaselineTestCase_run(BaselineTestCase* self, bool noisy) {
         );
         cstr_append_s(&errors_result, errors_body);
         cstr_drop(&errors_body);
-        vec_LineNumberedStr_drop(&error_lines);
+        vec_line_numbered_str_drop(&error_lines);
     }
 
     symbols_results = render_lines_woven_with_file(
@@ -404,17 +404,17 @@ cleanup:
     );
 }
 
-bool BaselineTestCase_is_pass(BaselineTestCase const* self) {
+bool baseline_test_case_is_pass(BaselineTestCase const* self) {
     return self->errors_passed && self->symbols_passed && self->types_passed;
 }
 
-bool BaselineTestCase_has_new_pass(BaselineTestCase const* self) {
+bool baseline_test_case_has_new_pass(BaselineTestCase const* self) {
     return (self->errors_passed  && (!self->has_prev || !self->errors_prev )) ||
            (self->symbols_passed && (!self->has_prev || !self->symbols_prev)) ||
            (self->types_passed   && (!self->has_prev || !self->types_prev  ));
 }
 
-bool BaselineTestCase_has_new_fail(BaselineTestCase const* self) {
+bool baseline_test_case_has_new_fail(BaselineTestCase const* self) {
     return (!self->errors_passed  && self->errors_prev ) ||
            (!self->symbols_passed && self->symbols_prev) ||
            (!self->types_passed   && self->types_prev  );

@@ -48,23 +48,23 @@ typedef struct Type {
     };
 } Type;
 
-extern const Type Type_any;
-extern const Type Type_unkown;
-extern const Type Type_never;
-extern const Type Type_void;
-extern const Type Type_boolean;
-extern const Type Type_number;
-extern const Type Type_string;
+extern const Type type_any;
+extern const Type type_unkown;
+extern const Type type_never;
+extern const Type type_void;
+extern const Type type_boolean;
+extern const Type type_number;
+extern const Type type_string;
 #undef TYPE_NEW_DECL
 
-static inline Type Type_value(Value value) {
+static inline Type type_value(Value value) {
     return (Type){
         .tag = TYPE_VALUE,
         .value = value,
     };
 }
 
-static inline Type Type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index, Span span) {
+static inline Type type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index, Span span) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier.name = identifier,
@@ -75,50 +75,50 @@ static inline Type Type_identifier(cstr identifier, Type const* type, int generi
     };
 }
 
-static inline Type Type_generic(Generic* generic) {
+static inline Type type_generic(Generic* generic) {
     return (Type){
         .tag = TYPE_GENERIC,
         .generic = generic,
     };
 }
 
-static inline Type Type_callable(CallableType* callable) {
+static inline Type type_callable(CallableType* callable) {
     return (Type){
         .tag = TYPE_CALLABLE,
         .callable = callable,
     };
 }
 
-static inline Type Type_interface(Interface interface) {
+static inline Type type_interface(Interface interface) {
     return (Type){
         .tag = TYPE_INTERFACE,
         .interface = interface,
     };
 }
 
-static inline Type Type_array(Type* member) {
+static inline Type type_array(Type* member) {
     return (Type){
         .tag = TYPE_ARRAY,
         .array = member,
     };
 }
 
-static inline Type Type_ternary(TernaryType* ternary) {
+static inline Type type_ternary(TernaryType* ternary) {
     return (Type){
         .tag = TYPE_TERNARY,
         .ternary = ternary,
     };
 }
 
-void Type_drop(Type* self);
+void type_drop(Type* self);
 void cstr_append_type_debug(cstr* target, Type const* self, int indent);
 void cstr_append_type_error_msg(cstr* target, Type const* self);
-Type Type_clone(Type self);
-Type Type_move(Type* self);
+Type type_clone(Type self);
+Type type_move(Type* self);
 
-void Type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs);
-bool Type_extends(Type const* sub, Type const* super);
-void Type_abstract_literals(Type* self); // {a: 7} -> {a: number}
+void type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs);
+bool type_extends(Type const* sub, Type const* super);
+void type_abstract_literals(Type* self); // {a: 7} -> {a: number}
 
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
 

@@ -1,11 +1,11 @@
 #include "error.h"
 #include "string_helpers.h"
 
-void Error_drop(Error* self) {
+void error_drop(Error* self) {
     cstr_drop(&self->message);
 }
 
-Error Error_clone(Error self) {
+Error error_clone(Error self) {
     self.message = cstr_clone(self.message);
     return self;
 }
@@ -43,11 +43,11 @@ void cstr_append_error_debug(cstr* target, Error const* self) {
     }
 }
 
-void ErrorCtx_drop(ErrorCtx* self) {
+void error_ctx_drop(ErrorCtx* self) {
     vec_error_drop(&self->errors);
 }
 
-void ErrorCtx_display(ErrorCtx* self) {
+void error_ctx_display(ErrorCtx* self) {
     cstr str = cstr_null;
     const int max_display = 10;
     c_foreach_n(i, vec_error, self->errors, max_display) {
@@ -64,19 +64,19 @@ void ErrorCtx_display(ErrorCtx* self) {
     cstr_drop(&str);
 }
 
-bool ErrorCtx_empty(ErrorCtx* self) {
+bool error_ctx_empty(ErrorCtx* self) {
     return vec_error_empty(&self->errors);
 }
 
-void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other) {
+void error_ctx_append_consume(ErrorCtx* self, ErrorCtx other) {
     c_foreach(i, vec_error, other.errors) {
         vec_error_push(&self->errors, *i.ref);
         *i.ref = (Error){0};
     }
-    ErrorCtx_drop(&other);
+    error_ctx_drop(&other);
 }
 
-void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message) {
+void error_ctx_parse_error(ErrorCtx* self, const char* static_message) {
     if (!self) {
         return;
     }
@@ -87,7 +87,7 @@ void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message) {
     });
 }
 
-void ErrorCtx_type_error(ErrorCtx* self, const char* static_message) {
+void error_ctx_type_error(ErrorCtx* self, const char* static_message) {
     if (!self) {
         return;
     }
@@ -98,7 +98,7 @@ void ErrorCtx_type_error(ErrorCtx* self, const char* static_message) {
     });
 }
 
-void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message) {
+void error_ctx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message) {
     if (!self) {
         cstr_drop(&message);
         return;
@@ -110,7 +110,7 @@ void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message)
     });
 }
 
-void ErrorCtx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt, ...) {
+void error_ctx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt, ...) {
     if (!self) {
         return;
     }
@@ -119,5 +119,5 @@ void ErrorCtx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt
     va_start(args, fmt);
     cstr_vfmt(&message, 0, fmt, args);
     va_end(args);
-    ErrorCtx_error_s(self, span, ts_code, message);
+    error_ctx_error_s(self, span, ts_code, message);
 }

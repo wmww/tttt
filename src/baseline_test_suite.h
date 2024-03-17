@@ -16,20 +16,20 @@ typedef struct BaselineTestSuite {
     const char* tests_dir;
     bool has_filter;
     cregex filter;
-    arc_Object prev_results;
-    vec_BaselineTestCase cases;
+    ArcObject prev_results;
+    VecBaselineTestCase cases;
 } BaselineTestSuite;
 
-void BaselineTestSuite_drop(BaselineTestSuite* self);
-void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy);
-void BaselineTestSuite_save_results(BaselineTestSuite* self, const char* results_path);
+void baseline_test_suite_drop(BaselineTestSuite* self);
+void baseline_test_suite_run(BaselineTestSuite* self, bool noisy);
+void baseline_test_suite_save_results(BaselineTestSuite* self, const char* results_path);
 
 #define i_key_class BaselineTestSuite
 #define i_no_clone
 #define i_no_hash
 #include "stc/box.h"
 
-box_BaselineTestSuite load_baseline_test_suite(
+BoxBaselineTestSuite load_baseline_test_suite(
     const char* tests_dir,
     const char* filter_re,
     const char* results_path

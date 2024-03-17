@@ -1,16 +1,16 @@
 #include "string_helpers.h"
 
-LinesSv_iter LinesSv_begin(csview* sv) {
-    LinesSv_iter ret = {
+lines_sv_iter lines_sv_begin(csview* sv) {
+    lines_sv_iter ret = {
         .ref = true,
         .line = c_sv(""),
         .remaining = *sv,
     };
-    LinesSv_next(&ret);
+    lines_sv_next(&ret);
     return ret;
 }
 
-void LinesSv_next(LinesSv_iter* self) {
+void lines_sv_next(lines_sv_iter* self) {
     const char* start = self->remaining.buf;
     const char* end = start + self->remaining.size;
     if (start >= end) {
@@ -26,7 +26,7 @@ void LinesSv_next(LinesSv_iter* self) {
     self->line = csview_from_n(start, pos - start);
 }
 
-LinesSv_iter LinesCstr_begin(cstr* str) {
+lines_sv_iter lines_cstr_begin(cstr* str) {
     csview sv = cstr_sv(str);
-    return LinesSv_begin(&sv);
+    return lines_sv_begin(&sv);
 }

@@ -23,7 +23,7 @@ typedef struct NameInitData {
     Expr value;
 } NameInitData;
 
-void NameInitData_drop(NameInitData* self);
+void name_init_data_drop(NameInitData* self);
 void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent);
 
 #define i_key_class NameInitData
@@ -38,12 +38,12 @@ typedef struct VarInitStatement {
         VAR_INIT_LET,
         VAR_INIT_CONST,
     } keyword;
-    vec_NameInitData vars;
+    VecNameInitData vars;
 } VarInitStatement;
 
-void VarInitStatement_drop(VarInitStatement* self);
+void var_init_statement_drop(VarInitStatement* self);
 void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, int indent);
-void VarInitStatement_typecheck(VarInitStatement* self, ErrorCtx* errs);
+void var_init_statement_typecheck(VarInitStatement* self, ErrorCtx* errs);
 
 // Function statements
 
@@ -59,15 +59,15 @@ typedef struct InterfaceStatement {
     Type type;
 } InterfaceStatement;
 
-void InterfaceStatement_drop(InterfaceStatement* self);
+void interface_statement_drop(InterfaceStatement* self);
 void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* self, int indent);
 
 // If statements
 
 typedef struct IfStatement {
-    vec_Expr conditions;
+    VecExpr conditions;
     // The length of statements should always be equal to conditions, or one greater (in the case of a trailing else)
-    vec_Statement statements;
+    VecStatement statements;
 } IfStatement;
 
 // Statements
@@ -97,13 +97,13 @@ typedef struct Statement {
     };
 } Statement;
 
-#define Statement_noop ((Statement){ .tag = STATEMENT_NOOP })
+#define statement_noop ((Statement){ .tag = STATEMENT_NOOP })
 
-void Statement_drop(Statement* self);
+void statement_drop(Statement* self);
 void cstr_append_statement_debug(cstr* target, Statement* self, int indent);
-void Statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs);
-void Statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs);
-void Statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs);
+void statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs);
+void statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs);
+void statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs);
 
 #define i_key_class Statement
 #define i_is_forward
@@ -122,12 +122,12 @@ typedef struct LoopStatement {
 // Statement context
 
 typedef struct StatementCtx {
-    vec_Type returned_types;
+    VecType returned_types;
     Type const* specified_return;
     bool return_allowed;
     bool break_allowd;
 } StatementCtx;
 
-StatementCtx StatementCtx_toplevel();
-StatementCtx StatementCtx_function(Type const* specified_return);
-void StatementCtx_drop(StatementCtx* self);
+StatementCtx statement_ctx_toplevel();
+StatementCtx statement_ctx_function(Type const* specified_return);
+void statement_ctx_drop(StatementCtx* self);

@@ -1,6 +1,6 @@
 #pragma once
 
 typedef struct Block Block;
-typedef struct arc_Object arc_Object;
+typedef struct ArcObject ArcObject;
 
-void eval_program(Block const* scope, arc_Object root);
+void eval_program(Block const* scope, ArcObject root);

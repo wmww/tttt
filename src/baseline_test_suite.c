@@ -28,7 +28,7 @@ static bool test_passes_filter(BaselineTestSuite* self, const char* name) {
 static void show_collected_test_counts(BaselineTestSuite* self) {
     printf(
         "\rCollected " CLR_GOOD "%ld" CLR0 " tests      ",
-        vec_BaselineTestCase_size(&self->cases)
+        vec_baseline_test_case_size(&self->cases)
     );
 }
 
@@ -41,17 +41,17 @@ static void load_path(void* data, const char* dir_path, const char* name) {
         cstr_drop(&full_path);
     } else if (path_is_reg_file(cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
         cstr name = test_name_from_path(cstr_str(&full_path));
-        Result prev_result = ObjectValue_get(self->prev_results.get, cstr_sv(&name));
+        Result prev_result = object_value_get(self->prev_results.get, cstr_sv(&name));
         ObjectValue* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
 
-        vec_BaselineTestCase_push(
+        vec_baseline_test_case_push(
             &self->cases,
             make_baseline_test_case(self, name, full_path, prev_obj)
         );
 
-        Result_drop(&prev_result);
+        result_drop(&prev_result);
 
-        if (vec_BaselineTestCase_size(&self->cases) % 100 == 0) {
+        if (vec_baseline_test_case_size(&self->cases) % 100 == 0) {
             show_collected_test_counts(self);
         }
     } else {
@@ -69,10 +69,10 @@ static void load_subdir(BaselineTestSuite* self, const char* subdir) {
     cstr_drop(&full_dir);
 }
 
-void BaselineTestSuite_drop(BaselineTestSuite* self) {
-    arc_Object_drop(&self->prev_results);
+void baseline_test_suite_drop(BaselineTestSuite* self) {
+    arc_object_drop(&self->prev_results);
     cregex_drop(&self->filter);
-    vec_BaselineTestCase_drop(&self->cases);
+    vec_baseline_test_case_drop(&self->cases);
 }
 
 static const char* color_for_state(bool is_pass, bool highlight) {
@@ -97,25 +97,25 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestCase const* tes
         cstr_append_fmt(
             target,
             "%s  did not run  " CLR0,
-            color_for_state(false, BaselineTestCase_has_new_fail(test))
+            color_for_state(false, baseline_test_case_has_new_fail(test))
         );
     }
-    bool test_has_change = BaselineTestCase_has_new_pass(test) || BaselineTestCase_has_new_fail(test);
+    bool test_has_change = baseline_test_case_has_new_pass(test) || baseline_test_case_has_new_fail(test);
     const char* name_color = test_has_change ?
-        color_for_state(!BaselineTestCase_has_new_fail(test), highlight_name) :
+        color_for_state(!baseline_test_case_has_new_fail(test), highlight_name) :
         "";
     cstr_append_fmt(target, "%s %s " CLR0, name_color, cstr_str(&test->name));
 }
 
-void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy) {
-    intptr_t test_count = vec_BaselineTestCase_size(&self->cases);
+void baseline_test_suite_run(BaselineTestSuite* self, bool noisy) {
+    intptr_t test_count = vec_baseline_test_case_size(&self->cases);
     int passed = 0, failed = 0;
     cstr display = cstr_null;
-    vec_BaselineTestCaseCPtr newly_failed = vec_BaselineTestCaseCPtr_init();
-    vec_BaselineTestCaseCPtr newly_passed = vec_BaselineTestCaseCPtr_init();
+    VecBaselineTestCaseCPtr newly_failed = vec_baseline_test_case_c_ptr_init();
+    VecBaselineTestCaseCPtr newly_passed = vec_baseline_test_case_c_ptr_init();
 
     printf(CLR_STATUS "Running tests...\n\n" CLR0);
-    c_foreach(i, vec_BaselineTestCase, self->cases) {
+    c_foreach(i, VecBaselineTestCase, self->cases) {
         intptr_t index = i.ref - self->cases.data;
         if (!test_passes_filter(self, cstr_str(&i.ref->name))) {
             continue;
@@ -126,21 +126,21 @@ void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy) {
         printf("        \x1b[1;44m%5s " CLR0 "  %s", cstr_str(&display), cstr_str(&i.ref->name));
         fflush(stdout);
 
-        BaselineTestCase_run(i.ref, noisy);
-        BaselineTestCase_clear_detail(i.ref);
+        baseline_test_case_run(i.ref, noisy);
+        baseline_test_case_clear_detail(i.ref);
 
-        if (BaselineTestCase_is_pass(i.ref)) {
+        if (baseline_test_case_is_pass(i.ref)) {
             passed++;
         } else {
             failed++;
         }
 
-        if (BaselineTestCase_has_new_pass(i.ref)) {
-            vec_BaselineTestCaseCPtr_push(&newly_passed, i.ref);
+        if (baseline_test_case_has_new_pass(i.ref)) {
+            vec_baseline_test_case_c_ptr_push(&newly_passed, i.ref);
         }
 
-        if (BaselineTestCase_has_new_fail(i.ref)) {
-            vec_BaselineTestCaseCPtr_push(&newly_failed, i.ref);
+        if (baseline_test_case_has_new_fail(i.ref)) {
+            vec_baseline_test_case_c_ptr_push(&newly_failed, i.ref);
         }
 
         cstr_clear(&display);
@@ -150,13 +150,13 @@ void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy) {
 
     printf("\n  " CLR_GOOD "%d" CLR0 " passed, " CLR_ERR "%d" CLR0 " failed\n\n", passed, failed);
 
-    intptr_t newly_passed_size = vec_BaselineTestCaseCPtr_size(&newly_passed);
+    intptr_t newly_passed_size = vec_baseline_test_case_c_ptr_size(&newly_passed);
     if (newly_passed_size) {
         printf(
             CLR_GOOD "%ld" CLR0 " test%s have newly passing components:\n",
             newly_passed_size, newly_passed_size == 1 ? "" : "s");
 
-        c_foreach(i, vec_BaselineTestCaseCPtr, newly_passed) {
+        c_foreach(i, VecBaselineTestCaseCPtr, newly_passed) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i.ref, false);
             printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i.ref)->source_path));
@@ -164,13 +164,13 @@ void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy) {
         printf("\n");
     }
 
-    intptr_t newly_failed_size = vec_BaselineTestCaseCPtr_size(&newly_failed);
+    intptr_t newly_failed_size = vec_baseline_test_case_c_ptr_size(&newly_failed);
     if (newly_failed_size) {
         printf(
             CLR_ERR "%ld" CLR0 " test%s have newly failing components:\n",
             newly_failed_size, newly_failed_size == 1 ? "" : "s");
 
-        c_foreach(i, vec_BaselineTestCaseCPtr, newly_failed) {
+        c_foreach(i, VecBaselineTestCaseCPtr, newly_failed) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i.ref, false);
             printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i.ref)->source_path));
@@ -178,11 +178,11 @@ void BaselineTestSuite_run(BaselineTestSuite* self, bool noisy) {
         printf("\n");
     }
 
-    c_drop(vec_BaselineTestCaseCPtr, &newly_failed, &newly_passed);
+    c_drop(VecBaselineTestCaseCPtr, &newly_failed, &newly_passed);
     cstr_drop(&display);
 }
 
-void BaselineTestSuite_save_results(BaselineTestSuite* self, const char* results_path) {
+void baseline_test_suite_save_results(BaselineTestSuite* self, const char* results_path) {
     printf(CLR_STATUS "Saving results...\n" CLR0);
     FILE *f = fopen(results_path, "w");
     if (!f) {
@@ -190,7 +190,7 @@ void BaselineTestSuite_save_results(BaselineTestSuite* self, const char* results
     }
     fprintf(f, "const baselines = {\n");
 
-    c_foreach(i, vec_BaselineTestCase, self->cases) {
+    c_foreach(i, VecBaselineTestCase, self->cases) {
         ASSERT(!strchr(cstr_str(&i.ref->name), '\\') && !strchr(cstr_str(&i.ref->name), '\''));
         fprintf(f, "    '%s': {\n", cstr_str(&i.ref->name));
         fprintf(f, "        errors: %s,\n", i.ref->errors_passed ? "true" : "false");
@@ -204,56 +204,56 @@ void BaselineTestSuite_save_results(BaselineTestSuite* self, const char* results
     printf(CLR_GOOD "Saving done\n" CLR0);
 }
 
-arc_Object load_saved_results(const char* results_path) {
+ArcObject load_saved_results(const char* results_path) {
     cstr results_source;
 
     if (!read_entire_file(results_path, true, &results_source)) {
-        return arc_Object_init();
+        return arc_object_init();
     }
 
-    ErrorCtx errs = ErrorCtx_init();
+    ErrorCtx errs = error_ctx_init();
     Block ast = parse_file(cstr_str(&results_source), &errs);
-    Block_resolve_names_toplevel(&ast, &errs);
-    Block_typecheck_toplevel(&ast, &errs);
-    if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs);
-        ErrorCtx_drop(&errs);
-        Block_drop(&ast);
+    block_resolve_names_toplevel(&ast, &errs);
+    block_typecheck_toplevel(&ast, &errs);
+    if (!error_ctx_empty(&errs)) {
+        error_ctx_display(&errs);
+        error_ctx_drop(&errs);
+        block_drop(&ast);
         cstr_drop(&results_source);
-        return arc_Object_init();
+        return arc_object_init();
     }
 
-    arc_Object root = arc_Object_make((ObjectValue){0});
-    eval_program(&ast, arc_Object_clone(root));
+    ArcObject root = arc_object_make((ObjectValue){0});
+    eval_program(&ast, arc_object_clone(root));
 
-    Result baselines_result = ObjectValue_get(root.get, c_sv("baselines"));
-    arc_Object ret = baselines_result.value.tag == VALUE_OBJECT ?
-        arc_Object_clone(baselines_result.value.object) :
-        arc_Object_make((ObjectValue){0});
+    Result baselines_result = object_value_get(root.get, c_sv("baselines"));
+    ArcObject ret = baselines_result.value.tag == VALUE_OBJECT ?
+        arc_object_clone(baselines_result.value.object) :
+        arc_object_make((ObjectValue){0});
 
-    Result_drop(&baselines_result);
-    arc_Object_drop(&root);
-    Block_drop(&ast);
-    ErrorCtx_drop(&errs);
+    result_drop(&baselines_result);
+    arc_object_drop(&root);
+    block_drop(&ast);
+    error_ctx_drop(&errs);
     cstr_drop(&results_source);
 
     return ret;
 }
 
-box_BaselineTestSuite load_baseline_test_suite(
+BoxBaselineTestSuite load_baseline_test_suite(
     const char* tests_dir,
     const char* filter_re,
     const char* results_path
 ) {
     printf(CLR_STATUS "Loading saved results...\n" CLR0);
-    arc_Object prev_results = load_saved_results(results_path);
+    ArcObject prev_results = load_saved_results(results_path);
 
-    box_BaselineTestSuite ret = box_BaselineTestSuite_make((BaselineTestSuite){
+    BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
         .has_filter = filter_re != nullptr,
         .filter = filter_re ? cregex_from(filter_re, CREG_ICASE | CREG_FULLMATCH) : cregex_init(),
         .prev_results = prev_results,
-        .cases = vec_BaselineTestCase_init(),
+        .cases = vec_baseline_test_case_init(),
     });
 
     printf(CLR_STATUS "Collecting tests...\n" CLR0);
@@ -262,6 +262,6 @@ box_BaselineTestSuite load_baseline_test_suite(
     show_collected_test_counts(ret.get);
     printf("\n");
     printf(CLR_STATUS "Sorting tests...\n" CLR0);
-    vec_BaselineTestCase_quicksort(&ret.get->cases);
+    vec_baseline_test_case_quicksort(&ret.get->cases);
     return ret;
 }

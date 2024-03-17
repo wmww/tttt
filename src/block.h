@@ -9,16 +9,16 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
 typedef struct NameStack NameStack;
 
-forward_vec(vec_Statement, Statement);
+forward_vec(VecStatement, Statement);
 
 typedef struct Block {
-    vec_Statement statements;
+    VecStatement statements;
 } Block;
 
-void Block_drop(Block* self);
+void block_drop(Block* self);
 void cstr_append_block_debug(cstr* target, Block* self, int indent);
-void Block_resolve_names_without_stack_frame(Block* self, NameStack* names, ErrorCtx* errs);
-void Block_resolve_names(Block* self, NameStack* names, ErrorCtx* errs);
-void Block_typecheck(Block* self, StatementCtx* ctx, ErrorCtx* errs);
-void Block_resolve_names_toplevel(Block* self, ErrorCtx* errs);
-void Block_typecheck_toplevel(Block* self, ErrorCtx* errs);
+void block_resolve_names_without_stack_frame(Block* self, NameStack* names, ErrorCtx* errs);
+void block_resolve_names(Block* self, NameStack* names, ErrorCtx* errs);
+void block_typecheck(Block* self, StatementCtx* ctx, ErrorCtx* errs);
+void block_resolve_names_toplevel(Block* self, ErrorCtx* errs);
+void block_typecheck_toplevel(Block* self, ErrorCtx* errs);

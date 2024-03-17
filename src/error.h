@@ -21,14 +21,14 @@ typedef struct ErrorCtx {
     VecError errors;
 } ErrorCtx;
 
-static inline ErrorCtx ErrorCtx_init() { return (ErrorCtx){0}; }
-void ErrorCtx_drop(ErrorCtx* self);
-void ErrorCtx_display(ErrorCtx* self);
-bool ErrorCtx_empty(ErrorCtx* self);
-void ErrorCtx_append_consume(ErrorCtx* self, ErrorCtx other);
-void ErrorCtx_parse_error(ErrorCtx* self, const char* static_message);
-void ErrorCtx_type_error(ErrorCtx* self, const char* static_message);
-void ErrorCtx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message);
-void ErrorCtx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
+void error_ctx_drop(ErrorCtx* self);
+void error_ctx_display(ErrorCtx* self);
+bool error_ctx_empty(ErrorCtx* self);
+void error_ctx_append_consume(ErrorCtx* self, ErrorCtx other);
+void error_ctx_parse_error(ErrorCtx* self, const char* static_message);
+void error_ctx_type_error(ErrorCtx* self, const char* static_message);
+void error_ctx_error_s(ErrorCtx* self, Span span, unsigned ts_code, cstr message);
+void error_ctx_error(ErrorCtx* self, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 
 #define TS_CODE_NONE 0

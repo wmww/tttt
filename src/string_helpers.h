@@ -5,18 +5,18 @@
 // cstr_vfmt seems to be a private API, but including the declaration works. Linking may break on STC update.
 intptr_t cstr_vfmt(cstr* self, intptr_t start, const char* fmt, va_list args);
 
-typedef struct LinesSv_iter {
+typedef struct lines_sv_iter {
     bool ref;
     csview line;
     csview remaining;
-} LinesSv_iter;
+} lines_sv_iter;
 
-LinesSv_iter LinesSv_begin(csview* sv);
-void LinesSv_next(LinesSv_iter* self);
+lines_sv_iter lines_sv_begin(csview* sv);
+void lines_sv_next(lines_sv_iter* self);
 
-#define LinesCstr_iter LinesSv_iter
-#define LinesCstr_next LinesSv_next
-LinesSv_iter LinesCstr_begin(cstr* str);
+#define lines_cstr_iter lines_sv_iter
+#define lines_cstr_next lines_sv_next
+lines_sv_iter lines_cstr_begin(cstr* str);
 
 static inline bool streq(const char* a, const char* b) {
     return (a == b || (a && b && strcmp(a, b) == 0));

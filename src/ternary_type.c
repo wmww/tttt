@@ -1,47 +1,47 @@
 #include "ternary_type.h"
 
-void TernaryType_drop(TernaryType* self) {
-    ExtendsConditional_drop(&self->conditional);
-    Type_drop(&self->trueType);
-    Type_drop(&self->falseType);
+void ternary_type_drop(TernaryType* self) {
+    extends_conditional_drop(&self->conditional);
+    type_drop(&self->TrueType);
+    type_drop(&self->FalseType);
 }
 
-TernaryType TernaryType_clone(TernaryType self) {
+TernaryType ternary_type_clone(TernaryType self) {
     return (TernaryType) {
-        .conditional = ExtendsConditional_clone(self.conditional),
-        .trueType = Type_clone(self.trueType),
-        .falseType = Type_clone(self.falseType),
+        .conditional = extends_conditional_clone(self.conditional),
+        .TrueType = type_clone(self.TrueType),
+        .FalseType = type_clone(self.FalseType),
     };
 }
 
 void cstr_append_ternary_type_debug(cstr* target, TernaryType* self, int indent) {
-    cstr_append_type_debug(target, &self->conditional.maybeSub, indent);
+    cstr_append_type_debug(target, &self->conditional.MaybeSub, indent);
     cstr_append_sv(target, c_sv(" extends "));
-    cstr_append_type_debug(target, &self->conditional.maybeSuper, indent);
+    cstr_append_type_debug(target, &self->conditional.MaybeSuper, indent);
     cstr_append_sv(target, c_sv("\n"));
     APPEND_INDENT(target, indent + 1);
     cstr_append_sv(target, c_sv("? "));
-    cstr_append_type_debug(target, &self->trueType, indent + 1);
+    cstr_append_type_debug(target, &self->TrueType, indent + 1);
     cstr_append_sv(target, c_sv("\n"));
     APPEND_INDENT(target, indent + 1);
     cstr_append_sv(target, c_sv(": "));
-    cstr_append_type_debug(target, &self->falseType, indent + 1);
+    cstr_append_type_debug(target, &self->FalseType, indent + 1);
 }
 
 void cstr_append_ternary_type_error_msg(cstr* target, TernaryType* self) {
-    cstr_append_type_error_msg(target, &self->conditional.maybeSub);
+    cstr_append_type_error_msg(target, &self->conditional.MaybeSub);
     cstr_append_sv(target, c_sv(" extends "));
-    cstr_append_type_error_msg(target, &self->conditional.maybeSuper);
+    cstr_append_type_error_msg(target, &self->conditional.MaybeSuper);
     cstr_append_sv(target, c_sv(" ? "));
-    cstr_append_type_error_msg(target, &self->trueType);
+    cstr_append_type_error_msg(target, &self->TrueType);
     cstr_append_sv(target, c_sv(" : "));
-    cstr_append_type_error_msg(target, &self->falseType);
+    cstr_append_type_error_msg(target, &self->FalseType);
 }
 
-Type* TernaryType_resolve(TernaryType* self) {
-    if (ExtendsConditional_eval(&self->conditional)) {
-        return &self->trueType;
+Type* ternary_type_resolve(TernaryType* self) {
+    if (extends_conditional_eval(&self->conditional)) {
+        return &self->TrueType;
     } else {
-        return &self->falseType;
+        return &self->FalseType;
     }
 }

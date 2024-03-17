@@ -85,14 +85,14 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    box_BaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter, results_path);
-    BaselineTestSuite_run(suite.get, show_diffs);
+    BoxBaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter, results_path);
+    baseline_test_suite_run(suite.get, show_diffs);
 
     if (save_results) {
-        BaselineTestSuite_save_results(suite.get, results_path);
+        baseline_test_suite_save_results(suite.get, results_path);
     }
 
-    box_BaselineTestSuite_drop(&suite);
+    box_baseline_test_suite_drop(&suite);
 
     return 0;
 }

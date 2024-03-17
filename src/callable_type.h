@@ -8,19 +8,19 @@ typedef struct CallableTypeArg {
     Type type;
 } CallableTypeArg;
 
-void CallableTypeArg_drop(CallableTypeArg* self);
-CallableTypeArg CallableTypeArg_clone(CallableTypeArg self);
+void callable_type_arg_drop(CallableTypeArg* self);
+CallableTypeArg callable_type_arg_clone(CallableTypeArg self);
 
 #define i_key_class CallableTypeArg
 #include "stc/vec.h"
 
 typedef struct CallableType {
-    vec_CallableTypeArg args;
+    VecCallableTypeArg args;
     bool ret_explicit;
     Type ret;
 } CallableType;
 
-void CallableType_drop(CallableType* self);
-CallableType CallableType_clone(CallableType self);
+void callable_type_drop(CallableType* self);
+CallableType callable_type_clone(CallableType self);
 void cstr_append_callable_type_debug(cstr* target, CallableType* self, int indent);
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* self);

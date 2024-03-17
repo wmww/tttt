@@ -80,10 +80,10 @@ static inline int binary_op_get_precedence(BinaryOp op) {
     UNREACHABLE;
 }
 
-void Expr_drop(Expr* self) {
+void expr_drop(Expr* self) {
     switch (self->tag) {
         case EXPR_LITERAL:
-            Value_drop(&self->literal);
+            value_drop(&self->literal);
             break;
 
         case EXPR_IDENTIFIER:
@@ -91,45 +91,45 @@ void Expr_drop(Expr* self) {
             break;
 
         case EXPR_BINARY_OP:
-            Expr_drop(&self->binary_op->left);
-            Expr_drop(&self->binary_op->right);
+            expr_drop(&self->binary_op->left);
+            expr_drop(&self->binary_op->right);
             free(self->binary_op);
             break;
 
         case EXPR_UNARY_OP:
-            Expr_drop(&self->unary_op->expr);
+            expr_drop(&self->unary_op->expr);
             free(self->unary_op);
             break;
 
         case EXPR_DOT_PROP:
-            Expr_drop(&self->dot_prop->expr);
+            expr_drop(&self->dot_prop->expr);
             cstr_drop(&self->dot_prop->prop);
             free(self->dot_prop);
             break;
 
         case EXPR_AS_TYPE:
-            Expr_drop(&self->as_type->expr);
-            Type_drop(&self->as_type->type);
+            expr_drop(&self->as_type->expr);
+            type_drop(&self->as_type->type);
             free(self->as_type);
             break;
 
         case EXPR_CALL:
-            Expr_drop(&self->call->callable);
-            vec_Expr_drop(&self->call->args);
+            expr_drop(&self->call->callable);
+            vec_expr_drop(&self->call->args);
             free(self->call);
             break;
 
         case EXPR_FUNCTION:
-            FunctionImpl_drop(self->function);
+            function_impl_drop(self->function);
             free(self->function);
             break;
 
         case EXPR_OBJECT:
-            vec_ObjectExprItem_drop(&self->object);
+            vec_object_expr_item_drop(&self->object);
             break;
 
         case EXPR_ARRAY:
-            vec_Expr_drop(&self->array);
+            vec_expr_drop(&self->array);
             break;
     }
 }
@@ -150,7 +150,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
         case EXPR_BINARY_OP: {
             cstr_append_expr_debug(target, &self->binary_op->left, indent);
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_sv(target, czview_sv(BinaryOp_get_zv(self->binary_op->op)));
+            cstr_append_sv(target, czview_sv(binary_op_get_zv(self->binary_op->op)));
             cstr_append_sv(target, c_sv(" "));
             cstr_append_expr_debug(target, &self->binary_op->right, indent);
         }   break;
@@ -158,11 +158,11 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
         case EXPR_UNARY_OP: {
             UnaryOp op = self->unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
-                cstr_append_sv(target, czview_sv(UnaryOp_get_zv(op)));
+                cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
             }
             cstr_append_expr_debug(target, &self->unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
-                cstr_append_sv(target, czview_sv(UnaryOp_get_zv(op)));
+                cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
             }
         }   break;
 
@@ -182,11 +182,11 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_CALL: {
             cstr_append_expr_debug(target, &self->call->callable, indent);
-            if (vec_Expr_empty(&self->call->args)) {
+            if (vec_expr_empty(&self->call->args)) {
                 cstr_append_sv(target, c_sv("()"));
             } else {
                 cstr_append_sv(target, c_sv("("));
-                c_foreach(i, vec_Expr, self->call->args) {
+                c_foreach(i, VecExpr, self->call->args) {
                     cstr_append_expr_debug(target, i.ref, indent + 1);
                     if (i.ref < i.end - 1) {
                         cstr_append_sv(target, c_sv(", "));
@@ -202,7 +202,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_OBJECT: {
             cstr_append_sv(target, c_sv("{\n"));
-            c_foreach(i, vec_ObjectExprItem, self->object) {
+            c_foreach(i, VecObjectExprItem, self->object) {
                 APPEND_INDENT(target, indent + 1);
                 cstr_append_s(target, i.ref->name);
                 cstr_append_sv(target, c_sv(": "));
@@ -215,7 +215,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_ARRAY: {
             cstr_append_sv(target, c_sv("[\n"));
-            c_foreach(i, vec_Expr, self->array) {
+            c_foreach(i, VecExpr, self->array) {
                 APPEND_INDENT(target, indent + 1);
                 cstr_append_expr_debug(target, i.ref, indent + 1);
                 cstr_append_sv(target, c_sv(",\n"));
@@ -229,65 +229,65 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
     }
 }
 
-void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
+void expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
     switch (self->tag) {
         case EXPR_LITERAL:
             break;
 
         case EXPR_IDENTIFIER: {
-            Type const* var_type = NameStack_get_variable(names, cstr_sv(&self->identifier.name));
+            Type const* var_type = name_stack_get_variable(names, cstr_sv(&self->identifier.name));
             if (var_type) {
                 self->identifier.type = var_type;
             } else {
-                ErrorCtx_error(errs, self->span, 2304, "Cannot find name '%s'.", cstr_str(&self->identifier.name));
+                error_ctx_error(errs, self->span, 2304, "Cannot find name '%s'.", cstr_str(&self->identifier.name));
             }
         }   break;
 
         case EXPR_BINARY_OP:
-            Expr_resolve_names(&self->binary_op->left, names, errs);
-            Expr_resolve_names(&self->binary_op->right, names, errs);
+            expr_resolve_names(&self->binary_op->left, names, errs);
+            expr_resolve_names(&self->binary_op->right, names, errs);
             break;
 
         case EXPR_UNARY_OP:
-            Expr_resolve_names(&self->unary_op->expr, names, errs);
+            expr_resolve_names(&self->unary_op->expr, names, errs);
             break;
 
         case EXPR_DOT_PROP:
-            Expr_resolve_names(&self->dot_prop->expr, names, errs);
+            expr_resolve_names(&self->dot_prop->expr, names, errs);
             // TODO: resolve name of prop
             break;
 
         case EXPR_AS_TYPE:
-            Expr_resolve_names(&self->as_type->expr, names, errs);
-            Type_resolve_names(&self->as_type->type, names, errs);
+            expr_resolve_names(&self->as_type->expr, names, errs);
+            type_resolve_names(&self->as_type->type, names, errs);
             break;
 
         case EXPR_CALL:
-            Expr_resolve_names(&self->call->callable, names, errs);
-            c_foreach(i, vec_Expr, self->call->args) {
-                Expr_resolve_names(i.ref, names, errs);
+            expr_resolve_names(&self->call->callable, names, errs);
+            c_foreach(i, VecExpr, self->call->args) {
+                expr_resolve_names(i.ref, names, errs);
             }
             break;
 
         case EXPR_FUNCTION:
-            FunctionImpl_resolve_names(self->function, names, errs);
+            function_impl_resolve_names(self->function, names, errs);
             break;
 
         case EXPR_OBJECT:
-            c_foreach(i, vec_ObjectExprItem, self->object) {
-                Expr_resolve_names(&i.ref->value, names, errs);
+            c_foreach(i, VecObjectExprItem, self->object) {
+                expr_resolve_names(&i.ref->value, names, errs);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, vec_Expr, self->array) {
-                Expr_resolve_names(i.ref, names, errs);
+            c_foreach(i, VecExpr, self->array) {
+                expr_resolve_names(i.ref, names, errs);
             }
             break;
     }
 }
 
-static BinaryOp BinaryOp_without_assignment(BinaryOp op) {
+static BinaryOp binary_op_without_assignment(BinaryOp op) {
     switch (op) {
         case BINARY_OP_PLUS_EQUAL: return BINARY_OP_PLUS; break;
         case BINARY_OP_STAR_STAR_EQUAL: return BINARY_OP_STAR_STAR; break;
@@ -305,27 +305,27 @@ static BinaryOp BinaryOp_without_assignment(BinaryOp op) {
         case BINARY_OP_OR_OR_EQUAL: return BINARY_OP_OR_OR; break;
         case BINARY_OP_EH_EH_EQUAL: return BINARY_OP_EH_EH; break;
         default: PANIC(
-            "BinaryOp_without_assignment() called with non-assignment op %s (%d)",
-            BinaryOp_get_zv(op).str,
+            "binary_op_without_assignment() called with non-assignment op %s (%d)",
+            binary_op_get_zv(op).str,
             op
         );
     }
 }
 
-static Type BinaryOp_get_type_and_typecheck(
+static Type binary_op_get_type_and_typecheck(
     Type left,
     BinaryOp op,
     Type right,
     Expr* expr,
     ErrorCtx* errs
 ) {
-    Type ret = Type_any;
+    Type ret = type_any;
     switch (op) {
         case BINARY_OP_PLUS:
-            if (Type_extends(&left, &Type_string) || Type_extends(&right, &Type_string)) {
-                ret = Type_string;
-            } else if (Type_extends(&left, &Type_number) && Type_extends(&right, &Type_number)) {
-                ret = Type_number;
+            if (type_extends(&left, &type_string) || type_extends(&right, &type_string)) {
+                ret = type_string;
+            } else if (type_extends(&left, &type_number) && type_extends(&right, &type_number)) {
+                ret = type_number;
             } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
                 if (errs) {
@@ -334,9 +334,9 @@ static Type BinaryOp_get_type_and_typecheck(
                     cstr_append_sv(&message, c_sv("' and '"));
                     cstr_append_type_error_msg(&message, &right);
                     cstr_append_sv(&message, c_sv("'."));
-                    ErrorCtx_error_s(errs, expr->span, 2365, message);
+                    error_ctx_error_s(errs, expr->span, 2365, message);
                 }
-                ret = Type_any;
+                ret = type_any;
             }
             break;
 
@@ -351,23 +351,23 @@ static Type BinaryOp_get_type_and_typecheck(
         case BINARY_OP_AND:
         case BINARY_OP_XOR:
         case BINARY_OP_OR:
-            if (!Type_extends(&left, &Type_number)) {
-                ErrorCtx_error(
+            if (!type_extends(&left, &type_number)) {
+                error_ctx_error(
                     errs,
                     expr->binary_op->left.span,
                     2362,
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            if (!Type_extends(&right, &Type_number)) {
-                ErrorCtx_error(
+            if (!type_extends(&right, &type_number)) {
+                error_ctx_error(
                     errs,
                     expr->binary_op->right.span,
                     2363,
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            ret = Type_number;
+            ret = type_number;
             break;
 
         case BINARY_OP_EQUAL:
@@ -388,7 +388,7 @@ static Type BinaryOp_get_type_and_typecheck(
                     break;
 
                 default:
-                    ErrorCtx_error(
+                    error_ctx_error(
                         errs,
                         expr->binary_op->left.span,
                         2364,
@@ -397,24 +397,24 @@ static Type BinaryOp_get_type_and_typecheck(
                     break;
             }
             ret = right;
-            right = Type_any;
+            right = type_any;
             break;
 
         case BINARY_OP_DOUBLE_EQUAL:
         case BINARY_OP_TRIPLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_NOT_EQUAL:
-            if (!Type_extends(&left, &right) && !Type_extends(&right, &left)) {
+            if (!type_extends(&left, &right) && !type_extends(&right, &left)) {
                 if (errs) {
                     cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
                     cstr_append_type_error_msg(&message, &left);
                     cstr_append_sv(&message, c_sv("' and '"));
                     cstr_append_type_error_msg(&message, &right);
                     cstr_append_sv(&message, c_sv("' have no overlap."));
-                    ErrorCtx_error_s(errs, expr->span, 2367, message);
+                    error_ctx_error_s(errs, expr->span, 2367, message);
                 }
             }
-            ret = Type_boolean;
+            ret = type_boolean;
             break;
 
         case BINARY_OP_LESS:
@@ -424,7 +424,7 @@ static Type BinaryOp_get_type_and_typecheck(
         case BINARY_OP_AND_AND:
         case BINARY_OP_OR_OR:
             // TODO: figure out rules and typecheck
-            ret = Type_boolean;
+            ret = type_boolean;
             break;
 
         case BINARY_OP_PLUS_EQUAL:
@@ -442,155 +442,155 @@ static Type BinaryOp_get_type_and_typecheck(
         case BINARY_OP_AND_AND_EQUAL:
         case BINARY_OP_OR_OR_EQUAL:
         case BINARY_OP_EH_EH_EQUAL: {
-            BinaryOp without_assignment = BinaryOp_without_assignment(op);
-            ret = BinaryOp_get_type_and_typecheck(Type_clone(left), without_assignment, right, expr, errs);
-            ret = BinaryOp_get_type_and_typecheck(left, BINARY_OP_EQUAL, ret, expr, errs);
-            left = Type_any;
-            right = Type_any;
+            BinaryOp without_assignment = binary_op_without_assignment(op);
+            ret = binary_op_get_type_and_typecheck(type_clone(left), without_assignment, right, expr, errs);
+            ret = binary_op_get_type_and_typecheck(left, BINARY_OP_EQUAL, ret, expr, errs);
+            left = type_any;
+            right = type_any;
         }   break;
 
         case BINARY_OP_COMMA:
             // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
             ret = right;
-            right = Type_any;
+            right = type_any;
             break;
 
         case BINARY_OP_EH_EH:
             // TODO
             ret = left;
-            left = Type_any;
+            left = type_any;
             break;
     }
-    Type_drop(&left);
-    Type_drop(&right);
+    type_drop(&left);
+    type_drop(&right);
     return ret;
 }
 
-Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
+Type expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
     switch (self->tag) {
         case EXPR_LITERAL:
-            return Type_value(Value_clone(self->literal));
+            return type_value(value_clone(self->literal));
 
         case EXPR_IDENTIFIER:
             if (self->identifier.type) {
-                return Type_clone(*self->identifier.type);
+                return type_clone(*self->identifier.type);
             } else {
-                return Type_any;
+                return type_any;
             }
 
         case EXPR_BINARY_OP:
-            return BinaryOp_get_type_and_typecheck(
-                Expr_get_type_and_typecheck(&self->binary_op->left, errs),
+            return binary_op_get_type_and_typecheck(
+                expr_get_type_and_typecheck(&self->binary_op->left, errs),
                 self->binary_op->op,
-                Expr_get_type_and_typecheck(&self->binary_op->right, errs),
+                expr_get_type_and_typecheck(&self->binary_op->right, errs),
                 self,
                 errs
             );
 
         case EXPR_UNARY_OP: {
             UnaryOpExpr* una = self->unary_op;
-            Type type = Expr_get_type_and_typecheck(&una->expr, errs);
+            Type type = expr_get_type_and_typecheck(&una->expr, errs);
             Type ret = {0};
             switch (una->op) {
                 // TODO: add typechecking
-                case UNARY_OP_BANG: ret = Type_boolean; break;
-                case UNARY_OP_TILDE: ret = Type_number; break;
-                case UNARY_OP_PLUS: ret = Type_number; break;
-                case UNARY_OP_MINUS: ret = Type_number; break;
-                case UNARY_OP_LEFT_PLUS_PLUS: ret = Type_number; break;
-                case UNARY_OP_LEFT_MINUS_MINUS: ret = Type_number; break;
-                case UNARY_OP_RIGHT_PLUS_PLUS: ret = Type_number; break;
-                case UNARY_OP_RIGHT_MINUS_MINUS: ret = Type_number; break;
+                case UNARY_OP_BANG: ret = type_boolean; break;
+                case UNARY_OP_TILDE: ret = type_number; break;
+                case UNARY_OP_PLUS: ret = type_number; break;
+                case UNARY_OP_MINUS: ret = type_number; break;
+                case UNARY_OP_LEFT_PLUS_PLUS: ret = type_number; break;
+                case UNARY_OP_LEFT_MINUS_MINUS: ret = type_number; break;
+                case UNARY_OP_RIGHT_PLUS_PLUS: ret = type_number; break;
+                case UNARY_OP_RIGHT_MINUS_MINUS: ret = type_number; break;
             }
-            Type_drop(&type);
+            type_drop(&type);
             return ret;
         }
 
         case EXPR_DOT_PROP: {
             // TODO: add typechecking
-            return Type_any;
+            return type_any;
         }
 
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-            return Type_clone(self->as_type->type);
+            return type_clone(self->as_type->type);
         }
 
         case EXPR_CALL: {
-            Type ret = Type_any;
-            Type callable = Expr_get_type_and_typecheck(&self->call->callable, errs);
+            Type ret = type_any;
+            Type callable = expr_get_type_and_typecheck(&self->call->callable, errs);
             if (callable.tag == TYPE_GENERIC) {
-                Type inferred = Generic_callable_infer(callable.generic, &self->call->args, errs);
-                Type_drop(&callable);
+                Type inferred = generic_callable_infer(callable.generic, &self->call->args, errs);
+                type_drop(&callable);
                 callable = inferred;
             }
-            long given_arg_count = vec_Expr_size(&self->call->args);
+            long given_arg_count = vec_expr_size(&self->call->args);
             long callable_arg_count = 0;
             if (callable.tag == TYPE_CALLABLE) {
-                callable_arg_count = vec_CallableTypeArg_size(&callable.callable->args);
+                callable_arg_count = vec_callable_type_arg_size(&callable.callable->args);
                 // TODO: handle optional and variadic arguments
                 if (callable_arg_count != given_arg_count) {
-                    ErrorCtx_type_error(errs, "wrong number of arguments");
+                    error_ctx_type_error(errs, "wrong number of arguments");
                 }
-                ret = Type_clone(callable.callable->ret);
+                ret = type_clone(callable.callable->ret);
             } else if (callable.tag != TYPE_ANY) {
-                ErrorCtx_type_error(errs, "expr is not callable");
+                error_ctx_type_error(errs, "expr is not callable");
             }
             for (long i = 0; i < given_arg_count; i++) {
-                Type arg_type = Expr_get_type_and_typecheck(
-                    vec_Expr_at_mut(&self->call->args, i),
+                Type arg_type = expr_get_type_and_typecheck(
+                    vec_expr_at_mut(&self->call->args, i),
                     errs
                 );
                 if (i < callable_arg_count) {
-                    if (!Type_extends(&arg_type, &vec_CallableTypeArg_at(&callable.callable->args, i)->type)) {
-                        ErrorCtx_type_error(errs, "bad argument type");
+                    if (!type_extends(&arg_type, &vec_callable_type_arg_at(&callable.callable->args, i)->type)) {
+                        error_ctx_type_error(errs, "bad argument type");
                     }
                 }
-                Type_drop(&arg_type);
+                type_drop(&arg_type);
             }
-            Type_drop(&callable);
+            type_drop(&callable);
             return ret;
         }
 
         case EXPR_FUNCTION:
-            FunctionImpl_typecheck(self->function, errs);
-            return Type_clone(self->function->type);
+            function_impl_typecheck(self->function, errs);
+            return type_clone(self->function->type);
 
         case EXPR_OBJECT: {
             // TODO: add typechecking
-            return Type_any;
+            return type_any;
         }
 
         case EXPR_ARRAY: {
-            Type array_type = Type_value(Value_undefined);
-            c_foreach(i, vec_Expr, self->array) {
-                Type t = Expr_get_type_and_typecheck(i.ref, errs);
+            Type array_type = type_value(value_undefined);
+            c_foreach(i, VecExpr, self->array) {
+                Type t = expr_get_type_and_typecheck(i.ref, errs);
                 if (array_type.tag == TYPE_VALUE && array_type.value.tag == VALUE_UNDEFINED) {
-                    Type_abstract_literals(&t);
-                    Type_drop(&array_type);
+                    type_abstract_literals(&t);
+                    type_drop(&array_type);
                     array_type = t;
-                } else if (Type_extends(&t, &array_type)) {
-                    Type_drop(&t);
+                } else if (type_extends(&t, &array_type)) {
+                    type_drop(&t);
                 } else {
-                    Type_drop(&t);
-                    Type_drop(&array_type);
-                    array_type = Type_any;
+                    type_drop(&t);
+                    type_drop(&array_type);
+                    array_type = type_any;
                 }
             }
-            return Type_array(c_new(Type, array_type));
+            return type_array(c_new(Type, array_type));
         }
     }
     UNREACHABLE;
 }
 
-signed char BinaryOp_cmp_precedence(BinaryOp a, BinaryOp b) {
+signed char binary_op_cmp_precedence(BinaryOp a, BinaryOp b) {
     int ap = binary_op_get_precedence(a);
     int bp = binary_op_get_precedence(b);
     return ap == bp ? 0 : (ap > bp ? 1 : -1);
 }
 
-czview BinaryOp_get_zv(BinaryOp op) {
+czview binary_op_get_zv(BinaryOp op) {
     switch (op) {
         case BINARY_OP_STAR_STAR: return c_zv("**");
         case BINARY_OP_STAR: return c_zv("*");
@@ -637,7 +637,7 @@ czview BinaryOp_get_zv(BinaryOp op) {
     return c_zv("<INVALID_OP>");
 }
 
-czview UnaryOp_get_zv(UnaryOp op) {
+czview unary_op_get_zv(UnaryOp op) {
     switch (op) {
         case UNARY_OP_BANG: return c_zv("!");
         case UNARY_OP_TILDE: return c_zv("~");
@@ -652,13 +652,13 @@ czview UnaryOp_get_zv(UnaryOp op) {
     return c_zv("<INVALID_OP>");
 }
 
-void ObjectExprItem_drop(ObjectExprItem* self) {
+void object_expr_item_drop(ObjectExprItem* self) {
     cstr_drop(&self->name);
-    Expr_drop(&self->value);
+    expr_drop(&self->value);
 }
 
-ObjectExprItem* ObjectExpr_get(ObjectExpr* self, const char* name) {
-    c_foreach(i, vec_ObjectExprItem, *self) {
+ObjectExprItem* object_expr_get(ObjectExpr* self, const char* name) {
+    c_foreach(i, VecObjectExprItem, *self) {
         if (strcmp(cstr_str(&i.ref->name), name) == 0) {
             return i.ref;
         }

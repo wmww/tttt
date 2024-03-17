@@ -9,14 +9,14 @@ typedef struct DotPropExpr DotPropExpr;
 typedef struct AsTypeExpr AsTypeExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
-typedef struct vec_ObjectExprItem ObjectExpr;
+typedef struct VecObjectExprItem ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct Expr Expr;
 
-forward_vec(vec_ObjectExprItem, ObjectExprItem);
-forward_vec(vec_Expr, Expr);
+forward_vec(VecObjectExprItem, ObjectExprItem);
+forward_vec(VecExpr, Expr);
 
 typedef struct Expr {
     Span span;
@@ -47,54 +47,54 @@ typedef struct Expr {
         FunctionImpl* function;
         // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
-        vec_Expr array;
+        VecExpr array;
     };
 } Expr;
 
-static inline Expr Expr_default(Span span) {
-    return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = Value_undefined };
+static inline Expr expr_default(Span span) {
+    return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value_undefined };
 }
 
-static inline Expr Expr_literal(Span span, Value value) {
+static inline Expr expr_literal(Span span, Value value) {
     return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value };
 }
 
-static inline Expr Expr_identifier(Span span, cstr identifier) {
+static inline Expr expr_identifier(Span span, cstr identifier) {
     return (Expr){ .span = span, .tag = EXPR_IDENTIFIER, .identifier.name = identifier };
 }
 
-static inline Expr Expr_binary_op(Span span, BinaryOpExpr* op) {
+static inline Expr expr_binary_op(Span span, BinaryOpExpr* op) {
     return (Expr){ .span = span, .tag = EXPR_BINARY_OP, .binary_op = op };
 }
 
-static inline Expr Expr_unary_op(Span span, UnaryOpExpr* op) {
+static inline Expr expr_unary_op(Span span, UnaryOpExpr* op) {
     return (Expr){ .span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
 }
 
-static inline Expr Expr_dot_prop(Span span, DotPropExpr* dot_prop) {
+static inline Expr expr_dot_prop(Span span, DotPropExpr* dot_prop) {
     return (Expr){ .span = span, .tag = EXPR_DOT_PROP, .dot_prop = dot_prop };
 }
 
-static inline Expr Expr_as_type(Span span, AsTypeExpr* as_type) {
+static inline Expr expr_as_type(Span span, AsTypeExpr* as_type) {
     return (Expr){ .span = span, .tag = EXPR_AS_TYPE, .as_type = as_type };
 }
 
-static inline Expr Expr_call(Span span, CallExpr* call) {
+static inline Expr expr_call(Span span, CallExpr* call) {
     return (Expr){ .span = span, .tag = EXPR_CALL, .call = call };
 }
 
-static inline Expr Expr_function(Span span, FunctionImpl* function) {
+static inline Expr expr_function(Span span, FunctionImpl* function) {
     return (Expr){ .span = span, .tag = EXPR_FUNCTION, .function = function };
 }
 
-static inline Expr Expr_object(Span span, ObjectExpr object) {
+static inline Expr expr_object(Span span, ObjectExpr object) {
     return (Expr){ .span = span, .tag = EXPR_OBJECT, .object = object };
 }
 
-void Expr_drop(Expr* self);
+void expr_drop(Expr* self);
 void cstr_append_expr_debug(cstr* target, Expr const* self, int indent);
-void Expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs);
-Type Expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
+void expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs);
+Type expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
 #define i_key_class Expr
 #define i_no_clone
@@ -162,8 +162,8 @@ typedef enum BinaryOp {
 // (BINARY_OP_STAR, BINARY_OP_PLUS) => 1
 // (BINARY_OP_PLUS, BINARY_OP_STAR) => -1
 // (BINARY_OP_PLUS, BINARY_OP_MINUS) => 0
-signed char BinaryOp_cmp_precedence(BinaryOp a, BinaryOp b);
-czview BinaryOp_get_zv(BinaryOp op);
+signed char binary_op_cmp_precedence(BinaryOp a, BinaryOp b);
+czview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {
     BinaryOp op;
@@ -186,7 +186,7 @@ typedef enum UnaryOp {
     UNARY_OP_RIGHT_MINUS_MINUS,
 } UnaryOp;
 
-czview UnaryOp_get_zv(UnaryOp op);
+czview unary_op_get_zv(UnaryOp op);
 
 typedef struct UnaryOpExpr {
     UnaryOp op;
@@ -204,7 +204,7 @@ typedef struct DotPropExpr {
 
 typedef struct CallExpr {
     Expr callable;
-    vec_Expr args;
+    VecExpr args;
 } CallExpr;
 
 // Object
@@ -214,8 +214,8 @@ typedef struct ObjectExprItem {
     Expr value;
 } ObjectExprItem;
 
-void ObjectExprItem_drop(ObjectExprItem* self);
-ObjectExprItem* ObjectExpr_get(ObjectExpr* self, const char* name);
+void object_expr_item_drop(ObjectExprItem* self);
+ObjectExprItem* object_expr_get(ObjectExpr* self, const char* name);
 
 #define i_key_class ObjectExprItem
 #define i_no_clone

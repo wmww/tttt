@@ -25,22 +25,22 @@ int main(int argc, const char** argv) {
     }
 
     ast = parse_file(cstr_str(&contents), &errs);
-    if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs);
+    if (!error_ctx_empty(&errs)) {
+        error_ctx_display(&errs);
         ret = 1;
         goto cleanup;
     }
 
-    Block_resolve_names_toplevel(&ast, &errs);
-    if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs);
+    block_resolve_names_toplevel(&ast, &errs);
+    if (!error_ctx_empty(&errs)) {
+        error_ctx_display(&errs);
         ret = 1;
         goto cleanup;
     }
 
-    Block_typecheck_toplevel(&ast, &errs);
+    block_typecheck_toplevel(&ast, &errs);
 
-    if (ErrorCtx_empty(&errs)) {
+    if (error_ctx_empty(&errs)) {
         printf(CLR_GOOD "Typecheck passed" CLR0 "\n");
     } else {
         printf(CLR_ERR "Typecheck failed" CLR0 "\n");
@@ -51,21 +51,21 @@ int main(int argc, const char** argv) {
     printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
 
-    if (!ErrorCtx_empty(&errs)) {
-        ErrorCtx_display(&errs);
+    if (!error_ctx_empty(&errs)) {
+        error_ctx_display(&errs);
         ret = 1;
         goto cleanup;
     }
 
     printf(CLR_GOOD "Running..." CLR0 "\n");
 
-    eval_program(&ast, arc_Object_init());
+    eval_program(&ast, arc_object_init());
 
     printf(CLR_GOOD "Run succeeded" CLR0 "\n");
 
 cleanup:
     cstr_drop(&contents);
-    ErrorCtx_drop(&errs);
-    Block_drop(&ast);
+    error_ctx_drop(&errs);
+    block_drop(&ast);
     return ret;
 }
