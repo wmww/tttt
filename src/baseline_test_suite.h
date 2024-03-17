@@ -5,18 +5,18 @@
 
 #include "stc/cregex.h"
 
-#define i_key_class BaselineTestCase
+#define i_key_class_names BaselineTestCase, baseline_test_case
 #define i_no_clone
 #define i_more
 #define i_cmp(a, b) cstr_cmp(&a->source_path, &b->source_path)
-#include "stc/vec.h"
-#include "stc/algo/quicksort.h"
+#include "wrap_stc/vec.h"
+#include "wrap_stc/quicksort.h"
 
 typedef struct BaselineTestSuite {
     const char* tests_dir;
     bool has_filter;
     cregex filter;
-    ArcObject prev_results;
+    ArcJsObject prev_results;
     VecBaselineTestCase cases;
 } BaselineTestSuite;
 
@@ -24,10 +24,10 @@ void baseline_test_suite_drop(BaselineTestSuite* self);
 void baseline_test_suite_run(BaselineTestSuite* self, bool noisy);
 void baseline_test_suite_save_results(BaselineTestSuite* self, const char* results_path);
 
-#define i_key_class BaselineTestSuite
+#define i_key_class_names BaselineTestSuite, baseline_test_suite
 #define i_no_clone
 #define i_no_hash
-#include "stc/box.h"
+#include "wrap_stc/box.h"
 
 BoxBaselineTestSuite load_baseline_test_suite(
     const char* tests_dir,

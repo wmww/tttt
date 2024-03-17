@@ -11,8 +11,8 @@ typedef struct CallableTypeArg {
 void callable_type_arg_drop(CallableTypeArg* self);
 CallableTypeArg callable_type_arg_clone(CallableTypeArg self);
 
-#define i_key_class CallableTypeArg
-#include "stc/vec.h"
+#define i_key_class_names CallableTypeArg, callable_type_arg
+#include "wrap_stc/vec.h"
 
 typedef struct CallableType {
     VecCallableTypeArg args;

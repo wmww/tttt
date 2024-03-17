@@ -90,7 +90,7 @@ void function_impl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx*
     // Loop through generics and add them to the namespace
     Generic* generic = function_impl_generic_or_null(self);
     if (generic) {
-        c_foreach(i, VecGenericItem, generic->items) {
+        c_foreach(i, vec_generic_item, generic->items) {
             // This is the function *implementation*, so we treat generic paramaters as regular types
             if (!name_stack_add_type(names, cstr_clone(i.ref->name), &i.ref->extends, false, 0)) {
                 // name is cstr_str(&result.ref->first)
@@ -114,7 +114,7 @@ void function_impl_resolve_names(FunctionImpl* self, NameStack* names, ErrorCtx*
     }
 
     // Loop through all arguments and resolve names in the default value expressions
-    c_foreach(i, VecFunctionArg, self->args) {
+    c_foreach(i, vec_function_arg, self->args) {
         expr_resolve_names(&i.ref->value, names, errs);
     }
 

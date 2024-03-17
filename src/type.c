@@ -177,14 +177,14 @@ void type_resolve_names(Type* self, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_CALLABLE:
-            c_foreach(i, VecCallableTypeArg, self->callable->args) {
+            c_foreach(i, vec_callable_type_arg, self->callable->args) {
                 type_resolve_names(&i.ref->type, names, errs);
             }
             type_resolve_names(&self->callable->ret, names, errs);
             break;
 
         case TYPE_INTERFACE:
-            c_foreach(i, VecInterfaceMember, self->interface.members) {
+            c_foreach(i, vec_interface_member, self->interface.members) {
                 type_resolve_names(&i.ref->type, names, errs);
             }
             break;
@@ -328,7 +328,7 @@ void type_abstract_literals(Type* self) {
 
                 case VALUE_OBJECT: {
                     Interface interface;
-                    c_foreach(i, HmapStrObjectValueItem, self->value.object.get->items) {
+                    c_foreach(i, hmap_str_object_item, self->value.object.get->items) {
                         InterfaceMember member = interface_member_make(
                             cstr_clone(i.ref->first),
                             type_value(value_clone(i.ref->second.value))

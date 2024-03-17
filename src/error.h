@@ -14,7 +14,7 @@ Error error_clone(Error self);
 void cstr_append_error_debug(cstr* target, Error const* self);
 void cstr_append_error_txt(cstr* target, Error const* self);
 
-#define i_key_classnames Error, error
+#define i_key_class_names Error, error
 #include "wrap_stc/vec.h"
 
 typedef struct ErrorCtx {

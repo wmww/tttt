@@ -86,7 +86,7 @@ static cstr render_lines_woven_with_file(
             cstr_append(&ret, "\r\n");
         }
     }
-    c_foreach(i, LinesSv, source_contents) {
+    c_foreach(i, lines_sv, source_contents) {
         cstr_append(&ret, line_indent);
         cstr_append_sv(&ret, i.line);
         if (csview_size(i.line)) {
@@ -166,7 +166,7 @@ static cstr load_test_source(const char* path, bool noisy) {
     }
 
     bool has_line = false;
-    c_foreach(i, LinesSv, contents_sv) {
+    c_foreach(i, lines_sv, contents_sv) {
         if (!csview_starts_with(i.line, "// @")) {
             cstr_append_sv(&ret, i.line);
             if (has_line || csview_size(i.line)) {
@@ -188,11 +188,11 @@ BaselineTestCase make_baseline_test_case(
     BaselineTestSuite* suite,
     cstr name,
     cstr source_path,
-    ObjectValue* previous
+    JsObject* previous
 ) {
-    Result errors_prev  = previous ? object_value_get(previous, c_sv("errors"))  : result_ok(value_boolean(true));
-    Result symbols_prev = previous ? object_value_get(previous, c_sv("symbols")) : result_ok(value_boolean(true));
-    Result types_prev   = previous ? object_value_get(previous, c_sv("types"))   : result_ok(value_boolean(true));
+    Result errors_prev  = previous ? js_object_get(previous, c_sv("errors"))  : result_ok(value_boolean(true));
+    Result symbols_prev = previous ? js_object_get(previous, c_sv("symbols")) : result_ok(value_boolean(true));
+    Result types_prev   = previous ? js_object_get(previous, c_sv("types"))   : result_ok(value_boolean(true));
 
     BaselineTestCase ret = {
         .suite = suite,
@@ -209,7 +209,9 @@ BaselineTestCase make_baseline_test_case(
         .detail = {0}
     };
 
-    c_drop(Result, &errors_prev, &symbols_prev, &types_prev);
+    result_drop(&errors_prev);
+    result_drop(&symbols_prev);
+    result_drop(&types_prev);
     return ret;
 }
 

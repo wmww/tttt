@@ -3,7 +3,7 @@
 #include "prelude.h"
 
 typedef struct InterfaceMember InterfaceMember;
-forward_vec(VecInterfaceMember, InterfaceMember);
+wrap_forward_vec(InterfaceMember, interface_member);
 
 typedef struct Interface {
     VecInterfaceMember members;

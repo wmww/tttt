@@ -9,8 +9,8 @@
 #include "extends_conditional.h"
 #include "expr.h"
 
-#define i_key_class VecType
-#include "stc/vec.h"
+#define i_key_class_names VecType, vec_type
+#include "wrap_stc/vec.h"
 
 void generic_item_drop(GenericItem* self) {
     cstr_drop(&self->name);
@@ -32,7 +32,7 @@ void cstr_append_vec_generic_item_debug(cstr* target, VecGenericItem* generics, 
         return;
     }
     cstr_append_sv(target, c_sv("<"));
-    c_foreach(i, VecGenericItem, *generics) {
+    c_foreach(i, vec_generic_item, *generics) {
         cstr_append_sv(target, c_sv(CLR_TYPE));
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0));
@@ -56,7 +56,7 @@ void cstr_append_vec_generic_item_error_msg(cstr* target, VecGenericItem* generi
         return;
     }
     cstr_append_sv(target, c_sv("<"));
-    c_foreach(i, VecGenericItem, *generics) {
+    c_foreach(i, vec_generic_item, *generics) {
         cstr_append_s(target, i.ref->name);
         if (i.ref->extends.tag != TYPE_ANY) {
             cstr_append_sv(target, c_sv(" extends "));
@@ -258,7 +258,7 @@ static void swap_generics_for_specific_types(Type* self, TraverseCtx ctx) {
             return;
 
         case TYPE_GENERIC: {
-            c_foreach(i, VecGenericItem, self->generic->items) {
+            c_foreach(i, vec_generic_item, self->generic->items) {
                 swap_generics_for_specific_types(&i.ref->extends, ctx);
                 swap_generics_for_specific_types(&i.ref->fallback, ctx);
             }
@@ -268,14 +268,14 @@ static void swap_generics_for_specific_types(Type* self, TraverseCtx ctx) {
         }   return;
 
         case TYPE_CALLABLE:
-            c_foreach(i, VecCallableTypeArg, self->callable->args) {
+            c_foreach(i, vec_callable_type_arg, self->callable->args) {
                 swap_generics_for_specific_types(&i.ref->type, ctx);
             }
             swap_generics_for_specific_types(&self->callable->ret, ctx);
             return;
 
         case TYPE_INTERFACE:
-            c_foreach(i, VecInterfaceMember, self->interface.members) {
+            c_foreach(i, vec_interface_member, self->interface.members) {
                 swap_generics_for_specific_types(&i.ref->type, ctx);
             }
             return;

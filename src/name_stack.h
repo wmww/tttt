@@ -8,16 +8,15 @@ typedef struct NamedType {
     bool is_generic;
     int generic_index;
 } NamedType;
-#define i_type HmapStrNamedType
+
 #define i_key_ssv
-#define i_val NamedType
-#include "stc/hmap.h"
+#define i_val_names NamedType, named_type
+#include "wrap_stc/hmap.h"
 
 typedef Type const* CTypePtr;
-#define i_type HmapStrCTypePtr
 #define i_key_ssv
-#define i_val CTypePtr
-#include "stc/hmap.h"
+#define i_val_names CTypePtr, c_type_ptr
+#include "wrap_stc/hmap.h"
 
 typedef struct Namespace {
     HmapStrNamedType types;
@@ -29,8 +28,8 @@ Namespace namespace_init(bool is_generic);
 void namespace_drop(Namespace* self);
 Namespace namespace_clone(Namespace self);
 
-#define i_key_class Namespace
-#include "stc/vec.h"
+#define i_key_class_names Namespace, namespace
+#include "wrap_stc/vec.h"
 
 typedef struct NameStack {
     VecNamespace stack;

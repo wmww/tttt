@@ -11,8 +11,9 @@
 #include <errno.h>
 
 #define i_key BaselineTestCase const*
-#define i_tag BaselineTestCaseCPtr
-#include "stc/vec.h"
+#define i_type vec_baseline_test_case_c_ptr
+#include "wrap_stc/vec.h"
+typedef vec_baseline_test_case_c_ptr VecBaselineTestCaseCPtr;
 
 static cstr test_name_from_path(const char* path) {
     csview name = csview_from(basename_of(path));
@@ -41,8 +42,8 @@ static void load_path(void* data, const char* dir_path, const char* name) {
         cstr_drop(&full_path);
     } else if (path_is_reg_file(cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
         cstr name = test_name_from_path(cstr_str(&full_path));
-        Result prev_result = object_value_get(self->prev_results.get, cstr_sv(&name));
-        ObjectValue* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
+        Result prev_result = js_object_get(self->prev_results.get, cstr_sv(&name));
+        JsObject* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
 
         vec_baseline_test_case_push(
             &self->cases,
@@ -70,7 +71,7 @@ static void load_subdir(BaselineTestSuite* self, const char* subdir) {
 }
 
 void baseline_test_suite_drop(BaselineTestSuite* self) {
-    arc_object_drop(&self->prev_results);
+    arc_js_object_drop(&self->prev_results);
     cregex_drop(&self->filter);
     vec_baseline_test_case_drop(&self->cases);
 }
@@ -115,7 +116,7 @@ void baseline_test_suite_run(BaselineTestSuite* self, bool noisy) {
     VecBaselineTestCaseCPtr newly_passed = vec_baseline_test_case_c_ptr_init();
 
     printf(CLR_STATUS "Running tests...\n\n" CLR0);
-    c_foreach(i, VecBaselineTestCase, self->cases) {
+    c_foreach(i, vec_baseline_test_case, self->cases) {
         intptr_t index = i.ref - self->cases.data;
         if (!test_passes_filter(self, cstr_str(&i.ref->name))) {
             continue;
@@ -156,7 +157,7 @@ void baseline_test_suite_run(BaselineTestSuite* self, bool noisy) {
             CLR_GOOD "%ld" CLR0 " test%s have newly passing components:\n",
             newly_passed_size, newly_passed_size == 1 ? "" : "s");
 
-        c_foreach(i, VecBaselineTestCaseCPtr, newly_passed) {
+        c_foreach(i, vec_baseline_test_case_c_ptr, newly_passed) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i.ref, false);
             printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i.ref)->source_path));
@@ -170,7 +171,7 @@ void baseline_test_suite_run(BaselineTestSuite* self, bool noisy) {
             CLR_ERR "%ld" CLR0 " test%s have newly failing components:\n",
             newly_failed_size, newly_failed_size == 1 ? "" : "s");
 
-        c_foreach(i, VecBaselineTestCaseCPtr, newly_failed) {
+        c_foreach(i, vec_baseline_test_case_c_ptr, newly_failed) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i.ref, false);
             printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i.ref)->source_path));
@@ -178,7 +179,8 @@ void baseline_test_suite_run(BaselineTestSuite* self, bool noisy) {
         printf("\n");
     }
 
-    c_drop(VecBaselineTestCaseCPtr, &newly_failed, &newly_passed);
+    vec_baseline_test_case_c_ptr_drop(&newly_failed);
+    vec_baseline_test_case_c_ptr_drop(&newly_passed);
     cstr_drop(&display);
 }
 
@@ -190,7 +192,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* self, const char* resul
     }
     fprintf(f, "const baselines = {\n");
 
-    c_foreach(i, VecBaselineTestCase, self->cases) {
+    c_foreach(i, vec_baseline_test_case, self->cases) {
         ASSERT(!strchr(cstr_str(&i.ref->name), '\\') && !strchr(cstr_str(&i.ref->name), '\''));
         fprintf(f, "    '%s': {\n", cstr_str(&i.ref->name));
         fprintf(f, "        errors: %s,\n", i.ref->errors_passed ? "true" : "false");
@@ -208,7 +210,7 @@ ArcObject load_saved_results(const char* results_path) {
     cstr results_source;
 
     if (!read_entire_file(results_path, true, &results_source)) {
-        return arc_object_init();
+        return arc_js_object_init();
     }
 
     ErrorCtx errs = error_ctx_init();
@@ -220,19 +222,19 @@ ArcObject load_saved_results(const char* results_path) {
         error_ctx_drop(&errs);
         block_drop(&ast);
         cstr_drop(&results_source);
-        return arc_object_init();
+        return arc_js_object_init();
     }
 
-    ArcObject root = arc_object_make((ObjectValue){0});
-    eval_program(&ast, arc_object_clone(root));
+    ArcObject root = arc_js_object_make((JsObject){0});
+    eval_program(&ast, arc_js_object_clone(root));
 
-    Result baselines_result = object_value_get(root.get, c_sv("baselines"));
+    Result baselines_result = js_object_get(root.get, c_sv("baselines"));
     ArcObject ret = baselines_result.value.tag == VALUE_OBJECT ?
-        arc_object_clone(baselines_result.value.object) :
-        arc_object_make((ObjectValue){0});
+        arc_js_object_clone(baselines_result.value.object) :
+        arc_js_object_make((JsObject){0});
 
     result_drop(&baselines_result);
-    arc_object_drop(&root);
+    arc_js_object_drop(&root);
     block_drop(&ast);
     error_ctx_drop(&errs);
     cstr_drop(&results_source);

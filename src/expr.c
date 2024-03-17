@@ -186,7 +186,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
                 cstr_append_sv(target, c_sv("()"));
             } else {
                 cstr_append_sv(target, c_sv("("));
-                c_foreach(i, VecExpr, self->call->args) {
+                c_foreach(i, vec_expr, self->call->args) {
                     cstr_append_expr_debug(target, i.ref, indent + 1);
                     if (i.ref < i.end - 1) {
                         cstr_append_sv(target, c_sv(", "));
@@ -202,7 +202,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_OBJECT: {
             cstr_append_sv(target, c_sv("{\n"));
-            c_foreach(i, VecObjectExprItem, self->object) {
+            c_foreach(i, vec_object_expr_item, self->object) {
                 APPEND_INDENT(target, indent + 1);
                 cstr_append_s(target, i.ref->name);
                 cstr_append_sv(target, c_sv(": "));
@@ -215,7 +215,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent) {
 
         case EXPR_ARRAY: {
             cstr_append_sv(target, c_sv("[\n"));
-            c_foreach(i, VecExpr, self->array) {
+            c_foreach(i, vec_expr, self->array) {
                 APPEND_INDENT(target, indent + 1);
                 cstr_append_expr_debug(target, i.ref, indent + 1);
                 cstr_append_sv(target, c_sv(",\n"));
@@ -264,7 +264,7 @@ void expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
 
         case EXPR_CALL:
             expr_resolve_names(&self->call->callable, names, errs);
-            c_foreach(i, VecExpr, self->call->args) {
+            c_foreach(i, vec_expr, self->call->args) {
                 expr_resolve_names(i.ref, names, errs);
             }
             break;
@@ -274,13 +274,13 @@ void expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_OBJECT:
-            c_foreach(i, VecObjectExprItem, self->object) {
+            c_foreach(i, vec_object_expr_item, self->object) {
                 expr_resolve_names(&i.ref->value, names, errs);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, VecExpr, self->array) {
+            c_foreach(i, vec_expr, self->array) {
                 expr_resolve_names(i.ref, names, errs);
             }
             break;
@@ -564,7 +564,7 @@ Type expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs) {
 
         case EXPR_ARRAY: {
             Type array_type = type_value(value_undefined);
-            c_foreach(i, VecExpr, self->array) {
+            c_foreach(i, vec_expr, self->array) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
                 if (array_type.tag == TYPE_VALUE && array_type.value.tag == VALUE_UNDEFINED) {
                     type_abstract_literals(&t);
@@ -658,7 +658,7 @@ void object_expr_item_drop(ObjectExprItem* self) {
 }
 
 ObjectExprItem* object_expr_get(ObjectExpr* self, const char* name) {
-    c_foreach(i, VecObjectExprItem, *self) {
+    c_foreach(i, vec_object_expr_item, *self) {
         if (strcmp(cstr_str(&i.ref->name), name) == 0) {
             return i.ref;
         }

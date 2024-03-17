@@ -3,7 +3,7 @@
 #include "prelude.h"
 #include "type.h"
 
-typedef struct VecExpr VecExpr;
+typedef struct vec_expr VecExpr;
 
 typedef struct GenericItem {
     cstr name;
@@ -15,8 +15,8 @@ typedef struct GenericItem {
 void generic_item_drop(GenericItem* self);
 GenericItem generic_item_clone(GenericItem self);
 
-#define i_key_class GenericItem
-#include "stc/vec.h"
+#define i_key_class_names GenericItem, generic_item
+#include "wrap_stc/vec.h"
 
 void cstr_append_vec_generic_item_debug(cstr* target, VecGenericItem* self, int indent);
 void cstr_append_vec_generic_item_error_msg(cstr* target, VecGenericItem* self);

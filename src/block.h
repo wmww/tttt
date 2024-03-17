@@ -9,7 +9,7 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
 typedef struct NameStack NameStack;
 
-forward_vec(VecStatement, Statement);
+wrap_forward_vec(Statement, statement);
 
 typedef struct Block {
     VecStatement statements;

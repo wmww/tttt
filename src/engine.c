@@ -13,8 +13,8 @@ typedef ArcObject StackFrame;
 
 static inline StackFrame stack_frame_new() { return value_object_empty().object; }
 
-#define i_key_class StackFrame
-#include "stc/vec.h"
+#define i_key_class_names StackFrame, stack_frame
+#include "wrap_stc/vec.h"
 
 typedef struct Engine {
     VecStackFrame stack;
@@ -24,7 +24,7 @@ void engine_drop(Engine* self) {
     vec_stack_frame_drop(&self->stack);
 }
 
-ObjectValue* engine_get_locals(Engine* self) {
+JsObject* engine_get_locals(Engine* self) {
     return vec_stack_frame_back(&self->stack)->get;
 }
 
@@ -48,8 +48,8 @@ static bool contains_only_digits(const char* str) {
 }
 
 static Result MUST_USE engine_eval_identifier(Engine* self, csview identifier) {
-    c_foreach_rev(i, VecStackFrame, self->stack) {
-        Result get_result = object_value_get(i.ref->get, identifier);
+    c_foreach_rev(i, vec_stack_frame, self->stack) {
+        Result get_result = js_object_get(i.ref->get, identifier);
         if (get_result.tag == RESULT_OK) {
             return get_result;
         }
@@ -62,14 +62,14 @@ static Result MUST_USE engine_eval_identifier(Engine* self, csview identifier) {
 }
 
 static Result MUST_USE engine_assign_identifier(Engine* self, csview identifier, Value value) {
-    c_foreach_rev(i, VecStackFrame, self->stack) {
-        if (object_value_has(i.ref->get, identifier)) {
-            object_value_set(i.ref->get, cstr_from_sv(identifier), value);
+    c_foreach_rev(i, vec_stack_frame, self->stack) {
+        if (js_object_has(i.ref->get, identifier)) {
+            js_object_set(i.ref->get, cstr_from_sv(identifier), value);
             return result_ok_undefined;
         }
     }
     // If we were in strict mode this would be an error
-    object_value_set(vec_stack_frame_back(&self->stack)->get, cstr_from_sv(identifier), value);
+    js_object_set(vec_stack_frame_back(&self->stack)->get, cstr_from_sv(identifier), value);
     return result_ok_undefined;
 }
 
@@ -104,7 +104,7 @@ static Result MUST_USE engine_assign(Engine* self, Expr const* target, Value val
                     return result_ok_undefined;
 
                 case VALUE_OBJECT:
-                    object_value_set(target_value.object.get, cstr_clone(target->identifier.name), value);
+                    js_object_set(target_value.object.get, cstr_clone(target->identifier.name), value);
                     return result_ok_undefined;
             }
             UNREACHABLE;
@@ -203,7 +203,7 @@ static Result MUST_USE engine_eval_dot_prop(Engine* self, DotPropExpr const* pro
         case VALUE_NATIVE_FUNC: ret.value = value_undefined; break;
 
         case VALUE_OBJECT:
-            ret = object_value_get(value.object.get, cstr_sv(&prop_expr->prop));
+            ret = js_object_get(value.object.get, cstr_sv(&prop_expr->prop));
             ret.tag = RESULT_OK; // undefined is fine if key is not found
             break;
 
@@ -228,7 +228,7 @@ static Result MUST_USE engine_eval_js_func(Engine* self, JsFuncValue const* func
     vec_stack_frame_push(&self->stack, stack_frame_new());
     int defined_arg_num = vec_function_arg_size(func->args);
     int given_arg_num = vec_value_size(args);
-    ObjectValue* locals = engine_get_locals(self);
+    JsObject* locals = engine_get_locals(self);
     for (int i = 0; i < defined_arg_num; i++) {
         FunctionArg const* defined = vec_function_arg_at(func->args, i);
         cstr name = cstr_clone(defined->name);
@@ -245,7 +245,7 @@ static Result MUST_USE engine_eval_js_func(Engine* self, JsFuncValue const* func
             });
             value = default_value;
         }
-        object_value_set(locals, name, value);
+        js_object_set(locals, name, value);
     }
     Result res = engine_run_block(self, func->code);
     vec_stack_frame_pop(&self->stack);
@@ -257,7 +257,7 @@ static Result MUST_USE engine_eval_call(Engine* self, CallExpr const* call_expr)
 
     int given_arg_num = vec_expr_size(&call_expr->args);
     VecValue given_args = vec_value_with_capacity(given_arg_num);
-    c_foreach(i, VecExpr, call_expr->args) {
+    c_foreach(i, vec_expr, call_expr->args) {
         TRY_CATCH(value, engine_eval_expr(self, i.ref), res_err, {
             vec_value_drop(&given_args);
             value_drop(&callable);
@@ -294,19 +294,19 @@ static Result MUST_USE engine_eval_call(Engine* self, CallExpr const* call_expr)
 
 static Result MUST_USE engine_eval_object(Engine* self, ObjectExpr const* obj_expr) {
     Value ret = value_object_empty();
-    c_foreach(i, VecObjectExprItem, *obj_expr) {
+    c_foreach(i, vec_object_expr_item, *obj_expr) {
         TRY_CATCH(value, engine_eval_expr(self, &i.ref->value), res_err, {
             value_drop(&ret);
             return res_err;
         });
-        object_value_set(ret.object.get, cstr_clone(i.ref->name), value);
+        js_object_set(ret.object.get, cstr_clone(i.ref->name), value);
     }
     return result_ok(ret);
 }
 
 static Result MUST_USE engine_eval_array(Engine* self, VecExpr const* array_expr) {
     Value ret = value_array_empty();
-    c_foreach(i, VecExpr, *array_expr) {
+    c_foreach(i, vec_expr, *array_expr) {
         TRY_CATCH(value, engine_eval_expr(self, i.ref), res_err, {
             value_drop(&ret);
             return res_err;
@@ -393,11 +393,11 @@ static Result MUST_USE engine_run_statement(Engine* self, Statement const* state
 
         case STATEMENT_VAR_INIT: {
             // TODO: respect keyword (let, const, var)
-            c_foreach(i, VecNameInitData, statement->var_init.vars) {
+            c_foreach(i, vec_name_init_data, statement->var_init.vars) {
                 TRY_THROW(value, engine_eval_expr(self, &i.ref->value));
                 cstr name = cstr_clone(i.ref->name);
-                ObjectValue* locals = engine_get_locals(self);
-                object_value_set(locals, name, value);
+                JsObject* locals = engine_get_locals(self);
+                js_object_set(locals, name, value);
             }
             return result_ok_undefined;
         }
@@ -408,8 +408,8 @@ static Result MUST_USE engine_run_statement(Engine* self, Statement const* state
                 &statement->function.impl.args,
                 &statement->function.impl.body
             );
-            ObjectValue* locals = engine_get_locals(self);
-            object_value_set(locals, name, value);
+            JsObject* locals = engine_get_locals(self);
+            js_object_set(locals, name, value);
             return result_ok_undefined;
         }
 
@@ -428,7 +428,7 @@ static Result MUST_USE engine_run_statement(Engine* self, Statement const* state
 }
 
 static Result MUST_USE engine_run_block(Engine* self, Block const* block) {
-    c_foreach(i, VecStatement, block->statements) {
+    c_foreach(i, vec_statement, block->statements) {
         TRY_THROW_DROP(engine_run_statement(self, i.ref));
     }
     return result_ok_undefined;
@@ -481,17 +481,17 @@ static Result boolean_impl(Engine* engine, int argc, Value const argv[], void* d
 
 void eval_program(Block const* scope, ArcObject root) {
     if (!root.get) {
-        root = arc_object_make((ObjectValue){0});
+        root = arc_js_object_make((JsObject){0});
     }
-    object_value_set(root.get, cstr_lit("console"), value_object_init({
+    js_object_set(root.get, cstr_lit("console"), value_object_init({
         {"log", value_native_func(console_log_impl, nullptr, nullptr)}
     }));
-    object_value_set(root.get, cstr_lit("String"), value_native_func(string_impl, nullptr, nullptr));
-    object_value_set(root.get, cstr_lit("Number"), value_native_func(number_impl, nullptr, nullptr));
-    object_value_set(root.get, cstr_lit("Boolean"), value_native_func(boolean_impl, nullptr, nullptr));
-    object_value_set(root.get, cstr_lit("NaN"), value_number(NAN));
+    js_object_set(root.get, cstr_lit("String"), value_native_func(string_impl, nullptr, nullptr));
+    js_object_set(root.get, cstr_lit("Number"), value_native_func(number_impl, nullptr, nullptr));
+    js_object_set(root.get, cstr_lit("Boolean"), value_native_func(boolean_impl, nullptr, nullptr));
+    js_object_set(root.get, cstr_lit("NaN"), value_number(NAN));
     Engine engine = {
-        .stack = c_init(VecStackFrame, {root}),
+        .stack = c_init(vec_stack_frame, {root}),
     };
     Result res = engine_run_block(&engine, scope);
     if (res.tag == RESULT_ERR) {

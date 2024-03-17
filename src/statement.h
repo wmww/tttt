@@ -26,9 +26,9 @@ typedef struct NameInitData {
 void name_init_data_drop(NameInitData* self);
 void cstr_append_name_init_data_debug(cstr* target, NameInitData* self, int indent);
 
-#define i_key_class NameInitData
+#define i_key_class_names NameInitData, name_init_data
 #define i_no_clone
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"
 
 // Variable initialization
 
@@ -105,10 +105,10 @@ void statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs);
 void statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs);
 void statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs);
 
-#define i_key_class Statement
+#define i_key_class_names Statement, statement
 #define i_is_forward
 #define i_no_clone
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"
 
 // Loop statements
 

@@ -4,7 +4,7 @@
 
 typedef struct Span Span;
 typedef struct Type Type;
-typedef struct ObjectValue ObjectValue;
+typedef struct JsObject JsObject;
 typedef struct BaselineTestSuite BaselineTestSuite;
 
 typedef struct LineNumberedStr {
@@ -14,9 +14,9 @@ typedef struct LineNumberedStr {
 
 void line_numbered_str_drop(LineNumberedStr* self);
 
-#define i_key_class LineNumberedStr
+#define i_key_class_names LineNumberedStr, line_numbered_str
 #define i_no_clone
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"
 
 typedef struct BaselineTestCase {
     BaselineTestSuite* suite;
@@ -38,7 +38,7 @@ typedef struct BaselineTestCase {
     } detail;
 } BaselineTestCase;
 
-BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path, ObjectValue* previous);
+BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path, JsObject* previous);
 void baseline_test_case_drop(BaselineTestCase* self);
 void baseline_test_case_clear_detail(BaselineTestCase* self);
 void baseline_test_case_add_symbol(BaselineTestCase* self, const char* name, Span const* span);

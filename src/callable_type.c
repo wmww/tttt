@@ -28,7 +28,7 @@ CallableType callable_type_clone(CallableType self) {
 
 void cstr_append_callable_type_debug(cstr* target, CallableType* self, int indent) {
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, VecCallableTypeArg, self->args) {
+    c_foreach(i, vec_callable_type_arg, self->args) {
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0));
@@ -47,7 +47,7 @@ void cstr_append_callable_type_debug(cstr* target, CallableType* self, int inden
 
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* self) {
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, VecCallableTypeArg, self->args) {
+    c_foreach(i, vec_callable_type_arg, self->args) {
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(": "));
         cstr_append_type_error_msg(target, &i.ref->type);

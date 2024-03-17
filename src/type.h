@@ -122,5 +122,5 @@ void type_abstract_literals(Type* self); // {a: 7} -> {a: number}
 
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
 
-#define i_key_class Type
-#include "stc/vec.h"
+#define i_key_class_names Type, type
+#include "wrap_stc/vec.h"

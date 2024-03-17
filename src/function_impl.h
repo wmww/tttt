@@ -16,10 +16,10 @@ typedef struct FunctionArg {
 
 void function_arg_drop(FunctionArg* self);
 
-#define i_key_class FunctionArg
+#define i_key_class_names FunctionArg, function_arg
 #define i_is_forward
 #define i_no_clone
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"
 
 typedef struct FunctionImpl {
     Type type;

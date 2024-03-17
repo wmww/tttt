@@ -22,8 +22,8 @@ Namespace namespace_clone(Namespace self) {
 
 NameStack name_stack_init() {
     return (NameStack){
-        .stack = c_init(VecNamespace, {{
-            .variables = c_init(HmapStrCTypePtr, {
+        .stack = c_init(vec_namespace, {{
+            .variables = c_init(hmap_str_c_type_ptr, {
                 {.first = c_sv("console"), .second = &type_any},
                 {.first = c_sv("String"), .second = &type_any},
                 {.first = c_sv("Number"), .second = &type_any},
@@ -71,7 +71,7 @@ bool name_stack_add_type(NameStack* self, cstr name, Type const* type, bool is_g
 }
 
 Type const* name_stack_get_variable(NameStack* self, csview name) {
-    c_foreach_rev(i, VecNamespace, self->stack) {
+    c_foreach_rev(i, vec_namespace, self->stack) {
         hmap_str_c_type_ptr_value const* result = hmap_str_c_type_ptr_get(&i.ref->variables, name);
         if (result) {
             return result->second;
@@ -84,7 +84,7 @@ NamedType const* name_stack_get_type(NameStack* self, csview name, int* optional
     if (optional_generic_depth) {
         *optional_generic_depth = 0;
     }
-    c_foreach_rev(i, VecNamespace, self->stack) {
+    c_foreach_rev(i, vec_namespace, self->stack) {
         if (optional_generic_depth && i.ref->is_generic) {
             (*optional_generic_depth)++;
         }

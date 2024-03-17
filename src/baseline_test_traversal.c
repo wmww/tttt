@@ -74,7 +74,7 @@ void expr_compile_test_info(Expr* self, BaselineTestCase* ctx) {
 
         case EXPR_CALL:
             expr_compile_test_info(&self->call->callable, ctx);
-            c_foreach(i, VecExpr, self->call->args) {
+            c_foreach(i, vec_expr, self->call->args) {
                 expr_compile_test_info(i.ref, ctx);
             }
             break;
@@ -92,13 +92,13 @@ void expr_compile_test_info(Expr* self, BaselineTestCase* ctx) {
         }   break;
 
         case EXPR_OBJECT:
-            c_foreach(i, VecObjectExprItem, self->object) {
+            c_foreach(i, vec_object_expr_item, self->object) {
                 expr_compile_test_info(&i.ref->value, ctx);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, VecExpr, self->array) {
+            c_foreach(i, vec_expr, self->array) {
                 expr_compile_test_info(i.ref, ctx);
             }
             break;
@@ -121,7 +121,7 @@ void statement_compile_test_info(Statement* self, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_VAR_INIT:
-            c_foreach(i, VecNameInitData, self->var_init.vars) {
+            c_foreach(i, vec_name_init_data, self->var_init.vars) {
                 baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span);
                 baseline_test_case_add_type(ctx, &i.ref->name_span, 0, &i.ref->type);
                 type_compile_test_info(&i.ref->type, ctx);
@@ -158,7 +158,7 @@ void statement_compile_test_info(Statement* self, BaselineTestCase* ctx) {
 }
 
 void block_compile_test_info(Block* self, BaselineTestCase* ctx) {
-    c_foreach(i, VecStatement, self->statements) {
+    c_foreach(i, vec_statement, self->statements) {
         statement_compile_test_info(i.ref, ctx);
     }
 }

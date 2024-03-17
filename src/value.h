@@ -8,18 +8,18 @@ typedef struct FunctionArg FunctionArg;
 typedef struct Value Value;
 typedef struct Engine Engine;
 typedef struct Result Result;
-typedef struct ObjectValueItem ObjectValueItem;
-typedef struct ObjectValue ObjectValue;
-typedef struct ArrayValue ArrayValue;
+typedef struct ObjectItem ObjectItem;
+typedef struct JsObject JsObject;
+typedef struct JsArray JsArray;
 typedef struct JsFuncValue JsFuncValue;
 typedef struct NativeFuncValue NativeFuncValue;
 
-forward_hmap(HmapStrObjectValueItem, cstr, ObjectValueItem);
-forward_arc(ArcObject, ObjectValue);
-forward_arc(ArcArray, ArrayValue);
-forward_arc(ArcJsFunc, JsFuncValue);
-forward_arc(ArcNativeFunc, NativeFuncValue);
-forward_vec(VecFunctionArg, FunctionArg);
+wrap_forward_hmap_str(ObjectItem, object_item);
+wrap_forward_arc(JsObject, js_object);
+wrap_forward_arc(JsArray, js_array);
+wrap_forward_arc(JsFuncValue, js_func_value);
+wrap_forward_arc(NativeFuncValue, native_func_value);
+wrap_forward_vec(FunctionArg, function_arg);
 
 typedef struct Value {
     enum {
@@ -38,10 +38,10 @@ typedef struct Value {
         double number;
         cstr string;
         // TODO: const non-ref variant of object for perf during type checking
-        ArcObject object;
-        ArcArray array;
-        ArcJsFunc js_func;
-        ArcNativeFunc native_func;
+        ArcJsObject object;
+        ArcJsArray array;
+        ArcJsFuncValue js_func;
+        ArcNativeFuncValue native_func;
     };
 } Value;
 
@@ -74,14 +74,14 @@ bool value_strict_eq(Value const* a, Value const* b);
 
 // Object
 
-typedef struct ObjectValueItem {
+typedef struct ObjectItem {
     int position;
     Value value;
-} ObjectValueItem;
+} ObjectItem;
 
 typedef struct ObjectItemRef {
     cstr* name;
-    ObjectValueItem* item;
+    ObjectItem* item;
 } ObjectItemRef;
 
 typedef struct ObjectItemInit {
@@ -89,64 +89,61 @@ typedef struct ObjectItemInit {
     Value value;
 } ObjectItemInit;
 
-#define i_key ObjectItemRef
+#define i_key_names ObjectItemRef, object_item_ref
 #define i_more
-// TODO: make purel positive numeric keys go first
+// TODO: make positive numeric keys go first
 #define i_cmp(a, b) c_default_cmp(&a->item->position, &b->item->position)
-#include "stc/vec.h"
-#include "stc/algo/quicksort.h"
+#include "wrap_stc/vec.h"
+#include "wrap_stc/quicksort.h"
 
-void object_value_item_drop(ObjectValueItem* self);
-ObjectValueItem object_value_item_clone(ObjectValueItem self);
+void object_item_drop(ObjectItem* self);
+ObjectItem object_item_clone(ObjectItem self);
 
-typedef struct ObjectValue {
-    HmapStrObjectValueItem items;
+typedef struct JsObject {
+    HmapStrObjectItem items;
     int total_inserted;
-} ObjectValue;
+} JsObject;
 
-void object_value_drop(ObjectValue* self);
-ObjectValue object_value_clone(ObjectValue self);
+void js_object_drop(JsObject* self);
+JsObject js_object_clone(JsObject self);
 // NOTE: returned list is invalidated by changes to object and should be dropped before then
-VecObjectItemRef object_value_sorted_items(ObjectValue* self);
+VecObjectItemRef js_object_sorted_items(JsObject* self);
 
-void object_value_set(ObjectValue* self, cstr key, Value val);
+void js_object_set(JsObject* self, cstr key, Value val);
 // On err .value is set to undefined, so you can ignore .is_err if you want the normal javascript behavior
 // Also means result doesn't need to be dropped as long as value is handled in the ok case
-Result object_value_get(ObjectValue* self, csview key);
-bool object_value_has(ObjectValue* self, csview key);
+Result js_object_get(JsObject* self, csview key);
+bool js_object_has(JsObject* self, csview key);
 
-#define i_type HmapStrObjectValueItem
 #define i_key_ssv
-#define i_val_class ObjectValueItem
+#define i_val_class_names ObjectItem, object_item
 #define i_is_forward
-#include "stc/hmap.h"
+#include "wrap_stc/hmap.h"
 
-#define i_tag Object
-#define i_key_class ObjectValue
+#define i_key_class_names JsObject, js_object
 #define i_opt c_no_atomic
 #define i_is_forward
 #define i_no_hash
-#include "stc/arc.h"
+#include "wrap_stc/arc.h"
 
-#define i_key_class Value
-#include "stc/vec.h"
+#define i_key_class_names Value, value
+#include "wrap_stc/vec.h"
 
 // Array
 
-typedef struct ArrayValue {
-    ObjectValue fallback;
+typedef struct JsArray {
+    JsObject fallback;
     VecValue vec;
-} ArrayValue;
+} JsArray;
 
-void array_value_drop(ArrayValue* self);
-ArrayValue array_value_clone(ArrayValue self);
+void js_array_drop(JsArray* self);
+JsArray js_array_clone(JsArray self);
 
-#define i_tag Array
-#define i_key_class ArrayValue
+#define i_key_class_names JsArray, js_array
 #define i_opt c_no_atomic
 #define i_is_forward
 #define i_no_hash
-#include "stc/arc.h"
+#include "wrap_stc/arc.h"
 
 // JsFunc
 
@@ -157,12 +154,11 @@ typedef struct JsFuncValue {
 
 void js_func_value_drop(JsFuncValue* self);
 
-#define i_tag JsFunc
-#define i_key_class JsFuncValue
+#define i_key_class_names JsFuncValue, js_func_value
 #define i_opt c_no_atomic
 #define i_is_forward
 #define i_no_hash
-#include "stc/arc.h"
+#include "wrap_stc/arc.h"
 
 // NativeFunc
 
@@ -174,12 +170,11 @@ typedef struct NativeFuncValue {
 
 void native_func_value_drop(NativeFuncValue* self);
 
-#define i_tag NativeFunc
-#define i_key_class NativeFuncValue
+#define i_key_class_names NativeFuncValue, native_func_value
 #define i_opt c_no_atomic
 #define i_is_forward
 #define i_no_hash
-#include "stc/arc.h"
+#include "wrap_stc/arc.h"
 
 // Builders
 
@@ -190,22 +185,22 @@ static inline Value value_number(double value) { return (Value){ .tag = VALUE_NU
 static inline Value value_string(cstr value) { return (Value){ .tag = VALUE_STRING, .string = value }; }
 
 static inline Value value_object_from_n(ObjectItemInit* items, int n) {
-    ObjectValue data = {
-        .items = hmap_str_object_value_item_init(),
+    JsObject data = {
+        .items = hmap_str_object_item_init(),
         .total_inserted = n,
     };
     for (int i = 0; i < n; i++) {
-        hmap_str_object_value_item_insert_or_assign(
+        hmap_str_object_item_insert_or_assign(
             &data.items,
             cstr_from(items[i].name),
-            (ObjectValueItem){
+            (ObjectItem){
                 .position = i,
                 .value = items[i].value,
             });
     }
     return (Value){
         .tag = VALUE_OBJECT,
-        .object = arc_object_make(data),
+        .object = arc_js_object_make(data),
     };
 }
 
@@ -219,14 +214,14 @@ static inline Value value_object_empty() {
 static inline Value value_array_empty() {
     return (Value){
         .tag = VALUE_ARRAY,
-        .array = arc_array_make((ArrayValue){0}),
+        .array = arc_js_array_make((JsArray){0}),
     };
 }
 
 static inline Value value_js_func(VecFunctionArg const* args, Block const* code) {
     return (Value){
         .tag = VALUE_JS_FUNC,
-        .js_func = arc_js_func_make((JsFuncValue){
+        .js_func = arc_js_func_value_make((JsFuncValue){
             .args = args,
             .code = code,
         }),
@@ -240,7 +235,7 @@ static inline Value value_native_func(
 ) {
     return (Value){
         .tag = VALUE_NATIVE_FUNC,
-        .native_func = arc_native_func_make((NativeFuncValue){
+        .native_func = arc_native_func_value_make((NativeFuncValue){
             .func = func,
             .drop = drop,
             .data = data,

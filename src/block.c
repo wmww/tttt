@@ -8,7 +8,7 @@ void block_drop(Block* self) {
 
 void cstr_append_block_debug(cstr* target, Block* self, int indent) {
     cstr_append_sv(target, c_sv("{\n"));
-    c_foreach(i, VecStatement, self->statements) {
+    c_foreach(i, vec_statement, self->statements) {
         APPEND_INDENT(target, indent + 1);
         cstr_append_statement_debug(target, i.ref, indent + 1);
         cstr_append_sv(target, c_sv("\n"));
@@ -18,10 +18,10 @@ void cstr_append_block_debug(cstr* target, Block* self, int indent) {
 }
 
 void block_resolve_names_without_stack_frame(Block* self, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, VecStatement, self->statements) {
+    c_foreach(i, vec_statement, self->statements) {
         statement_add_names(i.ref, names, errs);
     }
-    c_foreach(i, VecStatement, self->statements) {
+    c_foreach(i, vec_statement, self->statements) {
         statement_resolve_names(i.ref, names, errs);
     }
 }
@@ -33,7 +33,7 @@ void block_resolve_names(Block* self, NameStack* names, ErrorCtx* errs) {
 }
 
 void block_typecheck(Block* self, StatementCtx* ctx, ErrorCtx* errs) {
-    c_foreach(i, VecStatement, self->statements) {
+    c_foreach(i, vec_statement, self->statements) {
         statement_typecheck(i.ref, ctx, errs);
     }
 }

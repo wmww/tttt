@@ -32,7 +32,7 @@ void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, 
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
         case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
     }
-    c_foreach(i, VecNameInitData, self->vars) {
+    c_foreach(i, vec_name_init_data, self->vars) {
         cstr_append_name_init_data_debug(target, i.ref, indent);
         if (i.ref != i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
@@ -42,7 +42,7 @@ void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* self, 
 }
 
 void var_init_statement_typecheck(VarInitStatement* self, ErrorCtx* errs) {
-    c_foreach(i, VecNameInitData, self->vars) {
+    c_foreach(i, vec_name_init_data, self->vars) {
         if (i.ref->value_explicit) {
             Type expr_type = expr_get_type_and_typecheck(&i.ref->value, errs);
             if (i.ref->type_explicit) {
@@ -184,7 +184,7 @@ void cstr_append_statement_debug(cstr* target, Statement* self, int indent) {
 void statement_add_names(Statement* self, NameStack* names, ErrorCtx* errs) {
     switch (self->tag) {
         case STATEMENT_VAR_INIT:
-            c_foreach(i, VecNameInitData, self->var_init.vars) {
+            c_foreach(i, vec_name_init_data, self->var_init.vars) {
                 if (!name_stack_add_variable(
                     names,
                     cstr_clone(i.ref->name),
@@ -242,7 +242,7 @@ void statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) 
             break;
 
         case STATEMENT_VAR_INIT:
-            c_foreach(i, VecNameInitData, self->var_init.vars) {
+            c_foreach(i, vec_name_init_data, self->var_init.vars) {
                 type_resolve_names(&i.ref->type, names, errs);
                 expr_resolve_names(&i.ref->value, names, errs);
             }
@@ -257,10 +257,10 @@ void statement_resolve_names(Statement* self, NameStack* names, ErrorCtx* errs) 
             break;
 
         case STATEMENT_IF_ELSE:
-            c_foreach(i, VecExpr, self->if_else.conditions) {
+            c_foreach(i, vec_expr, self->if_else.conditions) {
                 expr_resolve_names(i.ref, names, errs);
             }
-            c_foreach(i, VecStatement, self->if_else.statements) {
+            c_foreach(i, vec_statement, self->if_else.statements) {
                 statement_resolve_names(i.ref, names, errs);
             }
             break;
@@ -324,12 +324,12 @@ void statement_typecheck(Statement* self, StatementCtx* ctx, ErrorCtx* errs) {
             if (statement_size != cond_size && statement_size != cond_size + 1) {
                 PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
             }
-            c_foreach(i, VecExpr, self->if_else.conditions) {
+            c_foreach(i, vec_expr, self->if_else.conditions) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
                 // Conditions do not have to be booleans
                 type_drop(&t);
             }
-            c_foreach(i, VecStatement, self->if_else.statements) {
+            c_foreach(i, vec_statement, self->if_else.statements) {
                 statement_typecheck(i.ref, ctx, errs);
             }
             break;

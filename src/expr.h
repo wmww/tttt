@@ -9,14 +9,14 @@ typedef struct DotPropExpr DotPropExpr;
 typedef struct AsTypeExpr AsTypeExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
-typedef struct VecObjectExprItem ObjectExpr;
+typedef struct vec_object_expr_item ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct Expr Expr;
 
-forward_vec(VecObjectExprItem, ObjectExprItem);
-forward_vec(VecExpr, Expr);
+wrap_forward_vec(ObjectExprItem, object_expr_item);
+wrap_forward_vec(Expr, expr);
 
 typedef struct Expr {
     Span span;
@@ -96,10 +96,10 @@ void cstr_append_expr_debug(cstr* target, Expr const* self, int indent);
 void expr_resolve_names(Expr* self, NameStack* names, ErrorCtx* errs);
 Type expr_get_type_and_typecheck(Expr* self, ErrorCtx* errs);
 
-#define i_key_class Expr
+#define i_key_class_names Expr, expr
 #define i_no_clone
 #define i_is_forward
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"
 
 // Binary op
 
@@ -217,7 +217,7 @@ typedef struct ObjectExprItem {
 void object_expr_item_drop(ObjectExprItem* self);
 ObjectExprItem* object_expr_get(ObjectExpr* self, const char* name);
 
-#define i_key_class ObjectExprItem
+#define i_key_class_names ObjectExprItem, object_expr_item
 #define i_no_clone
 #define i_is_forward
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"

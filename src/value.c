@@ -10,10 +10,10 @@ void value_drop_internal(Value* self) {
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: cstr_drop(&self->string); break;
-        case VALUE_OBJECT: arc_object_drop(&self->object); break;
-        case VALUE_ARRAY: arc_array_drop(&self->array); break;
-        case VALUE_JS_FUNC: arc_js_func_drop(&self->js_func); break;
-        case VALUE_NATIVE_FUNC: arc_native_func_drop(&self->native_func); break;
+        case VALUE_OBJECT: arc_js_object_drop(&self->object); break;
+        case VALUE_ARRAY: arc_js_array_drop(&self->array); break;
+        case VALUE_JS_FUNC: arc_js_func_value_drop(&self->js_func); break;
+        case VALUE_NATIVE_FUNC: arc_native_func_value_drop(&self->native_func); break;
     }
 }
 
@@ -24,10 +24,10 @@ Value value_clone(Value self) {
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: self.string = cstr_clone(self.string); break;
-        case VALUE_OBJECT: self.object = arc_object_clone(self.object); break;
-        case VALUE_ARRAY: self.array = arc_array_clone(self.array); break;
-        case VALUE_JS_FUNC: self.js_func = arc_js_func_clone(self.js_func); break;
-        case VALUE_NATIVE_FUNC: self.native_func = arc_native_func_clone(self.native_func); break;
+        case VALUE_OBJECT: self.object = arc_js_object_clone(self.object); break;
+        case VALUE_ARRAY: self.array = arc_js_array_clone(self.array); break;
+        case VALUE_JS_FUNC: self.js_func = arc_js_func_value_clone(self.js_func); break;
+        case VALUE_NATIVE_FUNC: self.native_func = arc_native_func_value_clone(self.native_func); break;
     }
     return self;
 }
@@ -119,7 +119,7 @@ void cstr_append_value_js(cstr* target, Value const* self) {
             break;
 
         case VALUE_ARRAY:
-            c_foreach(i, VecValue, self->array.get->vec) {
+            c_foreach(i, vec_value, self->array.get->vec) {
                 cstr_append_value_js(target, i.ref);
                 if (i.ref < i.end - 1) {
                     cstr_append_sv(target, c_sv(","));
@@ -160,11 +160,11 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
 
         case VALUE_OBJECT: {
             cstr_append_sv(target, c_sv("{"));
-            VecObjectItemRef items = object_value_sorted_items(self->object.get);
+            VecObjectItemRef items = js_object_sorted_items(self->object.get);
             int size = vec_object_item_ref_size(&items);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
-                c_foreach(i, VecObjectItemRef, items) {
+                c_foreach(i, vec_object_item_ref, items) {
                     APPEND_INDENT(target, indent + 1);
                     cstr_append_s(target, *i.ref->name);
                     cstr_append_sv(target, c_sv(": "));
@@ -185,11 +185,11 @@ void cstr_append_value_debug(cstr* target, Value const* self, int indent) {
 
         case VALUE_ARRAY: {
             cstr_append_sv(target, c_sv("["));
-            ArrayValue* value = self->array.get;
+            JsArray* value = self->array.get;
             int size = vec_value_size(&value->vec);
             if (size > 1) {
                 cstr_append_sv(target, c_sv("\n"));
-                c_foreach(i, VecValue, value->vec) {
+                c_foreach(i, vec_value, value->vec) {
                     APPEND_INDENT(target, indent + 1);
                     cstr_append_value_debug(target, i.ref, indent);
                     cstr_append_sv(target, c_sv(",\n"));
@@ -250,27 +250,27 @@ bool value_strict_eq(Value const* a, Value const* b) {
     UNREACHABLE;
 }
 
-void object_value_item_drop(ObjectValueItem* self) {
+void object_item_drop(ObjectItem* self) {
     value_drop(&self->value);
 }
 
-ObjectValueItem object_value_item_clone(ObjectValueItem self) {
+ObjectItem object_item_clone(ObjectItem self) {
     self.value = value_clone(self.value);
     return self;
 }
 
-void object_value_drop(ObjectValue* self) {
-    hmap_str_object_value_item_drop(&self->items);
+void js_object_drop(JsObject* self) {
+    hmap_str_object_item_drop(&self->items);
 }
 
-ObjectValue object_value_clone(ObjectValue self) {
-    self.items = hmap_str_object_value_item_clone(self.items);
+JsObject js_object_clone(JsObject self) {
+    self.items = hmap_str_object_item_clone(self.items);
     return self;
 }
 
-VecObjectItemRef object_value_sorted_items(ObjectValue* self) {
+VecObjectItemRef js_object_sorted_items(JsObject* self) {
     VecObjectItemRef ret = vec_object_item_ref_with_capacity(self->total_inserted);
-    c_foreach(i, HmapStrObjectValueItem, self->items) {
+    c_foreach(i, hmap_str_object_item, self->items) {
         vec_object_item_ref_push(&ret, (ObjectItemRef){
             .name = &i.ref->first,
             .item = &i.ref->second,
@@ -280,16 +280,16 @@ VecObjectItemRef object_value_sorted_items(ObjectValue* self) {
     return ret;
 }
 
-void object_value_set(ObjectValue* self, cstr key, Value val) {
-    hmap_str_object_value_item_insert_or_assign(&self->items, key, (ObjectValueItem){
+void js_object_set(JsObject* self, cstr key, Value val) {
+    hmap_str_object_item_insert_or_assign(&self->items, key, (ObjectItem){
         .value = val,
         .position = self->total_inserted,
     });
     self->total_inserted++;
 }
 
-Result object_value_get(ObjectValue* self, csview key) {
-    hmap_str_object_value_item_value const* value = hmap_str_object_value_item_get(&self->items, key);
+Result js_object_get(JsObject* self, csview key) {
+    hmap_str_object_item_value const* value = hmap_str_object_item_get(&self->items, key);
     if (value) {
         return result_ok(value_clone(value->second.value));
     } else {
@@ -297,18 +297,18 @@ Result object_value_get(ObjectValue* self, csview key) {
     }
 }
 
-bool object_value_has(ObjectValue* self, csview key) {
-    return hmap_str_object_value_item_get(&self->items, key) != nullptr;
+bool js_object_has(JsObject* self, csview key) {
+    return hmap_str_object_item_get(&self->items, key) != nullptr;
 }
 
-void array_value_drop(ArrayValue* self) {
-    object_value_drop(&self->fallback);
+void array_value_drop(JsArray* self) {
+    js_object_drop(&self->fallback);
     vec_value_drop(&self->vec);
 }
 
-ArrayValue array_value_clone(ArrayValue self) {
-    return (ArrayValue){
-        .fallback = object_value_clone(self.fallback),
+JsArray array_value_clone(JsArray self) {
+    return (JsArray){
+        .fallback = js_object_clone(self.fallback),
         .vec = vec_value_clone(self.vec),
     };
 }

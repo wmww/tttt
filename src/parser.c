@@ -14,12 +14,13 @@
 
 #define i_key uint8_t
 #define i_type vec_u8
-#include "stc/vec.h"
+#include "wrap_stc/vec.h"
+typedef vec_u8 VecU8;
 
 typedef struct ParserShared {
     const char* const file_start;
     const char* fail_cache_start;
-    vec_u8 fail_cache;
+    VecU8 fail_cache;
 } ParserShared;
 
 void parser_shared_drop(ParserShared* self) {
