@@ -1260,7 +1260,7 @@ const baselines = {
         types: false,
     },
     'arrayLiteralComments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26525,7 +26525,7 @@ const baselines = {
         types: false,
     },
     'stringPropCodeGen': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27295,7 +27295,7 @@ const baselines = {
         types: false,
     },
     'targetTypeObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49336,8 +49336,8 @@ const baselines = {
     },
     'parserUnaryExpression2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserUnaryExpression3': {
         errors: false,
@@ -52510,7 +52510,7 @@ const baselines = {
         types: false,
     },
     'jsContainerMergeJsContainer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52870,7 +52870,7 @@ const baselines = {
         types: false,
     },
     'prototypePropertyAssignmentMergedTypeReference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

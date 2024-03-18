@@ -907,6 +907,13 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
+static bool parse_old_style_function_expr(Parser* parent, FunctionImpl* ret) {
+    if (!hop_start_if_ends_on_word_break(parent, "function")) {
+        return false;
+    }
+    return parse_non_arrow_function(parent, ret);
+}
+
 static bool parse_object_item(Parser* parent, void* data) {
     Parser p = parser(parent);
     VecObjectExprItem* ret = data;
@@ -1403,8 +1410,8 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
     ret->peren_depth = 0;
 
-    cstr name = cstr_null;
-    FunctionImpl function = {0};
+    cstr name;
+    FunctionImpl function;
     if (parse_literal(&p, &ret->literal)) {
         ret->tag = EXPR_LITERAL;
     } else if (parse_object(&p, &ret->object)) {
@@ -1412,6 +1419,8 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     } else if (parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
     } else if (parse_left_unary_op_expr(&p, ret)) {
+    } else if (parse_old_style_function_expr(&p, &function)) {
+        *ret = expr_function(span_end(a), c_new(FunctionImpl, function));
     } else if (parse_identifier(&p, &name, nullptr)) {
         *ret = expr_identifier(span_end(a), name);
     } else if (parse_arrow_function(&p, &function)) {
