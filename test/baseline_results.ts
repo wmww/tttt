@@ -4400,7 +4400,7 @@ const baselines = {
         types: true,
     },
     'commentInEmptyParameterList1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12576,7 +12576,7 @@ const baselines = {
     },
     'fatarrowfunctionsOptionalArgsErrors2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'fatarrowfunctionsOptionalArgsErrors3': {
@@ -14420,7 +14420,7 @@ const baselines = {
         types: false,
     },
     'genericsManyTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
