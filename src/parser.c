@@ -50,6 +50,7 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
+static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret);
 static bool parse_name_init(Parser* parent, NameInitData* ret);
 static bool parse_statement(Parser* parent, Statement* ret);
 static bool parse_type(Parser* parent, Type* ret);
@@ -1018,6 +1019,8 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
             ret->tag = CLASS_ITEM_MEMBER;
             ret->member.name = name;
             ret->member.name_span = name_span;
+        } else if (parse_name_init_with_name(&p, name, name_span, &ret->field)) {
+            ret->tag = CLASS_ITEM_FIELD;
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "class member expected");
             ret->member = (typeof(ret->member)){0};
@@ -1061,7 +1064,9 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             return parse_success(&p);
         }
         vec_class_item_push(&ret->items, item);
-        hop_whitespace(&p);
+        do {
+            hop_whitespace(&p);
+        } while (hop_char(&p, ';'));
     }
 
     if (!hop_char(&p, '}')) {
@@ -1525,16 +1530,8 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_name_init(Parser* parent, NameInitData* ret) {
+static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret) {
     Parser p = parser(parent);
-
-    cstr name = cstr_null;
-    Span name_span;
-    if (!parse_identifier(&p, &name, &name_span)) {
-        name_span = span_from_pos(&p);
-        error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-    }
-    hop_whitespace(&p);
 
     Type type = type_any;
     bool type_explicit = false;
@@ -1569,6 +1566,24 @@ static bool parse_name_init(Parser* parent, NameInitData* ret) {
         .value_explicit = value_explicit,
         .value = value,
     };
+    return parse_success(&p);
+}
+
+static bool parse_name_init(Parser* parent, NameInitData* ret) {
+    Parser p = parser(parent);
+
+    cstr name = cstr_null;
+    Span name_span;
+    if (!parse_identifier(&p, &name, &name_span)) {
+        name_span = span_from_pos(&p);
+        error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+    }
+    hop_whitespace(&p);
+
+    if (!parse_name_init_with_name(&p, name, name_span, ret)) {
+        return parse_fail(&p);
+    }
+
     return parse_success(&p);
 }
 

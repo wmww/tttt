@@ -10,6 +10,10 @@ void class_item_drop(ClassItem* me) {
             cstr_drop(&my member.name);
             function_impl_drop(&my member.func);
             break;
+
+        case CLASS_ITEM_FIELD:
+            name_init_data_drop(&my field);
+            break;
     }
 }
 
@@ -39,6 +43,10 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                 cstr_append_s(target, i.ref->member.name);
                 cstr_append_sv(target, c_sv(CLR0));
                 cstr_append_function_impl_debug(target, &i.ref->member.func, false, indent + 1);
+                break;
+
+            case CLASS_ITEM_FIELD:
+                cstr_append_name_init_data_debug(target, &i.ref->field, indent + 1);
                 break;
         }
         cstr_append_sv(target, i.ref == i.end - 1 ? c_sv("\n") : c_sv("\n\n"));

@@ -2,11 +2,13 @@
 
 #include "prelude.h"
 #include "function_impl.h"
+#include "statement.h" // for NameInitData
 
 typedef struct ClassItem {
     enum {
         CLASS_ITEM_CONSTRUCTOR,
         CLASS_ITEM_MEMBER,
+        CLASS_ITEM_FIELD,
     } tag;
     struct {
         FunctionImpl constructor;
@@ -15,6 +17,7 @@ typedef struct ClassItem {
             Span name_span;
             FunctionImpl func;
         } member;
+        NameInitData field;
     };
 } ClassItem;
 
