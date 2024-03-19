@@ -328,6 +328,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_FUNCTION: return result_ok(value_js_func(&expr->function->args, &expr->function->body));
         case EXPR_OBJECT: return engine_eval_object(me, &expr->object);
         case EXPR_ARRAY: return engine_eval_array(me, &expr->array);
+        case EXPR_CLASS_DECL: return result_ok_undefined; // TODO
     }
     UNREACHABLE;
 }

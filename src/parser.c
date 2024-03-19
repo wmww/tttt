@@ -6,6 +6,7 @@
 #include "statement.h"
 #include "ternary_type.h"
 #include "generic.h"
+#include "class_decl.h"
 #include "callable_type.h"
 #include "as_type_expr.h"
 #include "extends_conditional.h"
@@ -999,6 +1000,77 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_class_item(Parser* parent, ClassItem* ret) {
+    Parser p = parser(parent);
+    cstr name;
+    Span name_span;
+
+    if (hop_start_if_ends_on_word_break(&p, "constructor")) {
+        ret->tag = CLASS_ITEM_CONSTRUCTOR;
+        hop_whitespace(&p);
+        if (!parse_non_arrow_function(&p, &ret->constructor)) {
+            error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "constructor expected");
+            ret->constructor = (FunctionImpl){0};
+        }
+    } else if (parse_identifier(&p, &name, &name_span)) {
+        hop_whitespace(&p);
+        if (parse_non_arrow_function(&p, &ret->member.func)) {
+            ret->tag = CLASS_ITEM_MEMBER;
+            ret->member.name = name;
+            ret->member.name_span = name_span;
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "class member expected");
+            ret->member = (typeof(ret->member)){0};
+        }
+    } else {
+        return parse_fail(&p);
+    }
+
+    return parse_success(&p);
+}
+
+static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_start_and_required_whitespace(&p, "class")) {
+        return parse_fail(&p);
+    }
+
+    *ret = (ClassDecl){0};
+    if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
+        ret->name = cstr_null;
+        ret->name_span = span_null;
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, '{')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        return parse_success(&p);
+    }
+    hop_whitespace(&p);
+
+    ClassItem item;
+    while (*p.pos && *p.pos != '}') {
+        if (!parse_class_item(&p, &item)) {
+            error_ctx_error(
+                &p.errs,
+                span_from_token(&p),
+                1068,
+                "Unexpected token. A constructor, method, accessor, or property was expected."
+            );
+            return parse_success(&p);
+        }
+        vec_class_item_push(&ret->items, item);
+        hop_whitespace(&p);
+    }
+
+    if (!hop_char(&p, '}')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_call_args(Parser* parent, VecExpr* args) {
     Parser p = parser(parent);
 
@@ -1410,21 +1482,27 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
     ret->peren_depth = 0;
 
-    cstr name;
-    FunctionImpl function;
+    union {
+        cstr name;
+        FunctionImpl function;
+        ClassDecl class_decl;
+    } parsed;
+
     if (parse_literal(&p, &ret->literal)) {
         ret->tag = EXPR_LITERAL;
     } else if (parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
     } else if (parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
+    } else if (parse_class_decl(&p, &parsed.class_decl)) {
+        *ret = expr_class_decl(span_end(a), c_new(ClassDecl, parsed.class_decl));
     } else if (parse_left_unary_op_expr(&p, ret)) {
-    } else if (parse_old_style_function_expr(&p, &function)) {
-        *ret = expr_function(span_end(a), c_new(FunctionImpl, function));
-    } else if (parse_identifier(&p, &name, nullptr)) {
-        *ret = expr_identifier(span_end(a), name);
-    } else if (parse_arrow_function(&p, &function)) {
-        *ret = expr_function(span_end(a), c_new(FunctionImpl, function));
+    } else if (parse_old_style_function_expr(&p, &parsed.function)) {
+        *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
+    } else if (parse_identifier(&p, &parsed.name, nullptr)) {
+        *ret = expr_identifier(span_end(a), parsed.name);
+    } else if (parse_arrow_function(&p, &parsed.function)) {
+        *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
         if (!parse_expr(&p, ret)) {
             return parse_fail(&p);

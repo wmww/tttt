@@ -102,6 +102,11 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                 expr_compile_test_info(i.ref, ctx);
             }
             break;
+
+        case EXPR_CLASS_DECL:
+            // TODO
+            NONFATAL("traversing EXPR_CLASS_DECL not implemented");
+            break;
     }
 }
 

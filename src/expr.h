@@ -11,6 +11,7 @@ typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_object_expr_item ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
+typedef struct ClassDecl ClassDecl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct Expr Expr;
@@ -32,6 +33,7 @@ typedef struct Expr {
         EXPR_FUNCTION,
         EXPR_OBJECT,
         EXPR_ARRAY,
+        EXPR_CLASS_DECL,
     } tag;
     union {
         Value literal;
@@ -48,6 +50,7 @@ typedef struct Expr {
         // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
         VecExpr array;
+        ClassDecl* class_decl;
     };
 } Expr;
 
@@ -89,6 +92,10 @@ static inline Expr expr_function(Span span, FunctionImpl* function) {
 
 static inline Expr expr_object(Span span, ObjectExpr object) {
     return (Expr){ .span = span, .tag = EXPR_OBJECT, .object = object };
+}
+
+static inline Expr expr_class_decl(Span span, ClassDecl* class_decl) {
+    return (Expr){ .span = span, .tag = EXPR_CLASS_DECL, .class_decl = class_decl };
 }
 
 void expr_drop(Expr* me);

@@ -34,7 +34,7 @@ typedef struct FunctionImpl {
 void function_impl_drop(FunctionImpl* me);
 CallableType* function_impl_callable_type(FunctionImpl* me);
 Generic* function_impl_generic_or_null(FunctionImpl* me);
-int function_impl_arg_count(FunctionImpl* me);
+intptr_t function_impl_arg_count(FunctionImpl* me);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

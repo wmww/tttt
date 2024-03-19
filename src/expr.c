@@ -7,6 +7,7 @@
 #include "function_impl.h"
 #include "as_type_expr.h"
 #include "generic.h"
+#include "class_decl.h"
 
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
 static inline int binary_op_get_precedence(BinaryOp op) {
@@ -131,6 +132,11 @@ void expr_drop(Expr* me) {
         case EXPR_ARRAY:
             vec_expr_drop(&my array);
             break;
+
+        case EXPR_CLASS_DECL:
+            class_decl_drop(my class_decl);
+            free(my class_decl);
+            break;
     }
 }
 
@@ -223,6 +229,10 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             APPEND_INDENT(target, indent);
             cstr_append_sv(target, c_sv("]"));
         }   break;
+
+        case EXPR_CLASS_DECL:
+            cstr_append_class_decl_debug(target, my class_decl, indent);
+            break;
     }
     for (int i = 0; i < my peren_depth; i++) {
         cstr_append_sv(target, c_sv(")"));
@@ -283,6 +293,11 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             c_foreach(i, vec_expr, my array) {
                 expr_resolve_names(i.ref, names, errs);
             }
+            break;
+
+        case EXPR_CLASS_DECL:
+            // TODO
+            NONFATAL("EXPR_CLASS_DECL resolve names not implemented");
             break;
     }
 }
@@ -580,6 +595,10 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
             }
             return type_array(c_new(Type, array_type));
         }
+
+        case EXPR_CLASS_DECL:
+            // TODO
+            return type_any;
     }
     UNREACHABLE;
 }
