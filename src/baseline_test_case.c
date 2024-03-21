@@ -65,17 +65,17 @@ static const char* relative_test_path(const char* test_path) {
 
 static cstr render_lines_woven_with_file(
     const char* source_path,
-    bool include_header,
-    const char* line_indent,
+    bool is_errors,
     csview source_contents,
     VecLineNumberedStr const* lines
 ) {
     cstr ret = cstr_null;
+    const char* line_indent = is_errors ? "    " : "";
     int line = 0;
     int index = 0;
     int vec_size = vec_line_numbered_str_size(lines);
     const char* relative_path = relative_test_path(source_path);
-    if (include_header) {
+    if (!is_errors) {
         cstr_append_fmt(&ret, "//// [%s] ////\r\n", relative_path);
         cstr_append(&ret, "\r\n");
         cstr_append_fmt(&ret, "=== %s ===\r\n", basename_of(source_path));
@@ -86,25 +86,32 @@ static cstr render_lines_woven_with_file(
             cstr_append(&ret, "\r\n");
         }
     }
+    bool last_line_from_vec = false;
     c_foreach(i, lines_sv, source_contents) {
-        cstr_append(&ret, line_indent);
-        cstr_append_sv(&ret, i.line);
-        if (csview_size(i.line)) {
+        if (csview_size(i.line) && last_line_from_vec) {
             cstr_append(&ret, "\r\n");
         }
-        bool lines_added = false;
+        last_line_from_vec = false;
+        cstr_append(&ret, line_indent);
+        cstr_append_sv(&ret, i.line);
+        cstr_append(&ret, "\r\n");
+        bool lines_added_from_vec = false;
         while (index < vec_size && vec_line_numbered_str_at(lines, index)->line <= line) {
-            cstr_append_s(&ret, vec_line_numbered_str_at(lines, index)->str);
-            if (include_header || index < vec_size - 1) {
+            if (lines_added_from_vec) {
                 cstr_append(&ret, "\r\n");
             }
-            lines_added = true;
+            cstr_append_s(&ret, vec_line_numbered_str_at(lines, index)->str);
+            lines_added_from_vec = true;
             index++;
+            last_line_from_vec = true;
         }
-        if (include_header && lines_added) {
+        if (!is_errors && lines_added_from_vec) {
             cstr_append(&ret, "\r\n");
         }
         line++;
+    }
+    if (!is_errors && last_line_from_vec && !cstr_ends_with(&ret, "\r\n\r\n")) {
+        cstr_append(&ret, "\r\n");
     }
     return ret;
 }
@@ -230,26 +237,51 @@ void baseline_test_case_clear_detail(BaselineTestCase* me) {
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span) {
-    const char* line_start = span_line_start(span);
-    unsigned line = span_line_index(span);
-    const char* span_start = span_start_ptr(span);
+    unsigned line_for_placement = span_line_index(span);
+    Span format_span = *span;
+    bool keep_going = true;
     // The space before the symbol is included in the span. Why? I have no idea.
-    while (span_start > line_start && *(span_start - 1) == ' ') span_start--;
-    unsigned col = span_start - line_start + 1;
+    while (keep_going && format_span.offset > 0) {
+        switch (format_span.file_start[format_span.offset - 1]) {
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\r':
+                format_span.offset--;
+                break;
+
+            default:
+                keep_going = false;
+                break;
+        }
+    }
+    int format_line = span_line_index(&format_span);
+    int format_col = span_col_index(&format_span);
     vec_line_numbered_str_push(&my detail.symbols, (LineNumberedStr){
-        .line = line,
+        .line = line_for_placement,
         .str = cstr_from_fmt(
             ">%s : Symbol(%s, Decl(%s, %d, %d))",
             name, name,
             basename_of(cstr_str(&my source_path)),
-            line, col - 1
+            format_line, format_col
         ),
     });
 }
 
+static void append_span_contents_without_newlines(cstr* target, Span const* span) {
+    csview sv = span_sv(span);
+    for (intptr_t i = 0; i < sv.size; i++) {
+        if (sv.buf[i] != '\r' && sv.buf[i] != '\n') {
+            cstr_push(target, &sv.buf[i]);
+        }
+    }
+}
+
 void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, int paren_depth, Type const* type) {
     unsigned line = span_line_index(span);
-    cstr str = cstr_from_fmt(">%.*s : ", c_SV(span_sv(span)));
+    cstr str = cstr_lit(">");
+    append_span_contents_without_newlines(&str, span);
+    cstr_append(&str, " : ");
     cstr_append_type_error_msg(&str, type);
     vec_line_numbered_str_push(&my detail.types, (LineNumberedStr){
         .line = line,
@@ -342,8 +374,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         );
         cstr errors_body = render_lines_woven_with_file(
             cstr_str(&my source_path),
-            false,
-            "    ",
+            true,
             cstr_sv(&my detail.source),
             &error_lines
         );
@@ -354,16 +385,14 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
 
     symbols_results = render_lines_woven_with_file(
         cstr_str(&my source_path),
-        true,
-        "",
+        false,
         cstr_sv(&my detail.source),
         &my detail.symbols
     );
 
     types_results = render_lines_woven_with_file(
         cstr_str(&my source_path),
-        true,
-        "",
+        false,
         cstr_sv(&my detail.source),
         &my detail.types
     );

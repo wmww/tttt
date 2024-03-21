@@ -194,8 +194,8 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
     if (new_passed || new_failed) {
         printf(
             "  %s%d" CLR0 " new passed, %s%d" CLR0 " new failed\n\n",
-            new_passed ? color_for_state(true,  true) : "", new_passed,
-            new_failed ? color_for_state(false, true) : "", new_failed
+            new_passed ? CLR_GOOD : "", new_passed,
+            new_failed ? CLR_ERR : "", new_failed
         );
     }
 

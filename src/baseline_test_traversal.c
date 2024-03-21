@@ -7,6 +7,7 @@
 #include "function_impl.h"
 #include "statement.h"
 #include "block.h"
+#include "class_decl.h"
 
 void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
     switch (my tag) {
@@ -104,8 +105,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CLASS_DECL:
-            // TODO
-            NONFATAL("traversing EXPR_CLASS_DECL not implemented");
+            baseline_test_case_add_symbol(ctx, cstr_str(&my class_decl->name), &my span);
             break;
     }
 }
