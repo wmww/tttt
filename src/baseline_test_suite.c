@@ -6,6 +6,7 @@
 #include "value.h"
 #include "block.h"
 #include "result.h"
+#include "subprocess.h"
 
 #include "stc/cregex.h"
 #include <errno.h>
@@ -23,7 +24,7 @@ static cstr test_name_from_path(const char* path) {
 }
 
 static bool test_passes_filter(BaselineTestSuite* me, const char* name) {
-    return !my has_filter || cregex_is_match(&my filter, name);
+    return !my has_filter || cregex_find(&my filter, name, nullptr, CREG_FULLMATCH) == CREG_OK;
 }
 
 static void show_collected_test_counts(BaselineTestSuite* me) {
@@ -73,6 +74,8 @@ static void load_subdir(BaselineTestSuite* me, const char* subdir) {
 void baseline_test_suite_drop(BaselineTestSuite* me) {
     arc_js_object_drop(&my prev_results);
     cregex_drop(&my filter);
+    cstr_drop(&my prev_typescript_commit);
+    cstr_drop(&my typescript_commit);
     vec_baseline_test_case_drop(&my cases);
 }
 
@@ -110,7 +113,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestCase const* tes
 
 void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
     intptr_t test_count = vec_baseline_test_case_size(&my cases);
-    int passed = 0, failed = 0;
+    int passed = 0, failed = 0, new_passed = 0, new_failed = 0;
     cstr display = cstr_null;
     VecBaselineTestCaseCPtr newly_failed = vec_baseline_test_case_c_ptr_init();
     VecBaselineTestCaseCPtr newly_passed = vec_baseline_test_case_c_ptr_init();
@@ -130,10 +133,14 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
         baseline_test_case_run(i.ref, noisy);
         baseline_test_case_clear_detail(i.ref);
 
-        if (baseline_test_case_is_pass(i.ref)) {
+        bool is_pass = baseline_test_case_is_pass(i.ref);
+        bool is_change = is_pass != baseline_test_case_was_pass(i.ref);
+        if (is_pass) {
             passed++;
+            new_passed += is_change ? 1 : 0;
         } else {
             failed++;
+            new_failed += is_change ? 1 : 0;
         }
 
         if (baseline_test_case_has_new_pass(i.ref)) {
@@ -149,7 +156,12 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
         printf("\r%s\n", cstr_str(&display));
     }
 
-    printf("\n  " CLR_GOOD "%d" CLR0 " passed, " CLR_ERR "%d" CLR0 " failed\n\n", passed, failed);
+    printf(
+        "\n  " CLR_GOOD "%d" CLR0 " passed, " CLR_ERR "%d" CLR0 " failed, %ld total\n\n",
+        passed,
+        failed,
+        vec_baseline_test_case_size(&my cases)
+    );
 
     intptr_t newly_passed_size = vec_baseline_test_case_c_ptr_size(&newly_passed);
     if (newly_passed_size) {
@@ -179,6 +191,22 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
         printf("\n");
     }
 
+    if (new_passed || new_failed) {
+        printf(
+            "  %s%d" CLR0 " new passed, %s%d" CLR0 " new failed\n\n",
+            new_passed ? color_for_state(true,  true) : "", new_passed,
+            new_failed ? color_for_state(false, true) : "", new_failed
+        );
+    }
+
+    if (!cstr_eq(&my prev_typescript_commit, &my typescript_commit)) {
+        printf(
+            "Note: the TypeScript commit changed %s%s%s -> %s%s%s.\n\n",
+            color_for_state(false, true), cstr_str(&my prev_typescript_commit), CLR0,
+            color_for_state(true,  true), cstr_str(&my typescript_commit),      CLR0
+        );
+    }
+
     vec_baseline_test_case_c_ptr_drop(&newly_failed);
     vec_baseline_test_case_c_ptr_drop(&newly_passed);
     cstr_drop(&display);
@@ -190,6 +218,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
     if (!f) {
         PANIC("Failed to write to %s: %s\n", results_path, strerror(errno));
     }
+    fprintf(f, "const tsCommit = \"%s\"\n", cstr_str(&my typescript_commit));
     fprintf(f, "const baselines = {\n");
 
     c_foreach(i, vec_baseline_test_case, my cases) {
@@ -206,11 +235,11 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
     printf(CLR_GOOD "Saving done\n" CLR0);
 }
 
-ArcObject load_saved_results(const char* results_path) {
+static void load_saved_results(BaselineTestSuite* me, const char* results_path) {
     cstr results_source;
 
     if (!read_entire_file(results_path, true, &results_source)) {
-        return arc_js_object_init();
+        my prev_results = arc_js_object_make((JsObject){0});
     }
 
     ErrorCtx errs = error_ctx_init();
@@ -222,24 +251,47 @@ ArcObject load_saved_results(const char* results_path) {
         error_ctx_drop(&errs);
         block_drop(&ast);
         cstr_drop(&results_source);
-        return arc_js_object_init();
+        my prev_results = arc_js_object_make((JsObject){0});
     }
 
     ArcObject root = arc_js_object_make((JsObject){0});
     eval_program(&ast, arc_js_object_clone(root));
 
+    Result prev_commit_result = js_object_get(root.get, c_sv("tsCommit"));
+    my prev_typescript_commit = prev_commit_result.value.tag == VALUE_STRING ?
+        cstr_clone(prev_commit_result.value.string) :
+        cstr_null;
+
     Result baselines_result = js_object_get(root.get, c_sv("baselines"));
-    ArcObject ret = baselines_result.value.tag == VALUE_OBJECT ?
+    my prev_results = baselines_result.value.tag == VALUE_OBJECT ?
         arc_js_object_clone(baselines_result.value.object) :
         arc_js_object_make((JsObject){0});
 
+    result_drop(&prev_commit_result);
     result_drop(&baselines_result);
     arc_js_object_drop(&root);
     block_drop(&ast);
     error_ctx_drop(&errs);
     cstr_drop(&results_source);
+}
 
-    return ret;
+static cstr get_git_hash_of_repo(const char* repo) {
+    const char* args[] = {
+        "git",
+        "-C",
+        repo,
+        "rev-parse",
+        "HEAD",
+        nullptr,
+    };
+    cstr out_str = cstr_null, err_str = cstr_null;
+    if (run_subprocess_get_output(args, &out_str, &err_str) == 0) {
+        if (cstr_size(&out_str)) cstr_resize(&out_str, cstr_size(&out_str) - 1, ' '); // strip trailing newline
+        cstr_drop(&err_str);
+        return out_str;
+    } else {
+        PANIC("getting git hash failed: %s", cstr_str(&err_str));
+    }
 }
 
 BoxBaselineTestSuite load_baseline_test_suite(
@@ -247,18 +299,17 @@ BoxBaselineTestSuite load_baseline_test_suite(
     const char* filter_re,
     const char* results_path
 ) {
-    printf(CLR_STATUS "Loading saved results...\n" CLR0);
-    ArcObject prev_results = load_saved_results(results_path);
-
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
         .has_filter = filter_re != nullptr,
-        .filter = filter_re ? cregex_from(filter_re, CREG_ICASE | CREG_FULLMATCH) : cregex_init(),
-        .prev_results = prev_results,
-        .cases = vec_baseline_test_case_init(),
+        .filter = filter_re ? cregex_from(filter_re, CREG_ICASE) : cregex_init(),
     });
 
+    printf(CLR_STATUS "Loading saved results...\n" CLR0);
+    load_saved_results(ret.get, results_path);
+
     printf(CLR_STATUS "Collecting tests...\n" CLR0);
+    ret.get->typescript_commit = get_git_hash_of_repo(tests_dir);
     load_subdir(ret.get, "conformance");
     load_subdir(ret.get, "compiler");
     show_collected_test_counts(ret.get);

@@ -4,7 +4,7 @@
 
 const char* const default_tests_dir = "../TypeScript/tests";
 const char* tests_dir = default_tests_dir;
-const char* test_filter = "";
+const char* test_filter = nullptr;
 const char* const default_results_path = "test/baseline_results.ts";
 const char* results_path = default_results_path;
 bool show_diffs = false;

@@ -16,6 +16,8 @@ typedef struct BaselineTestSuite {
     const char* tests_dir;
     bool has_filter;
     cregex filter;
+    cstr prev_typescript_commit;
+    cstr typescript_commit;
     ArcJsObject prev_results;
     VecBaselineTestCase cases;
 } BaselineTestSuite;

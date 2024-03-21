@@ -4,3 +4,4 @@
 
 void run_diff_subprocess(csview a, csview b);
 int run_subprocess(const char* const* cmd);
+int run_subprocess_get_output(const char* const* cmd, cstr* out, cstr* err);

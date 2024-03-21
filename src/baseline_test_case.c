@@ -410,6 +410,10 @@ bool baseline_test_case_is_pass(BaselineTestCase const* me) {
     return my errors_passed && my symbols_passed && my types_passed;
 }
 
+bool baseline_test_case_was_pass(BaselineTestCase const* me) {
+    return my errors_prev && my symbols_prev && my types_prev;
+}
+
 bool baseline_test_case_has_new_pass(BaselineTestCase const* me) {
     return (my errors_passed  && (!my has_prev || !my errors_prev )) ||
            (my symbols_passed && (!my has_prev || !my symbols_prev)) ||
