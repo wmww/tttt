@@ -584,7 +584,10 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
                     type_abstract_literals(&t);
                     type_drop(&array_type);
                     array_type = t;
-                } else if (type_extends(&t, &array_type)) {
+                } else if (
+                    (t.tag == TYPE_VALUE && t.value.tag == VALUE_UNDEFINED) ||
+                    type_extends(&t, &array_type)
+                ) {
                     type_drop(&t);
                 } else {
                     type_drop(&t);

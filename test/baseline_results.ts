@@ -4498,7 +4498,7 @@ const baselines = {
     'commentOnArrayElement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnArrayElement4': {
         errors: true,
@@ -29197,7 +29197,7 @@ const baselines = {
     },
     'unknownTypeErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unmatchedParameterPositions': {
@@ -48278,27 +48278,27 @@ const baselines = {
     'parserArrayLiteralExpression11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression2': {
         errors: true,
@@ -55742,7 +55742,7 @@ const baselines = {
     },
     'directReferenceToNull': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'validNullAssignments': {

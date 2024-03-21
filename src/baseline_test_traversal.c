@@ -22,7 +22,7 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER:
-            baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my identifier.span);
+            baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my identifier.span, false);
             break;
 
         case TYPE_GENERIC:
@@ -51,7 +51,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_IDENTIFIER:
             if (my identifier.type) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my span);
+                baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my span, true);
             }
             break;
 
@@ -86,7 +86,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             for (int i = 0; i < arg_count; i++) {
                 FunctionArg* value_arg = vec_function_arg_at_mut(&my function->args, i);
                 CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
-                baseline_test_case_add_symbol(ctx, cstr_str(&value_arg->name), &value_arg->name_span);
+                baseline_test_case_add_symbol(ctx, cstr_str(&value_arg->name), &value_arg->name_span, true);
                 baseline_test_case_add_type(ctx, &value_arg->name_span, 0, &type_arg->type);
             }
             block_compile_test_info(&my function->body, ctx);
@@ -105,7 +105,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CLASS_DECL:
-            baseline_test_case_add_symbol(ctx, cstr_str(&my class_decl->name), &my span);
+            baseline_test_case_add_symbol(ctx, cstr_str(&my class_decl->name), &my span, true);
             break;
     }
 }
@@ -127,7 +127,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_VAR_INIT:
             c_foreach(i, vec_name_init_data, my var_init.vars) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span);
+                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span, true);
                 baseline_test_case_add_type(ctx, &i.ref->name_span, 0, &i.ref->type);
                 type_compile_test_info(&i.ref->type, ctx);
                 if (i.ref->value_explicit) {

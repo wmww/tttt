@@ -236,35 +236,35 @@ void baseline_test_case_clear_detail(BaselineTestCase* me) {
     my detail = (typeof(my detail)){ 0 };
 }
 
-void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span) {
+void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span, bool decl) {
     unsigned line_for_placement = span_line_index(span);
-    Span format_span = *span;
-    bool keep_going = true;
-    // The space before the symbol is included in the span. Why? I have no idea.
-    while (keep_going && format_span.offset > 0) {
-        switch (format_span.file_start[format_span.offset - 1]) {
-            case ' ':
-            case '\t':
-            case '\n':
-            case '\r':
-                format_span.offset--;
-                break;
+    cstr text = cstr_from_fmt(">%s : Symbol(%s", name, name);
+    if (decl) {
+        Span format_span = *span;
+        bool keep_going = true;
+        // The space before the symbol is included in the span. Why? I have no idea.
+        while (keep_going && format_span.offset > 0) {
+            switch (format_span.file_start[format_span.offset - 1]) {
+                case ' ':
+                case '\t':
+                case '\n':
+                case '\r':
+                    format_span.offset--;
+                    break;
 
-            default:
-                keep_going = false;
-                break;
+                default:
+                    keep_going = false;
+                    break;
+            }
         }
+        int format_line = span_line_index(&format_span);
+        int format_col = span_col_index(&format_span);
+        cstr_append_fmt(&text, ", Decl(%s, %d, %d)", basename_of(cstr_str(&my source_path)), format_line, format_col);
     }
-    int format_line = span_line_index(&format_span);
-    int format_col = span_col_index(&format_span);
+    cstr_append(&text, ")");
     vec_line_numbered_str_push(&my detail.symbols, (LineNumberedStr){
         .line = line_for_placement,
-        .str = cstr_from_fmt(
-            ">%s : Symbol(%s, Decl(%s, %d, %d))",
-            name, name,
-            basename_of(cstr_str(&my source_path)),
-            format_line, format_col
-        ),
+        .str = text,
     });
 }
 
