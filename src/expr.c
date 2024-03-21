@@ -296,8 +296,7 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_CLASS_DECL:
-            // TODO
-            NONFATAL("EXPR_CLASS_DECL resolve names not implemented");
+            class_decl_resolve_names(my class_decl, names, errs);
             break;
     }
 }
@@ -597,8 +596,8 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
         }
 
         case EXPR_CLASS_DECL:
-            // TODO
-            return type_any;
+            class_decl_typecheck(my class_decl, errs);
+            return type_clone(my class_decl->interface);
     }
     UNREACHABLE;
 }

@@ -1,6 +1,7 @@
 #include "statement.h"
 #include "error.h"
 #include "name_stack.h"
+#include "class_decl.h"
 
 void name_init_data_drop(NameInitData* me) {
     cstr_drop(&my name);
@@ -208,20 +209,20 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_INTERFACE:
-            if (!name_stack_add_type(
-                names,
-                cstr_clone(my interface.name),
-                &my interface.type,
-                false, 0
-            )) {
+            if (!name_stack_add_type(names, cstr_clone(my interface.name), &my interface.type)) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
             break;
 
+        case STATEMENT_EXPR:
+            if (my expr.tag == EXPR_CLASS_DECL) {
+                name_stack_add_type(names, cstr_clone(my expr.class_decl->name), &my expr.class_decl->interface);
+            }
+            break;
+
         case STATEMENT_NOOP:
         case STATEMENT_BLOCK:
-        case STATEMENT_EXPR:
         case STATEMENT_RETURN:
         case STATEMENT_IF_ELSE:
         case STATEMENT_LOOP:
@@ -266,7 +267,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_LOOP:
-            name_stack_push_frame(names, false);
+            name_stack_push_frame(names, STACK_FRAME_BLOCK);
             statement_add_names(&my loop->initialization, names, errs);
             statement_resolve_names(&my loop->initialization, names, errs);
             expr_resolve_names(&my loop->condition, names, errs);

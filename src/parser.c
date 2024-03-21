@@ -1039,7 +1039,9 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         return parse_fail(&p);
     }
 
-    *ret = (ClassDecl){0};
+    *ret = (ClassDecl){
+        .interface = type_any,
+    };
     if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
         ret->name = cstr_null;
         ret->name_span = span_null;

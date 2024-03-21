@@ -85,14 +85,14 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
 
     // Push a stack frame for generics/arguments to live in
     // This is the function *implementation*, so we do not push a generic stack frame
-    name_stack_push_frame(names, false);
+    name_stack_push_frame(names, STACK_FRAME_BLOCK);
 
     // Loop through generics and add them to the namespace
     Generic* generic = function_impl_generic_or_null(me);
     if (generic) {
         c_foreach(i, vec_generic_item, generic->items) {
             // This is the function *implementation*, so we treat generic paramaters as regular types
-            if (!name_stack_add_type(names, cstr_clone(i.ref->name), &i.ref->extends, false, 0)) {
+            if (!name_stack_add_type(names, cstr_clone(i.ref->name), &i.ref->extends)) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple function generics with same name");
             }

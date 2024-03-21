@@ -30,8 +30,11 @@ void class_item_drop(ClassItem* me);
 typedef struct ClassDecl {
     cstr name;
     Span name_span;
+    Type interface;
     VecClassItem items;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent);
+void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
+void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);
