@@ -5,7 +5,7 @@
 void class_item_drop(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
-            function_impl_drop(&my constructor);
+            function_impl_drop(&my constructor.func);
             break;
 
         case CLASS_ITEM_MEMBER:
@@ -22,6 +22,7 @@ void class_item_drop(ClassItem* me) {
 void class_decl_drop(ClassDecl* me) {
     cstr_drop(&my name);
     type_drop(&my interface);
+    type_drop(&my constructor_type);
     vec_class_item_drop(&my items);
 }
 
@@ -38,7 +39,7 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
                 cstr_append_sv(target, c_sv(CLR_NAME "constructor" CLR0));
-                cstr_append_function_impl_debug(target, &i.ref->constructor, false, indent + 1);
+                cstr_append_function_impl_debug(target, &i.ref->constructor.func, false, indent + 1);
                 break;
 
             case CLASS_ITEM_MEMBER:
@@ -63,7 +64,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
-                function_impl_resolve_names(&i.ref->constructor, names, errs);
+                function_impl_resolve_names(&i.ref->constructor.func, names, errs);
                 break;
 
             case CLASS_ITEM_MEMBER:
@@ -83,10 +84,23 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     Interface interface = {0};
+
+    int constructor_count = 0;
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
-                function_impl_typecheck(&i.ref->constructor, errs);
+                function_impl_typecheck(&i.ref->constructor.func, errs);
+                if (constructor_count == 0) {
+                    type_drop(&my constructor_type);
+                    my constructor_type = type_clone(i.ref->constructor.func.type);
+                    CallableType* callable = type_get_callable_type(&my constructor_type);
+                    if (callable) {
+                        type_drop(&callable->ret);
+                        callable->ret = type_clone(my interface);
+                        callable->ret_explicit = true;
+                    }
+                }
+                constructor_count++;
                 break;
 
             case CLASS_ITEM_MEMBER:
@@ -121,6 +135,28 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
         }
     }
+
     type_drop(&my interface);
     my interface = type_interface(interface);
+
+    if (constructor_count == 0) {
+        my constructor_type = type_callable(c_new(CallableType, {
+            .args = vec_callable_type_arg_init(),
+            .ret_explicit = true,
+            .ret = type_clone(my interface),
+        }));
+    } else if (constructor_count > 1) {
+        c_foreach(i, vec_class_item, my items) {
+            if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
+                ASSERT(i.ref->constructor.name_span.file_start);
+                ASSERT(i.ref->constructor.func.full_span.file_start);
+                error_ctx_error(
+                    errs,
+                    span_between(&i.ref->constructor.name_span, &i.ref->constructor.func.full_span),
+                    2392,
+                    "Multiple constructor implementations are not allowed."
+                );
+            }
+        }
+    }
 }

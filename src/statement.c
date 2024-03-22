@@ -218,6 +218,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_EXPR:
             if (my expr.tag == EXPR_CLASS_DECL) {
                 name_stack_add_type(names, cstr_clone(my expr.class_decl->name), &my expr.class_decl->interface);
+                name_stack_add_variable(names, cstr_clone(my expr.class_decl->name), &my expr.class_decl->constructor_type);
             }
             break;
 

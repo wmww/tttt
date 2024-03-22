@@ -210,6 +210,7 @@ typedef struct DotPropExpr {
 // Call
 
 typedef struct CallExpr {
+    bool uses_new;
     Expr callable;
     VecExpr args;
 } CallExpr;

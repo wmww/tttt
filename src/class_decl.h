@@ -11,7 +11,10 @@ typedef struct ClassItem {
         CLASS_ITEM_FIELD,
     } tag;
     struct {
-        FunctionImpl constructor;
+        struct {
+            Span name_span;
+            FunctionImpl func;
+        } constructor;
         struct {
             cstr name;
             Span name_span;
@@ -31,6 +34,7 @@ typedef struct ClassDecl {
     cstr name;
     Span name_span;
     Type interface;
+    Type constructor_type;
     VecClassItem items;
 } ClassDecl;
 

@@ -187,6 +187,9 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
         }   break;
 
         case EXPR_CALL: {
+            if (my call->uses_new) {
+                cstr_append_sv(target, c_sv("new "));
+            }
             cstr_append_expr_debug(target, &my call->callable, indent);
             if (vec_expr_empty(&my call->args)) {
                 cstr_append_sv(target, c_sv("()"));

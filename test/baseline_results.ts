@@ -2111,7 +2111,7 @@ const baselines = {
         types: false,
     },
     'avoid': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3366,7 +3366,7 @@ const baselines = {
         types: false,
     },
     'classBlockScoping': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3386,12 +3386,12 @@ const baselines = {
         types: false,
     },
     'classDeclarationCheckUsedBeforeDefinitionInFunctionDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'classDeclarationCheckUsedBeforeDefinitionInItself': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3771,7 +3771,7 @@ const baselines = {
         types: false,
     },
     'classOrder1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8076,7 +8076,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitTypeParameterNameInOuterScope': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8216,12 +8216,12 @@ const baselines = {
         types: false,
     },
     'declarationMapsOutFile2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationMapsWithSourceMap': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20928,7 +20928,7 @@ const baselines = {
     'newNonReferenceType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newOnInstanceSymbol': {
         errors: false,
@@ -20961,7 +20961,7 @@ const baselines = {
         types: false,
     },
     'noCollisionThisExpressionAndClassInGlobal': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24141,7 +24141,7 @@ const baselines = {
         types: false,
     },
     'recur1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25186,7 +25186,7 @@ const baselines = {
         types: false,
     },
     'scopeCheckClassProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26216,7 +26216,7 @@ const baselines = {
         types: false,
     },
     'staticInstanceResolution2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28211,7 +28211,7 @@ const baselines = {
         types: false,
     },
     'typeOfPrototype': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30126,7 +30126,7 @@ const baselines = {
         types: false,
     },
     'varAsID': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31536,7 +31536,7 @@ const baselines = {
         types: false,
     },
     'classAbstractAsIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31706,7 +31706,7 @@ const baselines = {
         types: false,
     },
     'classDeclarationLoop': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31891,12 +31891,12 @@ const baselines = {
         types: false,
     },
     'classExpression4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'classExpression5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33726,7 +33726,7 @@ const baselines = {
         types: false,
     },
     'staticMemberInitialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49301,7 +49301,7 @@ const baselines = {
         types: false,
     },
     'parserInvocationOfMemberAccessOffOfObjectCreationExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49311,7 +49311,7 @@ const baselines = {
         types: false,
     },
     'parserObjectCreation2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49363,7 +49363,7 @@ const baselines = {
     'parserUnaryExpression7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserFunctionDeclaration1.d': {
         errors: false,
@@ -53056,7 +53056,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment24': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55121,7 +55121,7 @@ const baselines = {
         types: false,
     },
     'classWithPublicProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

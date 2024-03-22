@@ -16,15 +16,15 @@ void function_impl_drop(FunctionImpl* me) {
 }
 
 CallableType* function_impl_callable_type(FunctionImpl* me) {
-    if (my type.tag == TYPE_CALLABLE) {
-        return my type.callable;
-    } else if (my type.tag == TYPE_GENERIC && my type.generic->inner.tag == TYPE_CALLABLE) {
-        return my type.generic->inner.callable;
-    } else if (my type.tag == 0) {
+    if (my type.tag == 0) {
         my type = type_callable(c_new(CallableType, {0}));
         return my type.callable;
     } else {
-        PANIC("FunctionImpl has invald type type %d", my type.tag);
+        CallableType* callable = type_get_callable_type(&my type);
+        if (!callable) {
+            PANIC("FunctionImpl has invald type type %d", my type.tag);
+        }
+        return callable;
     }
 }
 

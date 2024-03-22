@@ -23,6 +23,7 @@ void function_arg_drop(FunctionArg* me);
 
 typedef struct FunctionImpl {
     Type type;
+    Span full_span;
     VecFunctionArg args;
     Span args_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason

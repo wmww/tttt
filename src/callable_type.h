@@ -24,3 +24,4 @@ void callable_type_drop(CallableType* me);
 CallableType callable_type_clone(CallableType me);
 void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent);
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* me);
+CallableType* type_get_callable_type(Type const* type);

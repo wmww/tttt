@@ -1,4 +1,5 @@
 #include "callable_type.h"
+#include "generic.h"
 
 void callable_type_arg_drop(CallableTypeArg* me) {
     cstr_drop(&my name);
@@ -58,4 +59,14 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
     cstr_append_sv(target, c_sv(")"));
     cstr_append_sv(target, c_sv(" => "));
     cstr_append_type_error_msg(target, &my ret);
+}
+
+CallableType* type_get_callable_type(Type const* type) {
+    if (type->tag == TYPE_CALLABLE) {
+        return type->callable;
+    } else if (type->tag == TYPE_GENERIC && type->generic->inner.tag == TYPE_CALLABLE) {
+        return type->generic->inner.callable;
+    } else {
+        return nullptr;
+    }
 }

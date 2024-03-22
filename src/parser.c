@@ -824,6 +824,7 @@ static bool parse_function_generics_args_and_return_type(Parser* parent, Functio
 static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
+    Anchor a = span_start(&p);
     bool is_definitely_function = false;
     cstr lone_arg_name;
     Span lone_arg_span;
@@ -864,6 +865,7 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
         if (is_definitely_function) {
             *ret = (FunctionImpl){0};
             error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=>' expected.");
+            ret->full_span = span_end(a);
             return parse_success(&p);
         } else {
             return parse_fail(&p);
@@ -891,11 +893,13 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
     }
 
+    ret->full_span = span_end(a);
     return parse_success(&p);
 }
 
 static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!parse_function_generics_args_and_return_type(&p, ret)) {
         return parse_fail(&p);
@@ -906,6 +910,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
         error_ctx_error(&p.errs, span_from_token(&p), 1144, "'{' or ';' expected.");
     }
 
+    ret->full_span = span_end(a);
     return parse_success(&p);
 }
 
@@ -1003,16 +1008,20 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 
 static bool parse_class_item(Parser* parent, ClassItem* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
     cstr name;
     Span name_span;
 
     if (hop_start_if_ends_on_word_break(&p, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
+        name_span = span_end(a);
         hop_whitespace(&p);
-        if (!parse_non_arrow_function(&p, &ret->constructor)) {
+        if (!parse_non_arrow_function(&p, &ret->constructor.func)) {
             error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "constructor expected");
-            ret->constructor = (FunctionImpl){0};
+            ret->constructor.func = (FunctionImpl){0};
         }
+        ret->constructor.name_span = name_span;
+        ret->constructor.func.full_span = span_end(a);
     } else if (parse_identifier(&p, &name, &name_span)) {
         hop_whitespace(&p);
         if (parse_non_arrow_function(&p, &ret->member.func)) {
@@ -1370,6 +1379,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         *left_and_ret = expr_call(
             span_end(a),
             c_new(CallExpr, {
+                .uses_new = false,
                 .callable = *left_and_ret,
                 .args = parsed.args,
             })
@@ -1503,6 +1513,24 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         ret->tag = EXPR_ARRAY;
     } else if (parse_class_decl(&p, &parsed.class_decl)) {
         *ret = expr_class_decl(span_end(a), c_new(ClassDecl, parsed.class_decl));
+    } else if (hop_start_if_ends_on_word_break(&p, "new")) {
+        hop_whitespace(&p);
+        if (!parse_expr(&p, ret)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+            *ret = expr_default(span_end(a));
+        }
+        if (ret->tag == EXPR_CALL) {
+            ret->call->uses_new = true;
+        } else {
+            *ret = expr_call(
+                span_end(a),
+                c_new(CallExpr, {
+                    .uses_new = true,
+                    .callable = *ret,
+                    .args = vec_expr_init(),
+                })
+            );
+        }
     } else if (parse_left_unary_op_expr(&p, ret)) {
     } else if (parse_old_style_function_expr(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
