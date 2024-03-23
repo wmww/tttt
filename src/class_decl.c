@@ -140,6 +140,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     my interface = type_interface(interface);
 
     if (constructor_count == 0) {
+        type_drop(&my constructor_type);
         my constructor_type = type_callable(c_new(CallableType, {
             .args = vec_callable_type_arg_init(),
             .ret_explicit = true,
