@@ -436,8 +436,9 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
     Parser p = parser(parent);
     VecGenericItem* ret = data;
     cstr name = cstr_null;
+    Span name_span = span_from_pos(&p);
 
-    if (!parse_identifier(&p, &name, nullptr)) {
+    if (!parse_identifier(&p, &name, &name_span)) {
         error_ctx_parse_error(&p.errs, "missing generic name");
     }
     hop_whitespace(&p);
@@ -460,6 +461,7 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
 
     vec_generic_item_push(ret, (GenericItem){
         .name = name,
+        .name_span = name_span,
         .extends = extends,
         .fallback_explicit = fallback_explicit,
         .fallback = fallback,
@@ -1850,12 +1852,13 @@ static bool parse_return(Parser* parent, Expr* ret) {
 
 static bool parse_function_statement(Parser* parent, FunctionStatement* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!hop_start_and_required_whitespace(&p, "function")) {
         return parse_fail(&p);
     }
 
-    if (!parse_identifier(&p, &ret->name, nullptr)) {
+    if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
         error_ctx_parse_error(&p.errs, "missing function name");
     }
     hop_whitespace(&p);
@@ -1865,6 +1868,7 @@ static bool parse_function_statement(Parser* parent, FunctionStatement* ret) {
         return parse_fail(&p);
     }
 
+    ret->full_span = span_end(a);
     return parse_success(&p);
 }
 

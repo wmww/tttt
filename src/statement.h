@@ -49,6 +49,8 @@ void var_init_statement_typecheck(VarInitStatement* me, ErrorCtx* errs);
 
 typedef struct FunctionStatement {
     cstr name;
+    Span name_span;
+    Span full_span;
     FunctionImpl impl;
 } FunctionStatement;
 

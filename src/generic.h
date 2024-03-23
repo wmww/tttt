@@ -7,6 +7,7 @@ typedef struct vec_expr VecExpr;
 
 typedef struct GenericItem {
     cstr name;
+    Span name_span;
     Type extends;
     bool fallback_explicit;
     Type fallback;

@@ -8,6 +8,7 @@
 #include "statement.h"
 #include "block.h"
 #include "class_decl.h"
+#include "function_impl.h"
 
 void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
     switch (my tag) {
@@ -137,6 +138,17 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_FUNCTION:
+            baseline_test_case_add_symbol(ctx, cstr_str(&my function.name), &my function.full_span, true);
+            baseline_test_case_add_type(ctx, &my function.name_span, 0, &my function.impl.type);
+            type_compile_test_info(&my function.impl.type, ctx);
+            CallableType* callable = function_impl_callable_type(&my function.impl);
+            int arg_count = function_impl_arg_count(&my function.impl);
+            for (int i = 0; i < arg_count; i++) {
+                FunctionArg* value_arg = vec_function_arg_at_mut(&my function.impl.args, i);
+                CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
+                baseline_test_case_add_symbol(ctx, cstr_str(&value_arg->name), &value_arg->name_span, true);
+                baseline_test_case_add_type(ctx, &value_arg->name_span, 0, &type_arg->type);
+            }
             block_compile_test_info(&my function.impl.body, ctx);
             break;
 
