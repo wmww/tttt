@@ -12,7 +12,7 @@
 void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:

@@ -110,7 +110,11 @@ static cstr render_lines_woven_with_file(
         }
         line++;
     }
-    if (!is_errors && last_line_from_vec && !cstr_ends_with(&ret, "\r\n\r\n")) {
+    if (is_errors) {
+        if (csview_ends_with(source_contents, "\n")) {
+            cstr_append_fmt(&ret, "\r\n%s", line_indent);
+        }
+    } else if (last_line_from_vec && !cstr_ends_with(&ret, "\r\n\r\n")) {
         cstr_append(&ret, "\r\n");
     }
     return ret;
@@ -176,7 +180,9 @@ static cstr load_test_source(const char* path, bool noisy) {
     c_foreach(i, lines_sv, contents_sv) {
         if (!csview_starts_with(i.line, "// @")) {
             cstr_append_sv(&ret, i.line);
-            if (has_line || csview_size(i.line)) {
+            if ((has_line || csview_size(i.line)) &&
+                i.line.buf + i.line.size < contents_sv.buf + contents_sv.size
+            ) {
                 cstr_append(&ret, "\r\n");
                 has_line = true;
             }

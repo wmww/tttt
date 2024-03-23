@@ -9,7 +9,7 @@
 #include "name_stack.h"
 
 const Type type_any = { .tag = TYPE_ANY };
-const Type type_unkown = { .tag = TYPE_UNKOWN };
+const Type type_unknown = { .tag = TYPE_UNKNOWN };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
 const Type type_boolean = { .tag = TYPE_BOOLEAN };
@@ -19,7 +19,7 @@ const Type type_string = { .tag = TYPE_STRING };
 void type_drop(Type* me) {
     switch (my tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
@@ -65,7 +65,7 @@ void type_drop(Type* me) {
 void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
     switch (my tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
-        case TYPE_UNKOWN: cstr_append_sv(target, c_sv(CLR_TYPE "unkown" CLR0)); break;
+        case TYPE_UNKNOWN: cstr_append_sv(target, c_sv(CLR_TYPE "unknown" CLR0)); break;
         case TYPE_NEVER: cstr_append_sv(target, c_sv(CLR_TYPE "never" CLR0)); break;
         case TYPE_VOID: cstr_append_sv(target, c_sv(CLR_TYPE "void" CLR0)); break;
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
@@ -91,7 +91,7 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
 void cstr_append_type_error_msg(cstr* target, Type const* me) {
     switch (my tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv("any")); break;
-        case TYPE_UNKOWN: cstr_append_sv(target, c_sv("unkown")); break;
+        case TYPE_UNKNOWN: cstr_append_sv(target, c_sv("unknown")); break;
         case TYPE_NEVER: cstr_append_sv(target, c_sv("never")); break;
         case TYPE_VOID: cstr_append_sv(target, c_sv("void")); break;
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv("boolean")); break;
@@ -113,7 +113,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
 Type type_clone(Type me) {
     switch (me.tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
@@ -145,7 +145,7 @@ Type type_move(Type* me) {
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
@@ -222,7 +222,7 @@ bool type_extends(Type const* sub, Type const* super) {
         case TYPE_ANY:
             return true;
 
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
             return false;
 
@@ -293,7 +293,7 @@ bool type_extends(Type const* sub, Type const* super) {
 void type_abstract_literals(Type* me) {
     switch (my tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:

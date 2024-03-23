@@ -232,6 +232,7 @@ static inline WhitespaceRet hop_comment(Parser* parent) {
                 }
                 pos++;
             }
+            pos++;
             parent->pos = pos;
             return ret;
         }
@@ -249,10 +250,12 @@ static inline WhitespaceRet hop_whitespace(Parser* parent) {
             case ' ':
             case '\t':
             case '\r':
+                parent->pos++;
                 break;
 
             case '\n':
                 ret = WHITESPACE_NEWLINE;
+                parent->pos++;
                 break;
 
             case '/':
@@ -269,7 +272,6 @@ static inline WhitespaceRet hop_whitespace(Parser* parent) {
         if (ret == WHITESPACE_NONE) {
             ret = WHITESPACE_PARSED;
         }
-        parent->pos++;
     }
 }
 
@@ -584,8 +586,8 @@ static bool parse_type(Parser* parent, Type* ret) {
 
     if (hop_start_if_ends_on_word_break(&p, "any")) {
         type = type_any;
-    } else if (hop_start_if_ends_on_word_break(&p, "unkown")) {
-        type = type_unkown;
+    } else if (hop_start_if_ends_on_word_break(&p, "unknown")) {
+        type = type_unknown;
     } else if (hop_start_if_ends_on_word_break(&p, "never")) {
         type = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {

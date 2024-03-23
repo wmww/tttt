@@ -161,7 +161,7 @@ static void collect_generic_candidates(
 
     switch (generic->tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
@@ -223,7 +223,7 @@ static void collect_generic_candidates(
 static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
     switch (my tag) {
         case TYPE_ANY:
-        case TYPE_UNKOWN:
+        case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_BOOLEAN:
@@ -245,7 +245,7 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
                 }
                 type_drop(me);
                 if (vec_type_empty(ctx.candidates + index)) {
-                    *me = type_unkown;
+                    *me = type_unknown;
                 } else {
                     *me = type_clone(*ctx.candidates[index].data);
                 }

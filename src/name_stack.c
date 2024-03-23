@@ -32,7 +32,16 @@ NameStack name_stack_init() {
                 {.first = c_sv("Boolean"), .second = &type_any},
                 {.first = c_sv("NaN"), .second = &type_any},
             }),
-            .types = hmap_str_named_type_init(),
+            .types = c_init(hmap_str_named_type, {
+                // TODO: populate from lib file in tsc
+                {.first = c_sv("any"), .second = {.type = &type_any}},
+                {.first = c_sv("unknown"), .second = {.type = &type_unknown}},
+                {.first = c_sv("never"), .second = {.type = &type_never}},
+                {.first = c_sv("void"), .second = {.type = &type_void}},
+                {.first = c_sv("boolean"), .second = {.type = &type_boolean}},
+                {.first = c_sv("number"), .second = {.type = &type_number}},
+                {.first = c_sv("string"), .second = {.type = &type_string}},
+            }),
         }}),
     };
 }
