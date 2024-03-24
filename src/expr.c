@@ -89,6 +89,7 @@ void expr_drop(Expr* me) {
 
         case EXPR_IDENTIFIER:
             cstr_drop(&my identifier.name);
+            arc_named_variable_drop(&my identifier.var);
             break;
 
         case EXPR_BINARY_OP:
@@ -250,7 +251,7 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
         case EXPR_IDENTIFIER: {
             ArcNamedVariable const* var = name_stack_get_variable(names, cstr_sv(&my identifier.name));
             if (var) {
-                my identifier.type = var->get->type;
+                my identifier.var = arc_named_variable_clone(*var);
             } else if (name_stack_get_type(names, cstr_sv(&my identifier.name), nullptr)) {
                 error_ctx_error(
                     errs, my span, 2693,
@@ -396,10 +397,10 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_EQUAL:
             switch (expr->binary_op->left.tag) {
                 case EXPR_IDENTIFIER:
-                    if (expr->binary_op->left.identifier.type) {
+                    if (expr->binary_op->left.identifier.var.get) {
                         check_assignable_or_error(
                             &right,
-                            expr->binary_op->left.identifier.type,
+                            expr->binary_op->left.identifier.var.get->type,
                             expr->binary_op->left.span,
                             errs
                         );
@@ -495,8 +496,8 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
             return type_value(value_clone(my literal));
 
         case EXPR_IDENTIFIER:
-            if (my identifier.type) {
-                return type_clone(*my identifier.type);
+            if (my identifier.var.get) {
+                return type_clone(*my identifier.var.get->type);
             } else {
                 return type_any;
             }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "expr.h"
 
 typedef struct NameStack NameStack;
 
@@ -17,6 +18,7 @@ typedef struct NamedVariable {
 
 #define i_key_names NamedVariable, named_variable
 #define i_no_atomic
+#define i_is_forward
 #include "wrap_stc/arc.h"
 
 typedef struct NamedType {
@@ -27,6 +29,7 @@ typedef struct NamedType {
 
 #define i_key_names NamedType, named_type
 #define i_no_atomic
+#define i_is_forward
 #include "wrap_stc/arc.h"
 
 NameStack* name_stack_new();

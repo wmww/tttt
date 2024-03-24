@@ -9,6 +9,9 @@ typedef struct CallableType CallableType;
 typedef struct Generic Generic;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
+typedef struct NamedType NamedType;
+
+wrap_forward_arc(NamedType, named_type);
 
 typedef struct Type {
     enum {
@@ -31,14 +34,12 @@ typedef struct Type {
         Value value;
         struct {
             cstr name;
-            Type const* type;
+            Span span;
+            ArcNamedType type;
             // 0: this identifier is not a generic item
             // 1: this identifier is the generic_indexth item of the first generic above this type
             // 2+: there are generics between this type and the generic it is an item of
             int generic_depth;
-            // Only used if generic_depth != 0
-            int generic_index;
-            Span span;
         } identifier;
         Generic* generic;
         CallableType* callable;
@@ -64,14 +65,21 @@ static inline Type type_value(Value value) {
     };
 }
 
-static inline Type type_identifier(cstr identifier, Type const* type, int generic_depth, int generic_index, Span span) {
+static inline Type type_identifier(cstr identifier, Span span) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier.name = identifier,
+        .identifier.span = span,
+    };
+}
+
+static inline Type type_identifier_full(cstr identifier, Span span, ArcNamedType type, int generic_depth) {
+    return (Type){
+        .tag = TYPE_IDENTIFIER,
+        .identifier.name = identifier,
+        .identifier.span = span,
         .identifier.type = type,
         .identifier.generic_depth = generic_depth,
-        .identifier.generic_index = generic_index,
-        .identifier.span = span,
     };
 }
 

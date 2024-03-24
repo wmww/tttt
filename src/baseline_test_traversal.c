@@ -51,7 +51,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_IDENTIFIER:
-            if (my identifier.type) {
+            if (my identifier.var.get) {
                 baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my span, true);
             }
             break;

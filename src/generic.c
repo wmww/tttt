@@ -148,8 +148,8 @@ static void collect_generic_candidates(
 ) {
     switch (arg->tag) {
         case TYPE_IDENTIFIER:
-            if (arg->identifier.type) {
-                collect_generic_candidates(generic, arg->identifier.type, ctx);
+            if (arg->identifier.type.get) {
+                collect_generic_candidates(generic, arg->identifier.type.get->type, ctx);
             }
             return;
 
@@ -173,12 +173,12 @@ static void collect_generic_candidates(
 
         case TYPE_IDENTIFIER:
             if (generic->identifier.generic_depth == ctx.generic_depth) {
-                int index = generic->identifier.generic_index;
+                int index = generic->identifier.type.get->generic_index;
                 if (index > ctx.candidates_len || index < 0) {
                     PANIC(
                         "generic %s has invalid index %d (there are only %d generic params)",
                         cstr_str(&generic->identifier.name),
-                        generic->identifier.generic_index,
+                        index,
                         ctx.candidates_len
                     );
                 }
@@ -235,12 +235,12 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
 
         case TYPE_IDENTIFIER:
             if (my identifier.generic_depth == ctx.generic_depth) {
-                int index = my identifier.generic_index;
+                int index = my identifier.type.get->generic_index;
                 if (index > ctx.candidates_len || index < 0) {
                     PANIC(
                         "generic %s has invalid index %d (there are only %d generic params)",
                         cstr_str(&my identifier.name),
-                        my identifier.generic_index,
+                        index,
                         ctx.candidates_len
                     );
                 }

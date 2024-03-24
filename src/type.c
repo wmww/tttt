@@ -34,6 +34,7 @@ void type_drop(Type* me) {
 
         case TYPE_IDENTIFIER:
             cstr_drop(&my identifier.name);
+            arc_named_type_drop(&my identifier.type);
             break;
 
         case TYPE_GENERIC:
@@ -121,12 +122,11 @@ Type type_clone(Type me) {
         case TYPE_NUMBER:
         case TYPE_STRING: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
-        case TYPE_IDENTIFIER: return type_identifier(
+        case TYPE_IDENTIFIER: return type_identifier_full(
             cstr_clone(me.identifier.name),
-            me.identifier.type,
-            me.identifier.generic_depth,
-            me.identifier.generic_index,
-            me.identifier.span
+            me.identifier.span,
+            arc_named_type_clone(me.identifier.type),
+            me.identifier.generic_depth
         );
         case TYPE_GENERIC: return type_generic(c_new(Generic, generic_clone(*me.generic)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
@@ -159,9 +159,8 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             int generic_depth;
             ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name), &generic_depth);
             if (result) {
-                my identifier.type = result->get->type;
+                my identifier.type = arc_named_type_clone(*result);
                 my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
-                my identifier.generic_index = result->get->generic_index;
             } else {
                 error_ctx_error(
                     errs,
@@ -209,8 +208,8 @@ bool type_extends(Type const* sub, Type const* super) {
         case TYPE_ANY: return true;
 
         case TYPE_IDENTIFIER:
-            if (sub->identifier.type) {
-                return type_extends(sub->identifier.type, super);
+            if (sub->identifier.type.get) {
+                return type_extends(sub->identifier.type.get->type, super);
             }
             return true;
 
@@ -246,8 +245,8 @@ bool type_extends(Type const* sub, Type const* super) {
             return value_strict_eq(&sub->value, &super->value);
 
         case TYPE_IDENTIFIER:
-            if (super->identifier.type) {
-                return type_extends(sub, super->identifier.type);
+            if (super->identifier.type.get) {
+                return type_extends(sub, super->identifier.type.get->type);
             }
             return true;
 

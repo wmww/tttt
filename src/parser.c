@@ -603,7 +603,7 @@ static bool parse_type(Parser* parent, Type* ret) {
     } else if (parse_type_compat_literal(&p, &type.value)) {
         type.tag = TYPE_VALUE;
     } else if (parse_identifier(&p, &name, &span)) {
-        type = type_identifier(name, nullptr, 0, 0, span);
+        type = type_identifier(name, span);
     } else if (parse_callable_type(&p, &type)) {
         // Tag set to either callable or generic
     } else if (parse_interface(&p, &type.interface)) {

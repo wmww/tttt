@@ -15,9 +15,11 @@ typedef struct ClassDecl ClassDecl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct Expr Expr;
+typedef struct NamedVariable NamedVariable;
 
 wrap_forward_vec(ObjectExprItem, object_expr_item);
 wrap_forward_vec(Expr, expr);
+wrap_forward_arc(NamedVariable, named_variable);
 
 typedef struct Expr {
     Span span;
@@ -39,7 +41,7 @@ typedef struct Expr {
         Value literal;
         struct {
             cstr name;
-            Type const* type;
+            ArcNamedVariable var;
         } identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
