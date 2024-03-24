@@ -207,6 +207,7 @@ typedef struct UnaryOpExpr {
 typedef struct DotPropExpr {
     Expr expr;
     cstr prop;
+    Span prop_span;
 } DotPropExpr;
 
 // Call

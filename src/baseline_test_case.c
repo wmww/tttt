@@ -283,7 +283,11 @@ static void append_span_contents_without_newlines(cstr* target, Span const* span
     }
 }
 
-void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, int paren_depth, Type const* type) {
+void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, Type const* type) {
+    baseline_test_case_add_type_with_peren(me, span, type, 0);
+}
+
+void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span const* span, Type const* type, int paren_depth) {
     unsigned line = span_line_index(span);
     cstr str = cstr_lit(">");
     append_span_contents_without_newlines(&str, span);
@@ -303,7 +307,7 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, int par
             while (start < end && (*start == ' ' || *start == '\n' || *start == '\r')) start--;
             while (start < end && (*end == ' ' || *end == '\n' || *end == '\r')) end--;
             Span subspan = span_make(span->file_start, start - span->file_start, end - start);
-            baseline_test_case_add_type(me, &subspan, paren_depth - 1, type);
+            baseline_test_case_add_type_with_peren(me, &subspan, type, paren_depth - 1);
         }
     }
 }

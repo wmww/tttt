@@ -915,14 +915,33 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     }
 
     ret->full_span = span_end(a);
+    ret->name = cstr_null;
+    ret->name_span = span_null;
     return parse_success(&p);
 }
 
 static bool parse_old_style_function_expr(Parser* parent, FunctionImpl* ret) {
-    if (!hop_start_if_ends_on_word_break(parent, "function")) {
-        return false;
+    Parser p = parser(parent);
+    if (!hop_start_if_ends_on_word_break(&p, "function")) {
+        return parse_fail(&p);
     }
-    return parse_non_arrow_function(parent, ret);
+    hop_whitespace(&p);
+
+    cstr name;
+    Span name_span;
+    if (!parse_identifier(&p, &name, &name_span)) {
+        name = cstr_null;
+        name_span = span_null;
+    }
+
+    if (!parse_non_arrow_function(&p, ret)) {
+        error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "Expected function.");
+        *ret = (FunctionImpl){0};
+    }
+
+    ret->name = name;
+    ret->name_span = name_span;
+    return parse_success(&p);
 }
 
 static bool parse_object_item(Parser* parent, void* data) {
@@ -1146,7 +1165,7 @@ static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_dot_prop(Parser* parent, cstr* prop) {
+static bool parse_dot_prop(Parser* parent, cstr* prop, Span* span) {
     Parser p = parser(parent);
 
     if (!hop_char(&p, '.')) {
@@ -1154,9 +1173,10 @@ static bool parse_dot_prop(Parser* parent, cstr* prop) {
     }
     hop_whitespace(&p);
 
-    if (!parse_identifier(&p, prop, nullptr)) {
+    if (!parse_identifier(&p, prop, span)) {
         error_ctx_parse_error(&p.errs, "expected property name");
         *prop = cstr_lit("INVALID_PROPERTY");
+        *span = span_null;
     }
 
     return parse_success(&p);
@@ -1369,7 +1389,10 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
 
     union {
         VecExpr args;
-        cstr str;
+        struct {
+            cstr str;
+            Span span;
+        } prop;
         Type type;
         UnaryOp unary;
         struct {
@@ -1391,12 +1414,13 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         return parse_success(&p);
     }
 
-    if (parse_dot_prop(&p, &parsed.str)) {
+    if (parse_dot_prop(&p, &parsed.prop.str, &parsed.prop.span)) {
         *left_and_ret = expr_dot_prop(
             span_end(a),
             c_new(DotPropExpr, {
                 .expr = *left_and_ret,
-                .prop = parsed.str,
+                .prop = parsed.prop.str,
+                .prop_span = parsed.prop.span,
             })
         );
         return parse_success(&p);

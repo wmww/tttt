@@ -22,6 +22,8 @@ void function_arg_drop(FunctionArg* me);
 #include "wrap_stc/vec.h"
 
 typedef struct FunctionImpl {
+    cstr name;
+    Span name_span;
     Type type;
     Span full_span;
     VecFunctionArg args;
