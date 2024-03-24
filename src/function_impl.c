@@ -104,11 +104,9 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     int arg_count = function_impl_arg_count(me);
     CallableType* callable = function_impl_callable_type(me);
     for (int i = 0; i < arg_count; i++) {
-        if (!name_stack_add_variable(
-            names,
-            cstr_clone(vec_function_arg_at_mut(&my args, i)->name),
-            &vec_callable_type_arg_at_mut(&callable->args, i)->type
-        )) {
+        CallableTypeArg const* type = vec_callable_type_arg_at(&callable->args, i);
+        FunctionArg const* arg = vec_function_arg_at(&my args, i);
+        if (!name_stack_add_variable(names, cstr_clone(arg->name), &type->type, arg->name_span)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple function arguments with same name");
         }

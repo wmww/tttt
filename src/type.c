@@ -157,11 +157,11 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
         case TYPE_IDENTIFIER: {
             int generic_depth;
-            NamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name), &generic_depth);
+            ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name), &generic_depth);
             if (result) {
-                my identifier.type = result->type;
-                my identifier.generic_depth = result->is_generic ? generic_depth : 0;
-                my identifier.generic_index = result->generic_index;
+                my identifier.type = result->get->type;
+                my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
+                my identifier.generic_index = result->get->generic_index;
             } else {
                 error_ctx_error(
                     errs,

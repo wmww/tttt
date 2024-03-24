@@ -248,9 +248,9 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_IDENTIFIER: {
-            Type const* var_type = name_stack_get_variable(names, cstr_sv(&my identifier.name));
-            if (var_type) {
-                my identifier.type = var_type;
+            ArcNamedVariable const* var = name_stack_get_variable(names, cstr_sv(&my identifier.name));
+            if (var) {
+                my identifier.type = var->get->type;
             } else if (name_stack_get_type(names, cstr_sv(&my identifier.name), nullptr)) {
                 error_ctx_error(
                     errs, my span, 2693,

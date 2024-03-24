@@ -69,12 +69,40 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_MEMBER:
-                name_stack_add_variable(names, cstr_clone(i.ref->member.name), &i.ref->member.func.type);
+                if (!name_stack_add_variable(
+                    names,
+                    cstr_clone(i.ref->member.name),
+                    &i.ref->member.func.type,
+                    i.ref->member.name_span
+                )) {
+                    /*
+                    error_ctx_error(
+                        errs,
+                        i.ref->member.name_span,
+                        TS_CODE_NONE,
+                        "multiple class members/fields with same name"
+                    );
+                    */
+                }
                 function_impl_resolve_names(&i.ref->member.func, names, errs);
                 break;
 
             case CLASS_ITEM_FIELD:
-                name_stack_add_variable(names, cstr_clone(i.ref->field.name), &i.ref->field.type);
+                if (!name_stack_add_variable(
+                    names,
+                    cstr_clone(i.ref->field.name),
+                    &i.ref->field.type,
+                    i.ref->field.name_span
+                )) {
+                    /*
+                    error_ctx_error(
+                        errs,
+                        i.ref->field.name_span,
+                        TS_CODE_NONE,
+                        "multiple class members/fields with same name"
+                    );
+                    */
+                }
                 type_resolve_names(&i.ref->field.type, names, errs);
                 expr_resolve_names(&i.ref->field.value, names, errs);
                 break;
