@@ -39,9 +39,9 @@ void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {
 }
 
 void block_resolve_names_toplevel(Block* me, ErrorCtx* errs) {
-    NameStack names = name_stack_init();
-    block_resolve_names(me, &names, errs);
-    name_stack_drop(&names);
+    NameStack* names = name_stack_new();
+    block_resolve_names(me, names, errs);
+    name_stack_destroy(names);
 }
 
 void block_typecheck_toplevel(Block* me, ErrorCtx* errs) {

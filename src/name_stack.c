@@ -1,5 +1,31 @@
 #include "name_stack.h"
 
+#define i_key_ssv
+#define i_val_names NamedType, named_type
+#include "wrap_stc/hmap.h"
+
+typedef Type const* CTypePtr;
+#define i_key_ssv
+#define i_val_names CTypePtr, c_type_ptr
+#include "wrap_stc/hmap.h"
+
+typedef struct StackFrame {
+    StackFrameTag tag;
+    HmapStrNamedType types;
+    HmapStrCTypePtr variables;
+} StackFrame;
+
+StackFrame stack_frame_init(StackFrameTag tag);
+void stack_frame_drop(StackFrame* me);
+StackFrame stack_frame_clone(StackFrame me);
+
+#define i_key_class_names StackFrame, stack_frame
+#include "wrap_stc/vec.h"
+
+typedef struct NameStack {
+    VecStackFrame stack;
+} NameStack;
+
 StackFrame stack_frame_init(StackFrameTag tag) {
     return (StackFrame){
         .tag = tag,
@@ -20,8 +46,8 @@ StackFrame stack_frame_clone(StackFrame me) {
     };
 }
 
-NameStack name_stack_init() {
-    return (NameStack){
+NameStack* name_stack_new() {
+    return c_new(NameStack, {
         .stack = c_init(vec_stack_frame, {{
             .tag = STACK_FRAME_BLOCK,
             .variables = c_init(hmap_str_c_type_ptr, {
@@ -43,11 +69,12 @@ NameStack name_stack_init() {
                 {.first = c_sv("string"), .second = {.type = &type_string}},
             }),
         }}),
-    };
+    });
 }
 
-void name_stack_drop(NameStack* me) {
+void name_stack_destroy(NameStack* me) {
     vec_stack_frame_drop(&my stack);
+    free(me);
 }
 
 void name_stack_push_frame(NameStack* me, StackFrameTag tag) {

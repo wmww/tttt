@@ -3,6 +3,7 @@
 #include "callable_type.h"
 #include "generic.h"
 #include "statement.h"
+#include "error.h"
 
 void function_arg_drop(FunctionArg* me) {
     cstr_drop(&my name);

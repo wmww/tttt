@@ -8,6 +8,7 @@
 #include "ternary_type.h"
 #include "extends_conditional.h"
 #include "expr.h"
+#include "error.h"
 
 #define i_key_class_names VecType, vec_type
 #include "wrap_stc/vec.h"

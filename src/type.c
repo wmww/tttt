@@ -7,6 +7,7 @@
 #include "extends_conditional.h"
 #include "value.h"
 #include "name_stack.h"
+#include "error.h"
 
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
