@@ -63,6 +63,17 @@ static const char* relative_test_path(const char* test_path) {
     return test_path;
 }
 
+// Line is treated as if it's empty if it has only whitespace, or whitespace plus a single open or close brace
+bool line_effectively_empty(csview line) {
+    line = csview_trim_whitespace(line);
+    return csview_size(line) == 0 || (
+        csview_size(line) == 1 && (
+            *line.buf == '{' ||
+            *line.buf == '}'
+        )
+    );
+}
+
 static cstr render_lines_woven_with_file(
     const char* source_path,
     bool is_errors,
@@ -75,23 +86,18 @@ static cstr render_lines_woven_with_file(
     int index = 0;
     int vec_size = vec_line_numbered_str_size(lines);
     const char* relative_path = relative_test_path(source_path);
+    bool newline_if_next_line_non_empty = false;
     if (!is_errors) {
         cstr_append_fmt(&ret, "//// [%s] ////\r\n", relative_path);
         cstr_append(&ret, "\r\n");
         cstr_append_fmt(&ret, "=== %s ===\r\n", basename_of(source_path));
-        if (!vec_size &&
-            !csview_starts_with(source_contents, " ") &&
-            !csview_starts_with(source_contents, "{")
-        ) {
-            cstr_append(&ret, "\r\n");
-        }
+        newline_if_next_line_non_empty = vec_size == 0;
     }
-    bool last_line_from_vec = false;
     c_foreach(i, lines_sv, source_contents) {
-        if (csview_size(i.line) && last_line_from_vec) {
+        if (newline_if_next_line_non_empty && !line_effectively_empty(i.line)) {
             cstr_append(&ret, "\r\n");
         }
-        last_line_from_vec = false;
+        newline_if_next_line_non_empty = false;
         cstr_append(&ret, line_indent);
         cstr_append_sv(&ret, i.line);
         cstr_append(&ret, "\r\n");
@@ -103,7 +109,7 @@ static cstr render_lines_woven_with_file(
             cstr_append_s(&ret, vec_line_numbered_str_at(lines, index)->str);
             lines_added_from_vec = true;
             index++;
-            last_line_from_vec = true;
+            newline_if_next_line_non_empty = true;
         }
         if (!is_errors && lines_added_from_vec) {
             cstr_append(&ret, "\r\n");
@@ -114,7 +120,7 @@ static cstr render_lines_woven_with_file(
         if (csview_ends_with(source_contents, "\n")) {
             cstr_append_fmt(&ret, "\r\n%s", line_indent);
         }
-    } else if (last_line_from_vec && !cstr_ends_with(&ret, "\r\n\r\n")) {
+    } else if (newline_if_next_line_non_empty && !cstr_ends_with(&ret, "\r\n\r\n")) {
         cstr_append(&ret, "\r\n");
     }
     return ret;

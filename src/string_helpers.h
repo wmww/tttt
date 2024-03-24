@@ -21,3 +21,5 @@ lines_sv_iter lines_cstr_begin(cstr* str);
 static inline bool streq(const char* a, const char* b) {
     return (a == b || (a && b && strcmp(a, b) == 0));
 }
+
+csview csview_trim_whitespace(csview sv);

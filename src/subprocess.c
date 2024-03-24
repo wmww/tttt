@@ -39,6 +39,14 @@ void run_diff_subprocess(csview a, csview b) {
 
     a_arg = cstr_from_fmt("/dev/fd/%d", a_pipe[0]);
     b_arg = cstr_from_fmt("/dev/fd/%d", b_pipe[0]);
+    /*
+    const char* args[] = {
+        "meld",
+        cstr_str(&a_arg),
+        cstr_str(&b_arg),
+        nullptr,
+    };
+    */
     const char* args[] = {
         "diff",
         "--color=always",

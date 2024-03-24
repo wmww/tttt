@@ -30,3 +30,25 @@ lines_sv_iter lines_cstr_begin(cstr* str) {
     csview sv = cstr_sv(str);
     return lines_sv_begin(&sv);
 }
+
+csview csview_trim_whitespace(csview sv) {
+    const char* start = sv.buf;
+    const char* end = sv.buf + sv.size;
+    while (start < end) {
+        switch (*start) {
+            case ' ': case '\t':
+                start++;
+                continue;
+        }
+        break;
+    }
+    while (start < end) {
+        switch (*(end - 1)) {
+            case ' ': case '\t':
+                end--;
+                continue;
+        }
+        break;
+    }
+    return csview_from_n(start, end - start);
+}
