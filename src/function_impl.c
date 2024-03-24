@@ -11,6 +11,7 @@ void function_arg_drop(FunctionArg* me) {
 }
 
 void function_impl_drop(FunctionImpl* me) {
+    cstr_drop(&my name);
     type_drop(&my type);
     vec_function_arg_drop(&my args);
     block_drop(&my body);

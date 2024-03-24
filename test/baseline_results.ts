@@ -4661,7 +4661,7 @@ const baselines = {
         types: false,
     },
     'commentsAfterFunctionExpression1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -4686,7 +4686,7 @@ const baselines = {
         types: false,
     },
     'commentsBeforeFunctionExpression1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -4773,7 +4773,7 @@ const baselines = {
     'commentsOnObjectLiteral1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnObjectLiteral2': {
         errors: false,
@@ -5916,7 +5916,7 @@ const baselines = {
         types: false,
     },
     'contextualTyping1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -5951,7 +5951,7 @@ const baselines = {
         types: false,
     },
     'contextualTyping16': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -6026,7 +6026,7 @@ const baselines = {
         types: false,
     },
     'contextualTyping3': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -9936,7 +9936,7 @@ const baselines = {
         types: false,
     },
     'emitOneLineVariableDeclarationRemoveCommentsFalse': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -10033,7 +10033,7 @@ const baselines = {
     'emptyExpr': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyFile-declaration': {
         errors: false,
@@ -15528,7 +15528,7 @@ const baselines = {
     'indexWithoutParamType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexWithoutParamType2': {
         errors: false,
@@ -17471,7 +17471,7 @@ const baselines = {
         types: false,
     },
     'jsFileAlternativeUseOfOverloadTag': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -18816,7 +18816,7 @@ const baselines = {
         types: false,
     },
     'matchingOfObjectLiteralConstraints': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -20966,12 +20966,12 @@ const baselines = {
         types: false,
     },
     'noCollisionThisExpressionAndLocalVarInAccessors': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'noCollisionThisExpressionAndLocalVarInConstructor': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -20986,12 +20986,12 @@ const baselines = {
         types: false,
     },
     'noCollisionThisExpressionAndLocalVarInMethod': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'noCollisionThisExpressionAndLocalVarInProperty': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -27296,7 +27296,7 @@ const baselines = {
         types: false,
     },
     'targetTypeObjectLiteral': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28641,7 +28641,7 @@ const baselines = {
         types: false,
     },
     'typeVal': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -41233,12 +41233,12 @@ const baselines = {
     'exponentiationOperatorWithTypeParameter': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithUndefinedValueAndInvalidOperands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithUndefinedValueAndValidOperands': {
         errors: false,
@@ -42018,12 +42018,12 @@ const baselines = {
     'arithmeticOperatorWithTypeParameter': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arithmeticOperatorWithUndefinedValueAndInvalidOperands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arithmeticOperatorWithUndefinedValueAndValidOperands': {
         errors: false,
@@ -42168,7 +42168,7 @@ const baselines = {
     'comparisonOperatorWithTypeParameter': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inOperatorWithInvalidOperands': {
         errors: false,
@@ -45851,7 +45851,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocSatisfiesTag2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46466,7 +46466,7 @@ const baselines = {
         types: false,
     },
     'errorIsolation': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46841,7 +46841,7 @@ const baselines = {
         types: false,
     },
     'jsdocTemplateTag2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -49348,7 +49348,7 @@ const baselines = {
     'parserUnaryExpression4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserUnaryExpression5': {
         errors: false,
@@ -50128,7 +50128,7 @@ const baselines = {
     'parserObjectType1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserObjectType2': {
         errors: true,

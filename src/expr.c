@@ -8,6 +8,7 @@
 #include "as_type_expr.h"
 #include "generic.h"
 #include "class_decl.h"
+#include "interface_member.h"
 
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
 static inline int binary_op_get_precedence(BinaryOp op) {
@@ -582,8 +583,15 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
             return type_clone(my function->type);
 
         case EXPR_OBJECT: {
-            // TODO: add typechecking
-            return type_any;
+            Interface interface = {0};
+            c_foreach(i, vec_object_expr_item, my object) {
+                Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
+                vec_interface_member_push(
+                    &interface.members,
+                    interface_member_make(cstr_clone(i.ref->name), t)
+                );
+            }
+            return type_interface(interface);
         }
 
         case EXPR_ARRAY: {
