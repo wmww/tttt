@@ -9,6 +9,7 @@
 #include "block.h"
 #include "class_decl.h"
 #include "function_impl.h"
+#include "name_stack.h"
 
 void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
     switch (my tag) {
@@ -22,9 +23,15 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
         case TYPE_VALUE:
             break;
 
-        case TYPE_IDENTIFIER:
-            baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my identifier.span, false);
-            break;
+        case TYPE_IDENTIFIER: {
+            baseline_test_case_add_symbol(
+                ctx,
+                cstr_str(&my identifier.name),
+                my identifier.span,
+                my identifier.type.get ? my identifier.type.get->name_span : span_null
+            );
+        }   break;
+
 
         case TYPE_GENERIC:
             type_compile_test_info(&my generic->inner, ctx);
@@ -43,17 +50,22 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     Type t = expr_get_type_and_typecheck(me, nullptr);
-    baseline_test_case_add_type_with_peren(ctx, &my span, &t, my peren_depth);
+    baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
 
     switch (my tag) {
         case EXPR_LITERAL:
             break;
 
-        case EXPR_IDENTIFIER:
+        case EXPR_IDENTIFIER: {
             if (my identifier.var.get) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&my identifier.name), &my span, true);
+                baseline_test_case_add_symbol(
+                    ctx,
+                    cstr_str(&my identifier.name),
+                    my span,
+                    my identifier.var.get->name_span
+                );
             }
-            break;
+        }   break;
 
         case EXPR_BINARY_OP:
             expr_compile_test_info(&my binary_op->left, ctx);
@@ -66,7 +78,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_DOT_PROP:
             expr_compile_test_info(&my dot_prop->expr, ctx);
-            baseline_test_case_add_type(ctx, &my dot_prop->prop_span, &t);
+            baseline_test_case_add_type(ctx, my dot_prop->prop_span, &t);
             break;
 
         case EXPR_AS_TYPE:
@@ -83,16 +95,21 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_FUNCTION: {
             if (!cstr_empty(&my function->name)) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&my function->name), &my span, true);
-                baseline_test_case_add_type(ctx, &my function->name_span, &my function->type);
+                baseline_test_case_add_symbol(ctx, cstr_str(&my function->name), my span, my span);
+                baseline_test_case_add_type(ctx, my function->name_span, &my function->type);
             }
             CallableType* callable = function_impl_callable_type(my function);
             int arg_count = function_impl_arg_count(my function);
             for (int i = 0; i < arg_count; i++) {
                 FunctionArg* value_arg = vec_function_arg_at_mut(&my function->args, i);
                 CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
-                baseline_test_case_add_symbol(ctx, cstr_str(&value_arg->name), &value_arg->name_span, true);
-                baseline_test_case_add_type(ctx, &value_arg->name_span, &type_arg->type);
+                baseline_test_case_add_symbol(
+                    ctx,
+                    cstr_str(&value_arg->name),
+                    value_arg->name_span,
+                    value_arg->name_span
+                );
+                baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
             }
             block_compile_test_info(&my function->body, ctx);
         }   break;
@@ -110,7 +127,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CLASS_DECL:
-            baseline_test_case_add_symbol(ctx, cstr_str(&my class_decl->name), &my span, true);
+            baseline_test_case_add_symbol(ctx, cstr_str(&my class_decl->name), my span, my span);
             break;
     }
 
@@ -134,8 +151,8 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_VAR_INIT:
             c_foreach(i, vec_name_init_data, my var_init.vars) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span, true);
-                baseline_test_case_add_type(ctx, &i.ref->name_span, &i.ref->type);
+                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
+                baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
                 type_compile_test_info(&i.ref->type, ctx);
                 if (i.ref->value_explicit) {
                     expr_compile_test_info(&i.ref->value, ctx);
@@ -144,16 +161,26 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_FUNCTION:
-            baseline_test_case_add_symbol(ctx, cstr_str(&my function.name), &my function.full_span, true);
-            baseline_test_case_add_type(ctx, &my function.name_span, &my function.impl.type);
+            baseline_test_case_add_symbol(
+                ctx,
+                cstr_str(&my function.name),
+                my function.full_span,
+                my function.full_span
+            );
+            baseline_test_case_add_type(ctx, my function.name_span, &my function.impl.type);
             type_compile_test_info(&my function.impl.type, ctx);
             CallableType* callable = function_impl_callable_type(&my function.impl);
             int arg_count = function_impl_arg_count(&my function.impl);
             for (int i = 0; i < arg_count; i++) {
                 FunctionArg* value_arg = vec_function_arg_at_mut(&my function.impl.args, i);
                 CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
-                baseline_test_case_add_symbol(ctx, cstr_str(&value_arg->name), &value_arg->name_span, true);
-                baseline_test_case_add_type(ctx, &value_arg->name_span, &type_arg->type);
+                baseline_test_case_add_symbol(
+                    ctx,
+                    cstr_str(&value_arg->name),
+                    value_arg->name_span,
+                    value_arg->name_span
+                );
+                baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
             }
             block_compile_test_info(&my function.impl.body, ctx);
             break;

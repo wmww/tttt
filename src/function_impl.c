@@ -93,7 +93,7 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     if (generic) {
         c_foreach(i, vec_generic_item, generic->items) {
             // This is the function *implementation*, so we treat generic paramaters as regular types
-            if (!name_stack_add_type(names, cstr_clone(i.ref->name), &i.ref->extends)) {
+            if (!name_stack_add_type(names, cstr_clone(i.ref->name), i.ref->name_span, &i.ref->extends)) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple function generics with same name");
             }
@@ -106,7 +106,7 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     for (int i = 0; i < arg_count; i++) {
         CallableTypeArg const* type = vec_callable_type_arg_at(&callable->args, i);
         FunctionArg const* arg = vec_function_arg_at(&my args, i);
-        if (!name_stack_add_variable(names, cstr_clone(arg->name), &type->type, arg->name_span)) {
+        if (!name_stack_add_variable(names, cstr_clone(arg->name), arg->name_span, &type->type)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple function arguments with same name");
         }

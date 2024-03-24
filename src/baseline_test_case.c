@@ -248,20 +248,19 @@ void baseline_test_case_clear_detail(BaselineTestCase* me) {
     my detail = (typeof(my detail)){ 0 };
 }
 
-void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span, bool decl) {
-    unsigned line_for_placement = span_line_index(span);
+void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span span, Span decl_span) {
+    unsigned line_for_placement = span_line_index(&span);
     cstr text = cstr_from_fmt(">%s : Symbol(%s", name, name);
-    if (decl) {
-        Span format_span = *span;
+    if (decl_span.file_start) {
         bool keep_going = true;
         // The space before the symbol is included in the span. Why? I have no idea.
-        while (keep_going && format_span.offset > 0) {
-            switch (format_span.file_start[format_span.offset - 1]) {
+        while (keep_going && decl_span.offset > 0) {
+            switch (decl_span.file_start[decl_span.offset - 1]) {
                 case ' ':
                 case '\t':
                 case '\n':
                 case '\r':
-                    format_span.offset--;
+                    decl_span.offset--;
                     break;
 
                 default:
@@ -269,8 +268,8 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span 
                     break;
             }
         }
-        int format_line = span_line_index(&format_span);
-        int format_col = span_col_index(&format_span);
+        int format_line = span_line_index(&decl_span);
+        int format_col = span_col_index(&decl_span);
         cstr_append_fmt(&text, ", Decl(%s, %d, %d)", basename_of(cstr_str(&my source_path)), format_line, format_col);
     }
     cstr_append(&text, ")");
@@ -280,8 +279,8 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span 
     });
 }
 
-static void append_span_contents_without_newlines(cstr* target, Span const* span) {
-    csview sv = span_sv(span);
+static void append_span_contents_without_newlines(cstr* target, Span span) {
+    csview sv = span_sv(&span);
     for (intptr_t i = 0; i < sv.size; i++) {
         if (sv.buf[i] != '\r' && sv.buf[i] != '\n') {
             cstr_push(target, &sv.buf[i]);
@@ -289,12 +288,12 @@ static void append_span_contents_without_newlines(cstr* target, Span const* span
     }
 }
 
-void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, Type const* type) {
+void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type) {
     baseline_test_case_add_type_with_peren(me, span, type, 0);
 }
 
-void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span const* span, Type const* type, int paren_depth) {
-    unsigned line = span_line_index(span);
+void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Type const* type, int paren_depth) {
+    unsigned line = span_line_index(&span);
     cstr str = cstr_lit(">");
     append_span_contents_without_newlines(&str, span);
     cstr_append(&str, " : ");
@@ -304,16 +303,16 @@ void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span const* sp
         .str = str,
     });
     if (paren_depth) {
-        const char* start = span_start_ptr(span);
-        const char* end = span_end_ptr(span);
+        const char* start = span_start_ptr(&span);
+        const char* end = span_end_ptr(&span);
         if (start < end && *start == '(' && *(end - 1) == ')') {
             start++;
             end--;
             // If this gets too annoying (ex if we need comments) we can just make the parser emit nested AST nodes
             while (start < end && (*start == ' ' || *start == '\n' || *start == '\r')) start--;
             while (start < end && (*end == ' ' || *end == '\n' || *end == '\r')) end--;
-            Span subspan = span_make(span->file_start, start - span->file_start, end - start);
-            baseline_test_case_add_type_with_peren(me, &subspan, type, paren_depth - 1);
+            Span subspan = span_make(span.file_start, start - span.file_start, end - start);
+            baseline_test_case_add_type_with_peren(me, subspan, type, paren_depth - 1);
         }
     }
 }

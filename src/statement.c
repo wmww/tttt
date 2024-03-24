@@ -189,8 +189,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 if (!name_stack_add_variable(
                     names,
                     cstr_clone(i.ref->name),
-                    &i.ref->type,
-                    i.ref->name_span
+                    i.ref->name_span,
+                    &i.ref->type
                 )) {
                     // name is cstr_str(&result.ref->first)
                     error_ctx_type_error(errs, "multiple values declared with same name");
@@ -202,8 +202,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             if (!name_stack_add_variable(
                 names,
                 cstr_clone(my function.name),
-                &my function.impl.type,
-                my function.full_span
+                my function.name_span,
+                &my function.impl.type
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -211,7 +211,12 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_INTERFACE:
-            if (!name_stack_add_type(names, cstr_clone(my interface.name), &my interface.type)) {
+            if (!name_stack_add_type(
+                names,
+                cstr_clone(my interface.name),
+                span_null, // TODO
+                &my interface.type)
+            ) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
@@ -222,6 +227,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 if (!name_stack_add_type(
                     names,
                     cstr_clone(my expr.class_decl->name),
+                    my expr.class_decl->name_span,
                     &my expr.class_decl->interface
                 )) {
                     error_ctx_type_error(errs, "multiple classes declared with same name");
@@ -229,8 +235,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 if (!name_stack_add_variable(
                     names,
                     cstr_clone(my expr.class_decl->name),
-                    &my expr.class_decl->constructor_type,
-                    my expr.class_decl->name_span
+                    my expr.class_decl->name_span,
+                    &my expr.class_decl->constructor_type
                 )) {
                     error_ctx_type_error(errs, "multiple classes declared with same name");
                 }

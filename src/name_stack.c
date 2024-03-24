@@ -51,19 +51,19 @@ NameStack* name_stack_new() {
     });
     name_stack_push_frame(ret, STACK_FRAME_BLOCK);
 
-    name_stack_add_variable(ret, cstr_lit("console"), &type_any, span_null);
-    name_stack_add_variable(ret, cstr_lit("String"), &type_any, span_null);
-    name_stack_add_variable(ret, cstr_lit("Number"), &type_any, span_null);
-    name_stack_add_variable(ret, cstr_lit("Boolean"), &type_any, span_null);
-    name_stack_add_variable(ret, cstr_lit("NaN"), &type_any, span_null);
+    name_stack_add_variable(ret, cstr_lit("console"), span_null, &type_any);
+    name_stack_add_variable(ret, cstr_lit("String"), span_null, &type_any);
+    name_stack_add_variable(ret, cstr_lit("Number"), span_null, &type_any);
+    name_stack_add_variable(ret, cstr_lit("Boolean"), span_null, &type_any);
+    name_stack_add_variable(ret, cstr_lit("NaN"), span_null, &type_any);
 
-    name_stack_add_type(ret, cstr_lit("any"), &type_any);
-    name_stack_add_type(ret, cstr_lit("unknown"), &type_unknown);
-    name_stack_add_type(ret, cstr_lit("never"), &type_never);
-    name_stack_add_type(ret, cstr_lit("void"), &type_void);
-    name_stack_add_type(ret, cstr_lit("boolean"), &type_boolean);
-    name_stack_add_type(ret, cstr_lit("number"), &type_number);
-    name_stack_add_type(ret, cstr_lit("string"), &type_string);
+    name_stack_add_type(ret, cstr_lit("any"), span_null, &type_any);
+    name_stack_add_type(ret, cstr_lit("unknown"), span_null, &type_unknown);
+    name_stack_add_type(ret, cstr_lit("never"), span_null, &type_never);
+    name_stack_add_type(ret, cstr_lit("void"), span_null, &type_void);
+    name_stack_add_type(ret, cstr_lit("boolean"), span_null, &type_boolean);
+    name_stack_add_type(ret, cstr_lit("number"), span_null, &type_number);
+    name_stack_add_type(ret, cstr_lit("string"), span_null, &type_string);
 
     return ret;
 }
@@ -87,23 +87,24 @@ void name_stack_pop_frame(NameStack* me) {
     vec_stack_frame_pop(&my stack);
 }
 
-bool name_stack_add_variable(NameStack* me, cstr name, Type const* type, Span decl_span) {
+bool name_stack_add_variable(NameStack* me, cstr name, Span name_span, Type const* type) {
     hmap_str_arc_named_variable_result result = hmap_str_arc_named_variable_insert(
         &vec_stack_frame_back(&my stack)->variables,
         name,
         arc_named_variable_make((NamedVariable){
+            .name_span = name_span,
             .type = type,
-            .decl_span = decl_span,
         })
     );
     return result.inserted;
 }
 
-bool name_stack_add_type(NameStack* me, cstr name, Type const* type) {
+bool name_stack_add_type(NameStack* me, cstr name, Span name_span, Type const* type) {
     hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
         &vec_stack_frame_back(&my stack)->types,
         name,
         arc_named_type_make((NamedType){
+            .name_span = name_span,
             .type = type,
             .is_generic = false,
             .generic_index = 0,
@@ -112,11 +113,12 @@ bool name_stack_add_type(NameStack* me, cstr name, Type const* type) {
     return result.inserted;
 }
 
-bool name_stack_add_generic_type(NameStack* me, cstr name, Type const* type, int generic_index) {
+bool name_stack_add_generic_type(NameStack* me, cstr name, Span name_span, Type const* type, int generic_index) {
     hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
         &vec_stack_frame_back(&my stack)->types,
         name,
         arc_named_type_make((NamedType){
+            .name_span = name_span,
             .type = type,
             .is_generic = true,
             .generic_index = generic_index,

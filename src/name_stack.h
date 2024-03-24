@@ -12,8 +12,8 @@ typedef enum StackFrameTag {
 } StackFrameTag;
 
 typedef struct NamedVariable {
+    Span name_span;
     Type const* type;
-    Span decl_span;
 } NamedVariable;
 
 #define i_key_names NamedVariable, named_variable
@@ -22,6 +22,7 @@ typedef struct NamedVariable {
 #include "wrap_stc/arc.h"
 
 typedef struct NamedType {
+    Span name_span;
     Type const* type;
     bool is_generic;
     int generic_index;
@@ -36,8 +37,8 @@ NameStack* name_stack_new();
 void name_stack_destroy(NameStack* me);
 void name_stack_push_frame(NameStack* me, StackFrameTag tag);
 void name_stack_pop_frame(NameStack* me);
-bool name_stack_add_variable(NameStack* me, cstr name, Type const* type, Span decl_span);
-bool name_stack_add_type(NameStack* me, cstr name, Type const* type);
-bool name_stack_add_generic_type(NameStack* me, cstr name, Type const* type, int generic_index);
+bool name_stack_add_variable(NameStack* me, cstr name, Span decl_name_span, Type const* type);
+bool name_stack_add_type(NameStack* me, cstr name, Span decl_name_span, Type const* type);
+bool name_stack_add_generic_type(NameStack* me, cstr name, Span decl_name_span, Type const* type, int generic_index);
 ArcNamedVariable const* name_stack_get_variable(NameStack* me, csview name);
 ArcNamedType const* name_stack_get_type(NameStack* me, csview name, int* optional_generic_depth);

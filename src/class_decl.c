@@ -72,8 +72,8 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 if (!name_stack_add_variable(
                     names,
                     cstr_clone(i.ref->member.name),
-                    &i.ref->member.func.type,
-                    i.ref->member.name_span
+                    i.ref->member.name_span,
+                    &i.ref->member.func.type
                 )) {
                     /*
                     error_ctx_error(
@@ -91,8 +91,8 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 if (!name_stack_add_variable(
                     names,
                     cstr_clone(i.ref->field.name),
-                    &i.ref->field.type,
-                    i.ref->field.name_span
+                    i.ref->field.name_span,
+                    &i.ref->field.type
                 )) {
                     /*
                     error_ctx_error(

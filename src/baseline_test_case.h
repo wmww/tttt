@@ -41,9 +41,9 @@ typedef struct BaselineTestCase {
 BaselineTestCase make_baseline_test_case(BaselineTestSuite* suite, cstr name, cstr source_path, JsObject* previous);
 void baseline_test_case_drop(BaselineTestCase* me);
 void baseline_test_case_clear_detail(BaselineTestCase* me);
-void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span const* span, bool decl);
-void baseline_test_case_add_type(BaselineTestCase* me, Span const* span, Type const* type);
-void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span const* span, Type const* type, int paren_depth);
+void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span span, Span decl_span);
+void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type);
+void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Type const* type, int paren_depth);
 void baseline_test_case_run(BaselineTestCase* me, bool noisy); // returns if test ran successfully, NOT if it passed
 bool baseline_test_case_is_pass(BaselineTestCase const* me);
 bool baseline_test_case_was_pass(BaselineTestCase const* me);

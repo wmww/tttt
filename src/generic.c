@@ -110,12 +110,8 @@ void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     name_stack_push_frame(names, STACK_FRAME_GENERIC);
     long generic_count = vec_generic_item_size(&my items);
     for (long i = 0; i < generic_count; i++) {
-        if (!name_stack_add_generic_type(
-            names,
-            cstr_clone(vec_generic_item_at(&my items, i)->name),
-            &vec_generic_item_at(&my items, i)->extends,
-            i
-        )) {
+        GenericItem const* item = vec_generic_item_at(&my items, i);
+        if (!name_stack_add_generic_type(names, cstr_clone(item->name), item->name_span, &item->extends, i)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple function generics with same name");
         }
