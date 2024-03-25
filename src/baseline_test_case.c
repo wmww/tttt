@@ -124,11 +124,11 @@ static cstr render_lines_woven_with_file(
         line++;
     }
 
-    if (is_errors) {
-        if (csview_ends_with(source_contents, "\n")) {
-            cstr_append_fmt(&ret, "\r\n%s", line_indent);
-        }
-    } else if (newline_if_next_line_non_empty && !cstr_ends_with(&ret, "\r\n\r\n")) {
+    if (csview_ends_with(source_contents, "\n")) {
+        cstr_append_fmt(&ret, "\r\n%s", line_indent);
+    }
+
+    if (!is_errors && newline_if_next_line_non_empty && !cstr_ends_with(&ret, "\r\n\r\n")) {
         cstr_append(&ret, "\r\n");
     }
 
