@@ -6308,7 +6308,7 @@ const baselines = {
     'contextuallyTypingOrOperator3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypingRestParameters': {
         errors: false,
@@ -42251,7 +42251,7 @@ const baselines = {
         types: false,
     },
     'logicalOrOperatorWithTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

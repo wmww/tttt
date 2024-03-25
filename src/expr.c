@@ -464,10 +464,19 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_GREATER:
         case BINARY_OP_LESS_EQUAL:
         case BINARY_OP_GREATER_EQUAL:
-        case BINARY_OP_AND_AND:
-        case BINARY_OP_OR_OR:
             // TODO: figure out rules and typecheck
             ret = type_boolean;
+            break;
+
+        case BINARY_OP_AND_AND:
+        case BINARY_OP_OR_OR:
+            // TODO: use union type once we support it
+            if (type_extends(&left, &right) && type_extends(&right, &left)) {
+                ret = left;
+                left = type_any;
+            } else {
+                ret = type_any;
+            }
             break;
 
         case BINARY_OP_PLUS_EQUAL:
