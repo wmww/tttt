@@ -272,9 +272,19 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span 
                     decl_span.offset--;
                     break;
 
-                default:
+                default: {
                     keep_going = false;
-                    break;
+                    // Skip comments, going backwards
+                    const char* c = decl_span.file_start + decl_span.offset - 1;
+                    while (c > decl_span.file_start && *c != '\n') {
+                        if (*c == '/' && *(c - 1) == '/') {
+                            keep_going = true;
+                            decl_span.offset = c - 1 - decl_span.file_start;
+                            break;
+                        }
+                        c--;
+                    }
+                }   break;
             }
         }
         int format_line = span_line_index(&decl_span);

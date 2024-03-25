@@ -34,13 +34,13 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
 
 
         case TYPE_GENERIC:
-            /*
             c_foreach(i, vec_generic_item, my generic->items) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span, true);
-                Type t = type_identifier(cstr_clone(i.ref->name), nullptr, 0, 0, span_null);
-                baseline_test_case_add_type(ctx, &i.ref->name_span, 0, &t);
-                type_drop(&t);
-            }*/
+                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
+                type_compile_test_info(&i.ref->extends, ctx);
+                if (i.ref->fallback_explicit) {
+                    type_compile_test_info(&i.ref->fallback, ctx);
+                }
+            }
             type_compile_test_info(&my generic->inner, ctx);
             break;
 
@@ -106,6 +106,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                 baseline_test_case_add_symbol(ctx, cstr_str(&my function->name), my span, my span);
                 baseline_test_case_add_type(ctx, my function->name_span, &my function->type);
             }
+            type_compile_test_info(&my function->type, ctx);
             CallableType* callable = function_impl_callable_type(my function);
             int arg_count = function_impl_arg_count(my function);
             for (int i = 0; i < arg_count; i++) {
@@ -118,7 +119,9 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                     value_arg->name_span
                 );
                 baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
+                type_compile_test_info(&type_arg->type, ctx);
             }
+            type_compile_test_info(&callable->ret, ctx);
             block_compile_test_info(&my function->body, ctx);
         }   break;
 
@@ -161,7 +164,9 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             c_foreach(i, vec_name_init_data, my var_init.vars) {
                 baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
                 baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
-                type_compile_test_info(&i.ref->type, ctx);
+                if (i.ref->type_explicit) {
+                    type_compile_test_info(&i.ref->type, ctx);
+                }
                 if (i.ref->value_explicit) {
                     expr_compile_test_info(&i.ref->value, ctx);
                 }
@@ -189,7 +194,9 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                     value_arg->name_span
                 );
                 baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
+                type_compile_test_info(&type_arg->type, ctx);
             }
+            type_compile_test_info(&callable->ret, ctx);
             block_compile_test_info(&my function.impl.body, ctx);
             break;
 

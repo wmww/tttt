@@ -45,25 +45,38 @@ StackFrame stack_frame_clone(StackFrame me) {
     };
 }
 
+static inline void add_builtin_variable(NameStack* me, csview name, Type const* type) {
+    name_stack_add_variable(me, cstr_from_sv(name), span_null, type);
+}
+
+static inline void add_builtin_type(NameStack* me, csview name, Type const* type) {
+    name_stack_add_type(me, cstr_from_sv(name), span_null, type);
+}
+
 NameStack* name_stack_new() {
     NameStack* ret = c_new(NameStack, {
         .stack = vec_stack_frame_init()
     });
     name_stack_push_frame(ret, STACK_FRAME_BLOCK);
 
-    name_stack_add_variable(ret, cstr_lit("console"), span_null, &type_any);
-    name_stack_add_variable(ret, cstr_lit("String"), span_null, &type_any);
-    name_stack_add_variable(ret, cstr_lit("Number"), span_null, &type_any);
-    name_stack_add_variable(ret, cstr_lit("Boolean"), span_null, &type_any);
-    name_stack_add_variable(ret, cstr_lit("NaN"), span_null, &type_any);
+    add_builtin_variable(ret, c_sv("console"), &type_any);
+    add_builtin_variable(ret, c_sv("String"), &type_any);
+    add_builtin_variable(ret, c_sv("Number"), &type_any);
+    add_builtin_variable(ret, c_sv("Boolean"), &type_any);
+    add_builtin_variable(ret, c_sv("NaN"), &type_any);
+    add_builtin_variable(ret, c_sv("Date"), &type_any);
 
-    name_stack_add_type(ret, cstr_lit("any"), span_null, &type_any);
-    name_stack_add_type(ret, cstr_lit("unknown"), span_null, &type_unknown);
-    name_stack_add_type(ret, cstr_lit("never"), span_null, &type_never);
-    name_stack_add_type(ret, cstr_lit("void"), span_null, &type_void);
-    name_stack_add_type(ret, cstr_lit("boolean"), span_null, &type_boolean);
-    name_stack_add_type(ret, cstr_lit("number"), span_null, &type_number);
-    name_stack_add_type(ret, cstr_lit("string"), span_null, &type_string);
+    add_builtin_type(ret, c_sv("any"), &type_any);
+    add_builtin_type(ret, c_sv("unknown"), &type_unknown);
+    add_builtin_type(ret, c_sv("never"), &type_never);
+    add_builtin_type(ret, c_sv("void"), &type_void);
+    add_builtin_type(ret, c_sv("boolean"), &type_boolean);
+    add_builtin_type(ret, c_sv("number"), &type_number);
+    add_builtin_type(ret, c_sv("string"), &type_string);
+    add_builtin_type(ret, c_sv("String"), &type_string);
+    add_builtin_type(ret, c_sv("Number"), &type_number);
+    add_builtin_type(ret, c_sv("Boolean"), &type_boolean);
+    add_builtin_type(ret, c_sv("Date"), &type_any);
 
     return ret;
 }

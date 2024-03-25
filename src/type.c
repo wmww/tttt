@@ -209,6 +209,10 @@ bool type_extends(Type const* sub, Type const* super) {
 
         case TYPE_IDENTIFIER:
             if (sub->identifier.type.get) {
+                if (sub->identifier.type.get->type == sub) {
+                    NONFATAL("Recursive types not yet correctly handled");
+                    return false;
+                }
                 return type_extends(sub->identifier.type.get->type, super);
             }
             return true;

@@ -1791,7 +1791,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatibilityForConstrainedTypeParameters': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -1817,7 +1817,7 @@ const baselines = {
     },
     'assignmentStricterConstraints': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'assignmentToAnyArrayRestParameters': {
@@ -2757,7 +2757,7 @@ const baselines = {
     },
     'callWithWrongNumberOfTypeArguments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callbackArgsDifferByOptionality': {
@@ -4542,7 +4542,7 @@ const baselines = {
     },
     'commentOnBlock1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'commentOnClassAccessor1': {
@@ -5307,7 +5307,7 @@ const baselines = {
     },
     'constDeclarationShadowedByVarDeclaration2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constDeclarationShadowedByVarDeclaration3': {
@@ -5541,8 +5541,8 @@ const baselines = {
         types: false,
     },
     'constraintErrors1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'constraintOfRecursivelyMappedTypeWithConditionalIsResolvable': {
@@ -6307,7 +6307,7 @@ const baselines = {
     },
     'contextuallyTypingOrOperator3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypingRestParameters': {
@@ -10097,7 +10097,7 @@ const baselines = {
     },
     'emptyTypeArgumentList': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emptyTypeArgumentListWithNew': {
@@ -12652,7 +12652,7 @@ const baselines = {
     },
     'fixTypeParameterInSignatureWithRestParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'fixingTypeParametersRepeatedly1': {
@@ -13377,7 +13377,7 @@ const baselines = {
     },
     'functionWithAnyReturnTypeAndNoReturnExpression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionWithDefaultParameterWithNoStatements1': {
@@ -13667,7 +13667,7 @@ const baselines = {
     },
     'genericCallSpecializedToTypeArg': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericCallWithFixedArguments': {
@@ -13677,7 +13677,7 @@ const baselines = {
     },
     'genericCallWithNonGenericArgs1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericCallWithObjectLiteralArguments1': {
@@ -13687,7 +13687,7 @@ const baselines = {
     },
     'genericCallWithoutArgs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericCallbackInvokedInsideItsContainingFunction1': {
@@ -14312,7 +14312,7 @@ const baselines = {
     },
     'genericTypeWithCallableMembers2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericTypeWithMultipleBases1': {
@@ -17092,7 +17092,7 @@ const baselines = {
     },
     'invalidTypeNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'invalidUnicodeEscapeSequance': {
@@ -17937,7 +17937,7 @@ const baselines = {
     },
     'jsdocCastCommentEmit': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocClassMissingTypeArguments': {
@@ -18501,7 +18501,7 @@ const baselines = {
         types: false,
     },
     'library_DatePrototypeProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23277,7 +23277,7 @@ const baselines = {
     },
     'primitiveConstraints1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'primitiveConstraints2': {
@@ -24317,7 +24317,7 @@ const baselines = {
     },
     'recursiveGenericSignatureInstantiation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveGenericSignatureInstantiation2': {
@@ -25092,7 +25092,7 @@ const baselines = {
     },
     'returnTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'returnTypeParameterWithModules': {
@@ -25317,7 +25317,7 @@ const baselines = {
     },
     'shadowedFunctionScopedVariablesByBlockScopedOnes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'shadowedReservedCompilerDeclarationsWithNoEmit': {
@@ -27586,7 +27586,7 @@ const baselines = {
         types: false,
     },
     'thisTypeAsConstraint': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28236,7 +28236,7 @@ const baselines = {
         types: false,
     },
     'typeParameterAndArgumentOfSameName1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28272,7 +28272,7 @@ const baselines = {
     },
     'typeParameterAsElementType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterAssignmentCompat1': {
@@ -28282,7 +28282,7 @@ const baselines = {
     },
     'typeParameterAssignmentWithConstraints': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterCompatibilityAccrossDeclarations': {
@@ -28392,7 +28392,7 @@ const baselines = {
     },
     'typeParameterHasSelfAsConstraint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterInConstraint1': {
@@ -28677,7 +28677,7 @@ const baselines = {
     },
     'typecheckIfCondition': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typedArrays-es5': {
@@ -30257,7 +30257,7 @@ const baselines = {
     },
     'voidArrayLit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'voidAsNonAmbiguousReturnType': {
@@ -31827,7 +31827,7 @@ const baselines = {
     },
     'classWithPredefinedTypesAsNames': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classWithPredefinedTypesAsNames2': {
@@ -35201,7 +35201,7 @@ const baselines = {
         types: false,
     },
     'es2017DateAPIs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41232,7 +41232,7 @@ const baselines = {
     },
     'exponentiationOperatorWithTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exponentiationOperatorWithUndefinedValueAndInvalidOperands': {
@@ -42017,7 +42017,7 @@ const baselines = {
     },
     'arithmeticOperatorWithTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arithmeticOperatorWithUndefinedValueAndInvalidOperands': {
@@ -42042,7 +42042,7 @@ const baselines = {
     },
     'comparisonOperatorWithIdenticalTypeParameter': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'comparisonOperatorWithIntersectionType': {
@@ -42232,7 +42232,7 @@ const baselines = {
     },
     'logicalAndOperatorWithTypeParameters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'logicalOrExpressionIsContextuallyTyped': {
@@ -42262,7 +42262,7 @@ const baselines = {
     },
     'commaOperatorOtherInvalidOperation': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'commaOperatorOtherValidOperation': {
@@ -42617,7 +42617,7 @@ const baselines = {
     },
     'newOperatorErrorCases_noImplicitAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nullishCoalescingOperator1': {
@@ -43317,7 +43317,7 @@ const baselines = {
     },
     'typeSatisfaction_asConstArrays': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeSatisfaction_contextualTyping1': {
@@ -46752,7 +46752,7 @@ const baselines = {
     },
     'jsdocParseErrorsInTypescript': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocParseHigherOrderFunction': {
@@ -49167,7 +49167,7 @@ const baselines = {
     },
     'parserErrantEqualsGreaterThanAfterFunction2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserErrantSemicolonInClass1': {
@@ -55552,12 +55552,12 @@ const baselines = {
     },
     'typeParameterUsedAsTypeParameterConstraint': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterUsedAsTypeParameterConstraint2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterUsedAsTypeParameterConstraint3': {
@@ -55962,7 +55962,7 @@ const baselines = {
     },
     'objectTypesWithPredefinedTypesAsName': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectTypesWithPredefinedTypesAsName2': {
@@ -56982,7 +56982,7 @@ const baselines = {
     },
     'typeParametersAvailableInNestedScope2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParametersAvailableInNestedScope3': {
@@ -57342,7 +57342,7 @@ const baselines = {
     },
     'typeParameterAssignability': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterAssignability2': {
