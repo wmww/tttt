@@ -87,12 +87,14 @@ static cstr render_lines_woven_with_file(
     int vec_size = vec_line_numbered_str_size(lines);
     const char* relative_path = relative_test_path(source_path);
     bool newline_if_next_line_non_empty = false;
+
     if (!is_errors) {
         cstr_append_fmt(&ret, "//// [%s] ////\r\n", relative_path);
         cstr_append(&ret, "\r\n");
         cstr_append_fmt(&ret, "=== %s ===\r\n", basename_of(source_path));
         newline_if_next_line_non_empty = vec_size == 0;
     }
+
     c_foreach(i, lines_sv, source_contents) {
         if (newline_if_next_line_non_empty && !line_effectively_empty(i.line)) {
             cstr_append(&ret, "\r\n");
@@ -100,7 +102,12 @@ static cstr render_lines_woven_with_file(
         newline_if_next_line_non_empty = false;
         cstr_append(&ret, line_indent);
         cstr_append_sv(&ret, i.line);
-        cstr_append(&ret, "\r\n");
+        if (!is_errors ||
+            index < vec_size ||
+            csview_end_ptr(i.line) < csview_end_ptr(source_contents)
+        ) {
+            cstr_append(&ret, "\r\n");
+        }
         bool lines_added_from_vec = false;
         while (index < vec_size && vec_line_numbered_str_at(lines, index)->line <= line) {
             if (lines_added_from_vec) {
@@ -116,6 +123,7 @@ static cstr render_lines_woven_with_file(
         }
         line++;
     }
+
     if (is_errors) {
         if (csview_ends_with(source_contents, "\n")) {
             cstr_append_fmt(&ret, "\r\n%s", line_indent);
@@ -123,6 +131,7 @@ static cstr render_lines_woven_with_file(
     } else if (newline_if_next_line_non_empty && !cstr_ends_with(&ret, "\r\n\r\n")) {
         cstr_append(&ret, "\r\n");
     }
+
     return ret;
 }
 

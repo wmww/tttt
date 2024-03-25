@@ -1341,7 +1341,7 @@ const baselines = {
         types: false,
     },
     'arrowFunctionMissingCurlyWithSemicolon': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -4771,7 +4771,7 @@ const baselines = {
         types: false,
     },
     'commentsOnObjectLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49581,7 +49581,7 @@ const baselines = {
         types: false,
     },
     'parserGreaterThanTokenAmbiguity15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49611,7 +49611,7 @@ const baselines = {
         types: false,
     },
     'parserGreaterThanTokenAmbiguity20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50646,7 +50646,7 @@ const baselines = {
         types: false,
     },
     'parserSkippedTokens15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51451,7 +51451,7 @@ const baselines = {
         types: true,
     },
     'parserVariableDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55706,7 +55706,7 @@ const baselines = {
         types: false,
     },
     'boolInsteadOfBoolean': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55821,7 +55821,7 @@ const baselines = {
         types: false,
     },
     'directReferenceToUndefined': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

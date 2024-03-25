@@ -34,6 +34,13 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
 
 
         case TYPE_GENERIC:
+            /*
+            c_foreach(i, vec_generic_item, my generic->items) {
+                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), &i.ref->name_span, true);
+                Type t = type_identifier(cstr_clone(i.ref->name), nullptr, 0, 0, span_null);
+                baseline_test_case_add_type(ctx, &i.ref->name_span, 0, &t);
+                type_drop(&t);
+            }*/
             type_compile_test_info(&my generic->inner, ctx);
             break;
 

@@ -23,3 +23,4 @@ static inline bool streq(const char* a, const char* b) {
 }
 
 csview csview_trim_whitespace(csview sv);
+static inline const char* csview_end_ptr(csview sv) { return sv.buf + sv.size; }
