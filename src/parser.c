@@ -1465,29 +1465,25 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
     }
 
     if (parse_binary_op_expr(&p, &parsed.binary.op, &parsed.binary.expr)) {
-        if (parsed.binary.expr.tag == EXPR_BINARY_OP &&
-            !parsed.binary.expr.peren_depth &&
-            binary_op_cmp_precedence(parsed.binary.op, parsed.binary.expr.binary_op->op) >= 0
+        Expr* insert_at = &parsed.binary.expr;
+
+        while (
+            insert_at->tag == EXPR_BINARY_OP &&
+            insert_at->peren_depth == 0 &&
+            binary_op_cmp_precedence(parsed.binary.op, insert_at->binary_op->op) >= 0
         ) {
-            parsed.binary.expr.binary_op->left = expr_binary_op(
-                span_end(a),
-                c_new(BinaryOpExpr, {
-                    .left = *left_and_ret,
-                    .op = parsed.binary.op,
-                    .right = parsed.binary.expr.binary_op->left,
-                })
-            );
-            *left_and_ret = parsed.binary.expr;
-        } else {
-            *left_and_ret = expr_binary_op(
-                span_end(a),
-                c_new(BinaryOpExpr, {
-                    .left = *left_and_ret,
-                    .op = parsed.binary.op,
-                    .right = parsed.binary.expr,
-                })
-            );
+            insert_at->span = span_between(&left_and_ret->span, &insert_at->span);
+            insert_at = &insert_at->binary_op->left;
         }
+
+        *insert_at = expr_binary_op(span_between(&left_and_ret->span, &insert_at->span), c_new(BinaryOpExpr, {
+            .left = *left_and_ret,
+            .op = parsed.binary.op,
+            .right = *insert_at,
+        }));
+
+        *left_and_ret = parsed.binary.expr;
+
         return parse_success(&p);
     }
 

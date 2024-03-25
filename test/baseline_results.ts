@@ -1343,7 +1343,7 @@ const baselines = {
     'arrowFunctionMissingCurlyWithSemicolon': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionParsingDoesNotConfuseParenthesizedObjectForArrowHead': {
         errors: false,
@@ -10091,9 +10091,9 @@ const baselines = {
         types: true,
     },
     'emptyThenWithoutWarning': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyTypeArgumentList': {
         errors: false,
@@ -50583,12 +50583,12 @@ const baselines = {
     'parserRegularExpressionDivideAmbiguity1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRegularExpressionDivideAmbiguity2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRegularExpressionDivideAmbiguity3': {
         errors: false,

@@ -161,14 +161,23 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             break;
 
         case EXPR_BINARY_OP: {
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            }
             cstr_append_expr_debug(target, &my binary_op->left, indent);
             cstr_append_sv(target, c_sv(" "));
             cstr_append_sv(target, czview_sv(binary_op_get_zv(my binary_op->op)));
             cstr_append_sv(target, c_sv(" "));
             cstr_append_expr_debug(target, &my binary_op->right, indent);
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            }
         }   break;
 
         case EXPR_UNARY_OP: {
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            }
             UnaryOp op = my unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
@@ -176,6 +185,9 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_expr_debug(target, &my unary_op->expr, indent);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
+            }
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
 
