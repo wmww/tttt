@@ -27,15 +27,17 @@ int main(int argc, const char** argv) {
     ast = parse_file(cstr_str(&contents), &errs);
     if (!error_ctx_empty(&errs)) {
         error_ctx_display(&errs);
+        error_ctx_drop(&errs);
+        errs = (ErrorCtx){0};
         ret = 1;
-        goto cleanup;
     }
 
     block_resolve_names_toplevel(&ast, &errs);
     if (!error_ctx_empty(&errs)) {
         error_ctx_display(&errs);
+        error_ctx_drop(&errs);
+        errs = (ErrorCtx){0};
         ret = 1;
-        goto cleanup;
     }
 
     block_typecheck_toplevel(&ast, &errs);
@@ -53,8 +55,9 @@ int main(int argc, const char** argv) {
 
     if (!error_ctx_empty(&errs)) {
         error_ctx_display(&errs);
+        error_ctx_drop(&errs);
+        errs = (ErrorCtx){0};
         ret = 1;
-        goto cleanup;
     }
 
     printf(CLR_GOOD "Running..." CLR0 "\n");

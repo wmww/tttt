@@ -25,6 +25,7 @@ typedef struct Expr {
     Span span;
     int peren_depth;
     enum {
+        EXPR_IMPLICIT_ANY,
         EXPR_LITERAL,
         EXPR_IDENTIFIER,
         EXPR_BINARY_OP,
@@ -55,10 +56,6 @@ typedef struct Expr {
         ClassDecl* class_decl;
     };
 } Expr;
-
-static inline Expr expr_default(Span span) {
-    return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value_undefined };
-}
 
 static inline Expr expr_literal(Span span, Value value) {
     return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value };
@@ -98,6 +95,14 @@ static inline Expr expr_object(Span span, ObjectExpr object) {
 
 static inline Expr expr_class_decl(Span span, ClassDecl* class_decl) {
     return (Expr){ .span = span, .tag = EXPR_CLASS_DECL, .class_decl = class_decl };
+}
+
+static inline Expr expr_undefined(Span span) {
+    return expr_literal(span, value_undefined);
+}
+
+static inline Expr expr_implicit_any(Span span) {
+    return (Expr){ .span = span, .tag = EXPR_IMPLICIT_ANY };
 }
 
 void expr_drop(Expr* me);

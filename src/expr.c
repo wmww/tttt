@@ -84,6 +84,9 @@ static inline int binary_op_get_precedence(BinaryOp op) {
 
 void expr_drop(Expr* me) {
     switch (my tag) {
+        case EXPR_IMPLICIT_ANY:
+            break;
+
         case EXPR_LITERAL:
             value_drop(&my literal);
             break;
@@ -147,6 +150,8 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
         cstr_append_sv(target, c_sv("("));
     }
     switch (my tag) {
+        case EXPR_IMPLICIT_ANY: cstr_append_sv(target, c_sv("/* implicit any */")); break;
+
         case EXPR_LITERAL: cstr_append_value_debug(target, &my literal, indent); break;
 
         case EXPR_IDENTIFIER:
@@ -246,6 +251,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
 
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
+        case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL:
             break;
 
@@ -493,6 +499,9 @@ static Type binary_op_get_type_and_typecheck(
 
 Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
     switch (my tag) {
+        case EXPR_IMPLICIT_ANY:
+            return type_any;
+
         case EXPR_LITERAL:
             return type_value(value_clone(my literal));
 

@@ -60,6 +60,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
 
     switch (my tag) {
+        case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL:
             break;
 

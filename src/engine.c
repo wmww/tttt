@@ -318,6 +318,7 @@ static Result MUST_USE engine_eval_array(Engine* me, VecExpr const* array_expr) 
 
 static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
     switch (expr->tag) {
+        case EXPR_IMPLICIT_ANY: return result_ok(value_undefined);
         case EXPR_LITERAL: return result_ok(value_clone(expr->literal));
         case EXPR_IDENTIFIER: return engine_eval_identifier(me, cstr_sv(&expr->identifier.name));
         case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);

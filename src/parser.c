@@ -848,7 +848,7 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
             .name = cstr_clone(lone_arg_name),
             .name_span = lone_arg_span,
             .value_explicit = false,
-            .value = expr_default(span_from_pos(&p)),
+            .value = expr_undefined(span_from_pos(&p)),
         });
         CallableType* callable = function_impl_callable_type(ret);
         vec_callable_type_arg_push(&callable->args, (CallableTypeArg){
@@ -883,9 +883,13 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace(&p);
 
-    Expr expr = {0};
-    if (parse_block(&p, &ret->body)) {
-    } else if (parse_expr(&p, &expr)) {
+    if (!parse_block(&p, &ret->body)) {
+        Expr expr;
+        if (!parse_expr(&p, &expr)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+            expr = expr_implicit_any(span_from_pos(&p));
+            p.pos = span_end_ptr(&ret->arrow_span);
+        }
         ret->body = (Block){
             .statements = vec_statement_init(),
         };
@@ -893,8 +897,6 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
             .tag = STATEMENT_RETURN,
             .expr = expr,
         });
-    } else {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
     }
 
     ret->full_span = span_end(a);
@@ -973,7 +975,7 @@ static bool parse_object_item(Parser* parent, void* data) {
     Expr value;
     if (!parse_expr(&p, &value)) {
         error_ctx_parse_error(&p.errs, "bad expression in object");
-        value = expr_default(span_from_pos(&p));
+        value = expr_undefined(span_from_pos(&p));
     }
 
     vec_object_expr_item_push(ret, (ObjectExprItem){
@@ -1010,7 +1012,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
         if (parse_expr(&p, &expr)) {
             vec_expr_push(ret, expr);
         } else if (*p.pos == ',') {
-            vec_expr_push(ret, expr_default(span_from_pos(&p)));
+            vec_expr_push(ret, expr_undefined(span_from_pos(&p)));
         } else {
             break;
         }
@@ -1258,7 +1260,7 @@ static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
 
     if (!parse_expr(&p, right)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        *right = expr_default(span_from_pos(&p));
+        *right = expr_undefined(span_from_pos(&p));
     }
 
     return parse_success(&p);
@@ -1297,7 +1299,7 @@ static bool parse_left_unary_op_expr(Parser* parent, Expr* ret) {
     Expr expr;
     if (!parse_expr(&p, &expr)) {
         error_ctx_parse_error(&p.errs, "expected expression after unary operation");
-        expr = expr_default(span_from_pos(&p));
+        expr = expr_undefined(span_from_pos(&p));
     }
 
     *ret = expr_unary_op(
@@ -1545,7 +1547,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         hop_whitespace(&p);
         if (!parse_expr(&p, ret)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-            *ret = expr_default(span_end(a));
+            *ret = expr_undefined(span_end(a));
         }
         if (ret->tag == EXPR_CALL) {
             ret->call->uses_new = true;
@@ -1612,7 +1614,7 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
         }
     }
     if (!value_explicit) {
-        value = expr_default(span_from_pos(&p));
+        value = expr_undefined(span_from_pos(&p));
     }
 
     *ret = (NameInitData) {
@@ -1798,7 +1800,7 @@ static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
     hop_whitespace(&p);
 
     if (!parse_expr(&p, &afterthought)) {
-        afterthought = expr_default(span_from_pos(&p));
+        afterthought = expr_undefined(span_from_pos(&p));
     }
     hop_whitespace(&p);
 
@@ -1852,7 +1854,7 @@ static bool parse_while_loop(Parser* parent, LoopStatement* ret) {
     *ret = (LoopStatement) {
         .initialization = statement_noop,
         .condition = condition,
-        .afterthought = expr_default(span_from_pos(&p)),
+        .afterthought = expr_undefined(span_from_pos(&p)),
         .body = body,
     };
     return parse_success(&p);
@@ -1868,7 +1870,7 @@ static bool parse_return(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
 
     if (!parse_expr(&p, ret)) {
-        *ret = expr_default(span_end(a));
+        *ret = expr_undefined(span_end(a));
     }
 
     return parse_success(&p);
