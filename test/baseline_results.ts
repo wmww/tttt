@@ -2492,17 +2492,17 @@ const baselines = {
     },
     'blockScopedFunctionDeclarationInStrictModule': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'blockScopedFunctionDeclarationStrictES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'blockScopedFunctionDeclarationStrictES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'blockScopedNamespaceDifferentFile': {
@@ -2522,12 +2522,12 @@ const baselines = {
     },
     'blockScopedSameNameFunctionDeclarationStrictES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'blockScopedSameNameFunctionDeclarationStrictES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'blockScopedVariablesUseBeforeDef': {
@@ -12872,7 +12872,7 @@ const baselines = {
     },
     'functionCall1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionCall10': {
@@ -12922,17 +12922,17 @@ const baselines = {
     },
     'functionCall2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionCall3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionCall4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionCall5': {
@@ -12942,7 +12942,7 @@ const baselines = {
     },
     'functionCall6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionCall7': {
@@ -13322,7 +13322,7 @@ const baselines = {
     },
     'functionReturningItself': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionSignatureAssignmentCompat1': {
@@ -13462,12 +13462,12 @@ const baselines = {
     },
     'functionWithNoBestCommonType1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionWithNoBestCommonType2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionWithSameNameAsField': {
@@ -18557,7 +18557,7 @@ const baselines = {
     },
     'literals-negative': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'literals1': {
@@ -20822,7 +20822,7 @@ const baselines = {
     },
     'nestedRecursiveLambda': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nestedRedeclarationInES6AMD': {
@@ -21777,7 +21777,7 @@ const baselines = {
     },
     'numberToString': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'numberVsBigIntOperations': {
@@ -22832,7 +22832,7 @@ const baselines = {
     },
     'parse2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parseArrowFunctionWithFunctionReturnType': {
@@ -24357,7 +24357,7 @@ const baselines = {
     },
     'recursiveInference1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveInferenceBug': {
@@ -24422,7 +24422,7 @@ const baselines = {
     },
     'recursiveReturns': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveReverseMappedType': {
@@ -27322,7 +27322,7 @@ const baselines = {
     },
     'targetTypeVoidFunc': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'targetTypingOnFunctions': {
@@ -39677,12 +39677,12 @@ const baselines = {
     },
     'templateStringWithEmbeddedFunctionExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringWithEmbeddedFunctionExpressionES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringWithEmbeddedInOperator': {

@@ -202,7 +202,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             if (!name_stack_add_variable(
                 names,
                 cstr_clone(my function.name),
-                my function.name_span,
+                my function.full_span,
                 &my function.impl.type
             )) {
                 // name is cstr_str(&result.ref->first)
