@@ -18,12 +18,26 @@ const Type type_number = { .tag = TYPE_NUMBER };
 const Type type_string = { .tag = TYPE_STRING };
 
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
-    // TODO: merge nested unions and intersections into a single type
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
-    return (Type){
-        .tag = tag,
-        .composite = c_init(vec_type, {a, b}),
-    };
+    if (a.tag == tag && b.tag == tag) {
+        // Doesn't seem to be a more elegant way to append one vec to another
+        vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
+        b.composite._len = 0; // fine, becuse the other vec now owns the data
+        type_drop(&b);
+        return a;
+    } else if (a.tag == tag) {
+        vec_type_push(&a.composite, b);
+        return a;
+    } else if (b.tag == tag) {
+        // Order doesn't matter at this stage, will be sorted later
+        vec_type_push(&b.composite, a);
+        return b;
+    } else {
+        return (Type){
+            .tag = tag,
+            .composite = c_init(vec_type, {a, b}),
+        };
+    }
 }
 
 void type_drop(Type* me) {
@@ -135,14 +149,12 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
             break;
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            cstr_append_sv(target, c_sv("("));
             c_foreach(i, vec_type, my composite) {
                 cstr_append_type_error_msg(target, i.ref);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
                 }
             }
-            cstr_append_sv(target, c_sv(")"));
             break;
         case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, my ternary); break;
     }
