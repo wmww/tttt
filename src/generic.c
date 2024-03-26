@@ -212,6 +212,13 @@ static void collect_generic_candidates(
             );
             return;
 
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with union/intersection not yet implemented"
+            );
+            return;
+
         case TYPE_TERNARY:
             error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with ternary not yet implemented"
@@ -283,6 +290,13 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
 
         case TYPE_ARRAY:
             swap_generics_for_specific_types(my array, ctx);
+            return;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                swap_generics_for_specific_types(i.ref, ctx);
+            }
             return;
 
         case TYPE_TERNARY:

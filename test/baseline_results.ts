@@ -4937,7 +4937,7 @@ const baselines = {
     },
     'compareTypeParameterConstrainedByLiteralToLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'comparisonOfPartialDeepAndIndexedAccessTerminatesWithoutError': {
@@ -21302,7 +21302,7 @@ const baselines = {
     },
     'noImplicitReturnsWithoutReturnExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noImplicitSymbolToString': {
@@ -24642,7 +24642,7 @@ const baselines = {
     },
     'relationalOperatorComparable': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'relativeNamesInClassicResolution': {
@@ -24926,7 +24926,7 @@ const baselines = {
         types: true,
     },
     'resolveInterfaceNameWithSameLetDeclarationName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28311,23 +28311,23 @@ const baselines = {
         types: false,
     },
     'typeParameterDiamond1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeParameterDiamond2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterDiamond3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterDiamond4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterDoesntBlockParameterLookup': {
@@ -33886,7 +33886,7 @@ const baselines = {
         types: false,
     },
     'controlFlowBinaryAndExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41831,7 +41831,7 @@ const baselines = {
         types: false,
     },
     'asOperator1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56381,7 +56381,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypesWithVariousOperators01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

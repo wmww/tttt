@@ -43,6 +43,13 @@ typedef struct Parser {
     ErrorCtx errs;
 } Parser;
 
+typedef enum TypePrecedence {
+    TYPE_PRECEDENCE_NULL = 0,
+    TYPE_PRECEDENCE_UNION,
+    TYPE_PRECEDENCE_INTERSECTION,
+    TYPE_PRECEDENCE_TERNARY,
+} TypePrecedence;
+
 static bool hop_token(Parser* parent);
 static bool parse_literal(Parser* parent, Value* ret);
 static bool parse_binary_op(Parser* parent, BinaryOp* op);
@@ -53,7 +60,7 @@ static bool parse_interface(Parser* parent, Interface* ret);
 static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret);
 static bool parse_name_init(Parser* parent, NameInitData* ret);
 static bool parse_statement(Parser* parent, Statement* ret);
-static bool parse_type(Parser* parent, Type* ret);
+static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, Expr* ret);
 
@@ -446,7 +453,7 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
     Type extends = type_any;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
-        parse_type(&p, &extends);
+        parse_type(&p, TYPE_PRECEDENCE_NULL, &extends);
         hop_whitespace(&p);
     }
 
@@ -454,7 +461,7 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
     bool fallback_explicit = false;
     if (hop_start(&p, "=")) {
         hop_whitespace(&p);
-        if (parse_type(&p, &fallback)) {
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &fallback)) {
             fallback_explicit = true;
         }
     }
@@ -478,7 +485,7 @@ static bool parse_generic_decl_list(Parser* parent, VecGenericItem* ret) {
     return true;
 }
 
-static bool parse_ternary_type(Parser* parent, Type first, TernaryType* ret) {
+static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     Parser p = parser(parent);
     Type MaybeSuper = {0};
     Type TrueType = {0};
@@ -489,7 +496,7 @@ static bool parse_ternary_type(Parser* parent, Type first, TernaryType* ret) {
     }
     hop_whitespace(&p);
 
-    parse_type(&p, &MaybeSuper);
+    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &MaybeSuper);
     hop_whitespace(&p);
 
     if (!hop_char(&p, '?')) {
@@ -497,7 +504,7 @@ static bool parse_ternary_type(Parser* parent, Type first, TernaryType* ret) {
     }
     hop_whitespace(&p);
 
-    parse_type(&p, &TrueType);
+    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &TrueType);
     hop_whitespace(&p);
 
     if (!hop_char(&p, ':')) {
@@ -505,16 +512,16 @@ static bool parse_ternary_type(Parser* parent, Type first, TernaryType* ret) {
     }
     hop_whitespace(&p);
 
-    parse_type(&p, &FalseType);
+    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &FalseType);
 
-    *ret = (TernaryType){
+    *left_and_ret = type_ternary(c_new(TernaryType, {
         .conditional = (ExtendsConditional){
-            .MaybeSub = first,
+            .MaybeSub = *left_and_ret,
             .MaybeSuper = MaybeSuper,
         },
         .TrueType = TrueType,
         .FalseType = FalseType,
-    };
+    }));
     return parse_success(&p);
 }
 
@@ -566,7 +573,7 @@ static bool parse_callable_type(Parser* parent, Type* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_type(&p, &callable.ret)) {
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &callable.ret)) {
         error_ctx_parse_error(&p.errs, "invalid return type");
     }
 
@@ -580,48 +587,84 @@ static bool parse_callable_type(Parser* parent, Type* ret) {
     return parse_success(&p);
 }
 
-static bool parse_type(Parser* parent, Type* ret) {
+static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, Type* left_and_ret) {
+    Parser p = parser(parent);
+    Type type;
+
+    hop_whitespace(&p);
+
+    if (TYPE_PRECEDENCE_TERNARY >= min_precedence) {
+        if (parse_ternary_type(&p, left_and_ret)) {
+            return parse_success(&p);
+        }
+    }
+
+    if (TYPE_PRECEDENCE_INTERSECTION >= min_precedence) {
+        if (hop_char(&p, '&' && *p.pos != '&' && *p.pos != '=')) {
+            hop_whitespace(&p);
+
+            if (!parse_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type)) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+                type = type_any;
+            }
+
+            *left_and_ret = type_composite(*left_and_ret, type, TYPE_INTERSECTION);
+            return parse_success(&p);
+        }
+    }
+
+    if (TYPE_PRECEDENCE_UNION >= min_precedence) {
+        if (hop_char(&p, '|') && *p.pos != '|' && *p.pos != '=') {
+            hop_whitespace(&p);
+
+            if (!parse_type(&p, TYPE_PRECEDENCE_UNION, &type)) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+                type = type_any;
+            }
+
+            *left_and_ret = type_composite(*left_and_ret, type, TYPE_UNION);
+            return parse_success(&p);
+        }
+    }
+
+    return parse_fail(&p);
+}
+
+static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
     Parser p = parser(parent);
     Span span;
-    Type type;
     cstr name;
 
     if (hop_start_if_ends_on_word_break(&p, "any")) {
-        type = type_any;
+        *ret = type_any;
     } else if (hop_start_if_ends_on_word_break(&p, "unknown")) {
-        type = type_unknown;
+        *ret = type_unknown;
     } else if (hop_start_if_ends_on_word_break(&p, "never")) {
-        type = type_never;
+        *ret = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {
-        type = type_void;
+        *ret = type_void;
     } else if (hop_start_if_ends_on_word_break(&p, "boolean")) {
-        type = type_boolean;
+        *ret = type_boolean;
     } else if (hop_start_if_ends_on_word_break(&p, "number")) {
-        type = type_number;
+        *ret = type_number;
     } else if (hop_start_if_ends_on_word_break(&p, "string")) {
-        type = type_string;
-    } else if (parse_type_compat_literal(&p, &type.value)) {
-        type.tag = TYPE_VALUE;
+        *ret = type_string;
+    } else if (parse_type_compat_literal(&p, &ret->value)) {
+        ret->tag = TYPE_VALUE;
     } else if (parse_identifier(&p, &name, &span)) {
-        type = type_identifier(name, span);
-    } else if (parse_callable_type(&p, &type)) {
+        *ret = type_identifier(name, span);
+    } else if (parse_callable_type(&p, ret)) {
         // Tag set to either callable or generic
-    } else if (parse_interface(&p, &type.interface)) {
-        type.tag = TYPE_INTERFACE;
+    } else if (parse_interface(&p, &ret->interface)) {
+        ret->tag = TYPE_INTERFACE;
     } else {
         error_ctx_parse_error(&p.errs, "did not find type");
         return parse_fail(&p);
     }
-    hop_whitespace(&p);
 
-    TernaryType ternary;
-    if (parse_ternary_type(&p, type, &ternary)) {
-        *ret = type_ternary(c_new(TernaryType, ternary));
-        return parse_success(&p);
-    } else {
-        *ret = type;
-        return parse_success(&p);
-    }
+    while (parse_type_right_side(&p, min_precedence, ret)) {}
+
+    return parse_success(&p);
 }
 
 static bool parse_interface(Parser* parent, Interface* ret) {
@@ -651,7 +694,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         Type type;
-        if (parse_type(&p, &type)) {
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
             vec_interface_member_push(&members, interface_member_make(name, type));
         } else {
             cstr_drop(&name);
@@ -782,7 +825,7 @@ static bool parse_function_args(
     hop_whitespace(&type_p);
     if (hop_start(&type_p, ":")) {
         hop_whitespace(&type_p);
-        if (parse_type(&type_p, &callable_ret->ret)) {
+        if (parse_type(&type_p, TYPE_PRECEDENCE_NULL, &callable_ret->ret)) {
             callable_ret->ret_explicit = true;
         } else {
             Span span = hop_token_get_span(&type_p);
@@ -1192,7 +1235,7 @@ static bool parse_as_type(Parser* parent, Type* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_type(&p, ret)) {
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
         *ret = type_any;
     }
@@ -1594,7 +1637,7 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
     Anchor type_a = span_start(&p);
     if (hop_start(&p, ":")) {
         hop_whitespace(&p);
-        if (parse_type(&p, &type)) {
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
             type_explicit = true;
         }
         hop_whitespace(&p);

@@ -51,6 +51,13 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             type_compile_test_info(my array, ctx);
             break;
 
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                type_compile_test_info(i.ref, ctx);
+            }
+            break;
+
         case TYPE_TERNARY: break;
     }
 }

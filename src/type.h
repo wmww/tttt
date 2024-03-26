@@ -12,6 +12,7 @@ typedef struct NameStack NameStack;
 typedef struct NamedType NamedType;
 
 wrap_forward_arc(NamedType, named_type);
+wrap_forward_vec(Type, type);
 
 typedef struct Type {
     enum {
@@ -28,6 +29,8 @@ typedef struct Type {
         TYPE_CALLABLE,
         TYPE_INTERFACE,
         TYPE_ARRAY,
+        TYPE_UNION,
+        TYPE_INTERSECTION,
         TYPE_TERNARY,
     } tag;
     union {
@@ -45,6 +48,7 @@ typedef struct Type {
         CallableType* callable;
         Interface interface;
         Type* array;
+        VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         TernaryType* ternary;
     };
 } Type;
@@ -118,6 +122,8 @@ static inline Type type_ternary(TernaryType* ternary) {
     };
 }
 
+Type type_composite(Type a, Type b, typeof((Type){}.tag) tag);
+
 void type_drop(Type* me);
 void cstr_append_type_debug(cstr* target, Type const* me, int indent);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
@@ -131,4 +137,5 @@ void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
 
 #define i_key_class_names Type, type
+#define i_is_forward
 #include "wrap_stc/vec.h"

@@ -17,6 +17,15 @@ const Type type_boolean = { .tag = TYPE_BOOLEAN };
 const Type type_number = { .tag = TYPE_NUMBER };
 const Type type_string = { .tag = TYPE_STRING };
 
+Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
+    // TODO: merge nested unions and intersections into a single type
+    ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
+    return (Type){
+        .tag = tag,
+        .composite = c_init(vec_type, {a, b}),
+    };
+}
+
 void type_drop(Type* me) {
     switch (my tag) {
         case TYPE_ANY:
@@ -56,6 +65,11 @@ void type_drop(Type* me) {
             free(my array);
             break;
 
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            vec_type_drop(&my composite);
+            break;
+
         case TYPE_TERNARY:
             ternary_type_drop(my ternary);
             free(my ternary);
@@ -86,6 +100,17 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             cstr_append_type_debug(target, my array, indent);
             cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
             break;
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            c_foreach(i, vec_type, my composite) {
+                cstr_append_type_debug(target, i.ref, indent);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
+                }
+            }
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            break;
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, my ternary, indent); break;
     }
 }
@@ -107,6 +132,17 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_ARRAY:
             cstr_append_type_error_msg(target, my array);
             cstr_append_sv(target, c_sv("[]"));
+            break;
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            cstr_append_sv(target, c_sv("("));
+            c_foreach(i, vec_type, my composite) {
+                cstr_append_type_error_msg(target, i.ref);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
+                }
+            }
+            cstr_append_sv(target, c_sv(")"));
             break;
         case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, my ternary); break;
     }
@@ -132,6 +168,7 @@ Type type_clone(Type me) {
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
+        case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
     }
     UNREACHABLE;
@@ -193,6 +230,13 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             type_resolve_names(my array, names, errs);
             break;
 
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                type_resolve_names(i.ref, names, errs);
+            }
+            break;
+
         case TYPE_TERNARY:
             type_resolve_names(&my ternary->conditional.MaybeSub, names, errs);
             type_resolve_names(&my ternary->conditional.MaybeSuper, names, errs);
@@ -218,6 +262,16 @@ bool type_extends(Type const* sub, Type const* super) {
             return true;
 
         case TYPE_TERNARY: return type_extends(ternary_type_resolve(sub->ternary), super);
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
+            c_foreach(i, vec_type, sub->composite) {
+                if (!type_extends(i.ref, super)) {
+                    return false;
+                }
+            }
+            return true;
+
 
         default: break;
     }
@@ -285,6 +339,22 @@ bool type_extends(Type const* sub, Type const* super) {
         case TYPE_ARRAY:
             return sub->tag == TYPE_ARRAY && type_extends(sub->array, super->array);
 
+        case TYPE_UNION:
+            c_foreach(i, vec_type, super->composite) {
+                if (type_extends(sub, i.ref)) {
+                    return true;
+                }
+            }
+            return false;
+
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, super->composite) {
+                if (!type_extends(sub, i.ref)) {
+                    return false;
+                }
+            }
+            return true;
+
         case TYPE_INTERFACE:
             NONFATAL("extends(TYPE_INTERFACE, ...) not implemented");
             return false;
@@ -308,6 +378,8 @@ void type_abstract_literals(Type* me) {
         case TYPE_CALLABLE:
         case TYPE_INTERFACE:
         case TYPE_ARRAY:
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
         case TYPE_TERNARY:
             break;
 
