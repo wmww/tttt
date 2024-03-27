@@ -101,7 +101,6 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_FUNCTION:
-            cstr_drop(&my function.name);
             function_impl_drop(&my function.impl);
             break;
 
@@ -143,7 +142,7 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
 
         case STATEMENT_FUNCTION:
             cstr_append_sv(target, c_sv("function " CLR_NAME));
-            cstr_append_s(target, my function.name);
+            cstr_append_s(target, my function.impl.name);
             cstr_append_sv(target, c_sv(CLR0));
             cstr_append_function_impl_debug(target, &my function.impl, false, indent);
             break;
@@ -201,8 +200,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_FUNCTION:
             if (!name_stack_add_variable(
                 names,
-                cstr_clone(my function.name),
-                my function.full_span,
+                cstr_clone(my function.impl.name),
+                my function.impl.full_span,
                 &my function.impl.type
             )) {
                 // name is cstr_str(&result.ref->first)

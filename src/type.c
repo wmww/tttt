@@ -29,8 +29,7 @@ Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
         vec_type_push(&a.composite, b);
         return a;
     } else if (b.tag == tag) {
-        // Order doesn't matter at this stage, will be sorted later
-        vec_type_push(&b.composite, a);
+        vec_type_insert_n(&b.composite, 0, &a, 1);
         return b;
     } else {
         return (Type){

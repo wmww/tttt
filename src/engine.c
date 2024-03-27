@@ -405,7 +405,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_FUNCTION: {
-            cstr name = cstr_clone(statement->function.name);
+            if (cstr_empty(&statement->function.impl.name)) {
+                return result_ok_undefined;
+            }
+            cstr name = cstr_clone(statement->function.impl.name);
             Value value = value_js_func(
                 &statement->function.impl.args,
                 &statement->function.impl.body

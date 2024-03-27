@@ -965,8 +965,10 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
-static bool parse_old_style_function_expr(Parser* parent, FunctionImpl* ret) {
+static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
+
     if (!hop_start_if_ends_on_word_break(&p, "function")) {
         return parse_fail(&p);
     }
@@ -986,6 +988,7 @@ static bool parse_old_style_function_expr(Parser* parent, FunctionImpl* ret) {
 
     ret->name = name;
     ret->name_span = name_span;
+    ret->full_span = span_end(a);
     return parse_success(&p);
 }
 
@@ -1601,7 +1604,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
             );
         }
     } else if (parse_left_unary_op_expr(&p, ret)) {
-    } else if (parse_old_style_function_expr(&p, &parsed.function)) {
+    } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (parse_identifier(&p, &parsed.name, nullptr)) {
         *ret = expr_identifier(span_end(a), parsed.name);
@@ -1915,33 +1918,14 @@ static bool parse_return(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_function_statement(Parser* parent, FunctionStatement* ret) {
-    Parser p = parser(parent);
-    Anchor a = span_start(&p);
-
-    if (!hop_start_and_required_whitespace(&p, "function")) {
-        return parse_fail(&p);
-    }
-
-    if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
-        error_ctx_parse_error(&p.errs, "missing function name");
-    }
-    hop_whitespace(&p);
-
-    if (!parse_non_arrow_function(&p, &ret->impl)) {
-        cstr_drop(&ret->name);
-        return parse_fail(&p);
-    }
-
-    ret->full_span = span_end(a);
-    return parse_success(&p);
-}
-
 static bool parse_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
 
-    LoopStatement loop;
+    union {
+        FunctionImpl function;
+        LoopStatement loop;
+    } parsed;
     if (parse_named_interface(&p, &ret->interface)) {
         ret->tag = STATEMENT_INTERFACE;
     } else if (parse_block(&p, &ret->block)) {
@@ -1950,23 +1934,26 @@ static bool parse_statement(Parser* parent, Statement* ret) {
         ret->tag = STATEMENT_VAR_INIT;
     } else if (parse_if_else(&p, &ret->if_else)) {
         ret->tag = STATEMENT_IF_ELSE;
-    } else if (parse_for_loop(&p, &loop)) {
+    } else if (parse_for_loop(&p, &parsed.loop)) {
         *ret = (Statement){
             .tag = STATEMENT_LOOP,
-            .loop = c_new(LoopStatement, loop),
+            .loop = c_new(LoopStatement, parsed.loop),
         };
-    } else if (parse_while_loop(&p, &loop)) {
+    } else if (parse_while_loop(&p, &parsed.loop)) {
         *ret = (Statement){
             .tag = STATEMENT_LOOP,
-            .loop = c_new(LoopStatement, loop),
+            .loop = c_new(LoopStatement, parsed.loop),
         };
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
         ret->break_span = span_end(a);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN;
-    } else if (parse_function_statement(&p, &ret->function)) {
-        ret->tag = STATEMENT_FUNCTION;
+    } else if (parse_function_keyword_function(&p, &parsed.function)) {
+        *ret = (Statement){
+            .tag = STATEMENT_FUNCTION,
+            .function.impl = parsed.function,
+        };
     } else if (parse_expr(&p, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         parse_comma_ops_right_side(&p, &ret->expr);

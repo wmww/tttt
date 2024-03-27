@@ -2,9 +2,7 @@
 
 #include "block.h"
 #include "expr.h"
-#include "interface.h"
 #include "type.h"
-#include "callable_type.h"
 #include "function_impl.h"
 
 typedef struct ErrorCtx ErrorCtx;
@@ -48,9 +46,7 @@ void var_init_statement_typecheck(VarInitStatement* me, ErrorCtx* errs);
 // Function statements
 
 typedef struct FunctionStatement {
-    cstr name;
-    Span name_span;
-    Span full_span;
+    bool exported;
     FunctionImpl impl;
 } FunctionStatement;
 

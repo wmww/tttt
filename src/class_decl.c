@@ -1,6 +1,7 @@
 #include "class_decl.h"
 #include "name_stack.h"
 #include "interface_member.h"
+#include "callable_type.h"
 #include "error.h"
 
 void class_item_drop(ClassItem* me) {

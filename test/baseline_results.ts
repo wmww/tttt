@@ -4938,7 +4938,7 @@ const baselines = {
     'compareTypeParameterConstrainedByLiteralToLiteral': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'comparisonOfPartialDeepAndIndexedAccessTerminatesWithoutError': {
         errors: false,
@@ -14363,7 +14363,7 @@ const baselines = {
     'genericWithNoConstraintComparableWithCurlyCurly': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericWithOpenTypeParameters1': {
         errors: false,
@@ -20362,7 +20362,7 @@ const baselines = {
     },
     'namedFunctionExpressionCallErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'namedFunctionExpressionInModule': {
@@ -24643,7 +24643,7 @@ const baselines = {
     'relationalOperatorComparable': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'relativeNamesInClassicResolution': {
         errors: false,
@@ -28313,22 +28313,22 @@ const baselines = {
     'typeParameterDiamond1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterDiamond2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterDiamond3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterDiamond4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterDoesntBlockParameterLookup': {
         errors: false,
@@ -39827,7 +39827,7 @@ const baselines = {
     },
     'templateStringsWithTypeErrorInFunctionExpressionsInSubstitutionExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringsWithTypeErrorInFunctionExpressionsInSubstitutionExpressionES6': {
@@ -54863,12 +54863,12 @@ const baselines = {
     'stringLiteralsWithEqualityChecks01': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsWithEqualityChecks02': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsWithEqualityChecks03': {
         errors: false,
@@ -54888,7 +54888,7 @@ const baselines = {
     'stringLiteralsWithSwitchStatements02': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsWithSwitchStatements03': {
         errors: false,
