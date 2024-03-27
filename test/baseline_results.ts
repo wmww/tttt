@@ -2493,7 +2493,7 @@ const baselines = {
     'blockScopedFunctionDeclarationInStrictModule': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedFunctionDeclarationStrictES5': {
         errors: false,
@@ -5352,7 +5352,7 @@ const baselines = {
     },
     'constDeclarations-errors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constDeclarations-es5': {
@@ -7302,7 +7302,7 @@ const baselines = {
     },
     'declarationEmitDefaultExport2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'declarationEmitDefaultExport3': {
@@ -7512,7 +7512,7 @@ const baselines = {
     },
     'declarationEmitExpressionInExtends4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpressionInExtends5': {
@@ -7527,7 +7527,7 @@ const baselines = {
     },
     'declarationEmitExpressionInExtends7': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'declarationEmitExpressionWithNonlocalPrivateUniqueSymbol': {
@@ -9728,7 +9728,7 @@ const baselines = {
     'duplicateVariableDeclaration1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateVariablesByScope': {
         errors: false,
@@ -12357,7 +12357,7 @@ const baselines = {
     },
     'extendNonClassSymbol2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'extendPrivateConstructorClass': {
@@ -12717,37 +12717,37 @@ const baselines = {
     },
     'forInStatement1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStrictNullChecksNoError': {
@@ -14673,7 +14673,7 @@ const baselines = {
     'ifStatementInternalComments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'illegalGenericWrapping1': {
         errors: false,
@@ -18317,7 +18317,7 @@ const baselines = {
     },
     'letDeclarations-es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'letDeclarations-invalidContexts': {
@@ -18387,7 +18387,7 @@ const baselines = {
     },
     'letDeclarations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'letDeclarations2': {
@@ -21772,7 +21772,7 @@ const baselines = {
     },
     'numberOnLeftSideOfInExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'numberToString': {
@@ -25317,7 +25317,7 @@ const baselines = {
     },
     'shadowedFunctionScopedVariablesByBlockScopedOnes': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'shadowedReservedCompilerDeclarationsWithNoEmit': {
@@ -26977,7 +26977,7 @@ const baselines = {
     },
     'systemDefaultExportCommentValidity': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'systemDefaultImportCallable': {
@@ -31792,7 +31792,7 @@ const baselines = {
     },
     'classExtendsValidConstructorFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classIsSubtypeOfBaseType': {
@@ -42182,7 +42182,7 @@ const baselines = {
     },
     'instanceofOperatorWithAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceofOperatorWithInvalidOperands.es2015': {
@@ -42207,7 +42207,7 @@ const baselines = {
     },
     'instanceofOperatorWithLHSIsTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceofOperatorWithRHSHasSymbolHasInstance': {
@@ -51082,7 +51082,7 @@ const baselines = {
     },
     'parserForStatement2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserForStatement3': {
@@ -52063,7 +52063,7 @@ const baselines = {
     'parserForOfStatement24': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForOfStatement25': {
         errors: false,
@@ -54062,12 +54062,12 @@ const baselines = {
     },
     'ES5For-of20': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'ES5For-of21': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'ES5For-of22': {

@@ -345,10 +345,14 @@ static bool hop_token(Parser* parent) {
         Value value;
         BinaryOp bin_op;
         UnaryOp un_op;
+        cstr identifier;
     } parsed;
 
     if (parse_literal(parent, &parsed.value)) {
         value_drop(&parsed.value);
+        return true;
+    } else if (parse_identifier(parent, &parsed.identifier, nullptr)) {
+        cstr_drop(&parsed.identifier);
         return true;
     } else if (hop_start(parent, "=>")) {
         return true;
