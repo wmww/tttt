@@ -1930,7 +1930,34 @@ static bool parse_statement(Parser* parent, Statement* ret) {
         FunctionImpl function;
         LoopStatement loop;
     } parsed;
-    if (parse_named_interface(&p, &ret->interface)) {
+    if (hop_start_if_ends_on_word_break(&p, "export")) {
+        hop_whitespace(&p);
+
+        bool is_default = false;
+        if (hop_start_if_ends_on_word_break(&p, "default")) {
+            is_default = true;
+            hop_whitespace(&p);
+        }
+
+        if (parse_statement(&p, ret)) {
+            switch (ret->tag) {
+                case STATEMENT_FUNCTION: ret->function.exported = true; break;
+                case STATEMENT_VAR_INIT: ret->var_init.exported = true; break;
+                case STATEMENT_INTERFACE: ret->interface.exported = true; break;
+                case STATEMENT_EXPR:
+                    if (is_default && ret->expr.tag == EXPR_IDENTIFIER) {
+                        // TODO: mark exported
+                        break;
+                    } else {
+                        return parse_fail(&p);
+                    }
+
+                default: return parse_fail(&p);
+            }
+        } else {
+            return parse_fail(&p);
+        }
+    } else if (parse_named_interface(&p, &ret->interface)) {
         ret->tag = STATEMENT_INTERFACE;
     } else if (parse_block(&p, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;

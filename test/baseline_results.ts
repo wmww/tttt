@@ -596,24 +596,24 @@ const baselines = {
         types: false,
     },
     'alwaysStrictModule3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'alwaysStrictModule4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'alwaysStrictModule5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'alwaysStrictModule6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'alwaysStrictNoImplicitUseStrict': {
         errors: false,
@@ -4691,9 +4691,9 @@ const baselines = {
         types: false,
     },
     'commentsBeforeVariableStatement1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'commentsClass': {
         errors: true,
@@ -7302,18 +7302,18 @@ const baselines = {
     },
     'declarationEmitDefaultExport2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitDefaultExport3': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitDefaultExport4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDefaultExport5': {
         errors: false,
@@ -7527,7 +7527,7 @@ const baselines = {
     },
     'declarationEmitExpressionInExtends7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpressionWithNonlocalPrivateUniqueSymbol': {
@@ -8626,12 +8626,12 @@ const baselines = {
         types: false,
     },
     'defaultNamedExportWithType3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'defaultNamedExportWithType4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9776,7 +9776,7 @@ const baselines = {
         types: false,
     },
     'dynamicModuleTypecheckError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10692,7 +10692,7 @@ const baselines = {
     },
     'es5-commonjs3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-commonjs4': {
@@ -10701,9 +10701,9 @@ const baselines = {
         types: false,
     },
     'es5-commonjs5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5-commonjs6': {
         errors: false,
@@ -10717,7 +10717,7 @@ const baselines = {
     },
     'es5-commonjs8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-declaration-amd': {
@@ -10746,9 +10746,9 @@ const baselines = {
         types: false,
     },
     'es5-system2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'es5-umd': {
         errors: true,
@@ -10801,14 +10801,14 @@ const baselines = {
         types: false,
     },
     'es5ExportDefaultFunctionDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es5ExportDefaultFunctionDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5ExportDefaultFunctionDeclaration3': {
         errors: false,
@@ -10821,9 +10821,9 @@ const baselines = {
         types: false,
     },
     'es5ExportDefaultIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es5ExportEquals': {
         errors: false,
@@ -10953,7 +10953,7 @@ const baselines = {
     'es6ExportAssignment': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ExportAssignment2': {
         errors: false,
@@ -11011,19 +11011,19 @@ const baselines = {
         types: false,
     },
     'es6ExportDefaultFunctionDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es6ExportDefaultFunctionDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ExportDefaultIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'es6ExportEquals': {
         errors: false,
@@ -11601,7 +11601,7 @@ const baselines = {
         types: false,
     },
     'expandoFunctionContextualTypesJSDocInTs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11763,7 +11763,7 @@ const baselines = {
     'exportAssignmentWithExportModifier': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentWithExports': {
         errors: false,
@@ -11916,9 +11916,9 @@ const baselines = {
         types: false,
     },
     'exportDefaultMissingName': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultParenthesize': {
         errors: false,
@@ -12228,12 +12228,12 @@ const baselines = {
     'exportToString': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportTwoInterfacesWithSameName': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportVisibility': {
         errors: false,
@@ -12251,12 +12251,12 @@ const baselines = {
         types: false,
     },
     'exportedVariable1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'exportingContainingVisibleType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15196,7 +15196,7 @@ const baselines = {
         types: false,
     },
     'importTypeResolutionJSDocEOF': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17186,7 +17186,7 @@ const baselines = {
         types: false,
     },
     'isolatedModulesDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17196,7 +17196,7 @@ const baselines = {
         types: false,
     },
     'isolatedModulesES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17311,17 +17311,17 @@ const baselines = {
         types: false,
     },
     'isolatedModulesSourceMap': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'isolatedModulesSpecifiedModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'isolatedModulesUnspecifiedModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18051,7 +18051,7 @@ const baselines = {
         types: false,
     },
     'jsdocTypedefNoCrash': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18621,9 +18621,9 @@ const baselines = {
         types: false,
     },
     'manyConstExports': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mapConstructor': {
         errors: false,
@@ -19226,7 +19226,7 @@ const baselines = {
         types: false,
     },
     'modifierParenCast': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21322,28 +21322,28 @@ const baselines = {
     },
     'noImplicitUseStrict_amd': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'noImplicitUseStrict_commonjs': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'noImplicitUseStrict_es6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'noImplicitUseStrict_system': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'noImplicitUseStrict_umd': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'noIterationTypeErrorsInCFA': {
         errors: false,
@@ -22312,8 +22312,8 @@ const baselines = {
     },
     'optionsOutAndNoModuleGen': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'optionsSourcemapInlineSources': {
         errors: true,
@@ -26976,9 +26976,9 @@ const baselines = {
         types: false,
     },
     'systemDefaultExportCommentValidity': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'systemDefaultImportCallable': {
         errors: false,
@@ -27006,9 +27006,9 @@ const baselines = {
         types: false,
     },
     'systemModule1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'systemModule10': {
         errors: false,
@@ -27063,7 +27063,7 @@ const baselines = {
     'systemModule2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'systemModule3': {
         errors: false,
@@ -27071,14 +27071,14 @@ const baselines = {
         types: false,
     },
     'systemModule4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'systemModule5': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'systemModule6': {
         errors: false,
@@ -27136,9 +27136,9 @@ const baselines = {
         types: false,
     },
     'systemModuleTrailingComments': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'systemModuleWithSuperClass': {
         errors: false,
@@ -28821,7 +28821,7 @@ const baselines = {
         types: false,
     },
     'umdNamedAmdMode': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30066,7 +30066,7 @@ const baselines = {
         types: false,
     },
     'useStrictLikePrologueString01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34131,7 +34131,7 @@ const baselines = {
         types: false,
     },
     'exportDefaultNamespace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38658,7 +38658,7 @@ const baselines = {
     'multipleDefaultExports04': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'multipleDefaultExports05': {
         errors: false,
@@ -43776,7 +43776,7 @@ const baselines = {
         types: false,
     },
     'es6modulekindWithES5Target4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43796,9 +43796,9 @@ const baselines = {
         types: false,
     },
     'es6modulekindWithES5Target8': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'es6modulekindWithES5Target9': {
         errors: false,
@@ -43846,7 +43846,7 @@ const baselines = {
         types: false,
     },
     'esnextmodulekindWithES5Target4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43866,9 +43866,9 @@ const baselines = {
         types: false,
     },
     'esnextmodulekindWithES5Target8': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esnextmodulekindWithES5Target9': {
         errors: false,
@@ -46041,7 +46041,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsConstsAsNamespacesWithReferences': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46271,7 +46271,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsModuleReferenceHasEmit': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46351,7 +46351,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsReusesExistingNodesMappingJSDocTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46656,7 +46656,7 @@ const baselines = {
         types: false,
     },
     'jsdocImportTypeReferenceToStringLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46686,7 +46686,7 @@ const baselines = {
         types: false,
     },
     'jsdocLinkTag5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47131,7 +47131,7 @@ const baselines = {
         types: false,
     },
     'thisTag2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49198,7 +49198,7 @@ const baselines = {
     'parserModifierOnStatementInBlock1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserModifierOnStatementInBlock2': {
         errors: false,
@@ -49208,12 +49208,12 @@ const baselines = {
     'parserModifierOnStatementInBlock3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserModifierOnStatementInBlock4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserPublicBreak1': {
         errors: false,
@@ -49243,12 +49243,12 @@ const baselines = {
     'parserExportAssignment1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserExportAssignment2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserExportAssignment3': {
         errors: false,
@@ -49798,12 +49798,12 @@ const baselines = {
     'parserInterfaceDeclaration6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserInterfaceDeclaration7': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserInterfaceDeclaration8': {
         errors: false,
@@ -52281,7 +52281,7 @@ const baselines = {
         types: false,
     },
     'library-reference-scoped-packages': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53191,7 +53191,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignmentWithExport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

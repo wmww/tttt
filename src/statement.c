@@ -28,6 +28,9 @@ void var_init_statement_drop(VarInitStatement* me) {
 }
 
 void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* me, int indent) {
+    if (my exported) {
+        cstr_append_sv(target, c_sv("export "));
+    }
     switch (my keyword) {
         case VAR_INIT_VAR: cstr_append_sv(target, c_sv("var ")); break;
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
@@ -73,6 +76,9 @@ void interface_statement_drop(InterfaceStatement* me) {
 }
 
 void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* me, int indent) {
+    if (my exported) {
+        cstr_append_sv(target, c_sv("export "));
+    }
     cstr_append_sv(target, c_sv("interface " CLR_NAME));
     cstr_append_s(target, my name);
     cstr_append_sv(target, c_sv(CLR0 " "));
@@ -141,6 +147,9 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
         case STATEMENT_VAR_INIT: cstr_append_var_init_statement_debug(target, &my var_init, indent); break;
 
         case STATEMENT_FUNCTION:
+            if (my function.exported) {
+                cstr_append_sv(target, c_sv("export "));
+            }
             cstr_append_sv(target, c_sv("function " CLR_NAME));
             cstr_append_s(target, my function.impl.name);
             cstr_append_sv(target, c_sv(CLR0));

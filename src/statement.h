@@ -31,6 +31,7 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent
 // Variable initialization
 
 typedef struct VarInitStatement {
+    bool exported;
     enum {
         VAR_INIT_VAR,
         VAR_INIT_LET,
@@ -53,6 +54,7 @@ typedef struct FunctionStatement {
 // Interface statements
 
 typedef struct InterfaceStatement {
+    bool exported;
     cstr name;
     Type type;
 } InterfaceStatement;
