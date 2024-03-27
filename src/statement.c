@@ -23,14 +23,11 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent
     }
 }
 
-void var_init_statement_drop(VarInitStatement* me) {
+void variable_statement_drop(VariableStatement* me) {
     vec_name_init_data_drop(&my vars);
 }
 
-void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* me, int indent) {
-    if (my exported) {
-        cstr_append_sv(target, c_sv("export "));
-    }
+void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent) {
     switch (my keyword) {
         case VAR_INIT_VAR: cstr_append_sv(target, c_sv("var ")); break;
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
@@ -45,7 +42,7 @@ void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* me, in
     cstr_append_sv(target, c_sv(";"));
 }
 
-void var_init_statement_typecheck(VarInitStatement* me, ErrorCtx* errs) {
+void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
     c_foreach(i, vec_name_init_data, my vars) {
         if (i.ref->value_explicit) {
             Type expr_type = expr_get_type_and_typecheck(&i.ref->value, errs);
@@ -89,25 +86,8 @@ void statement_drop(Statement* me) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
-        case STATEMENT_INTERFACE:
-            interface_statement_drop(&my interface);
-            break;
-
         case STATEMENT_BLOCK:
             block_drop(&my block);
-            break;
-
-        case STATEMENT_EXPR:
-        case STATEMENT_RETURN:
-            expr_drop(&my expr);
-            break;
-
-        case STATEMENT_VAR_INIT:
-            var_init_statement_drop(&my var_init);
-            break;
-
-        case STATEMENT_FUNCTION:
-            function_impl_drop(&my function.impl);
             break;
 
         case STATEMENT_IF_ELSE:
@@ -124,37 +104,42 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_BREAK: break; // nice
+
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_RETURN_EXPR:
+            expr_drop(&my expr);
+            break;
+
+        case STATEMENT_DECL_VARIABLE:
+            variable_statement_drop(&my decl.variable);
+            break;
+
+        case STATEMENT_DECL_FUNCTION:
+            function_impl_drop(&my decl.function);
+            break;
+
+        case STATEMENT_DECL_CLASS:
+            class_decl_drop(my decl.class);
+            free(my decl.class);
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            interface_statement_drop(&my decl.interface);
+            break;
     }
 }
 
 void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
+    switch (statement_get_exported(me)) {
+        case DECL_EXPORTED_NO: break;
+        case DECL_EXPORTED_YES: cstr_append_sv(target, c_sv("export ")); break;
+        case DECL_EXPORTED_YES_DEFAULT: cstr_append_sv(target, c_sv("export default ")); break;
+    }
+
     switch (my tag) {
         case STATEMENT_NOOP: cstr_append_sv(target, c_sv(";")); break;
-        case STATEMENT_INTERFACE: cstr_append_interface_statement_debug(target, &my interface, indent); break;
         case STATEMENT_BLOCK: cstr_append_block_debug(target, &my block, indent); break;
-
-        case STATEMENT_EXPR:
-            cstr_append_expr_debug(target, &my expr, indent);
-            cstr_append_sv(target, c_sv(";"));
-            break;
-
-        case STATEMENT_RETURN:
-            cstr_append_sv(target, c_sv("return "));
-            cstr_append_expr_debug(target, &my expr, indent);
-            cstr_append_sv(target, c_sv(";"));
-            break;
-
-        case STATEMENT_VAR_INIT: cstr_append_var_init_statement_debug(target, &my var_init, indent); break;
-
-        case STATEMENT_FUNCTION:
-            if (my function.exported) {
-                cstr_append_sv(target, c_sv("export "));
-            }
-            cstr_append_sv(target, c_sv("function " CLR_NAME));
-            cstr_append_s(target, my function.impl.name);
-            cstr_append_sv(target, c_sv(CLR0));
-            cstr_append_function_impl_debug(target, &my function.impl, false, indent);
-            break;
 
         case STATEMENT_IF_ELSE: {
             int statement_size = vec_statement_size(&my if_else.statements);
@@ -187,13 +172,38 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             break;
 
         case STATEMENT_BREAK: cstr_append_sv(target, c_sv("break;")); break;
+
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+            cstr_append_expr_debug(target, &my expr, indent);
+            cstr_append_sv(target, c_sv(";"));
+            break;
+
+        case STATEMENT_RETURN_EXPR:
+            cstr_append_sv(target, c_sv("return "));
+            cstr_append_expr_debug(target, &my expr, indent);
+            cstr_append_sv(target, c_sv(";"));
+            break;
+
+        case STATEMENT_DECL_VARIABLE: cstr_append_variable_statement_debug(target, &my decl.variable, indent); break;
+
+        case STATEMENT_DECL_FUNCTION:
+            cstr_append_sv(target, c_sv("function " CLR_NAME));
+            cstr_append_s(target, my decl.function.name);
+            cstr_append_sv(target, c_sv(CLR0));
+            cstr_append_function_impl_debug(target, &my decl.function, false, indent);
+            break;
+
+        case STATEMENT_DECL_CLASS: cstr_append_class_decl_debug(target, my decl.class, indent); break;
+
+        case STATEMENT_DECL_INTERFACE: cstr_append_interface_statement_debug(target, &my decl.interface, indent); break;
     }
 }
 
 void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
-        case STATEMENT_VAR_INIT:
-            c_foreach(i, vec_name_init_data, my var_init.vars) {
+        case STATEMENT_DECL_VARIABLE:
+            c_foreach(i, vec_name_init_data, my decl.variable.vars) {
                 if (!name_stack_add_variable(
                     names,
                     cstr_clone(i.ref->name),
@@ -206,57 +216,60 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
 
-        case STATEMENT_FUNCTION:
+        case STATEMENT_DECL_FUNCTION:
             if (!name_stack_add_variable(
                 names,
-                cstr_clone(my function.impl.name),
-                my function.impl.full_span,
-                &my function.impl.type
+                cstr_clone(my decl.function.name),
+                my decl.function.full_span,
+                &my decl.function.type
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
             break;
 
-        case STATEMENT_INTERFACE:
+        case STATEMENT_DECL_CLASS:
+            if (!name_stack_add_variable(
+                names,
+                cstr_clone(my decl.class->name),
+                my decl.class->name_span,
+                &my decl.class->constructor_type
+            )) {
+                // name is cstr_str(&result.ref->first)
+                error_ctx_type_error(errs, "multiple values declared with same name");
+            }
+
             if (!name_stack_add_type(
                 names,
-                cstr_clone(my interface.name),
+                cstr_clone(my decl.class->name),
+                my decl.class->name_span,
+                &my decl.class->interface
+            )) {
+                // name is cstr_str(&result.ref->first)
+                error_ctx_type_error(errs, "multiple values declared with same name");
+            }
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            if (!name_stack_add_type(
+                names,
+                cstr_clone(my decl.interface.name),
                 span_null, // TODO
-                &my interface.type)
+                &my decl.interface.type)
             ) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
             break;
 
-        case STATEMENT_EXPR:
-            if (my expr.tag == EXPR_CLASS_DECL) {
-                if (!name_stack_add_type(
-                    names,
-                    cstr_clone(my expr.class_decl->name),
-                    my expr.class_decl->name_span,
-                    &my expr.class_decl->interface
-                )) {
-                    error_ctx_type_error(errs, "multiple classes declared with same name");
-                }
-                if (!name_stack_add_variable(
-                    names,
-                    cstr_clone(my expr.class_decl->name),
-                    my expr.class_decl->name_span,
-                    &my expr.class_decl->constructor_type
-                )) {
-                    error_ctx_type_error(errs, "multiple classes declared with same name");
-                }
-            }
-            break;
-
         case STATEMENT_NOOP:
         case STATEMENT_BLOCK:
-        case STATEMENT_RETURN:
         case STATEMENT_IF_ELSE:
         case STATEMENT_LOOP:
         case STATEMENT_BREAK:
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_RETURN_EXPR:
             break;
     }
 }
@@ -265,26 +278,6 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case STATEMENT_BLOCK:
             block_resolve_names(&my block, names, errs);
-            break;
-
-        case STATEMENT_EXPR:
-        case STATEMENT_RETURN:
-            expr_resolve_names(&my expr, names, errs);
-            break;
-
-        case STATEMENT_VAR_INIT:
-            c_foreach(i, vec_name_init_data, my var_init.vars) {
-                type_resolve_names(&i.ref->type, names, errs);
-                expr_resolve_names(&i.ref->value, names, errs);
-            }
-            break;
-
-        case STATEMENT_FUNCTION:
-            function_impl_resolve_names(&my function.impl, names, errs);
-            break;
-
-        case STATEMENT_INTERFACE:
-            type_resolve_names(&my interface.type, names, errs);
             break;
 
         case STATEMENT_IF_ELSE:
@@ -304,6 +297,32 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             expr_resolve_names(&my loop->afterthought, names, errs);
             statement_resolve_names(&my loop->body, names, errs);
             name_stack_pop_frame(names);
+            break;
+
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_RETURN_EXPR:
+            expr_resolve_names(&my expr, names, errs);
+            break;
+
+        case STATEMENT_DECL_VARIABLE:
+            c_foreach(i, vec_name_init_data, my decl.variable.vars) {
+                type_resolve_names(&i.ref->type, names, errs);
+                expr_resolve_names(&i.ref->value, names, errs);
+            }
+            break;
+
+        case STATEMENT_DECL_FUNCTION:
+            function_impl_resolve_names(&my decl.function, names, errs);
+            break;
+
+        case STATEMENT_DECL_CLASS:
+            class_decl_resolve_names(my decl.class, names, errs);
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            type_resolve_names(&my decl.interface.type, names, errs);
+            break;
 
         case STATEMENT_NOOP:
         case STATEMENT_BREAK:
@@ -315,38 +334,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
-        case STATEMENT_INTERFACE: break;
-
         case STATEMENT_BLOCK:
             block_typecheck(&my block, ctx, errs);
-            break;
-
-        case STATEMENT_EXPR: {
-            Type t = expr_get_type_and_typecheck(&my expr, errs);
-            type_drop(&t);
-        }   break;
-
-        case STATEMENT_RETURN: {
-            if (ctx->return_allowed) {
-                Type t = expr_get_type_and_typecheck(&my expr, errs);
-                check_assignable_or_error(&t, ctx->specified_return, my expr.span, errs);
-                vec_type_push(&ctx->returned_types, t);
-            } else {
-                error_ctx_error(
-                    errs,
-                    my break_span,
-                    1108,
-                    "A 'return' statement can only be used within a function body."
-                );
-            }
-        }   break;
-
-        case STATEMENT_VAR_INIT:
-            var_init_statement_typecheck(&my var_init, errs);
-            break;
-
-        case STATEMENT_FUNCTION:
-            function_impl_typecheck(&my function.impl, errs);
             break;
 
         case STATEMENT_IF_ELSE: {
@@ -389,6 +378,41 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                 );
             }
             break;
+
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR: {
+            Type t = expr_get_type_and_typecheck(&my expr, errs);
+            type_drop(&t);
+        }   break;
+
+        case STATEMENT_RETURN_EXPR: {
+            if (ctx->return_allowed) {
+                Type t = expr_get_type_and_typecheck(&my expr, errs);
+                check_assignable_or_error(&t, ctx->specified_return, my expr.span, errs);
+                vec_type_push(&ctx->returned_types, t);
+            } else {
+                error_ctx_error(
+                    errs,
+                    my break_span,
+                    1108,
+                    "A 'return' statement can only be used within a function body."
+                );
+            }
+        }   break;
+
+        case STATEMENT_DECL_VARIABLE:
+            variable_statement_typecheck(&my decl.variable, errs);
+            break;
+
+        case STATEMENT_DECL_FUNCTION:
+            function_impl_typecheck(&my decl.function, errs);
+            break;
+
+        case STATEMENT_DECL_CLASS:
+            class_decl_typecheck(my decl.class, errs);
+            break;
+
+        case STATEMENT_DECL_INTERFACE: break;
     }
 }
 

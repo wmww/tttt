@@ -941,7 +941,7 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
             .statements = vec_statement_init(),
         };
         vec_statement_push(&ret->body.statements, (Statement){
-            .tag = STATEMENT_RETURN,
+            .tag = STATEMENT_RETURN_EXPR,
             .expr = expr,
         });
     }
@@ -1118,6 +1118,7 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
 
 static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!hop_start_and_required_whitespace(&p, "class")) {
         return parse_fail(&p);
@@ -1134,6 +1135,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
     if (!hop_char(&p, '{')) {
         error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        ret->full_span = span_end(a);
         return parse_success(&p);
     }
     hop_whitespace(&p);
@@ -1147,6 +1149,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
                 1068,
                 "Unexpected token. A constructor, method, accessor, or property was expected."
             );
+            ret->full_span = span_end(a);
             return parse_success(&p);
         }
         vec_class_item_push(&ret->items, item);
@@ -1159,6 +1162,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
     }
 
+    ret->full_span = span_end(a);
     return parse_success(&p);
 }
 
@@ -1693,7 +1697,7 @@ static bool parse_name_init(Parser* parent, NameInitData* ret) {
     return parse_success(&p);
 }
 
-static bool parse_var_init(Parser* parent, VarInitStatement* ret) {
+static bool parse_var_init(Parser* parent, VariableStatement* ret) {
     Parser p = parser(parent);
 
     typeof(ret->keyword) keyword;
@@ -1737,7 +1741,7 @@ static bool parse_var_init(Parser* parent, VarInitStatement* ret) {
         hop_whitespace(&p);
     }
 
-    *ret = (VarInitStatement) {
+    *ret = (VariableStatement) {
         .keyword = keyword,
         .vars = vars,
     };
@@ -1922,47 +1926,82 @@ static bool parse_return(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_statement_decl(Parser* parent, DeclExported exported, Statement* ret) {
+    Parser p = parser(parent);
+
+    union {
+        VariableStatement variable;
+        FunctionImpl function;
+        ClassDecl class;
+        InterfaceStatement interface;
+        Expr expr;
+    } parsed;
+
+    if (exported != DECL_EXPORTED_YES_DEFAULT && parse_var_init(&p, &parsed.variable)) {
+        *ret = (Statement) {
+            .tag = STATEMENT_DECL_VARIABLE,
+            .decl.exported = exported,
+            .decl.variable = parsed.variable,
+        };
+    } else if (parse_function_keyword_function(&p, &parsed.function)) {
+        *ret = (Statement){
+            .tag = STATEMENT_DECL_FUNCTION,
+            .decl.exported = exported,
+            .decl.function = parsed.function,
+        };
+    } else if (parse_class_decl(&p, &parsed.class)) {
+        *ret = (Statement){
+            .tag = STATEMENT_DECL_CLASS,
+            .decl.exported = exported,
+            .decl.class = c_new(ClassDecl, parsed.class),
+        };
+    } else if (parse_named_interface(&p, &parsed.interface)) {
+        *ret = (Statement){
+            .tag = STATEMENT_DECL_INTERFACE,
+            .decl.exported = exported,
+            .decl.interface = parsed.interface,
+        };
+    } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, &parsed.expr)) {
+        *ret = (Statement){
+            .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
+            .expr = parsed.expr,
+        };
+    } else {
+        return parse_fail(&p);
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
 
     union {
-        FunctionImpl function;
+
         LoopStatement loop;
     } parsed;
     if (hop_start_if_ends_on_word_break(&p, "export")) {
         hop_whitespace(&p);
 
-        bool is_default = false;
+        DeclExported exported = DECL_EXPORTED_YES;
         if (hop_start_if_ends_on_word_break(&p, "default")) {
-            is_default = true;
+            exported = DECL_EXPORTED_YES_DEFAULT;
             hop_whitespace(&p);
         }
 
-        if (parse_statement(&p, ret)) {
-            switch (ret->tag) {
-                case STATEMENT_FUNCTION: ret->function.exported = true; break;
-                case STATEMENT_VAR_INIT: ret->var_init.exported = true; break;
-                case STATEMENT_INTERFACE: ret->interface.exported = true; break;
-                case STATEMENT_EXPR:
-                    if (is_default && ret->expr.tag == EXPR_IDENTIFIER) {
-                        // TODO: mark exported
-                        break;
-                    } else {
-                        return parse_fail(&p);
-                    }
-
-                default: return parse_fail(&p);
-            }
-        } else {
+        if (!parse_statement_decl(&p, exported, ret)) {
             return parse_fail(&p);
         }
-    } else if (parse_named_interface(&p, &ret->interface)) {
-        ret->tag = STATEMENT_INTERFACE;
+
+        switch (ret->tag) {
+            case STATEMENT_DECL_FUNCTION: ret->decl.function.full_span = span_end(a); break;
+            case STATEMENT_DECL_CLASS: ret->decl.class->full_span = span_end(a); break;
+            default: break;
+        }
+    } else if (parse_statement_decl(&p, DECL_EXPORTED_NO, ret)) {
     } else if (parse_block(&p, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;
-    } else if (parse_var_init(&p, &ret->var_init)) {
-        ret->tag = STATEMENT_VAR_INIT;
     } else if (parse_if_else(&p, &ret->if_else)) {
         ret->tag = STATEMENT_IF_ELSE;
     } else if (parse_for_loop(&p, &parsed.loop)) {
@@ -1979,12 +2018,7 @@ static bool parse_statement(Parser* parent, Statement* ret) {
         ret->tag = STATEMENT_BREAK;
         ret->break_span = span_end(a);
     } else if (parse_return(&p, &ret->expr)) {
-        ret->tag = STATEMENT_RETURN;
-    } else if (parse_function_keyword_function(&p, &parsed.function)) {
-        *ret = (Statement){
-            .tag = STATEMENT_FUNCTION,
-            .function.impl = parsed.function,
-        };
+        ret->tag = STATEMENT_RETURN_EXPR;
     } else if (parse_expr(&p, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         parse_comma_ops_right_side(&p, &ret->expr);

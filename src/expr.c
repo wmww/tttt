@@ -590,7 +590,16 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
                 }
                 ret = type_clone(callable.callable->ret);
             } else if (callable.tag != TYPE_ANY) {
-                error_ctx_type_error(errs, "expr is not callable");
+                cstr type_str = cstr_null;
+                cstr_append_type_error_msg(&type_str, &callable);
+                // TODO: the two sentences of the error message are supposed to be on separate lines somehow
+                error_ctx_error(
+                    errs,
+                    my call->callable.span,
+                    2349,
+                    "This expression is not callable. Type '%s' has no call signatures.",
+                    cstr_str(&type_str)
+                );
             }
             for (long i = 0; i < given_arg_count; i++) {
                 Type arg_type = expr_get_type_and_typecheck(

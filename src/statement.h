@@ -30,26 +30,18 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent
 
 // Variable initialization
 
-typedef struct VarInitStatement {
-    bool exported;
+typedef struct VariableStatement {
     enum {
         VAR_INIT_VAR,
         VAR_INIT_LET,
         VAR_INIT_CONST,
     } keyword;
     VecNameInitData vars;
-} VarInitStatement;
+} VariableStatement;
 
-void var_init_statement_drop(VarInitStatement* me);
-void cstr_append_var_init_statement_debug(cstr* target, VarInitStatement* me, int indent);
-void var_init_statement_typecheck(VarInitStatement* me, ErrorCtx* errs);
-
-// Function statements
-
-typedef struct FunctionStatement {
-    bool exported;
-    FunctionImpl impl;
-} FunctionStatement;
+void variable_statement_drop(VariableStatement* me);
+void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent);
+void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 
 // Interface statements
 
@@ -72,32 +64,56 @@ typedef struct IfStatement {
 
 // Statements
 
+typedef enum DeclExported {
+    DECL_EXPORTED_NO = 0,
+    DECL_EXPORTED_YES,
+    DECL_EXPORTED_YES_DEFAULT,
+} DeclExported;
+
 typedef struct Statement {
     enum {
         STATEMENT_NOOP,
         STATEMENT_BLOCK,
-        STATEMENT_EXPR,
-        STATEMENT_RETURN, // also uses expr union member
-        STATEMENT_VAR_INIT,
-        STATEMENT_FUNCTION,
-        STATEMENT_INTERFACE,
         STATEMENT_IF_ELSE,
         STATEMENT_LOOP,
         STATEMENT_BREAK,
+        STATEMENT_EXPR,
+        STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
+        STATEMENT_RETURN_EXPR, // also uses expr union member
+        STATEMENT_DECL_VARIABLE,
+        STATEMENT_DECL_FUNCTION,
+        STATEMENT_DECL_CLASS,
+        STATEMENT_DECL_INTERFACE,
     } tag;
     union {
         Block block;
-        Expr expr; // also used for return
-        VarInitStatement var_init;
-        FunctionStatement function;
-        InterfaceStatement interface;
+        Expr expr; // also used for return and export default expressions
         IfStatement if_else;
         LoopStatement* loop;
         Span break_span;
+        struct {
+            DeclExported exported;
+            union {
+                VariableStatement variable;
+                FunctionImpl function;
+                ClassDecl* class;
+                InterfaceStatement interface;
+            };
+        } decl;
     };
 } Statement;
 
 #define statement_noop ((Statement){ .tag = STATEMENT_NOOP })
+
+static inline DeclExported statement_get_exported(Statement* me) {
+    switch (my tag) {
+        case STATEMENT_DECL_VARIABLE:
+        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_INTERFACE: return my decl.exported;
+        case STATEMENT_EXPORT_DEFAULT_EXPR: return DECL_EXPORTED_YES_DEFAULT;
+        default: return DECL_EXPORTED_NO;
+    }
+}
 
 void statement_drop(Statement* me);
 void cstr_append_statement_debug(cstr* target, Statement* me, int indent);

@@ -87,6 +87,15 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     block_compile_test_info(&my body, ctx);
 }
 
+void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
+    if (!cstr_empty(&my name)) {
+        baseline_test_case_add_symbol(ctx, cstr_str(&my name), my full_span, my full_span);
+        Type t = type_identifier(cstr_clone(my name), my name_span);
+        baseline_test_case_add_type(ctx, my name_span, &t);
+        type_drop(&t);
+    }
+}
+
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     Type t = expr_get_type_and_typecheck(me, nullptr);
     baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
@@ -150,7 +159,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CLASS_DECL:
-            baseline_test_case_add_symbol(ctx, cstr_str(&my class_decl->name), my span, my span);
+            class_decl_compile_test_info(my class_decl, ctx);
             break;
     }
 
@@ -160,33 +169,17 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
-        case STATEMENT_INTERFACE: break;
+
         case STATEMENT_BLOCK:
             block_compile_test_info(&my block, ctx);
             break;
 
         case STATEMENT_EXPR:
-        case STATEMENT_RETURN:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_RETURN_EXPR:
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED) {
                 expr_compile_test_info(&my expr, ctx);
             }
-            break;
-
-        case STATEMENT_VAR_INIT:
-            c_foreach(i, vec_name_init_data, my var_init.vars) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
-                baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
-                if (i.ref->type_explicit) {
-                    type_compile_test_info(&i.ref->type, ctx);
-                }
-                if (i.ref->value_explicit) {
-                    expr_compile_test_info(&i.ref->value, ctx);
-                }
-            }
-            break;
-
-        case STATEMENT_FUNCTION:
-            function_impl_compile_test_info(&my function.impl, ctx);
             break;
 
         case STATEMENT_IF_ELSE: {
@@ -210,6 +203,29 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_BREAK: break;
+
+        case STATEMENT_DECL_VARIABLE:
+            c_foreach(i, vec_name_init_data, my decl.variable.vars) {
+                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
+                baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
+                if (i.ref->type_explicit) {
+                    type_compile_test_info(&i.ref->type, ctx);
+                }
+                if (i.ref->value_explicit) {
+                    expr_compile_test_info(&i.ref->value, ctx);
+                }
+            }
+            break;
+
+        case STATEMENT_DECL_FUNCTION:
+            function_impl_compile_test_info(&my decl.function, ctx);
+            break;
+
+        case STATEMENT_DECL_CLASS:
+            class_decl_compile_test_info(my decl.class, ctx);
+            break;
+
+        case STATEMENT_DECL_INTERFACE: break;
     }
 }
 

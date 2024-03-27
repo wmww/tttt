@@ -33,6 +33,7 @@ void class_item_drop(ClassItem* me);
 typedef struct ClassDecl {
     cstr name;
     Span name_span;
+    Span full_span;
     Type interface;
     Type constructor_type;
     VecClassItem items;

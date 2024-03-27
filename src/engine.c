@@ -378,45 +378,10 @@ static Result MUST_USE engine_run_loop(Engine* me, LoopStatement const* loop) {
 static Result MUST_USE engine_run_statement(Engine* me, Statement const* statement) {
     switch (statement->tag) {
         case STATEMENT_NOOP: return result_ok_undefined;
-        case STATEMENT_INTERFACE: return result_ok_undefined;
 
         case STATEMENT_BLOCK:
             TRY_THROW_DROP(engine_run_block_in_stack_frame(me, &statement->block));
             return result_ok_undefined;
-
-        case STATEMENT_EXPR:
-            TRY_THROW_DROP(engine_eval_expr(me, &statement->expr));
-            return result_ok_undefined;
-
-        case STATEMENT_RETURN: {
-            TRY_THROW(value, engine_eval_expr(me, &statement->expr));
-            return result_return(value);
-        }
-
-        case STATEMENT_VAR_INIT: {
-            // TODO: respect keyword (let, const, var)
-            c_foreach(i, vec_name_init_data, statement->var_init.vars) {
-                TRY_THROW(value, engine_eval_expr(me, &i.ref->value));
-                cstr name = cstr_clone(i.ref->name);
-                JsObject* locals = engine_get_locals(me);
-                js_object_set(locals, name, value);
-            }
-            return result_ok_undefined;
-        }
-
-        case STATEMENT_FUNCTION: {
-            if (cstr_empty(&statement->function.impl.name)) {
-                return result_ok_undefined;
-            }
-            cstr name = cstr_clone(statement->function.impl.name);
-            Value value = value_js_func(
-                &statement->function.impl.args,
-                &statement->function.impl.body
-            );
-            JsObject* locals = engine_get_locals(me);
-            js_object_set(locals, name, value);
-            return result_ok_undefined;
-        }
 
         case STATEMENT_IF_ELSE: return engine_run_if_else(me, &statement->if_else);
 
@@ -428,6 +393,45 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_BREAK: return result_break();
+
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+            TRY_THROW_DROP(engine_eval_expr(me, &statement->expr));
+            return result_ok_undefined;
+
+        case STATEMENT_RETURN_EXPR: {
+            TRY_THROW(value, engine_eval_expr(me, &statement->expr));
+            return result_return(value);
+        }
+
+        case STATEMENT_DECL_VARIABLE: {
+            // TODO: respect keyword (let, const, var)
+            c_foreach(i, vec_name_init_data, statement->decl.variable.vars) {
+                TRY_THROW(value, engine_eval_expr(me, &i.ref->value));
+                cstr name = cstr_clone(i.ref->name);
+                JsObject* locals = engine_get_locals(me);
+                js_object_set(locals, name, value);
+            }
+            return result_ok_undefined;
+        }
+
+        case STATEMENT_DECL_FUNCTION: {
+            if (cstr_empty(&statement->decl.function.name)) {
+                return result_ok_undefined;
+            }
+            cstr name = cstr_clone(statement->decl.function.name);
+            Value value = value_js_func(
+                &statement->decl.function.args,
+                &statement->decl.function.body
+            );
+            JsObject* locals = engine_get_locals(me);
+            js_object_set(locals, name, value);
+            return result_ok_undefined;
+        }
+
+        case STATEMENT_DECL_CLASS: return result_ok_undefined; // TODO
+
+        case STATEMENT_DECL_INTERFACE: return result_ok_undefined;
     }
     UNREACHABLE;
 }
