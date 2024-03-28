@@ -106,7 +106,11 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_IDENTIFIER: {
-            if (my identifier.var.get) {
+            if (my identifier.var.get && (
+                    !cstr_equals(&my identifier.name, "this") ||
+                    my identifier.var.get->name_span.file_start
+                )
+            ) {
                 baseline_test_case_add_symbol(
                     ctx,
                     cstr_str(&my identifier.name),

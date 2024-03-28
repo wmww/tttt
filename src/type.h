@@ -60,6 +60,8 @@ extern const Type type_void;
 extern const Type type_boolean;
 extern const Type type_number;
 extern const Type type_string;
+extern const Type type_null;
+extern const Type type_undefined;
 #undef TYPE_NEW_DECL
 
 static inline Type type_value(Value value) {

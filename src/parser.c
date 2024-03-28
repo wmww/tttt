@@ -55,11 +55,11 @@ static bool parse_literal(Parser* parent, Value* ret);
 static bool parse_binary_op(Parser* parent, BinaryOp* op);
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
-static bool parse_block(Parser* parent, Block* ret);
+static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
 static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret);
 static bool parse_name_init(Parser* parent, NameInitData* ret);
-static bool parse_statement(Parser* parent, Statement* ret);
+static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, Expr* ret);
@@ -930,7 +930,7 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_block(&p, &ret->body)) {
+    if (!parse_block(&p, false, &ret->body)) {
         Expr expr;
         if (!parse_expr(&p, &expr)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
@@ -959,7 +959,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_block(&p, &ret->body)) {
+    if (!parse_block(&p, false, &ret->body)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1144, "'{' or ';' expected.");
     }
 
@@ -1772,7 +1772,7 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     }
     hop_whitespace(&p);
 
-    if (!parse_statement(&p, statement)) {
+    if (!parse_statement(&p, false, statement)) {
         error_ctx_parse_error(&p.errs, "invalid if body");
         *statement = statement_noop;
     }
@@ -1790,7 +1790,7 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
         if (!parse_if_arm(&p, &condition, &statement)) {
             if (vec_expr_empty(&conditions)) {
                 return parse_fail(&p);
-            } else if (parse_statement(&p, &statement)) {
+            } else if (parse_statement(&p, false, &statement)) {
                 vec_statement_push(&statements, statement);
                 break;
             } else {
@@ -1830,7 +1830,7 @@ static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
     Statement initialization = statement_noop;
     Expr afterthought;
     Statement body = statement_noop;
-    parse_statement(&p, &initialization); // It's fine if it doesn't parse anything
+    parse_statement(&p, false, &initialization); // It's fine if it doesn't parse anything
     hop_whitespace(&p);
 
     if (!hop_start(&p, ";")) {
@@ -1859,7 +1859,7 @@ static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_statement(&p, &body)) {
+    if (!parse_statement(&p, false, &body)) {
         error_ctx_parse_error(&p.errs, "expected for loop body");
     }
 
@@ -1897,7 +1897,7 @@ static bool parse_while_loop(Parser* parent, LoopStatement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_statement(&p, &body)) {
+    if (!parse_statement(&p, false, &body)) {
         error_ctx_parse_error(&p.errs, "expected while loop body");
     }
 
@@ -1973,15 +1973,16 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
     return parse_success(&p);
 }
 
-static bool parse_statement(Parser* parent, Statement* ret) {
+static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
+    LoopStatement loop;
 
-    union {
-
-        LoopStatement loop;
-    } parsed;
     if (hop_start_if_ends_on_word_break(&p, "export")) {
+        if (!toplevel) {
+            error_ctx_error(&p.errs, span_end(a), 1184, "Modifiers cannot appear here.");
+        }
+
         hop_whitespace(&p);
 
         DeclExported exported = DECL_EXPORTED_YES;
@@ -1990,8 +1991,14 @@ static bool parse_statement(Parser* parent, Statement* ret) {
             hop_whitespace(&p);
         }
 
-        if (!parse_statement_decl(&p, exported, ret)) {
-            return parse_fail(&p);
+        if (!parse_statement_decl(&p, toplevel ? exported : DECL_EXPORTED_NO, ret)) {
+            if (exported == DECL_EXPORTED_YES_DEFAULT) {
+                *ret = statement_noop;
+                error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+                return parse_success(&p);
+            } else {
+                return parse_fail(&p);
+            }
         }
 
         switch (ret->tag) {
@@ -2000,19 +2007,19 @@ static bool parse_statement(Parser* parent, Statement* ret) {
             default: break;
         }
     } else if (parse_statement_decl(&p, DECL_EXPORTED_NO, ret)) {
-    } else if (parse_block(&p, &ret->block)) {
+    } else if (parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;
     } else if (parse_if_else(&p, &ret->if_else)) {
         ret->tag = STATEMENT_IF_ELSE;
-    } else if (parse_for_loop(&p, &parsed.loop)) {
+    } else if (parse_for_loop(&p, &loop)) {
         *ret = (Statement){
             .tag = STATEMENT_LOOP,
-            .loop = c_new(LoopStatement, parsed.loop),
+            .loop = c_new(LoopStatement, loop),
         };
-    } else if (parse_while_loop(&p, &parsed.loop)) {
+    } else if (parse_while_loop(&p, &loop)) {
         *ret = (Statement){
             .tag = STATEMENT_LOOP,
-            .loop = c_new(LoopStatement, parsed.loop),
+            .loop = c_new(LoopStatement, loop),
         };
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
@@ -2030,7 +2037,7 @@ static bool parse_statement(Parser* parent, Statement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_block_inner(Parser* parent, Block* ret) {
+static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
     VecStatement statements = {0};
@@ -2038,9 +2045,13 @@ static bool parse_block_inner(Parser* parent, Block* ret) {
         Statement statement = {0};
         if (*p.pos == ';') {
             p.pos++;
-        } else if (parse_statement(&p, &statement)) {
+        } else if (parse_statement(&p, toplevel, &statement)) {
             vec_statement_push(&statements, statement);
-            if (hop_whitespace(&p) == WHITESPACE_NEWLINE || !*p.pos || *p.pos == '}') {
+            if (hop_whitespace(&p) == WHITESPACE_NEWLINE ||
+                statement.tag == STATEMENT_NOOP ||
+                !*p.pos ||
+                *p.pos == '}'
+            ) {
             } else if (*p.pos == ';') {
                 p.pos++;
             } else if (*p.pos) {
@@ -2063,13 +2074,13 @@ static bool parse_block_inner(Parser* parent, Block* ret) {
     return parse_success(&p);
 }
 
-static bool parse_block(Parser* parent, Block* ret) {
+static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
     if (!hop_char(&p, '{')) return parse_fail(&p);
     hop_whitespace(&p);
 
-    if (!parse_block_inner(&p, ret)) {
+    if (!parse_block_inner(&p, toplevel, ret)) {
         *ret = (Block){
             .statements = vec_statement_init(),
         };
@@ -2103,7 +2114,7 @@ Block parse_file(const char* source, ErrorCtx* errs) {
     hop_whitespace(&p);
 
     Block scope;
-    parse_block_inner(&p, &scope);
+    parse_block_inner(&p, true, &scope);
     if (*p.pos) {
         error_ctx_parse_error(&p.errs, "unexpected '}'");
     }

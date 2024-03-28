@@ -66,7 +66,6 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
-                function_impl_resolve_names(&i.ref->constructor.func, names, errs);
                 break;
 
             case CLASS_ITEM_MEMBER:
@@ -85,7 +84,6 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                     );
                     */
                 }
-                function_impl_resolve_names(&i.ref->member.func, names, errs);
                 break;
 
             case CLASS_ITEM_FIELD:
@@ -109,6 +107,22 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 break;
         }
     }
+    name_stack_push_frame(names, STACK_FRAME_CLASS);
+    name_stack_add_variable(names, cstr_lit("this"), span_null, &my interface);
+    c_foreach(i, vec_class_item, my items) {
+        switch (i.ref->tag) {
+            case CLASS_ITEM_CONSTRUCTOR:
+                function_impl_resolve_names(&i.ref->constructor.func, names, errs);
+                break;
+
+            case CLASS_ITEM_MEMBER:
+                function_impl_resolve_names(&i.ref->member.func, names, errs);
+                break;
+
+            case CLASS_ITEM_FIELD: break;
+        }
+    }
+    name_stack_pop_frame(names);
     name_stack_pop_frame(names);
 }
 

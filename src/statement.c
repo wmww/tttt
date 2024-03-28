@@ -313,7 +313,10 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
+            name_stack_push_frame(names, STACK_FRAME_CLASS);
+            name_stack_add_variable(names, cstr_lit("this"), span_null, &type_any);
             function_impl_resolve_names(&my decl.function, names, errs);
+            name_stack_pop_frame(names);
             break;
 
         case STATEMENT_DECL_CLASS:

@@ -16,6 +16,8 @@ const Type type_void = { .tag = TYPE_VOID };
 const Type type_boolean = { .tag = TYPE_BOOLEAN };
 const Type type_number = { .tag = TYPE_NUMBER };
 const Type type_string = { .tag = TYPE_STRING };
+const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
+const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
