@@ -95,8 +95,15 @@ static cstr render_lines_woven_with_file(
         newline_if_next_line_non_empty = vec_size == 0;
     }
 
+    csview source_without_ws = csview_trim_whitespace(source_contents);
+
     c_foreach(i, lines_sv, source_contents) {
-        if (newline_if_next_line_non_empty && !line_effectively_empty(i.line)) {
+        csview line_without_ws = csview_trim_whitespace(i.line);
+        if (newline_if_next_line_non_empty && (
+                is_errors ||
+                !line_effectively_empty(line_without_ws)
+            )
+        ) {
             cstr_append(&ret, "\r\n");
         }
         newline_if_next_line_non_empty = false;
@@ -104,7 +111,7 @@ static cstr render_lines_woven_with_file(
         cstr_append_sv(&ret, i.line);
         if (!is_errors ||
             index < vec_size ||
-            csview_end_ptr(i.line) < csview_end_ptr(source_contents)
+            csview_end_ptr(line_without_ws) < csview_end_ptr(source_without_ws)
         ) {
             cstr_append(&ret, "\r\n");
         }

@@ -501,7 +501,7 @@ const baselines = {
         types: false,
     },
     'allowJsClassThisTypeCrash': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1421,7 +1421,7 @@ const baselines = {
         types: false,
     },
     'asiPublicPrivateProtected': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3091,7 +3091,7 @@ const baselines = {
         types: false,
     },
     'checkJsFiles7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4291,7 +4291,7 @@ const baselines = {
         types: false,
     },
     'collisionThisExpressionAndClassInGlobal': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4301,7 +4301,7 @@ const baselines = {
         types: false,
     },
     'collisionThisExpressionAndFunctionInGlobal': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4361,7 +4361,7 @@ const baselines = {
         types: false,
     },
     'collisionThisExpressionAndVarInGlobal': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4701,7 +4701,7 @@ const baselines = {
         types: false,
     },
     'commentsClassMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4936,7 +4936,7 @@ const baselines = {
         types: false,
     },
     'compareTypeParameterConstrainedByLiteralToLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6791,7 +6791,7 @@ const baselines = {
         types: false,
     },
     'declFileClassWithStaticMethodReturningConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8981,12 +8981,12 @@ const baselines = {
         types: false,
     },
     'detachedCommentAtStartOfConstructor1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'detachedCommentAtStartOfConstructor2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9311,7 +9311,7 @@ const baselines = {
         types: false,
     },
     'doubleUnderStringLiteralAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13481,7 +13481,7 @@ const baselines = {
         types: false,
     },
     'functionsInClassExpressions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17396,7 +17396,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsGlobalFileConstFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17496,7 +17496,7 @@ const baselines = {
         types: false,
     },
     'jsFileClassSelfReferencedProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19131,7 +19131,7 @@ const baselines = {
         types: false,
     },
     'missingSelf': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20361,7 +20361,7 @@ const baselines = {
         types: false,
     },
     'namedFunctionExpressionCallErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23311,7 +23311,7 @@ const baselines = {
         types: false,
     },
     'primitiveTypeAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23596,7 +23596,7 @@ const baselines = {
         types: false,
     },
     'privateVisibles': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24341,7 +24341,7 @@ const baselines = {
         types: false,
     },
     'recursiveGetterAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24406,7 +24406,7 @@ const baselines = {
         types: false,
     },
     'recursiveProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25226,7 +25226,7 @@ const baselines = {
         types: false,
     },
     'selfInCallback': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25301,7 +25301,7 @@ const baselines = {
         types: false,
     },
     'setterBeforeGetter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25571,7 +25571,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationClassWithDefaultConstructorAndCapturedThisStatement': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26181,12 +26181,12 @@ const baselines = {
         types: false,
     },
     'staticGetter1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'staticGetter2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26351,7 +26351,7 @@ const baselines = {
         types: true,
     },
     'strictBooleanMemberAssignability': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27461,7 +27461,7 @@ const baselines = {
         types: false,
     },
     'thisInClassBodyStaticESNext': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27491,12 +27491,12 @@ const baselines = {
         types: false,
     },
     'thisInInnerFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'thisInLambda': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27526,12 +27526,12 @@ const baselines = {
         types: false,
     },
     'thisInStaticMethod1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'thisInStatics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27656,12 +27656,12 @@ const baselines = {
         types: false,
     },
     'topLevelLambda2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'topLevelLambda3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28221,7 +28221,7 @@ const baselines = {
         types: false,
     },
     'typeOfThisInStatics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29791,7 +29791,7 @@ const baselines = {
         types: false,
     },
     'unusedSetterInClass2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30396,12 +30396,12 @@ const baselines = {
         types: false,
     },
     'wrappedIncovations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'wrappedIncovations2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33511,7 +33511,7 @@ const baselines = {
         types: false,
     },
     'constructorParameterShadowsOuterScopes2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36316,7 +36316,7 @@ const baselines = {
         types: false,
     },
     'emitClassDeclarationWithThisKeywordInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41256,7 +41256,7 @@ const baselines = {
         types: false,
     },
     'trailingCommasInGetter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45971,7 +45971,7 @@ const baselines = {
         types: false,
     },
     'constructorTagWithThisTag': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46516,7 +46516,7 @@ const baselines = {
         types: false,
     },
     'inferThis': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48401,7 +48401,7 @@ const baselines = {
         types: true,
     },
     'parserArrowFunctionExpression5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49071,7 +49071,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_ParameterList6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49196,7 +49196,7 @@ const baselines = {
         types: false,
     },
     'parserModifierOnStatementInBlock1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49206,12 +49206,12 @@ const baselines = {
         types: false,
     },
     'parserModifierOnStatementInBlock3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserModifierOnStatementInBlock4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50621,7 +50621,7 @@ const baselines = {
         types: true,
     },
     'parserSkippedTokens10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50641,7 +50641,7 @@ const baselines = {
         types: false,
     },
     'parserSkippedTokens14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50876,7 +50876,7 @@ const baselines = {
         types: true,
     },
     'parserReturnStatement2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51126,7 +51126,7 @@ const baselines = {
         types: true,
     },
     'parserIfStatement2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52471,7 +52471,7 @@ const baselines = {
         types: false,
     },
     'inferringClassMembersFromAssignments2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52491,17 +52491,17 @@ const baselines = {
         types: false,
     },
     'inferringClassMembersFromAssignments6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'inferringClassMembersFromAssignments7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'inferringClassMembersFromAssignments8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52741,7 +52741,7 @@ const baselines = {
         types: false,
     },
     'multipleDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52811,7 +52811,7 @@ const baselines = {
         types: false,
     },
     'privateConstructorFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52856,7 +52856,7 @@ const baselines = {
         types: false,
     },
     'prototypePropertyAssignmentMergeAcrossFiles': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52911,7 +52911,7 @@ const baselines = {
         types: false,
     },
     'thisPropertyAssignmentCircular': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53071,7 +53071,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment27': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54886,7 +54886,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralsWithSwitchStatements02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
