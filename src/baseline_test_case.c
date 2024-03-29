@@ -160,7 +160,7 @@ static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, Ve
             .str = cstr_null,
         };
 
-        if (i.ref->span.file_start) {
+        if (span_valid(&i.ref->span)) {
             for (int j = 0; j < col + 4; j++) {
                 cstr_append_sv(&item.str, c_sv(" "));
             }
@@ -267,7 +267,7 @@ void baseline_test_case_clear_detail(BaselineTestCase* me) {
 void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span span, Span decl_span) {
     unsigned line_for_placement = span_line_index(&span);
     cstr text = cstr_from_fmt(">%s : Symbol(%s", name, name);
-    if (decl_span.file_start) {
+    if (span_valid(&decl_span)) {
         bool keep_going = true;
         // The space before the symbol is included in the span. Why? I have no idea.
         while (keep_going && decl_span.offset > 0) {

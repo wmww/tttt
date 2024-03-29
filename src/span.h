@@ -8,6 +8,8 @@ typedef struct Span {
     unsigned length;
 } Span;
 
+#define span_null ((Span){0})
+
 static inline Span span_make(const char* file_start, unsigned offset, unsigned length) {
     return (Span){
         .file_start = file_start,
@@ -15,6 +17,8 @@ static inline Span span_make(const char* file_start, unsigned offset, unsigned l
         .length = length,
     };
 }
+
+static inline bool span_valid(Span const* me) { return me->file_start; }
 
 static inline const char* span_start_ptr(Span const* me) {
     return my file_start ? my file_start + my offset : nullptr;
@@ -30,5 +34,3 @@ const char* span_line_start(Span const* me);
 const char* span_line_end(Span const* me);
 csview span_sv(Span const* me);
 Span span_between(Span const* a, Span const* b);
-
-extern const Span span_null;

@@ -87,12 +87,31 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     block_compile_test_info(&my body, ctx);
 }
 
+void name_init_compile_test_info(NameInitData* me, BaselineTestCase* ctx) {
+    baseline_test_case_add_symbol(ctx, cstr_str(&my name), my name_span, my name_span);
+    baseline_test_case_add_type(ctx, my name_span, &my type);
+    if (my type_explicit) {
+        type_compile_test_info(&my type, ctx);
+    }
+    if (my value_explicit) {
+        expr_compile_test_info(&my value, ctx);
+    }
+}
+
 void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol(ctx, cstr_str(&my name), my full_span, my full_span);
         Type t = type_identifier(cstr_clone(my name), my name_span);
         baseline_test_case_add_type(ctx, my name_span, &t);
         type_drop(&t);
+    }
+    c_foreach(i, vec_class_item, my items) {
+        switch(i.ref->tag) {
+            case CLASS_ITEM_CONSTRUCTOR: function_impl_compile_test_info(&i.ref->constructor.func, ctx); break;
+            case CLASS_ITEM_MEMBER: function_impl_compile_test_info(&i.ref->member.func, ctx); break;
+            case CLASS_ITEM_FIELD: name_init_compile_test_info(&i.ref->field.data, ctx); break;
+            case CLASS_ITEM_STATIC_BLOCK: block_compile_test_info(&i.ref->static_block, ctx); break;
+        }
     }
 }
 
@@ -108,7 +127,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         case EXPR_IDENTIFIER: {
             if (my identifier.var.get && (
                     !cstr_equals(&my identifier.name, "this") ||
-                    my identifier.var.get->name_span.file_start
+                    span_valid(&my identifier.var.get->name_span)
                 )
             ) {
                 baseline_test_case_add_symbol(
@@ -210,14 +229,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_DECL_VARIABLE:
             c_foreach(i, vec_name_init_data, my decl.variable.vars) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
-                baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
-                if (i.ref->type_explicit) {
-                    type_compile_test_info(&i.ref->type, ctx);
-                }
-                if (i.ref->value_explicit) {
-                    expr_compile_test_info(&i.ref->value, ctx);
-                }
+                name_init_compile_test_info(i.ref, ctx);
             }
             break;
 

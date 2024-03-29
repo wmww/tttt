@@ -20,7 +20,7 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
         cstr_str(&my message)
     );
 
-    if (my span.file_start) {
+    if (span_valid(&my span)) {
         const char* line_start = span_line_start(&my span);
         const char* line_end = span_line_end(&my span);
         int col = span_col_index(&my span);

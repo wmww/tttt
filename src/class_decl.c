@@ -16,7 +16,11 @@ void class_item_drop(ClassItem* me) {
             break;
 
         case CLASS_ITEM_FIELD:
-            name_init_data_drop(&my field);
+            name_init_data_drop(&my field.data);
+            break;
+
+        case CLASS_ITEM_STATIC_BLOCK:
+            block_drop(&my static_block);
             break;
     }
 }
@@ -52,7 +56,12 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                 break;
 
             case CLASS_ITEM_FIELD:
-                cstr_append_name_init_data_debug(target, &i.ref->field, indent + 1);
+                cstr_append_name_init_data_debug(target, &i.ref->field.data, indent + 1);
+                break;
+
+            case CLASS_ITEM_STATIC_BLOCK:
+                cstr_append_sv(target, c_sv("static "));
+                cstr_append_block_debug(target, &i.ref->static_block, indent + 1);
                 break;
         }
         cstr_append_sv(target, i.ref == i.end - 1 ? c_sv("\n") : c_sv("\n\n"));
@@ -89,9 +98,9 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             case CLASS_ITEM_FIELD:
                 if (!name_stack_add_variable(
                     names,
-                    cstr_clone(i.ref->field.name),
-                    i.ref->field.name_span,
-                    &i.ref->field.type
+                    cstr_clone(i.ref->field.data.name),
+                    i.ref->field.data.name_span,
+                    &i.ref->field.data.type
                 )) {
                     /*
                     error_ctx_error(
@@ -102,8 +111,12 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                     );
                     */
                 }
-                type_resolve_names(&i.ref->field.type, names, errs);
-                expr_resolve_names(&i.ref->field.value, names, errs);
+                type_resolve_names(&i.ref->field.data.type, names, errs);
+                expr_resolve_names(&i.ref->field.data.value, names, errs);
+                break;
+
+            case CLASS_ITEM_STATIC_BLOCK:
+                block_resolve_names(&i.ref->static_block, names, errs);
                 break;
         }
     }
@@ -120,6 +133,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_FIELD: break;
+            case CLASS_ITEM_STATIC_BLOCK: break;
         }
     }
     name_stack_pop_frame(names);
@@ -158,25 +172,31 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (i.ref->field.value_explicit) {
-                    Type expr_type = expr_get_type_and_typecheck(&i.ref->field.value, errs);
-                    if (i.ref->field.type_explicit) {
-                        check_assignable_or_error(&expr_type, &i.ref->field.type, i.ref->field.name_span, errs);
+                if (i.ref->field.data.value_explicit) {
+                    Type expr_type = expr_get_type_and_typecheck(&i.ref->field.data.value, errs);
+                    if (i.ref->field.data.type_explicit) {
+                        check_assignable_or_error(&expr_type, &i.ref->field.data.type, i.ref->field.data.name_span, errs);
                     } else {
-                        type_drop(&i.ref->field.type);
-                        i.ref->field.type = expr_type;
+                        type_drop(&i.ref->field.data.type);
+                        i.ref->field.data.type = expr_type;
                         expr_type = type_any;
-                        type_abstract_literals(&i.ref->field.type); // Perhaps not if read-only?
+                        type_abstract_literals(&i.ref->field.data.type); // Perhaps not if read-only?
                     }
                     type_drop(&expr_type);
                 }
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
-                        cstr_clone(i.ref->field.name),
-                        type_clone(i.ref->field.type)
+                        cstr_clone(i.ref->field.data.name),
+                        type_clone(i.ref->field.data.type)
                     ));
                 break;
+
+            case CLASS_ITEM_STATIC_BLOCK: {
+                StatementCtx ctx = statement_ctx_toplevel();
+                block_typecheck(&i.ref->static_block, &ctx, errs);
+                statement_ctx_drop(&ctx);
+            }   break;
         }
     }
 
@@ -193,8 +213,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     } else if (constructor_count > 1) {
         c_foreach(i, vec_class_item, my items) {
             if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
-                ASSERT(i.ref->constructor.name_span.file_start);
-                ASSERT(i.ref->constructor.func.full_span.file_start);
+                ASSERT(span_valid(&i.ref->constructor.name_span));
+                ASSERT(span_valid(&i.ref->constructor.func.full_span));
                 error_ctx_error(
                     errs,
                     span_between(&i.ref->constructor.name_span, &i.ref->constructor.func.full_span),

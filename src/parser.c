@@ -1081,36 +1081,239 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     return parse_success(&p);
 }
 
+// This function is a clusterfuck. I'm sorry.
 static bool parse_class_item(Parser* parent, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
-    cstr name;
-    Span name_span;
 
-    if (hop_start_if_ends_on_word_break(&p, "constructor")) {
+    enum {
+        MODIFIER_ERROR_NONE = 0,
+        READONLY_ALREADY_SEEN,
+        ACCCESS_ALREADY_SEEN,
+        MUST_PRECEDE_READONLY,
+        MUST_PRECEDE_STATIC,
+        MUST_PRECEDE_ASYNC,
+        INVALID_READONLY,
+        UNEXPECTED_IDENT,
+        MODIFIERS_CANNOT_APPEAR,
+    } modifier_error = 0;
+    enum {
+        NOT_GETTER_SETTER = 0,
+        IS_GETTER,
+        IS_SETTER,
+    } getter_setter = 0;
+    Span modifier_error_span = span_null;
+    Span access_span = span_null;
+    Span readonly_span = span_null;
+    Span static_span = span_null;
+    Span async_span = span_null;
+
+    cstr name = cstr_null;
+    Span name_span = span_null;
+
+    ret->access = ACCESS_MODIFIER_PUBLIC;
+    while (true) {
+        cstr next_name;
+        Span next_name_span;
+        if (!parse_identifier(&p, &next_name, &next_name_span)) {
+            break;
+        }
+
+        if (cstr_empty(&name)) {
+        } else if (cstr_equals(&name, "readonly")) {
+            if (span_valid(&readonly_span)) {
+                if (!modifier_error) {
+                    modifier_error = READONLY_ALREADY_SEEN;
+                    modifier_error_span = name_span;
+                }
+            } else {
+                readonly_span = name_span;
+            }
+        } else if (cstr_equals(&name, "static")) {
+            if (span_valid(&static_span)) {
+                if (!modifier_error) {
+                    modifier_error = UNEXPECTED_IDENT;
+                    modifier_error_span = name_span;
+                }
+            } else {
+                static_span = name_span;
+            }
+
+            if (span_valid(&async_span) && !modifier_error) {
+                modifier_error = MUST_PRECEDE_ASYNC;
+                modifier_error_span = name_span;
+            }
+        } else if (cstr_equals(&name, "async")) {
+            if (span_valid(&async_span)) {
+                if (!modifier_error) {
+                    modifier_error = UNEXPECTED_IDENT;
+                    modifier_error_span = name_span;
+                }
+            } else {
+                async_span = name_span;
+            }
+        } else if (cstr_equals(&name, "declare")) {
+        } else if (cstr_equals(&name, "get")) {
+            getter_setter = IS_GETTER;
+        } else if (cstr_equals(&name, "set")) {
+            getter_setter = IS_SETTER;
+        } else if (cstr_equals(&name, "public") || cstr_equals(&name, "protected") || cstr_equals(&name, "private")) {
+            if (cstr_equals(&name, "public")) {
+            } else if (cstr_equals(&name, "protected")) {
+                if (!span_valid(&access_span)) ret->access = ACCESS_MODIFIER_PROTECTED;
+            } else if (cstr_equals(&name, "private")) {
+                if (!span_valid(&access_span)) ret->access = ACCESS_MODIFIER_PRIVATE;
+            }
+
+            if (!modifier_error) {
+                if (span_valid(&access_span)) {
+                    modifier_error = ACCCESS_ALREADY_SEEN;
+                    modifier_error_span = name_span;
+                } else if (span_valid(&readonly_span)) {
+                    modifier_error = MUST_PRECEDE_READONLY;
+                    modifier_error_span = name_span;
+                } else if (span_valid(&static_span)) {
+                    modifier_error = MUST_PRECEDE_STATIC;
+                    modifier_error_span = name_span;
+                } else if (span_valid(&async_span)) {
+                    modifier_error = MUST_PRECEDE_ASYNC;
+                    modifier_error_span = name_span;
+                }
+            }
+
+            if (!span_valid(&access_span)) {
+                access_span = name_span;
+            }
+        } else {
+            if (!modifier_error) {
+                modifier_error = UNEXPECTED_IDENT;
+                modifier_error_span = name_span;
+            }
+        }
+
+        cstr_drop(&name);
+        name = next_name;
+        name_span = next_name_span;
+
+        if (hop_whitespace(&p) == WHITESPACE_NEWLINE) {
+            break;
+        }
+
+        if (getter_setter) {
+            break;
+        }
+    }
+
+    if (cstr_equals(&name, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
         name_span = span_end(a);
-        hop_whitespace(&p);
         if (!parse_non_arrow_function(&p, &ret->constructor.func)) {
             error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "constructor expected");
             ret->constructor.func = (FunctionImpl){0};
         }
         ret->constructor.name_span = name_span;
         ret->constructor.func.full_span = span_end(a);
-    } else if (parse_identifier(&p, &name, &name_span)) {
-        hop_whitespace(&p);
+        if (span_valid(&readonly_span)) {
+            modifier_error = INVALID_READONLY;
+            modifier_error_span = readonly_span;
+        }
+    } else if (cstr_equals(&name, "static") && parse_block(&p, false, &ret->static_block)) {
+        ret->tag = CLASS_ITEM_STATIC_BLOCK;
+        if (span_valid(&async_span)) {
+            modifier_error = MODIFIERS_CANNOT_APPEAR;
+            modifier_error_span = async_span;
+        } else if (span_valid(&readonly_span)) {
+            modifier_error = MODIFIERS_CANNOT_APPEAR;
+            modifier_error_span = readonly_span;
+        } else if (span_valid(&access_span)) {
+            modifier_error = MODIFIERS_CANNOT_APPEAR;
+            modifier_error_span = access_span;
+        }
+    } else if (!cstr_empty(&name)) {
         if (parse_non_arrow_function(&p, &ret->member.func)) {
             ret->tag = CLASS_ITEM_MEMBER;
             ret->member.name = name;
             ret->member.name_span = name_span;
-        } else if (parse_name_init_with_name(&p, name, name_span, &ret->field)) {
+            if (span_valid(&readonly_span)) {
+                modifier_error = INVALID_READONLY;
+                modifier_error_span = readonly_span;
+            }
+        } else if (parse_name_init_with_name(&p, name, name_span, &ret->field.data)) {
             ret->tag = CLASS_ITEM_FIELD;
+            ret->field.readonly = span_valid(&readonly_span);
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "class member expected");
             ret->member = (typeof(ret->member)){0};
         }
     } else {
         return parse_fail(&p);
+    }
+
+    switch (modifier_error) {
+        case MODIFIER_ERROR_NONE: break;
+
+        case READONLY_ALREADY_SEEN:
+            // Put error into parent errors because we know we will return success, and this will fix the ordering
+            error_ctx_error(&parent->errs, modifier_error_span, 1030, "'readonly' modifier already seen.");
+            break;
+
+        case ACCCESS_ALREADY_SEEN:
+            error_ctx_error(&parent->errs, modifier_error_span, 1028, "Accessibility modifier already seen.");
+            break;
+
+        case MUST_PRECEDE_READONLY:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1029,
+                "'%.*s' modifier must precede 'readonly' modifier.", c_SV(span_sv(&modifier_error_span))
+            );
+            break;
+
+        case MUST_PRECEDE_STATIC:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1029,
+                "'%.*s' modifier must precede 'static' modifier.", c_SV(span_sv(&modifier_error_span))
+            );
+            break;
+
+        case MUST_PRECEDE_ASYNC:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1029,
+                "'%.*s' modifier must precede 'async' modifier.", c_SV(span_sv(&modifier_error_span))
+            );
+            break;
+
+        case INVALID_READONLY:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1024,
+                "'readonly' modifier can only appear on a property declaration or index signature."
+            );
+            break;
+
+        case UNEXPECTED_IDENT:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1434,
+                "Unexpected keyword or identifier."
+            );
+            break;
+
+        case MODIFIERS_CANNOT_APPEAR:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1184,
+                "Modifiers cannot appear here."
+            );
+            break;
     }
 
     return parse_success(&p);
@@ -1352,7 +1555,7 @@ static bool parse_left_unary_op_expr(Parser* parent, Expr* ret) {
 
     Expr expr;
     if (!parse_expr(&p, &expr)) {
-        error_ctx_parse_error(&p.errs, "expected expression after unary operation");
+        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         expr = expr_undefined(span_from_pos(&p));
     }
 
@@ -1650,6 +1853,8 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
         hop_whitespace(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
             type_explicit = true;
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
         }
         hop_whitespace(&p);
     }
@@ -1661,6 +1866,8 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
         hop_whitespace(&p);
         if (parse_expr(&p, &value)) {
             value_explicit = true;
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         }
     }
     if (!value_explicit) {
@@ -1721,7 +1928,7 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
             parse_fail(&sub);
             break;
         }
-        if (cstr_empty(&data.name) && comma_span.file_start) {
+        if (cstr_empty(&data.name) && span_valid(&comma_span)) {
             error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
             name_init_data_drop(&data);
             parse_fail(&sub);

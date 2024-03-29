@@ -600,6 +600,7 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
                     "This expression is not callable. Type '%s' has no call signatures.",
                     cstr_str(&type_str)
                 );
+                cstr_drop(&type_str);
             }
             for (long i = 0; i < given_arg_count; i++) {
                 Type arg_type = expr_get_type_and_typecheck(

@@ -4,13 +4,21 @@
 #include "function_impl.h"
 #include "statement.h" // for NameInitData
 
+typedef enum AccessModifier {
+    ACCESS_MODIFIER_PUBLIC,
+    ACCESS_MODIFIER_PROTECTED,
+    ACCESS_MODIFIER_PRIVATE,
+} AccessModifier;
+
 typedef struct ClassItem {
     enum {
         CLASS_ITEM_CONSTRUCTOR,
         CLASS_ITEM_MEMBER,
         CLASS_ITEM_FIELD,
+        CLASS_ITEM_STATIC_BLOCK,
     } tag;
-    struct {
+    AccessModifier access;
+    union {
         struct {
             Span name_span;
             FunctionImpl func;
@@ -20,7 +28,11 @@ typedef struct ClassItem {
             Span name_span;
             FunctionImpl func;
         } member;
-        NameInitData field;
+        struct {
+            bool readonly;
+            NameInitData data;
+        } field;
+        Block static_block;
     };
 } ClassItem;
 

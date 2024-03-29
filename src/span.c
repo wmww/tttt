@@ -1,8 +1,6 @@
 #include "span.h"
 #include "math_helpers.h"
 
-const Span span_null = {0};
-
 int span_line_index(Span const* me) {
     if (!my file_start) {
         return 1;
