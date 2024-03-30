@@ -49291,7 +49291,7 @@ const baselines = {
         types: false,
     },
     'parserAssignmentExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51046,7 +51046,7 @@ const baselines = {
         types: false,
     },
     'parserForInStatement3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51061,7 +51061,7 @@ const baselines = {
         types: true,
     },
     'parserForInStatement6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

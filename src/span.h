@@ -34,3 +34,4 @@ const char* span_line_start(Span const* me);
 const char* span_line_end(Span const* me);
 csview span_sv(Span const* me);
 Span span_between(Span const* a, Span const* b);
+int span_cmp(Span const* a, Span const* b);

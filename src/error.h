@@ -23,8 +23,10 @@ typedef struct ErrorCtx {
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 void error_ctx_drop(ErrorCtx* me);
+void error_ctx_sort(ErrorCtx* me);
 void error_ctx_display(ErrorCtx* me);
 bool error_ctx_empty(ErrorCtx* me);
+void error_ctx_append_error(ErrorCtx* me, Error error);
 void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other);
 void error_ctx_parse_error(ErrorCtx* me, const char* static_message);
 void error_ctx_type_error(ErrorCtx* me, const char* static_message);

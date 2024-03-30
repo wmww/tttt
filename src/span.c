@@ -62,3 +62,16 @@ Span span_between(Span const* a, Span const* b) {
     unsigned end = umax(a->offset + a->length, b->offset + b->length);
     return span_make(a->file_start, start, end - start);
 }
+
+int span_cmp(Span const* a, Span const* b) {
+    if (a->file_start != b->file_start) {
+        // TODO: compare filenames once available
+        return a->file_start > b->file_start ? 1 : -1;
+    } else if (a->offset != b->offset) {
+        return a->offset > b->offset ? 1 : -1;
+    } else if (a->length != b->length) {
+        return a->length > b->length ? 1 : -1;
+    } else {
+        return 0;
+    }
+}

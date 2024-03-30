@@ -68,9 +68,19 @@ bool error_ctx_empty(ErrorCtx* me) {
     return vec_error_empty(&my errors);
 }
 
+void error_ctx_append_error(ErrorCtx* me, Error error) {
+    intptr_t i = vec_error_size(&my errors);
+    vec_error_insert_uninit(&my errors, i, 1);
+    while (i > 0 && span_cmp(&vec_error_at(&my errors, i - 1)->span, &error.span) > 0) {
+        *vec_error_at_mut(&my errors, i) = *vec_error_at(&my errors, i - 1);
+        i--;
+    }
+    *vec_error_at_mut(&my errors, i) = error;
+}
+
 void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other) {
     c_foreach(i, vec_error, other.errors) {
-        vec_error_push(&my errors, *i.ref);
+        error_ctx_append_error(me, *i.ref);
         *i.ref = (Error){0};
     }
     error_ctx_drop(&other);
@@ -80,7 +90,7 @@ void error_ctx_parse_error(ErrorCtx* me, const char* static_message) {
     if (!me) {
         return;
     }
-    vec_error_push(&my errors, (Error){
+    error_ctx_append_error(me, (Error){
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
@@ -91,7 +101,7 @@ void error_ctx_type_error(ErrorCtx* me, const char* static_message) {
     if (!me) {
         return;
     }
-    vec_error_push(&my errors, (Error){
+    error_ctx_append_error(me, (Error){
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
@@ -103,7 +113,7 @@ void error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) 
         cstr_drop(&message);
         return;
     }
-    vec_error_push(&my errors, (Error){
+    error_ctx_append_error(me, (Error){
         .message = message,
         .span = span,
         .ts_code = ts_code,
