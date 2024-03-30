@@ -355,7 +355,7 @@ static Result MUST_USE engine_run_if_else(Engine* me, IfStatement const* if_else
     return result_ok_undefined;
 }
 
-static Result MUST_USE engine_run_loop(Engine* me, LoopStatement const* loop) {
+static Result MUST_USE engine_run_for_loop(Engine* me, ForLoopStatement const* loop) {
     TRY_THROW_DROP(engine_run_statement(me, &loop->initialization));
     while (true) {
         TRY_THROW(keep_going, engine_eval_expr(me, &loop->condition));
@@ -385,12 +385,16 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
 
         case STATEMENT_IF_ELSE: return engine_run_if_else(me, &statement->if_else);
 
-        case STATEMENT_LOOP: {
+        case STATEMENT_FOR_LOOP: {
             vec_stack_frame_push(&my stack, stack_frame_new());
-            Result res = engine_run_loop(me, statement->loop);
+            Result res = engine_run_for_loop(me, statement->for_loop);
             vec_stack_frame_pop(&my stack);
             return res;
         }
+
+        case STATEMENT_FOR_OF_LOOP:
+            NONFATAL("Running for-of loops not yet implemented");
+            return result_ok_undefined;
 
         case STATEMENT_BREAK: return result_break();
 
@@ -429,7 +433,9 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return result_ok_undefined;
         }
 
-        case STATEMENT_DECL_CLASS: return result_ok_undefined; // TODO
+        case STATEMENT_DECL_CLASS:
+            NONFATAL("Creating classes not yet implemented");
+            return result_ok_undefined;
 
         case STATEMENT_DECL_INTERFACE: return result_ok_undefined;
     }

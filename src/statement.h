@@ -7,7 +7,8 @@
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
-typedef struct LoopStatement LoopStatement;
+typedef struct ForLoopStatement ForLoopStatement;
+typedef struct ForOfLoopStatement ForOfLoopStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
 
@@ -41,6 +42,8 @@ typedef struct VariableStatement {
 
 void variable_statement_drop(VariableStatement* me);
 void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent);
+void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
+void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 
 // Interface statements
@@ -75,7 +78,8 @@ typedef struct Statement {
         STATEMENT_NOOP,
         STATEMENT_BLOCK,
         STATEMENT_IF_ELSE,
-        STATEMENT_LOOP,
+        STATEMENT_FOR_LOOP,
+        STATEMENT_FOR_OF_LOOP,
         STATEMENT_BREAK,
         STATEMENT_EXPR,
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
@@ -89,7 +93,8 @@ typedef struct Statement {
         Block block;
         Expr expr; // also used for return and export default expressions
         IfStatement if_else;
-        LoopStatement* loop;
+        ForLoopStatement* for_loop;
+        ForOfLoopStatement* for_of_loop;
         Span break_span;
         struct {
             DeclExported exported;
@@ -128,12 +133,27 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs);
 
 // Loop statements
 
-typedef struct LoopStatement {
+typedef struct ForLoopStatement {
     Statement initialization; // initialization happens only once, but in the same stack frame as the body
     Expr condition;
     Expr afterthought;
     Statement body;
-} LoopStatement;
+} ForLoopStatement;
+
+typedef struct ForOfLoopStatement {
+    struct {
+        enum {
+            FOR_OF_VARIABLE_STATEMENT,
+            FOR_OF_VARIABLE_EXPR,
+        } tag;
+        union {
+            VariableStatement statement;
+            Expr expr;
+        };
+    } variable;
+    Expr iterable;
+    Statement body;
+} ForOfLoopStatement;
 
 // Statement context
 

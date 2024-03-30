@@ -2021,7 +2021,7 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
+static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
 
     if (!hop_start_if_ends_on_word_break(&p, "for")) {
@@ -2034,52 +2034,128 @@ static bool parse_for_loop(Parser* parent, LoopStatement* ret) {
     }
     hop_whitespace(&p);
 
-    Statement initialization = statement_noop;
-    Expr afterthought;
-    Statement body = statement_noop;
-    parse_statement(&p, false, &initialization); // It's fine if it doesn't parse anything
-    hop_whitespace(&p);
+    bool is_for_of = false;
+    Statement statement;
+    Expr left_expr;
+    Expr right_expr;
+    Statement body;
 
-    if (!hop_start(&p, ";")) {
-        error_ctx_parse_error(&p.errs, "expected ';' in for header");
-        hop_token(&p);
+    if (parse_var_init(&p, &statement.decl.variable)) {
+        statement.decl.exported = DECL_EXPORTED_NO;
+        statement.tag = STATEMENT_DECL_VARIABLE;
+    } else if (parse_expr(&p, &statement.expr)) {
+        statement.tag = STATEMENT_EXPR;
+    } else if (*p.pos == ';') {
+        statement = statement_noop;
+    } else {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1009, "Expression expected.");
+        statement = statement_noop;
     }
     hop_whitespace(&p);
 
-    Expr condition = expr_literal(span_from_pos(&p), value_boolean(true));
-    parse_expr(&p, &condition); // It's fine if it doesn't parse anything
-    hop_whitespace(&p);
+    if (hop_start(&p, ";")) {
+        hop_whitespace(&p);
 
-    if (!hop_start(&p, ";")) {
-        error_ctx_parse_error(&p.errs, "expected ';' in for header");
-        hop_token(&p);
-    }
-    hop_whitespace(&p);
+        if (!parse_expr(&p, &left_expr)) {
+            left_expr = expr_literal(span_from_pos(&p), value_boolean(true));
+        }
+        hop_whitespace(&p);
 
-    if (!parse_expr(&p, &afterthought)) {
-        afterthought = expr_undefined(span_from_pos(&p));
+        if (!hop_start(&p, ";")) {
+            // Unclear why this is the error message in this case
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+            hop_token(&p);
+        }
+        hop_whitespace(&p);
+
+        if (!parse_expr(&p, &right_expr)) {
+            right_expr = expr_undefined(span_from_pos(&p));
+        }
+        hop_whitespace(&p);
+    } else if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) &&
+               hop_start_if_ends_on_word_break(&p, "of")
+    ) {
+        is_for_of = true;
+
+        hop_whitespace(&p);
+
+        if (!parse_expr(&p, &right_expr)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
+            right_expr = expr_undefined(span_from_pos(&p));
+        }
+        hop_whitespace(&p);
+    } else {
+        // Unclear why this is the error message in this case
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+        left_expr = expr_undefined(span_from_pos(&p));
+        right_expr = expr_undefined(span_from_pos(&p));
     }
     hop_whitespace(&p);
 
     if (!hop_start(&p, ")")) {
-        error_ctx_parse_error(&p.errs, "expected ')' at end of for header");
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
+        while (*p.pos && *p.pos != '\n' && *p.pos != ';' && *p.pos != ')') {
+            hop_token(&p);
+            if (hop_whitespace(&p) == WHITESPACE_NEWLINE) {
+                break;
+            }
+        }
     }
     hop_whitespace(&p);
 
     if (!parse_statement(&p, false, &body)) {
-        error_ctx_parse_error(&p.errs, "expected for loop body");
+        error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
+        body = statement_noop;
     }
 
-    *ret = (LoopStatement) {
-        .initialization = initialization,
-        .condition = condition,
-        .afterthought = afterthought,
-        .body = body,
-    };
+    if (is_for_of) {
+        switch (statement.tag) {
+            case STATEMENT_DECL_VARIABLE:
+                *ret = (Statement){
+                    .tag = STATEMENT_FOR_OF_LOOP,
+                    .for_of_loop = c_new(ForOfLoopStatement, {
+                        .variable = {
+                            .tag = FOR_OF_VARIABLE_STATEMENT,
+                            .statement = statement.decl.variable,
+                        },
+                        .iterable = right_expr,
+                        .body = body,
+                    })
+                };
+                break;
+
+            case STATEMENT_EXPR:
+                *ret = (Statement){
+                    .tag = STATEMENT_FOR_OF_LOOP,
+                    .for_of_loop = c_new(ForOfLoopStatement, {
+                        .variable = {
+                            .tag = FOR_OF_VARIABLE_EXPR,
+                            .expr = statement.expr,
+                        },
+                        .iterable = right_expr,
+                        .body = body,
+                    })
+                };
+                break;
+
+            default: PANIC("Invalid statement type for for-of loop");
+        }
+    } else {
+        *ret = (Statement){
+            .tag = STATEMENT_FOR_LOOP,
+            .for_loop = c_new(ForLoopStatement, {
+                .initialization = statement,
+                .condition = left_expr,
+                .afterthought = right_expr,
+                .body = body,
+            }),
+        };
+    }
+
     return parse_success(&p);
 }
 
-static bool parse_while_loop(Parser* parent, LoopStatement* ret) {
+static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
 
     if (!hop_start_if_ends_on_word_break(&p, "while")) {
@@ -2108,11 +2184,14 @@ static bool parse_while_loop(Parser* parent, LoopStatement* ret) {
         error_ctx_parse_error(&p.errs, "expected while loop body");
     }
 
-    *ret = (LoopStatement) {
-        .initialization = statement_noop,
-        .condition = condition,
-        .afterthought = expr_undefined(span_from_pos(&p)),
-        .body = body,
+    *ret = (Statement){
+        .tag = STATEMENT_FOR_LOOP,
+        .for_loop = c_new(ForLoopStatement, {
+            .initialization = statement_noop,
+            .condition = condition,
+            .afterthought = expr_undefined(span_from_pos(&p)),
+            .body = body,
+        }),
     };
     return parse_success(&p);
 }
@@ -2183,9 +2262,10 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
-    LoopStatement loop;
 
-    if (hop_start_if_ends_on_word_break(&p, "export")) {
+    if (*p.pos == ';') {
+        *ret = statement_noop;
+    } else if (hop_start_if_ends_on_word_break(&p, "export")) {
         if (!toplevel) {
             error_ctx_error(&p.errs, span_end(a), 1184, "Modifiers cannot appear here.");
         }
@@ -2218,16 +2298,8 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_BLOCK;
     } else if (parse_if_else(&p, &ret->if_else)) {
         ret->tag = STATEMENT_IF_ELSE;
-    } else if (parse_for_loop(&p, &loop)) {
-        *ret = (Statement){
-            .tag = STATEMENT_LOOP,
-            .loop = c_new(LoopStatement, loop),
-        };
-    } else if (parse_while_loop(&p, &loop)) {
-        *ret = (Statement){
-            .tag = STATEMENT_LOOP,
-            .loop = c_new(LoopStatement, loop),
-        };
+    } else if (parse_for_loop_statement(&p, ret)) {
+    } else if (parse_while_loop_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
         ret->break_span = span_end(a);
@@ -2262,15 +2334,13 @@ static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
             } else if (*p.pos == ';') {
                 p.pos++;
             } else if (*p.pos) {
-                Span span = hop_token_get_span(&p);
-                error_ctx_error(&p.errs, span, 1005, "';' expected.");
+                error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "';' expected.");
             }
         } else if (*p.pos == '\\') {
             error_ctx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
             p.pos++;
         } else {
-            Span span = hop_token_get_span(&p);
-            error_ctx_error(&p.errs, span, 1128, "Declaration or statement expected.");
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
         }
         hop_whitespace(&p);
     }

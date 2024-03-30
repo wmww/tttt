@@ -42,6 +42,27 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
     cstr_append_sv(target, c_sv(";"));
 }
 
+void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
+    c_foreach(i, vec_name_init_data, my vars) {
+        if (!name_stack_add_variable(
+            names,
+            cstr_clone(i.ref->name),
+            i.ref->name_span,
+            &i.ref->type
+        )) {
+            // name is cstr_str(&result.ref->first)
+            error_ctx_type_error(errs, "multiple values declared with same name");
+        }
+    }
+}
+
+void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
+    c_foreach(i, vec_name_init_data, my vars) {
+        type_resolve_names(&i.ref->type, names, errs);
+        expr_resolve_names(&i.ref->value, names, errs);
+    }
+}
+
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
     c_foreach(i, vec_name_init_data, my vars) {
         if (i.ref->value_explicit) {
@@ -95,12 +116,22 @@ void statement_drop(Statement* me) {
             vec_statement_drop(&my if_else.statements);
             break;
 
-        case STATEMENT_LOOP:
-            statement_drop(&my loop->initialization);
-            expr_drop(&my loop->condition);
-            expr_drop(&my loop->afterthought);
-            statement_drop(&my loop->body);
-            free(my loop);
+        case STATEMENT_FOR_LOOP:
+            statement_drop(&my for_loop->initialization);
+            expr_drop(&my for_loop->condition);
+            expr_drop(&my for_loop->afterthought);
+            statement_drop(&my for_loop->body);
+            free(my for_loop);
+            break;
+
+        case STATEMENT_FOR_OF_LOOP:
+            switch (my for_of_loop->variable.tag) {
+                case FOR_OF_VARIABLE_STATEMENT: variable_statement_drop(&my for_of_loop->variable.statement); break;
+                case FOR_OF_VARIABLE_EXPR: expr_drop(&my for_of_loop->variable.expr); break;
+            }
+            expr_drop(&my for_of_loop->iterable);
+            statement_drop(&my for_of_loop->body);
+            free(my for_of_loop);
             break;
 
         case STATEMENT_BREAK: break; // nice
@@ -157,18 +188,35 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             }
         }   break;
 
-        case STATEMENT_LOOP:
+        case STATEMENT_FOR_LOOP:
             cstr_append_sv(target, c_sv("for ("));
-            cstr_append_statement_debug(target, &my loop->initialization, indent);
+            cstr_append_statement_debug(target, &my for_loop->initialization, indent);
             if (cstr_str(target)[cstr_size(target) - 1] != ';') {
                 cstr_append_sv(target, c_sv(";"));
             }
             cstr_append_sv(target, c_sv(" "));
-            cstr_append_expr_debug(target, &my loop->condition, indent);
+            cstr_append_expr_debug(target, &my for_loop->condition, indent);
             cstr_append_sv(target, c_sv("; "));
-            cstr_append_expr_debug(target, &my loop->afterthought, indent);
+            cstr_append_expr_debug(target, &my for_loop->afterthought, indent);
             cstr_append_sv(target, c_sv(") "));
-            cstr_append_statement_debug(target, &my loop->body, indent);
+            cstr_append_statement_debug(target, &my for_loop->body, indent);
+            break;
+
+        case STATEMENT_FOR_OF_LOOP:
+            cstr_append_sv(target, c_sv("for ("));
+            switch (my for_of_loop->variable.tag) {
+                case FOR_OF_VARIABLE_STATEMENT:
+                    cstr_append_variable_statement_debug(target, &my for_of_loop->variable.statement, indent);
+                    break;
+
+                case FOR_OF_VARIABLE_EXPR:
+                    cstr_append_expr_debug(target, &my for_of_loop->variable.expr, indent);
+                    break;
+            }
+            cstr_append_sv(target, c_sv(" of "));
+            cstr_append_expr_debug(target, &my for_of_loop->iterable, indent);
+            cstr_append_sv(target, c_sv(") "));
+            cstr_append_statement_debug(target, &my for_of_loop->body, indent);
             break;
 
         case STATEMENT_BREAK: cstr_append_sv(target, c_sv("break;")); break;
@@ -203,17 +251,7 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
 void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case STATEMENT_DECL_VARIABLE:
-            c_foreach(i, vec_name_init_data, my decl.variable.vars) {
-                if (!name_stack_add_variable(
-                    names,
-                    cstr_clone(i.ref->name),
-                    i.ref->name_span,
-                    &i.ref->type
-                )) {
-                    // name is cstr_str(&result.ref->first)
-                    error_ctx_type_error(errs, "multiple values declared with same name");
-                }
-            }
+            variable_statement_add_names(&my decl.variable, names, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:
@@ -265,7 +303,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_NOOP:
         case STATEMENT_BLOCK:
         case STATEMENT_IF_ELSE:
-        case STATEMENT_LOOP:
+        case STATEMENT_FOR_LOOP:
+        case STATEMENT_FOR_OF_LOOP:
         case STATEMENT_BREAK:
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -289,13 +328,30 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
 
-        case STATEMENT_LOOP:
+        case STATEMENT_FOR_LOOP:
             name_stack_push_frame(names, STACK_FRAME_BLOCK);
-            statement_add_names(&my loop->initialization, names, errs);
-            statement_resolve_names(&my loop->initialization, names, errs);
-            expr_resolve_names(&my loop->condition, names, errs);
-            expr_resolve_names(&my loop->afterthought, names, errs);
-            statement_resolve_names(&my loop->body, names, errs);
+            statement_add_names(&my for_loop->initialization, names, errs);
+            statement_resolve_names(&my for_loop->initialization, names, errs);
+            expr_resolve_names(&my for_loop->condition, names, errs);
+            expr_resolve_names(&my for_loop->afterthought, names, errs);
+            statement_resolve_names(&my for_loop->body, names, errs);
+            name_stack_pop_frame(names);
+            break;
+
+        case STATEMENT_FOR_OF_LOOP:
+            name_stack_push_frame(names, STACK_FRAME_BLOCK);
+            switch (my for_of_loop->variable.tag) {
+                case FOR_OF_VARIABLE_STATEMENT:
+                    variable_statement_add_names(&my for_of_loop->variable.statement, names, errs);
+                    variable_statement_resolve_names(&my for_of_loop->variable.statement, names, errs);
+                    break;
+
+                case FOR_OF_VARIABLE_EXPR:
+                    expr_resolve_names(&my for_of_loop->variable.expr, names, errs);
+                    break;
+            }
+            expr_resolve_names(&my for_of_loop->iterable, names, errs);
+            statement_resolve_names(&my for_of_loop->body, names, errs);
             name_stack_pop_frame(names);
             break;
 
@@ -306,10 +362,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_VARIABLE:
-            c_foreach(i, vec_name_init_data, my decl.variable.vars) {
-                type_resolve_names(&i.ref->type, names, errs);
-                expr_resolve_names(&i.ref->value, names, errs);
-            }
+            variable_statement_resolve_names(&my decl.variable, names, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:
@@ -358,18 +411,71 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
         }
 
-        case STATEMENT_LOOP: {
-            statement_typecheck(&my loop->initialization, ctx, errs);
-            Type t = expr_get_type_and_typecheck(&my loop->condition, errs);
+        case STATEMENT_FOR_LOOP: {
+            statement_typecheck(&my for_loop->initialization, ctx, errs);
+            Type t = expr_get_type_and_typecheck(&my for_loop->condition, errs);
             type_drop(&t);
-            t = expr_get_type_and_typecheck(&my loop->afterthought, errs);
+            t = expr_get_type_and_typecheck(&my for_loop->afterthought, errs);
             type_drop(&t);
             bool break_was_allowed = ctx->break_allowd;
             ctx->break_allowd = true;
-            statement_typecheck(&my loop->body, ctx, errs);
+            statement_typecheck(&my for_loop->body, ctx, errs);
             ctx->break_allowd = break_was_allowed;
             break;
         }
+
+        case STATEMENT_FOR_OF_LOOP: {
+            Type iterable_type = expr_get_type_and_typecheck(&my for_of_loop->iterable, errs);
+            Type var_type = type_any;
+
+            switch (iterable_type.tag) {
+                case TYPE_ARRAY:
+                    var_type = *iterable_type.array;
+                    *iterable_type.array = type_any;
+                    break;
+                case TYPE_STRING: var_type = type_string; break;
+                default: {
+                    cstr msg = cstr_lit("Type '");
+                    cstr_append_type_error_msg(&msg, &iterable_type);
+                    cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
+                    error_ctx_error_s(errs, my for_of_loop->iterable.span, 2495, msg);
+                }   break;
+            }
+            type_drop(&iterable_type);
+
+            switch (my for_of_loop->variable.tag) {
+                case FOR_OF_VARIABLE_STATEMENT:
+                    if (vec_name_init_data_size(&my for_of_loop->variable.statement.vars) > 1) {
+                        error_ctx_error(
+                            errs,
+                            vec_name_init_data_at(&my for_of_loop->variable.statement.vars, 1)->name_span,
+                            1188,
+                            "Only a single variable declaration is allowed in a 'for...of' statement."
+                        );
+                    } else {
+                        ASSERT(vec_name_init_data_size(&my for_of_loop->variable.statement.vars) >= 1);
+                    }
+                    c_foreach(i, vec_name_init_data, my for_of_loop->variable.statement.vars) {
+                        type_drop(&i.ref->type);
+                        i.ref->type = type_clone(var_type);
+                    }
+                    variable_statement_typecheck(&my for_of_loop->variable.statement, errs);
+                    break;
+
+                case FOR_OF_VARIABLE_EXPR: {
+                    Type existing_var_type = expr_get_type_and_typecheck(&my for_of_loop->variable.expr, errs);
+                    check_assignable_or_error(&var_type, &existing_var_type, my for_of_loop->variable.expr.span, errs);
+                    type_drop(&existing_var_type);
+                    break;
+                }
+            }
+            type_drop(&var_type);
+
+            bool break_was_allowed = ctx->break_allowd;
+            ctx->break_allowd = true;
+            statement_typecheck(&my for_of_loop->body, ctx, errs);
+            ctx->break_allowd = break_was_allowed;
+        }   break;
 
         case STATEMENT_BREAK:
             if (!ctx->break_allowd) {

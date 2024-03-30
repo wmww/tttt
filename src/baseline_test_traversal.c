@@ -216,13 +216,29 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             }
         }   break;
 
-        case STATEMENT_LOOP:
-            statement_compile_test_info(&my loop->initialization, ctx);
-            expr_compile_test_info(&my loop->condition, ctx);
-            if (my loop->afterthought.tag != EXPR_LITERAL || my loop->afterthought.literal.tag != VALUE_UNDEFINED) {
-                expr_compile_test_info(&my loop->afterthought, ctx);
+        case STATEMENT_FOR_LOOP:
+            statement_compile_test_info(&my for_loop->initialization, ctx);
+            expr_compile_test_info(&my for_loop->condition, ctx);
+            if (my for_loop->afterthought.tag != EXPR_LITERAL ||
+                my for_loop->afterthought.literal.tag != VALUE_UNDEFINED
+            ) {
+                expr_compile_test_info(&my for_loop->afterthought, ctx);
             }
-            statement_compile_test_info(&my loop->body, ctx);
+            statement_compile_test_info(&my for_loop->body, ctx);
+            break;
+
+        case STATEMENT_FOR_OF_LOOP:
+            switch (my for_of_loop->variable.tag) {
+                case FOR_OF_VARIABLE_STATEMENT:
+                    name_init_compile_test_info(my for_of_loop->variable.statement.vars.data, ctx);
+                    break;
+
+                case FOR_OF_VARIABLE_EXPR:
+                    expr_compile_test_info(&my for_of_loop->variable.expr, ctx);
+                    break;
+            }
+            expr_compile_test_info(&my for_of_loop->iterable, ctx);
+            statement_compile_test_info(&my for_of_loop->body, ctx);
             break;
 
         case STATEMENT_BREAK: break;

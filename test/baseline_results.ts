@@ -1801,7 +1801,7 @@ const baselines = {
         types: false,
     },
     'assignmentNestedInLiterals': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -2801,12 +2801,12 @@ const baselines = {
         types: false,
     },
     'capturedLetConstInLoop10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'capturedLetConstInLoop10_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6337,7 +6337,7 @@ const baselines = {
     },
     'continueInLoopsWithCapturedBlockScopedBindings1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'continueLabel': {
@@ -12717,37 +12717,37 @@ const baselines = {
     },
     'forInStatement1': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStatement2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStatement3': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStatement4': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStatement5': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStatement6': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStatement7': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'forInStrictNullChecksNoError': {
@@ -18441,14 +18441,14 @@ const baselines = {
         types: false,
     },
     'letInVarDeclOfForOf_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'letInVarDeclOfForOf_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'letKeepNamesOfTopLevelItems': {
         errors: false,
@@ -25317,7 +25317,7 @@ const baselines = {
     },
     'shadowedFunctionScopedVariablesByBlockScopedOnes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'shadowedReservedCompilerDeclarationsWithNoEmit': {
@@ -34012,7 +34012,7 @@ const baselines = {
     },
     'controlFlowNoIntermediateErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowNullishCoalesce': {
@@ -37956,7 +37956,7 @@ const baselines = {
         types: false,
     },
     'for-of1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38121,7 +38121,7 @@ const baselines = {
         types: false,
     },
     'for-of4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38176,7 +38176,7 @@ const baselines = {
         types: false,
     },
     'for-of5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38211,7 +38211,7 @@ const baselines = {
         types: false,
     },
     'for-of56': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51082,7 +51082,7 @@ const baselines = {
     },
     'parserForStatement2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'parserForStatement3': {
@@ -52053,7 +52053,7 @@ const baselines = {
     'parserForOfStatement22': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForOfStatement23': {
         errors: false,
@@ -52061,7 +52061,7 @@ const baselines = {
         types: false,
     },
     'parserForOfStatement24': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54001,19 +54001,19 @@ const baselines = {
         types: false,
     },
     'ES5For-of1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ES5For-of10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ES5For-of11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of12': {
         errors: false,
@@ -54021,72 +54021,72 @@ const baselines = {
         types: false,
     },
     'ES5For-of13': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ES5For-of14': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of15': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of16': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of17': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-of18': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of19': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of20': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-of21': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of22': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ES5For-of23': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ES5For-of24': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ES5For-of25': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54111,13 +54111,13 @@ const baselines = {
         types: false,
     },
     'ES5For-of3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ES5For-of30': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-of31': {
@@ -54126,7 +54126,7 @@ const baselines = {
         types: false,
     },
     'ES5For-of33': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54156,13 +54156,13 @@ const baselines = {
         types: false,
     },
     'ES5For-of5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'ES5For-of7': {
@@ -54176,7 +54176,7 @@ const baselines = {
         types: false,
     },
     'ES5For-of9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54211,7 +54211,7 @@ const baselines = {
         types: false,
     },
     'ES5For-ofTypeCheck2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
