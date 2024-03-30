@@ -2427,22 +2427,22 @@ const baselines = {
     },
     'blockScopedBindingsReassignedInLoop2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'blockScopedBindingsReassignedInLoop3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'blockScopedBindingsReassignedInLoop4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'blockScopedBindingsReassignedInLoop5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'blockScopedBindingsReassignedInLoop6': {
@@ -42267,7 +42267,7 @@ const baselines = {
     },
     'commaOperatorOtherValidOperation': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'commaOperatorWithSecondOperandAnyType': {
@@ -51081,12 +51081,12 @@ const baselines = {
         types: false,
     },
     'parserForStatement2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

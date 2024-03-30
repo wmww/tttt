@@ -2077,6 +2077,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         statement.decl.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
     } else if (parse_expr(&p, &statement.expr)) {
+        parse_comma_ops_right_side(&p, &statement.expr);
         statement.tag = STATEMENT_EXPR;
     } else if (*p.pos == ';') {
         statement = statement_noop;
@@ -2089,7 +2090,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     if (hop_start(&p, ";")) {
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, &left_expr)) {
+        if (parse_expr(&p, &left_expr)) {
+            parse_comma_ops_right_side(&p, &left_expr);
+        } else {
             left_expr = expr_literal(span_from_pos(&p), value_boolean(true));
         }
         hop_whitespace(&p);
@@ -2101,7 +2104,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         }
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, &right_expr)) {
+        if (parse_expr(&p, &right_expr)) {
+            parse_comma_ops_right_side(&p, &right_expr);
+        } else {
             right_expr = expr_undefined(span_from_pos(&p));
         }
         hop_whitespace(&p);
@@ -2113,7 +2118,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, &right_expr)) {
+        if (parse_expr(&p, &right_expr)) {
+            parse_comma_ops_right_side(&p, &right_expr);
+        } else {
             error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
             right_expr = expr_undefined(span_from_pos(&p));
         }
@@ -2205,7 +2212,9 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
 
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
     Statement body = statement_noop;
-    if (!parse_expr(&p, &condition)) {
+    if (parse_expr(&p, &condition)) {
+        parse_comma_ops_right_side(&p, &condition);
+    } else {
         error_ctx_parse_error(&p.errs, "expected expression before ')'");
     }
     hop_whitespace(&p);
