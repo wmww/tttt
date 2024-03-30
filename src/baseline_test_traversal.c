@@ -227,18 +227,20 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             statement_compile_test_info(&my for_loop->body, ctx);
             break;
 
-        case STATEMENT_FOR_OF_LOOP:
-            switch (my for_of_loop->variable.tag) {
-                case FOR_OF_VARIABLE_STATEMENT:
-                    name_init_compile_test_info(my for_of_loop->variable.statement.vars.data, ctx);
+        case STATEMENT_FOR_EACH_LOOP:
+            switch (my for_each_loop->variable.tag) {
+                case FOR_EACH_LOOP_STATEMENT:
+                    c_foreach(i, vec_name_init_data, my for_each_loop->variable.statement.vars) {
+                        name_init_compile_test_info(i.ref, ctx);
+                    }
                     break;
 
-                case FOR_OF_VARIABLE_EXPR:
-                    expr_compile_test_info(&my for_of_loop->variable.expr, ctx);
+                case FOR_EACH_LOOP_EXPR:
+                    expr_compile_test_info(&my for_each_loop->variable.expr, ctx);
                     break;
             }
-            expr_compile_test_info(&my for_of_loop->iterable, ctx);
-            statement_compile_test_info(&my for_of_loop->body, ctx);
+            expr_compile_test_info(&my for_each_loop->iterable, ctx);
+            statement_compile_test_info(&my for_each_loop->body, ctx);
             break;
 
         case STATEMENT_BREAK: break;

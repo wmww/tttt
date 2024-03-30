@@ -8,7 +8,7 @@
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
 typedef struct ForLoopStatement ForLoopStatement;
-typedef struct ForOfLoopStatement ForOfLoopStatement;
+typedef struct ForEachLoopStatement ForEachLoopStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
 
@@ -79,7 +79,7 @@ typedef struct Statement {
         STATEMENT_BLOCK,
         STATEMENT_IF_ELSE,
         STATEMENT_FOR_LOOP,
-        STATEMENT_FOR_OF_LOOP,
+        STATEMENT_FOR_EACH_LOOP,
         STATEMENT_BREAK,
         STATEMENT_EXPR,
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
@@ -94,7 +94,7 @@ typedef struct Statement {
         Expr expr; // also used for return and export default expressions
         IfStatement if_else;
         ForLoopStatement* for_loop;
-        ForOfLoopStatement* for_of_loop;
+        ForEachLoopStatement* for_each_loop;
         Span break_span;
         struct {
             DeclExported exported;
@@ -140,11 +140,15 @@ typedef struct ForLoopStatement {
     Statement body;
 } ForLoopStatement;
 
-typedef struct ForOfLoopStatement {
+typedef struct ForEachLoopStatement {
+    enum {
+        FOR_EACH_LOOP_IN,
+        FOR_EACH_LOOP_OF,
+    } keyword;
     struct {
         enum {
-            FOR_OF_VARIABLE_STATEMENT,
-            FOR_OF_VARIABLE_EXPR,
+            FOR_EACH_LOOP_STATEMENT,
+            FOR_EACH_LOOP_EXPR,
         } tag;
         union {
             VariableStatement statement;
@@ -153,7 +157,7 @@ typedef struct ForOfLoopStatement {
     } variable;
     Expr iterable;
     Statement body;
-} ForOfLoopStatement;
+} ForEachLoopStatement;
 
 // Statement context
 

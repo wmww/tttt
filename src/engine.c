@@ -392,8 +392,8 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return res;
         }
 
-        case STATEMENT_FOR_OF_LOOP:
-            NONFATAL("Running for-of loops not yet implemented");
+        case STATEMENT_FOR_EACH_LOOP:
+            NONFATAL("Running for-each loops not yet implemented");
             return result_ok_undefined;
 
         case STATEMENT_BREAK: return result_break();

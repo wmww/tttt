@@ -2039,6 +2039,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Expr left_expr;
     Expr right_expr;
     Statement body;
+    bool keyword_is_in = false;
 
     if (parse_var_init(&p, &statement.decl.variable)) {
         statement.decl.exported = DECL_EXPORTED_NO;
@@ -2072,9 +2073,10 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
             right_expr = expr_undefined(span_from_pos(&p));
         }
         hop_whitespace(&p);
-    } else if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) &&
-               hop_start_if_ends_on_word_break(&p, "of")
-    ) {
+    } else if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) && (
+        hop_start_if_ends_on_word_break(&p, "of") ||
+        (hop_start_if_ends_on_word_break(&p, "in") && (keyword_is_in = true)) // control flow is my passion
+    )) {
         is_for_of = true;
 
         hop_whitespace(&p);
@@ -2112,10 +2114,10 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         switch (statement.tag) {
             case STATEMENT_DECL_VARIABLE:
                 *ret = (Statement){
-                    .tag = STATEMENT_FOR_OF_LOOP,
-                    .for_of_loop = c_new(ForOfLoopStatement, {
+                    .tag = STATEMENT_FOR_EACH_LOOP,
+                    .for_each_loop = c_new(ForEachLoopStatement, {
                         .variable = {
-                            .tag = FOR_OF_VARIABLE_STATEMENT,
+                            .tag = FOR_EACH_LOOP_STATEMENT,
                             .statement = statement.decl.variable,
                         },
                         .iterable = right_expr,
@@ -2126,10 +2128,11 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
             case STATEMENT_EXPR:
                 *ret = (Statement){
-                    .tag = STATEMENT_FOR_OF_LOOP,
-                    .for_of_loop = c_new(ForOfLoopStatement, {
+                    .tag = STATEMENT_FOR_EACH_LOOP,
+                    .for_each_loop = c_new(ForEachLoopStatement, {
+                        .keyword = keyword_is_in ? FOR_EACH_LOOP_IN : FOR_EACH_LOOP_OF,
                         .variable = {
-                            .tag = FOR_OF_VARIABLE_EXPR,
+                            .tag = FOR_EACH_LOOP_EXPR,
                             .expr = statement.expr,
                         },
                         .iterable = right_expr,

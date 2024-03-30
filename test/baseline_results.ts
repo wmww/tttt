@@ -2406,8 +2406,8 @@ const baselines = {
         types: false,
     },
     'blockScopedBindingCaptureThisInFunction': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'blockScopedBindingUsedBeforeDef': {
@@ -2581,9 +2581,9 @@ const baselines = {
         types: false,
     },
     'breakInIterationOrSwitchStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'breakNotInIterationOrSwitchStatement1': {
         errors: false,
@@ -12706,7 +12706,7 @@ const baselines = {
         types: false,
     },
     'forIn2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -12716,39 +12716,39 @@ const baselines = {
         types: false,
     },
     'forInStatement1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'forInStatement2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'forInStatement3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'forInStatement4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'forInStatement5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'forInStatement6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'forInStatement7': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'forInStrictNullChecksNoError': {
         errors: false,
@@ -18316,7 +18316,7 @@ const baselines = {
         types: false,
     },
     'letDeclarations-es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18386,7 +18386,7 @@ const baselines = {
         types: false,
     },
     'letDeclarations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18431,12 +18431,12 @@ const baselines = {
         types: false,
     },
     'letInVarDeclOfForIn_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'letInVarDeclOfForIn_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37976,7 +37976,7 @@ const baselines = {
         types: false,
     },
     'for-of13': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38036,7 +38036,7 @@ const baselines = {
         types: false,
     },
     'for-of24': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50731,9 +50731,9 @@ const baselines = {
         types: false,
     },
     'parser_breakInIterationOrSwitchStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_breakNotInIterationOrSwitchStatement1': {
         errors: false,
@@ -50966,12 +50966,12 @@ const baselines = {
         types: false,
     },
     'parserES5ForOfStatement18': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserES5ForOfStatement19': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51038,7 +51038,7 @@ const baselines = {
     'parserForInStatement1.d': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForInStatement2': {
         errors: false,
@@ -51048,7 +51048,7 @@ const baselines = {
     'parserForInStatement3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForInStatement4': {
         errors: false,
@@ -51058,7 +51058,7 @@ const baselines = {
     'parserForInStatement5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForInStatement6': {
         errors: false,
@@ -51068,7 +51068,7 @@ const baselines = {
     'parserForInStatement7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForInStatement8': {
         errors: false,
@@ -51093,22 +51093,22 @@ const baselines = {
     'parserForStatement4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement8': {
         errors: false,
@@ -52026,12 +52026,12 @@ const baselines = {
         types: false,
     },
     'parserForOfStatement18': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserForOfStatement19': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53951,7 +53951,7 @@ const baselines = {
         types: false,
     },
     'for-inStatementsAsyncIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

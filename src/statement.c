@@ -103,6 +103,14 @@ void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* me,
     cstr_append_type_debug(target, &my type, indent);
 }
 
+czview for_each_loop_statement_keyword_str(ForEachLoopStatement* me) {
+    switch (my keyword) {
+        case FOR_EACH_LOOP_OF: return c_zv("of");
+        case FOR_EACH_LOOP_IN: return c_zv("in");
+    }
+    UNREACHABLE;
+}
+
 void statement_drop(Statement* me) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
@@ -124,14 +132,14 @@ void statement_drop(Statement* me) {
             free(my for_loop);
             break;
 
-        case STATEMENT_FOR_OF_LOOP:
-            switch (my for_of_loop->variable.tag) {
-                case FOR_OF_VARIABLE_STATEMENT: variable_statement_drop(&my for_of_loop->variable.statement); break;
-                case FOR_OF_VARIABLE_EXPR: expr_drop(&my for_of_loop->variable.expr); break;
+        case STATEMENT_FOR_EACH_LOOP:
+            switch (my for_each_loop->variable.tag) {
+                case FOR_EACH_LOOP_STATEMENT: variable_statement_drop(&my for_each_loop->variable.statement); break;
+                case FOR_EACH_LOOP_EXPR: expr_drop(&my for_each_loop->variable.expr); break;
             }
-            expr_drop(&my for_of_loop->iterable);
-            statement_drop(&my for_of_loop->body);
-            free(my for_of_loop);
+            expr_drop(&my for_each_loop->iterable);
+            statement_drop(&my for_each_loop->body);
+            free(my for_each_loop);
             break;
 
         case STATEMENT_BREAK: break; // nice
@@ -202,21 +210,23 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_statement_debug(target, &my for_loop->body, indent);
             break;
 
-        case STATEMENT_FOR_OF_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
             cstr_append_sv(target, c_sv("for ("));
-            switch (my for_of_loop->variable.tag) {
-                case FOR_OF_VARIABLE_STATEMENT:
-                    cstr_append_variable_statement_debug(target, &my for_of_loop->variable.statement, indent);
+            switch (my for_each_loop->variable.tag) {
+                case FOR_EACH_LOOP_STATEMENT:
+                    cstr_append_variable_statement_debug(target, &my for_each_loop->variable.statement, indent);
                     break;
 
-                case FOR_OF_VARIABLE_EXPR:
-                    cstr_append_expr_debug(target, &my for_of_loop->variable.expr, indent);
+                case FOR_EACH_LOOP_EXPR:
+                    cstr_append_expr_debug(target, &my for_each_loop->variable.expr, indent);
                     break;
             }
-            cstr_append_sv(target, c_sv(" of "));
-            cstr_append_expr_debug(target, &my for_of_loop->iterable, indent);
+            cstr_append_sv(target, c_sv(" "));
+            cstr_append_sv(target, czview_sv(for_each_loop_statement_keyword_str(my for_each_loop)));
+            cstr_append_sv(target, c_sv(" "));
+            cstr_append_expr_debug(target, &my for_each_loop->iterable, indent);
             cstr_append_sv(target, c_sv(") "));
-            cstr_append_statement_debug(target, &my for_of_loop->body, indent);
+            cstr_append_statement_debug(target, &my for_each_loop->body, indent);
             break;
 
         case STATEMENT_BREAK: cstr_append_sv(target, c_sv("break;")); break;
@@ -304,7 +314,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_BLOCK:
         case STATEMENT_IF_ELSE:
         case STATEMENT_FOR_LOOP:
-        case STATEMENT_FOR_OF_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
         case STATEMENT_BREAK:
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -338,20 +348,20 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             name_stack_pop_frame(names);
             break;
 
-        case STATEMENT_FOR_OF_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
             name_stack_push_frame(names, STACK_FRAME_BLOCK);
-            switch (my for_of_loop->variable.tag) {
-                case FOR_OF_VARIABLE_STATEMENT:
-                    variable_statement_add_names(&my for_of_loop->variable.statement, names, errs);
-                    variable_statement_resolve_names(&my for_of_loop->variable.statement, names, errs);
+            switch (my for_each_loop->variable.tag) {
+                case FOR_EACH_LOOP_STATEMENT:
+                    variable_statement_add_names(&my for_each_loop->variable.statement, names, errs);
+                    variable_statement_resolve_names(&my for_each_loop->variable.statement, names, errs);
                     break;
 
-                case FOR_OF_VARIABLE_EXPR:
-                    expr_resolve_names(&my for_of_loop->variable.expr, names, errs);
+                case FOR_EACH_LOOP_EXPR:
+                    expr_resolve_names(&my for_each_loop->variable.expr, names, errs);
                     break;
             }
-            expr_resolve_names(&my for_of_loop->iterable, names, errs);
-            statement_resolve_names(&my for_of_loop->body, names, errs);
+            expr_resolve_names(&my for_each_loop->iterable, names, errs);
+            statement_resolve_names(&my for_each_loop->body, names, errs);
             name_stack_pop_frame(names);
             break;
 
@@ -424,47 +434,75 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
         }
 
-        case STATEMENT_FOR_OF_LOOP: {
-            Type iterable_type = expr_get_type_and_typecheck(&my for_of_loop->iterable, errs);
+        case STATEMENT_FOR_EACH_LOOP: {
+            Type iterable_type = expr_get_type_and_typecheck(&my for_each_loop->iterable, errs);
             Type var_type = type_any;
 
-            switch (iterable_type.tag) {
-                case TYPE_ARRAY:
-                    var_type = *iterable_type.array;
-                    *iterable_type.array = type_any;
+            switch (my for_each_loop->keyword) {
+                case FOR_EACH_LOOP_IN:
+                    switch (iterable_type.tag) {
+                        case TYPE_ANY:
+                        case TYPE_INTERFACE:
+                        case TYPE_CALLABLE:
+                            // TODO: there def needs to be more nuance in this check
+                            var_type = type_string;
+                            break;
+
+                        case TYPE_ARRAY:
+                            var_type = type_number;
+                            break;
+
+                        default: {
+                            cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
+                            cstr_append_type_error_msg(&msg, &iterable_type);
+                            cstr_append_sv(&msg, c_sv("'."));
+                            error_ctx_error_s(errs, my for_each_loop->iterable.span, 2407, msg);
+                        }   break;
+                    }
                     break;
-                case TYPE_STRING: var_type = type_string; break;
-                default: {
-                    cstr msg = cstr_lit("Type '");
-                    cstr_append_type_error_msg(&msg, &iterable_type);
-                    cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
-                    error_ctx_error_s(errs, my for_of_loop->iterable.span, 2495, msg);
-                }   break;
+
+                case FOR_EACH_LOOP_OF:
+                    switch (iterable_type.tag) {
+                        case TYPE_ANY: break;
+                        case TYPE_ARRAY:
+                            var_type = *iterable_type.array;
+                            *iterable_type.array = type_any;
+                            break;
+                        case TYPE_STRING: var_type = type_string; break;
+                        default: {
+                            cstr msg = cstr_lit("Type '");
+                            cstr_append_type_error_msg(&msg, &iterable_type);
+                            cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
+                            error_ctx_error_s(errs, my for_each_loop->iterable.span, 2495, msg);
+                        }   break;
+                    }
+                    break;
             }
             type_drop(&iterable_type);
 
-            switch (my for_of_loop->variable.tag) {
-                case FOR_OF_VARIABLE_STATEMENT:
-                    if (vec_name_init_data_size(&my for_of_loop->variable.statement.vars) > 1) {
+            switch (my for_each_loop->variable.tag) {
+                case FOR_EACH_LOOP_STATEMENT:
+                    if (vec_name_init_data_size(&my for_each_loop->variable.statement.vars) > 1) {
                         error_ctx_error(
                             errs,
-                            vec_name_init_data_at(&my for_of_loop->variable.statement.vars, 1)->name_span,
-                            1188,
-                            "Only a single variable declaration is allowed in a 'for...of' statement."
+                            vec_name_init_data_at(&my for_each_loop->variable.statement.vars, 1)->name_span,
+                            my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
+                            "Only a single variable declaration is allowed in a 'for...%s' statement.",
+                            for_each_loop_statement_keyword_str(my for_each_loop).str
                         );
                     } else {
-                        ASSERT(vec_name_init_data_size(&my for_of_loop->variable.statement.vars) >= 1);
+                        ASSERT(vec_name_init_data_size(&my for_each_loop->variable.statement.vars) >= 1);
                     }
-                    c_foreach(i, vec_name_init_data, my for_of_loop->variable.statement.vars) {
+                    c_foreach(i, vec_name_init_data, my for_each_loop->variable.statement.vars) {
                         type_drop(&i.ref->type);
                         i.ref->type = type_clone(var_type);
                     }
-                    variable_statement_typecheck(&my for_of_loop->variable.statement, errs);
+                    variable_statement_typecheck(&my for_each_loop->variable.statement, errs);
                     break;
 
-                case FOR_OF_VARIABLE_EXPR: {
-                    Type existing_var_type = expr_get_type_and_typecheck(&my for_of_loop->variable.expr, errs);
-                    check_assignable_or_error(&var_type, &existing_var_type, my for_of_loop->variable.expr.span, errs);
+                case FOR_EACH_LOOP_EXPR: {
+                    Type existing_var_type = expr_get_type_and_typecheck(&my for_each_loop->variable.expr, errs);
+                    check_assignable_or_error(&var_type, &existing_var_type, my for_each_loop->variable.expr.span, errs);
                     type_drop(&existing_var_type);
                     break;
                 }
@@ -473,7 +511,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
             bool break_was_allowed = ctx->break_allowd;
             ctx->break_allowd = true;
-            statement_typecheck(&my for_of_loop->body, ctx, errs);
+            statement_typecheck(&my for_each_loop->body, ctx, errs);
             ctx->break_allowd = break_was_allowed;
         }   break;
 
