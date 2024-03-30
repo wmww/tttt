@@ -1424,7 +1424,7 @@ static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_dot_prop(Parser* parent, cstr* prop, Span* span) {
+static bool parse_dot_prop(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
 
     if (!hop_char(&p, '.')) {
@@ -1432,10 +1432,33 @@ static bool parse_dot_prop(Parser* parent, cstr* prop, Span* span) {
     }
     hop_whitespace(&p);
 
-    if (!parse_identifier(&p, prop, span)) {
-        error_ctx_parse_error(&p.errs, "expected property name");
-        *prop = cstr_lit("INVALID_PROPERTY");
-        *span = span_null;
+    cstr prop;
+    Span prop_span;
+    if (!parse_identifier(&p, &prop, &prop_span)) {
+        return parse_fail(&p);
+    }
+
+    *ret = expr_literal(prop_span, value_string(prop));
+    return parse_success(&p);
+}
+
+static bool parse_bracket_prop(Parser* parent, Expr* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_char(&p, '[')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!parse_expr(&p, ret)) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+        *ret = expr_undefined(span_from_pos(&p));
+        return parse_success(&p);
+    }
+
+    if (!hop_char(&p, ']')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+        return parse_success(&p);
     }
 
     return parse_success(&p);
@@ -1648,10 +1671,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
 
     union {
         VecExpr args;
-        struct {
-            cstr str;
-            Span span;
-        } prop;
+        Expr expr;
         Type type;
         UnaryOp unary;
         struct {
@@ -1673,13 +1693,25 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         return parse_success(&p);
     }
 
-    if (parse_dot_prop(&p, &parsed.prop.str, &parsed.prop.span)) {
-        *left_and_ret = expr_dot_prop(
+    if (parse_dot_prop(&p, &parsed.expr)) {
+        *left_and_ret = expr_property(
             span_end(a),
-            c_new(DotPropExpr, {
+            c_new(PropertyExpr, {
                 .expr = *left_and_ret,
-                .prop = parsed.prop.str,
-                .prop_span = parsed.prop.span,
+                .prop = parsed.expr,
+                .form = PROPERTY_EXPR_DOT,
+            })
+        );
+        return parse_success(&p);
+    }
+
+    if (parse_bracket_prop(&p, &parsed.expr)) {
+        *left_and_ret = expr_property(
+            span_end(a),
+            c_new(PropertyExpr, {
+                .expr = *left_and_ret,
+                .prop = parsed.expr,
+                .form = PROPERTY_EXPR_BRACKET,
             })
         );
         return parse_success(&p);

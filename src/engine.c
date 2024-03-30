@@ -78,8 +78,8 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
     switch (target->tag) {
         case EXPR_IDENTIFIER: return engine_assign_identifier(me, cstr_sv(&target->identifier.name), value);
 
-        case EXPR_DOT_PROP: {
-            TRY_THROW(target_value, engine_eval_expr(me, &target->dot_prop->expr));
+        case EXPR_PROPERTY: {
+            TRY_THROW(target_value, engine_eval_expr(me, &target->property->expr));
             switch (target_value.tag) {
                 case VALUE_UNDEFINED:
                 case VALUE_NULL:
@@ -189,8 +189,9 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
     return res;
 }
 
-static Result MUST_USE engine_eval_dot_prop(Engine* me, DotPropExpr const* prop_expr) {
+static Result MUST_USE engine_eval_property(Engine* me, PropertyExpr const* prop_expr) {
     TRY_THROW(value, engine_eval_expr(me, &prop_expr->expr));
+    TRY_THROW(property, engine_eval_expr(me, &prop_expr->prop));
     Result ret = {0};
     switch (value.tag) {
         case VALUE_UNDEFINED: ret = result_err(value_string(cstr_lit("TypeError: undefined has no properties"))); break;
@@ -202,21 +203,35 @@ static Result MUST_USE engine_eval_dot_prop(Engine* me, DotPropExpr const* prop_
         case VALUE_JS_FUNC:
         case VALUE_NATIVE_FUNC: ret.value = value_undefined; break;
 
-        case VALUE_OBJECT:
-            ret = js_object_get(value.object.get, cstr_sv(&prop_expr->prop));
+        case VALUE_OBJECT: {
+            cstr prop_str = cstr_null;
+            cstr_append_value_js(&prop_str, &property);
+            ret = js_object_get(value.object.get, cstr_sv(&prop_str));
             ret.tag = RESULT_OK; // undefined is fine if key is not found
-            break;
+            cstr_drop(&prop_str);
+        }   break;
 
-        case VALUE_ARRAY:
-            if (strcmp(cstr_str(&prop_expr->prop), "length") == 0) {
+        case VALUE_ARRAY: {
+            if (property.tag == VALUE_NUMBER) {
+                long index = property.number;
+                if (index == property.number && index >= 0 && index < vec_value_size(&value.array.get->vec)) {
+                    ret = result_ok(value_clone(*vec_value_at(&value.array.get->vec, index)));
+                    break;
+                }
+            }
+            cstr prop_str = cstr_null;
+            cstr_append_value_js(&prop_str, &property);
+            if (strcmp(cstr_str(&prop_str), "length") == 0) {
                 ret.value = value_number(vec_value_size(&value.array.get->vec));
             } else {
-                // TODO: support arbitrary properties on arrays
-                ret.value = value_undefined;
+                ret = js_object_get(&value.array.get->fallback, cstr_sv(&prop_str));
+                ret.tag = RESULT_OK; // undefined is fine if key is not found
             }
-            break;
+            cstr_drop(&prop_str);
+        }   break;
     }
     value_drop(&value);
+    value_drop(&property);
     return ret;
 }
 
@@ -323,7 +338,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_IDENTIFIER: return engine_eval_identifier(me, cstr_sv(&expr->identifier.name));
         case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);
         case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
-        case EXPR_DOT_PROP: return engine_eval_dot_prop(me, expr->dot_prop);
+        case EXPR_PROPERTY: return engine_eval_property(me, expr->property);
         case EXPR_AS_TYPE: return engine_eval_expr(me, &expr->as_type->expr);
         case EXPR_CALL: return engine_eval_call(me, expr->call);
         case EXPR_FUNCTION: return result_ok(value_js_func(&expr->function->args, &expr->function->body));

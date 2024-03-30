@@ -107,10 +107,10 @@ void expr_drop(Expr* me) {
             free(my unary_op);
             break;
 
-        case EXPR_DOT_PROP:
-            expr_drop(&my dot_prop->expr);
-            cstr_drop(&my dot_prop->prop);
-            free(my dot_prop);
+        case EXPR_PROPERTY:
+            expr_drop(&my property->expr);
+            expr_drop(&my property->prop);
+            free(my property);
             break;
 
         case EXPR_AS_TYPE:
@@ -191,10 +191,20 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             }
         }   break;
 
-        case EXPR_DOT_PROP: {
-            cstr_append_expr_debug(target, &my dot_prop->expr, indent);
-            cstr_append_sv(target, c_sv("."));
-            cstr_append_s(target, my dot_prop->prop);
+        case EXPR_PROPERTY: {
+            cstr_append_expr_debug(target, &my property->expr, indent);
+            switch (my property->form) {
+                case PROPERTY_EXPR_DOT:
+                    cstr_append_sv(target, c_sv("."));
+                    ASSERT(my property->prop.tag == EXPR_LITERAL && my property->prop.literal.tag == VALUE_STRING);
+                    cstr_append_s(target, my property->prop.literal.string);
+                    break;
+
+                case PROPERTY_EXPR_BRACKET:
+                    cstr_append_sv(target, c_sv("["));
+                    cstr_append_expr_debug(target, &my property->prop, indent);
+                    cstr_append_sv(target, c_sv("]"));
+            }
         }   break;
 
         case EXPR_AS_TYPE: {
@@ -291,9 +301,9 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             expr_resolve_names(&my unary_op->expr, names, errs);
             break;
 
-        case EXPR_DOT_PROP:
-            expr_resolve_names(&my dot_prop->expr, names, errs);
-            // TODO: resolve name of prop
+        case EXPR_PROPERTY:
+            expr_resolve_names(&my property->expr, names, errs);
+            expr_resolve_names(&my property->prop, names, errs);
             break;
 
         case EXPR_AS_TYPE:
@@ -426,7 +436,7 @@ static Type binary_op_get_type_and_typecheck(
                     }
                     break;
 
-                case EXPR_DOT_PROP:
+                case EXPR_PROPERTY:
                     // TODO
                     break;
 
@@ -561,10 +571,23 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
             return ret;
         }
 
-        case EXPR_DOT_PROP: {
-            // TODO: add typechecking
-            return type_any;
+        case EXPR_PROPERTY: {
+            Type value = expr_get_type_and_typecheck(&my property->expr, errs);
+            Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
+            Type ret = type_any;
+            if (value.tag == TYPE_ARRAY && type_extends(&prop, &type_number)) {
+                ret = *value.array;
+                *value.array = type_any;
+            } else if (type_extends(&value, &type_string) && type_extends(&prop, &type_number)) {
+                ret = type_string;
+            } else {
+                // TODO;
+            }
+            type_drop(&value);
+            type_drop(&prop);
+            return ret;
         }
+
 
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
@@ -658,7 +681,7 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            return type_clone(my class_decl->interface);
+            return type_clone(my class_decl->constructor_type);
     }
     UNREACHABLE;
 }

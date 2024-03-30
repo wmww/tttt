@@ -5,7 +5,7 @@
 
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
-typedef struct DotPropExpr DotPropExpr;
+typedef struct PropertyExpr PropertyExpr;
 typedef struct AsTypeExpr AsTypeExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
@@ -30,7 +30,7 @@ typedef struct Expr {
         EXPR_IDENTIFIER,
         EXPR_BINARY_OP,
         EXPR_UNARY_OP,
-        EXPR_DOT_PROP,
+        EXPR_PROPERTY,
         EXPR_AS_TYPE,
         EXPR_CALL,
         EXPR_FUNCTION,
@@ -46,7 +46,7 @@ typedef struct Expr {
         } identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
-        DotPropExpr* dot_prop;
+        PropertyExpr* property;
         AsTypeExpr* as_type;
         CallExpr* call;
         FunctionImpl* function;
@@ -73,8 +73,8 @@ static inline Expr expr_unary_op(Span span, UnaryOpExpr* op) {
     return (Expr){ .span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
 }
 
-static inline Expr expr_dot_prop(Span span, DotPropExpr* dot_prop) {
-    return (Expr){ .span = span, .tag = EXPR_DOT_PROP, .dot_prop = dot_prop };
+static inline Expr expr_property(Span span, PropertyExpr* property) {
+    return (Expr){ .span = span, .tag = EXPR_PROPERTY, .property = property };
 }
 
 static inline Expr expr_as_type(Span span, AsTypeExpr* as_type) {
@@ -207,13 +207,16 @@ typedef struct UnaryOpExpr {
     Expr expr;
 } UnaryOpExpr;
 
-// Dot property
+// Property
 
-typedef struct DotPropExpr {
+typedef struct PropertyExpr {
     Expr expr;
-    cstr prop;
-    Span prop_span;
-} DotPropExpr;
+    Expr prop;
+    enum {
+        PROPERTY_EXPR_DOT,
+        PROPERTY_EXPR_BRACKET,
+    } form;
+} PropertyExpr;
 
 // Call
 

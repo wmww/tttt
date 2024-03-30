@@ -285,7 +285,6 @@ bool type_extends(Type const* sub, Type const* super) {
             }
             return true;
 
-
         default: break;
     }
 

@@ -148,9 +148,14 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             expr_compile_test_info(&my unary_op->expr, ctx);
             break;
 
-        case EXPR_DOT_PROP:
-            expr_compile_test_info(&my dot_prop->expr, ctx);
-            baseline_test_case_add_type(ctx, my dot_prop->prop_span, &t);
+        case EXPR_PROPERTY:
+            expr_compile_test_info(&my property->expr, ctx);
+            if (my property->form != PROPERTY_EXPR_DOT) {
+                expr_compile_test_info(&my property->prop, ctx);
+            }
+            if (my property->form == PROPERTY_EXPR_DOT) {
+                baseline_test_case_add_type(ctx, my property->prop.span, &t);
+            }
             break;
 
         case EXPR_AS_TYPE:

@@ -1826,7 +1826,7 @@ const baselines = {
         types: false,
     },
     'assignmentToExpandingArrayType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1991,7 +1991,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypeBracketNamedPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7716,7 +7716,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLateBoundAssignments2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8488,7 +8488,7 @@ const baselines = {
     'decrementAndIncrementOperators': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deduplicateImportsInSystem': {
         errors: false,
@@ -8516,12 +8516,12 @@ const baselines = {
         types: false,
     },
     'deeplyDependentLargeArrayMutation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'deeplyDependentLargeArrayMutation2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8591,12 +8591,12 @@ const baselines = {
         types: false,
     },
     'defaultIndexProps1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'defaultIndexProps2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11466,7 +11466,7 @@ const baselines = {
         types: false,
     },
     'escapedReservedCompilerNamedIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11616,7 +11616,7 @@ const baselines = {
         types: false,
     },
     'expandoFunctionExpressionsWithDynamicNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14551,7 +14551,7 @@ const baselines = {
         types: false,
     },
     'globalThisCapture': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15421,7 +15421,7 @@ const baselines = {
         types: false,
     },
     'indexClassByNumber': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15886,7 +15886,7 @@ const baselines = {
         types: false,
     },
     'inferentialTypingWithFunctionType2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17891,7 +17891,7 @@ const baselines = {
         types: false,
     },
     'jsNegativeElementAccessNotBound': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18201,7 +18201,7 @@ const baselines = {
         types: false,
     },
     'keywordField': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23871,7 +23871,7 @@ const baselines = {
         types: false,
     },
     'protoInIndexer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26471,9 +26471,9 @@ const baselines = {
         types: false,
     },
     'stringHasStringValuedNumericIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringIncludes': {
         errors: true,
@@ -27001,7 +27001,7 @@ const baselines = {
         types: false,
     },
     'systemJsForInNoException': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28081,7 +28081,7 @@ const baselines = {
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41876,7 +41876,7 @@ const baselines = {
         types: false,
     },
     'assignmentLHSIsReference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42426,7 +42426,7 @@ const baselines = {
         types: false,
     },
     'letIdentifierInElementAccess01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47246,7 +47246,7 @@ const baselines = {
         types: false,
     },
     'typedefTagExtraneousProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48866,7 +48866,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecoveryArrayLiteralExpression2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50608,7 +50608,7 @@ const baselines = {
     'parserRegularExpressionDivideAmbiguity6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRegularExpressionDivideAmbiguity7': {
         errors: false,
@@ -51082,7 +51082,7 @@ const baselines = {
     },
     'parserForStatement2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserForStatement3': {
@@ -51506,7 +51506,7 @@ const baselines = {
         types: false,
     },
     'parserAdditiveExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52531,7 +52531,7 @@ const baselines = {
         types: false,
     },
     'jsObjectsMarkedAsOpenEnded': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52581,7 +52581,7 @@ const baselines = {
         types: false,
     },
     'lateBoundClassMemberAssignmentJS2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52601,7 +52601,7 @@ const baselines = {
         types: false,
     },
     'mixedPropertyElementAccessAssignmentDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52831,7 +52831,7 @@ const baselines = {
         types: false,
     },
     'propertyAssignmentOnParenthesizedNumber': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53131,12 +53131,12 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment38': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment39': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53281,7 +53281,7 @@ const baselines = {
         types: false,
     },
     'scannerAdditiveExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54356,7 +54356,7 @@ const baselines = {
         types: false,
     },
     'anyPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55711,7 +55711,7 @@ const baselines = {
         types: true,
     },
     'booleanPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55771,7 +55771,7 @@ const baselines = {
         types: false,
     },
     'numberPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55801,7 +55801,7 @@ const baselines = {
         types: false,
     },
     'stringPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
