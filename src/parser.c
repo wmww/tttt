@@ -1364,12 +1364,50 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
     *ret = (ClassDecl){
         .interface = type_any,
+        .extends = expr_implicit_any(span_null),
+        .implements = {0},
     };
     if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
         ret->name = cstr_null;
         ret->name_span = span_null;
     }
     hop_whitespace(&p);
+
+    if (hop_start_if_ends_on_word_break(&p, "extends")) {
+        hop_whitespace(&p);
+
+        if (!parse_expr(&p, &ret->extends)) {
+            ret->extends = expr_implicit_any(span_null);
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+        }
+        hop_whitespace(&p);
+
+        if (hop_char(&p, ',')) {
+            // TODO consume and give correct error when multiple classes are extended
+            error_ctx_error(&p.errs, span_from_previous_char(&p), 1009, "Trailing comma not allowed.");
+            hop_whitespace(&p);
+        }
+    }
+
+    if (hop_start_if_ends_on_word_break(&p, "implements")) {
+        hop_whitespace(&p);
+
+        while (true) {
+            Type t;
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+                vec_type_push(&ret->implements, t);
+
+                hop_whitespace(&p);
+                if (!hop_char(&p, ',')) {
+                    break;
+                }
+                hop_whitespace(&p);
+            } else {
+                error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+                break;
+            }
+        }
+    }
 
     if (!hop_char(&p, '{')) {
         error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");

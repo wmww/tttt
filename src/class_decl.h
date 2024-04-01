@@ -47,6 +47,8 @@ typedef struct ClassDecl {
     Span name_span;
     Span full_span;
     Type interface;
+    Expr extends;
+    VecType implements;
     Type constructor_type;
     VecClassItem items;
 } ClassDecl;

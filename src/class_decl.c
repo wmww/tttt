@@ -28,6 +28,8 @@ void class_item_drop(ClassItem* me) {
 void class_decl_drop(ClassDecl* me) {
     cstr_drop(&my name);
     type_drop(&my interface);
+    expr_drop(&my extends);
+    vec_type_drop(&my implements);
     type_drop(&my constructor_type);
     vec_class_item_drop(&my items);
 }
@@ -38,6 +40,18 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, my name);
         cstr_append_sv(target, c_sv(CLR0 " "));
+    }
+    if (my extends.tag != EXPR_IMPLICIT_ANY) {
+        cstr_append_sv(target, c_sv("extends "));
+        cstr_append_expr_debug(target, &my extends, indent);
+        cstr_append_sv(target, c_sv(" "));
+    }
+    if (!vec_type_empty(&my implements)) {
+        cstr_append_sv(target, c_sv("implements "));
+        c_foreach(i, vec_type, my implements) {
+            cstr_append_type_debug(target, i.ref, indent);
+            cstr_append_sv(target, i.ref == i.end - 1 ? c_sv(" ") : c_sv(", "));
+        }
     }
     cstr_append_sv(target, c_sv("{\n"));
     c_foreach(i, vec_class_item, my items) {
@@ -71,6 +85,11 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 }
 
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+    expr_resolve_names(&my extends, names, errs);
+    c_foreach(i, vec_type, my implements) {
+        type_resolve_names(i.ref, names, errs);
+    }
+
     name_stack_push_frame(names, STACK_FRAME_CLASS);
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
@@ -120,6 +139,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 break;
         }
     }
+
     name_stack_push_frame(names, STACK_FRAME_CLASS);
     name_stack_add_variable(names, cstr_lit("this"), span_null, &my interface);
     c_foreach(i, vec_class_item, my items) {
@@ -142,6 +162,11 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     Interface interface = {0};
+
+    if (my extends.tag != EXPR_IMPLICIT_ANY) {
+        Type extends_type = expr_get_type_and_typecheck(&my extends, errs);
+        type_drop(&extends_type);
+    }
 
     int constructor_count = 0;
     c_foreach(i, vec_class_item, my items) {
@@ -223,5 +248,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 );
             }
         }
+    }
+
+    c_foreach(i, vec_type, my implements) {
+        // TODO: check that we do, in fact, implement each type
     }
 }

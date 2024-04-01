@@ -111,6 +111,12 @@ void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_type(ctx, my name_span, &t);
         type_drop(&t);
     }
+    if (my extends.tag != EXPR_IMPLICIT_ANY) {
+        expr_compile_test_info(&my extends, ctx);
+    }
+    c_foreach(i, vec_type, my implements) {
+        type_compile_test_info(i.ref, ctx);
+    }
     c_foreach(i, vec_class_item, my items) {
         switch(i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR: function_impl_compile_test_info(&i.ref->constructor.func, ctx); break;
