@@ -591,6 +591,39 @@ static bool parse_callable_type(Parser* parent, Type* ret) {
     return parse_success(&p);
 }
 
+static bool parse_tuple(Parser* parent, VecType* ret) {
+    Parser p = parser(parent);
+    Type t;
+    *ret = vec_type_init();
+
+    if (!hop_char(&p, '[')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    while (*p.pos && *p.pos != ']') {
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+            vec_type_push(ret, t);
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+        }
+        hop_whitespace(&p);
+
+        if (*p.pos != ']' && !hop_char(&p, ',')) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+            return parse_success(&p);
+        }
+        hop_whitespace(&p);
+    }
+
+    if (!hop_char(&p, ']')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+    }
+
+    return parse_success(&p);
+
+}
+
 static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, Type* left_and_ret) {
     Parser p = parser(parent);
     Type type;
@@ -646,7 +679,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (hop_start_if_ends_on_word_break(&p, "never")) {
         *ret = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {
-        *ret = type_void;
+        *ret = type_void;;
     } else if (hop_start_if_ends_on_word_break(&p, "boolean")) {
         *ret = type_boolean;
     } else if (hop_start_if_ends_on_word_break(&p, "number")) {
@@ -657,6 +690,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         ret->tag = TYPE_VALUE;
     } else if (parse_identifier(&p, &name, &span)) {
         *ret = type_identifier(name, span);
+    } else if (parse_tuple(&p, &ret->tuple)){
+        ret->tag = TYPE_TUPLE;
     } else if (parse_callable_type(&p, ret)) {
         // Tag set to either callable or generic
     } else if (parse_interface(&p, &ret->interface)) {
@@ -2066,7 +2101,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    bool is_for_of = false;
+    bool is_for_each = false;
     Statement statement;
     Expr left_expr;
     Expr right_expr;
@@ -2114,7 +2149,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         hop_start_if_ends_on_word_break(&p, "of") ||
         (hop_start_if_ends_on_word_break(&p, "in") && (keyword_is_in = true)) // control flow is my passion
     )) {
-        is_for_of = true;
+        is_for_each = true;
 
         hop_whitespace(&p);
 
@@ -2149,38 +2184,28 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         body = statement_noop;
     }
 
-    if (is_for_of) {
+    if (is_for_each) {
+        *ret = (Statement){
+            .tag = STATEMENT_FOR_EACH_LOOP,
+            .for_each_loop = c_new(ForEachLoopStatement, {
+                .keyword = keyword_is_in ? FOR_EACH_LOOP_IN : FOR_EACH_LOOP_OF,
+                .iterable = right_expr,
+                .body = body,
+            })
+        };
+
         switch (statement.tag) {
             case STATEMENT_DECL_VARIABLE:
-                *ret = (Statement){
-                    .tag = STATEMENT_FOR_EACH_LOOP,
-                    .for_each_loop = c_new(ForEachLoopStatement, {
-                        .variable = {
-                            .tag = FOR_EACH_LOOP_STATEMENT,
-                            .statement = statement.decl.variable,
-                        },
-                        .iterable = right_expr,
-                        .body = body,
-                    })
-                };
+                ret->for_each_loop->variable.tag = FOR_EACH_LOOP_STATEMENT;
+                ret->for_each_loop->variable.statement = statement.decl.variable;
                 break;
 
             case STATEMENT_EXPR:
-                *ret = (Statement){
-                    .tag = STATEMENT_FOR_EACH_LOOP,
-                    .for_each_loop = c_new(ForEachLoopStatement, {
-                        .keyword = keyword_is_in ? FOR_EACH_LOOP_IN : FOR_EACH_LOOP_OF,
-                        .variable = {
-                            .tag = FOR_EACH_LOOP_EXPR,
-                            .expr = statement.expr,
-                        },
-                        .iterable = right_expr,
-                        .body = body,
-                    })
-                };
+                ret->for_each_loop->variable.tag = FOR_EACH_LOOP_EXPR;
+                ret->for_each_loop->variable.expr = statement.expr;
                 break;
 
-            default: PANIC("Invalid statement type for for-of loop");
+            default: PANIC("Invalid statement type for for-each loop");
         }
     } else {
         *ret = (Statement){

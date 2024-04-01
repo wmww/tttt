@@ -13,6 +13,7 @@ const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
+const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
 const Type type_boolean = { .tag = TYPE_BOOLEAN };
 const Type type_number = { .tag = TYPE_NUMBER };
 const Type type_string = { .tag = TYPE_STRING };
@@ -21,7 +22,35 @@ const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
-    if (a.tag == tag && b.tag == tag) {
+    if (a.tag == TYPE_NEVER || a.tag == TYPE_ANY || b.tag == TYPE_NEVER || b.tag == TYPE_ANY) {
+        typeof((Type){}.tag) override_tag = tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER;
+        typeof((Type){}.tag) ignore_tag = tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY;
+        if (a.tag == override_tag || b.tag == override_tag) {
+            type_drop(&a);
+            type_drop(&b);
+            return (Type){.tag = override_tag};
+        } else if (a.tag == ignore_tag) {
+            return b;
+        } else {
+            return a;
+        }
+    } else if (type_extends(&a, &b)) {
+        if (tag == TYPE_UNION) {
+            type_drop(&a);
+            return b;
+        } else {
+            type_drop(&b);
+            return a;
+        }
+    } else if (type_extends(&b, &a)) {
+        if (tag == TYPE_UNION) {
+            type_drop(&b);
+            return a;
+        } else {
+            type_drop(&a);
+            return b;
+        }
+    } else if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
         vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
         b.composite._len = 0; // fine, becuse the other vec now owns the data
@@ -80,6 +109,10 @@ void type_drop(Type* me) {
             free(my array);
             break;
 
+        case TYPE_TUPLE:
+            vec_type_drop(&my tuple);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             vec_type_drop(&my composite);
@@ -115,6 +148,16 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             cstr_append_type_debug(target, my array, indent);
             cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
             break;
+        case TYPE_TUPLE:
+            cstr_append_sv(target, c_sv("["));
+            c_foreach(i, vec_type, my tuple) {
+                cstr_append_type_debug(target, i.ref, indent);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, c_sv(", "));
+                }
+            }
+            cstr_append_sv(target, c_sv("]"));
+            break;
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
@@ -144,9 +187,27 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_GENERIC: cstr_append_generic_error_msg(target, my generic); break;
         case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, my callable); break;
         case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &my interface); break;
-        case TYPE_ARRAY:
+        case TYPE_ARRAY: {
+            bool needs_peren = my array->tag == TYPE_UNION || my array->tag == TYPE_INTERSECTION;
+            if (needs_peren) {
+                cstr_append_sv(target, c_sv("("));
+            }
             cstr_append_type_error_msg(target, my array);
+            if (needs_peren) {
+                cstr_append_sv(target, c_sv(")"));
+            }
             cstr_append_sv(target, c_sv("[]"));
+            break;
+        }
+        case TYPE_TUPLE:
+            cstr_append_sv(target, c_sv("["));
+            c_foreach(i, vec_type, my tuple) {
+                cstr_append_type_error_msg(target, i.ref);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, c_sv(", "));
+                }
+            }
+            cstr_append_sv(target, c_sv("]"));
             break;
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -181,6 +242,7 @@ Type type_clone(Type me) {
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
+        case TYPE_TUPLE: return type_tuple(vec_type_clone(me.tuple));
         case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
     }
@@ -208,10 +270,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
         case TYPE_IDENTIFIER: {
             int generic_depth;
             ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name), &generic_depth);
-            if (result) {
-                my identifier.type = arc_named_type_clone(*result);
-                my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
-            } else {
+            if (!result) {
                 error_ctx_error(
                     errs,
                     my identifier.span,
@@ -219,6 +278,11 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
                     "Cannot find name '%s'.",
                     cstr_str(&my identifier.name)
                 );
+                result = name_stack_get_type(names, c_sv("any"), &generic_depth);
+            }
+            if (result) {
+                my identifier.type = arc_named_type_clone(*result);
+                my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
             }
         }   break;
 
@@ -241,6 +305,12 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
         case TYPE_ARRAY:
             type_resolve_names(my array, names, errs);
+            break;
+
+        case TYPE_TUPLE:
+            c_foreach(i, vec_type, my tuple) {
+                type_resolve_names(i.ref, names, errs);
+            }
             break;
 
         case TYPE_UNION:
@@ -272,7 +342,7 @@ bool type_extends(Type const* sub, Type const* super) {
                 }
                 return type_extends(sub->identifier.type.get->type, super);
             }
-            return true;
+            return false;
 
         case TYPE_TERNARY: return type_extends(ternary_type_resolve(sub->ternary), super);
 
@@ -351,6 +421,17 @@ bool type_extends(Type const* sub, Type const* super) {
         case TYPE_ARRAY:
             return sub->tag == TYPE_ARRAY && type_extends(sub->array, super->array);
 
+        case TYPE_TUPLE:
+            if (sub->tag != TYPE_TUPLE || vec_type_size(&super->tuple) != vec_type_size(&sub->tuple)) {
+                return false;
+            }
+            for (intptr_t i = 0; i < vec_type_size(&super->tuple); i++) {
+                if (!type_extends(vec_type_at(&sub->tuple, i), vec_type_at(&super->tuple, i))) {
+                    return false;
+                }
+            }
+            return true;
+
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
                 if (type_extends(sub, i.ref)) {
@@ -374,6 +455,32 @@ bool type_extends(Type const* sub, Type const* super) {
         case TYPE_TERNARY: return type_extends(sub, ternary_type_resolve(super->ternary));
     }
     UNREACHABLE;
+}
+
+bool type_extends_array(Type const* sub) {
+    static Type array_any = {
+        .tag = TYPE_ARRAY,
+        .array = (Type*)&type_any,
+    };
+    return type_extends(sub, &array_any);
+}
+
+void type_abstract_tuple_to_array(Type* me) {
+    if (my tag == TYPE_TUPLE) {
+        type_abstract_literals(me);
+        Type ret = vec_type_empty(&my tuple) ? type_any : type_never;
+        c_foreach(i, vec_type, my tuple) {
+            if (i.ref->tag != TYPE_VALUE || i.ref->value.tag != VALUE_UNDEFINED) {
+                ret = type_composite(ret, *i.ref, TYPE_UNION);
+                *i.ref = type_any;
+            }
+        }
+        type_drop(me);
+        if (ret.tag == TYPE_NEVER) {
+            ret = type_undefined;
+        }
+        *me = type_array(c_new(Type, ret));
+    }
 }
 
 void type_abstract_literals(Type* me) {
@@ -439,6 +546,89 @@ void type_abstract_literals(Type* me) {
                     break;
             }
             break;
+
+        case TYPE_TUPLE: {
+            c_foreach(i, vec_type, my tuple) {
+                type_abstract_literals(i.ref);
+            }
+        }   break;
+    }
+}
+
+Type array_type_of(Type value) {
+    Type ret = type_any;
+    switch (value.tag) {
+        case TYPE_VALUE:
+            if (value.value.tag == VALUE_STRING) {
+                ret = type_string;
+            }
+            break;
+
+        case TYPE_STRING:
+            ret = type_string;
+            break;
+
+        case TYPE_ARRAY:
+            ret = *value.array;
+            *value.array = type_any;
+            break;
+
+        case TYPE_TUPLE:
+            ret = type_never;
+            c_foreach(i, vec_type, value.tuple) {
+                ret = type_composite(ret, *i.ref, TYPE_UNION);
+                *i.ref = type_any;
+            }
+            break;
+
+        default: break;
+    }
+    type_drop(&value);
+    return ret;
+}
+
+Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs) {
+    if (type_extends(&prop, &type_number)) {
+        Type ret = type_any;
+        if (value.tag == TYPE_TUPLE && prop.tag == TYPE_VALUE) {
+            if (value_is_int(&prop.value) &&
+                prop.value.number >= 0 &&
+                (long)prop.value.number < vec_type_size(&value.tuple)
+            ) {
+                ret = *vec_type_at(&value.tuple, (long)prop.value.number);
+                *vec_type_at_mut(&value.tuple, (long)prop.value.number) = type_any;
+            } else {
+                cstr msg = cstr_lit("Tuple type '");
+                cstr_append_type_error_msg(&msg, &value);
+                cstr_append_fmt(
+                    &msg,
+                    "' of length '%ld' has no element at index '",
+                    vec_type_size(&value.tuple)
+                );
+                cstr_append_value_error_msg(&msg, &prop.value);
+                cstr_append_sv(&msg, c_sv("'."));
+                error_ctx_error_s(errs, prop_span, 2493, msg);
+            }
+        } else {
+            ret = array_type_of(value);
+            value = type_any;
+        }
+        type_drop(&value);
+        type_drop(&prop);
+        return ret;
+    } else if (type_extends(&prop, &type_string)) {
+        // TODO
+        type_drop(&value);
+        type_drop(&prop);
+        return type_any;
+    } else {
+        // TODO: support number | string as index type
+        // TODO: refine type in error message, only report on possible subtypes that can't be used as index types
+        cstr msg = cstr_lit("Type '");
+        cstr_append_type_error_msg(&msg, &prop);
+        cstr_append_sv(&msg, c_sv("' cannot be used as an index type."));
+        error_ctx_error_s(errs, prop_span, 2538, msg);
+        return type_any;
     }
 }
 

@@ -52,6 +52,12 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             type_compile_test_info(my array, ctx);
             break;
 
+        case TYPE_TUPLE:
+            c_foreach(i, vec_type, my tuple) {
+                type_compile_test_info(i.ref, ctx);
+            }
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -117,6 +123,15 @@ void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     Type t = expr_get_type_and_typecheck(me, nullptr);
+    if (my tag == EXPR_ARRAY) {
+        if (vec_expr_empty(&my array)) {
+            type_drop(&t);
+            t = type_array(c_new(Type, type_undefined));
+        } else {
+            type_abstract_literals(&t);
+            type_abstract_tuple_to_array(&t);
+        }
+    }
     baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
 
     switch (my tag) {

@@ -71,6 +71,7 @@ NameStack* name_stack_new() {
     add_builtin_type(ret, c_sv("unknown"), &type_unknown);
     add_builtin_type(ret, c_sv("never"), &type_never);
     add_builtin_type(ret, c_sv("void"), &type_void);
+    add_builtin_type(ret, c_sv("object"), &type_object);
     add_builtin_type(ret, c_sv("boolean"), &type_boolean);
     add_builtin_type(ret, c_sv("number"), &type_number);
     add_builtin_type(ret, c_sv("string"), &type_string);

@@ -72,9 +72,10 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
             } else {
                 type_drop(&i.ref->type);
                 i.ref->type = type_clone(expr_type);
-                if (my keyword != VAR_INIT_CONST) {
+                if (my keyword != VAR_INIT_CONST || i.ref->type.tag == TYPE_TUPLE) {
                     type_abstract_literals(&i.ref->type);
                 }
+                type_abstract_tuple_to_array(&i.ref->type);
                 if (i.ref->type.tag == TYPE_ARRAY &&
                     i.ref->type.array->tag == TYPE_VALUE &&
                     i.ref->type.array->value.tag == VALUE_UNDEFINED
@@ -436,6 +437,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_FOR_EACH_LOOP: {
             Type iterable_type = expr_get_type_and_typecheck(&my for_each_loop->iterable, errs);
+            type_abstract_tuple_to_array(&iterable_type);
             Type var_type = type_any;
 
             switch (my for_each_loop->keyword) {
@@ -449,7 +451,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             break;
 
                         case TYPE_ARRAY:
-                            var_type = type_number;
+                        case TYPE_TUPLE:
+                            var_type = type_any;
                             break;
 
                         default: {
@@ -457,24 +460,20 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             cstr_append_type_error_msg(&msg, &iterable_type);
                             cstr_append_sv(&msg, c_sv("'."));
                             error_ctx_error_s(errs, my for_each_loop->iterable.span, 2407, msg);
+                            var_type = type_string;
                         }   break;
                     }
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    switch (iterable_type.tag) {
-                        case TYPE_ANY: break;
-                        case TYPE_ARRAY:
-                            var_type = *iterable_type.array;
-                            *iterable_type.array = type_any;
-                            break;
-                        case TYPE_STRING: var_type = type_string; break;
-                        default: {
-                            cstr msg = cstr_lit("Type '");
-                            cstr_append_type_error_msg(&msg, &iterable_type);
-                            cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
-                            error_ctx_error_s(errs, my for_each_loop->iterable.span, 2495, msg);
-                        }   break;
+                    if (type_extends_array(&iterable_type) || type_extends(&iterable_type, &type_string)) {
+                        var_type = array_type_of(iterable_type);
+                        iterable_type = type_any;
+                    } else {
+                        cstr msg = cstr_lit("Type '");
+                        cstr_append_type_error_msg(&msg, &iterable_type);
+                        cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
+                        error_ctx_error_s(errs, my for_each_loop->iterable.span, 2495, msg);
                     }
                     break;
             }
@@ -495,7 +494,12 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     }
                     c_foreach(i, vec_name_init_data, my for_each_loop->variable.statement.vars) {
                         type_drop(&i.ref->type);
-                        i.ref->type = type_clone(var_type);
+                        if (i.ref == i.end - 1) {
+                            i.ref->type = var_type;
+                            var_type = type_any;
+                        } else {
+                            i.ref->type = type_clone(var_type);
+                        }
                     }
                     variable_statement_typecheck(&my for_each_loop->variable.statement, errs);
                     break;

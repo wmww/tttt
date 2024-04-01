@@ -574,18 +574,7 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
         case EXPR_PROPERTY: {
             Type value = expr_get_type_and_typecheck(&my property->expr, errs);
             Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
-            Type ret = type_any;
-            if (value.tag == TYPE_ARRAY && type_extends(&prop, &type_number)) {
-                ret = *value.array;
-                *value.array = type_any;
-            } else if (type_extends(&value, &type_string) && type_extends(&prop, &type_number)) {
-                ret = type_string;
-            } else {
-                // TODO;
-            }
-            type_drop(&value);
-            type_drop(&prop);
-            return ret;
+            return property_type_of(value, prop, my property->prop.span, errs);
         }
 
 
@@ -658,25 +647,12 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
         }
 
         case EXPR_ARRAY: {
-            Type array_type = type_value(value_undefined);
+            Type tuple_type = type_tuple(vec_type_init());
             c_foreach(i, vec_expr, my array) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
-                if (array_type.tag == TYPE_VALUE && array_type.value.tag == VALUE_UNDEFINED) {
-                    type_abstract_literals(&t);
-                    type_drop(&array_type);
-                    array_type = t;
-                } else if (
-                    (t.tag == TYPE_VALUE && t.value.tag == VALUE_UNDEFINED) ||
-                    type_extends(&t, &array_type)
-                ) {
-                    type_drop(&t);
-                } else {
-                    type_drop(&t);
-                    type_drop(&array_type);
-                    array_type = type_any;
-                }
+                vec_type_push(&tuple_type.tuple, t);
             }
-            return type_array(c_new(Type, array_type));
+            return tuple_type;
         }
 
         case EXPR_CLASS_DECL:

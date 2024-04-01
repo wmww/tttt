@@ -212,6 +212,12 @@ static void collect_generic_candidates(
             );
             return;
 
+        case TYPE_TUPLE:
+            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with tuple not yet implemented"
+            );
+            return;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
@@ -290,6 +296,12 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
 
         case TYPE_ARRAY:
             swap_generics_for_specific_types(my array, ctx);
+            return;
+
+        case TYPE_TUPLE:
+            c_foreach(i, vec_type, my tuple) {
+                swap_generics_for_specific_types(i.ref, ctx);
+            }
             return;
 
         case TYPE_UNION:

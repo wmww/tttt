@@ -12708,7 +12708,7 @@ const baselines = {
     'forIn2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forInModule': {
         errors: false,
@@ -12723,7 +12723,7 @@ const baselines = {
     'forInStatement2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forInStatement3': {
         errors: false,
@@ -14363,7 +14363,7 @@ const baselines = {
     'genericWithNoConstraintComparableWithCurlyCurly': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'genericWithOpenTypeParameters1': {
         errors: false,
@@ -15528,7 +15528,7 @@ const baselines = {
     'indexWithoutParamType': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'indexWithoutParamType2': {
         errors: false,
@@ -27443,7 +27443,7 @@ const baselines = {
     'thisExpressionInIndexExpression': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisExpressionOfGenericObject': {
         errors: false,
@@ -38101,7 +38101,7 @@ const baselines = {
         types: false,
     },
     'for-of36': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38241,7 +38241,7 @@ const baselines = {
         types: false,
     },
     'for-of9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42428,7 +42428,7 @@ const baselines = {
     'letIdentifierInElementAccess01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringEnumInElementAccess01': {
         errors: false,
@@ -51088,7 +51088,7 @@ const baselines = {
     'parserForStatement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement4': {
         errors: false,
@@ -51361,32 +51361,32 @@ const baselines = {
         types: false,
     },
     'TupleType1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TupleType2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TupleType3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TupleType4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TupleType5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TupleType6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51586,9 +51586,9 @@ const baselines = {
         types: false,
     },
     'parserObjectCreationArrayLiteral2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserObjectCreationArrayLiteral3': {
         errors: false,
@@ -51596,9 +51596,9 @@ const baselines = {
         types: false,
     },
     'parserObjectCreationArrayLiteral4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserOptionalTypeMembers1': {
         errors: false,
@@ -52603,7 +52603,7 @@ const baselines = {
     'mixedPropertyElementAccessAssignmentDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportAlias': {
         errors: false,
@@ -54028,47 +54028,47 @@ const baselines = {
     'ES5For-of14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of17': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of19': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of20': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of21': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of22': {
         errors: true,
@@ -54153,17 +54153,17 @@ const baselines = {
     'ES5For-of4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ES5For-of5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-of7': {
         errors: false,
@@ -54181,7 +54181,7 @@ const baselines = {
         types: false,
     },
     'ES5For-ofTypeCheck1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54216,7 +54216,7 @@ const baselines = {
         types: false,
     },
     'ES5For-ofTypeCheck3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54358,7 +54358,7 @@ const baselines = {
     'anyPropertyAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignAnyToEveryType': {
         errors: false,
@@ -55383,12 +55383,12 @@ const baselines = {
     'nonPrimitiveIndexingWithForInNoImplicitAny': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nonPrimitiveIndexingWithForInSupressError': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nonPrimitiveNarrow': {
         errors: false,

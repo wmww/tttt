@@ -29,6 +29,7 @@ typedef struct Type {
         TYPE_CALLABLE,
         TYPE_INTERFACE,
         TYPE_ARRAY,
+        TYPE_TUPLE,
         TYPE_UNION,
         TYPE_INTERSECTION,
         TYPE_TERNARY,
@@ -48,6 +49,7 @@ typedef struct Type {
         CallableType* callable;
         Interface interface;
         Type* array;
+        VecType tuple;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         TernaryType* ternary;
     };
@@ -57,6 +59,7 @@ extern const Type type_any;
 extern const Type type_unknown;
 extern const Type type_never;
 extern const Type type_void;
+extern const Type type_object;
 extern const Type type_boolean;
 extern const Type type_number;
 extern const Type type_string;
@@ -117,6 +120,13 @@ static inline Type type_array(Type* member) {
     };
 }
 
+static inline Type type_tuple(VecType members) {
+    return (Type){
+        .tag = TYPE_TUPLE,
+        .tuple = members,
+    };
+}
+
 static inline Type type_ternary(TernaryType* ternary) {
     return (Type){
         .tag = TYPE_TERNARY,
@@ -134,8 +144,12 @@ Type type_move(Type* me);
 
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs);
 bool type_extends(Type const* sub, Type const* super);
+bool type_extends_array(Type const* sub);
+void type_abstract_tuple_to_array(Type* me); // [number | string] -> (number | string)[]
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 
+Type array_type_of(Type value);
+Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs);
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
 
 #define i_key_class_names Type, type
