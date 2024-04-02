@@ -2977,8 +2977,8 @@ const baselines = {
     },
     'catchClauseWithInitializer1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'cf': {
         errors: false,
@@ -8636,9 +8636,9 @@ const baselines = {
         types: false,
     },
     'defaultOfAnyInStrictNullChecks': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'defaultParameterAddsUndefinedWithStrictNullChecks': {
         errors: false,
@@ -18601,9 +18601,9 @@ const baselines = {
         types: false,
     },
     'localVariablesReturnedFromCatchBlocks': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'logicalNotExpression1': {
         errors: true,
@@ -20951,7 +20951,7 @@ const baselines = {
         types: false,
     },
     'noCatchBlock': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24067,7 +24067,7 @@ const baselines = {
     },
     'reachabilityChecks8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reactImportDropped': {
@@ -25531,7 +25531,7 @@ const baselines = {
         types: true,
     },
     'sourceMap-SkippedNode': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27772,8 +27772,8 @@ const baselines = {
     },
     'tryCatchFinally': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'tryCatchFinallyControlFlow': {
         errors: false,
@@ -29232,7 +29232,7 @@ const baselines = {
     },
     'unreachableFlowAfterFinally': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unreachableJavascriptChecked': {
@@ -29671,7 +29671,7 @@ const baselines = {
         types: false,
     },
     'unusedParameterInCatchClause': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35103,7 +35103,7 @@ const baselines = {
     'emitter.noCatchBinding.es2019': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitter.asyncGenerators.classMethods.es5': {
         errors: false,
@@ -49178,7 +49178,7 @@ const baselines = {
     'parserFuzz1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMissingLambdaOpenBrace1': {
         errors: false,
@@ -51152,8 +51152,8 @@ const baselines = {
     },
     'parserTryStatement1.d': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserVariableStatement1.d': {
         errors: false,
@@ -51207,8 +51207,8 @@ const baselines = {
     },
     'parserStrictMode13': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserStrictMode14': {
         errors: false,
@@ -54332,8 +54332,8 @@ const baselines = {
     },
     'tryStatements': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'withStatements': {
         errors: false,
@@ -57392,7 +57392,7 @@ const baselines = {
     },
     'functionWithMultipleReturnStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionWithMultipleReturnStatements2': {

@@ -8,6 +8,7 @@
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
 typedef struct ForLoopStatement ForLoopStatement;
+typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
@@ -36,6 +37,7 @@ typedef struct VariableStatement {
         VAR_INIT_VAR,
         VAR_INIT_LET,
         VAR_INIT_CONST,
+        VAR_INIT_CATCH, // Used only for the catch expression in try/catch blocks
     } keyword;
     VecNameInitData vars;
 } VariableStatement;
@@ -80,6 +82,7 @@ typedef struct Statement {
         STATEMENT_IF_ELSE,
         STATEMENT_FOR_LOOP,
         STATEMENT_FOR_EACH_LOOP,
+        STATEMENT_TRY_CATCH,
         STATEMENT_BREAK,
         STATEMENT_EXPR,
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
@@ -95,6 +98,7 @@ typedef struct Statement {
         IfStatement if_else;
         ForLoopStatement* for_loop;
         ForEachLoopStatement* for_each_loop;
+        TryCatchStatement* try_catch;
         Span break_span;
         struct {
             DeclExported exported;
@@ -158,6 +162,15 @@ typedef struct ForEachLoopStatement {
     Expr iterable;
     Statement body;
 } ForEachLoopStatement;
+
+// Try-catch-finally statements
+
+typedef struct TryCatchStatement {
+    Block try_block;
+    VariableStatement catch_var;
+    Block catch_block;
+    Block finally_block;
+} TryCatchStatement;
 
 // Statement context
 

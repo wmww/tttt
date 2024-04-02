@@ -32,6 +32,7 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
         case VAR_INIT_VAR: cstr_append_sv(target, c_sv("var ")); break;
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
         case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
+        case VAR_INIT_CATCH: break;
     }
     c_foreach(i, vec_name_init_data, my vars) {
         cstr_append_name_init_data_debug(target, i.ref, indent);
@@ -39,7 +40,6 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
             cstr_append_sv(target, c_sv(", "));
         }
     }
-    cstr_append_sv(target, c_sv(";"));
 }
 
 void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
@@ -143,7 +143,15 @@ void statement_drop(Statement* me) {
             free(my for_each_loop);
             break;
 
-        case STATEMENT_BREAK: break; // nice
+        case STATEMENT_TRY_CATCH:
+            block_drop(&my try_catch->try_block);
+            variable_statement_drop(&my try_catch->catch_var);
+            block_drop(&my try_catch->catch_block);
+            block_drop(&my try_catch->finally_block);
+            free(my try_catch);
+            break;
+
+        case STATEMENT_BREAK: break;
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -230,6 +238,26 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_statement_debug(target, &my for_each_loop->body, indent);
             break;
 
+        case STATEMENT_TRY_CATCH:
+            cstr_append_sv(target, c_sv("try "));
+            cstr_append_block_debug(target, &my try_catch->try_block, indent);
+            if (!vec_name_init_data_empty(&my try_catch->catch_var.vars) ||
+                !vec_statement_empty(&my try_catch->catch_block.statements)
+            ) {
+                cstr_append_sv(target, c_sv(" catch "));
+                if (!vec_name_init_data_empty(&my try_catch->catch_var.vars)) {
+                    cstr_append_sv(target, c_sv("("));
+                    cstr_append_variable_statement_debug(target, &my try_catch->catch_var, indent);
+                    cstr_append_sv(target, c_sv(") "));
+                }
+                cstr_append_block_debug(target, &my try_catch->catch_block, indent);
+            }
+            if (!vec_statement_empty(&my try_catch->finally_block.statements)) {
+                cstr_append_sv(target, c_sv(" finally "));
+                cstr_append_block_debug(target, &my try_catch->finally_block, indent);
+            }
+            break;
+
         case STATEMENT_BREAK: cstr_append_sv(target, c_sv("break;")); break;
 
         case STATEMENT_EXPR:
@@ -244,7 +272,10 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_sv(target, c_sv(";"));
             break;
 
-        case STATEMENT_DECL_VARIABLE: cstr_append_variable_statement_debug(target, &my decl.variable, indent); break;
+        case STATEMENT_DECL_VARIABLE:
+            cstr_append_variable_statement_debug(target, &my decl.variable, indent);
+            cstr_append_sv(target, c_sv(";"));
+            break;
 
         case STATEMENT_DECL_FUNCTION:
             cstr_append_sv(target, c_sv("function " CLR_NAME));
@@ -316,6 +347,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_IF_ELSE:
         case STATEMENT_FOR_LOOP:
         case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_TRY_CATCH:
         case STATEMENT_BREAK:
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -364,6 +396,18 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             expr_resolve_names(&my for_each_loop->iterable, names, errs);
             statement_resolve_names(&my for_each_loop->body, names, errs);
             name_stack_pop_frame(names);
+            break;
+
+        case STATEMENT_TRY_CATCH:
+            block_resolve_names(&my try_catch->try_block, names, errs);
+
+            name_stack_push_frame(names, STACK_FRAME_BLOCK);
+            variable_statement_add_names(&my try_catch->catch_var, names, errs);
+            variable_statement_resolve_names(&my try_catch->catch_var, names, errs);
+            block_resolve_names(&my try_catch->catch_block, names, errs);
+            name_stack_pop_frame(names);
+
+            block_resolve_names(&my try_catch->finally_block, names, errs);
             break;
 
         case STATEMENT_EXPR:
@@ -518,6 +562,13 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             statement_typecheck(&my for_each_loop->body, ctx, errs);
             ctx->break_allowd = break_was_allowed;
         }   break;
+
+        case STATEMENT_TRY_CATCH:
+            block_typecheck(&my try_catch->try_block, ctx, errs);
+            // No need to typecheck catch variable
+            block_typecheck(&my try_catch->catch_block, ctx, errs);
+            block_typecheck(&my try_catch->finally_block, ctx, errs);
+            break;
 
         case STATEMENT_BREAK:
             if (!ctx->break_allowd) {

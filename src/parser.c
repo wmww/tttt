@@ -2009,23 +2009,12 @@ static bool parse_name_init(Parser* parent, NameInitData* ret) {
     return parse_success(&p);
 }
 
-static bool parse_var_init(Parser* parent, VariableStatement* ret) {
+static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
     Parser p = parser(parent);
-
-    typeof(ret->keyword) keyword;
-    if (hop_start_and_required_whitespace(&p, "var")) {
-        keyword = VAR_INIT_VAR;
-    } else if (hop_start_and_required_whitespace(&p, "let")) {
-        keyword = VAR_INIT_LET;
-    } else if (hop_start_and_required_whitespace(&p, "const")) {
-        keyword = VAR_INIT_CONST;
-    } else {
-        return parse_fail(&p);
-    }
+    *ret = vec_name_init_data_init();
 
     Span comma_span = span_null;
     NameInitData data;
-    VecNameInitData vars = vec_name_init_data_init();
     while (true) {
         Parser sub = parser(&p);
         if (!parse_name_init(&sub, &data)) {
@@ -2041,7 +2030,7 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
             break;
         }
         parse_success(&sub);
-        vec_name_init_data_push(&vars, data);
+        vec_name_init_data_push(ret, data);
         const char* end_of_name_init = p.pos;
         hop_whitespace(&p);
 
@@ -2053,10 +2042,26 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
         hop_whitespace(&p);
     }
 
-    *ret = (VariableStatement) {
-        .keyword = keyword,
-        .vars = vars,
-    };
+    return parse_success(&p);
+}
+
+static bool parse_var_init(Parser* parent, VariableStatement* ret) {
+    Parser p = parser(parent);
+
+    if (hop_start_and_required_whitespace(&p, "var")) {
+        ret->keyword = VAR_INIT_VAR;
+    } else if (hop_start_and_required_whitespace(&p, "let")) {
+        ret->keyword = VAR_INIT_LET;
+    } else if (hop_start_and_required_whitespace(&p, "const")) {
+        ret->keyword = VAR_INIT_CONST;
+    } else {
+        return parse_fail(&p);
+    }
+
+    if (!parse_name_init_list(&p, &ret->vars)) {
+        return parse_fail(&p);
+    }
+
     return parse_success(&p);
 }
 
@@ -2303,6 +2308,74 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     return parse_success(&p);
 }
 
+static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_start_if_ends_on_word_break(&p, "try")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    TryCatchStatement try_catch = {
+        .catch_var.keyword = VAR_INIT_CATCH,
+    };
+    bool has_catch = false;
+    bool has_finally = false;
+
+    if (!parse_block(&p, false, &try_catch.try_block)) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        try_catch.try_block = (Block){0};
+    }
+    hop_whitespace(&p);
+
+    if (hop_start_if_ends_on_word_break(&p, "catch")) {
+        has_catch = true;
+        hop_whitespace(&p);
+        if (hop_char(&p, '(')) {
+            hop_whitespace(&p);
+
+            if (!parse_name_init_list(&p, &try_catch.catch_var.vars)) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+                try_catch.catch_var.vars = vec_name_init_data_init();
+            }
+            hop_whitespace(&p);
+
+            if (!hop_char(&p, ')')) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
+            }
+            hop_whitespace(&p);
+        }
+        if (!parse_block(&p, false, &try_catch.catch_block)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+            try_catch.catch_block = (Block){0};
+        }
+        hop_whitespace(&p);
+    } else {
+        try_catch.catch_block = (Block){0};
+    }
+
+    if (hop_start_if_ends_on_word_break(&p, "finally")) {
+        has_finally = true;
+        hop_whitespace(&p);
+        if (!parse_block(&p, false, &try_catch.finally_block)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+            try_catch.finally_block = (Block){0};
+        }
+    } else {
+        try_catch.finally_block = (Block){0};
+    }
+
+    if (!has_catch && !has_finally) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
+    }
+
+    *ret = (Statement){
+        .tag = STATEMENT_TRY_CATCH,
+        .try_catch = c_new(TryCatchStatement, try_catch),
+    };
+    return parse_success(&p);
+}
+
 static bool parse_return(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
@@ -2407,6 +2480,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_IF_ELSE;
     } else if (parse_for_loop_statement(&p, ret)) {
     } else if (parse_while_loop_statement(&p, ret)) {
+    } else if (parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
         ret->break_span = span_end(a);

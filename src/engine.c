@@ -411,6 +411,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             NONFATAL("Running for-each loops not yet implemented");
             return result_ok_undefined;
 
+        case STATEMENT_TRY_CATCH:
+            NONFATAL("Running try-catch blocks not yet implemented");
+            return result_ok_undefined;
+
         case STATEMENT_BREAK: return result_break();
 
         case STATEMENT_EXPR:

@@ -269,6 +269,15 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             statement_compile_test_info(&my for_each_loop->body, ctx);
             break;
 
+        case STATEMENT_TRY_CATCH:
+            block_compile_test_info(&my try_catch->try_block, ctx);
+            if (!vec_name_init_data_empty(&my try_catch->catch_var.vars)) {
+                name_init_compile_test_info(my try_catch->catch_var.vars.data, ctx);
+            }
+            block_compile_test_info(&my try_catch->catch_block, ctx);
+            block_compile_test_info(&my try_catch->finally_block, ctx);
+            break;
+
         case STATEMENT_BREAK: break;
 
         case STATEMENT_DECL_VARIABLE:
