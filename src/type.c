@@ -628,6 +628,8 @@ Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs) {
         cstr_append_type_error_msg(&msg, &prop);
         cstr_append_sv(&msg, c_sv("' cannot be used as an index type."));
         error_ctx_error_s(errs, prop_span, 2538, msg);
+        type_drop(&value);
+        type_drop(&prop);
         return type_any;
     }
 }
