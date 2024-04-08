@@ -555,10 +555,12 @@ static bool parse_callable_type_arg(Parser* parent, void* data) {
 static bool parse_callable_type(Parser* parent, Type* ret) {
     Parser p = parser(parent);
     VecGenericItem generics;
+    bool parsed_generics = false;
     CallableType callable = {0};
 
     if (parse_generic_decl_list(&p, &generics)) {
         hop_whitespace(&p);
+        parsed_generics = true;
     } else {
         generics = (VecGenericItem){0};
     }
@@ -582,7 +584,7 @@ static bool parse_callable_type(Parser* parent, Type* ret) {
     }
 
     *ret = type_callable(c_new(CallableType, callable));
-    if (!vec_generic_item_empty(&generics)) {
+    if (parsed_generics) {
         *ret = type_generic(c_new(Generic, {
             .items = generics,
             .inner = *ret,
@@ -694,6 +696,16 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         ret->tag = TYPE_TUPLE;
     } else if (parse_callable_type(&p, ret)) {
         // Tag set to either callable or generic
+    } else if (hop_char(&p, '(')) {
+        hop_whitespace(&p);
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+            *ret = type_any;
+        }
+        hop_whitespace(&p);
+        if (!hop_char(&p, ')')) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
+        }
     } else if (parse_interface(&p, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
     } else {
@@ -786,125 +798,155 @@ static bool parse_named_interface(Parser* parent, InterfaceStatement* ret) {
 
 static bool parse_function_args(
     Parser* parent,
-    VecFunctionArg* args_ret,
-    CallableType* callable_ret
+    VecFunctionArg* args_ret, // Null if parsing type
+    Span* args_span,
+    Type* type_ret
 ) {
     Parser p = parser(parent);
     bool is_definitely_function = false;
-
-    if (!hop_char(&p, '(')) {
-        return parse_fail(&p);
-    }
-    hop_whitespace(&p);
-
-    *args_ret = vec_function_arg_init();
-    *callable_ret = (CallableType){0};
-
-    while (*p.pos && *p.pos != ')') {
-        if (hop_char(&p, ',')) {
-            error_ctx_error(&p.errs, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
-        } else {
-            NameInitData name_init = {0};
-            const char* before_param = p.pos;
-
-            if (!parse_name_init(&p, &name_init)) {
-                vec_function_arg_drop(args_ret);
-                callable_type_drop(callable_ret);
-                return parse_fail(&p);
-            }
-
-            if (vec_function_arg_empty(args_ret) && name_init.type_explicit) {
-                is_definitely_function = true;
-            }
-
-            vec_function_arg_push(args_ret, (FunctionArg){
-                .name = cstr_clone(name_init.name),
-                .name_span = name_init.name_span,
-                .value_explicit = name_init.value_explicit,
-                .value = name_init.value,
-            });
-
-            vec_callable_type_arg_push(&callable_ret->args, (CallableTypeArg){
-                .name = name_init.name,
-                .type_explicit = name_init.type_explicit,
-                .type = name_init.type,
-            });
-
-            if (p.pos == before_param) {
-                if (is_definitely_function) {
-                    // parse_name_init already added error
-                    hop_token(&p);
-                } else {
-                    vec_function_arg_drop(args_ret);
-                    callable_type_drop(callable_ret);
-                    return parse_fail(&p);
-                }
-            } else {
-                hop_whitespace(&p);
-
-                if (*p.pos != ')' && !hop_char(&p, ',')) {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-                }
-            }
-        }
-
-        hop_whitespace(&p);
-    }
-
-    if (!hop_char(&p, ')')) {
-        vec_function_arg_drop(args_ret);
-        callable_type_drop(callable_ret);
-        *args_ret = vec_function_arg_init();
-        *callable_ret = (CallableType){0};
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
-        return parse_success(&p);
-    }
-
-    Parser type_p = parser(&p);
-    hop_whitespace(&type_p);
-    if (hop_start(&type_p, ":")) {
-        hop_whitespace(&type_p);
-        if (parse_type(&type_p, TYPE_PRECEDENCE_NULL, &callable_ret->ret)) {
-            callable_ret->ret_explicit = true;
-        } else {
-            Span span = hop_token_get_span(&type_p);
-            error_ctx_error(&p.errs, span, 1110, "Type expected.");
-        }
-        parse_success(&type_p);
-    }
-
-    return parse_success(&p);
-}
-
-static bool parse_function_generics_args_and_return_type(Parser* parent, FunctionImpl* ret) {
-    Parser p = parser(parent);
     VecGenericItem generics;
-    CallableType callable;
-    *ret = (FunctionImpl){0};
+    CallableType callable_type = {0};
 
     if (parse_generic_decl_list(&p, &generics)) {
         hop_whitespace(&p);
+        is_definitely_function = true;
     } else {
         generics = (VecGenericItem){0};
     }
 
-    Anchor args_a = span_start(&p);
+    if (args_ret) {
+        *args_ret = vec_function_arg_init();
+    }
+    *type_ret = type_any;
 
-    if (!parse_function_args(&p, &ret->args, &callable)) {
-        vec_generic_item_drop(&generics);
-        return parse_fail(&p);
+    Anchor args_start = span_start(&p);
+
+    if (hop_char(&p, '(')) {
+        hop_whitespace(&p);
+
+        while (*p.pos && *p.pos != ')') {
+            if (hop_char(&p, ',')) {
+                error_ctx_error(&p.errs, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
+            } else {
+                NameInitData name_init = {0};
+                const char* before_param = p.pos;
+
+                if (!parse_name_init(&p, &name_init)) {
+                    if (args_ret) {
+                        vec_function_arg_drop(args_ret);
+                    }
+                    goto drop_and_fail;
+                }
+
+                if (vec_callable_type_arg_empty(&callable_type.args) && name_init.type_explicit) {
+                    is_definitely_function = true;
+                }
+
+                vec_callable_type_arg_push(&callable_type.args, (CallableTypeArg){
+                    .name = name_init.name,
+                    .type_explicit = name_init.type_explicit,
+                    .type = name_init.type,
+                });
+
+                if (args_ret) {
+                    vec_function_arg_push(args_ret, (FunctionArg){
+                        .name = cstr_clone(name_init.name),
+                        .name_span = name_init.name_span,
+                        .value_explicit = name_init.value_explicit,
+                        .value = name_init.value,
+                    });
+                }
+
+                if (p.pos == before_param) {
+                    if (is_definitely_function) {
+                        // parse_name_init already added error
+                        hop_token(&p);
+                    } else {
+                        goto drop_and_fail;
+                    }
+                } else {
+                    hop_whitespace(&p);
+
+                    if (*p.pos != ')' && !hop_char(&p, ',')) {
+                        error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+                    }
+                }
+            }
+
+            hop_whitespace(&p);
+        }
+
+        if (!hop_char(&p, ')')) {
+            if (args_ret) {
+                vec_function_arg_drop(args_ret);
+                *args_ret = vec_function_arg_init();
+            }
+            callable_type_drop(&callable_type);
+            vec_generic_item_drop(&generics);
+            *type_ret = type_callable(c_new(CallableType, {0}));
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
+            return parse_success(&p);
+        }
+    } else if (is_definitely_function) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'(' expected.");
+    } else {
+        goto drop_and_fail;
     }
 
-    ret->args_span = span_end(args_a);
-    ret->type = type_callable(c_new(CallableType, callable));
+    if (args_span) {
+        *args_span = span_end(args_start);
+    }
+
+    bool parse_ret_type = true;
+    if (args_ret) {
+        Parser type_p = parser(&p);
+        hop_whitespace(&type_p);
+
+        if (hop_start(&type_p, ":")) {
+            parse_success(&type_p);
+        } else {
+            parse_fail(&type_p);
+            parse_ret_type = false;
+        }
+    } else {
+        hop_whitespace(&p);
+
+        if (!hop_start(&p, "=>")){
+            if (is_definitely_function) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=>' expected.");
+            } else {
+                goto drop_and_fail;
+            }
+        }
+    }
+    hop_whitespace(&p);
+
+    if (parse_ret_type) {
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &callable_type.ret)) {
+            callable_type.ret_explicit = true;
+        } else {
+            goto drop_and_fail;
+        }
+    }
+
+    *type_ret = type_callable(c_new(CallableType, callable_type));
     if (!vec_generic_item_empty(&generics)) {
-        ret->type = type_generic(c_new(Generic, {
+        *type_ret = type_generic(c_new(Generic, {
             .items = generics,
-            .inner = ret->type,
+            .inner = *type_ret,
         }));
     }
 
     return parse_success(&p);
+
+drop_and_fail:
+    callable_type_drop(&callable_type);
+    vec_generic_item_drop(&generics);
+    if (args_ret) {
+        vec_function_arg_drop(args_ret);
+    }
+    type_drop(type_ret);
+    return parse_fail(&p);
 }
 
 static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
@@ -914,8 +956,9 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
     bool is_definitely_function = false;
     cstr lone_arg_name;
     Span lone_arg_span;
+    *ret = (FunctionImpl){0};
 
-    if (parse_function_generics_args_and_return_type(&p, ret)) {
+    if (parse_function_args(&p, &ret->args, &ret->args_span, &ret->type)) {
 
         CallableType* callable = function_impl_callable_type(ret);
         is_definitely_function =
@@ -988,8 +1031,9 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
 static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
+    *ret = (FunctionImpl){0};
 
-    if (!parse_function_generics_args_and_return_type(&p, ret)) {
+    if (!parse_function_args(&p, &ret->args, &ret->args_span, &ret->type)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
