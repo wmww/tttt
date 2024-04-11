@@ -28,6 +28,12 @@ void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
 }
 
+typedef enum WhitespaceType {
+    WHITESPACE_NONE = 0,
+    WHITESPACE_PARSED,
+    WHITESPACE_NEWLINE,
+} WhitespaceType;
+
 typedef enum FailCacheFlag {
     FAIL_CACHE_EXPR = 1 << 0,
     FAIL_CACHE_ARROW_FUNCTION = 1 << 1,
@@ -39,6 +45,8 @@ typedef struct Parser {
     ParserShared* shared;
     Parser* parent; // the parser this parser was created from (and will merge it's result into on success)
     const char* pos; // current position in the code
+    WhitespaceType whitespace; // the type of whitespace detected in the most recent call to hop_whitespace()
+    const char* whitespace_end; // the end of the most recent whitespace (whitespace type is retained if same as pos)
     uint8_t fail_cache_flag;
     ErrorCtx errs;
 } Parser;
@@ -69,6 +77,8 @@ static inline Parser parser(Parser* parent) {
         .shared = parent->shared,
         .parent = parent,
         .pos = parent->pos,
+        .whitespace = parent->whitespace,
+        .whitespace_end = parent->whitespace_end,
         .errs = {0},
     };
 }
@@ -76,6 +86,8 @@ static inline Parser parser(Parser* parent) {
 /// Must not be used on the root parser, always returns true, drops parser
 static inline bool parse_success(Parser* me) {
     my parent->pos = my pos;
+    my parent->whitespace = my whitespace;
+    my parent->whitespace_end = my whitespace_end;
     error_ctx_append_consume(&my parent->errs, my errs);
     return true;
 }
@@ -209,15 +221,9 @@ static bool parse_number_str(Parser* parent, cstr* ret) {
     }
 }
 
-typedef enum WhitespaceRet {
-    WHITESPACE_NONE = 0,
-    WHITESPACE_PARSED,
-    WHITESPACE_NEWLINE,
-} WhitespaceRet;
-
-static inline WhitespaceRet hop_comment(Parser* parent) {
+static inline bool hop_comment(Parser* parent) {
     if (*parent->pos != '/') {
-        return WHITESPACE_NONE;
+        return false;
     }
     switch (*(parent->pos + 1)) {
         case '/':
@@ -225,33 +231,40 @@ static inline WhitespaceRet hop_comment(Parser* parent) {
             while (*parent->pos && *parent->pos != '\n') {
                 (parent->pos)++;
             }
-            return WHITESPACE_PARSED;
+            if (parent->whitespace == WHITESPACE_NONE) {
+                parent->whitespace = WHITESPACE_PARSED;
+            }
+            break;
 
         case '*': {
-            WhitespaceRet ret = WHITESPACE_PARSED;
+            if (parent->whitespace == WHITESPACE_NONE) {
+                parent->whitespace = WHITESPACE_PARSED;
+            }
             const char* pos = parent->pos;
             pos += 2;
             while (*(pos - 1) != '*' || *pos != '/') {
                 switch (*pos) {
-                    case '\n': ret = WHITESPACE_NEWLINE; break;
-                    case '\0': return WHITESPACE_NONE;
+                    case '\n': parent->whitespace = WHITESPACE_NEWLINE; break;
+                    case '\0': return false;
                     default: break;
                 }
                 pos++;
             }
             pos++;
             parent->pos = pos;
-            return ret;
-        }
+        }   break;
 
-        default: break;
+        default: return false;
     }
-    return WHITESPACE_NONE;
+    return true;
 }
 
-static inline WhitespaceRet hop_whitespace(Parser* parent) {
+static inline void hop_whitespace(Parser* parent) {
     // TODO unicode and additional character support: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar
-    WhitespaceRet ret = WHITESPACE_NONE;
+    if (parent->pos == parent->whitespace_end) {
+        return;
+    }
+    parent->whitespace = WHITESPACE_NONE;
     while (true) {
         switch (*parent->pos) {
             case ' ':
@@ -261,25 +274,25 @@ static inline WhitespaceRet hop_whitespace(Parser* parent) {
                 break;
 
             case '\n':
-                ret = WHITESPACE_NEWLINE;
+                parent->whitespace = WHITESPACE_NEWLINE;
                 parent->pos++;
                 break;
 
             case '/':
-                switch (hop_comment(parent)) {
-                    case WHITESPACE_NONE: return ret;
-                    case WHITESPACE_PARSED: break;
-                    case WHITESPACE_NEWLINE: ret = WHITESPACE_NEWLINE; break;
+                if (!hop_comment(parent)) {
+                    goto ws_end;
                 }
                 break;
 
-            default:
-                return ret;
+            default: goto ws_end;
         }
-        if (ret == WHITESPACE_NONE) {
-            ret = WHITESPACE_PARSED;
+        if (parent->whitespace == WHITESPACE_NONE) {
+            parent->whitespace = WHITESPACE_PARSED;
         }
     }
+
+ws_end:
+    parent->whitespace_end = parent->pos;
 }
 
 static inline bool hop_start(Parser* parent, const char* prefix) {
@@ -307,7 +320,8 @@ static inline bool hop_char(Parser* parent, char c) {
 static inline bool hop_start_and_required_whitespace(Parser* parent, const char* prefix) {
     Parser p = parser(parent);
     if (hop_start(&p, prefix)) {
-        if (hop_whitespace(&p)) {
+        hop_whitespace(&p);
+        if (p.whitespace) {
             return parse_success(&p);
         }
     }
@@ -985,8 +999,9 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
     } else {
         return parse_fail(&p);
     }
+    hop_whitespace(&p);
 
-    bool newline_after_args = hop_whitespace(&p) == WHITESPACE_NEWLINE;
+    bool newline_after_args = p.whitespace == WHITESPACE_NEWLINE;
 
     Anchor arrow_a = span_start(&p);
     if (!hop_start(&p, "=>")) {
@@ -1269,12 +1284,13 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 modifier_error_span = name_span;
             }
         }
+        hop_whitespace(&p);
 
         cstr_drop(&name);
         name = next_name;
         name_span = next_name_span;
 
-        if (hop_whitespace(&p) == WHITESPACE_NEWLINE) {
+        if (p.whitespace == WHITESPACE_NEWLINE) {
             break;
         }
 
@@ -1616,6 +1632,7 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     else if (hop_start(&p, ">>")) *op = BINARY_OP_GREATER_GREATER;
     else if (hop_start(&p, "<=")) *op = BINARY_OP_LESS_EQUAL;
     else if (hop_start(&p, ">=")) *op = BINARY_OP_GREATER_EQUAL;
+    else if (hop_start(&p, "instanceof")) *op = BINARY_OP_INSTANCEOF;
     else if (hop_start(&p, "==")) *op = BINARY_OP_DOUBLE_EQUAL;
     else if (hop_start(&p, "!=")) *op = BINARY_OP_NOT_EQUAL;
     else if (hop_start(&p, "&&")) *op = BINARY_OP_AND_AND;
@@ -1784,7 +1801,8 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, left_and_ret->span);
 
-    bool hit_newline = hop_whitespace(&p) == WHITESPACE_NEWLINE;
+    hop_whitespace(&p);
+    bool hit_newline = p.whitespace == WHITESPACE_NEWLINE;
 
     union {
         VecExpr args;
@@ -1971,16 +1989,38 @@ static bool parse_expr(Parser* parent, Expr* ret) {
     } else if (parse_arrow_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
+        hop_whitespace(&p);
         if (!parse_expr(&p, ret)) {
             return parse_fail(&p);
         }
         parse_comma_ops_right_side(&p, ret);
         hop_whitespace(&p);
         if (!hop_char(&p, ')')) {
-            Span span = hop_token_get_span(&p);
-            error_ctx_error(&p.errs, span, 1005, "')' expected.");
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
         }
         ret->peren_depth++;
+    } else if (hop_char(&p, '<')) {
+        Type t;
+        Expr e;
+        hop_whitespace(&p);
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+            t = type_any;
+        }
+        hop_whitespace(&p);
+        if (!hop_char(&p, '>')) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'>' expected.");
+        }
+        hop_whitespace(&p);
+        if (!parse_expr(&p, &e)) {
+            Span s = hop_token_get_span(&p);
+            error_ctx_error(&p.errs, s, 1109, "Expression expected.");
+            e = expr_undefined(s);
+        }
+        *ret = expr_as_type(span_end(a), c_new(AsTypeExpr, {
+            .expr = e,
+            .type = t,
+        }));
     } else {
         return parse_fail(&p);
     }
@@ -2004,6 +2044,7 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
             type_explicit = true;
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+            type = type_any;
         }
         hop_whitespace(&p);
     }
@@ -2078,9 +2119,22 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
         const char* end_of_name_init = p.pos;
         hop_whitespace(&p);
 
-        if (!hop_char(&p, ',')) {
+        if (*p.pos == ';' ||
+            *p.pos == ')' ||
+            *p.pos == '\0' ||
+            hop_start_if_ends_on_word_break(&p, "in") ||
+            hop_start_if_ends_on_word_break(&p, "of")
+        ) {
             p.pos = end_of_name_init;
-            break;
+            return parse_success(&p);
+        }
+
+
+        if (!hop_char(&p, ',')) {
+            if (p.whitespace != WHITESPACE_NEWLINE) {
+                error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+            }
+            return parse_success(&p);
         }
         comma_span = span_from_previous_char(&p);
         hop_whitespace(&p);
@@ -2158,10 +2212,11 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
                 error_ctx_parse_error(&p.errs, "expected else statement");
             }
         }
-        hop_whitespace(&p);
 
         vec_expr_push(&conditions, condition);
         vec_statement_push(&statements, statement);
+        hop_whitespace(&p);
+
         if (!hop_start_if_ends_on_word_break(&p, "else")) {
             break;
         }
@@ -2259,7 +2314,8 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
         while (*p.pos && *p.pos != '\n' && *p.pos != ';' && *p.pos != ')') {
             hop_token(&p);
-            if (hop_whitespace(&p) == WHITESPACE_NEWLINE) {
+            hop_whitespace(&p);
+            if (p.whitespace == WHITESPACE_NEWLINE) {
                 break;
             }
         }
@@ -2551,9 +2607,12 @@ static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
             p.pos++;
         } else if (parse_statement(&p, toplevel, &statement)) {
             vec_statement_push(&statements, statement);
-            if (hop_whitespace(&p) == WHITESPACE_NEWLINE ||
+            bool ended_on_brace = p.pos > p.shared->file_start && *(p.pos - 1) == '}';
+            hop_whitespace(&p);
+            if (p.whitespace == WHITESPACE_NEWLINE ||
                 statement.tag == STATEMENT_NOOP ||
                 !*p.pos ||
+                ended_on_brace ||
                 *p.pos == '}'
             ) {
             } else if (*p.pos == ';') {

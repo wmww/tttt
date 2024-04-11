@@ -34,6 +34,7 @@ static inline int binary_op_get_precedence(BinaryOp op) {
         case BINARY_OP_LESS_EQUAL:
         case BINARY_OP_GREATER:
         case BINARY_OP_GREATER_EQUAL:
+        case BINARY_OP_INSTANCEOF:
             return 90;
 
         case BINARY_OP_DOUBLE_EQUAL:
@@ -474,6 +475,7 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_GREATER:
         case BINARY_OP_LESS_EQUAL:
         case BINARY_OP_GREATER_EQUAL:
+        case BINARY_OP_INSTANCEOF:
             // TODO: figure out rules and typecheck
             ret = type_boolean;
             break;
@@ -683,6 +685,7 @@ czview binary_op_get_zv(BinaryOp op) {
         case BINARY_OP_LESS_EQUAL: return c_zv("<=");
         case BINARY_OP_GREATER: return c_zv(">");
         case BINARY_OP_GREATER_EQUAL: return c_zv(">=");
+        case BINARY_OP_INSTANCEOF: return c_zv("instanceof");
         case BINARY_OP_DOUBLE_EQUAL: return c_zv("==");
         case BINARY_OP_NOT_EQUAL: return c_zv("!=");
         case BINARY_OP_TRIPLE_EQUAL: return c_zv("===");

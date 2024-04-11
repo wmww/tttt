@@ -908,7 +908,7 @@ const baselines = {
     'anyIndexedAccessArrayNoException': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anyInferenceAnonymousFunctions': {
         errors: false,
@@ -1358,22 +1358,22 @@ const baselines = {
     'arrowFunctionWithObjectLiteralBody1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithObjectLiteralBody2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithObjectLiteralBody3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithObjectLiteralBody4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithObjectLiteralBody5': {
         errors: false,
@@ -2498,12 +2498,12 @@ const baselines = {
     'blockScopedFunctionDeclarationStrictES5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedFunctionDeclarationStrictES6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedNamespaceDifferentFile': {
         errors: false,
@@ -2687,7 +2687,7 @@ const baselines = {
     },
     'callConstructAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callExpressionWithMissingTypeArgument1': {
@@ -2897,12 +2897,12 @@ const baselines = {
     },
     'capturedLetConstInLoop8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'capturedLetConstInLoop8_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'capturedLetConstInLoop9': {
@@ -2971,9 +2971,9 @@ const baselines = {
         types: false,
     },
     'catch': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'catchClauseWithInitializer1': {
         errors: false,
@@ -3831,7 +3831,7 @@ const baselines = {
         types: false,
     },
     'classStaticPropertyTypeGuard': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4621,7 +4621,7 @@ const baselines = {
         types: true,
     },
     'commentOnParenthesizedExpressionOpenParen1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6051,12 +6051,12 @@ const baselines = {
         types: false,
     },
     'contextualTyping34': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'contextualTyping35': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6506,7 +6506,7 @@ const baselines = {
         types: false,
     },
     'controlFlowForCompoundAssignmentToThisMember': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8316,7 +8316,7 @@ const baselines = {
         types: false,
     },
     'declareIdentifierAsBeginningOfStatementExpression01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9327,7 +9327,7 @@ const baselines = {
     },
     'doubleUnderscoreLabels': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'doubleUnderscoreMappedTypes': {
@@ -10391,7 +10391,7 @@ const baselines = {
         types: false,
     },
     'errorHandlingInInstanceOf': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12976,9 +12976,9 @@ const baselines = {
         types: false,
     },
     'functionDeclarationWithResolutionOfTypeOfSameName01': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'functionExpressionAndLambdaMatchesFunction': {
         errors: false,
@@ -14671,7 +14671,7 @@ const baselines = {
         types: false,
     },
     'ifStatementInternalComments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14736,7 +14736,7 @@ const baselines = {
         types: false,
     },
     'implicitAnyAnyReturningFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17098,12 +17098,12 @@ const baselines = {
     'invalidUnicodeEscapeSequance': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'invalidUnicodeEscapeSequance2': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'invalidUnicodeEscapeSequance3': {
         errors: false,
@@ -18306,7 +18306,7 @@ const baselines = {
         types: false,
     },
     'letDeclarations-access': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20877,7 +20877,7 @@ const baselines = {
     },
     'newExpressionWithCast': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'newExpressionWithTypeParameterConstrainedToOuterTypeParameter': {
@@ -22811,7 +22811,7 @@ const baselines = {
         types: false,
     },
     'parenthesizedExpressionInternalComments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -23237,7 +23237,7 @@ const baselines = {
     },
     'prefixUnaryOperatorsOnExportedVariables': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'prefixedNumberLiteralAssignToNumberLiteralType': {
@@ -23791,7 +23791,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessOnObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27771,7 +27771,7 @@ const baselines = {
         types: false,
     },
     'tryCatchFinally': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29261,9 +29261,9 @@ const baselines = {
         types: false,
     },
     'unresolvedTypeAssertionSymbol': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unspecializedConstraints': {
         errors: false,
@@ -33996,7 +33996,7 @@ const baselines = {
         types: false,
     },
     'controlFlowIteration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35101,7 +35101,7 @@ const baselines = {
         types: false,
     },
     'emitter.noCatchBinding.es2019': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41132,12 +41132,12 @@ const baselines = {
     },
     'emitExponentiationOperatorInTemplateString2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'emitExponentiationOperatorInTemplateString2ES6': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'emitExponentiationOperatorInTemplateString3': {
@@ -42181,9 +42181,9 @@ const baselines = {
         types: false,
     },
     'instanceofOperatorWithAny': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofOperatorWithInvalidOperands.es2015': {
         errors: false,
@@ -42206,9 +42206,9 @@ const baselines = {
         types: false,
     },
     'instanceofOperatorWithLHSIsTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofOperatorWithRHSHasSymbolHasInstance': {
         errors: false,
@@ -42256,9 +42256,9 @@ const baselines = {
         types: false,
     },
     'commaOperatorInvalidAssignmentType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'commaOperatorOtherInvalidOperation': {
         errors: false,
@@ -49327,7 +49327,7 @@ const baselines = {
     },
     'parserTypeAssertionInObjectCreationExpression1': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'parserUnaryExpression1': {
@@ -53006,7 +53006,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment15': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53031,7 +53031,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53086,7 +53086,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53141,12 +53141,12 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment40': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54331,7 +54331,7 @@ const baselines = {
         types: false,
     },
     'tryStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54846,9 +54846,9 @@ const baselines = {
         types: false,
     },
     'stringLiteralsAssertionsInEqualityComparisons01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsAssertionsInEqualityComparisons02': {
         errors: false,
@@ -55656,7 +55656,7 @@ const baselines = {
         types: false,
     },
     'objectTypeLiteralSyntax': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56372,7 +56372,7 @@ const baselines = {
     },
     'stringLiteralTypesWithTemplateStrings01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringLiteralTypesWithTemplateStrings02': {
