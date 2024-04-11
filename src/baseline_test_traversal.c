@@ -12,6 +12,16 @@
 #include "callable_type.h"
 #include "name_stack.h"
 
+void generic_items_compile_test_info(VecGenericItem* me, BaselineTestCase* ctx) {
+    c_foreach(i, vec_generic_item, *me) {
+        baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
+        type_compile_test_info(&i.ref->extends, ctx);
+        if (i.ref->fallback_explicit) {
+            type_compile_test_info(&i.ref->fallback, ctx);
+        }
+    }
+}
+
 void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case TYPE_ANY:
@@ -35,17 +45,17 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
 
 
         case TYPE_GENERIC:
-            c_foreach(i, vec_generic_item, my generic->items) {
-                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
-                type_compile_test_info(&i.ref->extends, ctx);
-                if (i.ref->fallback_explicit) {
-                    type_compile_test_info(&i.ref->fallback, ctx);
-                }
-            }
+            generic_items_compile_test_info(&my generic->items, ctx);
             type_compile_test_info(&my generic->inner, ctx);
             break;
 
-        case TYPE_CALLABLE: break;
+        case TYPE_CALLABLE:
+            c_foreach(i, vec_callable_type_arg, my callable->args) {
+                type_compile_test_info(&i.ref->type, ctx);
+            }
+            type_compile_test_info(&my callable->ret, ctx);
+            break;
+
         case TYPE_INTERFACE: break;
 
         case TYPE_ARRAY:
@@ -74,7 +84,9 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_symbol(ctx, cstr_str(&my name), my full_span, my full_span);
         baseline_test_case_add_type(ctx, my name_span, &my type);
     }
-    type_compile_test_info(&my type, ctx);
+    if (my type.tag == TYPE_GENERIC) {
+        generic_items_compile_test_info(&my type.generic->items, ctx);
+    }
     CallableType* callable = function_impl_callable_type(me);
     int arg_count = function_impl_arg_count(me);
     for (int i = 0; i < arg_count; i++) {
@@ -138,7 +150,9 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             type_abstract_tuple_to_array(&t);
         }
     }
-    baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
+    if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
+        baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
+    }
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:

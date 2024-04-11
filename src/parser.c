@@ -69,6 +69,12 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
 static bool parse_name_init(Parser* parent, NameInitData* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
+static bool parse_function_args(
+    Parser* parent,
+    VecFunctionArg* args_ret, // Null if parsing type
+    Span* args_span,
+    Type* type_ret
+);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, Expr* ret);
 
@@ -566,47 +572,6 @@ static bool parse_callable_type_arg(Parser* parent, void* data) {
     return parse_success(&p);
 }
 
-static bool parse_callable_type(Parser* parent, Type* ret) {
-    Parser p = parser(parent);
-    VecGenericItem generics;
-    bool parsed_generics = false;
-    CallableType callable = {0};
-
-    if (parse_generic_decl_list(&p, &generics)) {
-        hop_whitespace(&p);
-        parsed_generics = true;
-    } else {
-        generics = (VecGenericItem){0};
-    }
-
-    if (!parse_sequence(&p, "(", SEQUENCE_SEP_COMMA, ')', parse_callable_type_arg, &callable)) {
-        vec_generic_item_drop(&generics);
-        callable_type_drop(&callable);
-        return parse_fail(&p);
-    }
-    hop_whitespace(&p);
-
-    if (!hop_start(&p, "=>")) {
-        vec_generic_item_drop(&generics);
-        callable_type_drop(&callable);
-        return parse_fail(&p);
-    }
-    hop_whitespace(&p);
-
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &callable.ret)) {
-        error_ctx_parse_error(&p.errs, "invalid return type");
-    }
-
-    *ret = type_callable(c_new(CallableType, callable));
-    if (parsed_generics) {
-        *ret = type_generic(c_new(Generic, {
-            .items = generics,
-            .inner = *ret,
-        }));
-    }
-    return parse_success(&p);
-}
-
 static bool parse_tuple(Parser* parent, VecType* ret) {
     Parser p = parser(parent);
     Type t;
@@ -708,7 +673,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_identifier(name, span);
     } else if (parse_tuple(&p, &ret->tuple)){
         ret->tag = TYPE_TUPLE;
-    } else if (parse_callable_type(&p, ret)) {
+    } else if (parse_function_args(&p, nullptr, nullptr, ret)) {
         // Tag set to either callable or generic
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);

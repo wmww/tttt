@@ -2333,7 +2333,7 @@ const baselines = {
     'binaryArithmatic1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'binaryArithmatic2': {
         errors: false,
@@ -2348,7 +2348,7 @@ const baselines = {
     'binaryArithmatic4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'binaryArithmeticControlFlowGraphNotTooLarge': {
         errors: false,
@@ -6783,7 +6783,7 @@ const baselines = {
     'declFileClassExtendsNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileClassWithIndexSignature': {
         errors: false,
@@ -14133,7 +14133,7 @@ const baselines = {
     'genericParameterAssignability1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericPrototypeProperty': {
         errors: false,
@@ -21748,12 +21748,12 @@ const baselines = {
     'nullKeyword': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullableFunctionError': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'numberAsInLHS': {
         errors: false,
@@ -22836,8 +22836,8 @@ const baselines = {
         types: false,
     },
     'parseArrowFunctionWithFunctionReturnType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parseAssertEntriesError': {
@@ -23763,7 +23763,7 @@ const baselines = {
     'propertyAccess4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAccess5': {
         errors: false,
@@ -34128,7 +34128,7 @@ const baselines = {
     'exportDefaultExpressionComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultNamespace': {
         errors: true,
@@ -41208,7 +41208,7 @@ const baselines = {
     'exponentiationOperatorWithNullValueAndInvalidOperands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithNullValueAndValidOperands': {
         errors: false,
@@ -41218,7 +41218,7 @@ const baselines = {
     'exponentiationOperatorWithOnlyNullValueOrUndefinedValue': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithTemplateStringInvalid': {
         errors: false,
@@ -41958,7 +41958,7 @@ const baselines = {
     'additionOperatorWithOnlyNullValueOrUndefinedValue': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'additionOperatorWithStringAndEveryType': {
         errors: false,
@@ -42003,7 +42003,7 @@ const baselines = {
     'arithmeticOperatorWithNullValueAndInvalidOperands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arithmeticOperatorWithNullValueAndValidOperands': {
         errors: false,
@@ -42013,7 +42013,7 @@ const baselines = {
     'arithmeticOperatorWithOnlyNullValueOrUndefinedValue': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arithmeticOperatorWithTypeParameter': {
         errors: false,
@@ -55868,7 +55868,7 @@ const baselines = {
     'validVoidValues': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericObjectRest': {
         errors: false,
