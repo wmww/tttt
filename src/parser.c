@@ -1540,6 +1540,38 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_ternary_expr(Parser* parent, Expr* ret_yes, Expr* ret_no) {
+    Parser p = parser(parent);
+
+    if (!hop_char(&p, '?')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!parse_expr(&p, ret_yes)) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+        *ret_yes = expr_undefined(span_from_pos(&p));
+        *ret_no = expr_undefined(span_from_pos(&p));
+        return parse_success(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, ':')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "':' expected.");
+        *ret_no = expr_undefined(span_from_pos(&p));
+        return parse_success(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!parse_expr(&p, ret_no)) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+        *ret_no = expr_undefined(span_from_pos(&p));
+        return parse_success(&p);
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
 
@@ -1771,7 +1803,10 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
 
     union {
         VecExpr args;
-        Expr expr;
+        struct {
+            Expr expr_a;
+            Expr expr_b;
+        };
         Type type;
         UnaryOp unary;
         struct {
@@ -1793,24 +1828,36 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         return parse_success(&p);
     }
 
-    if (parse_dot_prop(&p, &parsed.expr)) {
+    if (parse_dot_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_end(a),
             c_new(PropertyExpr, {
                 .expr = *left_and_ret,
-                .prop = parsed.expr,
+                .prop = parsed.expr_a,
                 .form = PROPERTY_EXPR_DOT,
             })
         );
         return parse_success(&p);
     }
 
-    if (parse_bracket_prop(&p, &parsed.expr)) {
+    if (parse_ternary_expr(&p, &parsed.expr_a, &parsed.expr_b)) {
+        *left_and_ret = expr_ternary(
+            span_end(a),
+            c_new(TernaryExpr, {
+                .condition = *left_and_ret,
+                .yes = parsed.expr_a,
+                .no = parsed.expr_b,
+            })
+        );
+        return parse_success(&p);
+    }
+
+    if (parse_bracket_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_end(a),
             c_new(PropertyExpr, {
                 .expr = *left_and_ret,
-                .prop = parsed.expr,
+                .prop = parsed.expr_a,
                 .form = PROPERTY_EXPR_BRACKET,
             })
         );

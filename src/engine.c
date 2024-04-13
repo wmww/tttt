@@ -235,6 +235,13 @@ static Result MUST_USE engine_eval_property(Engine* me, PropertyExpr const* prop
     return ret;
 }
 
+static Result MUST_USE engine_eval_ternary(Engine* me, TernaryExpr* ternary) {
+    TRY_THROW(condition_val, engine_eval_expr(me, &ternary->condition));
+    bool condition = value_to_boolean(&condition_val);
+    value_drop(&condition_val);
+    return engine_eval_expr(me, condition ? &ternary->yes : &ternary->no);
+}
+
 static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const* func, VecValue const* args) {
     return func->func(me, vec_value_size(args), args->data, func->data);
 }
@@ -340,6 +347,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
         case EXPR_PROPERTY: return engine_eval_property(me, expr->property);
         case EXPR_AS_TYPE: return engine_eval_expr(me, &expr->as_type->expr);
+        case EXPR_TERNARY: return engine_eval_ternary(me, expr->ternary);
         case EXPR_CALL: return engine_eval_call(me, expr->call);
         case EXPR_FUNCTION: return result_ok(value_js_func(&expr->function->args, &expr->function->body));
         case EXPR_OBJECT: return engine_eval_object(me, &expr->object);

@@ -120,6 +120,13 @@ void expr_drop(Expr* me) {
             free(my as_type);
             break;
 
+        case EXPR_TERNARY:
+            expr_drop(&my ternary->condition);
+            expr_drop(&my ternary->yes);
+            expr_drop(&my ternary->no);
+            free(my ternary);
+            break;
+
         case EXPR_CALL:
             expr_drop(&my call->callable);
             vec_expr_drop(&my call->args);
@@ -213,6 +220,16 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_expr_debug(target, &my as_type->expr, indent);
             cstr_append_sv(target, c_sv(" as "));
             cstr_append_type_debug(target, &my as_type->type, indent);
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+        }   break;
+
+        case EXPR_TERNARY: {
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            cstr_append_expr_debug(target, &my ternary->condition, indent);
+            cstr_append_sv(target, c_sv(" ? "));
+            cstr_append_expr_debug(target, &my ternary->yes, indent);
+            cstr_append_sv(target, c_sv(" : "));
+            cstr_append_expr_debug(target, &my ternary->no, indent);
             cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
         }   break;
 
@@ -310,6 +327,12 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
         case EXPR_AS_TYPE:
             expr_resolve_names(&my as_type->expr, names, errs);
             type_resolve_names(&my as_type->type, names, errs);
+            break;
+
+        case EXPR_TERNARY:
+            expr_resolve_names(&my ternary->condition, names, errs);
+            expr_resolve_names(&my ternary->yes, names, errs);
+            expr_resolve_names(&my ternary->no, names, errs);
             break;
 
         case EXPR_CALL:
@@ -579,11 +602,18 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
             return property_type_of(value, prop, my property->prop.span, errs);
         }
 
-
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
             return type_clone(my as_type->type);
+        }
+
+        case EXPR_TERNARY: {
+            Type condition_type = expr_get_type_and_typecheck(&my ternary->condition, errs);
+            type_drop(&condition_type);
+            Type ret_type = expr_get_type_and_typecheck(&my ternary->yes, errs);
+            ret_type = type_composite(ret_type, expr_get_type_and_typecheck(&my ternary->no, errs), TYPE_UNION);
+            return ret_type;
         }
 
         case EXPR_CALL: {

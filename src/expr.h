@@ -7,6 +7,7 @@ typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
 typedef struct PropertyExpr PropertyExpr;
 typedef struct AsTypeExpr AsTypeExpr;
+typedef struct TernaryExpr TernaryExpr;
 typedef struct CallExpr CallExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_object_expr_item ObjectExpr;
@@ -32,6 +33,7 @@ typedef struct Expr {
         EXPR_UNARY_OP,
         EXPR_PROPERTY,
         EXPR_AS_TYPE,
+        EXPR_TERNARY,
         EXPR_CALL,
         EXPR_FUNCTION,
         EXPR_OBJECT,
@@ -48,6 +50,7 @@ typedef struct Expr {
         UnaryOpExpr* unary_op;
         PropertyExpr* property;
         AsTypeExpr* as_type;
+        TernaryExpr* ternary;
         CallExpr* call;
         FunctionImpl* function;
         // TODO: perhaps optimize lookup somehow? (currently linear)
@@ -79,6 +82,10 @@ static inline Expr expr_property(Span span, PropertyExpr* property) {
 
 static inline Expr expr_as_type(Span span, AsTypeExpr* as_type) {
     return (Expr){ .span = span, .tag = EXPR_AS_TYPE, .as_type = as_type };
+}
+
+static inline Expr expr_ternary(Span span, TernaryExpr* ternary) {
+    return (Expr){ .span = span, .tag = EXPR_TERNARY, .ternary = ternary };
 }
 
 static inline Expr expr_call(Span span, CallExpr* call) {
@@ -218,6 +225,14 @@ typedef struct PropertyExpr {
         PROPERTY_EXPR_BRACKET,
     } form;
 } PropertyExpr;
+
+// Ternary
+
+typedef struct TernaryExpr {
+    Expr condition;
+    Expr yes;
+    Expr no;
+} TernaryExpr;
 
 // Call
 

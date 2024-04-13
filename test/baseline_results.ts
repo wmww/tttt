@@ -5111,54 +5111,54 @@ const baselines = {
         types: false,
     },
     'conditionalExpressionNewLine1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine10': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine8': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressionNewLine9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalExpressions2': {
         errors: false,
@@ -9276,7 +9276,7 @@ const baselines = {
         types: false,
     },
     'doesNotNarrowUnionOfConstructorsWithInstanceof': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24356,7 +24356,7 @@ const baselines = {
         types: false,
     },
     'recursiveInference1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27396,9 +27396,9 @@ const baselines = {
         types: false,
     },
     'ternaryExpressionSourceMap': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'testContainerList': {
         errors: false,
@@ -33911,7 +33911,7 @@ const baselines = {
         types: false,
     },
     'controlFlowConditionalExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42323,7 +42323,7 @@ const baselines = {
     'conditionalOperatorConditoinIsAnyType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'conditionalOperatorConditoinIsStringType': {
         errors: false,
@@ -48406,7 +48406,7 @@ const baselines = {
         types: true,
     },
     'parserArrowFunctionExpression6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49296,7 +49296,7 @@ const baselines = {
         types: true,
     },
     'parserConditionalExpression1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50548,7 +50548,7 @@ const baselines = {
     'parserTernaryAndCommaOperators1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseRegularExpressionMixedWithComments': {
         errors: false,
@@ -51611,14 +51611,14 @@ const baselines = {
         types: false,
     },
     'parserParenthesizedVariableAndFunctionInTernary': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserParenthesizedVariableAndParenthesizedFunctionInTernary': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource1': {
         errors: false,
@@ -57376,7 +57376,7 @@ const baselines = {
         types: false,
     },
     'bestCommonTypeOfConditionalExpressions2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

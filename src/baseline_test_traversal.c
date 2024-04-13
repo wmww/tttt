@@ -198,6 +198,12 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             type_compile_test_info(&my as_type->type, ctx);
             break;
 
+        case EXPR_TERNARY:
+            expr_compile_test_info(&my ternary->condition, ctx);
+            expr_compile_test_info(&my ternary->yes, ctx);
+            expr_compile_test_info(&my ternary->no, ctx);
+            break;
+
         case EXPR_CALL:
             expr_compile_test_info(&my call->callable, ctx);
             c_foreach(i, vec_expr, my call->args) {
