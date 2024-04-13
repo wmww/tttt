@@ -2124,9 +2124,9 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
         if (cstr_empty(&data.name)) {
             if (span_valid(&comma_span)) {
                 error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
-                name_init_data_drop(&data);
                 p.pos = span_end_ptr(&comma_span);
             }
+            name_init_data_drop(&data);
             parse_fail(&sub);
             break;
         }
@@ -2181,7 +2181,8 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
 
     if (vec_name_init_data_empty(&ret->vars)) {
         if (ret->keyword == VAR_INIT_LET) {
-            // let can also be a variable name
+            // let can also be a variable name, fail so we then attempt to parse it as such
+            vec_name_init_data_drop(&ret->vars);
             return parse_fail(&p);
         } else {
             Span s = span_from_previous_char(&p);
