@@ -749,7 +749,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
     return parse_success(&p);
 }
 
-static bool parse_named_interface(Parser* parent, InterfaceStatement* ret) {
+static bool parse_named_interface(Parser* parent, TypeDeclStatement* ret) {
     Parser p = parser(parent);
 
     if (!hop_start_and_required_whitespace(&p, "interface")) {
@@ -768,7 +768,8 @@ static bool parse_named_interface(Parser* parent, InterfaceStatement* ret) {
         return parse_fail(&p);
     }
 
-    *ret = (InterfaceStatement) {
+    *ret = (TypeDeclStatement) {
+        .is_interface = true,
         .name = name,
         .type = type_interface(interface),
     };
@@ -2523,7 +2524,7 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
         VariableStatement variable;
         FunctionImpl function;
         ClassDecl class;
-        InterfaceStatement interface;
+        TypeDeclStatement type_decl;
         Expr expr;
     } parsed;
 
@@ -2545,11 +2546,11 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
             .decl.exported = exported,
             .decl.class = c_new(ClassDecl, parsed.class),
         };
-    } else if (parse_named_interface(&p, &parsed.interface)) {
+    } else if (parse_named_interface(&p, &parsed.type_decl)) {
         *ret = (Statement){
-            .tag = STATEMENT_DECL_INTERFACE,
+            .tag = STATEMENT_DECL_TYPE,
             .decl.exported = exported,
-            .decl.interface = parsed.interface,
+            .decl.type = parsed.type_decl,
         };
     } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, &parsed.expr)) {
         *ret = (Statement){

@@ -314,7 +314,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             class_decl_compile_test_info(my decl.class, ctx);
             break;
 
-        case STATEMENT_DECL_INTERFACE: break;
+        case STATEMENT_DECL_TYPE: break;
     }
 }
 

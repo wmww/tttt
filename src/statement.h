@@ -48,16 +48,16 @@ void variable_statement_add_names(VariableStatement* me, NameStack* names, Error
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 
-// Interface statements
+// Type declaration statements (including interfaces)
 
-typedef struct InterfaceStatement {
-    bool exported;
+typedef struct TypeDeclStatement {
+    bool is_interface;
     cstr name;
     Type type;
-} InterfaceStatement;
+} TypeDeclStatement;
 
-void interface_statement_drop(InterfaceStatement* me);
-void cstr_append_interface_statement_debug(cstr* target, InterfaceStatement* me, int indent);
+void type_decl_statement_drop(TypeDeclStatement* me);
+void cstr_append_type_decl_statement_debug(cstr* target, TypeDeclStatement* me, int indent);
 
 // If statements
 
@@ -90,7 +90,7 @@ typedef struct Statement {
         STATEMENT_DECL_VARIABLE,
         STATEMENT_DECL_FUNCTION,
         STATEMENT_DECL_CLASS,
-        STATEMENT_DECL_INTERFACE,
+        STATEMENT_DECL_TYPE,
     } tag;
     union {
         Block block;
@@ -106,7 +106,7 @@ typedef struct Statement {
                 VariableStatement variable;
                 FunctionImpl function;
                 ClassDecl* class;
-                InterfaceStatement interface;
+                TypeDeclStatement type;
             };
         } decl;
     };
@@ -118,7 +118,7 @@ static inline DeclExported statement_get_exported(Statement* me) {
     switch (my tag) {
         case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_FUNCTION:
-        case STATEMENT_DECL_INTERFACE: return my decl.exported;
+        case STATEMENT_DECL_TYPE: return my decl.exported;
         case STATEMENT_EXPORT_DEFAULT_EXPR: return DECL_EXPORTED_YES_DEFAULT;
         default: return DECL_EXPORTED_NO;
     }

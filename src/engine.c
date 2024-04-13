@@ -464,7 +464,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             NONFATAL("Creating classes not yet implemented");
             return result_ok_undefined;
 
-        case STATEMENT_DECL_INTERFACE: return result_ok_undefined;
+        case STATEMENT_DECL_TYPE: return result_ok_undefined;
     }
     UNREACHABLE;
 }
