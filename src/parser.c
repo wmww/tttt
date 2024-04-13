@@ -2066,20 +2066,24 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
     Span comma_span = span_null;
     NameInitData data;
     while (true) {
+
         Parser sub = parser(&p);
         if (!parse_name_init(&sub, &data)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1134, "Variable declaration expected.");
             parse_fail(&sub);
             break;
         }
-        if (cstr_empty(&data.name) && span_valid(&comma_span)) {
-            error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
-            name_init_data_drop(&data);
+        if (cstr_empty(&data.name)) {
+            if (span_valid(&comma_span)) {
+                error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
+                name_init_data_drop(&data);
+                p.pos = span_end_ptr(&comma_span);
+            }
             parse_fail(&sub);
-            p.pos = span_end_ptr(&comma_span);
             break;
         }
         parse_success(&sub);
+
         vec_name_init_data_push(ret, data);
         const char* end_of_name_init = p.pos;
         hop_whitespace(&p);
@@ -2094,14 +2098,16 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
             return parse_success(&p);
         }
 
-
-        if (!hop_char(&p, ',')) {
-            if (p.whitespace != WHITESPACE_NEWLINE) {
-                error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+        if (hop_char(&p, ',')) {
+            comma_span = span_from_previous_char(&p);
+        } else {
+            comma_span = span_null;
+            if (p.whitespace == WHITESPACE_NEWLINE) {
+                return parse_success(&p);
+            } else {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
             }
-            return parse_success(&p);
         }
-        comma_span = span_from_previous_char(&p);
         hop_whitespace(&p);
     }
 
@@ -2123,6 +2129,17 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
 
     if (!parse_name_init_list(&p, &ret->vars)) {
         return parse_fail(&p);
+    }
+
+    if (vec_name_init_data_empty(&ret->vars)) {
+        if (ret->keyword == VAR_INIT_LET) {
+            // let can also be a variable name
+            return parse_fail(&p);
+        } else {
+            Span s = span_from_previous_char(&p);
+            s.length = 0;
+            error_ctx_error(&p.errs, s, 1123, "Variable declaration list cannot be empty.");
+        }
     }
 
     return parse_success(&p);
@@ -2239,19 +2256,20 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         }
         hop_whitespace(&p);
 
-        if (!hop_start(&p, ";")) {
-            // Unclear why this is the error message in this case
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+        if (hop_start(&p, ";")) {
+            hop_whitespace(&p);
+            if (parse_expr(&p, &right_expr)) {
+                parse_comma_ops_right_side(&p, &right_expr);
+            } else {
+                right_expr = expr_undefined(span_from_pos(&p));
+            }
+            hop_whitespace(&p);
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+            right_expr = expr_undefined(span_from_pos(&p));
             hop_token(&p);
         }
-        hop_whitespace(&p);
 
-        if (parse_expr(&p, &right_expr)) {
-            parse_comma_ops_right_side(&p, &right_expr);
-        } else {
-            right_expr = expr_undefined(span_from_pos(&p));
-        }
-        hop_whitespace(&p);
     } else if ((statement.tag == STATEMENT_EXPR || statement.tag == STATEMENT_DECL_VARIABLE) && (
         hop_start_if_ends_on_word_break(&p, "of") ||
         (hop_start_if_ends_on_word_break(&p, "in") && (keyword_is_in = true)) // control flow is my passion
@@ -2275,20 +2293,14 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, ")")) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
-        while (*p.pos && *p.pos != '\n' && *p.pos != ';' && *p.pos != ')') {
-            hop_token(&p);
-            hop_whitespace(&p);
-            if (p.whitespace == WHITESPACE_NEWLINE) {
-                break;
-            }
+    if (hop_start(&p, ")")) {
+        hop_whitespace(&p);
+        if (!parse_statement(&p, false, &body)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
+            body = statement_noop;
         }
-    }
-    hop_whitespace(&p);
-
-    if (!parse_statement(&p, false, &body)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
+    } else {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
         body = statement_noop;
     }
 

@@ -908,7 +908,7 @@ const baselines = {
     'anyIndexedAccessArrayNoException': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'anyInferenceAnonymousFunctions': {
         errors: false,
@@ -17098,12 +17098,12 @@ const baselines = {
     'invalidUnicodeEscapeSequance': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'invalidUnicodeEscapeSequance2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'invalidUnicodeEscapeSequance3': {
         errors: false,
@@ -18282,8 +18282,8 @@ const baselines = {
     },
     'letAsIdentifier': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'letAsIdentifier2': {
         errors: true,
@@ -18292,8 +18292,8 @@ const baselines = {
     },
     'letAsIdentifierInStrictMode': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'letConstInCaseClauses': {
         errors: false,
@@ -28787,7 +28787,7 @@ const baselines = {
     },
     'typeofUnknownSymbol': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'typeofUsedBeforeBlockScoped': {
@@ -37557,7 +37557,7 @@ const baselines = {
     },
     'emptyAssignmentPatterns01_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emptyAssignmentPatterns01_ES5iterable': {
@@ -37652,17 +37652,17 @@ const baselines = {
     },
     'emptyVariableDeclarationBindingPatterns02_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emptyVariableDeclarationBindingPatterns02_ES5iterable': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emptyVariableDeclarationBindingPatterns02_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern1': {
@@ -39217,12 +39217,12 @@ const baselines = {
     },
     'templateStringInFunctionExpression': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'templateStringInFunctionExpressionES6': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'templateStringInFunctionParameterType': {
@@ -39352,7 +39352,7 @@ const baselines = {
     },
     'templateStringInPropertyName2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'templateStringInPropertyNameES6_1': {
@@ -39362,7 +39362,7 @@ const baselines = {
     },
     'templateStringInPropertyNameES6_2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'templateStringInSwitchAndCase': {
@@ -39387,12 +39387,12 @@ const baselines = {
     },
     'templateStringInTypeAssertion': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'templateStringInTypeAssertionES6': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'templateStringInTypeOf': {
@@ -43302,8 +43302,8 @@ const baselines = {
     },
     'typePredicateOnVariableDeclaration02': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeSatisfaction': {
         errors: false,
@@ -43317,7 +43317,7 @@ const baselines = {
     },
     'typeSatisfaction_asConstArrays': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'typeSatisfaction_contextualTyping1': {
@@ -43617,7 +43617,7 @@ const baselines = {
     },
     'typeofOperatorInvalidOperations': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'typeofOperatorWithAnyOtherType': {
@@ -43647,7 +43647,7 @@ const baselines = {
     },
     'voidOperatorInvalidOperations': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'voidOperatorWithAnyOtherType': {
@@ -51486,9 +51486,9 @@ const baselines = {
         types: true,
     },
     'parserVariableDeclaration8': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserVariableDeclaration9': {
         errors: true,
@@ -56372,7 +56372,7 @@ const baselines = {
     },
     'stringLiteralTypesWithTemplateStrings01': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'stringLiteralTypesWithTemplateStrings02': {
