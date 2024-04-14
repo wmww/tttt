@@ -9341,9 +9341,9 @@ const baselines = {
         types: false,
     },
     'downlevelLetConst1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'downlevelLetConst10': {
         errors: true,
@@ -40496,9 +40496,9 @@ const baselines = {
         types: false,
     },
     'VariableDeclaration1_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'VariableDeclaration2_es6': {
         errors: false,
@@ -51476,9 +51476,9 @@ const baselines = {
         types: true,
     },
     'parserVariableDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserVariableDeclaration7': {
         errors: true,

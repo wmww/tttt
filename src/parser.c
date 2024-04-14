@@ -323,18 +323,6 @@ static inline bool hop_char(Parser* parent, char c) {
     }
 }
 
-// TODO: calls to this should really be hop_start_if_ends_on_word_break() followed by hop_whitespace()
-static inline bool hop_start_and_required_whitespace(Parser* parent, const char* prefix) {
-    Parser p = parser(parent);
-    if (hop_start(&p, prefix)) {
-        hop_whitespace(&p);
-        if (p.whitespace) {
-            return parse_success(&p);
-        }
-    }
-    return parse_fail(&p);
-}
-
 static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
     Parser p = parser(parent);
     if (hop_start(&p, prefix)) {
@@ -807,9 +795,10 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
 static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     Parser p = parser(parent);
 
-    if (!hop_start_and_required_whitespace(&p, "interface")) {
+    if (!hop_start_if_ends_on_word_break(&p, "interface")) {
         return parse_fail(&p);
     }
+    hop_whitespace(&p);
 
     cstr name;
     Span name_span;
@@ -1449,9 +1438,10 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
 
-    if (!hop_start_and_required_whitespace(&p, "class")) {
+    if (!hop_start_if_ends_on_word_break(&p, "class")) {
         return parse_fail(&p);
     }
+    hop_whitespace(&p);
 
     *ret = (ClassDecl){
         .interface = type_any,
@@ -2230,15 +2220,17 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
 static bool parse_var_init(Parser* parent, VariableStatement* ret) {
     Parser p = parser(parent);
 
-    if (hop_start_and_required_whitespace(&p, "var")) {
+    if (hop_start_if_ends_on_word_break(&p, "var")) {
         ret->keyword = VAR_INIT_VAR;
-    } else if (hop_start_and_required_whitespace(&p, "let")) {
+    } else if (hop_start_if_ends_on_word_break(&p, "let")) {
         ret->keyword = VAR_INIT_LET;
-    } else if (hop_start_and_required_whitespace(&p, "const")) {
+    } else if (hop_start_if_ends_on_word_break(&p, "const")) {
         ret->keyword = VAR_INIT_CONST;
     } else {
         return parse_fail(&p);
     }
+    Anchor end_of_keyword = span_start(&p);
+    hop_whitespace(&p);
 
     if (!parse_name_init_list(&p, &ret->vars)) {
         return parse_fail(&p);
@@ -2250,7 +2242,7 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
             vec_name_init_data_drop(&ret->vars);
             return parse_fail(&p);
         } else {
-            Span s = span_from_previous_char(&p);
+            Span s = span_end(end_of_keyword);
             s.length = 0;
             error_ctx_error(&p.errs, s, 1123, "Variable declaration list cannot be empty.");
         }
