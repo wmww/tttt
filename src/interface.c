@@ -20,7 +20,7 @@ void cstr_append_interface_debug(cstr* target, Interface const* me, int indent) 
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0 ": "));
         cstr_append_type_debug(target, &i.ref->type, indent + 1);
-        cstr_append_sv(target, c_sv(";\n"));
+        cstr_append_sv(target, c_sv(",\n"));
     }
     APPEND_INDENT(target, indent);
     cstr_append_sv(target, c_sv("}"));

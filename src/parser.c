@@ -67,6 +67,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
 static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret);
 static bool parse_name_init(Parser* parent, NameInitData* ret);
+static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
 static bool parse_function_args(
@@ -701,38 +702,48 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         prev_s = p.pos;
         hop_whitespace(&p);
 
-        cstr name;
-        Span name_span;
-        if (!parse_identifier(&p, &name, &name_span)) {
-            error_ctx_parse_error(&p.errs, "expected interface member name");
-            name = cstr_null;
-            name_span = span_null;
-        }
-        hop_whitespace(&p);
+        ClassItem item;
+        if (parse_class_item(&p, true, &item)) {
+            switch (item.tag) {
+                case CLASS_ITEM_MEMBER:
+                    vec_interface_member_push(&members, (InterfaceMember){
+                        .name = cstr_move(&item.member.name),
+                        .name_span = item.member.name_span,
+                        .type = type_move(&item.member.func.type)
+                    });
+                    break;
 
-        if (!hop_char(&p, ':')) {
-            error_ctx_parse_error(&p.errs, "expected ':'");
-        }
-        hop_whitespace(&p);
+                case CLASS_ITEM_FIELD:
+                    vec_interface_member_push(&members, (InterfaceMember){
+                        .name = cstr_move(&item.field.data.name),
+                        .name_span = item.field.data.name_span,
+                        .type = type_move(&item.field.data.type)
+                    });
+                    break;
 
-        Type type;
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-            vec_interface_member_push(&members, interface_member_make(name, name_span, type));
+                default:
+                    error_ctx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "Invalid class item for interface.");
+                    break;
+            }
+            class_item_drop(&item);
         } else {
-            cstr_drop(&name);
-            error_ctx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "expected type");
-            while (*p.pos && *p.pos != '}' && *p.pos != ',' && *p.pos != ';' && *p.pos != '\n') p.pos++;
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1131, "Property or signature expected.");
         }
         hop_whitespace(&p);
 
-        // Typescript accepts EITHER of these in interfaces (or nothing at all). You can MIX them!
-        // it also cares about newlines but we can sort that out later
-        (void)(hop_char(&p, ',') || hop_char(&p, ';'));
+        // Typescript accepts EITHER , ; or newlines in interfaces. You can MIX them!
+        if (!hop_char(&p, ',') &&
+            !hop_char(&p, ';') &&
+            *p.pos != '}' &&
+            p.whitespace != WHITESPACE_NEWLINE
+        ) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+        }
         hop_whitespace(&p);
     }
 
     if (!hop_char(&p, '}')) {
-        error_ctx_parse_error(&p.errs, "expected '}'");
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
     }
 
     *ret = (Interface) {
@@ -1194,7 +1205,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 }
 
 // This function is a clusterfuck. I'm sorry.
-static bool parse_class_item(Parser* parent, ClassItem* ret) {
+static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
 
@@ -1208,6 +1219,7 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
         INVALID_READONLY,
         UNEXPECTED_IDENT,
         MODIFIERS_CANNOT_APPEAR,
+        MODIFIER_ON_TYPE,
     } modifier_error = 0;
     enum {
         NOT_GETTER_SETTER = 0,
@@ -1251,9 +1263,14 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 static_span = name_span;
             }
 
-            if (span_valid(&async_span) && !modifier_error) {
-                modifier_error = MUST_PRECEDE_ASYNC;
-                modifier_error_span = name_span;
+            if (!modifier_error) {
+                if (is_type) {
+                    modifier_error = MODIFIER_ON_TYPE;
+                    modifier_error_span = name_span;
+                } else if (span_valid(&async_span)) {
+                    modifier_error = MUST_PRECEDE_ASYNC;
+                    modifier_error_span = name_span;
+                }
             }
         } else if (cstr_equals(&name, "async")) {
             if (span_valid(&async_span)) {
@@ -1263,6 +1280,13 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 }
             } else {
                 async_span = name_span;
+            }
+
+            if (!modifier_error) {
+                if (is_type) {
+                    modifier_error = MODIFIER_ON_TYPE;
+                    modifier_error_span = name_span;
+                }
             }
         } else if (cstr_equals(&name, "declare")) {
         } else if (cstr_equals(&name, "get")) {
@@ -1278,7 +1302,10 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
             }
 
             if (!modifier_error) {
-                if (span_valid(&access_span)) {
+                if (is_type) {
+                    modifier_error = MODIFIER_ON_TYPE;
+                    modifier_error_span = name_span;
+                } else if (span_valid(&access_span)) {
                     modifier_error = ACCCESS_ALREADY_SEEN;
                     modifier_error_span = name_span;
                 } else if (span_valid(&readonly_span)) {
@@ -1330,8 +1357,6 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
         }
-    } else if (cstr_equals(&name, "new")) {
-
     } else if (cstr_equals(&name, "static") && parse_block(&p, false, &ret->static_block)) {
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
         if (span_valid(&async_span)) {
@@ -1358,6 +1383,7 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
             ret->field.readonly = span_valid(&readonly_span);
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "class member expected");
+            ret->tag = CLASS_ITEM_MEMBER;
             ret->member = (typeof(ret->member)){0};
         }
     } else {
@@ -1381,7 +1407,8 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 &parent->errs,
                 modifier_error_span,
                 1029,
-                "'%.*s' modifier must precede 'readonly' modifier.", c_SV(span_sv(&modifier_error_span))
+                "'%.*s' modifier must precede 'readonly' modifier.",
+                c_SV(span_sv(&modifier_error_span))
             );
             break;
 
@@ -1390,7 +1417,8 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 &parent->errs,
                 modifier_error_span,
                 1029,
-                "'%.*s' modifier must precede 'static' modifier.", c_SV(span_sv(&modifier_error_span))
+                "'%.*s' modifier must precede 'static' modifier.",
+                c_SV(span_sv(&modifier_error_span))
             );
             break;
 
@@ -1399,7 +1427,8 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 &parent->errs,
                 modifier_error_span,
                 1029,
-                "'%.*s' modifier must precede 'async' modifier.", c_SV(span_sv(&modifier_error_span))
+                "'%.*s' modifier must precede 'async' modifier.",
+                c_SV(span_sv(&modifier_error_span))
             );
             break;
 
@@ -1427,6 +1456,16 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
                 modifier_error_span,
                 1184,
                 "Modifiers cannot appear here."
+            );
+            break;
+
+        case MODIFIER_ON_TYPE:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1070,
+                "'%.*s' modifier cannot appear on a type member.",
+                c_SV(span_sv(&modifier_error_span))
             );
             break;
     }
@@ -1499,7 +1538,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
     ClassItem item;
     while (*p.pos && *p.pos != '}') {
-        if (!parse_class_item(&p, &item)) {
+        if (!parse_class_item(&p, false, &item)) {
             error_ctx_error(
                 &p.errs,
                 span_from_token(&p),

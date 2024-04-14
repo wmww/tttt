@@ -6072,12 +6072,12 @@ const baselines = {
     },
     'contextualTyping38': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'contextualTyping39': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'contextualTyping4': {
@@ -15528,7 +15528,7 @@ const baselines = {
     'indexWithoutParamType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexWithoutParamType2': {
         errors: false,
@@ -22936,8 +22936,8 @@ const baselines = {
         types: false,
     },
     'parseObjectLiteralsWithoutTypes': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parseShortform': {
@@ -28546,7 +28546,7 @@ const baselines = {
         types: false,
     },
     'typeReferenceDirectives1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28571,7 +28571,7 @@ const baselines = {
         types: false,
     },
     'typeReferenceDirectives2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43152,7 +43152,7 @@ const baselines = {
     },
     'typeGuardOfFormTypeOfPrimitiveSubtype': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeGuardOfFormTypeOfString': {
@@ -45216,7 +45216,7 @@ const baselines = {
         types: false,
     },
     'interfaceWithAccessibilityModifiers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49186,12 +49186,12 @@ const baselines = {
         types: false,
     },
     'parserModifierOnPropertySignature1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserModifierOnPropertySignature2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50136,23 +50136,23 @@ const baselines = {
         types: false,
     },
     'parserObjectType3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserObjectType4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserObjectType5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserObjectType6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserParameterList1': {
@@ -50261,7 +50261,7 @@ const baselines = {
         types: false,
     },
     'parserPropertySignature1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50356,7 +50356,7 @@ const baselines = {
         types: false,
     },
     'Protected8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50511,7 +50511,7 @@ const baselines = {
         types: true,
     },
     'parser643728': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55661,7 +55661,7 @@ const baselines = {
         types: false,
     },
     'objectTypeLiteralSyntax2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55676,7 +55676,7 @@ const baselines = {
         types: false,
     },
     'propertyNameWithoutTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57386,7 +57386,7 @@ const baselines = {
         types: false,
     },
     'bestCommonTypeOfTuple2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
