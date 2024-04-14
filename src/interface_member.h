@@ -4,12 +4,14 @@
 
 typedef struct InterfaceMember {
     cstr name;
+    Span name_span;
     Type type;
 } InterfaceMember;
 
-static inline InterfaceMember interface_member_make(cstr name, Type type) {
+static inline InterfaceMember interface_member_make(cstr name, Span name_span, Type type) {
     return (InterfaceMember) {
         .name = name,
+        .name_span = name_span,
         .type = type,
     };
 }

@@ -672,7 +672,7 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
                 Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
                 vec_interface_member_push(
                     &interface.members,
-                    interface_member_make(cstr_clone(i.ref->name), t)
+                    interface_member_make(cstr_clone(i.ref->name), i.ref->name_span, t)
                 );
             }
             return type_interface(interface);

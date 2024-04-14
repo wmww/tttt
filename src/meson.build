@@ -9,6 +9,7 @@ core_files = files(
     'generic.c',
     'ternary_type.c',
     'class_decl.c',
+    'type_decl.c',
     'block.c',
     'expr.c',
     'value.c',

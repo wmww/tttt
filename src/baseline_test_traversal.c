@@ -1,6 +1,7 @@
 #include "baseline_test_traversal.h"
 #include "baseline_test_case.h"
 #include "type.h"
+#include "interface_member.h"
 #include "generic.h"
 #include "expr.h"
 #include "as_type_expr.h"
@@ -56,7 +57,12 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             type_compile_test_info(&my callable->ret, ctx);
             break;
 
-        case TYPE_INTERFACE: break;
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_interface_member, my interface.members) {
+                baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
+                type_compile_test_info(&i.ref->type, ctx);
+            }
+            break;
 
         case TYPE_ARRAY:
             type_compile_test_info(my array, ctx);
@@ -137,6 +143,16 @@ void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
             case CLASS_ITEM_STATIC_BLOCK: block_compile_test_info(&i.ref->static_block, ctx); break;
         }
     }
+}
+
+void type_decl_compile_test_info(TypeDecl* me, BaselineTestCase* ctx) {
+    baseline_test_case_add_symbol(
+        ctx,
+        cstr_str(&my name),
+        my name_span,
+        my full_span
+    );
+    type_compile_test_info(&my type, ctx);
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
@@ -314,7 +330,9 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             class_decl_compile_test_info(my decl.class, ctx);
             break;
 
-        case STATEMENT_DECL_TYPE: break;
+        case STATEMENT_DECL_TYPE:
+            type_decl_compile_test_info(&my decl.type, ctx);
+            break;
     }
 }
 

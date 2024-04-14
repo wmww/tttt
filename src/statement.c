@@ -89,24 +89,6 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
     }
 }
 
-void type_decl_statement_drop(TypeDeclStatement* me) {
-    cstr_drop(&my name);
-    type_drop(&my type);
-}
-
-void cstr_append_type_decl_statement_debug(cstr* target, TypeDeclStatement* me, int indent) {
-    if (my is_interface) {
-        cstr_append_sv(target, c_sv("interface " CLR_NAME));
-        cstr_append_s(target, my name);
-        cstr_append_sv(target, c_sv(CLR0 " "));
-    } else {
-        cstr_append_sv(target, c_sv("type " CLR_NAME));
-        cstr_append_s(target, my name);
-        cstr_append_sv(target, c_sv(CLR0 " = "));
-    }
-    cstr_append_type_debug(target, &my type, indent);
-}
-
 czview for_each_loop_statement_keyword_str(ForEachLoopStatement* me) {
     switch (my keyword) {
         case FOR_EACH_LOOP_OF: return c_zv("of");
@@ -176,7 +158,7 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            type_decl_statement_drop(&my decl.type);
+            type_decl_drop(&my decl.type);
             break;
     }
 }
@@ -289,7 +271,7 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
 
         case STATEMENT_DECL_CLASS: cstr_append_class_decl_debug(target, my decl.class, indent); break;
 
-        case STATEMENT_DECL_TYPE: cstr_append_type_decl_statement_debug(target, &my decl.type, indent); break;
+        case STATEMENT_DECL_TYPE: cstr_append_type_decl_debug(target, &my decl.type, indent); break;
     }
 }
 

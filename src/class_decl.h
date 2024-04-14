@@ -43,9 +43,9 @@ void class_item_drop(ClassItem* me);
 #include "wrap_stc/vec.h"
 
 typedef struct ClassDecl {
+    Span full_span;
     cstr name;
     Span name_span;
-    Span full_span;
     Type interface;
     Expr extends;
     VecType implements;

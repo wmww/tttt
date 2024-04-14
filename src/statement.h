@@ -4,6 +4,7 @@
 #include "expr.h"
 #include "type.h"
 #include "function_impl.h"
+#include "type_decl.h"
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
@@ -47,17 +48,6 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
 void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
-
-// Type declaration statements (including interfaces)
-
-typedef struct TypeDeclStatement {
-    bool is_interface;
-    cstr name;
-    Type type;
-} TypeDeclStatement;
-
-void type_decl_statement_drop(TypeDeclStatement* me);
-void cstr_append_type_decl_statement_debug(cstr* target, TypeDeclStatement* me, int indent);
 
 // If statements
 
@@ -106,7 +96,7 @@ typedef struct Statement {
                 VariableStatement variable;
                 FunctionImpl function;
                 ClassDecl* class;
-                TypeDeclStatement type;
+                TypeDecl type;
             };
         } decl;
     };

@@ -386,7 +386,12 @@ bool type_extends(Type const* sub, Type const* super) {
 
         case TYPE_IDENTIFIER:
             if (super->identifier.type.get) {
-                return type_extends(sub, super->identifier.type.get->type);
+                // TODO: replace with a more robust recursion checking system
+                if (super->identifier.type.get->type == super) {
+                    return false;
+                } else {
+                    return type_extends(sub, super->identifier.type.get->type);
+                }
             }
             return true;
 
@@ -526,6 +531,7 @@ void type_abstract_literals(Type* me) {
                     c_foreach(i, hmap_str_object_item, my value.object.get->items) {
                         InterfaceMember member = interface_member_make(
                             cstr_clone(i.ref->first),
+                            span_null,
                             type_value(value_clone(i.ref->second.value))
                         );
                         type_abstract_literals(&member.type);

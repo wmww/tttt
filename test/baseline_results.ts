@@ -131,7 +131,7 @@ const baselines = {
         types: true,
     },
     'DeclarationErrorsNoEmitOnError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1792,7 +1792,7 @@ const baselines = {
     },
     'assignmentCompatibilityForConstrainedTypeParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignmentIndexedToPrimitives': {
@@ -2687,7 +2687,7 @@ const baselines = {
     },
     'callConstructAssignment': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'callExpressionWithMissingTypeArgument1': {
@@ -5552,7 +5552,7 @@ const baselines = {
     },
     'constraintPropagationThroughReturnTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constraintReferencingTypeParameterFromSameTypeParameterList': {
@@ -6002,17 +6002,17 @@ const baselines = {
     },
     'contextualTyping25': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTyping26': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTyping27': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTyping28': {
@@ -6107,12 +6107,12 @@ const baselines = {
     },
     'contextualTyping7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTyping8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTyping9': {
@@ -8616,12 +8616,12 @@ const baselines = {
         types: false,
     },
     'defaultNamedExportWithType1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'defaultNamedExportWithType2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9282,7 +9282,7 @@ const baselines = {
     },
     'dontShowCompilerGeneratedMembers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'dottedModuleName': {
@@ -10447,7 +10447,7 @@ const baselines = {
     },
     'errorOnInitializerInObjectTypeLiteralProperty': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorOnUnionVsObjectShouldDeeplyDisambiguate': {
@@ -10487,7 +10487,7 @@ const baselines = {
     },
     'errorWithTruncatedType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorsForCallAndAssignmentAreSimilar': {
@@ -13642,7 +13642,7 @@ const baselines = {
     },
     'genericAssignmentCompatOfFunctionSignatures1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericAssignmentCompatWithInterfaces1': {
@@ -14312,7 +14312,7 @@ const baselines = {
     },
     'genericTypeWithCallableMembers2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'genericTypeWithMultipleBases1': {
@@ -20506,7 +20506,7 @@ const baselines = {
         types: false,
     },
     'narrowTypeByInstanceof': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20841,7 +20841,7 @@ const baselines = {
         types: false,
     },
     'nestedThisContainer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24946,7 +24946,7 @@ const baselines = {
         types: false,
     },
     'resolveTypeAliasWithSameLetDeclarationName1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27322,7 +27322,7 @@ const baselines = {
     },
     'targetTypeVoidFunc': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'targetTypingOnFunctions': {
@@ -27861,7 +27861,7 @@ const baselines = {
         types: false,
     },
     'typeAliasDeclarationEmit3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28631,7 +28631,7 @@ const baselines = {
         types: false,
     },
     'typeUsedAsValueError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28982,7 +28982,7 @@ const baselines = {
     },
     'unexpectedStatementBlockTerminator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unexportedInstanceClassVariables': {
@@ -30272,7 +30272,7 @@ const baselines = {
     },
     'voidConstructor': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'voidFunctionAssignmentCompat': {
@@ -46891,7 +46891,7 @@ const baselines = {
         types: false,
     },
     'jsdocTwoLineTypedef': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49132,7 +49132,7 @@ const baselines = {
     },
     'parserCommaInTypeMemberList1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserCommaInTypeMemberList2': {
@@ -49802,7 +49802,7 @@ const baselines = {
     },
     'parserInterfaceDeclaration7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserInterfaceDeclaration8': {
@@ -50132,7 +50132,7 @@ const baselines = {
     },
     'parserObjectType2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserObjectType3': {
@@ -50422,7 +50422,7 @@ const baselines = {
     },
     'parser509677': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parser509693': {
@@ -55657,12 +55657,12 @@ const baselines = {
     },
     'objectTypeLiteralSyntax': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectTypeLiteralSyntax2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'numericNamedPropertyDuplicates': {

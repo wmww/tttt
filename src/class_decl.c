@@ -192,6 +192,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     &interface.members,
                     interface_member_make(
                         cstr_clone(i.ref->member.name),
+                        i.ref->member.name_span,
                         type_clone(i.ref->member.func.type)
                     ));
                 break;
@@ -213,6 +214,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     &interface.members,
                     interface_member_make(
                         cstr_clone(i.ref->field.data.name),
+                        i.ref->field.data.name_span,
                         type_clone(i.ref->field.data.type)
                     ));
                 break;

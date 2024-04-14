@@ -246,6 +246,7 @@ typedef struct CallExpr {
 
 typedef struct ObjectExprItem {
     cstr name;
+    Span name_span;
     Expr value;
 } ObjectExprItem;
 

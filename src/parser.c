@@ -323,6 +323,7 @@ static inline bool hop_char(Parser* parent, char c) {
     }
 }
 
+// TODO: calls to this should really be hop_start_if_ends_on_word_break() followed by hop_whitespace()
 static inline bool hop_start_and_required_whitespace(Parser* parent, const char* prefix) {
     Parser p = parser(parent);
     if (hop_start(&p, prefix)) {
@@ -712,9 +713,12 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         prev_s = p.pos;
         hop_whitespace(&p);
 
-        cstr name = cstr_null;
-        if (!parse_identifier(&p, &name, nullptr)) {
+        cstr name;
+        Span name_span;
+        if (!parse_identifier(&p, &name, &name_span)) {
             error_ctx_parse_error(&p.errs, "expected interface member name");
+            name = cstr_null;
+            name_span = span_null;
         }
         hop_whitespace(&p);
 
@@ -725,7 +729,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
         Type type;
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-            vec_interface_member_push(&members, interface_member_make(name, type));
+            vec_interface_member_push(&members, interface_member_make(name, name_span, type));
         } else {
             cstr_drop(&name);
             error_ctx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "expected type");
@@ -749,16 +753,70 @@ static bool parse_interface(Parser* parent, Interface* ret) {
     return parse_success(&p);
 }
 
-static bool parse_named_interface(Parser* parent, TypeDeclStatement* ret) {
+static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_start_if_ends_on_word_break(&p, "type")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    if (p.whitespace == WHITESPACE_NEWLINE) {
+        return parse_fail(&p);
+    }
+
+    cstr name;
+    Span name_span;
+    if (!parse_identifier(&p, &name, &name_span)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!hop_start(&p, "=")) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=' expected.");
+        *ret = (TypeDecl) {
+            .is_interface = false,
+            .name = name,
+            .name_span = name_span,
+            .type = type_any,
+        };
+        return parse_success(&p);
+    }
+    hop_whitespace(&p);
+
+    Type type;
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+        *ret = (TypeDecl) {
+            .is_interface = false,
+            .name = name,
+            .name_span = name_span,
+            .type = type_any,
+        };
+        return parse_success(&p);
+    }
+
+    *ret = (TypeDecl) {
+        .is_interface = false,
+        .name = name,
+        .name_span = name_span,
+        .type = type,
+    };
+    return parse_success(&p);
+}
+
+static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     Parser p = parser(parent);
 
     if (!hop_start_and_required_whitespace(&p, "interface")) {
         return parse_fail(&p);
     }
 
-    cstr name = cstr_null;
-    if (!parse_identifier(&p, &name, nullptr)) {
+    cstr name;
+    Span name_span;
+    if (!parse_identifier(&p, &name, &name_span)) {
         error_ctx_parse_error(&p.errs, "interface does not have a name");
+        name = cstr_null;
+        name_span = span_null;
     }
     hop_whitespace(&p);
 
@@ -768,9 +826,10 @@ static bool parse_named_interface(Parser* parent, TypeDeclStatement* ret) {
         return parse_fail(&p);
     }
 
-    *ret = (TypeDeclStatement) {
+    *ret = (TypeDecl) {
         .is_interface = true,
         .name = name,
+        .name_span = name_span,
         .type = type_interface(interface),
     };
     return parse_success(&p);
@@ -1059,20 +1118,23 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
 static bool parse_object_item(Parser* parent, void* data) {
     Parser p = parser(parent);
     VecObjectExprItem* ret = data;
-    cstr name = cstr_null;
+    cstr name;
+    Span name_span;
     Value name_value;
 
-    if (parse_identifier(&p, &name, nullptr)) {
+    if (parse_identifier(&p, &name, &name_span)) {
     } else if (parse_literal(&p, &name_value)) {
         if (name_value.tag == VALUE_STRING) {
             name = name_value.string;
+            name_span = span_null;
         } else {
             name = cstr_null;
+            name_span = span_null;
             cstr_append_value_js(&name, &name_value);
             value_drop(&name_value);
         }
     } else {
-        return parse_fail(&p);
+            return parse_fail(&p);
     }
     hop_whitespace(&p);
 
@@ -1090,6 +1152,7 @@ static bool parse_object_item(Parser* parent, void* data) {
 
     vec_object_expr_item_push(ret, (ObjectExprItem){
         .name = name,
+        .name_span = name_span,
         .value = value,
     });
     return parse_success(&p);
@@ -1278,6 +1341,8 @@ static bool parse_class_item(Parser* parent, ClassItem* ret) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
         }
+    } else if (cstr_equals(&name, "new")) {
+
     } else if (cstr_equals(&name, "static") && parse_block(&p, false, &ret->static_block)) {
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
         if (span_valid(&async_span)) {
@@ -2525,7 +2590,7 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
         VariableStatement variable;
         FunctionImpl function;
         ClassDecl class;
-        TypeDeclStatement type_decl;
+        TypeDecl type_decl;
         Expr expr;
     } parsed;
 
@@ -2547,7 +2612,9 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
             .decl.exported = exported,
             .decl.class = c_new(ClassDecl, parsed.class),
         };
-    } else if (parse_named_interface(&p, &parsed.type_decl)) {
+    } else if (parse_interface_decl(&p, &parsed.type_decl) ||
+               parse_type_decl(&p, &parsed.type_decl)
+    ) {
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
             .decl.exported = exported,
@@ -2597,6 +2664,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         switch (ret->tag) {
             case STATEMENT_DECL_FUNCTION: ret->decl.function.full_span = span_end(a); break;
             case STATEMENT_DECL_CLASS: ret->decl.class->full_span = span_end(a); break;
+            case STATEMENT_DECL_TYPE: ret->decl.type.full_span = span_end(a); break;
             default: break;
         }
     } else if (parse_statement_decl(&p, DECL_EXPORTED_NO, ret)) {

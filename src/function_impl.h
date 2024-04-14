@@ -22,10 +22,10 @@ void function_arg_drop(FunctionArg* me);
 #include "wrap_stc/vec.h"
 
 typedef struct FunctionImpl {
+    Span full_span;
     cstr name;
     Span name_span;
     Type type;
-    Span full_span;
     VecFunctionArg args;
     Span args_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
