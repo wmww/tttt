@@ -77,8 +77,12 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
         cstr_append_sv(target, c_sv(": "));
         cstr_append_type_debug(target, &callable->ret, indent);
     }
-    cstr_append_sv(target, include_arrow ? c_sv(" => ") : c_sv(" "));
-    cstr_append_block_debug(target, &my body, indent);
+    if (my has_block) {
+        cstr_append_sv(target, include_arrow ? c_sv(" => ") : c_sv(" "));
+        cstr_append_block_debug(target, &my body, indent);
+    } else {
+        cstr_append_sv(target, c_sv(";"));
+    }
 }
 
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {

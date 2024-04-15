@@ -236,7 +236,7 @@ const baselines = {
         types: true,
     },
     'abstractInterfaceIdentifierName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4256,7 +4256,7 @@ const baselines = {
         types: false,
     },
     'collisionSuperAndNameResolution': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6856,7 +6856,7 @@ const baselines = {
         types: false,
     },
     'declFileForClassWithPrivateOverloadedFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9136,12 +9136,12 @@ const baselines = {
         types: false,
     },
     'divergentAccessors1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'divergentAccessorsTypes1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13291,7 +13291,7 @@ const baselines = {
         types: false,
     },
     'functionOverloadsOnGenericArity2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14706,7 +14706,7 @@ const baselines = {
         types: false,
     },
     'implementInterfaceAnyMemberWithVoid': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16661,7 +16661,7 @@ const baselines = {
         types: false,
     },
     'interfaceOnly': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19031,7 +19031,7 @@ const baselines = {
         types: false,
     },
     'methodSignatureDeclarationEmit1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22506,12 +22506,12 @@ const baselines = {
         types: false,
     },
     'overloadOnConstInBaseWithBadImplementationInDerived': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'overloadOnConstInCallback1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22536,7 +22536,7 @@ const baselines = {
         types: false,
     },
     'overloadOnConstInheritance4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22551,7 +22551,7 @@ const baselines = {
         types: false,
     },
     'overloadOnConstNoNonSpecializedSignature': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22571,7 +22571,7 @@ const baselines = {
         types: false,
     },
     'overloadOnGenericArity': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22611,7 +22611,7 @@ const baselines = {
         types: false,
     },
     'overloadRet': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25401,7 +25401,7 @@ const baselines = {
         types: false,
     },
     'sigantureIsSubTypeIfTheyAreIdentical': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27756,7 +27756,7 @@ const baselines = {
         types: false,
     },
     'truthinessCallExpressionCoercion3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29611,7 +29611,7 @@ const baselines = {
         types: false,
     },
     'unusedMethodsInInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30271,7 +30271,7 @@ const baselines = {
         types: false,
     },
     'voidConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43291,7 +43291,7 @@ const baselines = {
         types: false,
     },
     'typePredicateASI': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48481,7 +48481,7 @@ const baselines = {
         types: false,
     },
     'parserClassDeclaration16': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49966,7 +49966,7 @@ const baselines = {
         types: true,
     },
     'parserMethodSignature1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49991,7 +49991,7 @@ const baselines = {
         types: false,
     },
     'parserMethodSignature3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51541,7 +51541,7 @@ const baselines = {
         types: true,
     },
     'parserExportAsFunctionIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55151,7 +55151,7 @@ const baselines = {
         types: false,
     },
     'objectTypeHidingMembersOfObject': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55716,7 +55716,7 @@ const baselines = {
         types: false,
     },
     'extendBooleanInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55761,7 +55761,7 @@ const baselines = {
         types: false,
     },
     'extendNumberInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55791,7 +55791,7 @@ const baselines = {
         types: false,
     },
     'extendStringInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

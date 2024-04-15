@@ -1055,15 +1055,14 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
             expr = expr_implicit_any(span_from_pos(&p));
             p.pos = span_end_ptr(&ret->arrow_span);
         }
-        ret->body = (Block){
-            .statements = vec_statement_init(),
-        };
+        ret->body = (Block){0};
         vec_statement_push(&ret->body.statements, (Statement){
             .tag = STATEMENT_RETURN_EXPR,
             .expr = expr,
         });
     }
 
+    ret->has_block = true;
     ret->full_span = span_end(a);
     return parse_success(&p);
 }
@@ -1078,7 +1077,11 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_block(&p, false, &ret->body)) {
+    if (parse_block(&p, false, &ret->body)) {
+        ret->has_block = true;
+    } else if (*p.pos == ';' || p.whitespace == WHITESPACE_NEWLINE) {
+        ret->body = (Block){0};
+    } else {
         error_ctx_error(&p.errs, span_from_token(&p), 1144, "'{' or ';' expected.");
     }
 
