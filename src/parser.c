@@ -348,6 +348,14 @@ static bool hop_token(Parser* parent) {
             parent->pos++;
             return true;
 
+        case '.':
+            if (is_number_char(*(parent->pos + 1))) {
+                break;
+            } else {
+                parent->pos++;
+                return true;
+            }
+
         default: break;
     }
 
@@ -1067,6 +1075,19 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
+static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
+    Parser p = parser(parent);
+    Anchor a = span_start(&p);
+    *ret = (FunctionImpl){0};
+
+    if (!parse_function_args(&p, &ret->args, &ret->args_span, &ret->type)) {
+        return parse_fail(&p);
+    }
+
+    ret->full_span = span_end(a);
+    return parse_success(&p);
+}
+
 static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
@@ -1086,8 +1107,6 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     }
 
     ret->full_span = span_end(a);
-    ret->name = cstr_null;
-    ret->name_span = span_null;
     return parse_success(&p);
 }
 
@@ -1347,10 +1366,13 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
     }
 
-    if (cstr_equals(&name, "constructor")) {
+    bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
+        is_type ? parse_function_header : parse_non_arrow_function;
+
+    if (!is_type && cstr_equals(&name, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
         name_span = span_end(a);
-        if (!parse_non_arrow_function(&p, &ret->constructor.func)) {
+        if (!parse_function_fn(&p, &ret->constructor.func)) {
             error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "constructor expected");
             ret->constructor.func = (FunctionImpl){0};
         }
@@ -1360,7 +1382,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
         }
-    } else if (cstr_equals(&name, "static") && parse_block(&p, false, &ret->static_block)) {
+    } else if (!is_type && cstr_equals(&name, "static") && parse_block(&p, false, &ret->static_block)) {
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
         if (span_valid(&async_span)) {
             modifier_error = MODIFIERS_CANNOT_APPEAR;
@@ -1373,7 +1395,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             modifier_error_span = access_span;
         }
     } else if (!cstr_empty(&name)) {
-        if (parse_non_arrow_function(&p, &ret->member.func)) {
+        if (parse_function_fn(&p, &ret->member.func)) {
             ret->tag = CLASS_ITEM_MEMBER;
             ret->member.name = name;
             ret->member.name_span = name_span;

@@ -16686,7 +16686,7 @@ const baselines = {
         types: false,
     },
     'interfaceWithCommaSeparators': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49811,7 +49811,7 @@ const baselines = {
         types: true,
     },
     'parserInterfaceDeclaration9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
