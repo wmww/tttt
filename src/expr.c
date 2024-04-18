@@ -393,7 +393,7 @@ static Type binary_op_get_type_and_typecheck(
     Type left,
     BinaryOp op,
     Type right,
-    Expr* expr,
+    Expr const* expr,
     ErrorCtx* errs
 ) {
     Type ret = type_any;
@@ -553,7 +553,7 @@ static Type binary_op_get_type_and_typecheck(
     return ret;
 }
 
-Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
+Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
             return type_any;
@@ -619,14 +619,20 @@ Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs) {
         case EXPR_CALL: {
             Type ret = type_any;
             Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
-            if (callable.tag == TYPE_GENERIC) {
-                Type inferred = generic_callable_infer(callable.generic, &my call->args, errs);
-                type_drop(&callable);
-                callable = inferred;
-            }
             long given_arg_count = vec_expr_size(&my call->args);
             long callable_arg_count = 0;
             if (callable.tag == TYPE_CALLABLE) {
+                if (!generic_empty(&callable.callable->generic)) {
+                    Type inferred = generic_infer_callable_types(
+                        &callable.callable->generic,
+                        callable.callable,
+                        &my call->args,
+                        errs
+                    );
+                    type_drop(&callable);
+                    callable = inferred;
+                    ASSERT(callable.tag == TYPE_CALLABLE);
+                }
                 callable_arg_count = vec_callable_type_arg_size(&callable.callable->args);
                 // TODO: handle optional and variadic arguments
                 if (callable_arg_count != given_arg_count) {

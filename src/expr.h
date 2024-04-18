@@ -115,7 +115,7 @@ static inline Expr expr_implicit_any(Span span) {
 void expr_drop(Expr* me);
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent);
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs);
-Type expr_get_type_and_typecheck(Expr* me, ErrorCtx* errs);
+Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs);
 
 #define i_key_class_names Expr, expr
 #define i_no_clone

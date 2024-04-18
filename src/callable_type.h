@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "generic.h"
 
 typedef struct CallableTypeArg {
     cstr name;
@@ -15,6 +16,7 @@ CallableTypeArg callable_type_arg_clone(CallableTypeArg me);
 #include "wrap_stc/vec.h"
 
 typedef struct CallableType {
+    Generic generic;
     VecCallableTypeArg args;
     bool ret_explicit;
     Type ret;

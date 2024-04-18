@@ -13,8 +13,8 @@
 #include "callable_type.h"
 #include "name_stack.h"
 
-void generic_items_compile_test_info(VecGenericItem* me, BaselineTestCase* ctx) {
-    c_foreach(i, vec_generic_item, *me) {
+void generic_compile_test_info(Generic* me, BaselineTestCase* ctx) {
+    c_foreach(i, vec_generic_item, my items) {
         baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
         type_compile_test_info(&i.ref->extends, ctx);
         if (i.ref->fallback_explicit) {
@@ -43,12 +43,6 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
                 my identifier.type.get ? my identifier.type.get->name_span : span_null
             );
         }   break;
-
-
-        case TYPE_GENERIC:
-            generic_items_compile_test_info(&my generic->items, ctx);
-            type_compile_test_info(&my generic->inner, ctx);
-            break;
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_type_arg, my callable->args) {
@@ -90,10 +84,8 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_symbol(ctx, cstr_str(&my name), my full_span, my full_span);
         baseline_test_case_add_type(ctx, my name_span, &my type);
     }
-    if (my type.tag == TYPE_GENERIC) {
-        generic_items_compile_test_info(&my type.generic->items, ctx);
-    }
     CallableType* callable = function_impl_callable_type(me);
+    generic_compile_test_info(&callable->generic, ctx);
     int arg_count = function_impl_arg_count(me);
     for (int i = 0; i < arg_count; i++) {
         FunctionArg* value_arg = vec_function_arg_at_mut(&my args, i);
@@ -107,7 +99,9 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
         type_compile_test_info(&type_arg->type, ctx);
     }
-    type_compile_test_info(&callable->ret, ctx);
+    if (callable->ret_explicit) {
+        type_compile_test_info(&callable->ret, ctx);
+    }
     block_compile_test_info(&my body, ctx);
 }
 

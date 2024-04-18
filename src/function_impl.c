@@ -31,11 +31,7 @@ CallableType* function_impl_callable_type(FunctionImpl* me) {
 }
 
 Generic* function_impl_generic_or_null(FunctionImpl* me) {
-    if (my type.tag == TYPE_GENERIC) {
-        return my type.generic;
-    } else {
-        return nullptr;
-    }
+    return type_get_generic(&my type);
 }
 
 intptr_t function_impl_arg_count(FunctionImpl* me) {
@@ -50,7 +46,7 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
     Generic* generic = function_impl_generic_or_null(me);
     CallableType* callable = function_impl_callable_type(me);
     if (generic) {
-        cstr_append_vec_generic_item_debug(target, &generic->items, indent);
+        cstr_append_generic_debug(target, generic, indent);
     }
     cstr_append_sv(target, c_sv("("));
     int arg_count = function_impl_arg_count(me);

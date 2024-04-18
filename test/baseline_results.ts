@@ -1107,7 +1107,7 @@ const baselines = {
     },
     'arithmeticOnInvalidTypes2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arityErrorRelatedSpanBindingPattern': {
@@ -8087,7 +8087,7 @@ const baselines = {
     },
     'declarationEmitTypeParameterNameShadowedInternally': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitTypeofDefaultExport': {
@@ -13922,12 +13922,12 @@ const baselines = {
     },
     'genericFunctions0': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericFunctions1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericFunctions2': {
@@ -14131,8 +14131,8 @@ const baselines = {
         types: false,
     },
     'genericParameterAssignability1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'genericPrototypeProperty': {
@@ -27957,7 +27957,7 @@ const baselines = {
     },
     'typeArgumentsInFunctionExpressions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeArgumentsOnFunctionsWithNoTypeParameters': {
@@ -28982,7 +28982,7 @@ const baselines = {
     },
     'unexpectedStatementBlockTerminator': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'unexportedInstanceClassVariables': {

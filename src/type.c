@@ -90,11 +90,6 @@ void type_drop(Type* me) {
             arc_named_type_drop(&my identifier.type);
             break;
 
-        case TYPE_GENERIC:
-            generic_drop(my generic);
-            free(my generic);
-            break;
-
         case TYPE_CALLABLE:
             callable_type_drop(my callable);
             free(my callable);
@@ -141,7 +136,6 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             cstr_append_s(target, my identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
-        case TYPE_GENERIC: cstr_append_generic_debug(target, my generic, indent); break;
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, my callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &my interface, indent); break;
         case TYPE_ARRAY:
@@ -184,7 +178,6 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
         case TYPE_VALUE: cstr_append_value_error_msg(target, &my value); break;
         case TYPE_IDENTIFIER: cstr_append_s(target, my identifier.name); break;
-        case TYPE_GENERIC: cstr_append_generic_error_msg(target, my generic); break;
         case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, my callable); break;
         case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &my interface); break;
         case TYPE_ARRAY: {
@@ -238,7 +231,6 @@ Type type_clone(Type me) {
             arc_named_type_clone(me.identifier.type),
             me.identifier.generic_depth
         );
-        case TYPE_GENERIC: return type_generic(c_new(Generic, generic_clone(*me.generic)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
@@ -255,7 +247,26 @@ Type type_move(Type* me) {
     return ret;
 }
 
+Generic* type_get_generic(Type const* me) {
+    switch (my tag) {
+        case TYPE_CALLABLE:
+            if (!generic_empty(&my callable->generic)) {
+                return &my callable->generic;
+            }
+            break;
+
+        default: break;
+    }
+    return nullptr;
+}
+
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
+    Generic* generic = type_get_generic(me);
+    if (generic) {
+        name_stack_push_frame(names, STACK_FRAME_GENERIC);
+        generic_resolve_names(generic, names, errs);
+    }
+
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -285,10 +296,6 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
                 my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
             }
         }   break;
-
-        case TYPE_GENERIC:
-            generic_resolve_names(my generic, names, errs);
-            break;
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_type_arg, my callable->args) {
@@ -326,7 +333,10 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             type_resolve_names(&my ternary->TrueType, names, errs);
             type_resolve_names(&my ternary->FalseType, names, errs);
             break;
+    }
 
+    if (generic) {
+        name_stack_pop_frame(names);
     }
 }
 
@@ -395,33 +405,25 @@ bool type_extends(Type const* sub, Type const* super) {
             }
             return true;
 
-        case TYPE_GENERIC:
-            NONFATAL("generic extends not yet implemented");
-            return false;
-
         case TYPE_CALLABLE:
-            if (sub->tag == TYPE_GENERIC) {
-                NONFATAL("generic extends not yet implemented");
-                return false;
-            } else if (sub->tag == TYPE_CALLABLE) {
-                long arg_count = vec_callable_type_arg_size(&super->callable->args);
-                if (vec_callable_type_arg_size(&sub->callable->args) != arg_count) {
-                    return false;
-                }
-                for (int i = 0; i < arg_count; i++) {
-                    // Order is flipped for arguments
-                    if (!type_extends(
-                        &vec_callable_type_arg_at(&super->callable->args, i)->type,
-                        &vec_callable_type_arg_at(&sub->callable->args, i)->type
-                    )) {
-                        return false;
-                    }
-                }
-                // Order is not flipped for return
-                return type_extends(&sub->callable->ret, &super->callable->ret);
-            } else {
+            if (sub->tag != TYPE_CALLABLE) {
                 return false;
             }
+            long arg_count = vec_callable_type_arg_size(&super->callable->args);
+            if (vec_callable_type_arg_size(&sub->callable->args) != arg_count) {
+                return false;
+            }
+            for (int i = 0; i < arg_count; i++) {
+                // Order is flipped for arguments
+                if (!type_extends(
+                    &vec_callable_type_arg_at(&super->callable->args, i)->type,
+                    &vec_callable_type_arg_at(&sub->callable->args, i)->type
+                )) {
+                    return false;
+                }
+            }
+            // Order is not flipped for return
+            return type_extends(&sub->callable->ret, &super->callable->ret);
 
         case TYPE_ARRAY:
             return sub->tag == TYPE_ARRAY && type_extends(sub->array, super->array);
@@ -498,7 +500,6 @@ void type_abstract_literals(Type* me) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_IDENTIFIER:
-        case TYPE_GENERIC:
         case TYPE_CALLABLE:
         case TYPE_INTERFACE:
         case TYPE_ARRAY:

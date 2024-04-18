@@ -463,7 +463,7 @@ static bool parse_sequence(
 
 static bool parse_generic_decl_item(Parser* parent, void* data) {
     Parser p = parser(parent);
-    VecGenericItem* ret = data;
+    Generic* ret = data;
     cstr name = cstr_null;
     Span name_span = span_from_pos(&p);
 
@@ -488,7 +488,7 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
         }
     }
 
-    vec_generic_item_push(ret, (GenericItem){
+    vec_generic_item_push(&ret->items, (GenericItem){
         .name = name,
         .name_span = name_span,
         .extends = extends,
@@ -498,10 +498,10 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
     return parse_success(&p);
 }
 
-static bool parse_generic_decl_list(Parser* parent, VecGenericItem* ret) {
-    *ret = (VecGenericItem){0};
+static bool parse_generic_decl(Parser* parent, Generic* ret) {
+    *ret = (Generic){0};
     if (!parse_sequence(parent, "<", SEQUENCE_SEP_COMMA, '>', parse_generic_decl_item, ret)) {
-        vec_generic_item_drop(ret);
+        generic_drop(ret);
         return false;
     }
     return true;
@@ -851,14 +851,13 @@ static bool parse_function_args(
 ) {
     Parser p = parser(parent);
     bool is_definitely_function = false;
-    VecGenericItem generics;
     CallableType callable_type = {0};
 
-    if (parse_generic_decl_list(&p, &generics)) {
+    if (parse_generic_decl(&p, &callable_type.generic)) {
         hop_whitespace(&p);
         is_definitely_function = true;
     } else {
-        generics = (VecGenericItem){0};
+        callable_type.generic = (Generic){0};
     }
 
     if (args_ret) {
@@ -929,7 +928,6 @@ static bool parse_function_args(
                 *args_ret = vec_function_arg_init();
             }
             callable_type_drop(&callable_type);
-            vec_generic_item_drop(&generics);
             *type_ret = type_callable(c_new(CallableType, {0}));
             error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
             return parse_success(&p);
@@ -977,18 +975,10 @@ static bool parse_function_args(
     }
 
     *type_ret = type_callable(c_new(CallableType, callable_type));
-    if (!vec_generic_item_empty(&generics)) {
-        *type_ret = type_generic(c_new(Generic, {
-            .items = generics,
-            .inner = *type_ret,
-        }));
-    }
-
     return parse_success(&p);
 
 drop_and_fail:
     callable_type_drop(&callable_type);
-    vec_generic_item_drop(&generics);
     if (args_ret) {
         vec_function_arg_drop(args_ret);
     }

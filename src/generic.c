@@ -28,12 +28,22 @@ GenericItem generic_item_clone(GenericItem me) {
     };
 }
 
-void cstr_append_vec_generic_item_debug(cstr* target, VecGenericItem* generics, int indent) {
-    if (vec_generic_item_empty(generics)) {
+void generic_drop(Generic* me) {
+    vec_generic_item_drop(&my items);
+}
+
+Generic generic_clone(Generic me) {
+    return (Generic) {
+        .items = vec_generic_item_clone(me.items),
+    };
+}
+
+void cstr_append_generic_debug(cstr* target, Generic* me, int indent) {
+    if (generic_empty(me)) {
         return;
     }
     cstr_append_sv(target, c_sv("<"));
-    c_foreach(i, vec_generic_item, *generics) {
+    c_foreach(i, vec_generic_item, my items) {
         cstr_append_sv(target, c_sv(CLR_TYPE));
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0));
@@ -52,12 +62,12 @@ void cstr_append_vec_generic_item_debug(cstr* target, VecGenericItem* generics, 
     cstr_append_sv(target, c_sv(">"));
 }
 
-void cstr_append_vec_generic_item_error_msg(cstr* target, VecGenericItem* generics) {
-    if (vec_generic_item_empty(generics)) {
+void cstr_append_generic_error_msg(cstr* target, Generic* me) {
+    if (generic_empty(me)) {
         return;
     }
     cstr_append_sv(target, c_sv("<"));
-    c_foreach(i, vec_generic_item, *generics) {
+    c_foreach(i, vec_generic_item, my items) {
         cstr_append_s(target, i.ref->name);
         if (i.ref->extends.tag != TYPE_ANY) {
             cstr_append_sv(target, c_sv(" extends "));
@@ -74,40 +84,7 @@ void cstr_append_vec_generic_item_error_msg(cstr* target, VecGenericItem* generi
     cstr_append_sv(target, c_sv(">"));
 }
 
-void generic_drop(Generic* me) {
-    vec_generic_item_drop(&my items);
-    type_drop(&my inner);
-}
-
-Generic generic_clone(Generic me) {
-    return (Generic) {
-        .items = vec_generic_item_clone(me.items),
-        .inner = type_clone(me.inner),
-    };
-}
-
-void cstr_append_generic_debug(cstr* target, Generic* me, int indent) {
-    if (my inner.tag == TYPE_CALLABLE) {
-        cstr_append_vec_generic_item_debug(target, &my items, indent);
-        cstr_append_type_debug(target, &my inner, indent);
-    } else {
-        cstr_append_type_debug(target, &my inner, indent);
-        cstr_append_vec_generic_item_debug(target, &my items, indent);
-    }
-}
-
-void cstr_append_generic_error_msg(cstr* target, Generic* me) {
-    if (my inner.tag == TYPE_CALLABLE) {
-        cstr_append_vec_generic_item_error_msg(target, &my items);
-        cstr_append_type_error_msg(target, &my inner);
-    } else {
-        cstr_append_type_error_msg(target, &my inner);
-        cstr_append_vec_generic_item_error_msg(target, &my items);
-    }
-}
-
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
-    name_stack_push_frame(names, STACK_FRAME_GENERIC);
     long generic_count = vec_generic_item_size(&my items);
     for (long i = 0; i < generic_count; i++) {
         GenericItem* item = vec_generic_item_at_mut(&my items, i);
@@ -120,8 +97,6 @@ void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
         type_resolve_names(&i.ref->extends, names, errs);
         type_resolve_names(&i.ref->fallback, names, errs);
     }
-    type_resolve_names(&my inner, names, errs);
-    name_stack_pop_frame(names);
 }
 
 typedef struct TraverseCtx {
@@ -132,9 +107,11 @@ typedef struct TraverseCtx {
     ErrorCtx* errs;
 } TraverseCtx;
 
-static inline TraverseCtx traverse_ctx_make(VecVecType* candidates, ErrorCtx* errs) {
+static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx);
+
+static inline TraverseCtx traverse_ctx_make(VecVecType* candidates, int depth, ErrorCtx* errs) {
     return (TraverseCtx) {
-        .generic_depth = 1,
+        .generic_depth = depth,
         .candidates = candidates->data,
         .candidates_len = vec_vec_type_size(candidates),
         .errs = errs,
@@ -187,14 +164,10 @@ static void collect_generic_candidates(
             // Hopefully assumption that named types can't refer to generic params holds
             return;
 
-        case TYPE_GENERIC: {
-            TraverseCtx sub = ctx;
-            sub.generic_depth++;
-            collect_generic_candidates(&generic->generic->inner, arg, sub);
-            return;
-        }
-
         case TYPE_CALLABLE:
+            if (!generic_empty(&generic->callable->generic)) {
+                ctx.generic_depth++;
+            }
             error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with callable not yet implemented"
             );
@@ -234,7 +207,22 @@ static void collect_generic_candidates(
     UNREACHABLE;
 }
 
+static void generic_swap_generics_for_specific_types(Generic* me, TraverseCtx ctx) {
+    c_foreach(i, vec_generic_item, my items) {
+        swap_generics_for_specific_types(&i.ref->extends, ctx);
+        swap_generics_for_specific_types(&i.ref->fallback, ctx);
+    }
+}
+
 static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
+    Generic* generic = type_get_generic(me);
+    if (generic) {
+        generic_swap_generics_for_specific_types(generic, ctx);
+        ctx.generic_depth++;
+        cstr s = cstr_null;
+        cstr_append_type_debug(&s, me, 0);
+        cstr_drop(&s);
+    }
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -249,7 +237,7 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
         case TYPE_IDENTIFIER:
             if (my identifier.generic_depth == ctx.generic_depth) {
                 int index = my identifier.type.get->generic_index;
-                if (index > ctx.candidates_len || index < 0) {
+                if (index >= ctx.candidates_len || index < 0) {
                     PANIC(
                         "generic %s has invalid index %d (there are only %d generic params)",
                         cstr_str(&my identifier.name),
@@ -270,16 +258,6 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
                 // Hopefully assumption that named types can't refer to generic params holds
             }
             return;
-
-        case TYPE_GENERIC: {
-            c_foreach(i, vec_generic_item, my generic->items) {
-                swap_generics_for_specific_types(&i.ref->extends, ctx);
-                swap_generics_for_specific_types(&i.ref->fallback, ctx);
-            }
-            TraverseCtx sub = ctx;
-            sub.generic_depth++;
-            swap_generics_for_specific_types(&my generic->inner, sub);
-        }   return;
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_type_arg, my callable->args) {
@@ -321,30 +299,27 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
     UNREACHABLE;
 }
 
-Type generic_callable_infer(Generic const* me, VecExpr* args, ErrorCtx* errs) {
-    if (my inner.tag != TYPE_CALLABLE) {
-        error_ctx_type_error(errs, "Generic is not callable");
-        return type_any;
-    }
-    CallableType const* callable = my inner.callable;
+Type generic_infer_callable_types(
+    Generic const* me,
+    CallableType const* callable,
+    VecExpr const* args,
+    ErrorCtx* errs
+) {
     int generic_count = vec_generic_item_size(&my items);
     int call_arg_count = vec_expr_size(args);
     int callable_arg_count = vec_callable_type_arg_size(&callable->args);
     VecVecType candidates = vec_vec_type_with_size(generic_count, vec_type_init());
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
-        Type call_arg_type = expr_get_type_and_typecheck(vec_expr_at_mut(args, i), errs);
+        Type call_arg_type = expr_get_type_and_typecheck(vec_expr_at(args, i), errs);
         collect_generic_candidates(
-            &vec_callable_type_arg_at(&my inner.callable->args, i)->type,
+            &vec_callable_type_arg_at(&callable->args, i)->type,
             &call_arg_type,
-            traverse_ctx_make(&candidates, errs)
+            traverse_ctx_make(&candidates, 1, errs)
         );
         type_drop(&call_arg_type);
     }
-    Type ret = type_clone(my inner);
-    swap_generics_for_specific_types(
-        &ret,
-        traverse_ctx_make(&candidates, errs)
-    );
+    Type ret = type_callable(c_new(CallableType, callable_type_clone(*callable)));
+    swap_generics_for_specific_types(&ret, traverse_ctx_make(&candidates, 0, errs));
     vec_vec_type_drop(&candidates);
     return ret;
 }

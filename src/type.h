@@ -6,10 +6,10 @@
 
 typedef struct TernaryType TernaryType;
 typedef struct CallableType CallableType;
-typedef struct Generic Generic;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct NamedType NamedType;
+typedef struct Generic Generic;
 
 wrap_forward_arc(NamedType, named_type);
 wrap_forward_vec(Type, type);
@@ -25,7 +25,6 @@ typedef struct Type {
         TYPE_STRING,
         TYPE_VALUE,
         TYPE_IDENTIFIER,
-        TYPE_GENERIC,
         TYPE_CALLABLE,
         TYPE_INTERFACE,
         TYPE_ARRAY,
@@ -45,7 +44,6 @@ typedef struct Type {
             // 2+: there are generics between this type and the generic it is an item of
             int generic_depth;
         } identifier;
-        Generic* generic;
         CallableType* callable;
         Interface interface;
         Type* array;
@@ -92,13 +90,6 @@ static inline Type type_identifier_full(cstr identifier, Span span, ArcNamedType
     };
 }
 
-static inline Type type_generic(Generic* generic) {
-    return (Type){
-        .tag = TYPE_GENERIC,
-        .generic = generic,
-    };
-}
-
 static inline Type type_callable(CallableType* callable) {
     return (Type){
         .tag = TYPE_CALLABLE,
@@ -141,6 +132,8 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
 Type type_clone(Type me);
 Type type_move(Type* me);
+// Returns the non-empty generic of the toplevel type, or null
+Generic* type_get_generic(Type const* me);
 
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs);
 bool type_extends(Type const* sub, Type const* super);

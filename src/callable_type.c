@@ -15,12 +15,14 @@ CallableTypeArg callable_type_arg_clone(CallableTypeArg me) {
 }
 
 void callable_type_drop(CallableType* me) {
+    generic_drop(&my generic);
     vec_callable_type_arg_drop(&my args);
     type_drop(&my ret);
 }
 
 CallableType callable_type_clone(CallableType me) {
     return (CallableType){
+        .generic = generic_clone(me.generic),
         .args = vec_callable_type_arg_clone(me.args),
         .ret_explicit = me.ret_explicit,
         .ret = type_clone(me.ret),
@@ -28,6 +30,7 @@ CallableType callable_type_clone(CallableType me) {
 }
 
 void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent) {
+    cstr_append_generic_debug(target, &my generic, indent);
     cstr_append_sv(target, c_sv("("));
     c_foreach(i, vec_callable_type_arg, my args) {
         cstr_append_sv(target, c_sv(CLR_NAME));
@@ -47,6 +50,7 @@ void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent)
 }
 
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
+    cstr_append_generic_error_msg(target, &my generic);
     cstr_append_sv(target, c_sv("("));
     c_foreach(i, vec_callable_type_arg, my args) {
         cstr_append_s(target, i.ref->name);
@@ -64,8 +68,6 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
 CallableType* type_get_callable_type(Type const* type) {
     if (type->tag == TYPE_CALLABLE) {
         return type->callable;
-    } else if (type->tag == TYPE_GENERIC && type->generic->inner.tag == TYPE_CALLABLE) {
-        return type->generic->inner.callable;
     } else {
         return nullptr;
     }
