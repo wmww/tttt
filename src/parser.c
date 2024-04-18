@@ -197,23 +197,30 @@ static inline bool is_number_start_char(char c) {
     return (c >= '0' && c <= '9') || c == '.';
 }
 
-static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
-    Anchor a = span_start(parent);
+static inline bool hop_identifier_or_keyword(Parser* parent) {
     if (is_identifier_start_char(*parent->pos)) {
         parent->pos++;
         while (is_identifier_char(*parent->pos)) parent->pos++;
-        if (span) {
-            *span = span_end(a);
-        }
-        csview sv = csview_from_n(a.start, parent->pos - a.start);
-        if (csview_cmp(&sv, &c_sv("return")) == 0) {
-            return false; // TODO: check for all keywords efficiently
-        }
-        *ret = cstr_from_sv(sv);
         return true;
     } else {
         return false;
     }
+}
+
+static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
+    Anchor a = span_start(parent);
+    if (!hop_identifier_or_keyword(parent)) {
+        return false;
+    }
+    if (span) {
+        *span = span_end(a);
+    }
+    csview sv = csview_from_n(a.start, parent->pos - a.start);
+    if (csview_cmp(&sv, &c_sv("return")) == 0 || csview_cmp(&sv, &c_sv("case")) == 0) {
+        return false; // TODO: check for all keywords efficiently
+    }
+    *ret = cstr_from_sv(sv);
+    return true;
 }
 
 static bool parse_number_str(Parser* parent, cstr* ret) {
@@ -363,14 +370,12 @@ static bool hop_token(Parser* parent) {
         Value value;
         BinaryOp bin_op;
         UnaryOp un_op;
-        cstr identifier;
     } parsed;
 
     if (parse_literal(parent, &parsed.value)) {
         value_drop(&parsed.value);
         return true;
-    } else if (parse_identifier(parent, &parsed.identifier, nullptr)) {
-        cstr_drop(&parsed.identifier);
+    } else if (hop_identifier_or_keyword(parent)) {
         return true;
     } else if (hop_start(parent, "=>")) {
         return true;
@@ -381,7 +386,6 @@ static bool hop_token(Parser* parent) {
     } else if (parse_right_unary_op(parent, &parsed.un_op)) {
         return true;
     } else {
-        // TODO: hop keywords
         parent->pos++;
         return true;
     }
