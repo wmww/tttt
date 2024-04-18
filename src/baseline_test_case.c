@@ -279,12 +279,31 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span 
                     decl_span.offset--;
                     break;
 
+                case '/':
+                    if (decl_span.offset > 1 && decl_span.file_start[decl_span.offset - 2] == '*') {
+                        keep_going = false;
+                        // Skip block comments, going backwards
+                        const char* c = decl_span.file_start + decl_span.offset - 1;
+                        while (c > decl_span.file_start) {
+                            if (*(c - 1) == '/' && *c == '*') {
+                                keep_going = true;
+                                decl_span.offset = c - 1 - decl_span.file_start;
+                                break;
+                            }
+                            c--;
+                        }
+                        if (keep_going) {
+                            break;
+                        }
+                    }
+                    // fallthrough
+
                 default: {
                     keep_going = false;
-                    // Skip comments, going backwards
+                    // Skip line comments, going backwards
                     const char* c = decl_span.file_start + decl_span.offset - 1;
                     while (c > decl_span.file_start && *c != '\n') {
-                        if (*c == '/' && *(c - 1) == '/') {
+                        if (*(c - 1) == '/' && *c == '/') {
                             keep_going = true;
                             decl_span.offset = c - 1 - decl_span.file_start;
                             break;
