@@ -670,12 +670,13 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_FUNCTION:
             function_impl_typecheck(my function, errs);
-            return type_clone(my function->type);
+            return type_callable(c_new(CallableType, callable_type_clone(my function->type)));
 
         case EXPR_OBJECT: {
             Interface interface = {0};
             c_foreach(i, vec_object_expr_item, my object) {
                 Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
+                type_abstract_literals(&t);
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(cstr_clone(i.ref->name), i.ref->name_span, t)
@@ -695,7 +696,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            return type_clone(my class_decl->constructor_type);
+            return type_callable(c_new(CallableType, callable_type_clone(my class_decl->constructor_type)));
     }
     UNREACHABLE;
 }

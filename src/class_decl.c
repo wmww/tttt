@@ -30,7 +30,7 @@ void class_decl_drop(ClassDecl* me) {
     type_drop(&my interface);
     expr_drop(&my extends);
     vec_type_drop(&my implements);
-    type_drop(&my constructor_type);
+    callable_type_drop(&my constructor_type);
     vec_class_item_drop(&my items);
 }
 
@@ -101,7 +101,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                     names,
                     cstr_clone(i.ref->member.name),
                     i.ref->member.name_span,
-                    &i.ref->member.func.type
+                    callable_type_get_wrapper(&i.ref->member.func.type)
                 )) {
                     /*
                     error_ctx_error(
@@ -174,14 +174,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_CONSTRUCTOR:
                 function_impl_typecheck(&i.ref->constructor.func, errs);
                 if (constructor_count == 0) {
-                    type_drop(&my constructor_type);
-                    my constructor_type = type_clone(i.ref->constructor.func.type);
-                    CallableType* callable = type_get_callable_type(&my constructor_type);
-                    if (callable) {
-                        type_drop(&callable->ret);
-                        callable->ret = type_clone(my interface);
-                        callable->ret_explicit = true;
-                    }
+                    callable_type_drop(&my constructor_type);
+                    my constructor_type = callable_type_clone(i.ref->constructor.func.type);
+                    type_drop(&my constructor_type.ret);
+                    my constructor_type.ret = type_clone(my interface);
+                    my constructor_type.ret_explicit = true;
                 }
                 constructor_count++;
                 break;
@@ -193,7 +190,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     interface_member_make(
                         cstr_clone(i.ref->member.name),
                         i.ref->member.name_span,
-                        type_clone(i.ref->member.func.type)
+                        type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)))
                     ));
                 break;
 
@@ -231,12 +228,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     my interface = type_interface(interface);
 
     if (constructor_count == 0) {
-        type_drop(&my constructor_type);
-        my constructor_type = type_callable(c_new(CallableType, {
-            .args = vec_callable_type_arg_init(),
+        callable_type_drop(&my constructor_type);
+        my constructor_type = (CallableType){
             .ret_explicit = true,
             .ret = type_clone(my interface),
-        }));
+        };
     } else if (constructor_count > 1) {
         c_foreach(i, vec_class_item, my items) {
             if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {

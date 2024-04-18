@@ -28,6 +28,9 @@ void cstr_append_interface_debug(cstr* target, Interface const* me, int indent) 
 
 void cstr_append_interface_error_msg(cstr* target, Interface const* me) {
     cstr_append_sv(target, c_sv("{"));
+    if (!vec_interface_member_empty(&my members)) {
+        cstr_append_sv(target, c_sv(" "));
+    }
     c_foreach(i, vec_interface_member, my members) {
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(": "));

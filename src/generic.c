@@ -1,5 +1,4 @@
 #include "generic.h"
-#include "err.h"
 #include "name_stack.h"
 #include "ternary_type.h"
 #include "callable_type.h"
@@ -22,6 +21,7 @@ void generic_item_drop(GenericItem* me) {
 GenericItem generic_item_clone(GenericItem me) {
     return (GenericItem){
         .name = cstr_clone(me.name),
+        .name_span = me.name_span,
         .extends = type_clone(me.extends),
         .fallback_explicit = me.fallback_explicit,
         .fallback = type_clone(me.fallback),
@@ -38,7 +38,7 @@ Generic generic_clone(Generic me) {
     };
 }
 
-void cstr_append_generic_debug(cstr* target, Generic* me, int indent) {
+void cstr_append_generic_debug(cstr* target, Generic const* me, int indent) {
     if (generic_empty(me)) {
         return;
     }
@@ -62,7 +62,7 @@ void cstr_append_generic_debug(cstr* target, Generic* me, int indent) {
     cstr_append_sv(target, c_sv(">"));
 }
 
-void cstr_append_generic_error_msg(cstr* target, Generic* me) {
+void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
     if (generic_empty(me)) {
         return;
     }
@@ -90,7 +90,7 @@ void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
         GenericItem* item = vec_generic_item_at_mut(&my items, i);
         if (!name_stack_add_generic_type(names, cstr_clone(item->name), item->name_span, &item->extends, i)) {
             // name is cstr_str(&result.ref->first)
-            error_ctx_type_error(errs, "multiple function generics with same name");
+            error_ctx_type_error(errs, "multiple generics with same name");
         }
     }
     c_foreach(i, vec_generic_item, my items) {
@@ -109,9 +109,9 @@ typedef struct TraverseCtx {
 
 static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx);
 
-static inline TraverseCtx traverse_ctx_make(VecVecType* candidates, int depth, ErrorCtx* errs) {
+static inline TraverseCtx traverse_ctx_make(VecVecType* candidates, ErrorCtx* errs) {
     return (TraverseCtx) {
-        .generic_depth = depth,
+        .generic_depth = 1,
         .candidates = candidates->data,
         .candidates_len = vec_vec_type_size(candidates),
         .errs = errs,
@@ -207,11 +207,18 @@ static void collect_generic_candidates(
     UNREACHABLE;
 }
 
-static void generic_swap_generics_for_specific_types(Generic* me, TraverseCtx ctx) {
+static inline void generic_swap_generics_for_specific_types(Generic* me, TraverseCtx ctx) {
     c_foreach(i, vec_generic_item, my items) {
         swap_generics_for_specific_types(&i.ref->extends, ctx);
         swap_generics_for_specific_types(&i.ref->fallback, ctx);
     }
+}
+
+static inline void callable_swap_generics_for_specific_types(CallableType* me, TraverseCtx ctx) {
+    c_foreach(i, vec_callable_type_arg, my args) {
+        swap_generics_for_specific_types(&i.ref->type, ctx);
+    }
+    swap_generics_for_specific_types(&my ret, ctx);
 }
 
 static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
@@ -260,10 +267,7 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
             return;
 
         case TYPE_CALLABLE:
-            c_foreach(i, vec_callable_type_arg, my callable->args) {
-                swap_generics_for_specific_types(&i.ref->type, ctx);
-            }
-            swap_generics_for_specific_types(&my callable->ret, ctx);
+            callable_swap_generics_for_specific_types(my callable, ctx);
             return;
 
         case TYPE_INTERFACE:
@@ -314,12 +318,12 @@ Type generic_infer_callable_types(
         collect_generic_candidates(
             &vec_callable_type_arg_at(&callable->args, i)->type,
             &call_arg_type,
-            traverse_ctx_make(&candidates, 1, errs)
+            traverse_ctx_make(&candidates, errs)
         );
         type_drop(&call_arg_type);
     }
     Type ret = type_callable(c_new(CallableType, callable_type_clone(*callable)));
-    swap_generics_for_specific_types(&ret, traverse_ctx_make(&candidates, 0, errs));
+    callable_swap_generics_for_specific_types(ret.callable, traverse_ctx_make(&candidates, errs));
     vec_vec_type_drop(&candidates);
     return ret;
 }

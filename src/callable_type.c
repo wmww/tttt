@@ -65,10 +65,14 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
     cstr_append_type_error_msg(target, &my ret);
 }
 
-CallableType* type_get_callable_type(Type const* type) {
-    if (type->tag == TYPE_CALLABLE) {
-        return type->callable;
-    } else {
-        return nullptr;
+void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs) {
+    c_foreach(i, vec_callable_type_arg, my args) {
+        type_resolve_names(&i.ref->type, names, errs);
     }
+    type_resolve_names(&my ret, names, errs);
+}
+
+Type const* callable_type_get_wrapper(CallableType* me) {
+    my wrapper_type_do_not_drop = type_callable(me);
+    return &my wrapper_type_do_not_drop;
 }

@@ -286,7 +286,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 names,
                 cstr_clone(my decl.function.name),
                 my decl.function.full_span,
-                &my decl.function.type
+                callable_type_get_wrapper(&my decl.function.type)
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -297,8 +297,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             if (!name_stack_add_variable(
                 names,
                 cstr_clone(my decl.class->name),
-                my decl.class->name_span,
-                &my decl.class->constructor_type
+                my decl.class->full_span,
+                callable_type_get_wrapper(&my decl.class->constructor_type)
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -307,7 +307,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             if (!name_stack_add_type(
                 names,
                 cstr_clone(my decl.class->name),
-                my decl.class->name_span,
+                my decl.class->full_span,
                 &my decl.class->interface
             )) {
                 // name is cstr_str(&result.ref->first)

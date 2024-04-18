@@ -49,7 +49,7 @@ typedef struct ClassDecl {
     Type interface;
     Expr extends;
     VecType implements;
-    Type constructor_type;
+    CallableType constructor_type;
     VecClassItem items;
 } ClassDecl;
 

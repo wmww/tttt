@@ -298,10 +298,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
         }   break;
 
         case TYPE_CALLABLE:
-            c_foreach(i, vec_callable_type_arg, my callable->args) {
-                type_resolve_names(&i.ref->type, names, errs);
-            }
-            type_resolve_names(&my callable->ret, names, errs);
+            callable_type_resolve_names(my callable, names, errs);
             break;
 
         case TYPE_INTERFACE:
@@ -377,7 +374,7 @@ bool type_extends(Type const* sub, Type const* super) {
             return false;
 
         case TYPE_VOID:
-            return sub->tag == TYPE_VOID;
+            return sub->tag == TYPE_VOID || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_UNDEFINED);
 
         case TYPE_BOOLEAN:
             return sub->tag == TYPE_BOOLEAN || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_BOOLEAN);

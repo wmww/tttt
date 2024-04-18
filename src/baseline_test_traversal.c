@@ -82,14 +82,15 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
 void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol(ctx, cstr_str(&my name), my full_span, my full_span);
-        baseline_test_case_add_type(ctx, my name_span, &my type);
+        Type t = type_callable(c_new(CallableType, callable_type_clone(my type)));
+        baseline_test_case_add_type(ctx, my name_span, &t);
+        type_drop(&t);
     }
-    CallableType* callable = function_impl_callable_type(me);
-    generic_compile_test_info(&callable->generic, ctx);
+    generic_compile_test_info(&my type.generic, ctx);
     int arg_count = function_impl_arg_count(me);
     for (int i = 0; i < arg_count; i++) {
         FunctionArg* value_arg = vec_function_arg_at_mut(&my args, i);
-        CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&callable->args, i);
+        CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&my type.args, i);
         baseline_test_case_add_symbol(
             ctx,
             cstr_str(&value_arg->name),
@@ -99,8 +100,8 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
         type_compile_test_info(&type_arg->type, ctx);
     }
-    if (callable->ret_explicit) {
-        type_compile_test_info(&callable->ret, ctx);
+    if (my type.ret_explicit) {
+        type_compile_test_info(&my type.ret, ctx);
     }
     block_compile_test_info(&my body, ctx);
 }
@@ -227,6 +228,20 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
+                baseline_test_case_add_symbol(
+                    ctx,
+                    cstr_str(&i.ref->name),
+                    i.ref->name_span,
+                    i.ref->name_span
+                );
+                Type t = expr_get_type_and_typecheck(&i.ref->value, nullptr);
+                type_abstract_literals(&t);
+                baseline_test_case_add_type(
+                    ctx,
+                    i.ref->name_span,
+                    &t
+                );
+                type_drop(&t);
                 expr_compile_test_info(&i.ref->value, ctx);
             }
             break;

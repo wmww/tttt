@@ -22,14 +22,14 @@ typedef struct Generic {
     VecGenericItem items;
 } Generic;
 
-static inline bool generic_empty(Generic* me) {
+static inline bool generic_empty(Generic const* me) {
     return vec_generic_item_empty(&my items);
 }
 
 void generic_drop(Generic* me);
 Generic generic_clone(Generic me);
-void cstr_append_generic_debug(cstr* target, Generic* me, int indent);
-void cstr_append_generic_error_msg(cstr* target, Generic* me);
+void cstr_append_generic_debug(cstr* target, Generic const* me, int indent);
+void cstr_append_generic_error_msg(cstr* target, Generic const* me);
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs);
 Type generic_infer_callable_types(
     Generic const* me,

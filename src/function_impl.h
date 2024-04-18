@@ -4,6 +4,7 @@
 #include "type.h"
 #include "block.h"
 #include "value.h"
+#include "callable_type.h"
 
 typedef struct CallableTypeArg CallableTypeArg;
 
@@ -25,7 +26,7 @@ typedef struct FunctionImpl {
     Span full_span;
     cstr name;
     Span name_span;
-    Type type;
+    CallableType type;
     VecFunctionArg args;
     Span args_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
@@ -36,8 +37,6 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
-CallableType* function_impl_callable_type(FunctionImpl* me);
-Generic* function_impl_generic_or_null(FunctionImpl* me);
 intptr_t function_impl_arg_count(FunctionImpl* me);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);

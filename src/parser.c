@@ -74,7 +74,7 @@ static bool parse_function_args(
     Parser* parent,
     VecFunctionArg* args_ret, // Null if parsing type
     Span* args_span,
-    Type* type_ret
+    CallableType* type_ret
 );
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, Expr* ret);
@@ -652,8 +652,14 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
     Parser p = parser(parent);
-    Span span;
-    cstr name;
+
+    union {
+        struct {
+            Span span;
+            cstr name;
+        };
+        CallableType callable;
+    } parsed;
 
     if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
@@ -671,12 +677,12 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_string;
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
-    } else if (parse_identifier(&p, &name, &span)) {
-        *ret = type_identifier(name, span);
+    } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
+        *ret = type_identifier(parsed.name, parsed.span);
     } else if (parse_tuple(&p, &ret->tuple)){
         ret->tag = TYPE_TUPLE;
-    } else if (parse_function_args(&p, nullptr, nullptr, ret)) {
-        // Tag set to either callable or generic
+    } else if (parse_function_args(&p, nullptr, nullptr, &parsed.callable)) {
+        *ret = type_callable(c_new(CallableType, parsed.callable));
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
@@ -721,8 +727,9 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     vec_interface_member_push(&members, (InterfaceMember){
                         .name = cstr_move(&item.member.name),
                         .name_span = item.member.name_span,
-                        .type = type_move(&item.member.func.type)
+                        .type = type_callable(c_new(CallableType, item.member.func.type)),
                     });
+                    item.member.func.type = (CallableType){0};
                     break;
 
                 case CLASS_ITEM_FIELD:
@@ -851,23 +858,23 @@ static bool parse_function_args(
     Parser* parent,
     VecFunctionArg* args_ret, // Null if parsing type
     Span* args_span,
-    Type* type_ret
+    CallableType* type_ret
 ) {
     Parser p = parser(parent);
     bool is_definitely_function = false;
-    CallableType callable_type = {0};
 
-    if (parse_generic_decl(&p, &callable_type.generic)) {
+    *type_ret = (CallableType){0};
+
+    if (parse_generic_decl(&p, &type_ret->generic)) {
         hop_whitespace(&p);
         is_definitely_function = true;
     } else {
-        callable_type.generic = (Generic){0};
+        type_ret->generic = (Generic){0};
     }
 
     if (args_ret) {
         *args_ret = vec_function_arg_init();
     }
-    *type_ret = type_any;
 
     Anchor args_start = span_start(&p);
 
@@ -888,11 +895,11 @@ static bool parse_function_args(
                     goto drop_and_fail;
                 }
 
-                if (vec_callable_type_arg_empty(&callable_type.args) && name_init.type_explicit) {
+                if (vec_callable_type_arg_empty(&type_ret->args) && name_init.type_explicit) {
                     is_definitely_function = true;
                 }
 
-                vec_callable_type_arg_push(&callable_type.args, (CallableTypeArg){
+                vec_callable_type_arg_push(&type_ret->args, (CallableTypeArg){
                     .name = name_init.name,
                     .type_explicit = name_init.type_explicit,
                     .type = name_init.type,
@@ -931,8 +938,8 @@ static bool parse_function_args(
                 vec_function_arg_drop(args_ret);
                 *args_ret = vec_function_arg_init();
             }
-            callable_type_drop(&callable_type);
-            *type_ret = type_callable(c_new(CallableType, {0}));
+            callable_type_drop(type_ret);
+            *type_ret = (CallableType){0};
             error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
             return parse_success(&p);
         }
@@ -971,22 +978,20 @@ static bool parse_function_args(
     hop_whitespace(&p);
 
     if (parse_ret_type) {
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &callable_type.ret)) {
-            callable_type.ret_explicit = true;
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type_ret->ret)) {
+            type_ret->ret_explicit = true;
         } else {
             goto drop_and_fail;
         }
     }
 
-    *type_ret = type_callable(c_new(CallableType, callable_type));
     return parse_success(&p);
 
 drop_and_fail:
-    callable_type_drop(&callable_type);
+    callable_type_drop(type_ret);
     if (args_ret) {
         vec_function_arg_drop(args_ret);
     }
-    type_drop(type_ret);
     return parse_fail(&p);
 }
 
@@ -1001,10 +1006,9 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
 
     if (parse_function_args(&p, &ret->args, &ret->args_span, &ret->type)) {
 
-        CallableType* callable = function_impl_callable_type(ret);
         is_definitely_function =
-            !vec_callable_type_arg_empty(&callable->args) &&
-            vec_callable_type_arg_at(&callable->args, 0)->type_explicit;
+            !vec_callable_type_arg_empty(&ret->type.args) &&
+            vec_callable_type_arg_at(&ret->type.args, 0)->type_explicit;
 
     } else if (parse_identifier(&p, &lone_arg_name, &lone_arg_span)) {
         *ret = (FunctionImpl){0};
@@ -1016,8 +1020,7 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
             .value_explicit = false,
             .value = expr_undefined(span_from_pos(&p)),
         });
-        CallableType* callable = function_impl_callable_type(ret);
-        vec_callable_type_arg_push(&callable->args, (CallableTypeArg){
+        vec_callable_type_arg_push(&ret->type.args, (CallableTypeArg){
             .name = lone_arg_name,
             .type_explicit = false,
             .type = type_any,
