@@ -90,11 +90,7 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 }
 
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
-    bool has_generics = !generic_empty(&my generic);
-    if (has_generics) {
-        name_stack_push_frame(names, STACK_FRAME_GENERIC);
-        generic_resolve_names(&my generic, names, errs);
-    }
+    name_stack_push_generic_frame(names, &my generic, errs);
 
     expr_resolve_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
@@ -169,10 +165,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
     name_stack_pop_frame(names);
     name_stack_pop_frame(names);
-
-    if (has_generics) {
-        name_stack_pop_frame(names);
-    }
+    name_stack_pop_frame(names); // generics
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {

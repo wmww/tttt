@@ -297,8 +297,7 @@ Generic* type_get_generic(Type const* me) {
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
     Generic* generic = type_get_generic(me);
     if (generic) {
-        name_stack_push_frame(names, STACK_FRAME_GENERIC);
-        generic_resolve_names(generic, names, errs);
+        name_stack_push_generic_frame(names, generic, errs);
     }
 
     switch (my tag) {
@@ -374,26 +373,26 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-bool type_extends(Type const* sub, Type const* super) {
+static bool type_extends_internal(Type const* sub, Type const* super, int level) {
+    if (level > 100) {
+        NONFATAL("max type recursion depth exceeded");
+        return false;
+    }
     switch (sub->tag) {
         case TYPE_ANY: return true;
 
         case TYPE_IDENTIFIER:
             if (sub->identifier.type.get) {
-                if (sub->identifier.type.get->type == sub) {
-                    NONFATAL("Recursive types not yet correctly handled");
-                    return false;
-                }
-                return type_extends(sub->identifier.type.get->type, super);
+                return type_extends_internal(sub->identifier.type.get->type, super, level + 1);
             }
             return false;
 
-        case TYPE_TERNARY: return type_extends(ternary_type_resolve(sub->ternary), super);
+        case TYPE_TERNARY: return type_extends_internal(ternary_type_resolve(sub->ternary), super, level);
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
             c_foreach(i, vec_type, sub->composite) {
-                if (!type_extends(i.ref, super)) {
+                if (!type_extends_internal(i.ref, super, level)) {
                     return false;
                 }
             }
@@ -434,7 +433,7 @@ bool type_extends(Type const* sub, Type const* super) {
                 if (super->identifier.type.get->type == super) {
                     return false;
                 } else {
-                    return type_extends(sub, super->identifier.type.get->type);
+                    return type_extends_internal(sub, super->identifier.type.get->type, level);
                 }
             }
             return true;
@@ -449,25 +448,26 @@ bool type_extends(Type const* sub, Type const* super) {
             }
             for (int i = 0; i < arg_count; i++) {
                 // Order is flipped for arguments
-                if (!type_extends(
+                if (!type_extends_internal(
                     &vec_callable_type_arg_at(&super->callable->args, i)->type,
-                    &vec_callable_type_arg_at(&sub->callable->args, i)->type
+                    &vec_callable_type_arg_at(&sub->callable->args, i)->type,
+                    level
                 )) {
                     return false;
                 }
             }
             // Order is not flipped for return
-            return type_extends(&sub->callable->ret, &super->callable->ret);
+            return type_extends_internal(&sub->callable->ret, &super->callable->ret, level);
 
         case TYPE_ARRAY:
-            return sub->tag == TYPE_ARRAY && type_extends(sub->array, super->array);
+            return sub->tag == TYPE_ARRAY && type_extends_internal(sub->array, super->array, level);
 
         case TYPE_TUPLE:
             if (sub->tag != TYPE_TUPLE || vec_type_size(&super->tuple) != vec_type_size(&sub->tuple)) {
                 return false;
             }
             for (intptr_t i = 0; i < vec_type_size(&super->tuple); i++) {
-                if (!type_extends(vec_type_at(&sub->tuple, i), vec_type_at(&super->tuple, i))) {
+                if (!type_extends_internal(vec_type_at(&sub->tuple, i), vec_type_at(&super->tuple, i), level)) {
                     return false;
                 }
             }
@@ -475,7 +475,7 @@ bool type_extends(Type const* sub, Type const* super) {
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
-                if (type_extends(sub, i.ref)) {
+                if (type_extends_internal(sub, i.ref, level)) {
                     return true;
                 }
             }
@@ -483,7 +483,7 @@ bool type_extends(Type const* sub, Type const* super) {
 
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, super->composite) {
-                if (!type_extends(sub, i.ref)) {
+                if (!type_extends_internal(sub, i.ref, level)) {
                     return false;
                 }
             }
@@ -493,9 +493,13 @@ bool type_extends(Type const* sub, Type const* super) {
             NONFATAL("extends(TYPE_INTERFACE, ...) not implemented");
             return false;
 
-        case TYPE_TERNARY: return type_extends(sub, ternary_type_resolve(super->ternary));
+        case TYPE_TERNARY: return type_extends_internal(sub, ternary_type_resolve(super->ternary), level);
     }
     UNREACHABLE;
+}
+
+bool type_extends(Type const* sub, Type const* super) {
+    return type_extends_internal(sub, super, 0);
 }
 
 bool type_extends_array(Type const* sub) {

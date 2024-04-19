@@ -62,11 +62,7 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
 
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
     // Handle generics
-    bool has_generics = !generic_empty(&my type.generic);
-    if (has_generics) {
-        name_stack_push_frame(names, STACK_FRAME_GENERIC);
-        generic_resolve_names(&my type.generic, names, errs);
-    }
+    name_stack_push_generic_frame(names, &my type.generic, errs);
 
     // First, resolve names in the callable type
     callable_type_resolve_names(&my type, names, errs);
@@ -99,9 +95,7 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     name_stack_pop_frame(names);
 
     // Pop the generics frame
-    if (has_generics) {
-        name_stack_pop_frame(names);
-    }
+    name_stack_pop_frame(names);
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {

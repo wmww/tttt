@@ -821,6 +821,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
 static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "type")) {
         return parse_fail(&p);
@@ -834,6 +835,12 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     Span name_span;
     if (!parse_identifier(&p, &name, &name_span)) {
         return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    Generic generic;
+    if (!parse_generic_decl(&p, &generic)) {
+        generic = (Generic){0};
     }
     hop_whitespace(&p);
 
@@ -852,19 +859,15 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     Type type;
     if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
-        *ret = (TypeDecl) {
-            .is_interface = false,
-            .name = name,
-            .name_span = name_span,
-            .type = type_any,
-        };
-        return parse_success(&p);
+        type = type_any;
     }
 
     *ret = (TypeDecl) {
+        .full_span = span_end(a),
         .is_interface = false,
         .name = name,
         .name_span = name_span,
+        .generic = generic,
         .type = type,
     };
     return parse_success(&p);

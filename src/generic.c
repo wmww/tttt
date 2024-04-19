@@ -87,7 +87,7 @@ void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     long generic_count = vec_generic_item_size(&my items);
     for (long i = 0; i < generic_count; i++) {
-        GenericItem* item = vec_generic_item_at_mut(&my items, i);
+        GenericItem const* item = vec_generic_item_at(&my items, i);
         if (!name_stack_add_generic_type(names, cstr_clone(item->name), item->name_span, &item->extends, i)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple generics with same name");

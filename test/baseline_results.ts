@@ -5087,7 +5087,7 @@ const baselines = {
     },
     'conditionalAnyCheckTypePicksBothBranches': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'conditionalDoesntLeakUninstantiatedTypeParameter': {
@@ -5166,8 +5166,8 @@ const baselines = {
         types: false,
     },
     'conditionalTypeAnyUnion': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'conditionalTypeAssignabilityWhenDeferred': {
@@ -8037,36 +8037,36 @@ const baselines = {
     },
     'declarationEmitTypeAliasTypeParameterExtendingUnknownSymbol': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitTypeAliasWithTypeParameters1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitTypeAliasWithTypeParameters2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitTypeAliasWithTypeParameters3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationEmitTypeAliasWithTypeParameters4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationEmitTypeAliasWithTypeParameters5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationEmitTypeAliasWithTypeParameters6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8541,7 +8541,7 @@ const baselines = {
         types: false,
     },
     'deeplyNestedConditionalTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9017,7 +9017,7 @@ const baselines = {
     },
     'didYouMeanStringLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'didYouMeanSuggestionErrors': {
@@ -20842,7 +20842,7 @@ const baselines = {
     },
     'nestedThisContainer': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nestedTypeVariableInfersLiteral': {
@@ -27852,12 +27852,12 @@ const baselines = {
     },
     'typeAliasDeclarationEmit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeAliasDeclarationEmit2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeAliasDeclarationEmit3': {
@@ -27922,7 +27922,7 @@ const baselines = {
     },
     'typeArgumentDefaultUsesConstraintOnCircularDefault': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeArgumentInferenceApparentType1': {
@@ -29027,7 +29027,7 @@ const baselines = {
     },
     'unionErrorMessageOnMatchingDiscriminant': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unionExcessPropertyCheckNoApparentPropTypeMismatchErrors': {
@@ -46892,8 +46892,8 @@ const baselines = {
     },
     'jsdocTwoLineTypedef': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocTypeDefAtStartOfFile': {
         errors: true,
@@ -54822,7 +54822,7 @@ const baselines = {
     },
     'numericLiteralTypes3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'numericStringLiteralTypes': {
@@ -55327,7 +55327,7 @@ const baselines = {
     },
     'neverUnionIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignObjectToNonPrimitive': {
@@ -56607,7 +56607,7 @@ const baselines = {
     },
     'optionalTupleElements1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'readonlyArraysAndTuples': {

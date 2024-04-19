@@ -1,4 +1,5 @@
 #include "name_stack.h"
+#include "generic.h"
 
 #define i_key_ssv
 #define i_val_class_names ArcNamedType, arc_named_type
@@ -93,6 +94,16 @@ void name_stack_destroy(NameStack* me) {
 
 void name_stack_push_frame(NameStack* me, StackFrameTag tag) {
     vec_stack_frame_push(&my stack, stack_frame_init(tag));
+}
+
+void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs) {
+    if (generic_empty(generic)) {
+        // Frame is only needed so a frame can be unconditionally popped later
+        name_stack_push_frame(me, STACK_FRAME_BLOCK);
+    } else {
+        name_stack_push_frame(me, STACK_FRAME_GENERIC);
+        generic_resolve_names(generic, me, errs);
+    }
 }
 
 void name_stack_pop_frame(NameStack* me) {

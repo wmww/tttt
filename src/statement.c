@@ -319,7 +319,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             if (!name_stack_add_type(
                 names,
                 cstr_clone(my decl.type.name),
-                span_null, // TODO
+                my decl.type.full_span,
                 &my decl.type.type)
             ) {
                 // name is cstr_str(&result.ref->first)
@@ -417,7 +417,9 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE:
+            name_stack_push_generic_frame(names, &my decl.type.generic, errs);
             type_resolve_names(&my decl.type.type, names, errs);
+            name_stack_pop_frame(names);
             break;
 
         case STATEMENT_NOOP:

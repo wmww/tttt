@@ -36,6 +36,7 @@ typedef struct NamedType {
 NameStack* name_stack_new();
 void name_stack_destroy(NameStack* me);
 void name_stack_push_frame(NameStack* me, StackFrameTag tag);
+void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs);
 void name_stack_pop_frame(NameStack* me);
 bool name_stack_add_variable(NameStack* me, cstr name, Span decl_name_span, Type const* type);
 bool name_stack_add_type(NameStack* me, cstr name, Span decl_name_span, Type const* type);

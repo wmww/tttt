@@ -1,12 +1,14 @@
 #pragma once
 
 #include "type.h"
+#include "generic.h"
 
 typedef struct TypeDecl {
     Span full_span;
     bool is_interface;
     cstr name;
     Span name_span;
+    Generic generic;
     Type type;
 } TypeDecl;
 
