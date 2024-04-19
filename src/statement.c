@@ -309,7 +309,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 cstr_clone(my decl.class->name),
                 my decl.class->full_span,
                 &my decl.class->interface,
-                generic_clone(my decl.class->generic)
+                &my decl.class->generic
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -322,7 +322,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 cstr_clone(my decl.type.name),
                 my decl.type.full_span,
                 &my decl.type.type,
-                generic_clone(my decl.type.generic)
+                &my decl.type.generic
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");

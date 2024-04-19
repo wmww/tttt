@@ -479,7 +479,9 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
     Type extends = type_any;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
-        parse_type(&p, TYPE_PRECEDENCE_NULL, &extends);
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &extends)) {
+            extends = type_any;
+        }
         hop_whitespace(&p);
     }
 
@@ -489,6 +491,8 @@ static bool parse_generic_decl_item(Parser* parent, void* data) {
         hop_whitespace(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &fallback)) {
             fallback_explicit = true;
+        } else {
+            fallback = type_any;
         }
     }
 
@@ -844,21 +848,15 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, "=")) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=' expected.");
-        *ret = (TypeDecl) {
-            .is_interface = false,
-            .name = name,
-            .name_span = name_span,
-            .type = type_any,
-        };
-        return parse_success(&p);
-    }
-    hop_whitespace(&p);
-
     Type type;
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+    if (hop_start(&p, "=")) {
+        hop_whitespace(&p);
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+            type = type_any;
+        }
+    } else {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=' expected.");
         type = type_any;
     }
 
