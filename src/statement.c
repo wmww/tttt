@@ -304,11 +304,12 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
 
-            if (!name_stack_add_type(
+            if (!name_stack_add_type_with_generic(
                 names,
                 cstr_clone(my decl.class->name),
                 my decl.class->full_span,
-                &my decl.class->interface
+                &my decl.class->interface,
+                generic_clone(my decl.class->generic)
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -316,12 +317,13 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            if (!name_stack_add_type(
+            if (!name_stack_add_type_with_generic(
                 names,
                 cstr_clone(my decl.type.name),
                 my decl.type.full_span,
-                &my decl.type.type)
-            ) {
+                &my decl.type.type,
+                generic_clone(my decl.type.generic)
+            )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }

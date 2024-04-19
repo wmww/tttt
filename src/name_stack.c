@@ -134,6 +134,7 @@ bool name_stack_add_type(NameStack* me, cstr name, Span name_span, Type const* t
             .type = type,
             .is_generic = false,
             .generic_index = 0,
+            .generic = (Generic){0},
         })
     );
     return result.inserted;
@@ -148,6 +149,22 @@ bool name_stack_add_generic_type(NameStack* me, cstr name, Span name_span, Type 
             .type = type,
             .is_generic = true,
             .generic_index = generic_index,
+            .generic = (Generic){0},
+        })
+    );
+    return result.inserted;
+}
+
+bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span name_span, Type const* type, Generic generic) {
+    hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
+        &vec_stack_frame_back(&my stack)->types,
+        name,
+        arc_named_type_make((NamedType){
+            .name_span = name_span,
+            .type = type,
+            .is_generic = false,
+            .generic_index = 0,
+            .generic = generic,
         })
     );
     return result.inserted;

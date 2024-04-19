@@ -2,6 +2,7 @@
 
 #include "type.h"
 #include "expr.h"
+#include "generic.h"
 
 typedef struct NameStack NameStack;
 
@@ -26,6 +27,7 @@ typedef struct NamedType {
     Type const* type;
     bool is_generic;
     int generic_index;
+    Generic generic;
 } NamedType;
 
 #define i_key_names NamedType, named_type
@@ -41,5 +43,6 @@ void name_stack_pop_frame(NameStack* me);
 bool name_stack_add_variable(NameStack* me, cstr name, Span decl_name_span, Type const* type);
 bool name_stack_add_type(NameStack* me, cstr name, Span decl_name_span, Type const* type);
 bool name_stack_add_generic_type(NameStack* me, cstr name, Span decl_name_span, Type const* type, int generic_index);
+bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span decl_name_span, Type const* type, Generic generic);
 ArcNamedVariable const* name_stack_get_variable(NameStack* me, csview name);
 ArcNamedType const* name_stack_get_type(NameStack* me, csview name, int* optional_generic_depth);
