@@ -1515,6 +1515,12 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     }
     hop_whitespace(&p);
 
+    if (parse_generic_decl(&p, &ret->generic)) {
+        hop_whitespace(&p);
+    } else {
+        ret->generic = (Generic){0};
+    }
+
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
 

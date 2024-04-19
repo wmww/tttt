@@ -46,6 +46,7 @@ typedef struct ClassDecl {
     Span full_span;
     cstr name;
     Span name_span;
+    Generic generic;
     Type interface;
     Expr extends;
     VecType implements;

@@ -124,6 +124,7 @@ void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_type(ctx, my name_span, &t);
         type_drop(&t);
     }
+    generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_compile_test_info(&my extends, ctx);
     }

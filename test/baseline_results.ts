@@ -4826,7 +4826,7 @@ const baselines = {
         types: true,
     },
     'commentsTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5576,7 +5576,7 @@ const baselines = {
         types: false,
     },
     'constraintsUsedInPrototypeProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5682,7 +5682,7 @@ const baselines = {
     },
     'constructorReturningAPrimitive': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constructorReturnsInvalidType': {
@@ -6881,7 +6881,7 @@ const baselines = {
         types: false,
     },
     'declFileForTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9472,7 +9472,7 @@ const baselines = {
     },
     'duplicateConstructorOverloadSignature2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'duplicateDefaultExport': {
@@ -10052,7 +10052,7 @@ const baselines = {
     },
     'emptyGenericParamList': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emptyIndexer': {
@@ -10102,7 +10102,7 @@ const baselines = {
     },
     'emptyTypeArgumentListWithNew': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge': {
@@ -13717,7 +13717,7 @@ const baselines = {
     },
     'genericClassInheritsConstructorFromNonGenericClass': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericClassPropertyInheritanceSpecialization': {
@@ -14102,7 +14102,7 @@ const baselines = {
     },
     'genericObjectCreationWithoutTypeArgs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericObjectLitReturnType': {
@@ -14136,7 +14136,7 @@ const baselines = {
         types: true,
     },
     'genericPrototypeProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19147,7 +19147,7 @@ const baselines = {
     },
     'missingTypeArguments2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'missingTypeArguments3': {
@@ -21981,8 +21981,8 @@ const baselines = {
         types: false,
     },
     'objectLiteralDeclarationGeneration1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'objectLiteralEnumPropertyNames': {
@@ -23876,7 +23876,7 @@ const baselines = {
         types: false,
     },
     'prototypeInstantiatedWithBaseConstraint': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24167,7 +24167,7 @@ const baselines = {
     },
     'recursiveBaseCheck4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveBaseCheck5': {
@@ -24477,7 +24477,7 @@ const baselines = {
     },
     'recursiveTypeParameterConstraintReferenceLacksTypeArgs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveTypeParameterReferenceError1': {
@@ -26312,7 +26312,7 @@ const baselines = {
     },
     'staticPrototypePropertyOnClass': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'staticVisibility': {
@@ -28267,7 +28267,7 @@ const baselines = {
     },
     'typeParameterAsBaseClass': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterAsElementType': {
@@ -28396,8 +28396,8 @@ const baselines = {
         types: false,
     },
     'typeParameterInConstraint1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeParameterLeak': {
@@ -28406,8 +28406,8 @@ const baselines = {
         types: false,
     },
     'typeParameterListWithTrailingComma1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeParameterOrderReversal': {
@@ -28706,7 +28706,7 @@ const baselines = {
         types: false,
     },
     'typedGenericPrototypeMember': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32172,7 +32172,7 @@ const baselines = {
     },
     'classWithTwoConstructorDefinitions': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constructorDefaultValuesReferencingThis': {
@@ -32616,7 +32616,7 @@ const baselines = {
         types: false,
     },
     'typeOfThisInStaticMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32641,7 +32641,7 @@ const baselines = {
         types: false,
     },
     'typeOfThisInStaticMembers2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33631,7 +33631,7 @@ const baselines = {
         types: false,
     },
     'typeOfThisInMemberFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33751,7 +33751,7 @@ const baselines = {
         types: false,
     },
     'thisInInstanceMemberInitializer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36326,7 +36326,7 @@ const baselines = {
         types: false,
     },
     'emitClassDeclarationWithTypeArgumentInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49486,18 +49486,18 @@ const baselines = {
         types: false,
     },
     'parserGenericClass1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericClass2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint2': {
@@ -56436,7 +56436,7 @@ const baselines = {
         types: false,
     },
     'thisTypeAndConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56836,7 +56836,7 @@ const baselines = {
         types: false,
     },
     'instantiateGenericClassWithZeroTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56886,7 +56886,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56906,7 +56906,7 @@ const baselines = {
         types: false,
     },
     'innerTypeParameterShadowingOuterOne2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

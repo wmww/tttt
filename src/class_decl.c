@@ -27,6 +27,7 @@ void class_item_drop(ClassItem* me) {
 
 void class_decl_drop(ClassDecl* me) {
     cstr_drop(&my name);
+    generic_drop(&my generic);
     type_drop(&my interface);
     expr_drop(&my extends);
     vec_type_drop(&my implements);
@@ -39,6 +40,10 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
     if (!cstr_empty(&my name)) {
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, my name);
+        cstr_append_sv(target, c_sv(CLR0));
+    }
+    cstr_append_generic_debug(target, &my generic, indent);
+    if (!cstr_empty(&my name) || !generic_empty(&my generic)) {
         cstr_append_sv(target, c_sv(CLR0 " "));
     }
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
@@ -85,6 +90,12 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 }
 
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+    bool has_generics = !generic_empty(&my generic);
+    if (has_generics) {
+        name_stack_push_frame(names, STACK_FRAME_GENERIC);
+        generic_resolve_names(&my generic, names, errs);
+    }
+
     expr_resolve_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
         type_resolve_names(i.ref, names, errs);
@@ -158,6 +169,10 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
     name_stack_pop_frame(names);
     name_stack_pop_frame(names);
+
+    if (has_generics) {
+        name_stack_pop_frame(names);
+    }
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
