@@ -34,6 +34,12 @@ typedef enum WhitespaceType {
     WHITESPACE_NEWLINE,
 } WhitespaceType;
 
+typedef struct ExprCtx {
+    bool block_in_op;
+} ExprCtx;
+
+static const ExprCtx expr_ctx_null = {0};
+
 typedef enum FailCacheFlag {
     FAIL_CACHE_EXPR = 1 << 0,
     FAIL_CACHE_ARROW_FUNCTION = 1 << 1,
@@ -65,8 +71,8 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
-static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret);
-static bool parse_name_init(Parser* parent, NameInitData* ret);
+static bool parse_name_init_with_name(Parser* parent, ExprCtx ctx, cstr name, Span name_span, NameInitData* ret);
+static bool parse_name_init(Parser* parent, ExprCtx ctx, NameInitData* ret);
 static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
@@ -77,7 +83,7 @@ static bool parse_function_args(
     CallableType* type_ret
 );
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
-static bool parse_expr(Parser* parent, Expr* ret);
+static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 
 static inline Parser parser(Parser* parent) {
     return (Parser){
@@ -602,7 +608,7 @@ static bool parse_callable_type_arg(Parser* parent, void* data) {
     CallableType* ret = data;
 
     NameInitData name_init = {0};
-    if (!parse_name_init(&p, &name_init)) {
+    if (!parse_name_init(&p, expr_ctx_null, &name_init)) {
         return parse_fail(&p);
     }
 
@@ -937,7 +943,7 @@ static bool parse_function_args(
                 NameInitData name_init = {0};
                 const char* before_param = p.pos;
 
-                if (!parse_name_init(&p, &name_init)) {
+                if (!parse_name_init(&p, expr_ctx_null, &name_init)) {
                     if (args_ret) {
                         vec_function_arg_drop(args_ret);
                     }
@@ -1044,7 +1050,7 @@ drop_and_fail:
     return parse_fail(&p);
 }
 
-static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
+static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
     Parser p = parser(parent);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
     Anchor a = span_start(&p);
@@ -1104,7 +1110,7 @@ static bool parse_arrow_function(Parser* parent, FunctionImpl* ret) {
 
     if (!parse_block(&p, false, &ret->body)) {
         Expr expr;
-        if (!parse_expr(&p, &expr)) {
+        if (!parse_expr(&p, ctx, &expr)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
             expr = expr_implicit_any(span_from_pos(&p));
             p.pos = span_end_ptr(&ret->arrow_span);
@@ -1213,7 +1219,7 @@ static bool parse_object_item(Parser* parent, void* data) {
     hop_whitespace(&p);
 
     Expr value;
-    if (!parse_expr(&p, &value)) {
+    if (!parse_expr(&p, expr_ctx_null, &value)) {
         error_ctx_parse_error(&p.errs, "bad expression in object");
         value = expr_undefined(span_from_pos(&p));
     }
@@ -1250,7 +1256,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 
     while (*p.pos && *p.pos != ']') {
         Expr expr;
-        if (parse_expr(&p, &expr)) {
+        if (parse_expr(&p, expr_ctx_null, &expr)) {
             vec_expr_push(ret, expr);
         } else if (*p.pos == ',') {
             vec_expr_push(ret, expr_undefined(span_from_pos(&p)));
@@ -1449,7 +1455,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 modifier_error = INVALID_READONLY;
                 modifier_error_span = readonly_span;
             }
-        } else if (parse_name_init_with_name(&p, name, name_span, &ret->field.data)) {
+        } else if (parse_name_init_with_name(&p, expr_ctx_null, name, name_span, &ret->field.data)) {
             ret->tag = CLASS_ITEM_FIELD;
             ret->field.readonly = span_valid(&readonly_span);
         } else {
@@ -1573,7 +1579,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, &ret->extends)) {
+        if (!parse_expr(&p, expr_ctx_null, &ret->extends)) {
             ret->extends = expr_implicit_any(span_null);
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         }
@@ -1650,7 +1656,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     *args = vec_expr_init();
     while (*p.pos && *p.pos != ')') {
         Expr arg = {0};
-        if (parse_expr(&p, &arg)) {
+        if (parse_expr(&p, expr_ctx_null, &arg)) {
             vec_expr_push(args, arg);
         } else {
             error_ctx_parse_error(&p.errs, "invald expression in call");
@@ -1712,7 +1718,7 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_ternary_expr(Parser* parent, Expr* ret_yes, Expr* ret_no) {
+static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr* ret_no) {
     Parser p = parser(parent);
 
     if (!hop_char(&p, '?')) {
@@ -1720,7 +1726,7 @@ static bool parse_ternary_expr(Parser* parent, Expr* ret_yes, Expr* ret_no) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ret_yes)) {
+    if (!parse_expr(&p, ctx, ret_yes)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         *ret_yes = expr_undefined(span_from_pos(&p));
         *ret_no = expr_undefined(span_from_pos(&p));
@@ -1735,7 +1741,7 @@ static bool parse_ternary_expr(Parser* parent, Expr* ret_yes, Expr* ret_no) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ret_no)) {
+    if (!parse_expr(&p, ctx, ret_no)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         *ret_no = expr_undefined(span_from_pos(&p));
         return parse_success(&p);
@@ -1752,7 +1758,7 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ret)) {
+    if (!parse_expr(&p, expr_ctx_null, ret)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         *ret = expr_undefined(span_from_pos(&p));
         return parse_success(&p);
@@ -1801,7 +1807,8 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     else if (hop_start(&p, ">>")) *op = BINARY_OP_GREATER_GREATER;
     else if (hop_start(&p, "<=")) *op = BINARY_OP_LESS_EQUAL;
     else if (hop_start(&p, ">=")) *op = BINARY_OP_GREATER_EQUAL;
-    else if (hop_start(&p, "instanceof")) *op = BINARY_OP_INSTANCEOF;
+    else if (hop_start_if_ends_on_word_break(&p, "in")) *op = BINARY_OP_IN;
+    else if (hop_start_if_ends_on_word_break(&p, "instanceof")) *op = BINARY_OP_INSTANCEOF;
     else if (hop_start(&p, "==")) *op = BINARY_OP_DOUBLE_EQUAL;
     else if (hop_start(&p, "!=")) *op = BINARY_OP_NOT_EQUAL;
     else if (hop_start(&p, "&&")) *op = BINARY_OP_AND_AND;
@@ -1833,15 +1840,18 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_binary_op_expr(Parser* parent, BinaryOp* op, Expr* right) {
+static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, BinaryOp* op, Expr* right) {
     Parser p = parser(parent);
 
     if (!parse_binary_op(&p, op)) {
         return parse_fail(&p);
     }
+    if (ctx.block_in_op && *op == BINARY_OP_IN) {
+        return parse_fail(&p);
+    }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, right)) {
+    if (!parse_expr(&p, ctx, right)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         *right = expr_undefined(span_from_pos(&p));
     }
@@ -1868,7 +1878,7 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
     return true;
 }
 
-static bool parse_left_unary_op_expr(Parser* parent, Expr* ret) {
+static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
 
     Anchor a = span_start(&p);
@@ -1880,7 +1890,7 @@ static bool parse_left_unary_op_expr(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
 
     Expr expr;
-    if (!parse_expr(&p, &expr)) {
+    if (!parse_expr(&p, ctx, &expr)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         expr = expr_undefined(span_from_pos(&p));
     }
@@ -1966,7 +1976,7 @@ static bool parse_literal(Parser* parent, Value* ret) {
     return parse_type_compat_literal(parent, ret);
 }
 
-static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
+static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, left_and_ret->span);
 
@@ -2012,7 +2022,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         return parse_success(&p);
     }
 
-    if (parse_ternary_expr(&p, &parsed.expr_a, &parsed.expr_b)) {
+    if (parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
         *left_and_ret = expr_ternary(
             span_end(a),
             c_new(TernaryExpr, {
@@ -2051,7 +2061,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         Parser sub_p = parser(&p);
         sub_p.pos = span_start_ptr(&left_and_ret->span);
 
-        if (parse_arrow_function(&sub_p, &parsed.function)) {
+        if (parse_arrow_function(&sub_p, ctx, &parsed.function)) {
             parse_success(&sub_p);
             expr_drop(left_and_ret);
             *left_and_ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
@@ -2072,7 +2082,7 @@ static bool parse_expr_right_side(Parser* parent, Expr* left_and_ret) {
         }
     }
 
-    if (parse_binary_op_expr(&p, &parsed.binary.op, &parsed.binary.expr)) {
+    if (parse_binary_op_expr(&p, ctx, &parsed.binary.op, &parsed.binary.expr)) {
         Expr* insert_at = &parsed.binary.expr;
 
         while (
@@ -2110,7 +2120,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
         parsed_commas = true;
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, &expr)) {
+        if (!parse_expr(&p, expr_ctx_null, &expr)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
             return parse_success(&p);
         }
@@ -2127,7 +2137,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }
 
-static bool parse_expr(Parser* parent, Expr* ret) {
+static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
@@ -2149,7 +2159,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
         *ret = expr_class_decl(span_end(a), c_new(ClassDecl, parsed.class_decl));
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
         hop_whitespace(&p);
-        if (!parse_expr(&p, ret)) {
+        if (!parse_expr(&p, ctx, ret)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
             *ret = expr_undefined(span_end(a));
         }
@@ -2165,16 +2175,16 @@ static bool parse_expr(Parser* parent, Expr* ret) {
                 })
             );
         }
-    } else if (parse_left_unary_op_expr(&p, ret)) {
+    } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (parse_identifier(&p, &parsed.name, nullptr)) {
         *ret = expr_identifier(span_end(a), parsed.name);
-    } else if (parse_arrow_function(&p, &parsed.function)) {
+    } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
-        if (!parse_expr(&p, ret)) {
+        if (!parse_expr(&p, expr_ctx_null, ret)) {
             return parse_fail(&p);
         }
         parse_comma_ops_right_side(&p, ret);
@@ -2196,7 +2206,7 @@ static bool parse_expr(Parser* parent, Expr* ret) {
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'>' expected.");
         }
         hop_whitespace(&p);
-        if (!parse_expr(&p, &e)) {
+        if (!parse_expr(&p, ctx, &e)) {
             Span s = hop_token_get_span(&p);
             error_ctx_error(&p.errs, s, 1109, "Expression expected.");
             e = expr_undefined(s);
@@ -2211,12 +2221,12 @@ static bool parse_expr(Parser* parent, Expr* ret) {
 
     ret->span = span_end(a);
 
-    while (parse_expr_right_side(&p, ret)) {}
+    while (parse_expr_right_side(&p, ctx, ret)) {}
 
     return parse_success(&p);
 }
 
-static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span, NameInitData* ret) {
+static bool parse_name_init_with_name(Parser* parent, ExprCtx ctx, cstr name, Span name_span, NameInitData* ret) {
     Parser p = parser(parent);
 
     Type type = type_any;
@@ -2238,7 +2248,7 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
     bool value_explicit = false;
     if (hop_start(&p, "=")) {
         hop_whitespace(&p);
-        if (parse_expr(&p, &value)) {
+        if (parse_expr(&p, ctx, &value)) {
             value_explicit = true;
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
@@ -2260,7 +2270,7 @@ static bool parse_name_init_with_name(Parser* parent, cstr name, Span name_span,
     return parse_success(&p);
 }
 
-static bool parse_name_init(Parser* parent, NameInitData* ret) {
+static bool parse_name_init(Parser* parent, ExprCtx ctx, NameInitData* ret) {
     Parser p = parser(parent);
 
     cstr name = cstr_null;
@@ -2271,14 +2281,14 @@ static bool parse_name_init(Parser* parent, NameInitData* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_name_init_with_name(&p, name, name_span, ret)) {
+    if (!parse_name_init_with_name(&p, ctx, name, name_span, ret)) {
         return parse_fail(&p);
     }
 
     return parse_success(&p);
 }
 
-static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
+static bool parse_name_init_list(Parser* parent, ExprCtx ctx, VecNameInitData* ret) {
     Parser p = parser(parent);
     *ret = vec_name_init_data_init();
 
@@ -2287,7 +2297,7 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
     while (true) {
 
         Parser sub = parser(&p);
-        if (!parse_name_init(&sub, &data)) {
+        if (!parse_name_init(&sub, ctx, &data)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1134, "Variable declaration expected.");
             parse_fail(&sub);
             break;
@@ -2333,7 +2343,7 @@ static bool parse_name_init_list(Parser* parent, VecNameInitData* ret) {
     return parse_success(&p);
 }
 
-static bool parse_var_init(Parser* parent, VariableStatement* ret) {
+static bool parse_var_init(Parser* parent, ExprCtx ctx, VariableStatement* ret) {
     Parser p = parser(parent);
 
     if (hop_start_if_ends_on_word_break(&p, "var")) {
@@ -2348,7 +2358,7 @@ static bool parse_var_init(Parser* parent, VariableStatement* ret) {
     Anchor end_of_keyword = span_start(&p);
     hop_whitespace(&p);
 
-    if (!parse_name_init_list(&p, &ret->vars)) {
+    if (!parse_name_init_list(&p, ctx, &ret->vars)) {
         return parse_fail(&p);
     }
 
@@ -2380,7 +2390,7 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, condition)) {
+    if (!parse_expr(&p, expr_ctx_null, condition)) {
         error_ctx_parse_error(&p.errs, "invalid if condition");
         *condition = expr_literal(span_from_pos(&p), value_boolean(false));
     }
@@ -2454,10 +2464,10 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Statement body;
     bool keyword_is_in = false;
 
-    if (parse_var_init(&p, &statement.decl.variable)) {
+    if (parse_var_init(&p, (ExprCtx){.block_in_op = true}, &statement.decl.variable)) {
         statement.decl.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
-    } else if (parse_expr(&p, &statement.expr)) {
+    } else if (parse_expr(&p, (ExprCtx){.block_in_op = true}, &statement.expr)) {
         parse_comma_ops_right_side(&p, &statement.expr);
         statement.tag = STATEMENT_EXPR;
     } else if (*p.pos == ';') {
@@ -2471,7 +2481,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     if (hop_start(&p, ";")) {
         hop_whitespace(&p);
 
-        if (parse_expr(&p, &left_expr)) {
+        if (parse_expr(&p, expr_ctx_null, &left_expr)) {
             parse_comma_ops_right_side(&p, &left_expr);
         } else {
             left_expr = expr_literal(span_from_pos(&p), value_boolean(true));
@@ -2480,7 +2490,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
         if (hop_start(&p, ";")) {
             hop_whitespace(&p);
-            if (parse_expr(&p, &right_expr)) {
+            if (parse_expr(&p, expr_ctx_null, &right_expr)) {
                 parse_comma_ops_right_side(&p, &right_expr);
             } else {
                 right_expr = expr_undefined(span_from_pos(&p));
@@ -2500,7 +2510,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
         hop_whitespace(&p);
 
-        if (parse_expr(&p, &right_expr)) {
+        if (parse_expr(&p, expr_ctx_null, &right_expr)) {
             parse_comma_ops_right_side(&p, &right_expr);
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
@@ -2579,7 +2589,7 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
 
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
     Statement body = statement_noop;
-    if (parse_expr(&p, &condition)) {
+    if (parse_expr(&p, expr_ctx_null, &condition)) {
         parse_comma_ops_right_side(&p, &condition);
     } else {
         error_ctx_parse_error(&p.errs, "expected expression before ')'");
@@ -2633,7 +2643,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
         if (hop_char(&p, '(')) {
             hop_whitespace(&p);
 
-            if (!parse_name_init_list(&p, &try_catch.catch_var.vars)) {
+            if (!parse_name_init_list(&p, expr_ctx_null, &try_catch.catch_var.vars)) {
                 error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
                 try_catch.catch_var.vars = vec_name_init_data_init();
             }
@@ -2684,7 +2694,7 @@ static bool parse_return(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ret)) {
+    if (!parse_expr(&p, expr_ctx_null, ret)) {
         *ret = expr_undefined(span_end(a));
     }
 
@@ -2702,7 +2712,7 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
         Expr expr;
     } parsed;
 
-    if (exported != DECL_EXPORTED_YES_DEFAULT && parse_var_init(&p, &parsed.variable)) {
+    if (exported != DECL_EXPORTED_YES_DEFAULT && parse_var_init(&p, expr_ctx_null, &parsed.variable)) {
         *ret = (Statement) {
             .tag = STATEMENT_DECL_VARIABLE,
             .decl.exported = exported,
@@ -2728,7 +2738,7 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
             .decl.exported = exported,
             .decl.type = parsed.type_decl,
         };
-    } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, &parsed.expr)) {
+    } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
         *ret = (Statement){
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
@@ -2788,7 +2798,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->break_span = span_end(a);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
-    } else if (parse_expr(&p, &ret->expr)) {
+    } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         parse_comma_ops_right_side(&p, &ret->expr);
     } else {

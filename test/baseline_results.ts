@@ -15322,11 +15322,11 @@ const baselines = {
     },
     'inOperator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inOperatorWithFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21756,9 +21756,9 @@ const baselines = {
         types: true,
     },
     'numberAsInLHS': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numberAssignableToEnumInsideUnion': {
         errors: false,
@@ -21771,9 +21771,9 @@ const baselines = {
         types: false,
     },
     'numberOnLeftSideOfInExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numberToString': {
         errors: false,
@@ -39687,12 +39687,12 @@ const baselines = {
     },
     'templateStringWithEmbeddedInOperator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringWithEmbeddedInOperatorES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringWithEmbeddedInstanceOf': {
@@ -45686,9 +45686,9 @@ const baselines = {
         types: false,
     },
     'asiPreventsParsingAsNamespace04': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asiPreventsParsingAsNamespace05': {
         errors: false,
@@ -51551,7 +51551,7 @@ const baselines = {
         types: false,
     },
     'parserInExpression1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55398,7 +55398,7 @@ const baselines = {
     'nonPrimitiveRhsSideOfInExpression': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nonPrimitiveStrictNull': {
         errors: false,
