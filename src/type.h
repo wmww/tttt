@@ -43,6 +43,7 @@ typedef struct Type {
             // 1: this identifier is the generic_indexth item of the first generic above this type
             // 2+: there are generics between this type and the generic it is an item of
             int generic_depth;
+            VecType generic_params;
         } identifier;
         CallableType* callable;
         Interface interface;

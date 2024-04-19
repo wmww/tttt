@@ -88,6 +88,7 @@ void type_drop(Type* me) {
         case TYPE_IDENTIFIER:
             cstr_drop(&my identifier.name);
             arc_named_type_drop(&my identifier.type);
+            vec_type_drop(&my identifier.generic_params);
             break;
 
         case TYPE_CALLABLE:
@@ -131,17 +132,31 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
         case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
         case TYPE_VALUE: cstr_append_value_debug(target, &my value, indent); break;
+
         case TYPE_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_TYPE));
             cstr_append_s(target, my identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
+            if (!vec_type_empty(&my identifier.generic_params)) {
+                cstr_append_sv(target, c_sv("<"));
+                c_foreach(i, vec_type, my identifier.generic_params) {
+                    cstr_append_type_debug(target, i.ref, indent);
+                    if (i.ref != i.end - 1) {
+                        cstr_append_sv(target, c_sv(", "));
+                    }
+                }
+                cstr_append_sv(target, c_sv(">"));
+            }
             break;
+
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, my callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &my interface, indent); break;
+
         case TYPE_ARRAY:
             cstr_append_type_debug(target, my array, indent);
             cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
             break;
+
         case TYPE_TUPLE:
             cstr_append_sv(target, c_sv("["));
             c_foreach(i, vec_type, my tuple) {
@@ -152,6 +167,7 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             }
             cstr_append_sv(target, c_sv("]"));
             break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
@@ -163,6 +179,7 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             }
             cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             break;
+
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, my ternary, indent); break;
     }
 }
@@ -177,9 +194,24 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_NUMBER: cstr_append_sv(target, c_sv("number")); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
         case TYPE_VALUE: cstr_append_value_error_msg(target, &my value); break;
-        case TYPE_IDENTIFIER: cstr_append_s(target, my identifier.name); break;
+
+        case TYPE_IDENTIFIER:
+            cstr_append_s(target, my identifier.name);
+            if (!vec_type_empty(&my identifier.generic_params)) {
+                cstr_append_sv(target, c_sv("<"));
+                c_foreach(i, vec_type, my identifier.generic_params) {
+                    cstr_append_type_error_msg(target, i.ref);
+                    if (i.ref != i.end - 1) {
+                        cstr_append_sv(target, c_sv(", "));
+                    }
+                }
+                cstr_append_sv(target, c_sv(">"));
+            }
+            break;
+
         case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, my callable); break;
         case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &my interface); break;
+
         case TYPE_ARRAY: {
             bool needs_peren = my array->tag == TYPE_UNION || my array->tag == TYPE_INTERSECTION;
             if (needs_peren) {
@@ -190,8 +222,8 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
                 cstr_append_sv(target, c_sv(")"));
             }
             cstr_append_sv(target, c_sv("[]"));
-            break;
-        }
+        }   break;
+
         case TYPE_TUPLE:
             cstr_append_sv(target, c_sv("["));
             c_foreach(i, vec_type, my tuple) {
@@ -202,6 +234,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
             }
             cstr_append_sv(target, c_sv("]"));
             break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -211,6 +244,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
                 }
             }
             break;
+
         case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, my ternary); break;
     }
 }
@@ -294,6 +328,9 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             if (result) {
                 my identifier.type = arc_named_type_clone(*result);
                 my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
+            }
+            c_foreach(i, vec_type, my identifier.generic_params) {
+                type_resolve_names(i.ref, names, errs);
             }
         }   break;
 

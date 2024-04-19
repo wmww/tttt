@@ -511,6 +511,48 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
     return true;
 }
 
+static bool parse_generic_params(Parser* parent, VecType* ret) {
+    Parser p = parser(parent);
+    *ret = vec_type_init();
+
+    if (!hop_char(&p, '<')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    Span trailing_comma_span = span_null;
+    while (*p.pos && *p.pos != '>') {
+        trailing_comma_span = span_null;
+        Type t;
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+            vec_type_push(ret, t);
+        } else if (*p.pos == ',') {
+            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+        } else {
+            break;
+        }
+        hop_whitespace(&p);
+
+        if (hop_char(&p, ',')) {
+            trailing_comma_span = span_from_previous_char(&p);
+        } else if (*p.pos == '>') {
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+        }
+        hop_whitespace(&p);
+    }
+
+    if (span_valid(&trailing_comma_span)) {
+        error_ctx_error(&p.errs, trailing_comma_span, 1009, "Trailing comma not allowed.");
+    }
+
+    if (!hop_char(&p, '>')) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'>' expected.");
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     Parser p = parser(parent);
     Type MaybeSuper = {0};
@@ -679,6 +721,12 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         ret->tag = TYPE_VALUE;
     } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
         *ret = type_identifier(parsed.name, parsed.span);
+        hop_whitespace(&p);
+        if (p.whitespace != WHITESPACE_NEWLINE) {
+            if (!parse_generic_params(&p, &ret->identifier.generic_params)) {
+                ret->identifier.generic_params = vec_type_init();
+            }
+        }
     } else if (parse_tuple(&p, &ret->tuple)){
         ret->tag = TYPE_TUPLE;
     } else if (parse_function_args(&p, nullptr, nullptr, &parsed.callable)) {

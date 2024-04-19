@@ -42,6 +42,9 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
                 my identifier.span,
                 my identifier.type.get ? my identifier.type.get->name_span : span_null
             );
+            c_foreach(i, vec_type, my identifier.generic_params) {
+                type_compile_test_info(i.ref, ctx);
+            }
         }   break;
 
         case TYPE_CALLABLE:

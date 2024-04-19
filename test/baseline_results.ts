@@ -5571,7 +5571,7 @@ const baselines = {
         types: false,
     },
     'constraintsThatReferenceOtherContstraints1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9023,7 +9023,7 @@ const baselines = {
     'didYouMeanSuggestionErrors': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'differentTypesWithSameName': {
         errors: false,
@@ -12466,7 +12466,7 @@ const baselines = {
         types: false,
     },
     'externalModuleQualification': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13741,7 +13741,7 @@ const baselines = {
         types: false,
     },
     'genericClasses0': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13826,7 +13826,7 @@ const baselines = {
         types: false,
     },
     'genericConstraintDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14106,7 +14106,7 @@ const baselines = {
         types: false,
     },
     'genericObjectLitReturnType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14141,12 +14141,12 @@ const baselines = {
         types: false,
     },
     'genericPrototypeProperty2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'genericPrototypeProperty3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14406,7 +14406,7 @@ const baselines = {
         types: false,
     },
     'generics4NoError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21006,7 +21006,7 @@ const baselines = {
         types: false,
     },
     'noConstraintInReturnType1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22456,7 +22456,7 @@ const baselines = {
         types: false,
     },
     'overloadEquivalenceWithStatics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22631,7 +22631,7 @@ const baselines = {
         types: false,
     },
     'overloadedStaticMethodSpecialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25991,7 +25991,7 @@ const baselines = {
         types: false,
     },
     'specializedLambdaTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26518,7 +26518,7 @@ const baselines = {
     'stringMappingAssignability': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'stringMatchAll': {
         errors: false,
@@ -27446,7 +27446,7 @@ const baselines = {
         types: true,
     },
     'thisExpressionOfGenericObject': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49501,33 +49501,33 @@ const baselines = {
         types: false,
     },
     'parserGenericConstraint2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericConstraint7': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserGenericsInInterfaceDeclaration1': {
@@ -50677,8 +50677,8 @@ const baselines = {
     },
     'parserSkippedTokens20': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserSkippedTokens3': {
         errors: true,
