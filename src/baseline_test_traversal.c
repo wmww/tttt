@@ -151,13 +151,16 @@ void type_decl_compile_test_info(TypeDecl* me, BaselineTestCase* ctx) {
         my name_span,
         my full_span
     );
+    Type t = type_clone(my type);
+    type_simplify(&t);
     if (!my is_interface) {
         baseline_test_case_add_type(
             ctx,
             my name_span,
-            &my type
+            &t
         );
     }
+    type_drop(&t);
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(&my type, ctx);
 }

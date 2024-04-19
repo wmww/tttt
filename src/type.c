@@ -600,6 +600,78 @@ void type_abstract_literals(Type* me) {
     }
 }
 
+void type_simplify_internal(Type* me, int level) {
+    if (level > 2) {
+        NONFATAL("max type recursion depth exceeded");
+        return;
+    }
+    switch (my tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_VALUE:
+            break;
+
+        case TYPE_IDENTIFIER:
+            if (my identifier.type.get && !my identifier.generic_depth) {
+                Type tmp = type_clone(*my identifier.type.get->type);
+                type_drop(me);
+                *me = tmp;
+                type_simplify_internal(me, level + 1);
+            }
+            break;
+
+        case TYPE_CALLABLE:
+            c_foreach(i, vec_generic_item, my callable->generic.items) {
+                type_simplify_internal(&i.ref->extends, level);
+                type_simplify_internal(&i.ref->fallback, level);
+            }
+            c_foreach(i, vec_callable_type_arg, my callable->args) {
+                type_simplify_internal(&i.ref->type, level);
+            }
+            type_simplify_internal(&my callable->ret, level);
+            break;
+
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_interface_member, my interface.members) {
+                type_simplify_internal(&i.ref->type, level + 1);
+            }
+            break;
+
+        case TYPE_ARRAY:
+            type_simplify_internal(my array, level);
+            break;
+
+        case TYPE_TUPLE:
+            c_foreach(i, vec_type, my tuple) {
+                type_simplify_internal(i.ref, level);
+            }
+            break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                type_simplify_internal(i.ref, level);
+            }
+            break;
+
+        case TYPE_TERNARY: {
+            Type tmp = type_clone(*ternary_type_resolve(my ternary));
+            type_drop(me);
+            *me = tmp;
+            type_simplify_internal(me, level);
+        }   break;
+    }
+}
+
+void type_simplify(Type* me) {
+    type_simplify_internal(me, 0);
+}
+
 Type array_type_of(Type value) {
     Type ret = type_any;
     switch (value.tag) {
