@@ -2852,7 +2852,7 @@ static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
             } else if (*p.pos == ';') {
                 p.pos++;
             } else if (*p.pos) {
-                error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "';' expected.");
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
             }
         } else if (*p.pos == '\\') {
             error_ctx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
