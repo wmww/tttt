@@ -927,7 +927,7 @@ const baselines = {
     },
     'anyMappedTypesError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'anyPlusAny1': {
@@ -12731,7 +12731,7 @@ const baselines = {
         types: false,
     },
     'forInStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51041,9 +51041,9 @@ const baselines = {
         types: true,
     },
     'parserForInStatement2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserForInStatement3': {
         errors: true,
@@ -51051,22 +51051,22 @@ const baselines = {
         types: true,
     },
     'parserForInStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForInStatement5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserForInStatement6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForInStatement7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

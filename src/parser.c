@@ -222,7 +222,10 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
         *span = span_end(a);
     }
     csview sv = csview_from_n(a.start, parent->pos - a.start);
-    if (csview_cmp(&sv, &c_sv("return")) == 0 || csview_cmp(&sv, &c_sv("case")) == 0) {
+    if (csview_cmp(&sv, &c_sv("return")) == 0 ||
+        csview_cmp(&sv, &c_sv("case")) == 0 ||
+        csview_cmp(&sv, &c_sv("in")) == 0
+    ) {
         return false; // TODO: check for all keywords efficiently
     }
     *ret = cstr_from_sv(sv);

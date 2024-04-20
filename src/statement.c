@@ -513,8 +513,9 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             type_drop(&iterable_type);
 
             switch (my for_each_loop->variable.tag) {
-                case FOR_EACH_LOOP_STATEMENT:
-                    if (vec_name_init_data_size(&my for_each_loop->variable.statement.vars) > 1) {
+                case FOR_EACH_LOOP_STATEMENT: {
+                    intptr_t var_size = vec_name_init_data_size(&my for_each_loop->variable.statement.vars);
+                    if (var_size > 1) {
                         error_ctx_error(
                             errs,
                             vec_name_init_data_at(&my for_each_loop->variable.statement.vars, 1)->name_span,
@@ -522,8 +523,27 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             "Only a single variable declaration is allowed in a 'for...%s' statement.",
                             for_each_loop_statement_keyword_str(my for_each_loop).str
                         );
+                    } else if (var_size == 0) {
+                        // Error added by parser
                     } else {
-                        ASSERT(vec_name_init_data_size(&my for_each_loop->variable.statement.vars) >= 1);
+                        NameInitData* data = my for_each_loop->variable.statement.vars.data;
+                        if (data->value_explicit) {
+                            error_ctx_error(
+                                errs,
+                                data->name_span,
+                                1189,
+                                "The variable declaration of a 'for...%s' statement cannot have an initializer.",
+                                for_each_loop_statement_keyword_str(my for_each_loop).str
+                            );
+                        } else if (data->type_explicit) {
+                            error_ctx_error(
+                                errs,
+                                data->name_span,
+                                2404,
+                                "The left-hand side of a 'for...%s' statement cannot use a type annotation.",
+                                for_each_loop_statement_keyword_str(my for_each_loop).str
+                            );
+                        }
                     }
                     c_foreach(i, vec_name_init_data, my for_each_loop->variable.statement.vars) {
                         type_drop(&i.ref->type);
@@ -534,8 +554,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             i.ref->type = type_clone(var_type);
                         }
                     }
-                    variable_statement_typecheck(&my for_each_loop->variable.statement, errs);
-                    break;
+                }   break;
 
                 case FOR_EACH_LOOP_EXPR: {
                     Type existing_var_type = expr_get_type_and_typecheck(&my for_each_loop->variable.expr, errs);
