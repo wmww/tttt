@@ -407,9 +407,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
 
         Block ast = parse_file(cstr_str(&my detail.source), &my detail.errs);
 
-        NameStack* names = name_stack_new();
-        block_resolve_names(&ast, names, &my detail.errs);
-        name_stack_destroy(names);
+        block_resolve_names_toplevel(&ast, &my detail.errs);
 
         block_typecheck_toplevel(&ast, &my detail.errs);
         block_compile_test_info(&ast, me);
