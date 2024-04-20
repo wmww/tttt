@@ -435,6 +435,11 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return result_return(value);
         }
 
+        case STATEMENT_THROW_EXPR: {
+            TRY_THROW(value, engine_eval_expr(me, &statement->expr));
+            return result_err(value);
+        }
+
         case STATEMENT_DECL_VARIABLE: {
             // TODO: respect keyword (let, const, var)
             c_foreach(i, vec_name_init_data, statement->decl.variable.vars) {

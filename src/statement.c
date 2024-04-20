@@ -141,6 +141,7 @@ void statement_drop(Statement* me) {
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
             expr_drop(&my expr);
             break;
 
@@ -257,6 +258,12 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_sv(target, c_sv(";"));
             break;
 
+        case STATEMENT_THROW_EXPR:
+            cstr_append_sv(target, c_sv("throw "));
+            cstr_append_expr_debug(target, &my expr, indent);
+            cstr_append_sv(target, c_sv(";"));
+            break;
+
         case STATEMENT_DECL_VARIABLE:
             cstr_append_variable_statement_debug(target, &my decl.variable, indent);
             cstr_append_sv(target, c_sv(";"));
@@ -339,6 +346,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
             break;
     }
 }
@@ -400,6 +408,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
             expr_resolve_names(&my expr, names, errs);
             break;
 
@@ -590,7 +599,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_EXPR:
-        case STATEMENT_EXPORT_DEFAULT_EXPR: {
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_THROW_EXPR: {
             Type t = expr_get_type_and_typecheck(&my expr, errs);
             type_drop(&t);
         }   break;

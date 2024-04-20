@@ -223,6 +223,7 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
     }
     csview sv = csview_from_n(a.start, parent->pos - a.start);
     if (csview_cmp(&sv, &c_sv("return")) == 0 ||
+        csview_cmp(&sv, &c_sv("throw")) == 0 ||
         csview_cmp(&sv, &c_sv("case")) == 0 ||
         csview_cmp(&sv, &c_sv("in")) == 0
     ) {
@@ -2704,6 +2705,22 @@ static bool parse_return(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_throw(Parser* parent, Expr* ret) {
+    Parser p = parser(parent);
+    Anchor a = span_start(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "throw")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!parse_expr(&p, expr_ctx_null, ret)) {
+        *ret = expr_undefined(span_end(a));
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_statement_decl(Parser* parent, DeclExported exported, Statement* ret) {
     Parser p = parser(parent);
 
@@ -2801,6 +2818,8 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->break_span = span_end(a);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
+    } else if (parse_throw(&p, &ret->expr)) {
+        ret->tag = STATEMENT_THROW_EXPR;
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         parse_comma_ops_right_side(&p, &ret->expr);

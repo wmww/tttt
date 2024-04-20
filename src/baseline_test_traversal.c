@@ -286,6 +286,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED) {
                 expr_compile_test_info(&my expr, ctx);
             }

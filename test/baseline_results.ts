@@ -1376,12 +1376,12 @@ const baselines = {
         types: true,
     },
     'arrowFunctionWithObjectLiteralBody5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'arrowFunctionWithObjectLiteralBody6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -8071,7 +8071,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitTypeParamMergedWithPrivate': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13036,7 +13036,7 @@ const baselines = {
         types: false,
     },
     'functionOnlyHasThrow': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13476,7 +13476,7 @@ const baselines = {
         types: false,
     },
     'functionWithThrowButNoReturn1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14501,7 +14501,7 @@ const baselines = {
         types: false,
     },
     'getterThatThrowsShouldNotNeedReturn': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25221,9 +25221,9 @@ const baselines = {
         types: false,
     },
     'scopingInCatchBlocks': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'selfInCallback': {
         errors: true,
@@ -25891,7 +25891,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationTryCatchFinally': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27781,9 +27781,9 @@ const baselines = {
         types: false,
     },
     'tryStatementInternalComments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsconfigExtendsPackageJsonExportsWildcard': {
         errors: false,
@@ -29231,9 +29231,9 @@ const baselines = {
         types: false,
     },
     'unreachableFlowAfterFinally': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unreachableJavascriptChecked': {
         errors: false,
@@ -51148,7 +51148,7 @@ const baselines = {
     'parserThrowStatement1.d': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserTryStatement1.d': {
         errors: false,
@@ -51498,7 +51498,7 @@ const baselines = {
     'parser10.1.1-8gs': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser15.4.4.14-9-2': {
         errors: false,
@@ -53278,7 +53278,7 @@ const baselines = {
     'scanner10.1.1-8gs': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerAdditiveExpression1': {
         errors: true,
@@ -54146,7 +54146,7 @@ const baselines = {
         types: false,
     },
     'ES5For-of37': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

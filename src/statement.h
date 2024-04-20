@@ -77,6 +77,7 @@ typedef struct Statement {
         STATEMENT_EXPR,
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
         STATEMENT_RETURN_EXPR, // also uses expr union member
+        STATEMENT_THROW_EXPR, // also uses expr union member
         STATEMENT_DECL_VARIABLE,
         STATEMENT_DECL_FUNCTION,
         STATEMENT_DECL_CLASS,
