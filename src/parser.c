@@ -971,6 +971,8 @@ static bool parse_function_args(
                         .value_explicit = name_init.value_explicit,
                         .value = name_init.value,
                     });
+                } else {
+                    expr_drop(&name_init.value);
                 }
 
                 if (p.pos == before_param) {

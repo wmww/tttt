@@ -67,8 +67,8 @@ int main(int argc, const char** argv) {
     printf(CLR_GOOD "Run succeeded" CLR0 "\n");
 
 cleanup:
-    cstr_drop(&contents);
     error_ctx_drop(&errs);
     block_drop(&ast);
+    cstr_drop(&contents);
     return ret;
 }
