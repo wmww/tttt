@@ -68,14 +68,41 @@ bool error_ctx_empty(ErrorCtx* me) {
     return vec_error_empty(&my errors);
 }
 
-void error_ctx_append_error(ErrorCtx* me, Error error) {
+static int error_cmp(Error const* a, Error const* b) {
+    int ret = span_cmp(&a->span, &b->span);
+    if (ret) {
+        return ret;
+    } else if (a->phase != b->phase) {
+        return a->phase > b->phase ? 1 : -1;
+    } else {
+        return 0;
+    }
+}
+
+static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     intptr_t i = vec_error_size(&my errors);
-    vec_error_insert_uninit(&my errors, i, 1);
-    while (i > 0 && span_cmp(&vec_error_at(&my errors, i - 1)->span, &error.span) > 0) {
-        *vec_error_at_mut(&my errors, i) = *vec_error_at(&my errors, i - 1);
+    while (i > 0) {
+        int cmp = error_cmp(vec_error_at(&my errors, i - 1), error);
+        if (cmp < 0) {
+            return i;
+        } else if (cmp == 0) {
+            return -1;
+        }
         i--;
     }
-    *vec_error_at_mut(&my errors, i) = error;
+    return 0;
+}
+
+void error_ctx_append_error(ErrorCtx* me, Error error) {
+    if (error.phase == ERROR_PHASE_UNKOWN) {
+        NONFATAL("Error added with unkown phase: %s", cstr_str(&error.message));
+    }
+    intptr_t insertion_index = insertion_index_for_span(me, &error);
+    if (insertion_index >= 0) {
+        vec_error_insert_n(&my errors, insertion_index, &error, 1);
+    } else {
+        error_drop(&error);
+    }
 }
 
 void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other) {
