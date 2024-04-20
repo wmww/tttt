@@ -429,14 +429,9 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 
         case TYPE_IDENTIFIER:
             if (super->identifier.type.get) {
-                // TODO: replace with a more robust recursion checking system
-                if (super->identifier.type.get->type == super) {
-                    return false;
-                } else {
-                    return type_extends_internal(sub, super->identifier.type.get->type, level);
-                }
+                return type_extends_internal(sub, super->identifier.type.get->type, level + 1);
             }
-            return true;
+            return false;
 
         case TYPE_CALLABLE:
             if (sub->tag != TYPE_CALLABLE) {

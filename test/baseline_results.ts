@@ -7632,7 +7632,7 @@ const baselines = {
     },
     'declarationEmitInferredTypeAlias4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitInferredTypeAlias5': {
@@ -7652,12 +7652,12 @@ const baselines = {
     },
     'declarationEmitInferredTypeAlias8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitInferredTypeAlias9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitInferredUndefinedPropFromFunctionInArray': {
@@ -11557,7 +11557,7 @@ const baselines = {
     },
     'excessPropertyErrorForFunctionTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'excessPropertyErrorsSuppressed': {
@@ -12686,7 +12686,7 @@ const baselines = {
         types: false,
     },
     'flowInFinally1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14363,7 +14363,7 @@ const baselines = {
     'genericWithNoConstraintComparableWithCurlyCurly': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericWithOpenTypeParameters1': {
         errors: false,
@@ -42203,7 +42203,7 @@ const baselines = {
     'instanceofOperatorWithLHSIsObject': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'instanceofOperatorWithLHSIsTypeParameter': {
         errors: true,
