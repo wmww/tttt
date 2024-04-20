@@ -216,13 +216,13 @@ const baselines = {
         types: false,
     },
     'abstractClassInLocalScope': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'abstractClassInLocalScopeIsAbstract': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'abstractClassUnionInstantiation': {
@@ -20862,7 +20862,7 @@ const baselines = {
     },
     'newAbstractInstance': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'newAbstractInstance2': {
@@ -31552,8 +31552,8 @@ const baselines = {
     },
     'classAbstractConstructor': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classAbstractConstructorAssignability': {
         errors: false,
@@ -31602,7 +31602,7 @@ const baselines = {
     },
     'classAbstractInstantiations1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classAbstractInstantiations2': {
@@ -33363,7 +33363,7 @@ const baselines = {
     'abstractPropertyInitializer': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'accessibilityModifiers': {
         errors: true,

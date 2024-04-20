@@ -36,6 +36,9 @@ void class_decl_drop(ClassDecl* me) {
 }
 
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent) {
+    if (my is_abstract) {
+        cstr_append_sv(target, c_sv("abstract "));
+    }
     cstr_append_sv(target, c_sv("class "));
     if (!cstr_empty(&my name)) {
         cstr_append_sv(target, c_sv(CLR_NAME));

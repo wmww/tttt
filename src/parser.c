@@ -1560,12 +1560,19 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
 
+    bool is_abstract = false;
+    if (hop_start_if_ends_on_word_break(&p, "abstract")) {
+        hop_whitespace(&p);
+        is_abstract = true;
+    }
+
     if (!hop_start_if_ends_on_word_break(&p, "class")) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
     *ret = (ClassDecl){
+        .is_abstract = is_abstract,
         .interface = type_any,
         .extends = expr_implicit_any(span_null),
         .implements = {0},
