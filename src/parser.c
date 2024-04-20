@@ -676,7 +676,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
     }
 
     if (TYPE_PRECEDENCE_INTERSECTION >= min_precedence) {
-        if (hop_char(&p, '&' && *p.pos != '&' && *p.pos != '=')) {
+        if (hop_char(&p, '&') && *p.pos != '&' && *p.pos != '=') {
             hop_whitespace(&p);
 
             if (!parse_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type)) {
@@ -684,7 +684,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
                 type = type_any;
             }
 
-            *left_and_ret = type_composite(*left_and_ret, type, TYPE_INTERSECTION);
+            *left_and_ret = type_composite_without_simplify(*left_and_ret, type, TYPE_INTERSECTION);
             return parse_success(&p);
         }
     }
@@ -698,7 +698,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
                 type = type_any;
             }
 
-            *left_and_ret = type_composite(*left_and_ret, type, TYPE_UNION);
+            *left_and_ret = type_composite_without_simplify(*left_and_ret, type, TYPE_UNION);
             return parse_success(&p);
         }
     }

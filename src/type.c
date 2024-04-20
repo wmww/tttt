@@ -20,6 +20,27 @@ const Type type_string = { .tag = TYPE_STRING };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
+Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag) {
+    if (a.tag == tag && b.tag == tag) {
+        // Doesn't seem to be a more elegant way to append one vec to another
+        vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
+        b.composite._len = 0; // fine, becuse the other vec now owns the data
+        type_drop(&b);
+        return a;
+    } else if (a.tag == tag) {
+        vec_type_push(&a.composite, b);
+        return a;
+    } else if (b.tag == tag) {
+        vec_type_insert_n(&b.composite, 0, &a, 1);
+        return b;
+    } else {
+        return (Type){
+            .tag = tag,
+            .composite = c_init(vec_type, {a, b}),
+        };
+    }
+}
+
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
     if (a.tag == TYPE_NEVER || a.tag == TYPE_ANY || b.tag == TYPE_NEVER || b.tag == TYPE_ANY) {
@@ -50,23 +71,8 @@ Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
             type_drop(&a);
             return b;
         }
-    } else if (a.tag == tag && b.tag == tag) {
-        // Doesn't seem to be a more elegant way to append one vec to another
-        vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
-        b.composite._len = 0; // fine, becuse the other vec now owns the data
-        type_drop(&b);
-        return a;
-    } else if (a.tag == tag) {
-        vec_type_push(&a.composite, b);
-        return a;
-    } else if (b.tag == tag) {
-        vec_type_insert_n(&b.composite, 0, &a, 1);
-        return b;
     } else {
-        return (Type){
-            .tag = tag,
-            .composite = c_init(vec_type, {a, b}),
-        };
+        return type_composite_without_simplify(a, b, tag);
     }
 }
 

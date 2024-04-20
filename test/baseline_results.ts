@@ -9131,7 +9131,7 @@ const baselines = {
         types: false,
     },
     'distributiveConditionalTypeNeverIntersection1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10407,7 +10407,7 @@ const baselines = {
     },
     'errorMessageOnIntersectionsWithDiscriminants01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorMessageOnObjectLiteralType': {
@@ -18542,7 +18542,7 @@ const baselines = {
     },
     'literalIntersectionYieldsLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'literalTypeNameAssertionNotTriggered': {
@@ -42047,7 +42047,7 @@ const baselines = {
     },
     'comparisonOperatorWithIntersectionType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnCallSignature': {
@@ -42102,7 +42102,7 @@ const baselines = {
     },
     'comparisonOperatorWithNumericLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'comparisonOperatorWithOneOperandIsAny': {
@@ -47157,7 +47157,7 @@ const baselines = {
     },
     'typeParameterExtendsUnionConstraintDistributed': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeTagCircularReferenceOnConstructorFunction': {
@@ -54602,7 +54602,7 @@ const baselines = {
     },
     'commonTypeIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualIntersectionType': {
@@ -54657,7 +54657,7 @@ const baselines = {
     },
     'intersectionTypeAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionTypeEquivalence': {
@@ -54852,7 +54852,7 @@ const baselines = {
     },
     'stringLiteralsAssertionsInEqualityComparisons02': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringLiteralsAssignedToStringMappings': {
@@ -55326,7 +55326,7 @@ const baselines = {
         types: false,
     },
     'neverUnionIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

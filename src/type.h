@@ -126,6 +126,7 @@ static inline Type type_ternary(TernaryType* ternary) {
     };
 }
 
+Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag);
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag);
 
 void type_drop(Type* me);
