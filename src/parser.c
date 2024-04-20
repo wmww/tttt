@@ -92,7 +92,7 @@ static inline Parser parser(Parser* parent) {
         .pos = parent->pos,
         .whitespace = parent->whitespace,
         .whitespace_end = parent->whitespace_end,
-        .errs = {0},
+        .errs = { .phase = ERROR_PHASE_PARSE },
     };
 }
 
@@ -2898,7 +2898,7 @@ Block parse_file(const char* source, ErrorCtx* errs) {
         .shared = &shared,
         .parent = nullptr,
         .pos = source,
-        .errs = {0},
+        .errs = { .phase = ERROR_PHASE_PARSE },
     };
 
     if (p.pos[0] == '\xEF' && p.pos[1] == '\xBB' && p.pos[2] == '\xBF') {

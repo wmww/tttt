@@ -94,6 +94,7 @@ void error_ctx_parse_error(ErrorCtx* me, const char* static_message) {
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
+        .phase = my phase,
     });
 }
 
@@ -105,6 +106,7 @@ void error_ctx_type_error(ErrorCtx* me, const char* static_message) {
         .message = cstr_from(static_message),
         .span = {0},
         .ts_code = TS_CODE_NONE,
+        .phase = my phase,
     });
 }
 
@@ -117,6 +119,7 @@ void error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) 
         .message = message,
         .span = span,
         .ts_code = ts_code,
+        .phase = my phase,
     });
 }
 

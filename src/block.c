@@ -1,6 +1,7 @@
 #include "block.h"
 #include "statement.h"
 #include "name_stack.h"
+#include "error.h"
 
 void block_drop(Block* me) {
     vec_statement_drop(&my statements);
@@ -39,13 +40,19 @@ void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {
 }
 
 void block_resolve_names_toplevel(Block* me, ErrorCtx* errs) {
+    ErrorPhase prev_phase = errs->phase;
+    errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     NameStack* names = name_stack_new();
     block_resolve_names(me, names, errs);
     name_stack_destroy(names);
+    errs->phase = prev_phase;
 }
 
 void block_typecheck_toplevel(Block* me, ErrorCtx* errs) {
+    ErrorPhase prev_phase = errs->phase;
+    errs->phase = ERROR_PHASE_TYPECHECK;
     StatementCtx statement_ctx = statement_ctx_toplevel();
     block_typecheck(me, &statement_ctx, errs);
     statement_ctx_drop(&statement_ctx);
+    errs->phase = prev_phase;
 }

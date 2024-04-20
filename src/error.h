@@ -1,12 +1,19 @@
 #pragma once
 
-#include "prelude.h"
 #include "span.h"
+
+typedef enum ErrorPhase {
+    ERROR_PHASE_UNKOWN = 0,
+    ERROR_PHASE_PARSE,
+    ERROR_PHASE_RESOLVE_NAMES,
+    ERROR_PHASE_TYPECHECK,
+} ErrorPhase;
 
 typedef struct Error {
     cstr message;
     Span span;
     unsigned ts_code;
+    ErrorPhase phase;
 } Error;
 
 void error_drop(Error* me);
@@ -18,6 +25,7 @@ void cstr_append_error_txt(cstr* target, Error const* me);
 #include "wrap_stc/vec.h"
 
 typedef struct ErrorCtx {
+    ErrorPhase phase;
     VecError errors;
 } ErrorCtx;
 
