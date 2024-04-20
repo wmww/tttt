@@ -33,6 +33,9 @@ void class_decl_drop(ClassDecl* me) {
     vec_type_drop(&my implements);
     callable_type_drop(&my constructor_type);
     vec_class_item_drop(&my items);
+    if (my type_ref.get) {
+        arc_named_type_drop(&my type_ref);
+    }
 }
 
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent) {
@@ -94,6 +97,17 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_push_generic_frame(names, &my generic, errs);
+
+    ArcNamedType const* type_ref = name_stack_get_type(names, cstr_sv(&my name), nullptr);
+    if (type_ref) {
+        my type_ref = arc_named_type_clone(*type_ref);
+    } else {
+        my type_ref = arc_named_type_make((NamedType){
+            .name_span = my name_span,
+            .type = callable_type_get_wrapper(&my constructor_type),
+            .generic = &my generic,
+        });
+    }
 
     expr_resolve_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
@@ -187,9 +201,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 if (constructor_count == 0) {
                     callable_type_drop(&my constructor_type);
                     my constructor_type = callable_type_clone(i.ref->constructor.func.type);
-                    type_drop(&my constructor_type.ret);
-                    my constructor_type.ret = type_clone(my interface);
-                    my constructor_type.ret_explicit = true;
                 }
                 constructor_count++;
                 break;
@@ -240,10 +251,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     if (constructor_count == 0) {
         callable_type_drop(&my constructor_type);
-        my constructor_type = (CallableType){
-            .ret_explicit = true,
-            .ret = type_clone(my interface),
-        };
+        my constructor_type = (CallableType){0};
     } else if (constructor_count > 1) {
         c_foreach(i, vec_class_item, my items) {
             if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -258,6 +266,17 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             }
         }
     }
+
+    type_drop(&my constructor_type.ret);
+    my constructor_type.ret = type_identifier_full(
+        cstr_clone(my name),
+        my name_span,
+        arc_named_type_clone(my type_ref),
+        0
+    );
+    my constructor_type.ret_explicit = true;
+    my constructor_type.is_constructor = true;
+    callable_type_get_wrapper(&my constructor_type);
 
     c_foreach(i, vec_type, my implements) {
         // TODO: check that we do, in fact, implement each type

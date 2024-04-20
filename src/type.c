@@ -389,6 +389,12 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 
         case TYPE_IDENTIFIER:
             if (sub->identifier.type.get) {
+                while (super->tag == TYPE_IDENTIFIER && super->identifier.type.get) {
+                    if (sub->identifier.type.get == super->identifier.type.get) {
+                        return true;
+                    }
+                    super = super->identifier.type.get->type;
+                }
                 return type_extends_internal(sub->identifier.type.get->type, super, level + 1);
             }
             return false;

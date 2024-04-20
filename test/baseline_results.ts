@@ -1323,7 +1323,7 @@ const baselines = {
     'arrowFunctionInConstructorArgument1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionInExpressionStatement1': {
         errors: true,
@@ -1486,7 +1486,7 @@ const baselines = {
         types: false,
     },
     'assignToObjectTypeWithPrototypeProperty': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -1541,7 +1541,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatOnNew': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -2963,7 +2963,7 @@ const baselines = {
     'castParentheses': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'castTest': {
         errors: false,
@@ -3383,12 +3383,12 @@ const baselines = {
     'classDeclarationBlockScoping2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classDeclarationCheckUsedBeforeDefinitionInFunctionDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classDeclarationCheckUsedBeforeDefinitionInItself': {
         errors: true,
@@ -4698,7 +4698,7 @@ const baselines = {
     'commentsClass': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'commentsClassMembers': {
         errors: true,
@@ -5073,7 +5073,7 @@ const baselines = {
     'concatClassAndString': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'concatError': {
         errors: false,
@@ -7323,12 +7323,12 @@ const baselines = {
     'declarationEmitDefaultExport6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDefaultExport7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDefaultExport8': {
         errors: false,
@@ -8318,7 +8318,7 @@ const baselines = {
     'declareIdentifierAsBeginningOfStatementExpression01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declareModifierOnImport1': {
         errors: false,
@@ -12321,7 +12321,7 @@ const baselines = {
         types: false,
     },
     'extendConstructSignatureInInterface': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -12686,7 +12686,7 @@ const baselines = {
         types: false,
     },
     'flowInFinally1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -14396,7 +14396,7 @@ const baselines = {
         types: false,
     },
     'generics3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15668,7 +15668,7 @@ const baselines = {
     'indirectSelfReference': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indirectSelfReferenceGeneric': {
         errors: false,
@@ -20933,7 +20933,7 @@ const baselines = {
     'newOnInstanceSymbol': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newOperator': {
         errors: false,
@@ -20963,7 +20963,7 @@ const baselines = {
     'noCollisionThisExpressionAndClassInGlobal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCollisionThisExpressionAndLocalVarInAccessors': {
         errors: false,
@@ -23526,7 +23526,7 @@ const baselines = {
         types: false,
     },
     'privacyTypeParametersOfClass': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25406,7 +25406,7 @@ const baselines = {
         types: false,
     },
     'signatureInstantiationWithRecursiveConstraints': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -26236,7 +26236,7 @@ const baselines = {
         types: false,
     },
     'staticInterfaceAssignmentCompat': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -27083,7 +27083,7 @@ const baselines = {
     'systemModule6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'systemModule7': {
         errors: false,
@@ -28118,7 +28118,7 @@ const baselines = {
     'typeIdentityConsidersBrands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeInfer1': {
         errors: false,
@@ -30128,7 +30128,7 @@ const baselines = {
     'varAsID': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'varBlock': {
         errors: false,
@@ -34273,7 +34273,7 @@ const baselines = {
     'constructableDecoratorOnClass01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnClassConstructor1': {
         errors: false,
@@ -56886,7 +56886,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints3': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

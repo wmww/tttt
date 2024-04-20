@@ -53,6 +53,7 @@ typedef struct ClassDecl {
     VecType implements;
     CallableType constructor_type;
     VecClassItem items;
+    ArcNamedType type_ref;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

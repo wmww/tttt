@@ -20,6 +20,7 @@ typedef struct CallableType {
     VecCallableTypeArg args;
     bool ret_explicit;
     Type ret;
+    bool is_constructor;
     Type wrapper_type_do_not_drop; // used by callable_type_get_wrapper
 } CallableType;
 
