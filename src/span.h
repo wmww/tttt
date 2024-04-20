@@ -35,3 +35,4 @@ const char* span_line_end(Span const* me);
 csview span_sv(Span const* me);
 Span span_between(Span const* a, Span const* b);
 int span_cmp(Span const* a, Span const* b);
+bool span_eq_str(Span const* me, const char* str);

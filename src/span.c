@@ -75,3 +75,16 @@ int span_cmp(Span const* a, Span const* b) {
         return 0;
     }
 }
+
+bool span_eq_str(Span const* me, const char* str) {
+    const char* s = span_start_ptr(me);
+    if (!s) {
+        return false;
+    }
+    for (intptr_t i = 0; i < my length; i++) {
+        if (s[i] != str[i] || !str[i]) {
+            return false;
+        }
+    }
+    return str[my length] == 0;
+}

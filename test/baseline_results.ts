@@ -32003,7 +32003,7 @@ const baselines = {
     'classStaticBlock19': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock2': {
         errors: false,
@@ -49161,12 +49161,12 @@ const baselines = {
         types: false,
     },
     'parserErrantEqualsGreaterThanAfterFunction1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserErrantEqualsGreaterThanAfterFunction2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49176,9 +49176,9 @@ const baselines = {
         types: false,
     },
     'parserFuzz1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMissingLambdaOpenBrace1': {
         errors: false,
@@ -49286,7 +49286,7 @@ const baselines = {
         types: false,
     },
     'parseIncompleteBinaryExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49788,7 +49788,7 @@ const baselines = {
     'parserInterfaceDeclaration4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserInterfaceDeclaration5': {
         errors: false,

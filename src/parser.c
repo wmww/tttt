@@ -218,18 +218,18 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
     if (!hop_identifier_or_keyword(parent)) {
         return false;
     }
+    Span s = span_end(a);
     if (span) {
-        *span = span_end(a);
+        *span = s;
     }
-    csview sv = csview_from_n(a.start, parent->pos - a.start);
-    if (csview_cmp(&sv, &c_sv("return")) == 0 ||
-        csview_cmp(&sv, &c_sv("throw")) == 0 ||
-        csview_cmp(&sv, &c_sv("case")) == 0 ||
-        csview_cmp(&sv, &c_sv("in")) == 0
+    if (span_eq_str(&s, "return") ||
+        span_eq_str(&s, "throw") ||
+        span_eq_str(&s, "case") ||
+        span_eq_str(&s, "in")
     ) {
         return false; // TODO: check for all keywords efficiently
     }
-    *ret = cstr_from_sv(sv);
+    *ret = cstr_from_n(a.start, parent->pos - a.start);
     return true;
 }
 
@@ -2637,51 +2637,52 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
     bool has_catch = false;
     bool has_finally = false;
 
-    if (!parse_block(&p, false, &try_catch.try_block)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
-        try_catch.try_block = (Block){0};
-    }
-    hop_whitespace(&p);
-
-    if (hop_start_if_ends_on_word_break(&p, "catch")) {
-        has_catch = true;
+    if (parse_block(&p, false, &try_catch.try_block)) {
         hop_whitespace(&p);
-        if (hop_char(&p, '(')) {
-            hop_whitespace(&p);
 
-            if (!parse_name_init_list(&p, expr_ctx_null, &try_catch.catch_var.vars)) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-                try_catch.catch_var.vars = vec_name_init_data_init();
+        if (hop_start_if_ends_on_word_break(&p, "catch")) {
+            has_catch = true;
+            hop_whitespace(&p);
+            if (hop_char(&p, '(')) {
+                hop_whitespace(&p);
+
+                if (!parse_name_init_list(&p, expr_ctx_null, &try_catch.catch_var.vars)) {
+                    error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+                    try_catch.catch_var.vars = vec_name_init_data_init();
+                }
+                hop_whitespace(&p);
+
+                if (!hop_char(&p, ')')) {
+                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
+                }
+                hop_whitespace(&p);
+            }
+            if (!parse_block(&p, false, &try_catch.catch_block)) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+                try_catch.catch_block = (Block){0};
             }
             hop_whitespace(&p);
-
-            if (!hop_char(&p, ')')) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
-            }
-            hop_whitespace(&p);
-        }
-        if (!parse_block(&p, false, &try_catch.catch_block)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        } else {
             try_catch.catch_block = (Block){0};
         }
-        hop_whitespace(&p);
-    } else {
-        try_catch.catch_block = (Block){0};
-    }
 
-    if (hop_start_if_ends_on_word_break(&p, "finally")) {
-        has_finally = true;
-        hop_whitespace(&p);
-        if (!parse_block(&p, false, &try_catch.finally_block)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        if (hop_start_if_ends_on_word_break(&p, "finally")) {
+            has_finally = true;
+            hop_whitespace(&p);
+            if (!parse_block(&p, false, &try_catch.finally_block)) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+                try_catch.finally_block = (Block){0};
+            }
+        } else {
             try_catch.finally_block = (Block){0};
         }
-    } else {
-        try_catch.finally_block = (Block){0};
-    }
 
-    if (!has_catch && !has_finally) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
+        if (!has_catch && !has_finally) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
+        }
+    } else {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        try_catch.try_block = (Block){0};
     }
 
     *ret = (Statement){
@@ -2825,6 +2826,13 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         parse_comma_ops_right_side(&p, &ret->expr);
+        if (ret->tag == STATEMENT_EXPR && ret->expr.tag == EXPR_IDENTIFIER && cstr_equals(&ret->expr.identifier.name, "static")) {
+            hop_whitespace(&p);
+            if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != '}') {
+                statement_drop(ret);
+                return parse_fail(&p);
+            }
+        }
     } else {
         return parse_fail(&p);
     }
@@ -2854,7 +2862,11 @@ static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
             } else if (*p.pos == ';') {
                 p.pos++;
             } else if (*p.pos) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+                if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
+                    error_ctx_error(&p.errs, statement.expr.span, 1434, "Unexpected keyword or identifier.");
+                } else {
+                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+                }
             }
         } else if (*p.pos == '\\') {
             error_ctx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
@@ -2885,7 +2897,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     hop_whitespace(&p);
 
     if (!hop_char(&p, '}')) {
-        error_ctx_parse_error(&p.errs, "expected '}'");
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
     }
     return parse_success(&p);
 }
