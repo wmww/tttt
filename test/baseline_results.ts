@@ -40641,7 +40641,7 @@ const baselines = {
         types: true,
     },
     'YieldStarExpression2_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48661,7 +48661,7 @@ const baselines = {
         types: true,
     },
     'parserConstructorDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48876,7 +48876,7 @@ const baselines = {
         types: false,
     },
     'ArrowFunction1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -48891,7 +48891,7 @@ const baselines = {
         types: true,
     },
     'parserX_ArrowFunction1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -48906,7 +48906,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_Block1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49011,14 +49011,14 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_LeftShift1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserErrorRecovery_ModuleElement1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ModuleElement2': {
         errors: false,
@@ -49076,9 +49076,9 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_SourceUnit1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_SwitchStatement1': {
         errors: false,
@@ -49101,7 +49101,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_VariableList1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -49566,17 +49566,17 @@ const baselines = {
         types: true,
     },
     'parserGreaterThanTokenAmbiguity12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49591,17 +49591,17 @@ const baselines = {
         types: true,
     },
     'parserGreaterThanTokenAmbiguity17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49636,17 +49636,17 @@ const baselines = {
         types: true,
     },
     'parserGreaterThanTokenAmbiguity7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserGreaterThanTokenAmbiguity9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -49926,7 +49926,7 @@ const baselines = {
         types: false,
     },
     'parserMemberFunctionDeclaration4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49956,7 +49956,7 @@ const baselines = {
         types: true,
     },
     'parserMemberVariableDeclaration4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50481,8 +50481,8 @@ const baselines = {
         types: false,
     },
     'parser585151': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'parser596700': {

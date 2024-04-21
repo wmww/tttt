@@ -415,12 +415,17 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
             inhibit_nonfatals();
         }
 
+        ErrorCtx null_error_ctx = error_ctx_init();
+
         Block ast = parse_file(cstr_str(&my detail.source), &my detail.errs);
-
+        // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
+        // but name errors are shown reguardless
+        ErrorCtx* errs = error_ctx_empty(&my detail.errs) ? &my detail.errs : &null_error_ctx;
         block_resolve_names_toplevel(&ast, &my detail.errs);
-
-        block_typecheck_toplevel(&ast, &my detail.errs);
+        block_typecheck_toplevel(&ast, errs);
         block_compile_test_info(&ast, me);
+
+        error_ctx_drop(&null_error_ctx);
 
         if (!noisy) {
             uninhibit_nonfatals();

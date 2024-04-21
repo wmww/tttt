@@ -1335,6 +1335,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         UNEXPECTED_IDENT,
         MODIFIERS_CANNOT_APPEAR,
         MODIFIER_ON_TYPE,
+        EXPORT_INVALID,
     } modifier_error = 0;
     enum {
         NOT_GETTER_SETTER = 0,
@@ -1358,8 +1359,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
         }
 
-        if (cstr_empty(&name)) {
-        } else if (cstr_equals(&name, "readonly")) {
+        if (cstr_equals(&name, "readonly")) {
             if (span_valid(&readonly_span)) {
                 if (!modifier_error) {
                     modifier_error = READONLY_ALREADY_SEEN;
@@ -1386,6 +1386,11 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     modifier_error = MUST_PRECEDE_ASYNC;
                     modifier_error_span = name_span;
                 }
+            }
+        } else if (cstr_equals(&name, "export")) {
+            if (!modifier_error) {
+                modifier_error = EXPORT_INVALID;
+                modifier_error_span = name_span;
             }
         } else if (cstr_equals(&name, "async")) {
             if (span_valid(&async_span)) {
@@ -1438,11 +1443,14 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             if (!span_valid(&access_span)) {
                 access_span = name_span;
             }
-        } else {
-            if (!modifier_error) {
-                modifier_error = UNEXPECTED_IDENT;
-                modifier_error_span = name_span;
+        } else if (!cstr_empty(&name) && !modifier_error) {
+            if (cstr_equals(&name, "var")) {
+                cstr_drop(&name);
+                return parse_fail(&p);
             }
+            // If previous name is not empty
+            modifier_error = UNEXPECTED_IDENT;
+            modifier_error_span = name_span;
         }
         hop_whitespace(&p);
 
@@ -1505,6 +1513,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             ret->member = (typeof(ret->member)){0};
         }
     } else {
+        cstr_drop(&name);
         return parse_fail(&p);
     }
 
@@ -1584,6 +1593,15 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 1070,
                 "'%.*s' modifier cannot appear on a type member.",
                 c_SV(span_sv(&modifier_error_span))
+            );
+            break;
+
+        case EXPORT_INVALID:
+            error_ctx_error(
+                &parent->errs,
+                modifier_error_span,
+                1031,
+                "'export' modifier cannot appear on class elements of this kind."
             );
             break;
     }
@@ -2886,16 +2904,15 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
+static bool parse_block_inner_append(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
-    VecStatement statements = {0};
     while(*p.pos && *p.pos != '}') {
         Statement statement = {0};
         if (*p.pos == ';') {
             p.pos++;
         } else if (parse_statement(&p, toplevel, &statement)) {
-            vec_statement_push(&statements, statement);
+            vec_statement_push(&ret->statements, statement);
             bool ended_on_brace = p.pos > p.shared->file_start && *(p.pos - 1) == '}';
             hop_whitespace(&p);
             if (p.whitespace == WHITESPACE_NEWLINE ||
@@ -2922,9 +2939,6 @@ static bool parse_block_inner(Parser* parent, bool toplevel, Block* ret) {
         hop_whitespace(&p);
     }
 
-    *ret = (Block){
-        .statements = statements,
-    };
     return parse_success(&p);
 }
 
@@ -2934,10 +2948,9 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     if (!hop_char(&p, '{')) return parse_fail(&p);
     hop_whitespace(&p);
 
-    if (!parse_block_inner(&p, toplevel, ret)) {
-        *ret = (Block){
-            .statements = vec_statement_init(),
-        };
+    *ret = (Block){0};
+    if (!parse_block_inner_append(&p, toplevel, ret)) {
+        *ret = (Block){0};
     }
     hop_whitespace(&p);
 
@@ -2967,10 +2980,15 @@ Block parse_file(const char* source, ErrorCtx* errs) {
 
     hop_whitespace(&p);
 
-    Block scope;
-    parse_block_inner(&p, true, &scope);
-    if (*p.pos) {
-        error_ctx_parse_error(&p.errs, "unexpected '}'");
+    Block scope = {0};
+    while (true) {
+        parse_block_inner_append(&p, true, &scope);
+        if (*p.pos) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
+            hop_whitespace(&p);
+        } else {
+            break;
+        }
     }
 
     parser_shared_drop(&shared);
