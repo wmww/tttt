@@ -407,8 +407,20 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-        case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
+            expr_resolve_names(&my expr, names, errs);
+            break;
+
+        case STATEMENT_RETURN_EXPR:
+            /*
+            if (!name_stack_has_function(names)) {
+                error_ctx_error(
+                    errs,
+                    my expr.span,
+                    1108,
+                    "A 'return' statement can only be used within a function body."
+                );
+            }*/
             expr_resolve_names(&my expr, names, errs);
             break;
 
@@ -611,12 +623,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                 check_assignable_or_error(&t, ctx->specified_return, my expr.span, errs);
                 vec_type_push(&ctx->returned_types, t);
             } else {
-                error_ctx_error(
-                    errs,
-                    my break_span,
-                    1108,
-                    "A 'return' statement can only be used within a function body."
-                );
+                // Error is reported when resolving names
             }
         }   break;
 
