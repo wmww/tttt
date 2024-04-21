@@ -669,6 +669,27 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     hop_whitespace(&p);
 
+    if (hop_char(&p, '[')) {
+        hop_whitespace(&p);
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+            hop_whitespace(&p);
+            if (!hop_char(&p, ']')) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+            }
+            NONFATAL("Indexing into types not yet supported");
+            type_drop(left_and_ret);
+            type_drop(&type);
+            *left_and_ret = type_any;
+            return parse_success(&p);
+        } else {
+            if (!hop_char(&p, ']')) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+            }
+            *left_and_ret = type_array(c_new(Type, *left_and_ret));
+            return parse_success(&p);
+        }
+    }
+
     if (TYPE_PRECEDENCE_TERNARY >= min_precedence) {
         if (parse_ternary_type(&p, left_and_ret)) {
             return parse_success(&p);
@@ -2065,6 +2086,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             c_new(AsTypeExpr, {
                 .expr = *left_and_ret,
                 .type = parsed.type,
+                .angle_bracket_syntax = false,
             })
         );
         return parse_success(&p);
@@ -2227,6 +2249,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         *ret = expr_as_type(span_end(a), c_new(AsTypeExpr, {
             .expr = e,
             .type = t,
+            .angle_bracket_syntax = true,
         }));
     } else {
         return parse_fail(&p);

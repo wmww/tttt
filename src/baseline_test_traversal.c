@@ -220,8 +220,13 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_AS_TYPE:
+            if (my as_type->angle_bracket_syntax) {
+                type_compile_test_info(&my as_type->type, ctx);
+            }
             expr_compile_test_info(&my as_type->expr, ctx);
-            type_compile_test_info(&my as_type->type, ctx);
+            if (!my as_type->angle_bracket_syntax) {
+                type_compile_test_info(&my as_type->type, ctx);
+            }
             break;
 
         case EXPR_TERNARY:

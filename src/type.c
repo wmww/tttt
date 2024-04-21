@@ -467,7 +467,18 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
             return type_extends_internal(&sub->callable->ret, &super->callable->ret, level);
 
         case TYPE_ARRAY:
-            return sub->tag == TYPE_ARRAY && type_extends_internal(sub->array, super->array, level);
+            if (sub->tag == TYPE_ARRAY) {
+                return type_extends_internal(sub->array, super->array, level);
+            } else if (sub->tag == TYPE_TUPLE) {
+                c_foreach(i, vec_type, sub->tuple) {
+                    if (!type_extends_internal(i.ref, super->array, level)) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
 
         case TYPE_TUPLE:
             if (sub->tag != TYPE_TUPLE || vec_type_size(&super->tuple) != vec_type_size(&sub->tuple)) {
