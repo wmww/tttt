@@ -57,6 +57,7 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
                 baseline_test_case_add_symbol(ctx, cstr_str(&i.ref->name), i.ref->name_span, i.ref->name_span);
+                baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
                 type_compile_test_info(&i.ref->type, ctx);
             }
             break;
