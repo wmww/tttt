@@ -110,7 +110,9 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
             UNREACHABLE;
         }
 
-        default: return result_err(value_string(cstr_lit("SyntaxError: invalid assignment left-hand side")));
+        default:
+            value_drop(&value);
+            return result_err(value_string(cstr_lit("SyntaxError: invalid assignment left-hand side")));
     }
     UNREACHABLE;
 }
