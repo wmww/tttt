@@ -3,13 +3,15 @@
 #include "type.h"
 
 typedef struct InterfaceMember {
+    Span span;
     cstr name;
     Span name_span;
     Type type;
 } InterfaceMember;
 
-static inline InterfaceMember interface_member_make(cstr name, Span name_span, Type type) {
+static inline InterfaceMember interface_member_make(Span span, cstr name, Span name_span, Type type) {
     return (InterfaceMember) {
+        .span = span,
         .name = name,
         .name_span = name_span,
         .type = type,

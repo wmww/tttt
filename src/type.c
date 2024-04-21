@@ -613,6 +613,7 @@ void type_abstract_literals(Type* me) {
                     Interface interface;
                     c_foreach(i, hmap_str_object_item, my value.object.get->items) {
                         InterfaceMember member = interface_member_make(
+                            span_null,
                             cstr_clone(i.ref->first),
                             span_null,
                             type_value(value_clone(i.ref->second.value))

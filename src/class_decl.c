@@ -210,6 +210,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
+                        i.ref->span,
                         cstr_clone(i.ref->member.name),
                         i.ref->member.name_span,
                         type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)))
@@ -232,6 +233,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
+                        i.ref->span,
                         cstr_clone(i.ref->field.data.name),
                         i.ref->field.data.name_span,
                         type_clone(i.ref->field.data.type)

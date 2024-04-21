@@ -808,20 +808,22 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         if (parse_class_item(&p, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_MEMBER:
-                    vec_interface_member_push(&members, (InterfaceMember){
-                        .name = cstr_move(&item.member.name),
-                        .name_span = item.member.name_span,
-                        .type = type_callable(c_new(CallableType, item.member.func.type)),
-                    });
+                    vec_interface_member_push(&members, interface_member_make(
+                        item.span,
+                        cstr_move(&item.member.name),
+                        item.member.name_span,
+                        type_callable(c_new(CallableType, item.member.func.type))
+                    ));
                     item.member.func.type = (CallableType){0};
                     break;
 
                 case CLASS_ITEM_FIELD:
-                    vec_interface_member_push(&members, (InterfaceMember){
-                        .name = cstr_move(&item.field.data.name),
-                        .name_span = item.field.data.name_span,
-                        .type = type_move(&item.field.data.type)
-                    });
+                    vec_interface_member_push(&members, interface_member_make(
+                        item.span,
+                        cstr_move(&item.field.data.name),
+                        item.field.data.name_span,
+                        type_move(&item.field.data.type)
+                    ));
                     break;
 
                 default:
@@ -905,6 +907,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
 
 static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "interface")) {
         return parse_fail(&p);
@@ -934,6 +937,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     }
 
     *ret = (TypeDecl) {
+        .full_span = span_end(a),
         .is_interface = true,
         .name = name,
         .name_span = name_span,
@@ -1227,6 +1231,7 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
 
 static bool parse_object_item(Parser* parent, void* data) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
     VecObjectExprItem* ret = data;
     cstr name;
     Span name_span;
@@ -1236,11 +1241,11 @@ static bool parse_object_item(Parser* parent, void* data) {
     } else if (parse_literal(&p, &name_value)) {
         if (name_value.tag == VALUE_STRING) {
             name = name_value.string;
-            name_span = span_null;
+            name_span = span_end(a);
         } else {
             name = cstr_null;
-            name_span = span_null;
             cstr_append_value_js(&name, &name_value);
+            name_span = span_end(a);
             value_drop(&name_value);
         }
     } else {
@@ -1583,6 +1588,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
     }
 
+    ret->span = span_end(a);
     return parse_success(&p);
 }
 

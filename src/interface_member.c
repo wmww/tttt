@@ -7,5 +7,5 @@ void interface_member_drop(InterfaceMember* me) {
 }
 
 InterfaceMember interface_member_clone(InterfaceMember me) {
-    return interface_member_make(cstr_clone(me.name), me.name_span, type_clone(me.type));
+    return interface_member_make(me.span, cstr_clone(me.name), me.name_span, type_clone(me.type));
 }

@@ -264,9 +264,19 @@ void baseline_test_case_clear_detail(BaselineTestCase* me) {
     my detail = (typeof(my detail)){ 0 };
 }
 
-void baseline_test_case_add_symbol(BaselineTestCase* me, const char* name, Span span, Span decl_span) {
+void baseline_test_case_add_symbol(BaselineTestCase* me, csview name, Span span, Span decl_span) {
+    baseline_test_case_add_symbol_with_scope(me, c_sv(""), name, span, decl_span);
+}
+
+void baseline_test_case_add_symbol_with_scope(BaselineTestCase* me, csview scope, csview name, Span span, Span decl_span) {
     unsigned line_for_placement = span_line_index(&span);
-    cstr text = cstr_from_fmt(">%s : Symbol(%s", name, name);
+    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SV(name));
+    if (!csview_empty(scope)) {
+        cstr_append_sv(&text, scope);
+        cstr_append_sv(&text, c_sv("."));
+    }
+    cstr_append_sv(&text, name);
+
     if (span_valid(&decl_span)) {
         bool keep_going = true;
         // The space before the symbol is included in the span. Why? I have no idea.

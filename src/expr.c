@@ -681,7 +681,12 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 type_abstract_literals(&t);
                 vec_interface_member_push(
                     &interface.members,
-                    interface_member_make(cstr_clone(i.ref->name), i.ref->name_span, t)
+                    interface_member_make(
+                        span_between(&i.ref->name_span, &i.ref->value.span),
+                        cstr_clone(i.ref->name),
+                        i.ref->name_span,
+                        t
+                    )
                 );
             }
             return type_interface(interface);

@@ -18,6 +18,7 @@ typedef struct ClassItem {
         CLASS_ITEM_STATIC_BLOCK,
     } tag;
     AccessModifier access;
+    Span span;
     union {
         struct {
             Span name_span;
