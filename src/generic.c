@@ -1,6 +1,7 @@
 #include "generic.h"
 #include "name_stack.h"
 #include "ternary_type.h"
+#include "indexed_type.h"
 #include "callable_type.h"
 #include "interface.h"
 #include "interface_member.h"
@@ -191,16 +192,22 @@ static void collect_generic_candidates(
             );
             return;
 
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
+        case TYPE_INDEXED:
             error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with union/intersection not yet implemented"
+                "inferring types of generic with index type not yet implemented"
             );
             return;
 
         case TYPE_TERNARY:
             error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with ternary not yet implemented"
+            );
+            return;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with union/intersection not yet implemented"
             );
             return;
     }
@@ -286,11 +293,9 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
             }
             return;
 
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                swap_generics_for_specific_types(i.ref, ctx);
-            }
+        case TYPE_INDEXED:
+            swap_generics_for_specific_types(&my indexed->interface, ctx);
+            swap_generics_for_specific_types(&my indexed->index, ctx);
             return;
 
         case TYPE_TERNARY:
@@ -298,6 +303,13 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
             swap_generics_for_specific_types(&my ternary->conditional.MaybeSuper, ctx);
             swap_generics_for_specific_types(&my ternary->TrueType, ctx);
             swap_generics_for_specific_types(&my ternary->FalseType, ctx);
+            return;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                swap_generics_for_specific_types(i.ref, ctx);
+            }
             return;
     }
     UNREACHABLE;

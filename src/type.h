@@ -5,6 +5,7 @@
 #include "span.h"
 
 typedef struct TernaryType TernaryType;
+typedef struct IndexedType IndexedType;
 typedef struct CallableType CallableType;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
@@ -29,9 +30,10 @@ typedef struct Type {
         TYPE_INTERFACE,
         TYPE_ARRAY,
         TYPE_TUPLE,
+        TYPE_INDEXED,
+        TYPE_TERNARY,
         TYPE_UNION,
         TYPE_INTERSECTION,
-        TYPE_TERNARY,
     } tag;
     union {
         Value value;
@@ -49,8 +51,9 @@ typedef struct Type {
         Interface interface;
         Type* array;
         VecType tuple;
-        VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
+        IndexedType* indexed;
         TernaryType* ternary;
+        VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
     };
 } Type;
 
@@ -116,6 +119,13 @@ static inline Type type_tuple(VecType members) {
     return (Type){
         .tag = TYPE_TUPLE,
         .tuple = members,
+    };
+}
+
+static inline Type type_indexed(IndexedType* indexed) {
+    return (Type){
+        .tag = TYPE_INDEXED,
+        .indexed = indexed,
     };
 }
 

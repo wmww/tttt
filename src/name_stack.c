@@ -83,6 +83,7 @@ NameStack* name_stack_new() {
     add_builtin_type(ret, c_sv("Boolean"), &type_boolean);
     add_builtin_type(ret, c_sv("Date"), &type_any);
     add_builtin_type(ret, c_sv("Error"), &type_any);
+    add_builtin_type(ret, c_sv("Set"), &type_any);
 
     return ret;
 }

@@ -908,7 +908,7 @@ const baselines = {
     'anyIndexedAccessArrayNoException': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'anyInferenceAnonymousFunctions': {
         errors: false,
@@ -14097,7 +14097,7 @@ const baselines = {
     },
     'genericNumberIndex': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericObjectCreationWithoutTypeArgs': {
@@ -15576,7 +15576,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessToThisTypeOnIntersection01': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -20742,7 +20742,7 @@ const baselines = {
     },
     'nestedCallbackErrorNotFlattened': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nestedExcessPropertyChecking': {
@@ -26616,7 +26616,7 @@ const baselines = {
         types: false,
     },
     'substitutionTypePassedToExtends': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56607,7 +56607,7 @@ const baselines = {
     },
     'optionalTupleElements1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'readonlyArraysAndTuples': {

@@ -11,6 +11,7 @@
 #include "class_decl.h"
 #include "function_impl.h"
 #include "callable_type.h"
+#include "indexed_type.h"
 #include "name_stack.h"
 
 void generic_compile_test_info(Generic* me, BaselineTestCase* ctx) {
@@ -72,14 +73,19 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             }
             break;
 
+        case TYPE_INDEXED:
+            type_compile_test_info(&my indexed->interface, ctx);
+            type_compile_test_info(&my indexed->index, ctx);
+            break;
+
+        case TYPE_TERNARY: break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
                 type_compile_test_info(i.ref, ctx);
             }
             break;
-
-        case TYPE_TERNARY: break;
     }
 }
 

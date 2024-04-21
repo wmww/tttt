@@ -8,6 +8,7 @@
 #include "generic.h"
 #include "class_decl.h"
 #include "callable_type.h"
+#include "indexed_type.h"
 #include "as_type_expr.h"
 #include "extends_conditional.h"
 #include "type.h"
@@ -676,10 +677,10 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
             if (!hop_char(&p, ']')) {
                 error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
             }
-            NONFATAL("Indexing into types not yet supported");
-            type_drop(left_and_ret);
-            type_drop(&type);
-            *left_and_ret = type_any;
+            *left_and_ret = type_indexed(c_new(IndexedType, {
+                .interface = *left_and_ret,
+                .index = type,
+            }));
             return parse_success(&p);
         } else {
             if (!hop_char(&p, ']')) {
