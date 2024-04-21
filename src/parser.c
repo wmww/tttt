@@ -920,9 +920,16 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
+    Generic generic;
+    if (!parse_generic_decl(&p, &generic)) {
+        generic = (Generic){0};
+    }
+    hop_whitespace(&p);
+
     Interface interface;
     if (!parse_interface(&p, &interface)) {
         cstr_drop(&name);
+        generic_drop(&generic);
         return parse_fail(&p);
     }
 
@@ -930,6 +937,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         .is_interface = true,
         .name = name,
         .name_span = name_span,
+        .generic = generic,
         .type = type_interface(interface),
     };
     return parse_success(&p);

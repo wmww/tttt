@@ -5556,7 +5556,7 @@ const baselines = {
         types: false,
     },
     'constraintReferencingTypeParameterFromSameTypeParameterList': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7206,7 +7206,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitBundlePreservesHasNoDefaultLibDirective': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7886,9 +7886,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitPreservesHasNoDefaultLibDirective': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitPrivateAsync': {
         errors: true,
@@ -10476,7 +10476,7 @@ const baselines = {
         types: false,
     },
     'errorTypesAsTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12373,7 +12373,7 @@ const baselines = {
     'extendedInterfacesWithDuplicateTypeParameters': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'extendedUnicodeEscapeSequenceIdentifiers': {
         errors: false,
@@ -12788,7 +12788,7 @@ const baselines = {
     'forwardDeclaredCommonTypes01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'forwardRefInClassProperties': {
         errors: false,
@@ -13751,7 +13751,7 @@ const baselines = {
         types: false,
     },
     'genericClasses2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13846,7 +13846,7 @@ const baselines = {
         types: false,
     },
     'genericConstructInvocationWithNoTypeArg': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14371,7 +14371,7 @@ const baselines = {
         types: false,
     },
     'generics0': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14676,7 +14676,7 @@ const baselines = {
         types: true,
     },
     'illegalGenericWrapping1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16453,10 +16453,10 @@ const baselines = {
     'instantiateTypeParameter': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'instantiatedBaseTypeConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16511,9 +16511,9 @@ const baselines = {
         types: false,
     },
     'interface0': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'interfaceAssignmentCompat': {
         errors: false,
@@ -20761,9 +20761,9 @@ const baselines = {
         types: false,
     },
     'nestedGenerics': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nestedGlobalNamespaceInClass': {
         errors: false,
@@ -20786,7 +20786,7 @@ const baselines = {
         types: false,
     },
     'nestedInfinitelyExpandedRecursiveTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23303,7 +23303,7 @@ const baselines = {
     'primitiveTypeAsInterfaceNameGeneric': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'primitiveTypeAsmoduleName': {
         errors: false,
@@ -23536,7 +23536,7 @@ const baselines = {
         types: false,
     },
     'privacyTypeParametersOfInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24481,14 +24481,14 @@ const baselines = {
         types: false,
     },
     'recursiveTypeParameterReferenceError1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'recursiveTypeParameterReferenceError2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'recursiveTypeRelations': {
         errors: false,
@@ -25176,7 +25176,7 @@ const baselines = {
         types: false,
     },
     'reversedRecusiveTypeInstantiation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25966,7 +25966,7 @@ const baselines = {
         types: false,
     },
     'specializationError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28301,7 +28301,7 @@ const baselines = {
         types: false,
     },
     'typeParameterConstraintInstantiation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28931,7 +28931,7 @@ const baselines = {
         types: false,
     },
     'undefinedTypeArgument2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29946,7 +29946,7 @@ const baselines = {
         types: false,
     },
     'unusedTypeParametersNotCheckedByNoUnusedLocals': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55291,9 +55291,9 @@ const baselines = {
         types: false,
     },
     'interfaceWithPrivateMember': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'optionalMethods': {
         errors: false,
@@ -55561,12 +55561,12 @@ const baselines = {
         types: true,
     },
     'typeParameterUsedAsTypeParameterConstraint3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeParameterUsedAsTypeParameterConstraint4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57496,7 +57496,7 @@ const baselines = {
         types: false,
     },
     'infiniteExpansionThroughTypeInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
