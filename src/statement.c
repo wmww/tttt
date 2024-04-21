@@ -367,7 +367,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_FOR_LOOP:
-            name_stack_push_frame(names, STACK_FRAME_BLOCK);
+            name_stack_push_block_frame(names);
             statement_add_names(&my for_loop->initialization, names, errs);
             statement_resolve_names(&my for_loop->initialization, names, errs);
             expr_resolve_names(&my for_loop->condition, names, errs);
@@ -377,7 +377,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_FOR_EACH_LOOP:
-            name_stack_push_frame(names, STACK_FRAME_BLOCK);
+            name_stack_push_block_frame(names);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
                     variable_statement_add_names(&my for_each_loop->variable.statement, names, errs);
@@ -396,7 +396,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_TRY_CATCH:
             block_resolve_names(&my try_catch->try_block, names, errs);
 
-            name_stack_push_frame(names, STACK_FRAME_BLOCK);
+            name_stack_push_block_frame(names);
             variable_statement_add_names(&my try_catch->catch_var, names, errs);
             variable_statement_resolve_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);
@@ -412,7 +412,6 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_RETURN_EXPR:
-            /*
             if (!name_stack_has_function(names)) {
                 error_ctx_error(
                     errs,
@@ -420,7 +419,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                     1108,
                     "A 'return' statement can only be used within a function body."
                 );
-            }*/
+            }
             expr_resolve_names(&my expr, names, errs);
             break;
 
@@ -429,7 +428,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            name_stack_push_frame(names, STACK_FRAME_CLASS);
+            name_stack_push_block_frame(names);
             name_stack_add_variable(names, cstr_lit("this"), span_null, &type_any);
             function_impl_resolve_names(&my decl.function, names, errs);
             name_stack_pop_frame(names);
@@ -618,13 +617,11 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
         }   break;
 
         case STATEMENT_RETURN_EXPR: {
-            if (ctx->return_allowed) {
-                Type t = expr_get_type_and_typecheck(&my expr, errs);
+            Type t = expr_get_type_and_typecheck(&my expr, errs);
+            if (ctx->specified_return) {
                 check_assignable_or_error(&t, ctx->specified_return, my expr.span, errs);
-                vec_type_push(&ctx->returned_types, t);
-            } else {
-                // Error is reported when resolving names
             }
+            vec_type_push(&ctx->returned_types, t);
         }   break;
 
         case STATEMENT_DECL_VARIABLE:
@@ -650,7 +647,6 @@ StatementCtx statement_ctx_toplevel() {
 StatementCtx statement_ctx_function(Type const* specified_return) {
     return (StatementCtx){
         .specified_return = specified_return,
-        .return_allowed = true,
     };
 }
 

@@ -67,9 +67,9 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     // First, resolve names in the callable type
     callable_type_resolve_names(&my type, names, errs);
 
-    // Push a stack frame for generics/arguments to live in
+    // Push a stack frame for arguments to live in
     // This is the function *implementation*, so we do not push a generic stack frame
-    name_stack_push_frame(names, STACK_FRAME_BLOCK);
+    name_stack_push_function_frame(names);
 
     // Loop through all arguments and add them to the namespace
     int arg_count = function_impl_arg_count(me);
@@ -88,7 +88,7 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     }
 
     // Resolve names in the function body, don't push a stack frame since the toplevel function body should be the same
-    // namespace as the variables are in.
+    // namespace as the arguments
     block_resolve_names_without_stack_frame(&my body, names, errs);
 
     // Pop the stack frame we pushed above

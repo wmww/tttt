@@ -49101,7 +49101,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecovery_VariableList1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

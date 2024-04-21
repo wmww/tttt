@@ -9,6 +9,13 @@
 #define i_val_class_names ArcNamedVariable, arc_named_variable
 #include "wrap_stc/hmap.h"
 
+typedef enum StackFrameTag {
+    STACK_FRAME_BLOCK,
+    STACK_FRAME_FUNCTION,
+    STACK_FRAME_CLASS,
+    STACK_FRAME_GENERIC,
+} StackFrameTag;
+
 typedef struct StackFrame {
     StackFrameTag tag;
     HmapStrArcNamedType types;
@@ -54,11 +61,15 @@ static inline void add_builtin_type(NameStack* me, csview name, Type const* type
     name_stack_add_type(me, cstr_from_sv(name), span_null, type);
 }
 
+static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag) {
+    vec_stack_frame_push(&my stack, stack_frame_init(tag));
+}
+
 NameStack* name_stack_new() {
     NameStack* ret = c_new(NameStack, {
         .stack = vec_stack_frame_init()
     });
-    name_stack_push_frame(ret, STACK_FRAME_BLOCK);
+    name_stack_push_frame_private(ret, STACK_FRAME_BLOCK);
 
     add_builtin_variable(ret, c_sv("console"), &type_any);
     add_builtin_variable(ret, c_sv("String"), &type_any);
@@ -88,6 +99,18 @@ NameStack* name_stack_new() {
     return ret;
 }
 
+void name_stack_push_block_frame(NameStack* me) {
+    name_stack_push_frame_private(me, STACK_FRAME_BLOCK);
+}
+
+void name_stack_push_function_frame(NameStack* me) {
+    name_stack_push_frame_private(me, STACK_FRAME_FUNCTION);
+}
+
+void name_stack_push_class_frame(NameStack* me) {
+    name_stack_push_frame_private(me, STACK_FRAME_CLASS);
+}
+
 void name_stack_destroy(NameStack* me) {
     if (vec_stack_frame_size(&my stack) != 1) {
         PANIC("stack size %ld on destroy, 1 expected", vec_stack_frame_size(&my stack));
@@ -96,16 +119,12 @@ void name_stack_destroy(NameStack* me) {
     free(me);
 }
 
-void name_stack_push_frame(NameStack* me, StackFrameTag tag) {
-    vec_stack_frame_push(&my stack, stack_frame_init(tag));
-}
-
 void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs) {
     if (generic_empty(generic)) {
         // Frame is only needed so a frame can be unconditionally popped later
-        name_stack_push_frame(me, STACK_FRAME_BLOCK);
+        name_stack_push_frame_private(me, STACK_FRAME_BLOCK);
     } else {
-        name_stack_push_frame(me, STACK_FRAME_GENERIC);
+        name_stack_push_frame_private(me, STACK_FRAME_GENERIC);
         generic_resolve_names(generic, me, errs);
     }
 }
@@ -172,6 +191,15 @@ bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span name_span, 
         })
     );
     return result.inserted;
+}
+
+bool name_stack_has_function(NameStack* me) {
+    c_foreach_rev(i, vec_stack_frame, my stack) {
+        if (i.ref->tag == STACK_FRAME_FUNCTION) {
+            return true;
+        }
+    }
+    return false;
 }
 
 ArcNamedVariable const* name_stack_get_variable(NameStack* me, csview name) {

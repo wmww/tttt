@@ -6,12 +6,6 @@
 
 typedef struct NameStack NameStack;
 
-typedef enum StackFrameTag {
-    STACK_FRAME_BLOCK,
-    STACK_FRAME_GENERIC,
-    STACK_FRAME_CLASS,
-} StackFrameTag;
-
 typedef struct NamedVariable {
     Span name_span;
     Type const* type;
@@ -37,12 +31,16 @@ typedef struct NamedType {
 
 NameStack* name_stack_new();
 void name_stack_destroy(NameStack* me);
-void name_stack_push_frame(NameStack* me, StackFrameTag tag);
+void name_stack_push_block_frame(NameStack* me);
+void name_stack_push_function_frame(NameStack* me);
+void name_stack_push_class_frame(NameStack* me);
+void name_stack_push_function_frame(NameStack* me);
 void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs);
 void name_stack_pop_frame(NameStack* me);
 bool name_stack_add_variable(NameStack* me, cstr name, Span decl_name_span, Type const* type);
 bool name_stack_add_type(NameStack* me, cstr name, Span decl_name_span, Type const* type);
 bool name_stack_add_generic_type(NameStack* me, cstr name, Span decl_name_span, Type const* type, int generic_index);
 bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span decl_name_span, Type const* type, Generic const* generic);
+bool name_stack_has_function(NameStack* me);
 ArcNamedVariable const* name_stack_get_variable(NameStack* me, csview name);
 ArcNamedType const* name_stack_get_type(NameStack* me, csview name, int* optional_generic_depth);

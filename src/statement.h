@@ -168,7 +168,6 @@ typedef struct TryCatchStatement {
 typedef struct StatementCtx {
     VecType returned_types;
     Type const* specified_return;
-    bool return_allowed;
     bool break_allowd;
 } StatementCtx;
 

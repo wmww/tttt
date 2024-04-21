@@ -114,7 +114,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         type_resolve_names(i.ref, names, errs);
     }
 
-    name_stack_push_frame(names, STACK_FRAME_CLASS);
+    name_stack_push_class_frame(names);
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
@@ -164,7 +164,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         }
     }
 
-    name_stack_push_frame(names, STACK_FRAME_CLASS);
+    name_stack_push_class_frame(names);
     name_stack_add_variable(names, cstr_lit("this"), span_null, &my interface);
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
