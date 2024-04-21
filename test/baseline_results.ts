@@ -887,7 +887,7 @@ const baselines = {
     },
     'anyAndUnknownHaveFalsyComponents': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'anyAsReturnTypeForNewOnCall': {
@@ -5882,7 +5882,7 @@ const baselines = {
     },
     'contextualTypeObjectSpreadExpression': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'contextualTypeOfIndexedAccessParameter': {
@@ -8527,7 +8527,7 @@ const baselines = {
     },
     'deeplyNestedAssignabilityErrorsCombined': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'deeplyNestedAssignabilityIssue': {
@@ -14261,7 +14261,7 @@ const baselines = {
         types: false,
     },
     'genericTypeAssertions3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15367,7 +15367,7 @@ const baselines = {
     },
     'incompleteObjectLiteral1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'incorrectClassOverloadChain': {
@@ -20347,7 +20347,7 @@ const baselines = {
     },
     'nameCollisionsInPropertyAssignments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'namedFunctionExpressionAssignedToClassProperty': {
@@ -22037,12 +22037,12 @@ const baselines = {
     },
     'objectLiteralMemberWithQuestionMark1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralMemberWithoutBlock1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralParameterResolution': {
@@ -22871,7 +22871,7 @@ const baselines = {
         types: false,
     },
     'parseErrorDoubleCommaInCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25367,12 +25367,12 @@ const baselines = {
     },
     'shorthandOfExportedEntity01_targetES2015_CommonJS': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'shorthandOfExportedEntity02_targetES5_CommonJS': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'shorthandPropertyAssignmentInES6Module': {
@@ -25392,7 +25392,7 @@ const baselines = {
     },
     'shorthandPropertyUndefined': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'shouldNotPrintNullEscapesIntoOctalLiterals': {
@@ -25847,7 +25847,7 @@ const baselines = {
     },
     'sourceMapValidationFunctionPropertyAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationFunctions': {
@@ -25952,7 +25952,7 @@ const baselines = {
     },
     'spaceBeforeQuestionMarkInPropertyAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'specedNoStackBlown': {
@@ -38792,12 +38792,12 @@ const baselines = {
     },
     'objectLiteralShorthandPropertiesFunctionArgument': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralShorthandPropertiesFunctionArgument2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralShorthandPropertiesWithModule': {
@@ -39317,12 +39317,12 @@ const baselines = {
     },
     'templateStringInObjectLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInObjectLiteralES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInParentheses': {
@@ -39337,12 +39337,12 @@ const baselines = {
     },
     'templateStringInPropertyAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInPropertyAssignmentES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInPropertyName1': {
@@ -39352,7 +39352,7 @@ const baselines = {
     },
     'templateStringInPropertyName2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInPropertyNameES6_1': {
@@ -39362,7 +39362,7 @@ const baselines = {
     },
     'templateStringInPropertyNameES6_2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInSwitchAndCase': {
@@ -49026,7 +49026,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ObjectLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50242,7 +50242,7 @@ const baselines = {
     },
     'parserFunctionPropertyAssignment1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserFunctionPropertyAssignment2': {
@@ -50442,7 +50442,7 @@ const baselines = {
     },
     'parser512097': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parser512325': {
@@ -52112,7 +52112,7 @@ const baselines = {
     },
     'parserShorthandPropertyAssignment2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserShorthandPropertyAssignment3': {
@@ -52127,7 +52127,7 @@ const baselines = {
     },
     'parserShorthandPropertyAssignment5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserSymbolIndexer1': {

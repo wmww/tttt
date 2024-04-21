@@ -62,7 +62,7 @@ static inline void value_drop(Value* me) {
             value_drop_internal(me);
             break;
     }
-    my tag = VALUE_NULL; // Makes repeated calls to drop safe
+    my tag = VALUE_UNDEFINED; // Makes repeated calls to drop safe
 }
 Value value_clone(Value me);
 bool value_to_boolean(Value const* me);
@@ -206,14 +206,14 @@ static inline Value value_object_from_n(ObjectItemInit* items, int n) {
     };
 }
 
-static inline Value value_object_empty() {
+static inline Value value_object_make_empty() {
     return value_object_from_n(nullptr, 0);
 }
 
 #define value_object_init(...) \
     value_object_from_n((ObjectItemInit[])__VA_ARGS__, c_arraylen(((ObjectItemInit[])__VA_ARGS__)))
 
-static inline Value value_array_empty() {
+static inline Value value_array_make_empty() {
     return (Value){
         .tag = VALUE_ARRAY,
         .array = arc_js_array_make((JsArray){0}),

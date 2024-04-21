@@ -11,7 +11,7 @@ typedef ArcObject StackFrame;
 #define stack_frame_drop arc_js_object_drop
 #define stack_frame_clone arc_js_object_clone
 
-static inline StackFrame stack_frame_new() { return value_object_empty().object; }
+static inline StackFrame stack_frame_new() { return value_object_make_empty().object; }
 
 #define i_key_class_names StackFrame, stack_frame
 #include "wrap_stc/vec.h"
@@ -79,7 +79,10 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
         case EXPR_IDENTIFIER: return engine_assign_identifier(me, cstr_sv(&target->identifier.name), value);
 
         case EXPR_PROPERTY: {
-            TRY_THROW(target_value, engine_eval_expr(me, &target->property->expr));
+            TRY_CATCH(target_value, engine_eval_expr(me, &target->property->expr), res_err, {
+                value_drop(&value);
+                return res_err;
+            });
             switch (target_value.tag) {
                 case VALUE_UNDEFINED:
                 case VALUE_NULL:
@@ -101,7 +104,7 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
                 case VALUE_STRING:
                     // Return the value, but do not assign it to anything (that's what browsers seem to do)
                     value_drop(&target_value);
-                    return result_ok_undefined;
+                    return result_ok(value);
 
                 case VALUE_OBJECT:
                     js_object_set(target_value.object.get, cstr_clone(target->identifier.name), value);
@@ -111,7 +114,10 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
         }
 
         default:
-            value_drop(&value);
+            TRY_CATCH_DROP(engine_eval_expr(me, target), res_err, {
+                value_drop(&value);
+                return res_err;
+            });
             return result_err(value_string(cstr_lit("SyntaxError: invalid assignment left-hand side")));
     }
     UNREACHABLE;
@@ -317,7 +323,7 @@ static Result MUST_USE engine_eval_call(Engine* me, CallExpr const* call_expr) {
 }
 
 static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr) {
-    Value ret = value_object_empty();
+    Value ret = value_object_make_empty();
     c_foreach(i, vec_object_expr_item, *obj_expr) {
         TRY_CATCH(value, engine_eval_expr(me, &i.ref->value), res_err, {
             value_drop(&ret);
@@ -329,7 +335,8 @@ static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr
 }
 
 static Result MUST_USE engine_eval_array(Engine* me, VecExpr const* array_expr) {
-    Value ret = value_array_empty();
+    Value ret = value_array_make_empty();
+    ret.array.get->vec = vec_value_with_capacity(vec_expr_size(array_expr));
     c_foreach(i, vec_expr, *array_expr) {
         TRY_CATCH(value, engine_eval_expr(me, i.ref), res_err, {
             value_drop(&ret);
