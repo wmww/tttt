@@ -56,7 +56,7 @@ Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
         } else {
             return a;
         }
-    } else if (type_extends(&a, &b)) {
+    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends(&a, &b)) {
         if (tag == TYPE_UNION) {
             type_drop(&a);
             return b;
@@ -64,7 +64,7 @@ Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
             type_drop(&b);
             return a;
         }
-    } else if (type_extends(&b, &a)) {
+    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends(&b, &a)) {
         if (tag == TYPE_UNION) {
             type_drop(&b);
             return a;
@@ -473,8 +473,26 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
             return type_extends_internal(&sub->callable->ret, &super->callable->ret, level);
 
         case TYPE_INTERFACE:
-            NONFATAL("extends(TYPE_INTERFACE, ...) not implemented");
-            return false;
+            if (sub->tag != TYPE_INTERFACE) {
+                return false;
+            }
+            c_foreach(i, vec_interface_member, super->interface.members) {
+                bool found = false;
+                c_foreach(j, vec_interface_member, sub->interface.members) {
+                    if (cstr_eq(&i.ref->name, &j.ref->name)) {
+                        if (type_extends_internal(&j.ref->type, &i.ref->type, level)) {
+                            found = true;
+                            break;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+            }
+            return true;
 
         case TYPE_ARRAY:
             if (sub->tag == TYPE_ARRAY) {

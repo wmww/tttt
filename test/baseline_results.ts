@@ -1791,7 +1791,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatibilityForConstrainedTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5551,7 +5551,7 @@ const baselines = {
         types: false,
     },
     'constraintPropagationThroughReturnTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5916,12 +5916,12 @@ const baselines = {
         types: false,
     },
     'contextualTyping1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'contextualTyping10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5951,7 +5951,7 @@ const baselines = {
         types: false,
     },
     'contextualTyping16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5961,12 +5961,12 @@ const baselines = {
         types: true,
     },
     'contextualTyping18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'contextualTyping19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6001,17 +6001,17 @@ const baselines = {
         types: false,
     },
     'contextualTyping25': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'contextualTyping26': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'contextualTyping27': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6026,7 +6026,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -6101,17 +6101,17 @@ const baselines = {
         types: true,
     },
     'contextualTyping6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'contextualTyping7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'contextualTyping8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9071,7 +9071,7 @@ const baselines = {
         types: false,
     },
     'discriminateObjectTypesOnly': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9936,7 +9936,7 @@ const baselines = {
         types: false,
     },
     'emitOneLineVariableDeclarationRemoveCommentsFalse': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11546,7 +11546,7 @@ const baselines = {
         types: false,
     },
     'excessPropertyCheckingIntersectionWithConditional': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12686,7 +12686,7 @@ const baselines = {
         types: false,
     },
     'flowInFinally1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18816,7 +18816,7 @@ const baselines = {
         types: false,
     },
     'matchingOfObjectLiteralConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18856,7 +18856,7 @@ const baselines = {
         types: false,
     },
     'memberVariableDeclarations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22516,7 +22516,7 @@ const baselines = {
         types: false,
     },
     'overloadOnConstInObjectLiteralImplementingAnInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28286,7 +28286,7 @@ const baselines = {
         types: true,
     },
     'typeParameterCompatibilityAccrossDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28351,7 +28351,7 @@ const baselines = {
         types: false,
     },
     'typeParameterExtendingUnion2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28641,7 +28641,7 @@ const baselines = {
         types: false,
     },
     'typeVal': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33931,7 +33931,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52851,7 +52851,7 @@ const baselines = {
         types: false,
     },
     'propertyAssignmentUseParentType3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55331,7 +55331,7 @@ const baselines = {
         types: false,
     },
     'assignObjectToNonPrimitive': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -55396,7 +55396,7 @@ const baselines = {
         types: false,
     },
     'nonPrimitiveRhsSideOfInExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -56886,7 +56886,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57121,7 +57121,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatWithGenericCallSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
