@@ -143,13 +143,15 @@ void name_init_compile_test_info(NameInitData* me, Span scope, Span full, Baseli
         type_compile_test_info(&my type, ctx);
     }
     if (my value_explicit) {
-        expr_compile_test_info(&my value, ctx);
+        expr_compile_test_info(&my value, true, ctx);
     }
 }
 
 void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestCase* ctx) {
     switch (my tag) {
-        case BINDING_NOOP: break;
+        case BINDING_NOOP:
+            baseline_test_case_add_type(ctx, my content_span, &type_undefined);
+            break;
 
         case BINDING_IDENTIFIER:
             baseline_test_case_add_symbol_with_scope(
@@ -178,7 +180,7 @@ void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestC
         type_compile_test_info(&my type, ctx);
     }
     if (my value_explicit) {
-        expr_compile_test_info(&my value, ctx);
+        expr_compile_test_info(&my value, my tag != BINDING_ARRAY, ctx);
     }
 }
 
@@ -197,7 +199,7 @@ void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        expr_compile_test_info(&my extends, ctx);
+        expr_compile_test_info(&my extends, true, ctx);
     }
     c_foreach(i, vec_type, my implements) {
         type_compile_test_info(i.ref, ctx);
@@ -237,7 +239,7 @@ void type_decl_compile_test_info(TypeDecl* me, BaselineTestCase* ctx) {
     }
 }
 
-void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+void expr_compile_test_info(Expr* me, bool abstract_arrays, BaselineTestCase* ctx) {
     Type t = expr_get_type_and_typecheck(me, nullptr);
     if (my tag == EXPR_ARRAY) {
         if (vec_expr_empty(&my array)) {
@@ -245,7 +247,9 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             t = type_array(c_new(Type, type_undefined));
         } else {
             type_abstract_literals(&t);
-            type_abstract_tuple_to_array(&t);
+            if (abstract_arrays) {
+                type_abstract_tuple_to_array(&t);
+            }
         }
     }
     if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
@@ -255,6 +259,9 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL:
+            if (my literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(&my span), "undefined")) {
+                baseline_test_case_add_symbol(ctx, c_sv("undefined"), my span, span_null);
+            }
             break;
 
         case EXPR_IDENTIFIER: {
@@ -273,18 +280,18 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         }   break;
 
         case EXPR_BINARY_OP:
-            expr_compile_test_info(&my binary_op->left, ctx);
-            expr_compile_test_info(&my binary_op->right, ctx);
+            expr_compile_test_info(&my binary_op->left, true, ctx);
+            expr_compile_test_info(&my binary_op->right, true, ctx);
             break;
 
         case EXPR_UNARY_OP:
-            expr_compile_test_info(&my unary_op->expr, ctx);
+            expr_compile_test_info(&my unary_op->expr, true, ctx);
             break;
 
         case EXPR_PROPERTY:
-            expr_compile_test_info(&my property->expr, ctx);
+            expr_compile_test_info(&my property->expr, true, ctx);
             if (my property->form != PROPERTY_EXPR_DOT) {
-                expr_compile_test_info(&my property->prop, ctx);
+                expr_compile_test_info(&my property->prop, true, ctx);
             }
             if (my property->form == PROPERTY_EXPR_DOT) {
                 baseline_test_case_add_type(ctx, my property->prop.span, &t);
@@ -295,22 +302,22 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             if (my as_type->angle_bracket_syntax) {
                 type_compile_test_info(&my as_type->type, ctx);
             }
-            expr_compile_test_info(&my as_type->expr, ctx);
+            expr_compile_test_info(&my as_type->expr, true, ctx);
             if (!my as_type->angle_bracket_syntax) {
                 type_compile_test_info(&my as_type->type, ctx);
             }
             break;
 
         case EXPR_TERNARY:
-            expr_compile_test_info(&my ternary->condition, ctx);
-            expr_compile_test_info(&my ternary->yes, ctx);
-            expr_compile_test_info(&my ternary->no, ctx);
+            expr_compile_test_info(&my ternary->condition, true, ctx);
+            expr_compile_test_info(&my ternary->yes, true, ctx);
+            expr_compile_test_info(&my ternary->no, true, ctx);
             break;
 
         case EXPR_CALL:
-            expr_compile_test_info(&my call->callable, ctx);
+            expr_compile_test_info(&my call->callable, true, ctx);
             c_foreach(i, vec_expr, my call->args) {
-                expr_compile_test_info(i.ref, ctx);
+                expr_compile_test_info(i.ref, true, ctx);
             }
             break;
 
@@ -334,13 +341,13 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                     &t
                 );
                 type_drop(&t);
-                expr_compile_test_info(&i.ref->value, ctx);
+                expr_compile_test_info(&i.ref->value, true, ctx);
             }
             break;
 
         case EXPR_ARRAY:
             c_foreach(i, vec_expr, my array) {
-                expr_compile_test_info(i.ref, ctx);
+                expr_compile_test_info(i.ref, true, ctx);
             }
             break;
 
@@ -365,7 +372,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED) {
-                expr_compile_test_info(&my expr, ctx);
+                expr_compile_test_info(&my expr, true, ctx);
             }
             break;
 
@@ -374,7 +381,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             int cond_size = vec_expr_size(&my if_else.conditions);
             for (int i = 0; i < statement_size; i++) {
                 if (i < cond_size) {
-                    expr_compile_test_info(vec_expr_at_mut(&my if_else.conditions, i), ctx);
+                    expr_compile_test_info(vec_expr_at_mut(&my if_else.conditions, i), true, ctx);
                 }
                 statement_compile_test_info(vec_statement_at_mut(&my if_else.statements, i), ctx);
             }
@@ -382,11 +389,11 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_FOR_LOOP:
             statement_compile_test_info(&my for_loop->initialization, ctx);
-            expr_compile_test_info(&my for_loop->condition, ctx);
+            expr_compile_test_info(&my for_loop->condition, true, ctx);
             if (my for_loop->afterthought.tag != EXPR_LITERAL ||
                 my for_loop->afterthought.literal.tag != VALUE_UNDEFINED
             ) {
-                expr_compile_test_info(&my for_loop->afterthought, ctx);
+                expr_compile_test_info(&my for_loop->afterthought, true, ctx);
             }
             statement_compile_test_info(&my for_loop->body, ctx);
             break;
@@ -398,17 +405,19 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
-                    expr_compile_test_info(&my for_each_loop->variable.expr, ctx);
+                    expr_compile_test_info(&my for_each_loop->variable.expr, true, ctx);
                     break;
             }
-            expr_compile_test_info(&my for_each_loop->iterable, ctx);
+            expr_compile_test_info(&my for_each_loop->iterable, true, ctx);
             statement_compile_test_info(&my for_each_loop->body, ctx);
             break;
 
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
-            binding_compile_test_info(&my try_catch->catch_var, span_null, span_null, ctx);
-            block_compile_test_info(&my try_catch->catch_block, ctx);
+            if (my try_catch->catch_var.tag != BINDING_NOOP) {
+                binding_compile_test_info(&my try_catch->catch_var, span_null, span_null, ctx);
+                block_compile_test_info(&my try_catch->catch_block, ctx);
+            }
             block_compile_test_info(&my try_catch->finally_block, ctx);
             break;
 

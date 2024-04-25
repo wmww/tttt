@@ -406,14 +406,12 @@ static Type binary_op_get_type_and_typecheck(
                 ret = type_number;
             } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
-                if (errs) {
-                    cstr message = cstr_lit("Operator '+' cannot be applied to types '");
-                    cstr_append_type_error_msg(&message, &left);
-                    cstr_append_sv(&message, c_sv("' and '"));
-                    cstr_append_type_error_msg(&message, &right);
-                    cstr_append_sv(&message, c_sv("'."));
-                    error_ctx_error_s(errs, expr->span, 2365, message);
-                }
+                cstr message = cstr_lit("Operator '+' cannot be applied to types '");
+                cstr_append_type_error_msg(&message, &left);
+                cstr_append_sv(&message, c_sv("' and '"));
+                cstr_append_type_error_msg(&message, &right);
+                cstr_append_sv(&message, c_sv("'."));
+                error_ctx_error_s(errs, expr->span, 2365, message);
                 ret = type_any;
             }
             break;
