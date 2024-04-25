@@ -2334,62 +2334,131 @@ static bool parse_name_init(Parser* parent, ExprCtx ctx, NameInitData* ret) {
     return parse_success(&p);
 }
 
-static bool parse_name_init_list(Parser* parent, ExprCtx ctx, VecNameInitData* ret) {
+// Only parses content, sets type and value to defaults
+static bool parse_binding_content(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
-    *ret = vec_name_init_data_init();
+    Anchor a = span_start(&p);
 
-    Span comma_span = span_null;
-    NameInitData data;
-    while (true) {
+    cstr identifier;
+    Binding binding;
 
-        Parser sub = parser(&p);
-        if (!parse_name_init(&sub, ctx, &data)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1134, "Variable declaration expected.");
-            parse_fail(&sub);
-            break;
-        }
-        if (cstr_empty(&data.name)) {
-            if (span_valid(&comma_span)) {
-                error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
-                p.pos = span_end_ptr(&comma_span);
-            }
-            name_init_data_drop(&data);
-            parse_fail(&sub);
-            break;
-        }
-        parse_success(&sub);
-
-        vec_name_init_data_push(ret, data);
-        const char* end_of_name_init = p.pos;
+    if (parse_identifier(&p, &identifier, nullptr)) {
+        ret->tag = BINDING_IDENTIFIER;
+        ret->identifier = identifier;
+    } else if (hop_char(&p, '[')) {
         hop_whitespace(&p);
-
-        if (*p.pos == ';' ||
-            *p.pos == ')' ||
-            *p.pos == '\0' ||
-            hop_start_if_ends_on_word_break(&p, "in") ||
-            hop_start_if_ends_on_word_break(&p, "of")
-        ) {
-            p.pos = end_of_name_init;
-            return parse_success(&p);
-        }
-
-        if (hop_char(&p, ',')) {
-            comma_span = span_from_previous_char(&p);
-        } else {
-            comma_span = span_null;
-            if (p.whitespace == WHITESPACE_NEWLINE) {
-                return parse_success(&p);
+        ret->tag = BINDING_ARRAY;
+        ret->array = vec_binding_init();
+        while (*p.pos && *p.pos != ']') {
+            binding = (Binding){0};
+            if (parse_binding_content(&p, &binding)) {
+                vec_binding_push(&ret->array, binding);
+            } else if (*p.pos == ',') {
+                vec_binding_push(&ret->array, (Binding){
+                    .tag = BINDING_NOOP,
+                });
             } else {
+                break;
+            }
+            hop_whitespace(&p);
+
+            if (!hop_char(&p, ',') && *p.pos != ']') {
                 error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
             }
+            hop_whitespace(&p);
         }
+        if (!hop_char(&p, ']')) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+        }
+    } else if (hop_char(&p, '{')) {
         hop_whitespace(&p);
+        ret->tag = BINDING_OBJECT;
+        ret->object = vec_object_binding_item_init();
+        while (*p.pos && *p.pos != ']') {
+            if (parse_identifier(&p, &identifier, nullptr)) {
+                Span identifier_span = span_end(a);
+
+                hop_whitespace(&p);
+
+                if (hop_char(&p, ':')) {
+                    hop_whitespace(&p);
+
+                    binding = (Binding){0};
+                    if (!parse_binding_content(&p, &binding)) {
+                        // TODO
+                        break;
+                    }
+
+                    vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
+                        .source = value_string(cstr_clone(identifier)),
+                        .source_span = identifier_span,
+                        .target = binding,
+                    });
+                } else {
+                    vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
+                        .source = value_string(cstr_clone(identifier)),
+                        .source_span = identifier_span,
+                        .target = (Binding){
+                            .tag = BINDING_IDENTIFIER,
+                            .identifier = identifier,
+                            .content_span = identifier_span,
+                        },
+                    });
+                }
+            } else {
+                break;
+            }
+            hop_whitespace(&p);
+
+            if (!hop_char(&p, ',') && *p.pos != '}') {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+            }
+            hop_whitespace(&p);
+        }
+        if (!hop_char(&p, '}')) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
+        }
+    } else {
+        return parse_fail(&p);
     }
 
+    ret->content_span = span_end(a);
     return parse_success(&p);
 }
 
-static bool parse_var_init(Parser* parent, ExprCtx ctx, VariableStatement* ret) {
+static bool parse_binding_type(Parser* parent, Binding* ret) {
+    if (!hop_char(parent, ':')) {
+        return false;
+    }
+    hop_whitespace(parent);
+
+    Anchor a = span_start(parent);
+    if (!parse_type(parent, TYPE_PRECEDENCE_NULL, &ret->type)) {
+        error_ctx_error(&parent->errs, span_from_token(parent), 1110, "Type expected.");
+        ret->type = type_any;
+    }
+    ret->type_explicit = true;
+    ret->type_span = span_end(a);
+
+    return true;
+}
+
+static bool parse_binding_value(Parser* parent, ExprCtx ctx, Binding* ret) {
+    if (!hop_char(parent, '=')) {
+        return false;
+    }
+    hop_whitespace(parent);
+
+    if (!parse_expr(parent, ctx, &ret->value)) {
+        error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
+        ret->value = expr_undefined(span_from_pos(parent));
+    }
+    ret->value_explicit = true;
+
+    return true;
+}
+
+static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatement* ret) {
     Parser p = parser(parent);
 
     if (hop_start_if_ends_on_word_break(&p, "var")) {
@@ -2404,20 +2473,73 @@ static bool parse_var_init(Parser* parent, ExprCtx ctx, VariableStatement* ret) 
     Anchor end_of_keyword = span_start(&p);
     hop_whitespace(&p);
 
-    if (!parse_name_init_list(&p, ctx, &ret->vars)) {
-        return parse_fail(&p);
-    }
+    Span comma_span = span_null;
+    Binding binding;
+    ret->bindings = vec_binding_init();
 
-    if (vec_name_init_data_empty(&ret->vars)) {
-        if (ret->keyword == VAR_INIT_LET) {
-            // let can also be a variable name, fail so we then attempt to parse it as such
-            vec_name_init_data_drop(&ret->vars);
-            return parse_fail(&p);
-        } else {
-            Span s = span_end(end_of_keyword);
-            s.length = 0;
-            error_ctx_error(&p.errs, s, 1123, "Variable declaration list cannot be empty.");
+    while (true) {
+        if (!parse_binding_content(&p, &binding)) {
+            if (span_valid(&comma_span)) {
+                error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
+                p.pos = span_end_ptr(&comma_span);
+            } else if (vec_binding_empty(&ret->bindings)) {
+                if (ret->keyword == VAR_INIT_LET) {
+                    // let can also be a variable name, fail so we then attempt to parse it as such
+                    variable_statement_drop(ret);
+                    return parse_fail(&p);
+                } else {
+                    Span s = span_end(end_of_keyword);
+                    s.length = 0;
+                    error_ctx_error(&p.errs, s, 1123, "Variable declaration list cannot be empty.");
+                }
+            } else {
+                error_ctx_error(&p.errs, span_from_token(&p), 1134, "Variable declaration expected.");
+            }
+            break;
         }
+        const char* end_of_name_init = p.pos;
+        hop_whitespace(&p);
+
+        if (parse_binding_type(&p, &binding)) {
+            end_of_name_init = p.pos;
+            hop_whitespace(&p);
+        } else {
+            binding.type_span = span_null;
+            binding.type = type_any;
+            binding.type_explicit = false;
+        }
+
+        if (parse_binding_value(&p, ctx, &binding)) {
+            end_of_name_init = p.pos;
+            hop_whitespace(&p);
+        } else {
+            binding.value = expr_undefined(span_from_pos(&p));
+            binding.value_explicit = false;
+        }
+
+        vec_binding_push(&ret->bindings, binding);
+
+        if (*p.pos == ';' ||
+            *p.pos == ')' ||
+            *p.pos == '\0' ||
+            hop_start_if_ends_on_word_break(&p, "in") ||
+            hop_start_if_ends_on_word_break(&p, "of")
+        ) {
+            p.pos = end_of_name_init;
+            break;
+        }
+
+        if (hop_char(&p, ',')) {
+            comma_span = span_from_previous_char(&p);
+        } else {
+            comma_span = span_null;
+            if (p.whitespace == WHITESPACE_NEWLINE) {
+                break;
+            } else {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+            }
+        }
+        hop_whitespace(&p);
     }
 
     return parse_success(&p);
@@ -2510,7 +2632,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Statement body;
     bool keyword_is_in = false;
 
-    if (parse_var_init(&p, (ExprCtx){.block_in_op = true}, &statement.decl.variable)) {
+    if (parse_variable_statement(&p, (ExprCtx){.block_in_op = true}, &statement.decl.variable)) {
         statement.decl.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
     } else if (parse_expr(&p, (ExprCtx){.block_in_op = true}, &statement.expr)) {
@@ -2671,9 +2793,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    TryCatchStatement try_catch = {
-        .catch_var.keyword = VAR_INIT_CATCH,
-    };
+    TryCatchStatement try_catch = {0};
     bool has_catch = false;
     bool has_finally = false;
 
@@ -2686,9 +2806,9 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
             if (hop_char(&p, '(')) {
                 hop_whitespace(&p);
 
-                if (!parse_name_init_list(&p, expr_ctx_null, &try_catch.catch_var.vars)) {
+                if (!parse_binding_content(&p, &try_catch.catch_var)) {
                     error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-                    try_catch.catch_var.vars = vec_name_init_data_init();
+                    try_catch.catch_var = (Binding){0};
                 }
                 hop_whitespace(&p);
 
@@ -2775,7 +2895,9 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
         Expr expr;
     } parsed;
 
-    if (exported != DECL_EXPORTED_YES_DEFAULT && parse_var_init(&p, expr_ctx_null, &parsed.variable)) {
+    if (exported != DECL_EXPORTED_YES_DEFAULT &&
+        parse_variable_statement(&p, expr_ctx_null, &parsed.variable)
+    ) {
         *ret = (Statement) {
             .tag = STATEMENT_DECL_VARIABLE,
             .decl.exported = exported,

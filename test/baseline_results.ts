@@ -2391,7 +2391,7 @@ const baselines = {
         types: false,
     },
     'bindingPatternOmittedExpressionNesting': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7376,8 +7376,8 @@ const baselines = {
         types: false,
     },
     'declarationEmitDestructuringArrayPattern1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitDestructuringArrayPattern2': {
@@ -7396,8 +7396,8 @@ const baselines = {
         types: false,
     },
     'declarationEmitDestructuringArrayPattern5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitDestructuringObjectLiteralPattern': {
@@ -8891,7 +8891,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8901,7 +8901,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8911,7 +8911,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8921,7 +8921,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8951,7 +8951,7 @@ const baselines = {
         types: false,
     },
     'destructuringTypeGuardFlow': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8971,12 +8971,12 @@ const baselines = {
         types: false,
     },
     'destructuringWithNewExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'destructuringWithNumberLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13552,7 +13552,7 @@ const baselines = {
     },
     'generatorES6_3': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'generatorES6_4': {
@@ -18426,7 +18426,7 @@ const baselines = {
         types: true,
     },
     'letInNonStrictMode': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20892,7 +20892,7 @@ const baselines = {
     },
     'newLexicalEnvironmentForConvertedLoop': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'newLineFlagWithCRLF': {
@@ -24387,7 +24387,7 @@ const baselines = {
     },
     'recursiveLetConst': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveMods': {
@@ -25741,23 +25741,23 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues': {
@@ -25791,12 +25791,12 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26406,7 +26406,7 @@ const baselines = {
         types: false,
     },
     'strictModeUseContextualKeyword': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27031,7 +27031,7 @@ const baselines = {
         types: false,
     },
     'systemModule13': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27091,7 +27091,7 @@ const baselines = {
         types: false,
     },
     'systemModule8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37272,12 +37272,12 @@ const baselines = {
     },
     'destructuringArrayBindingPatternAndAssignment4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringArrayBindingPatternAndAssignment5SiblingInitializer': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringAssignabilityCheck': {
@@ -37286,7 +37286,7 @@ const baselines = {
         types: false,
     },
     'destructuringCatch': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37481,7 +37481,7 @@ const baselines = {
         types: false,
     },
     'destructuringTypeAssertionsES5_5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37653,17 +37653,17 @@ const baselines = {
     'emptyVariableDeclarationBindingPatterns02_ES5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyVariableDeclarationBindingPatterns02_ES5iterable': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyVariableDeclarationBindingPatterns02_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern1': {
         errors: false,
@@ -37856,12 +37856,12 @@ const baselines = {
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers05': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers06': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38131,12 +38131,12 @@ const baselines = {
         types: false,
     },
     'for-of41': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'for-of42': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40492,8 +40492,8 @@ const baselines = {
     },
     'VariableDeclaration13_es6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'VariableDeclaration1_es6': {
         errors: true,
@@ -40632,7 +40632,7 @@ const baselines = {
     },
     'YieldExpression9_es6': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'YieldStarExpression1_es6': {
@@ -53957,8 +53957,8 @@ const baselines = {
     },
     'for-inStatementsDestructuring': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'for-inStatementsDestructuring2': {
         errors: false,
@@ -56262,7 +56262,7 @@ const baselines = {
     },
     'stringLiteralTypesAndTuples01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringLiteralTypesAsTags01': {
@@ -56641,7 +56641,7 @@ const baselines = {
         types: false,
     },
     'tupleElementTypes3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56701,7 +56701,7 @@ const baselines = {
         types: false,
     },
     'wideningTuples6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

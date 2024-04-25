@@ -15,6 +15,7 @@ core_files = files(
     'expr.c',
     'value.c',
     'statement.c',
+    'binding.c',
     'function_impl.c',
     'parser.c',
     'error.c',

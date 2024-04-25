@@ -1,0 +1,139 @@
+#include "binding.h"
+#include "name_stack.h"
+#include "error.h"
+
+void binding_drop(Binding* me) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+        case BINDING_IDENTIFIER: cstr_drop(&my identifier); break;
+        case BINDING_ARRAY: vec_binding_drop(&my array); break;
+        case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
+    }
+    type_drop(&my type);
+    expr_drop(&my value);
+}
+
+void cstr_append_binding_debug(cstr* target, Binding* me, int indent) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            cstr_append_sv(target, c_sv(CLR_NAME));
+            cstr_append_s(target, my identifier);
+            cstr_append_sv(target, c_sv(CLR0));
+            break;
+
+        case BINDING_ARRAY:
+            cstr_append_sv(target, c_sv("["));
+            c_foreach(i, vec_binding, my array) {
+                cstr_append_binding_debug(target, i.ref, indent);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, c_sv(", "));
+                }
+            }
+            cstr_append_sv(target, c_sv("]"));
+            break;
+
+        case BINDING_OBJECT:
+            cstr_append_sv(target, c_sv("{"));
+            c_foreach(i, vec_object_binding_item, my object) {
+                cstr_append_value_debug(target, &i.ref->source, indent);
+                cstr_append_sv(target, c_sv(": "));
+                cstr_append_binding_debug(target, &i.ref->target, indent);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, c_sv(", "));
+                }
+            }
+            cstr_append_sv(target, c_sv("}"));
+            break;
+    }
+    if (my type_explicit) {
+        cstr_append_sv(target, c_sv(": "));
+        cstr_append_type_debug(target, &my type, indent);
+    }
+    if (my value_explicit) {
+        cstr_append_sv(target, c_sv(" = "));
+        cstr_append_expr_debug(target, &my value, indent);
+    }
+}
+
+void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            if (!name_stack_add_variable(
+                names,
+                cstr_clone(my identifier),
+                my content_span,
+                &my type
+            )) {
+                // name is cstr_str(&result.ref->first)
+                error_ctx_error(errs, my content_span, TS_CODE_NONE, "multiple values declared with same name");
+            }
+            break;
+
+        case BINDING_ARRAY:
+            c_foreach(i, vec_binding, my array) {
+                binding_add_names(i.ref, names, errs);
+            }
+            break;
+
+        case BINDING_OBJECT:
+            c_foreach(i, vec_object_binding_item, my object) {
+                binding_add_names(&i.ref->target, names, errs);
+            }
+            break;
+    }
+}
+
+void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER: break;
+
+        case BINDING_ARRAY:
+            c_foreach(i, vec_binding, my array) {
+                binding_resolve_names(i.ref, names, errs);
+            }
+            break;
+
+        case BINDING_OBJECT:
+            c_foreach(i, vec_object_binding_item, my object) {
+                binding_resolve_names(&i.ref->target, names, errs);
+            }
+            break;
+    }
+    type_resolve_names(&my type, names, errs);
+    expr_resolve_names(&my value, names, errs);
+}
+
+void binding_typecheck(Binding* me, bool absract_literals, ErrorCtx* errs) {
+    if (my value_explicit) {
+        Type expr_type = expr_get_type_and_typecheck(&my value, errs);
+        if (my type_explicit) {
+            check_assignable_or_error(&expr_type, &my type, my content_span, errs);
+        } else {
+            type_drop(&my type);
+            my type = type_clone(expr_type);
+            if (absract_literals || my type.tag == TYPE_TUPLE) {
+                type_abstract_literals(&my type);
+            }
+            type_abstract_tuple_to_array(&my type);
+            if (my type.tag == TYPE_ARRAY &&
+                my type.array->tag == TYPE_VALUE &&
+                my type.array->value.tag == VALUE_UNDEFINED
+            ) {
+                type_drop(my type.array);
+                *my type.array = type_any;
+            }
+        }
+        type_drop(&expr_type);
+    }
+}
+
+void object_binding_item_drop(ObjectBindingItem* me) {
+    value_drop(&my source);
+    binding_drop(&my target);
+}

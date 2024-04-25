@@ -147,6 +147,47 @@ void name_init_compile_test_info(NameInitData* me, Span scope, Span full, Baseli
     }
 }
 
+void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestCase* ctx) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            baseline_test_case_add_symbol_with_scope(
+                ctx,
+                span_sv(&scope),
+                cstr_sv(&my identifier),
+                my content_span,
+                span_valid(&full) ? full : my content_span
+            );
+            baseline_test_case_add_type(ctx, my content_span, &my type);
+            break;
+
+        case BINDING_ARRAY:
+            c_foreach(i, vec_binding, my array) {
+                binding_compile_test_info(i.ref, scope, full, ctx);
+            }
+            break;
+
+        case BINDING_OBJECT:
+            c_foreach(i, vec_object_binding_item, my object) {
+                binding_compile_test_info(&i.ref->target, scope, full, ctx);
+            }
+            break;
+    }
+    if (my type_explicit) {
+        type_compile_test_info(&my type, ctx);
+    }
+    if (my value_explicit) {
+        expr_compile_test_info(&my value, ctx);
+    }
+}
+
+void variable_statement_compile_test_info(VariableStatement* me, BaselineTestCase* ctx) {
+    c_foreach(i, vec_binding, my bindings) {
+        binding_compile_test_info(i.ref, span_null, span_null, ctx);
+    }
+}
+
 void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my full_span, my full_span);
@@ -353,9 +394,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_FOR_EACH_LOOP:
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
-                    c_foreach(i, vec_name_init_data, my for_each_loop->variable.statement.vars) {
-                        name_init_compile_test_info(i.ref, span_null, span_null, ctx);
-                    }
+                    variable_statement_compile_test_info(&my for_each_loop->variable.statement, ctx);
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
@@ -368,9 +407,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
-            if (!vec_name_init_data_empty(&my try_catch->catch_var.vars)) {
-                name_init_compile_test_info(my try_catch->catch_var.vars.data, span_null, span_null, ctx);
-            }
+            binding_compile_test_info(&my try_catch->catch_var, span_null, span_null, ctx);
             block_compile_test_info(&my try_catch->catch_block, ctx);
             block_compile_test_info(&my try_catch->finally_block, ctx);
             break;
@@ -378,9 +415,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_BREAK: break;
 
         case STATEMENT_DECL_VARIABLE:
-            c_foreach(i, vec_name_init_data, my decl.variable.vars) {
-                name_init_compile_test_info(i.ref, span_null, span_null, ctx);
-            }
+            variable_statement_compile_test_info(&my decl.variable, ctx);
             break;
 
         case STATEMENT_DECL_FUNCTION:

@@ -24,7 +24,7 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent
 }
 
 void variable_statement_drop(VariableStatement* me) {
-    vec_name_init_data_drop(&my vars);
+    vec_binding_drop(&my bindings);
 }
 
 void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent) {
@@ -32,10 +32,9 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
         case VAR_INIT_VAR: cstr_append_sv(target, c_sv("var ")); break;
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
         case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
-        case VAR_INIT_CATCH: break;
     }
-    c_foreach(i, vec_name_init_data, my vars) {
-        cstr_append_name_init_data_debug(target, i.ref, indent);
+    c_foreach(i, vec_binding, my bindings) {
+        cstr_append_binding_debug(target, i.ref, indent);
         if (i.ref != i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
@@ -43,49 +42,21 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
 }
 
 void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_name_init_data, my vars) {
-        if (!name_stack_add_variable(
-            names,
-            cstr_clone(i.ref->name),
-            i.ref->name_span,
-            &i.ref->type
-        )) {
-            // name is cstr_str(&result.ref->first)
-            error_ctx_type_error(errs, "multiple values declared with same name");
-        }
+    c_foreach(i, vec_binding, my bindings) {
+        binding_add_names(i.ref, names, errs);
     }
 }
 
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_name_init_data, my vars) {
+    c_foreach(i, vec_binding, my bindings) {
         type_resolve_names(&i.ref->type, names, errs);
         expr_resolve_names(&i.ref->value, names, errs);
     }
 }
 
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
-    c_foreach(i, vec_name_init_data, my vars) {
-        if (i.ref->value_explicit) {
-            Type expr_type = expr_get_type_and_typecheck(&i.ref->value, errs);
-            if (i.ref->type_explicit) {
-                check_assignable_or_error(&expr_type, &i.ref->type, i.ref->name_span, errs);
-            } else {
-                type_drop(&i.ref->type);
-                i.ref->type = type_clone(expr_type);
-                if (my keyword != VAR_INIT_CONST || i.ref->type.tag == TYPE_TUPLE) {
-                    type_abstract_literals(&i.ref->type);
-                }
-                type_abstract_tuple_to_array(&i.ref->type);
-                if (i.ref->type.tag == TYPE_ARRAY &&
-                    i.ref->type.array->tag == TYPE_VALUE &&
-                    i.ref->type.array->value.tag == VALUE_UNDEFINED
-                ) {
-                    type_drop(i.ref->type.array);
-                    *i.ref->type.array = type_any;
-                }
-            }
-            type_drop(&expr_type);
-        }
+    c_foreach(i, vec_binding, my bindings) {
+        binding_typecheck(i.ref, my keyword != VAR_INIT_CONST, errs);
     }
 }
 
@@ -130,7 +101,7 @@ void statement_drop(Statement* me) {
 
         case STATEMENT_TRY_CATCH:
             block_drop(&my try_catch->try_block);
-            variable_statement_drop(&my try_catch->catch_var);
+            binding_drop(&my try_catch->catch_var);
             block_drop(&my try_catch->catch_block);
             block_drop(&my try_catch->finally_block);
             free(my try_catch);
@@ -227,13 +198,13 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
         case STATEMENT_TRY_CATCH:
             cstr_append_sv(target, c_sv("try "));
             cstr_append_block_debug(target, &my try_catch->try_block, indent);
-            if (!vec_name_init_data_empty(&my try_catch->catch_var.vars) ||
+            if (my try_catch->catch_var.tag != BINDING_NOOP ||
                 !vec_statement_empty(&my try_catch->catch_block.statements)
             ) {
                 cstr_append_sv(target, c_sv(" catch "));
-                if (!vec_name_init_data_empty(&my try_catch->catch_var.vars)) {
+                if (my try_catch->catch_var.tag != BINDING_NOOP) {
                     cstr_append_sv(target, c_sv("("));
-                    cstr_append_variable_statement_debug(target, &my try_catch->catch_var, indent);
+                    cstr_append_binding_debug(target, &my try_catch->catch_var, indent);
                     cstr_append_sv(target, c_sv(") "));
                 }
                 cstr_append_block_debug(target, &my try_catch->catch_block, indent);
@@ -397,8 +368,8 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
             name_stack_push_block_frame(names);
-            variable_statement_add_names(&my try_catch->catch_var, names, errs);
-            variable_statement_resolve_names(&my try_catch->catch_var, names, errs);
+            binding_add_names(&my try_catch->catch_var, names, errs);
+            binding_resolve_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);
             name_stack_pop_frame(names);
 
@@ -534,11 +505,11 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT: {
-                    intptr_t var_size = vec_name_init_data_size(&my for_each_loop->variable.statement.vars);
+                    intptr_t var_size = vec_binding_size(&my for_each_loop->variable.statement.bindings);
                     if (var_size > 1) {
                         error_ctx_error(
                             errs,
-                            vec_name_init_data_at(&my for_each_loop->variable.statement.vars, 1)->name_span,
+                            vec_binding_at(&my for_each_loop->variable.statement.bindings, 1)->content_span,
                             my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
                             "Only a single variable declaration is allowed in a 'for...%s' statement.",
                             for_each_loop_statement_keyword_str(my for_each_loop).str
@@ -546,26 +517,26 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     } else if (var_size == 0) {
                         // Error added by parser
                     } else {
-                        NameInitData* data = my for_each_loop->variable.statement.vars.data;
-                        if (data->value_explicit) {
+                        Binding* binding = my for_each_loop->variable.statement.bindings.data;
+                        if (binding->value_explicit) {
                             error_ctx_error(
                                 errs,
-                                data->name_span,
+                                binding->content_span,
                                 1189,
                                 "The variable declaration of a 'for...%s' statement cannot have an initializer.",
                                 for_each_loop_statement_keyword_str(my for_each_loop).str
                             );
-                        } else if (data->type_explicit) {
+                        } else if (binding->type_explicit) {
                             error_ctx_error(
                                 errs,
-                                data->name_span,
+                                binding->content_span,
                                 2404,
                                 "The left-hand side of a 'for...%s' statement cannot use a type annotation.",
                                 for_each_loop_statement_keyword_str(my for_each_loop).str
                             );
                         }
                     }
-                    c_foreach(i, vec_name_init_data, my for_each_loop->variable.statement.vars) {
+                    c_foreach(i, vec_binding, my for_each_loop->variable.statement.bindings) {
                         type_drop(&i.ref->type);
                         if (i.ref == i.end - 1) {
                             i.ref->type = var_type;

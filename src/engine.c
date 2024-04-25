@@ -406,6 +406,29 @@ static Result MUST_USE engine_run_for_loop(Engine* me, ForLoopStatement const* l
     return result_ok_undefined;
 }
 
+static Result MUST_USE engine_run_binding(Engine* me, Binding const* binding, Value value) {
+    switch (binding->tag) {
+        case BINDING_NOOP:
+            value_drop(&value);
+            break;
+
+        case BINDING_IDENTIFIER: {
+            cstr name = cstr_clone(binding->identifier);
+            JsObject* locals = engine_get_locals(me);
+            js_object_set(locals, name, value);
+        }   break;
+
+        case BINDING_ARRAY:
+            NONFATAL("Array structured bindings not supported");
+            break;
+
+        case BINDING_OBJECT:
+            NONFATAL("Object structured bindings not supported");
+            break;
+    }
+    return result_ok_undefined;
+}
+
 // Only return statements return ok with a value, caller has to check statement tag to notice undefined returns
 static Result MUST_USE engine_run_statement(Engine* me, Statement const* statement) {
     switch (statement->tag) {
@@ -451,11 +474,9 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
 
         case STATEMENT_DECL_VARIABLE: {
             // TODO: respect keyword (let, const, var)
-            c_foreach(i, vec_name_init_data, statement->decl.variable.vars) {
+            c_foreach(i, vec_binding, statement->decl.variable.bindings) {
                 TRY_THROW(value, engine_eval_expr(me, &i.ref->value));
-                cstr name = cstr_clone(i.ref->name);
-                JsObject* locals = engine_get_locals(me);
-                js_object_set(locals, name, value);
+                TRY_THROW_DROP(engine_run_binding(me, i.ref, value));
             }
             return result_ok_undefined;
         }

@@ -5,6 +5,7 @@
 #include "type.h"
 #include "function_impl.h"
 #include "type_decl.h"
+#include "binding.h"
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
@@ -38,9 +39,8 @@ typedef struct VariableStatement {
         VAR_INIT_VAR,
         VAR_INIT_LET,
         VAR_INIT_CONST,
-        VAR_INIT_CATCH, // Used only for the catch expression in try/catch blocks
     } keyword;
-    VecNameInitData vars;
+    VecBinding bindings;
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
@@ -158,7 +158,7 @@ typedef struct ForEachLoopStatement {
 
 typedef struct TryCatchStatement {
     Block try_block;
-    VariableStatement catch_var;
+    Binding catch_var;
     Block catch_block;
     Block finally_block;
 } TryCatchStatement;
