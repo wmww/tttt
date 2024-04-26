@@ -386,7 +386,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
 static bool type_extends_internal(Type const* sub, Type const* super, int level) {
     if (level > 100) {
-        NONFATAL("max type recursion depth exceeded");
+        NONFATAL("Max type recursion depth exceeded");
         return false;
     }
     switch (sub->tag) {
@@ -647,7 +647,7 @@ void type_abstract_literals(Type* me) {
 
 void type_simplify_internal(Type* me, int level) {
     if (level > 2) {
-        NONFATAL("max type recursion depth exceeded");
+        NONFATAL("Max type recursion depth exceeded");
         return;
     }
     switch (my tag) {
@@ -803,7 +803,14 @@ Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs) {
     }
 }
 
-void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs) {
+static void check_assignable_or_error_internal(
+    const char* source_label,
+    Type const* source,
+    const char* target_label,
+    Type const* target,
+    Span span,
+    ErrorCtx* errs
+) {
     if (type_extends(source, target)) {
         return;
     }
@@ -823,9 +830,123 @@ void check_assignable_or_error(Type const* source, Type const* target, Span span
         errs,
         span,
         2322,
-        "Type '%s' is not assignable to type '%s'.",
+        "%s '%s' is not assignable to %s '%s'.",
+        source_label,
         cstr_str(&source_str),
+        target_label,
         cstr_str(&target_str)
     );
     c_drop(cstr, &source_str, &target_str);
+}
+
+void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs) {
+    check_assignable_or_error_internal("Type", source, "type", target, span, errs);
+}
+
+Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, int level) {
+    if (level > 100) {
+        NONFATAL("Max type recursion depth exceeeded");
+        return type_never;
+    }
+    switch (my tag) {
+        case TYPE_ANY:
+            return type_any;
+
+        case TYPE_IDENTIFIER:
+            if (my identifier.type.get) {
+                return type_typecheck_call(my identifier.type.get->type, call, errs, level + 1);
+            } else {
+                return type_any;
+            }
+
+        case TYPE_CALLABLE: {
+            CallableType inferred = {0};
+            CallableType const* callable = my callable;
+
+            if (!generic_empty(&callable->generic)) {
+                inferred = generic_infer_callable_types(
+                    &callable->generic,
+                    callable,
+                    &call->args,
+                    errs
+                );
+                callable = &inferred;
+            }
+
+            intptr_t call_arg_count = vec_expr_size(&call->args);
+            if (call_arg_count < callable->min_args ||
+                (call_arg_count > callable->max_args && !callable->variadic)
+            ) {
+                if (callable->variadic) {
+                    error_ctx_error(
+                        errs,
+                        call->callable.span,
+                        2555,
+                        "Expected at least %ld arguments, but got %ld.",
+                        callable->min_args,
+                        call_arg_count
+                    );
+                } else if (callable->min_args == callable->max_args) {
+                    error_ctx_error(
+                        errs,
+                        call->callable.span,
+                        2554,
+                        "Expected %ld arguments, but got %ld.",
+                        callable->min_args,
+                        call_arg_count
+                    );
+                } else {
+                    error_ctx_error(
+                        errs,
+                        call->callable.span,
+                        2554,
+                        "Expected %ld-%ld arguments, but got %ld.",
+                        callable->min_args,
+                        callable->max_args,
+                        call_arg_count
+                    );
+                }
+            } else {
+                for (intptr_t i = 0; i < call_arg_count; i++) {
+                    Expr const* arg_expr = vec_expr_at(&call->args, i);
+                    Type arg_type = expr_get_type_and_typecheck(arg_expr, errs);
+                    if (i < callable->max_args) {
+                        Type const* param_type = &vec_callable_type_arg_at(&callable->args, i)->type;
+                        check_assignable_or_error_internal(
+                            "Argument of type",
+                            &arg_type,
+                            "parameter of type",
+                            param_type,
+                            arg_expr->span,
+                            errs
+                        );
+                    }
+                    type_drop(&arg_type);
+                }
+            }
+
+            Type ret = type_clone(callable->ret);
+            callable_type_drop(&inferred);
+            return ret;
+        }
+
+        case TYPE_INDEXED:
+            return type_typecheck_call(indexed_type_resolve(my indexed), call, errs, level);
+
+        case TYPE_TERNARY:
+            return type_typecheck_call(ternary_type_resolve(my ternary), call, errs, level);
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION: {
+            Type ret = my tag == TYPE_UNION ? type_never : type_any;
+            c_foreach(i, vec_type, my composite) {
+                ret = type_composite(ret, type_typecheck_call(i.ref, call, errs, level), my tag);
+            }
+            return ret;
+        }
+
+        default:
+            error_ctx_error(errs, call->callable.span, 2349, "This expression is not callable.");
+            return type_any;
+    }
 }

@@ -617,53 +617,8 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         }
 
         case EXPR_CALL: {
-            Type ret = type_any;
             Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
-            long given_arg_count = vec_expr_size(&my call->args);
-            long callable_arg_count = 0;
-            if (callable.tag == TYPE_CALLABLE) {
-                if (!generic_empty(&callable.callable->generic)) {
-                    Type inferred = generic_infer_callable_types(
-                        &callable.callable->generic,
-                        callable.callable,
-                        &my call->args,
-                        errs
-                    );
-                    type_drop(&callable);
-                    callable = inferred;
-                    ASSERT(callable.tag == TYPE_CALLABLE);
-                }
-                callable_arg_count = vec_callable_type_arg_size(&callable.callable->args);
-                // TODO: handle optional and variadic arguments
-                if (callable_arg_count != given_arg_count) {
-                    error_ctx_type_error(errs, "wrong number of arguments");
-                }
-                ret = type_clone(callable.callable->ret);
-            } else if (callable.tag != TYPE_ANY) {
-                cstr type_str = cstr_null;
-                cstr_append_type_error_msg(&type_str, &callable);
-                // TODO: the two sentences of the error message are supposed to be on separate lines somehow
-                error_ctx_error(
-                    errs,
-                    my call->callable.span,
-                    2349,
-                    "This expression is not callable. Type '%s' has no call signatures.",
-                    cstr_str(&type_str)
-                );
-                cstr_drop(&type_str);
-            }
-            for (long i = 0; i < given_arg_count; i++) {
-                Type arg_type = expr_get_type_and_typecheck(
-                    vec_expr_at_mut(&my call->args, i),
-                    errs
-                );
-                if (i < callable_arg_count) {
-                    if (!type_extends(&arg_type, &vec_callable_type_arg_at(&callable.callable->args, i)->type)) {
-                        error_ctx_type_error(errs, "bad argument type");
-                    }
-                }
-                type_drop(&arg_type);
-            }
+            Type ret = type_typecheck_call(&callable, my call, errs, 0);
             type_drop(&callable);
             return ret;
         }
@@ -757,7 +712,7 @@ czview binary_op_get_zv(BinaryOp op) {
         case BINARY_OP_EH_EH_EQUAL: return c_zv("\?\?=");
         case BINARY_OP_COMMA: return c_zv(",");
     }
-    NONFATAL("invalid binary operator %d", op);
+    NONFATAL("Invalid binary operator %d", op);
     return c_zv("<INVALID_OP>");
 }
 
@@ -772,7 +727,7 @@ czview unary_op_get_zv(UnaryOp op) {
         case UNARY_OP_RIGHT_PLUS_PLUS: return c_zv("++");
         case UNARY_OP_RIGHT_MINUS_MINUS: return c_zv("--");
     }
-    NONFATAL("invalid unary operator %d", op);
+    NONFATAL("Invalid unary operator %d", op);
     return c_zv("<INVALID_OP>");
 }
 

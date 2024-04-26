@@ -24,6 +24,9 @@ CallableType callable_type_clone(CallableType me) {
     return (CallableType){
         .generic = generic_clone(me.generic),
         .args = vec_callable_type_arg_clone(me.args),
+        .min_args = me.min_args,
+        .max_args = me.max_args,
+        .variadic = me.variadic,
         .ret_explicit = me.ret_explicit,
         .ret = type_clone(me.ret),
         .is_constructor = me.is_constructor,

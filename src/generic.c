@@ -315,7 +315,7 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
     UNREACHABLE;
 }
 
-Type generic_infer_callable_types(
+CallableType generic_infer_callable_types(
     Generic const* me,
     CallableType const* callable,
     VecExpr const* args,
@@ -334,8 +334,8 @@ Type generic_infer_callable_types(
         );
         type_drop(&call_arg_type);
     }
-    Type ret = type_callable(c_new(CallableType, callable_type_clone(*callable)));
-    callable_swap_generics_for_specific_types(ret.callable, traverse_ctx_make(&candidates, errs));
+    CallableType ret = callable_type_clone(*callable);
+    callable_swap_generics_for_specific_types(&ret, traverse_ctx_make(&candidates, errs));
     vec_vec_type_drop(&candidates);
     return ret;
 }

@@ -18,6 +18,9 @@ CallableTypeArg callable_type_arg_clone(CallableTypeArg me);
 typedef struct CallableType {
     Generic generic;
     VecCallableTypeArg args;
+    intptr_t min_args;
+    intptr_t max_args; // does not include possible final variadic argument
+    bool variadic;
     bool ret_explicit;
     Type ret;
     bool is_constructor;

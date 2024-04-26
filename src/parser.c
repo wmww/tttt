@@ -954,6 +954,8 @@ static bool parse_function_args(
                     .type_explicit = name_init.type_explicit,
                     .type = name_init.type,
                 });
+                type_ret->min_args++;
+                type_ret->max_args++;
 
                 if (args_ret) {
                     vec_function_arg_push(args_ret, (FunctionArg){

@@ -31,7 +31,7 @@ Generic generic_clone(Generic me);
 void cstr_append_generic_debug(cstr* target, Generic const* me, int indent);
 void cstr_append_generic_error_msg(cstr* target, Generic const* me);
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs);
-Type generic_infer_callable_types(
+CallableType generic_infer_callable_types(
     Generic const* me,
     CallableType const* callable,
     VecExpr const* args,
