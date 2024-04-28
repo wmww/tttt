@@ -55,8 +55,10 @@ csview span_sv(Span const* me) {
 }
 
 Span span_between(Span const* a, Span const* b) {
-    if (!span_valid(a) || !span_valid(b)) {
-        return span_null;
+    if (!span_valid(a)) {
+        return *b;
+    } else if (!span_valid(b)) {
+        return *a;
     }
     if (a->file_start != b->file_start) {
         PANIC("Tried to make a span between two different files");

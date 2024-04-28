@@ -878,10 +878,18 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
             if (call_arg_count < callable->min_args ||
                 (call_arg_count > callable->max_args && !callable->variadic)
             ) {
+                Span span = call->callable.span;
+                if (call_arg_count > callable->max_args) {
+                    span = span_between(
+                        &vec_expr_at(&call->args, callable->max_args)->span,
+                        &vec_expr_at(&call->args, call_arg_count - 1)->span
+                    );
+                }
+
                 if (callable->variadic) {
                     error_ctx_error(
                         errs,
-                        call->callable.span,
+                        span,
                         2555,
                         "Expected at least %ld arguments, but got %ld.",
                         callable->min_args,
@@ -890,7 +898,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
                 } else if (callable->min_args == callable->max_args) {
                     error_ctx_error(
                         errs,
-                        call->callable.span,
+                        span,
                         2554,
                         "Expected %ld arguments, but got %ld.",
                         callable->min_args,
@@ -899,7 +907,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
                 } else {
                     error_ctx_error(
                         errs,
-                        call->callable.span,
+                        span,
                         2554,
                         "Expected %ld-%ld arguments, but got %ld.",
                         callable->min_args,

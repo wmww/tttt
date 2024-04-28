@@ -22581,7 +22581,7 @@ const baselines = {
         types: false,
     },
     'overloadResolutionOnDefaultConstructor1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32106,7 +32106,7 @@ const baselines = {
         types: false,
     },
     'classWithoutExplicitConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
