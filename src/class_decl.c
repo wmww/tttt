@@ -274,7 +274,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         cstr_clone(my name),
         my name_span,
         arc_named_type_clone(my type_ref),
-        0
+        0,
+        vec_type_init()
     );
     my constructor_type.ret_explicit = true;
     my constructor_type.is_constructor = true;

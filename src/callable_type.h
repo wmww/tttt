@@ -5,7 +5,6 @@
 
 typedef struct CallableTypeArg {
     cstr name;
-    bool type_explicit;
     Type type;
 } CallableTypeArg;
 

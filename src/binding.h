@@ -2,11 +2,10 @@
 
 #include "type.h"
 #include "expr.h"
+#include "value.h"
 
-typedef struct Binding Binding;
 typedef struct ObjectBindingItem ObjectBindingItem;
 
-wrap_forward_vec(Binding, binding);
 wrap_forward_vec(ObjectBindingItem, object_binding_item);
 
 typedef struct Binding {
@@ -36,10 +35,12 @@ typedef struct ObjectBindingItem {
 } ObjectBindingItem;
 
 void binding_drop(Binding* me);
-void cstr_append_binding_debug(cstr* target, Binding* me, int indent);
+void cstr_append_binding_debug(cstr* target, Binding const* me, int indent);
+void cstr_append_binding_error_msg(cstr* target, Binding const* me);
 void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_typecheck(Binding* me, bool absract_literals, ErrorCtx* errs);
+void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 

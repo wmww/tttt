@@ -4,7 +4,6 @@
 
 typedef struct Type Type;
 typedef struct Block Block;
-typedef struct FunctionArg FunctionArg;
 typedef struct Value Value;
 typedef struct Engine Engine;
 typedef struct Result Result;
@@ -13,13 +12,14 @@ typedef struct JsObject JsObject;
 typedef struct JsArray JsArray;
 typedef struct JsFuncValue JsFuncValue;
 typedef struct NativeFuncValue NativeFuncValue;
+typedef struct Binding Binding;
 
 wrap_forward_hmap_str(ObjectItem, object_item);
 wrap_forward_arc(JsObject, js_object);
 wrap_forward_arc(JsArray, js_array);
 wrap_forward_arc(JsFuncValue, js_func_value);
 wrap_forward_arc(NativeFuncValue, native_func_value);
-wrap_forward_vec(FunctionArg, function_arg);
+wrap_forward_vec(Binding, binding);
 
 typedef struct Value {
     enum {
@@ -150,7 +150,7 @@ JsArray js_array_clone(JsArray me);
 // JsFunc
 
 typedef struct JsFuncValue {
-    VecFunctionArg const* args; // non-owning
+    VecBinding const* args; // non-owning
     Block const* code; // non-owning
 } JsFuncValue;
 
@@ -220,7 +220,7 @@ static inline Value value_array_make_empty() {
     };
 }
 
-static inline Value value_js_func(VecFunctionArg const* args, Block const* code) {
+static inline Value value_js_func(VecBinding const* args, Block const* code) {
     return (Value){
         .tag = VALUE_JS_FUNC,
         .js_func = arc_js_func_value_make((JsFuncValue){

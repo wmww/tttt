@@ -277,7 +277,8 @@ Type type_clone(Type me) {
             cstr_clone(me.identifier.name),
             me.identifier.span,
             arc_named_type_clone(me.identifier.type),
-            me.identifier.generic_depth
+            me.identifier.generic_depth,
+            vec_type_clone(me.identifier.generic_params)
         );
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));

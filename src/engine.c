@@ -256,26 +256,30 @@ static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const
 
 static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
     vec_stack_frame_push(&my stack, stack_frame_new());
-    int defined_arg_num = vec_function_arg_size(func->args);
+    int defined_arg_num = vec_binding_size(func->args);
     int given_arg_num = vec_value_size(args);
     JsObject* locals = engine_get_locals(me);
     for (int i = 0; i < defined_arg_num; i++) {
-        FunctionArg const* defined = vec_function_arg_at(func->args, i);
-        cstr name = cstr_clone(defined->name);
-        Value value = value_undefined;
-        if (i < given_arg_num) {
-            // TODO: don't clone all args
-            value = value_clone(*vec_value_at(args, i));
+        Binding const* binding = vec_binding_at(func->args, i);
+        if (binding->tag == BINDING_IDENTIFIER) {
+            cstr name = cstr_clone(binding->identifier);
+            Value value = value_undefined;
+            if (i < given_arg_num) {
+                // TODO: don't clone all args
+                value = value_clone(*vec_value_at(args, i));
+            }
+            if (value.tag == VALUE_UNDEFINED && binding->value_explicit) {
+                TRY_CATCH(default_value, engine_eval_expr(me, &binding->value), res_err, {
+                    cstr_drop(&name);
+                    vec_stack_frame_pop(&my stack);
+                    return res_err;
+                });
+                value = default_value;
+            }
+            js_object_set(locals, name, value);
+        } else {
+            NONFATAL("Structured binding function arguments not yet supported in engine");
         }
-        if (value.tag == VALUE_UNDEFINED && defined->value_explicit) {
-            TRY_CATCH(default_value, engine_eval_expr(me, &defined->value), res_err, {
-                cstr_drop(&name);
-                vec_stack_frame_pop(&my stack);
-                return res_err;
-            });
-            value = default_value;
-        }
-        js_object_set(locals, name, value);
     }
     Result res = engine_run_block(me, func->code);
     vec_stack_frame_pop(&my stack);

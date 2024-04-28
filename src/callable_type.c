@@ -9,7 +9,6 @@ void callable_type_arg_drop(CallableTypeArg* me) {
 CallableTypeArg callable_type_arg_clone(CallableTypeArg me) {
     return (CallableTypeArg){
         .name = cstr_clone(me.name),
-        .type_explicit = me.type_explicit,
         .type = type_clone(me.type),
     };
 }
@@ -40,10 +39,8 @@ void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent)
         cstr_append_sv(target, c_sv(CLR_NAME));
         cstr_append_s(target, i.ref->name);
         cstr_append_sv(target, c_sv(CLR0));
-        if (i.ref->type_explicit) {
-            cstr_append_sv(target, c_sv(": "));
-            cstr_append_type_debug(target, &i.ref->type, indent);
-        }
+        cstr_append_sv(target, c_sv(": "));
+        cstr_append_type_debug(target, &i.ref->type, indent);
         if (i.ref < i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }

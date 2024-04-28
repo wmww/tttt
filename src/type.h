@@ -85,13 +85,20 @@ static inline Type type_identifier(cstr identifier, Span span) {
     };
 }
 
-static inline Type type_identifier_full(cstr identifier, Span span, ArcNamedType type, int generic_depth) {
+static inline Type type_identifier_full(
+    cstr identifier,
+    Span span,
+    ArcNamedType type,
+    int generic_depth,
+    VecType generic_params
+) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier.name = identifier,
         .identifier.span = span,
         .identifier.type = type,
         .identifier.generic_depth = generic_depth,
+        .identifier.generic_params = generic_params,
     };
 }
 

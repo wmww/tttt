@@ -13,7 +13,7 @@ void binding_drop(Binding* me) {
     expr_drop(&my value);
 }
 
-void cstr_append_binding_debug(cstr* target, Binding* me, int indent) {
+void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -54,6 +54,40 @@ void cstr_append_binding_debug(cstr* target, Binding* me, int indent) {
     if (my value_explicit) {
         cstr_append_sv(target, c_sv(" = "));
         cstr_append_expr_debug(target, &my value, indent);
+    }
+}
+
+void cstr_append_binding_error_msg(cstr* target, Binding const* me) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            cstr_append_s(target, my identifier);
+            break;
+
+        case BINDING_ARRAY:
+            cstr_append_sv(target, c_sv("["));
+            c_foreach(i, vec_binding, my array) {
+                cstr_append_binding_error_msg(target, i.ref);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, c_sv(", "));
+                }
+            }
+            cstr_append_sv(target, c_sv("]"));
+            break;
+
+        case BINDING_OBJECT:
+            cstr_append_sv(target, c_sv("{ "));
+            c_foreach(i, vec_object_binding_item, my object) {
+                cstr_append_value_error_msg(target, &i.ref->source);
+                cstr_append_sv(target, c_sv(": "));
+                cstr_append_binding_error_msg(target, &i.ref->target);
+                if (i.ref != i.end - 1) {
+                    cstr_append_sv(target, c_sv(", "));
+                }
+            }
+            cstr_append_sv(target, c_sv(" }"));
+            break;
     }
 }
 
@@ -130,6 +164,35 @@ void binding_typecheck(Binding* me, bool absract_literals, ErrorCtx* errs) {
             }
         }
         type_drop(&expr_type);
+    }
+}
+
+void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            error_ctx_error(
+                errs,
+                my content_span,
+                toplevel ? 7006 : 7031,
+                "%s '%s' implicitly has an 'any' type.",
+                toplevel ? "Parameter" : "Binding element",
+                cstr_str(&my identifier)
+            );
+            break;
+
+        case BINDING_ARRAY:
+            c_foreach(i, vec_binding, my array) {
+                binding_add_implicit_any_type_errors(i.ref, false, errs);
+            }
+            break;
+
+        case BINDING_OBJECT:
+            c_foreach(i, vec_object_binding_item, my object) {
+                binding_add_implicit_any_type_errors(&i.ref->target, false, errs);
+            }
+            break;
     }
 }
 

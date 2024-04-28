@@ -24,6 +24,43 @@ void generic_compile_test_info(Generic* me, BaselineTestCase* ctx) {
     }
 }
 
+void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestCase* ctx) {
+    switch (my tag) {
+        case BINDING_NOOP:
+            baseline_test_case_add_type(ctx, my content_span, &type_undefined);
+            break;
+
+        case BINDING_IDENTIFIER:
+            baseline_test_case_add_symbol_with_scope(
+                ctx,
+                span_sv(&scope),
+                cstr_sv(&my identifier),
+                my content_span,
+                span_valid(&full) ? full : my content_span
+            );
+            baseline_test_case_add_type(ctx, my content_span, &my type);
+            break;
+
+        case BINDING_ARRAY:
+            c_foreach(i, vec_binding, my array) {
+                binding_compile_test_info(i.ref, scope, full, ctx);
+            }
+            break;
+
+        case BINDING_OBJECT:
+            c_foreach(i, vec_object_binding_item, my object) {
+                binding_compile_test_info(&i.ref->target, scope, full, ctx);
+            }
+            break;
+    }
+    if (my type_explicit) {
+        type_compile_test_info(&my type, ctx);
+    }
+    if (my value_explicit) {
+        expr_compile_test_info(&my value, my tag != BINDING_ARRAY, ctx);
+    }
+}
+
 void interface_compile_test_info(Interface* me, Span scope, BaselineTestCase* ctx) {
     c_foreach(i, vec_interface_member, my members) {
         baseline_test_case_add_symbol_with_scope(
@@ -111,18 +148,8 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
         type_drop(&t);
     }
     generic_compile_test_info(&my type.generic, ctx);
-    int arg_count = function_impl_arg_count(me);
-    for (int i = 0; i < arg_count; i++) {
-        FunctionArg* value_arg = vec_function_arg_at_mut(&my args, i);
-        CallableTypeArg* type_arg = vec_callable_type_arg_at_mut(&my type.args, i);
-        baseline_test_case_add_symbol(
-            ctx,
-            cstr_sv(&value_arg->name),
-            value_arg->name_span,
-            value_arg->name_span
-        );
-        baseline_test_case_add_type(ctx, value_arg->name_span, &type_arg->type);
-        type_compile_test_info(&type_arg->type, ctx);
+    c_foreach(i, vec_binding, my args) {
+        binding_compile_test_info(i.ref, span_null, span_null, ctx);
     }
     if (my type.ret_explicit) {
         type_compile_test_info(&my type.ret, ctx);
@@ -144,43 +171,6 @@ void name_init_compile_test_info(NameInitData* me, Span scope, Span full, Baseli
     }
     if (my value_explicit) {
         expr_compile_test_info(&my value, true, ctx);
-    }
-}
-
-void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestCase* ctx) {
-    switch (my tag) {
-        case BINDING_NOOP:
-            baseline_test_case_add_type(ctx, my content_span, &type_undefined);
-            break;
-
-        case BINDING_IDENTIFIER:
-            baseline_test_case_add_symbol_with_scope(
-                ctx,
-                span_sv(&scope),
-                cstr_sv(&my identifier),
-                my content_span,
-                span_valid(&full) ? full : my content_span
-            );
-            baseline_test_case_add_type(ctx, my content_span, &my type);
-            break;
-
-        case BINDING_ARRAY:
-            c_foreach(i, vec_binding, my array) {
-                binding_compile_test_info(i.ref, scope, full, ctx);
-            }
-            break;
-
-        case BINDING_OBJECT:
-            c_foreach(i, vec_object_binding_item, my object) {
-                binding_compile_test_info(&i.ref->target, scope, full, ctx);
-            }
-            break;
-    }
-    if (my type_explicit) {
-        type_compile_test_info(&my type, ctx);
-    }
-    if (my value_explicit) {
-        expr_compile_test_info(&my value, my tag != BINDING_ARRAY, ctx);
     }
 }
 

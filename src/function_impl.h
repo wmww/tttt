@@ -8,26 +8,12 @@
 
 typedef struct CallableTypeArg CallableTypeArg;
 
-typedef struct FunctionArg {
-    cstr name;
-    Span name_span;
-    bool value_explicit;
-    Expr value;
-} FunctionArg;
-
-void function_arg_drop(FunctionArg* me);
-
-#define i_key_class_names FunctionArg, function_arg
-#define i_is_forward
-#define i_no_clone
-#include "wrap_stc/vec.h"
-
 typedef struct FunctionImpl {
     Span full_span;
     cstr name;
     Span name_span;
     CallableType type;
-    VecFunctionArg args;
+    VecBinding args;
     Span args_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
