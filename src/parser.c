@@ -930,12 +930,19 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
             } else {
                 Binding binding = {0};
                 const char* before_param = p.pos;
+                bool optional = false;
 
                 if (!parse_binding_content(&p, &binding)) {
                     goto drop_and_fail;
                 }
                 hop_whitespace(&p);
+                if (hop_char(&p, '?')) {
+                    optional = true;
+                }
                 if (parse_binding_type(&p, &binding)) {
+                    if (optional) {
+                        binding.type = type_composite(binding.type, type_undefined, TYPE_UNION);
+                    }
                     hop_whitespace(&p);
                 }
                 if (parse_binding_value(&p, expr_ctx_null, &binding)) {
@@ -952,8 +959,19 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
                     .name = binding_str,
                     .type = type_clone(binding.type),
                 });
-                type_ret->min_args++;
-                type_ret->max_args++;
+
+                type_ret->max_args = vec_callable_type_arg_size(&type_ret->args);
+                if (!optional) {
+                    if (type_ret->min_args != type_ret->max_args - 1) {
+                        error_ctx_error(
+                            &p.errs,
+                            binding.content_span,
+                            1016,
+                            "A required parameter cannot follow an optional parameter."
+                        );
+                    }
+                    type_ret->min_args = type_ret->max_args;
+                }
 
                 if (func_ret) {
                     vec_binding_push(&func_ret->args, binding);

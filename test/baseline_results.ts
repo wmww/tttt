@@ -3307,7 +3307,7 @@ const baselines = {
     },
     'circularOptionalityRemoval': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'circularReferenceInImport': {
@@ -4676,8 +4676,8 @@ const baselines = {
         types: true,
     },
     'commentsArgumentsOfCallExpression2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'commentsAtEndOfFile1': {
@@ -7856,7 +7856,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitOverloadedPrivateInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9641,7 +9641,7 @@ const baselines = {
         types: false,
     },
     'duplicateOverloadInTypeAugmentation1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12882,12 +12882,12 @@ const baselines = {
     },
     'functionCall11': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionCall12': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionCall13': {
@@ -12952,12 +12952,12 @@ const baselines = {
     },
     'functionCall8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionCall9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionCallOnConstrainedTypeVariable': {
@@ -13266,12 +13266,12 @@ const baselines = {
         types: false,
     },
     'functionOverloads6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionOverloads7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22216,7 +22216,7 @@ const baselines = {
         types: false,
     },
     'optionalParamInOverride': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23701,7 +23701,7 @@ const baselines = {
         types: false,
     },
     'promises': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23721,7 +23721,7 @@ const baselines = {
         types: false,
     },
     'propagationOfPromiseInitialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32197,7 +32197,7 @@ const baselines = {
     },
     'constructorOverloadsWithOptionalParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constructorParameterProperties': {
@@ -33611,7 +33611,7 @@ const baselines = {
         types: false,
     },
     'memberFunctionsWithPublicOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37867,7 +37867,7 @@ const baselines = {
     },
     'optionalBindingParameters1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'optionalBindingParameters2': {
@@ -50206,7 +50206,7 @@ const baselines = {
         types: false,
     },
     'parserParameterList3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55586,7 +55586,7 @@ const baselines = {
         types: false,
     },
     'constructSignaturesWithOverloadsThatDifferOnlyByReturnType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
