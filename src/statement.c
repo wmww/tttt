@@ -24,7 +24,7 @@ void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent
 }
 
 void variable_statement_drop(VariableStatement* me) {
-    vec_binding_drop(&my bindings);
+    vec_initialized_binding_drop(&my initializers);
 }
 
 void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent) {
@@ -33,8 +33,8 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
         case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
         case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
     }
-    c_foreach(i, vec_binding, my bindings) {
-        cstr_append_binding_debug(target, i.ref, indent);
+    c_foreach(i, vec_initialized_binding, my initializers) {
+        cstr_append_initialized_binding_debug(target, i.ref, indent);
         if (i.ref != i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
@@ -42,21 +42,21 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
 }
 
 void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_binding, my bindings) {
-        binding_add_names(i.ref, names, errs);
+    c_foreach(i, vec_initialized_binding, my initializers) {
+        binding_add_names(&i.ref->binding, names, errs);
     }
 }
 
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_binding, my bindings) {
-        type_resolve_names(&i.ref->type, names, errs);
+    c_foreach(i, vec_initialized_binding, my initializers) {
+        type_resolve_names(&i.ref->binding.type, names, errs);
         expr_resolve_names(&i.ref->value, names, errs);
     }
 }
 
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
-    c_foreach(i, vec_binding, my bindings) {
-        binding_typecheck(i.ref, my keyword != VAR_INIT_CONST, errs);
+    c_foreach(i, vec_initialized_binding, my initializers) {
+        initialized_binding_typecheck(i.ref, my keyword != VAR_INIT_CONST, errs);
     }
 }
 
@@ -505,11 +505,12 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT: {
-                    intptr_t var_size = vec_binding_size(&my for_each_loop->variable.statement.bindings);
+                    VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
+                    intptr_t var_size = vec_initialized_binding_size(initializers);
                     if (var_size > 1) {
                         error_ctx_error(
                             errs,
-                            vec_binding_at(&my for_each_loop->variable.statement.bindings, 1)->content_span,
+                            vec_initialized_binding_at(initializers, 1)->binding.content_span,
                             my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
                             "Only a single variable declaration is allowed in a 'for...%s' statement.",
                             for_each_loop_statement_keyword_str(my for_each_loop).str
@@ -517,32 +518,32 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     } else if (var_size == 0) {
                         // Error added by parser
                     } else {
-                        Binding* binding = my for_each_loop->variable.statement.bindings.data;
-                        if (binding->value_explicit) {
+                        InitializedBinding* initializer = initializers->data;
+                        if (initializer->value_explicit) {
                             error_ctx_error(
                                 errs,
-                                binding->content_span,
+                                initializer->binding.content_span,
                                 1189,
                                 "The variable declaration of a 'for...%s' statement cannot have an initializer.",
                                 for_each_loop_statement_keyword_str(my for_each_loop).str
                             );
-                        } else if (binding->type_explicit) {
+                        } else if (initializer->binding.type_explicit) {
                             error_ctx_error(
                                 errs,
-                                binding->content_span,
+                                initializer->binding.content_span,
                                 2404,
                                 "The left-hand side of a 'for...%s' statement cannot use a type annotation.",
                                 for_each_loop_statement_keyword_str(my for_each_loop).str
                             );
                         }
                     }
-                    c_foreach(i, vec_binding, my for_each_loop->variable.statement.bindings) {
-                        type_drop(&i.ref->type);
+                    c_foreach(i, vec_initialized_binding, *initializers) {
+                        type_drop(&i.ref->binding.type);
                         if (i.ref == i.end - 1) {
-                            i.ref->type = var_type;
+                            i.ref->binding.type = var_type;
                             var_type = type_any;
                         } else {
-                            i.ref->type = type_clone(var_type);
+                            i.ref->binding.type = type_clone(var_type);
                         }
                     }
                 }   break;

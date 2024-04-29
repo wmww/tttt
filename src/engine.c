@@ -256,20 +256,20 @@ static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const
 
 static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
     vec_stack_frame_push(&my stack, stack_frame_new());
-    int defined_arg_num = vec_binding_size(func->args);
+    int defined_arg_num = vec_initialized_binding_size(func->args);
     int given_arg_num = vec_value_size(args);
     JsObject* locals = engine_get_locals(me);
     for (int i = 0; i < defined_arg_num; i++) {
-        Binding const* binding = vec_binding_at(func->args, i);
-        if (binding->tag == BINDING_IDENTIFIER) {
-            cstr name = cstr_clone(binding->identifier);
+        InitializedBinding const* initializer = vec_initialized_binding_at(func->args, i);
+        if (initializer->binding.tag == BINDING_IDENTIFIER) {
+            cstr name = cstr_clone(initializer->binding.identifier);
             Value value = value_undefined;
             if (i < given_arg_num) {
                 // TODO: don't clone all args
                 value = value_clone(*vec_value_at(args, i));
             }
-            if (value.tag == VALUE_UNDEFINED && binding->value_explicit) {
-                TRY_CATCH(default_value, engine_eval_expr(me, &binding->value), res_err, {
+            if (value.tag == VALUE_UNDEFINED && initializer->value_explicit) {
+                TRY_CATCH(default_value, engine_eval_expr(me, &initializer->value), res_err, {
                     cstr_drop(&name);
                     vec_stack_frame_pop(&my stack);
                     return res_err;
@@ -478,9 +478,9 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
 
         case STATEMENT_DECL_VARIABLE: {
             // TODO: respect keyword (let, const, var)
-            c_foreach(i, vec_binding, statement->decl.variable.bindings) {
+            c_foreach(i, vec_initialized_binding, statement->decl.variable.initializers) {
                 TRY_THROW(value, engine_eval_expr(me, &i.ref->value));
-                TRY_THROW_DROP(engine_run_binding(me, i.ref, value));
+                TRY_THROW_DROP(engine_run_binding(me, &i.ref->binding, value));
             }
             return result_ok_undefined;
         }

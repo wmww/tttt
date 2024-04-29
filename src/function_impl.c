@@ -8,13 +8,13 @@
 void function_impl_drop(FunctionImpl* me) {
     cstr_drop(&my name);
     callable_type_drop(&my type);
-    vec_binding_drop(&my args);
+    vec_initialized_binding_drop(&my args);
     block_drop(&my body);
 }
 
 intptr_t function_impl_arg_count(FunctionImpl* me) {
     intptr_t arg_count = vec_callable_type_arg_size(&my type.args);
-    if (vec_binding_size(&my args) != arg_count) {
+    if (vec_initialized_binding_size(&my args) != arg_count) {
         PANIC("function type has different number of args than function");
     }
     return arg_count;
@@ -23,8 +23,8 @@ intptr_t function_impl_arg_count(FunctionImpl* me) {
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent) {
     cstr_append_generic_debug(target, &my type.generic, indent);
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, vec_binding, my args) {
-        cstr_append_binding_debug(target, i.ref, indent);
+    c_foreach(i, vec_initialized_binding, my args) {
+        cstr_append_initialized_binding_debug(target, i.ref, indent);
         if (i.ref < i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
@@ -54,13 +54,13 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     name_stack_push_function_frame(names);
 
     // Loop through all arguments and add them to the namespace
-    c_foreach(i, vec_binding, my args) {
-        binding_add_names(i.ref, names, errs);
+    c_foreach(i, vec_initialized_binding, my args) {
+        binding_add_names(&i.ref->binding, names, errs);
     }
 
     // Loop through all arguments and resolve names
-    c_foreach(i, vec_binding, my args) {
-        binding_resolve_names(i.ref, names, errs);
+    c_foreach(i, vec_initialized_binding, my args) {
+        initialized_binding_resolve_names(i.ref, names, errs);
     }
 
     // Resolve names in the function body, don't push a stack frame since the toplevel function body should be the same
@@ -75,11 +75,11 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
-    c_foreach(i, vec_binding, my args) {
-        binding_typecheck(i.ref, true, errs);
+    c_foreach(i, vec_initialized_binding, my args) {
+        initialized_binding_typecheck(i.ref, true, errs);
         // TODO: only run this check in strict mode
-        if (!i.ref->type_explicit) {
-            binding_add_implicit_any_type_errors(i.ref, true, errs);
+        if (!i.ref->binding.type_explicit) {
+            binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
         }
     }
 

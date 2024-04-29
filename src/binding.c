@@ -10,7 +10,6 @@ void binding_drop(Binding* me) {
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
     type_drop(&my type);
-    expr_drop(&my value);
 }
 
 void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
@@ -50,10 +49,6 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
     if (my type_explicit) {
         cstr_append_sv(target, c_sv(": "));
         cstr_append_type_debug(target, &my type, indent);
-    }
-    if (my value_explicit) {
-        cstr_append_sv(target, c_sv(" = "));
-        cstr_append_expr_debug(target, &my value, indent);
     }
 }
 
@@ -140,31 +135,6 @@ void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
             break;
     }
     type_resolve_names(&my type, names, errs);
-    expr_resolve_names(&my value, names, errs);
-}
-
-void binding_typecheck(Binding* me, bool absract_literals, ErrorCtx* errs) {
-    if (my value_explicit) {
-        Type expr_type = expr_get_type_and_typecheck(&my value, errs);
-        if (my type_explicit) {
-            check_assignable_or_error(&expr_type, &my type, my content_span, errs);
-        } else {
-            type_drop(&my type);
-            my type = type_clone(expr_type);
-            if (absract_literals || my type.tag == TYPE_TUPLE) {
-                type_abstract_literals(&my type);
-            }
-            type_abstract_tuple_to_array(&my type);
-            if (my type.tag == TYPE_ARRAY &&
-                my type.array->tag == TYPE_VALUE &&
-                my type.array->value.tag == VALUE_UNDEFINED
-            ) {
-                type_drop(my type.array);
-                *my type.array = type_any;
-            }
-        }
-        type_drop(&expr_type);
-    }
 }
 
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
@@ -199,4 +169,46 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 void object_binding_item_drop(ObjectBindingItem* me) {
     value_drop(&my source);
     binding_drop(&my target);
+}
+
+void initialized_binding_drop(InitializedBinding* me) {
+    binding_drop(&my binding);
+    expr_drop(&my value);
+}
+
+void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent) {
+    cstr_append_binding_debug(target, &my binding, indent);
+    if (my value_explicit) {
+        cstr_append_sv(target, c_sv(" = "));
+        cstr_append_expr_debug(target, &my value, indent);
+    }
+}
+
+void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs) {
+    binding_resolve_names(&my binding, names, errs);
+    expr_resolve_names(&my value, names, errs);
+}
+
+void initialized_binding_typecheck(InitializedBinding* me, bool absract_literals, ErrorCtx* errs) {
+    if (my value_explicit) {
+        Type expr_type = expr_get_type_and_typecheck(&my value, errs);
+        if (my binding.type_explicit) {
+            check_assignable_or_error(&expr_type, &my binding.type, my binding.content_span, errs);
+        } else {
+            type_drop(&my binding.type);
+            my binding.type = type_clone(expr_type);
+            if (absract_literals || my binding.type.tag == TYPE_TUPLE) {
+                type_abstract_literals(&my binding.type);
+            }
+            type_abstract_tuple_to_array(&my binding.type);
+            if (my binding.type.tag == TYPE_ARRAY &&
+                my binding.type.array->tag == TYPE_VALUE &&
+                my binding.type.array->value.tag == VALUE_UNDEFINED
+            ) {
+                type_drop(my binding.type.array);
+                *my binding.type.array = type_any;
+            }
+        }
+        type_drop(&expr_type);
+    }
 }

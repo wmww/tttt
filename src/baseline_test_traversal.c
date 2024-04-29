@@ -56,8 +56,12 @@ void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestC
     if (my type_explicit) {
         type_compile_test_info(&my type, ctx);
     }
+}
+
+void initialized_binding_compile_test_info(InitializedBinding* me, Span scope, Span full, BaselineTestCase* ctx) {
+    binding_compile_test_info(&my binding, scope, full, ctx);
     if (my value_explicit) {
-        expr_compile_test_info(&my value, my tag != BINDING_ARRAY, ctx);
+        expr_compile_test_info(&my value, my binding.tag != BINDING_ARRAY, ctx);
     }
 }
 
@@ -148,8 +152,8 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
         type_drop(&t);
     }
     generic_compile_test_info(&my type.generic, ctx);
-    c_foreach(i, vec_binding, my args) {
-        binding_compile_test_info(i.ref, span_null, span_null, ctx);
+    c_foreach(i, vec_initialized_binding, my args) {
+        initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
     }
     if (my type.ret_explicit) {
         type_compile_test_info(&my type.ret, ctx);
@@ -175,8 +179,8 @@ void name_init_compile_test_info(NameInitData* me, Span scope, Span full, Baseli
 }
 
 void variable_statement_compile_test_info(VariableStatement* me, BaselineTestCase* ctx) {
-    c_foreach(i, vec_binding, my bindings) {
-        binding_compile_test_info(i.ref, span_null, span_null, ctx);
+    c_foreach(i, vec_initialized_binding, my initializers) {
+        initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
     }
 }
 

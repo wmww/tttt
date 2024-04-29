@@ -24,8 +24,6 @@ typedef struct Binding {
     bool type_explicit;
     Type type;
     Span type_span;
-    bool value_explicit;
-    Expr value;
 } Binding;
 
 typedef struct ObjectBindingItem {
@@ -39,7 +37,6 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, int indent);
 void cstr_append_binding_error_msg(cstr* target, Binding const* me);
 void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
-void binding_typecheck(Binding* me, bool absract_literals, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
@@ -50,6 +47,22 @@ void object_binding_item_drop(ObjectBindingItem* me);
 #include "wrap_stc/vec.h"
 
 #define i_key_class_names ObjectBindingItem, object_binding_item
+#define i_no_clone
+#define i_is_forward
+#include "wrap_stc/vec.h"
+
+typedef struct InitializedBinding {
+    Binding binding;
+    bool value_explicit;
+    Expr value;
+} InitializedBinding;
+
+void initialized_binding_drop(InitializedBinding* me);
+void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent);
+void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs);
+void initialized_binding_typecheck(InitializedBinding* me, bool absract_literals, ErrorCtx* errs);
+
+#define i_key_class_names InitializedBinding, initialized_binding
 #define i_no_clone
 #define i_is_forward
 #include "wrap_stc/vec.h"

@@ -40,7 +40,7 @@ typedef struct VariableStatement {
         VAR_INIT_LET,
         VAR_INIT_CONST,
     } keyword;
-    VecBinding bindings;
+    VecInitializedBinding initializers;
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
