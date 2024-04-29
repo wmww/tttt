@@ -1,4 +1,5 @@
 #include "type.h"
+#include "binding.h"
 #include "interface.h"
 #include "interface_member.h"
 #include "ternary_type.h"
@@ -456,15 +457,15 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
             if (sub->tag != TYPE_CALLABLE) {
                 return false;
             }
-            long arg_count = vec_callable_type_arg_size(&super->callable->args);
-            if (vec_callable_type_arg_size(&sub->callable->args) != arg_count) {
+            long arg_count = vec_binding_size(&super->callable->args);
+            if (vec_binding_size(&sub->callable->args) != arg_count) {
                 return false;
             }
             for (int i = 0; i < arg_count; i++) {
                 // Order is flipped for arguments
                 if (!type_extends_internal(
-                    &vec_callable_type_arg_at(&super->callable->args, i)->type,
-                    &vec_callable_type_arg_at(&sub->callable->args, i)->type,
+                    &vec_binding_at(&super->callable->args, i)->type,
+                    &vec_binding_at(&sub->callable->args, i)->type,
                     level
                 )) {
                     return false;
@@ -676,7 +677,7 @@ void type_simplify_internal(Type* me, int level) {
                 type_simplify_internal(&i.ref->extends, level);
                 type_simplify_internal(&i.ref->fallback, level);
             }
-            c_foreach(i, vec_callable_type_arg, my callable->args) {
+            c_foreach(i, vec_binding, my callable->args) {
                 type_simplify_internal(&i.ref->type, level);
             }
             type_simplify_internal(&my callable->ret, level);
@@ -920,7 +921,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
                     Expr const* arg_expr = vec_expr_at(&call->args, i);
                     Type arg_type = expr_get_type_and_typecheck(arg_expr, errs);
                     if (i < callable->max_args) {
-                        Type const* param_type = &vec_callable_type_arg_at(&callable->args, i)->type;
+                        Type const* param_type = &vec_binding_at(&callable->args, i)->type;
                         check_assignable_or_error_internal(
                             "Argument of type",
                             &arg_type,

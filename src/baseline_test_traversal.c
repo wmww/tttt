@@ -104,8 +104,8 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
         }   break;
 
         case TYPE_CALLABLE:
-            c_foreach(i, vec_callable_type_arg, my callable->args) {
-                type_compile_test_info(&i.ref->type, ctx);
+            c_foreach(i, vec_binding, my callable->args) {
+                binding_compile_test_info(i.ref, span_null, span_null, ctx);
             }
             type_compile_test_info(&my callable->ret, ctx);
             break;

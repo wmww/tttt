@@ -563,28 +563,6 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     return parse_success(&p);
 }
 
-static bool parse_callable_type_arg(Parser* parent, void* data) {
-    Parser p = parser(parent);
-    CallableType* ret = data;
-
-    NameInitData name_init = {0};
-    if (!parse_name_init(&p, expr_ctx_null, &name_init)) {
-        return parse_fail(&p);
-    }
-
-    if (name_init.value_explicit) {
-        error_ctx_parse_error(&p.errs, "initializer not allowed in function type");
-        expr_drop(&name_init.value);
-    }
-
-    vec_callable_type_arg_push(&ret->args, (CallableTypeArg){
-        .name = name_init.name,
-        .type = name_init.type,
-    });
-
-    return parse_success(&p);
-}
-
 static bool parse_tuple(Parser* parent, VecType* ret) {
     Parser p = parser(parent);
     Type t;
@@ -949,18 +927,13 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
                     hop_whitespace(&p);
                 }
 
-                if (vec_callable_type_arg_empty(&type_ret->args) && initializer.binding.type_explicit) {
+                if (vec_binding_empty(&type_ret->args) && initializer.binding.type_explicit) {
                     is_definitely_function = true;
                 }
 
-                cstr binding_str = cstr_null; // TODO: do this a better way]
-                cstr_append_binding_error_msg(&binding_str, &initializer.binding);
-                vec_callable_type_arg_push(&type_ret->args, (CallableTypeArg){
-                    .name = binding_str,
-                    .type = type_clone(initializer.binding.type),
-                });
+                vec_binding_push(&type_ret->args, binding_clone(initializer.binding));
 
-                type_ret->max_args = vec_callable_type_arg_size(&type_ret->args);
+                type_ret->max_args = vec_binding_size(&type_ret->args);
                 if (!optional) {
                     if (type_ret->min_args != type_ret->max_args - 1) {
                         error_ctx_error(
@@ -1079,19 +1052,17 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
         *ret = (FunctionImpl){0};
 
         ret->args_span = lone_arg_span;
+        Binding binding = {
+            .tag = BINDING_IDENTIFIER,
+            .identifier = cstr_clone(lone_arg_name),
+            .content_span = lone_arg_span,
+        };
         vec_initialized_binding_push(&ret->args, (InitializedBinding){
-            .binding = (Binding){
-                .tag = BINDING_IDENTIFIER,
-                .identifier = cstr_clone(lone_arg_name),
-                .content_span = lone_arg_span,
-            },
+            .binding = binding_clone(binding),
             .value_explicit = false,
             .value = expr_undefined(span_from_pos(&p)),
         });
-        vec_callable_type_arg_push(&ret->type.args, (CallableTypeArg){
-            .name = lone_arg_name,
-            .type = type_any,
-        });
+        vec_binding_push(&ret->type.args, binding);
 
     } else {
         return parse_fail(&p);

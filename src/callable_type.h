@@ -3,20 +3,9 @@
 #include "type.h"
 #include "generic.h"
 
-typedef struct CallableTypeArg {
-    cstr name;
-    Type type;
-} CallableTypeArg;
-
-void callable_type_arg_drop(CallableTypeArg* me);
-CallableTypeArg callable_type_arg_clone(CallableTypeArg me);
-
-#define i_key_class_names CallableTypeArg, callable_type_arg
-#include "wrap_stc/vec.h"
-
 typedef struct CallableType {
     Generic generic;
-    VecCallableTypeArg args;
+    VecBinding args;
     intptr_t min_args;
     intptr_t max_args; // does not include possible final variadic argument
     bool variadic;

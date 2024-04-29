@@ -12,14 +12,6 @@ void function_impl_drop(FunctionImpl* me) {
     block_drop(&my body);
 }
 
-intptr_t function_impl_arg_count(FunctionImpl* me) {
-    intptr_t arg_count = vec_callable_type_arg_size(&my type.args);
-    if (vec_initialized_binding_size(&my args) != arg_count) {
-        PANIC("function type has different number of args than function");
-    }
-    return arg_count;
-}
-
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent) {
     cstr_append_generic_debug(target, &my type.generic, indent);
     cstr_append_sv(target, c_sv("("));

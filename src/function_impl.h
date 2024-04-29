@@ -23,7 +23,6 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
-intptr_t function_impl_arg_count(FunctionImpl* me);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

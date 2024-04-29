@@ -95,6 +95,8 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me) {
             cstr_append_sv(target, c_sv(" }"));
             break;
     }
+    cstr_append_sv(target, c_sv(": "));
+    cstr_append_type_error_msg(target, &my type);
 }
 
 void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs) {
