@@ -12,6 +12,17 @@ void binding_drop(Binding* me) {
     type_drop(&my type);
 }
 
+Binding binding_clone(Binding me) {
+    switch (me.tag) {
+        case BINDING_NOOP: break;
+        case BINDING_IDENTIFIER: me.identifier = cstr_clone(me.identifier); break;
+        case BINDING_ARRAY: me.array = vec_binding_clone(me.array); break;
+        case BINDING_OBJECT: me.object = vec_object_binding_item_clone(me.object); break;
+    }
+    me.type = type_clone(me.type);
+    return me;
+}
+
 void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -169,6 +180,12 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 void object_binding_item_drop(ObjectBindingItem* me) {
     value_drop(&my source);
     binding_drop(&my target);
+}
+
+ObjectBindingItem object_binding_item_clone(ObjectBindingItem me) {
+    me.source = value_clone(me.source);
+    me.target = binding_clone(me.target);
+    return me;
 }
 
 void initialized_binding_drop(InitializedBinding* me) {

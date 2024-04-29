@@ -33,6 +33,7 @@ typedef struct ObjectBindingItem {
 } ObjectBindingItem;
 
 void binding_drop(Binding* me);
+Binding binding_clone(Binding me);
 void cstr_append_binding_debug(cstr* target, Binding const* me, int indent);
 void cstr_append_binding_error_msg(cstr* target, Binding const* me);
 void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs);
@@ -40,14 +41,13 @@ void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
+ObjectBindingItem object_binding_item_clone(ObjectBindingItem me);
 
 #define i_key_class_names Binding, binding
-#define i_no_clone
 #define i_is_forward
 #include "wrap_stc/vec.h"
 
 #define i_key_class_names ObjectBindingItem, object_binding_item
-#define i_no_clone
 #define i_is_forward
 #include "wrap_stc/vec.h"
 
