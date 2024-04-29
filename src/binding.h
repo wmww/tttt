@@ -39,6 +39,7 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me);
 void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
+void binding_set_assigned_type(Binding* me, Type assigned, bool absract_literals, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 ObjectBindingItem object_binding_item_clone(ObjectBindingItem me);
@@ -53,7 +54,6 @@ ObjectBindingItem object_binding_item_clone(ObjectBindingItem me);
 
 typedef struct InitializedBinding {
     Binding binding;
-    bool value_explicit;
     Expr value;
 } InitializedBinding;
 

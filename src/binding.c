@@ -179,6 +179,27 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
     }
 }
 
+void binding_set_assigned_type(Binding* me, Type assigned, bool absract_literals, ErrorCtx* errs) {
+    if (my type_explicit) {
+        check_assignable_or_error(&assigned, &my type, my content_span, errs);
+    } else {
+        type_drop(&my type);
+        my type = type_move(&assigned);
+        if (absract_literals || my type.tag == TYPE_TUPLE) {
+            type_abstract_literals(&my type);
+        }
+        type_abstract_tuple_to_array(&my type);
+        if (my type.tag == TYPE_ARRAY &&
+            my type.array->tag == TYPE_VALUE &&
+            my type.array->value.tag == VALUE_UNDEFINED
+        ) {
+            type_drop(my type.array);
+            *my type.array = type_any;
+        }
+    }
+    type_drop(&assigned);
+}
+
 void object_binding_item_drop(ObjectBindingItem* me) {
     value_drop(&my source);
     binding_drop(&my target);
@@ -197,7 +218,7 @@ void initialized_binding_drop(InitializedBinding* me) {
 
 void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent) {
     cstr_append_binding_debug(target, &my binding, indent);
-    if (my value_explicit) {
+    if (my value.tag != EXPR_IMPLICIT_ANY) {
         cstr_append_sv(target, c_sv(" = "));
         cstr_append_expr_debug(target, &my value, indent);
     }
@@ -209,25 +230,12 @@ void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names,
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, bool absract_literals, ErrorCtx* errs) {
-    if (my value_explicit) {
-        Type expr_type = expr_get_type_and_typecheck(&my value, errs);
-        if (my binding.type_explicit) {
-            check_assignable_or_error(&expr_type, &my binding.type, my binding.content_span, errs);
-        } else {
-            type_drop(&my binding.type);
-            my binding.type = type_clone(expr_type);
-            if (absract_literals || my binding.type.tag == TYPE_TUPLE) {
-                type_abstract_literals(&my binding.type);
-            }
-            type_abstract_tuple_to_array(&my binding.type);
-            if (my binding.type.tag == TYPE_ARRAY &&
-                my binding.type.array->tag == TYPE_VALUE &&
-                my binding.type.array->value.tag == VALUE_UNDEFINED
-            ) {
-                type_drop(my binding.type.array);
-                *my binding.type.array = type_any;
-            }
-        }
-        type_drop(&expr_type);
+    if (my value.tag != EXPR_IMPLICIT_ANY) {
+        binding_set_assigned_type(
+            &my binding,
+            expr_get_type_and_typecheck(&my value, errs),
+            absract_literals,
+            errs
+        );
     }
 }

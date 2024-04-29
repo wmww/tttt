@@ -10,6 +10,8 @@
 #include "class_decl.h"
 #include "interface_member.h"
 
+const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
+
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
 static inline int binary_op_get_precedence(BinaryOp op) {
     switch (op) {

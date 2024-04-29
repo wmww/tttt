@@ -1006,12 +1006,12 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInConstructor1_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'argumentsReferenceInConstructor2_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1026,7 +1026,7 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInConstructor5_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1046,12 +1046,12 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInMethod1_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'argumentsReferenceInMethod2_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1066,7 +1066,7 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInMethod5_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8646,7 +8646,7 @@ const baselines = {
         types: false,
     },
     'defaultParameterTrailingComments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -12556,7 +12556,7 @@ const baselines = {
         types: false,
     },
     'fatarrowfunctionsInFunctionParameterDefaults': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13381,37 +13381,37 @@ const baselines = {
         types: true,
     },
     'functionWithDefaultParameterWithNoStatements1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13421,12 +13421,12 @@ const baselines = {
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13436,27 +13436,27 @@ const baselines = {
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22221,7 +22221,7 @@ const baselines = {
         types: false,
     },
     'optionalParamReferencingOtherParams1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22771,7 +22771,7 @@ const baselines = {
         types: false,
     },
     'parameterReferenceInInitializer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22781,7 +22781,7 @@ const baselines = {
         types: false,
     },
     'parameterReferencesOtherParameter2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37881,7 +37881,7 @@ const baselines = {
         types: false,
     },
     'optionalBindingParameters4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56646,7 +56646,7 @@ const baselines = {
         types: false,
     },
     'tupleElementTypes4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

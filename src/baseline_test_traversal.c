@@ -60,7 +60,7 @@ void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestC
 
 void initialized_binding_compile_test_info(InitializedBinding* me, Span scope, Span full, BaselineTestCase* ctx) {
     binding_compile_test_info(&my binding, scope, full, ctx);
-    if (my value_explicit) {
+    if (my value.tag != EXPR_IMPLICIT_ANY) {
         expr_compile_test_info(&my value, my binding.tag != BINDING_ARRAY, ctx);
     }
 }
@@ -152,8 +152,14 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
         type_drop(&t);
     }
     generic_compile_test_info(&my type.generic, ctx);
-    c_foreach(i, vec_initialized_binding, my args) {
-        initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
+    intptr_t arg_size = vec_binding_size(&my type.args);
+    for (intptr_t i = 0; i < arg_size; i++) {
+        Binding* binding = vec_binding_at_mut(&my type.args, i);
+        Expr const* default_arg = function_impl_arg_default_at(me, i);
+        binding_compile_test_info(binding, span_null, span_null, ctx);
+        if (default_arg->tag != EXPR_IMPLICIT_ANY) {
+            expr_compile_test_info(default_arg, binding->tag != BINDING_ARRAY, ctx);
+        }
     }
     if (my type.ret_explicit) {
         type_compile_test_info(&my type.ret, ctx);
@@ -233,7 +239,7 @@ void type_decl_compile_test_info(TypeDecl* me, BaselineTestCase* ctx) {
     }
 }
 
-void expr_compile_test_info(Expr* me, bool abstract_arrays, BaselineTestCase* ctx) {
+void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
     Type t = expr_get_type_and_typecheck(me, nullptr);
     if (my tag == EXPR_ARRAY) {
         if (vec_expr_empty(&my array)) {
@@ -251,7 +257,8 @@ void expr_compile_test_info(Expr* me, bool abstract_arrays, BaselineTestCase* ct
     }
 
     switch (my tag) {
-        case EXPR_IMPLICIT_ANY:
+        case EXPR_IMPLICIT_ANY: break;
+
         case EXPR_LITERAL:
             if (my literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(&my span), "undefined")) {
                 baseline_test_case_add_symbol(ctx, c_sv("undefined"), my span, span_null);

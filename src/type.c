@@ -292,12 +292,6 @@ Type type_clone(Type me) {
     UNREACHABLE;
 }
 
-Type type_move(Type* me) {
-    Type ret = *me;
-    my tag = TYPE_ANY;
-    return ret;
-}
-
 Generic* type_get_generic(Type const* me) {
     switch (my tag) {
         case TYPE_CALLABLE:

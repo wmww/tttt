@@ -112,6 +112,8 @@ static inline Expr expr_implicit_any(Span span) {
     return (Expr){ .span = span, .tag = EXPR_IMPLICIT_ANY };
 }
 
+extern const Expr expr_implicit_any_no_span;
+
 void expr_drop(Expr* me);
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent);
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs);

@@ -151,7 +151,11 @@ void type_drop(Type* me);
 void cstr_append_type_debug(cstr* target, Type const* me, int indent);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
 Type type_clone(Type me);
-Type type_move(Type* me);
+static inline Type type_move(Type* me) {
+    Type ret = *me;
+    my tag = TYPE_ANY;
+    return ret;
+}
 // Returns the non-empty generic of the toplevel type, or null
 Generic* type_get_generic(Type const* me);
 

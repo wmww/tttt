@@ -4,6 +4,7 @@
 
 typedef struct Type Type;
 typedef struct Block Block;
+typedef struct FunctionImpl FunctionImpl;
 typedef struct Value Value;
 typedef struct Engine Engine;
 typedef struct Result Result;
@@ -152,8 +153,7 @@ JsArray js_array_clone(JsArray me);
 // JsFunc
 
 typedef struct JsFuncValue {
-    VecInitializedBinding const* args; // non-owning
-    Block const* code; // non-owning
+    FunctionImpl const* impl; // non-owning
 } JsFuncValue;
 
 void js_func_value_drop(JsFuncValue* me);
@@ -222,13 +222,10 @@ static inline Value value_array_make_empty() {
     };
 }
 
-static inline Value value_js_func(VecInitializedBinding const* args, Block const* code) {
+static inline Value value_js_func(FunctionImpl const* impl) {
     return (Value){
         .tag = VALUE_JS_FUNC,
-        .js_func = arc_js_func_value_make((JsFuncValue){
-            .args = args,
-            .code = code,
-        }),
+        .js_func = arc_js_func_value_make((JsFuncValue){ .impl = impl }),
     };
 }
 

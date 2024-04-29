@@ -82,7 +82,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool parse_binding_type(Parser* parent, Binding* ret);
-static bool parse_initialized_binding_value(Parser* parent, ExprCtx ctx, InitializedBinding* ret);
+static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
 
 static inline Parser parser(Parser* parent) {
     return (Parser){
@@ -894,7 +894,7 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
     }
 
     if (func_ret) {
-        func_ret->args = vec_initialized_binding_init();
+        func_ret->arg_defaults = vec_expr_init();
     }
 
     Anchor args_start = span_start(&p);
@@ -906,39 +906,46 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
             if (hop_char(&p, ',')) {
                 error_ctx_error(&p.errs, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
             } else {
-                InitializedBinding initializer = {0};
+                Binding binding = {0};
+                Expr default_value;
                 const char* before_param = p.pos;
                 bool optional = false;
 
-                if (!parse_binding_content(&p, &initializer.binding)) {
+                if (!parse_binding_content(&p, &binding)) {
                     goto drop_and_fail;
                 }
                 hop_whitespace(&p);
+
                 if (hop_char(&p, '?')) {
                     optional = true;
+                    hop_whitespace(&p);
                 }
-                if (parse_binding_type(&p, &initializer.binding)) {
+
+                if (parse_binding_type(&p, &binding)) {
                     if (optional) {
-                        initializer.binding.type = type_composite(initializer.binding.type, type_undefined, TYPE_UNION);
+                        binding.type = type_composite(binding.type, type_undefined, TYPE_UNION);
                     }
                     hop_whitespace(&p);
                 }
-                if (parse_initialized_binding_value(&p, expr_ctx_null, &initializer)) {
+
+                if (parse_initialization(&p, expr_ctx_null, &default_value)) {
                     hop_whitespace(&p);
+                } else {
+                    default_value = expr_implicit_any_no_span;
                 }
 
-                if (vec_binding_empty(&type_ret->args) && initializer.binding.type_explicit) {
+                if (vec_binding_empty(&type_ret->args) && binding.type_explicit) {
                     is_definitely_function = true;
                 }
 
-                vec_binding_push(&type_ret->args, binding_clone(initializer.binding));
+                vec_binding_push(&type_ret->args, binding);
 
                 type_ret->max_args = vec_binding_size(&type_ret->args);
                 if (!optional) {
                     if (type_ret->min_args != type_ret->max_args - 1) {
                         error_ctx_error(
                             &p.errs,
-                            initializer.binding.content_span,
+                            binding.content_span,
                             1016,
                             "A required parameter cannot follow an optional parameter."
                         );
@@ -947,9 +954,12 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
                 }
 
                 if (func_ret) {
-                    vec_initialized_binding_push(&func_ret->args, initializer);
+                    while (vec_expr_size(&func_ret->arg_defaults) < vec_binding_size(&type_ret->args) - 1) {
+                        vec_expr_push(&func_ret->arg_defaults, expr_implicit_any(span_from_pos(&p)));
+                    }
+                    vec_expr_push(&func_ret->arg_defaults, default_value);
                 } else {
-                    initialized_binding_drop(&initializer);
+                    expr_drop(&default_value);
                 }
 
                 if (p.pos == before_param) {
@@ -973,8 +983,8 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
 
         if (!hop_char(&p, ')')) {
             if (func_ret) {
-                vec_initialized_binding_drop(&func_ret->args);
-                func_ret->args = vec_initialized_binding_init();
+                vec_expr_drop(&func_ret->arg_defaults);
+                func_ret->arg_defaults = vec_expr_init();
             }
             callable_type_drop(type_ret);
             *type_ret = (CallableType){0};
@@ -1028,7 +1038,7 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
 drop_and_fail:
     callable_type_drop(type_ret);
     if (func_ret) {
-        vec_initialized_binding_drop(&func_ret->args);
+        vec_expr_drop(&func_ret->arg_defaults);
     }
     return parse_fail(&p);
 }
@@ -1045,8 +1055,8 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     if (parse_function_args(&p, ret, &ret->type)) {
 
         is_definitely_function =
-            !vec_initialized_binding_empty(&ret->args) &&
-            vec_initialized_binding_at(&ret->args, 0)->binding.type_explicit;
+            !vec_binding_empty(&ret->type.args) &&
+            vec_binding_at(&ret->type.args, 0)->type_explicit;
 
     } else if (parse_identifier(&p, &lone_arg_name, &lone_arg_span)) {
         *ret = (FunctionImpl){0};
@@ -1057,11 +1067,6 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
             .identifier = cstr_clone(lone_arg_name),
             .content_span = lone_arg_span,
         };
-        vec_initialized_binding_push(&ret->args, (InitializedBinding){
-            .binding = binding_clone(binding),
-            .value_explicit = false,
-            .value = expr_undefined(span_from_pos(&p)),
-        });
         vec_binding_push(&ret->type.args, binding);
 
     } else {
@@ -2429,17 +2434,16 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     return true;
 }
 
-static bool parse_initialized_binding_value(Parser* parent, ExprCtx ctx, InitializedBinding* ret) {
+static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (!hop_char(parent, '=')) {
         return false;
     }
     hop_whitespace(parent);
 
-    if (!parse_expr(parent, ctx, &ret->value)) {
+    if (!parse_expr(parent, ctx, ret)) {
         error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
-        ret->value = expr_undefined(span_from_pos(parent));
+        *ret = expr_implicit_any(span_from_pos(parent));
     }
-    ret->value_explicit = true;
 
     return true;
 }
@@ -2495,12 +2499,11 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
             initializer.binding.type_explicit = false;
         }
 
-        if (parse_initialized_binding_value(&p, ctx, &initializer)) {
+        if (parse_initialization(&p, ctx, &initializer.value)) {
             end_of_name_init = p.pos;
             hop_whitespace(&p);
         } else {
-            initializer.value = expr_undefined(span_from_pos(&p));
-            initializer.value_explicit = false;
+            initializer.value = expr_implicit_any(span_from_pos(&p));
         }
 
         vec_initialized_binding_push(&ret->initializers, initializer);

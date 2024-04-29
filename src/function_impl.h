@@ -13,7 +13,7 @@ typedef struct FunctionImpl {
     cstr name;
     Span name_span;
     CallableType type;
-    VecInitializedBinding args;
+    VecExpr arg_defaults; // May have less elements than there are args, these are assumed to be implicit any
     Span args_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
@@ -26,3 +26,11 @@ void function_impl_drop(FunctionImpl* me);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
+
+static inline Expr const* function_impl_arg_default_at(FunctionImpl const* me, intptr_t i) {
+    if (i < vec_expr_size(&my arg_defaults)) {
+        return vec_expr_at(&my arg_defaults, i);
+    } else {
+        return &expr_implicit_any_no_span;
+    }
+}

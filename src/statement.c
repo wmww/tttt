@@ -519,7 +519,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                         // Error added by parser
                     } else {
                         InitializedBinding* initializer = initializers->data;
-                        if (initializer->value_explicit) {
+                        if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
                             error_ctx_error(
                                 errs,
                                 initializer->binding.content_span,

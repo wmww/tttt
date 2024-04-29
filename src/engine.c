@@ -256,20 +256,24 @@ static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const
 
 static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
     vec_stack_frame_push(&my stack, stack_frame_new());
-    int defined_arg_num = vec_initialized_binding_size(func->args);
+    int defined_arg_num = vec_binding_size(&func->impl->type.args);
     int given_arg_num = vec_value_size(args);
     JsObject* locals = engine_get_locals(me);
     for (int i = 0; i < defined_arg_num; i++) {
-        InitializedBinding const* initializer = vec_initialized_binding_at(func->args, i);
-        if (initializer->binding.tag == BINDING_IDENTIFIER) {
-            cstr name = cstr_clone(initializer->binding.identifier);
+        Binding const* binding = vec_binding_at(&func->impl->type.args, i);
+        if (binding->tag == BINDING_IDENTIFIER) {
+            cstr name = cstr_clone(binding->identifier);
             Value value = value_undefined;
             if (i < given_arg_num) {
                 // TODO: don't clone all args
                 value = value_clone(*vec_value_at(args, i));
             }
-            if (value.tag == VALUE_UNDEFINED && initializer->value_explicit) {
-                TRY_CATCH(default_value, engine_eval_expr(me, &initializer->value), res_err, {
+            if (value.tag == VALUE_UNDEFINED) {
+                TRY_CATCH(
+                    default_value,
+                    engine_eval_expr(me, function_impl_arg_default_at(func->impl, i)),
+                    res_err,
+                {
                     cstr_drop(&name);
                     vec_stack_frame_pop(&my stack);
                     return res_err;
@@ -281,7 +285,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
             NONFATAL("Structured binding function arguments not yet supported in engine");
         }
     }
-    Result res = engine_run_block(me, func->code);
+    Result res = engine_run_block(me, &func->impl->body);
     vec_stack_frame_pop(&my stack);
     return res;
 }
@@ -362,7 +366,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_AS_TYPE: return engine_eval_expr(me, &expr->as_type->expr);
         case EXPR_TERNARY: return engine_eval_ternary(me, expr->ternary);
         case EXPR_CALL: return engine_eval_call(me, expr->call);
-        case EXPR_FUNCTION: return result_ok(value_js_func(&expr->function->args, &expr->function->body));
+        case EXPR_FUNCTION: return result_ok(value_js_func(expr->function));
         case EXPR_OBJECT: return engine_eval_object(me, &expr->object);
         case EXPR_ARRAY: return engine_eval_array(me, &expr->array);
         case EXPR_CLASS_DECL: return result_ok_undefined; // TODO
@@ -490,10 +494,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
                 return result_ok_undefined;
             }
             cstr name = cstr_clone(statement->decl.function.name);
-            Value value = value_js_func(
-                &statement->decl.function.args,
-                &statement->decl.function.body
-            );
+            Value value = value_js_func(&statement->decl.function);
             JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);
             return result_ok_undefined;
