@@ -34,8 +34,8 @@ typedef struct ObjectBindingItem {
 
 void binding_drop(Binding* me);
 Binding binding_clone(Binding me);
-void cstr_append_binding_debug(cstr* target, Binding const* me, int indent);
-void cstr_append_binding_error_msg(cstr* target, Binding const* me);
+void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, int indent);
+void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optional);
 void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);

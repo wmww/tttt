@@ -930,6 +930,7 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
 
                 if (parse_initialization(&p, expr_ctx_null, &default_value)) {
                     hop_whitespace(&p);
+                    optional = true;
                 } else {
                     default_value = expr_implicit_any_no_span;
                 }
@@ -1068,6 +1069,8 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
             .content_span = lone_arg_span,
         };
         vec_binding_push(&ret->type.args, binding);
+        ret->type.min_args = 1;
+        ret->type.max_args = 1;
 
     } else {
         return parse_fail(&p);

@@ -804,6 +804,7 @@ static void check_assignable_or_error_internal(
     Type const* source,
     const char* target_label,
     Type const* target,
+    unsigned ts_code,
     Span span,
     ErrorCtx* errs
 ) {
@@ -825,7 +826,7 @@ static void check_assignable_or_error_internal(
     error_ctx_error(
         errs,
         span,
-        2322,
+        ts_code,
         "%s '%s' is not assignable to %s '%s'.",
         source_label,
         cstr_str(&source_str),
@@ -836,7 +837,7 @@ static void check_assignable_or_error_internal(
 }
 
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs) {
-    check_assignable_or_error_internal("Type", source, "type", target, span, errs);
+    check_assignable_or_error_internal("Type", source, "type", target, 2322, span, errs);
 }
 
 Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, int level) {
@@ -921,6 +922,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
                             &arg_type,
                             "parameter of type",
                             param_type,
+                            2345,
                             arg_expr->span,
                             errs
                         );

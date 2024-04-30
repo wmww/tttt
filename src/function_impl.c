@@ -20,7 +20,7 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
         if (my type.variadic && i == arg_size - 1) {
             cstr_append_sv(target, c_sv("..."));
         }
-        cstr_append_binding_debug(target, vec_binding_at(&my type.args, i), indent);
+        cstr_append_binding_debug(target, vec_binding_at(&my type.args, i), i >= my type.max_args, indent);
         Expr const* default_arg = function_impl_arg_default_at(me, i);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
             cstr_append_sv(target, c_sv(" = "));

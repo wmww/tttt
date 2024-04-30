@@ -23,7 +23,7 @@ Binding binding_clone(Binding me) {
     return me;
 }
 
-void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
+void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, int indent) {
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -36,7 +36,7 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
         case BINDING_ARRAY:
             cstr_append_sv(target, c_sv("["));
             c_foreach(i, vec_binding, my array) {
-                cstr_append_binding_debug(target, i.ref, indent);
+                cstr_append_binding_debug(target, i.ref, false, indent);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, c_sv(", "));
                 }
@@ -49,7 +49,7 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
             c_foreach(i, vec_object_binding_item, my object) {
                 cstr_append_value_debug(target, &i.ref->source, indent);
                 cstr_append_sv(target, c_sv(": "));
-                cstr_append_binding_debug(target, &i.ref->target, indent);
+                cstr_append_binding_debug(target, &i.ref->target, false, indent);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, c_sv(", "));
                 }
@@ -57,13 +57,18 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, int indent) {
             cstr_append_sv(target, c_sv("}"));
             break;
     }
+
+    if (optional) {
+        cstr_append_sv(target, c_sv("?"));
+    }
+
     if (my type_explicit) {
         cstr_append_sv(target, c_sv(": "));
         cstr_append_type_debug(target, &my type, indent);
     }
 }
 
-void cstr_append_binding_error_msg(cstr* target, Binding const* me) {
+void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optional) {
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -74,7 +79,7 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me) {
         case BINDING_ARRAY:
             cstr_append_sv(target, c_sv("["));
             c_foreach(i, vec_binding, my array) {
-                cstr_append_binding_error_msg(target, i.ref);
+                cstr_append_binding_error_msg(target, i.ref, false);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, c_sv(", "));
                 }
@@ -87,7 +92,7 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me) {
             c_foreach(i, vec_object_binding_item, my object) {
                 cstr_append_value_error_msg(target, &i.ref->source);
                 cstr_append_sv(target, c_sv(": "));
-                cstr_append_binding_error_msg(target, &i.ref->target);
+                cstr_append_binding_error_msg(target, &i.ref->target, false);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, c_sv(", "));
                 }
@@ -95,6 +100,11 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me) {
             cstr_append_sv(target, c_sv(" }"));
             break;
     }
+
+    if (optional) {
+        cstr_append_sv(target, c_sv("?"));
+    }
+
     cstr_append_sv(target, c_sv(": "));
     cstr_append_type_error_msg(target, &my type);
 }
@@ -217,7 +227,7 @@ void initialized_binding_drop(InitializedBinding* me) {
 }
 
 void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent) {
-    cstr_append_binding_debug(target, &my binding, indent);
+    cstr_append_binding_debug(target, &my binding, false, indent);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
         cstr_append_sv(target, c_sv(" = "));
         cstr_append_expr_debug(target, &my value, indent);

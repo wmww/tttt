@@ -8648,7 +8648,7 @@ const baselines = {
     'defaultParameterTrailingComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultPropsEmptyCurlyBecomesAnyForJs': {
         errors: false,
@@ -13383,52 +13383,52 @@ const baselines = {
     'functionWithDefaultParameterWithNoStatements1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements10': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'functionWithDefaultParameterWithNoStatements2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements4': {
         errors: false,
@@ -13438,17 +13438,17 @@ const baselines = {
     'functionWithDefaultParameterWithNoStatements5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithDefaultParameterWithNoStatements8': {
         errors: true,
@@ -17126,9 +17126,9 @@ const baselines = {
         types: false,
     },
     'invocationExpressionInFunctionParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invokingNonGenericMethodWithTypeArguments1': {
         errors: false,
@@ -22223,7 +22223,7 @@ const baselines = {
     'optionalParamReferencingOtherParams1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalParamReferencingOtherParams2': {
         errors: false,
@@ -22233,7 +22233,7 @@ const baselines = {
     'optionalParamReferencingOtherParams3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalParamTypeComparison': {
         errors: false,
@@ -22773,7 +22773,7 @@ const baselines = {
     'parameterReferenceInInitializer2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parameterReferencesOtherParameter1': {
         errors: true,
@@ -30256,7 +30256,7 @@ const baselines = {
         types: false,
     },
     'voidArrayLit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30618,7 +30618,7 @@ const baselines = {
     'asyncArrowFunction3_es2017': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowFunction4_es2017': {
         errors: true,
@@ -30833,7 +30833,7 @@ const baselines = {
     'asyncFunctionDeclaration3_es2017': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration4_es2017': {
         errors: true,
@@ -30898,7 +30898,7 @@ const baselines = {
     'asyncArrowFunction3_es5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowFunction4_es5': {
         errors: true,
@@ -31148,7 +31148,7 @@ const baselines = {
     'asyncFunctionDeclaration3_es5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration4_es5': {
         errors: true,
@@ -31213,7 +31213,7 @@ const baselines = {
     'asyncArrowFunction3_es6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncArrowFunction4_es6': {
         errors: true,
@@ -31478,7 +31478,7 @@ const baselines = {
     'asyncFunctionDeclaration3_es6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration4_es6': {
         errors: true,
@@ -38278,7 +38278,7 @@ const baselines = {
     'FunctionDeclaration3_es6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration4_es6': {
         errors: true,
@@ -57313,7 +57313,7 @@ const baselines = {
     'genericCallWithObjectTypeArgsAndInitializers': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'intersectionIncludingPropFromGlobalAugmentation': {
         errors: false,

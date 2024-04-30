@@ -204,7 +204,7 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
                 cstr_append_sv(target, c_sv(" catch "));
                 if (my try_catch->catch_var.tag != BINDING_NOOP) {
                     cstr_append_sv(target, c_sv("("));
-                    cstr_append_binding_debug(target, &my try_catch->catch_var, indent);
+                    cstr_append_binding_debug(target, &my try_catch->catch_var, false, indent);
                     cstr_append_sv(target, c_sv(") "));
                 }
                 cstr_append_block_debug(target, &my try_catch->catch_block, indent);
