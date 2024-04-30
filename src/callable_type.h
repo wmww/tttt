@@ -2,13 +2,26 @@
 
 #include "type.h"
 #include "generic.h"
+#include "binding.h"
+
+typedef struct CallableArg {
+    Span span;
+    Span rest_span;
+    Binding binding;
+    bool optional;
+    bool explicit_optional;
+    bool rest;
+} CallableArg;
+
+void callable_arg_drop(CallableArg* me);
+CallableArg callable_arg_clone(CallableArg me);
+
+#define i_key_class_names CallableArg, callable_arg
+#include "wrap_stc/vec.h"
 
 typedef struct CallableType {
     Generic generic;
-    VecBinding args;
-    intptr_t min_args;
-    intptr_t max_args; // does not include possible final variadic argument
-    bool variadic;
+    VecCallableArg args;
     bool ret_explicit;
     Type ret;
     bool is_constructor;

@@ -620,7 +620,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CALL: {
             Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
-            Type ret = type_typecheck_call(&callable, my call, errs, 0);
+            Type ret = type_typecheck_call(&callable, my call, my span, errs, 0);
             type_drop(&callable);
             return ret;
         }

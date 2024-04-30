@@ -223,8 +223,8 @@ static inline void generic_swap_generics_for_specific_types(Generic* me, Travers
 }
 
 static inline void callable_swap_generics_for_specific_types(CallableType* me, TraverseCtx ctx) {
-    c_foreach(i, vec_binding, my args) {
-        swap_generics_for_specific_types(&i.ref->type, ctx);
+    c_foreach(i, vec_callable_arg, my args) {
+        swap_generics_for_specific_types(&i.ref->binding.type, ctx);
     }
     swap_generics_for_specific_types(&my ret, ctx);
 }
@@ -324,12 +324,12 @@ CallableType generic_infer_callable_types(
 ) {
     int generic_count = vec_generic_item_size(&my items);
     int call_arg_count = vec_expr_size(args);
-    int callable_arg_count = vec_binding_size(&callable->args);
+    int callable_arg_count = vec_callable_arg_size(&callable->args);
     VecVecType candidates = vec_vec_type_with_size(generic_count, vec_type_init());
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         Type call_arg_type = expr_get_type_and_typecheck(vec_expr_at(args, i), errs);
         collect_generic_candidates(
-            &vec_binding_at(&callable->args, i)->type,
+            &vec_callable_arg_at(&callable->args, i)->binding.type,
             &call_arg_type,
             traverse_ctx_make(&candidates, errs)
         );

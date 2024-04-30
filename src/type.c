@@ -451,15 +451,15 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
             if (sub->tag != TYPE_CALLABLE) {
                 return false;
             }
-            long arg_count = vec_binding_size(&super->callable->args);
-            if (vec_binding_size(&sub->callable->args) != arg_count) {
+            long arg_count = vec_callable_arg_size(&super->callable->args);
+            if (vec_callable_arg_size(&sub->callable->args) != arg_count) {
                 return false;
             }
             for (int i = 0; i < arg_count; i++) {
                 // Order is flipped for arguments
                 if (!type_extends_internal(
-                    &vec_binding_at(&super->callable->args, i)->type,
-                    &vec_binding_at(&sub->callable->args, i)->type,
+                    &vec_callable_arg_at(&super->callable->args, i)->binding.type,
+                    &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
                     level
                 )) {
                     return false;
@@ -671,8 +671,8 @@ void type_simplify_internal(Type* me, int level) {
                 type_simplify_internal(&i.ref->extends, level);
                 type_simplify_internal(&i.ref->fallback, level);
             }
-            c_foreach(i, vec_binding, my callable->args) {
-                type_simplify_internal(&i.ref->type, level);
+            c_foreach(i, vec_callable_arg, my callable->args) {
+                type_simplify_internal(&i.ref->binding.type, level);
             }
             type_simplify_internal(&my callable->ret, level);
             break;
@@ -799,7 +799,7 @@ Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs) {
     }
 }
 
-static void check_assignable_or_error_internal(
+static bool check_assignable_or_error_internal(
     const char* source_label,
     Type const* source,
     const char* target_label,
@@ -809,7 +809,7 @@ static void check_assignable_or_error_internal(
     ErrorCtx* errs
 ) {
     if (type_extends(source, target)) {
-        return;
+        return true;
     }
 
     cstr source_str = cstr_null, target_str = cstr_null;
@@ -834,13 +834,45 @@ static void check_assignable_or_error_internal(
         cstr_str(&target_str)
     );
     c_drop(cstr, &source_str, &target_str);
+    return false;
 }
 
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs) {
     check_assignable_or_error_internal("Type", source, "type", target, 2322, span, errs);
 }
 
-Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, int level) {
+static intptr_t min_args_of_callable(CallableType const* me) {
+    intptr_t args_size = vec_callable_arg_size(&my args);
+    intptr_t ret = args_size;
+    if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
+        Type const* rest_type = &vec_callable_arg_at(&my args, args_size - 1)->binding.type;
+        if (rest_type->tag == TYPE_TUPLE && vec_type_size(&rest_type->tuple) > 0) {
+            return args_size - 1 + vec_type_size(&rest_type->tuple);
+        } else {
+            ret--;
+        }
+    }
+    while (ret && vec_callable_arg_at(&my args, ret - 1)->optional) {
+        ret--;
+    }
+    return ret;
+}
+
+static intptr_t max_args_of_callable(CallableType const* me) {
+    intptr_t args_size = vec_callable_arg_size(&my args);
+    if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
+        Type const* rest_type = &vec_callable_arg_at(&my args, args_size - 1)->binding.type;
+        if (rest_type->tag == TYPE_TUPLE) {
+            return args_size - 1 + vec_type_size(&rest_type->tuple);
+        } else {
+            return INTPTR_MAX;
+        }
+    } else {
+        return args_size;
+    }
+}
+
+Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs, int level) {
     if (level > 100) {
         NONFATAL("Max type recursion depth exceeeded");
         return type_never;
@@ -851,7 +883,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
 
         case TYPE_IDENTIFIER:
             if (my identifier.type.get) {
-                return type_typecheck_call(my identifier.type.get->type, call, errs, level + 1);
+                return type_typecheck_call(my identifier.type.get->type, call, span, errs, level + 1);
             } else {
                 return type_any;
             }
@@ -871,33 +903,38 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
             }
 
             intptr_t call_arg_count = vec_expr_size(&call->args);
-            if (call_arg_count < callable->min_args ||
-                (call_arg_count > callable->max_args && !callable->variadic)
-            ) {
+            intptr_t callable_arg_count = vec_callable_arg_size(&callable->args);
+            intptr_t min_args = min_args_of_callable(callable);
+            intptr_t max_args = max_args_of_callable(callable);
+            bool check_types_against_callable = true;
+
+            if (call_arg_count < min_args || call_arg_count > max_args) {
+                check_types_against_callable = false;
+
                 Span span = call->callable.span;
-                if (call_arg_count > callable->max_args) {
+                if (call_arg_count > max_args) {
                     span = span_between(
-                        &vec_expr_at(&call->args, callable->max_args)->span,
+                        &vec_expr_at(&call->args, max_args)->span,
                         &vec_expr_at(&call->args, call_arg_count - 1)->span
                     );
                 }
 
-                if (callable->variadic) {
+                if (max_args == INTPTR_MAX) {
                     error_ctx_error(
                         errs,
                         span,
                         2555,
                         "Expected at least %ld arguments, but got %ld.",
-                        callable->min_args,
+                        min_args,
                         call_arg_count
                     );
-                } else if (callable->min_args == callable->max_args) {
+                } else if (min_args == max_args) {
                     error_ctx_error(
                         errs,
                         span,
                         2554,
                         "Expected %ld arguments, but got %ld.",
-                        callable->min_args,
+                        min_args,
                         call_arg_count
                     );
                 } else {
@@ -906,29 +943,58 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
                         span,
                         2554,
                         "Expected %ld-%ld arguments, but got %ld.",
-                        callable->min_args,
-                        callable->max_args,
+                        min_args,
+                        max_args,
                         call_arg_count
                     );
                 }
-            } else {
-                for (intptr_t i = 0; i < call_arg_count; i++) {
-                    Expr const* arg_expr = vec_expr_at(&call->args, i);
-                    Type arg_type = expr_get_type_and_typecheck(arg_expr, errs);
-                    if (i < callable->max_args) {
-                        Type const* param_type = &vec_binding_at(&callable->args, i)->type;
-                        check_assignable_or_error_internal(
-                            "Argument of type",
-                            &arg_type,
-                            "parameter of type",
-                            param_type,
-                            2345,
-                            arg_expr->span,
-                            errs
-                        );
+            }
+
+            bool last_arg_rest =
+                check_types_against_callable &&
+                callable_arg_count &&
+                vec_callable_arg_at(&callable->args, callable_arg_count - 1)->rest;
+            Span rest_span = span_null;
+            VecType rest_tuple = {0};
+
+            c_foreach(i, vec_expr, call->args) {
+                intptr_t index = i.ref - call->args.data;
+                Type arg_type = expr_get_type_and_typecheck(i.ref, errs);
+                if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
+                    if (!check_assignable_or_error_internal(
+                        "Argument of type",
+                        &arg_type,
+                        "parameter of type",
+                        &vec_callable_arg_at(&callable->args, index)->binding.type,
+                        2345,
+                        i.ref->span,
+                        errs
+                    )) {
+                        check_types_against_callable = false;
                     }
                     type_drop(&arg_type);
+                } else if (last_arg_rest) {
+                    rest_span = span_between(&rest_span, &i.ref->span);
+                    vec_type_push(&rest_tuple, arg_type);
+                } else {
+                    type_drop(&arg_type);
                 }
+            }
+
+            if (last_arg_rest) {
+                Type rest_type = type_tuple(rest_tuple);
+                if (check_types_against_callable) {
+                    check_assignable_or_error_internal(
+                        "Argument of type",
+                        &rest_type,
+                        "parameter of type",
+                        &vec_callable_arg_at(&callable->args, callable_arg_count - 1)->binding.type,
+                        2345,
+                        span_valid(&rest_span) ? rest_span : span,
+                        errs
+                    );
+                }
+                type_drop(&rest_type);
             }
 
             Type ret = type_clone(callable->ret);
@@ -937,16 +1003,16 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, i
         }
 
         case TYPE_INDEXED:
-            return type_typecheck_call(indexed_type_resolve(my indexed), call, errs, level);
+            return type_typecheck_call(indexed_type_resolve(my indexed), call, span, errs, level);
 
         case TYPE_TERNARY:
-            return type_typecheck_call(ternary_type_resolve(my ternary), call, errs, level);
+            return type_typecheck_call(ternary_type_resolve(my ternary), call, span, errs, level);
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
             Type ret = my tag == TYPE_UNION ? type_never : type_any;
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite(ret, type_typecheck_call(i.ref, call, errs, level), my tag);
+                ret = type_composite(ret, type_typecheck_call(i.ref, call, span, errs, level), my tag);
             }
             return ret;
         }

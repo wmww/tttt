@@ -2,19 +2,29 @@
 #include "generic.h"
 #include "binding.h"
 
+void callable_arg_drop(CallableArg* me) {
+    binding_drop(&my binding);
+}
+
+CallableArg callable_arg_clone(CallableArg me) {
+    return (CallableArg){
+        .binding = binding_clone(me.binding),
+        .optional = me.optional,
+        .explicit_optional = me.explicit_optional,
+        .rest = me.rest,
+    };
+}
+
 void callable_type_drop(CallableType* me) {
     generic_drop(&my generic);
-    vec_binding_drop(&my args);
+    vec_callable_arg_drop(&my args);
     type_drop(&my ret);
 }
 
 CallableType callable_type_clone(CallableType me) {
     return (CallableType){
         .generic = generic_clone(me.generic),
-        .args = vec_binding_clone(me.args),
-        .min_args = me.min_args,
-        .max_args = me.max_args,
-        .variadic = me.variadic,
+        .args = vec_callable_arg_clone(me.args),
         .ret_explicit = me.ret_explicit,
         .ret = type_clone(me.ret),
         .is_constructor = me.is_constructor,
@@ -24,11 +34,12 @@ CallableType callable_type_clone(CallableType me) {
 void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent) {
     cstr_append_generic_debug(target, &my generic, indent);
     cstr_append_sv(target, c_sv("("));
-    intptr_t args_size = vec_binding_size(&my args);
-    for (intptr_t i = 0; i < args_size; i++) {
-        Binding const* arg = vec_binding_at(&my args, i);
-        cstr_append_binding_debug(target, arg, i >= my min_args, indent);
-        if (i < args_size - 1) {
+    c_foreach(i, vec_callable_arg, my args) {
+        if (i.ref->rest) {
+            cstr_append_sv(target, c_sv("..."));
+        }
+        cstr_append_binding_debug(target, &i.ref->binding, i.ref->explicit_optional, indent);
+        if (i.ref != i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
     }
@@ -45,11 +56,12 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
     } else {
         cstr_append_generic_error_msg(target, &my generic);
         cstr_append_sv(target, c_sv("("));
-        intptr_t args_size = vec_binding_size(&my args);
-        for (intptr_t i = 0; i < args_size; i++) {
-            Binding const* arg = vec_binding_at(&my args, i);
-            cstr_append_binding_error_msg(target, arg, i >= my min_args);
-            if (i < args_size - 1) {
+        c_foreach(i, vec_callable_arg, my args) {
+            if (i.ref->rest) {
+                cstr_append_sv(target, c_sv("..."));
+            }
+            cstr_append_binding_error_msg(target, &i.ref->binding, i.ref->optional);
+            if (i.ref != i.end - 1) {
                 cstr_append_sv(target, c_sv(", "));
             }
         }
@@ -60,8 +72,8 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
 }
 
 void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_binding, my args) {
-        binding_resolve_names(i.ref, names, errs);
+    c_foreach(i, vec_callable_arg, my args) {
+        binding_resolve_names(&i.ref->binding, names, errs);
     }
     type_resolve_names(&my ret, names, errs);
 }

@@ -910,6 +910,16 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
                 Expr default_value;
                 const char* before_param = p.pos;
                 bool optional = false;
+                bool explicit_optional = false;
+                bool rest = false;
+                Span rest_span = span_null;
+                Anchor arg_start = span_start(&p);
+
+                if (hop_start(&p, "...")) {
+                    hop_whitespace(&p);
+                    rest = true;
+                    rest_span = span_end(arg_start);
+                }
 
                 if (!parse_binding_content(&p, &binding)) {
                     goto drop_and_fail;
@@ -918,44 +928,39 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
 
                 if (hop_char(&p, '?')) {
                     optional = true;
+                    explicit_optional = true;
                     hop_whitespace(&p);
                 }
 
                 if (parse_binding_type(&p, &binding)) {
-                    if (optional) {
+                    if (explicit_optional) {
                         binding.type = type_composite(binding.type, type_undefined, TYPE_UNION);
                     }
                     hop_whitespace(&p);
                 }
 
                 if (parse_initialization(&p, expr_ctx_null, &default_value)) {
-                    hop_whitespace(&p);
                     optional = true;
+                    hop_whitespace(&p);
                 } else {
                     default_value = expr_implicit_any_no_span;
                 }
 
-                if (vec_binding_empty(&type_ret->args) && binding.type_explicit) {
+                if (vec_callable_arg_empty(&type_ret->args) && binding.type_explicit) {
                     is_definitely_function = true;
                 }
 
-                vec_binding_push(&type_ret->args, binding);
-
-                type_ret->max_args = vec_binding_size(&type_ret->args);
-                if (!optional) {
-                    if (type_ret->min_args != type_ret->max_args - 1) {
-                        error_ctx_error(
-                            &p.errs,
-                            binding.content_span,
-                            1016,
-                            "A required parameter cannot follow an optional parameter."
-                        );
-                    }
-                    type_ret->min_args = type_ret->max_args;
-                }
+                vec_callable_arg_push(&type_ret->args, (CallableArg){
+                    .span = span_end(arg_start),
+                    .rest_span = rest_span,
+                    .binding = binding,
+                    .optional = optional,
+                    .explicit_optional = explicit_optional,
+                    .rest = rest,
+                });
 
                 if (func_ret) {
-                    while (vec_expr_size(&func_ret->arg_defaults) < vec_binding_size(&type_ret->args) - 1) {
+                    while (vec_expr_size(&func_ret->arg_defaults) < vec_callable_arg_size(&type_ret->args) - 1) {
                         vec_expr_push(&func_ret->arg_defaults, expr_implicit_any(span_from_pos(&p)));
                     }
                     vec_expr_push(&func_ret->arg_defaults, default_value);
@@ -1056,8 +1061,8 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     if (parse_function_args(&p, ret, &ret->type)) {
 
         is_definitely_function =
-            !vec_binding_empty(&ret->type.args) &&
-            vec_binding_at(&ret->type.args, 0)->type_explicit;
+            !vec_callable_arg_empty(&ret->type.args) &&
+            vec_callable_arg_at(&ret->type.args, 0)->binding.type_explicit;
 
     } else if (parse_identifier(&p, &lone_arg_name, &lone_arg_span)) {
         *ret = (FunctionImpl){0};
@@ -1068,9 +1073,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
             .identifier = cstr_clone(lone_arg_name),
             .content_span = lone_arg_span,
         };
-        vec_binding_push(&ret->type.args, binding);
-        ret->type.min_args = 1;
-        ret->type.max_args = 1;
+        vec_callable_arg_push(&ret->type.args, (CallableArg){ .binding = binding });
 
     } else {
         return parse_fail(&p);

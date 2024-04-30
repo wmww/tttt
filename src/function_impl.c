@@ -15,18 +15,18 @@ void function_impl_drop(FunctionImpl* me) {
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent) {
     cstr_append_generic_debug(target, &my type.generic, indent);
     cstr_append_sv(target, c_sv("("));
-    intptr_t arg_size = vec_binding_size(&my type.args);
-    for (intptr_t i = 0; i < arg_size; i++) {
-        if (my type.variadic && i == arg_size - 1) {
+    c_foreach(i, vec_callable_arg, my type.args) {
+        if (i.ref->rest) {
             cstr_append_sv(target, c_sv("..."));
         }
-        cstr_append_binding_debug(target, vec_binding_at(&my type.args, i), i >= my type.max_args, indent);
-        Expr const* default_arg = function_impl_arg_default_at(me, i);
+        cstr_append_binding_debug(target, &i.ref->binding, i.ref->explicit_optional, indent);
+        intptr_t index = i.ref - my type.args.data;
+        Expr const* default_arg = function_impl_arg_default_at(me, index);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
             cstr_append_sv(target, c_sv(" = "));
             cstr_append_expr_debug(target, default_arg, indent);
         }
-        if (i < arg_size - 1) {
+        if (i.ref != i.end - 1) {
             cstr_append_sv(target, c_sv(", "));
         }
     }
@@ -55,13 +55,13 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     name_stack_push_function_frame(names);
 
     // Loop through all arguments and add them to the namespace
-    c_foreach(i, vec_binding, my type.args) {
-        binding_add_names(i.ref, names, errs);
+    c_foreach(i, vec_callable_arg, my type.args) {
+        binding_add_names(&i.ref->binding, names, errs);
     }
 
     // Loop through all arguments and resolve names
-    c_foreach(i, vec_binding, my type.args) {
-        binding_resolve_names(i.ref, names, errs);
+    c_foreach(i, vec_callable_arg, my type.args) {
+        binding_resolve_names(&i.ref->binding, names, errs);
     }
 
     // Loop through all argument defaults and resolve names
@@ -81,15 +81,53 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
-    intptr_t arg_size = vec_binding_size(&my type.args);
-    for (intptr_t i = 0; i < arg_size; i++) {
-        Binding* binding = vec_binding_at_mut(&my type.args, i);
-        Expr const* default_arg = function_impl_arg_default_at(me, i);
-        if (!binding->type_explicit && default_arg->tag == EXPR_IMPLICIT_ANY) {
+    bool found_optional = false;
+    bool required_after_optional = false;
+    bool rest_not_last = false;
+
+    c_foreach(i, vec_callable_arg, my type.args) {
+        intptr_t index = i.ref - my type.args.data;
+        Expr const* default_arg = function_impl_arg_default_at(me, index);
+
+        if (i.ref->rest && i.ref != i.end - 1 && !rest_not_last) {
+            rest_not_last = true;
+            error_ctx_error(
+                errs,
+                i.ref->rest_span,
+                1014,
+                "A rest parameter must be last in a parameter list."
+            );
+        }
+
+        if (i.ref->rest) {
+        } else if (i.ref->explicit_optional) {
+            found_optional = true;
+        } else if (found_optional && default_arg->tag == EXPR_IMPLICIT_ANY && !required_after_optional) {
+            required_after_optional = true;
+            error_ctx_error(
+                errs,
+                i.ref->binding.content_span,
+                1016,
+                "A required parameter cannot follow an optional parameter."
+            );
+        }
+
+        if (!i.ref->binding.type_explicit && default_arg->tag == EXPR_IMPLICIT_ANY) {
             // TODO: only run this check in strict mode
-            binding_add_implicit_any_type_errors(binding, true, errs);
+            binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
         } else {
-            binding_set_assigned_type(binding, expr_get_type_and_typecheck(default_arg, errs), true, errs);
+            binding_set_assigned_type(&i.ref->binding, expr_get_type_and_typecheck(default_arg, errs), true, errs);
+        }
+
+        if (i.ref->rest) {
+            if (!type_extends_array(&i.ref->binding.type)) {
+                error_ctx_error(
+                    errs,
+                    i.ref->span,
+                    2370,
+                    "A rest parameter must be of an array type."
+                );
+            }
         }
     }
 

@@ -43,13 +43,13 @@ void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestC
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_compile_test_info(i.ref, scope, full, ctx);
+                binding_compile_test_info(i.ref, scope, i.ref->content_span, ctx);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_compile_test_info(&i.ref->target, scope, full, ctx);
+                binding_compile_test_info(&i.ref->target, scope, i.ref->target.content_span, ctx);
             }
             break;
     }
@@ -104,8 +104,8 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
         }   break;
 
         case TYPE_CALLABLE:
-            c_foreach(i, vec_binding, my callable->args) {
-                binding_compile_test_info(i.ref, span_null, span_null, ctx);
+            c_foreach(i, vec_callable_arg, my callable->args) {
+                binding_compile_test_info(&i.ref->binding, span_null, span_null, ctx);
             }
             type_compile_test_info(&my callable->ret, ctx);
             break;
@@ -152,13 +152,13 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
         type_drop(&t);
     }
     generic_compile_test_info(&my type.generic, ctx);
-    intptr_t arg_size = vec_binding_size(&my type.args);
+    intptr_t arg_size = vec_callable_arg_size(&my type.args);
     for (intptr_t i = 0; i < arg_size; i++) {
-        Binding* binding = vec_binding_at_mut(&my type.args, i);
+        CallableArg* arg = vec_callable_arg_at_mut(&my type.args, i);
         Expr const* default_arg = function_impl_arg_default_at(me, i);
-        binding_compile_test_info(binding, span_null, span_null, ctx);
+        binding_compile_test_info(&arg->binding, span_null, arg->span, ctx);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
-            expr_compile_test_info(default_arg, binding->tag != BINDING_ARRAY, ctx);
+            expr_compile_test_info(default_arg, arg->binding.tag != BINDING_ARRAY, ctx);
         }
     }
     if (my type.ret_explicit) {

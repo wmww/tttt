@@ -169,7 +169,7 @@ void type_simplify(Type* me);
 Type array_type_of(Type value);
 Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs);
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
-Type type_typecheck_call(Type const* me, CallExpr const* call, ErrorCtx* errs, int level);
+Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs, int level);
 
 #define i_key_class_names Type, type
 #define i_is_forward
