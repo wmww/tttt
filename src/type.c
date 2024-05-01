@@ -656,15 +656,7 @@ void type_simplify_internal(Type* me, int level) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_VALUE:
-            break;
-
         case TYPE_IDENTIFIER:
-            if (my identifier.type.get && !my identifier.generic_depth) {
-                Type tmp = type_clone(*my identifier.type.get->type);
-                type_drop(me);
-                *me = tmp;
-                type_simplify_internal(me, level + 1);
-            }
             break;
 
         case TYPE_CALLABLE:

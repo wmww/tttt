@@ -11558,7 +11558,7 @@ const baselines = {
     'excessPropertyErrorForFunctionTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyErrorsSuppressed': {
         errors: false,
@@ -28633,7 +28633,7 @@ const baselines = {
     'typeUsedAsValueError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeUsedAsValueError2': {
         errors: false,
