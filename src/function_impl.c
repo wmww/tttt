@@ -59,11 +59,6 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
         binding_add_names(&i.ref->binding, names, errs);
     }
 
-    // Loop through all arguments and resolve names
-    c_foreach(i, vec_callable_arg, my type.args) {
-        binding_resolve_names(&i.ref->binding, names, errs);
-    }
-
     // Loop through all argument defaults and resolve names
     c_foreach(i, vec_expr, my arg_defaults) {
         expr_resolve_names(i.ref, names, errs);

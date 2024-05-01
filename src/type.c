@@ -336,6 +336,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
                 result = name_stack_get_type(names, c_sv("any"), &generic_depth);
             }
             if (result) {
+                ASSERT(!my identifier.type.get);
                 my identifier.type = arc_named_type_clone(*result);
                 my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
             }
