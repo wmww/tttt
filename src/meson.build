@@ -6,6 +6,7 @@ core_files = files(
     'interface_member.c',
     'callable_type.c',
     'generic.c',
+    'identifier_type.c',
     'ternary_type.c',
     'indexed_type.c',
     'class_decl.c',

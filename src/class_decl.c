@@ -2,6 +2,7 @@
 #include "name_stack.h"
 #include "interface_member.h"
 #include "callable_type.h"
+#include "identifier_type.h"
 #include "error.h"
 
 void class_item_drop(ClassItem* me) {
@@ -270,12 +271,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
 
     type_drop(&my constructor_type.ret);
-    my constructor_type.ret = type_identifier_full(
-        cstr_clone(my name),
-        my name_span,
-        arc_named_type_clone(my type_ref),
-        vec_type_init()
-    );
+    my constructor_type.ret = type_identifier(c_new(IdentifierType, {
+        .name = cstr_clone(my name),
+        .span = my name_span,
+        .type = arc_named_type_clone(my type_ref),
+    }));
     my constructor_type.ret_explicit = true;
     my constructor_type.is_constructor = true;
     callable_type_get_wrapper(&my constructor_type);

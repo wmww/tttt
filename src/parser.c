@@ -4,6 +4,7 @@
 #include "interface_member.h"
 #include "src/span.h"
 #include "statement.h"
+#include "identifier_type.h"
 #include "ternary_type.h"
 #include "generic.h"
 #include "class_decl.h"
@@ -685,11 +686,14 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
     } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
-        *ret = type_identifier(parsed.name, parsed.span);
+        *ret = type_identifier(c_new(IdentifierType, {
+            .name = parsed.name,
+            .span = parsed.span,
+        }));
         hop_whitespace(&p);
         if (p.whitespace != WHITESPACE_NEWLINE) {
-            if (!parse_generic_params(&p, &ret->identifier.generic_params)) {
-                ret->identifier.generic_params = vec_type_init();
+            if (!parse_generic_params(&p, &ret->identifier->generic_params)) {
+                ret->identifier->generic_params = vec_type_init();
             }
         }
     } else if (parse_tuple(&p, &ret->tuple)){

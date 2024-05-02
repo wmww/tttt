@@ -10,6 +10,7 @@
 #include "block.h"
 #include "class_decl.h"
 #include "function_impl.h"
+#include "identifier_type.h"
 #include "callable_type.h"
 #include "indexed_type.h"
 #include "name_stack.h"
@@ -94,11 +95,11 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
         case TYPE_IDENTIFIER: {
             baseline_test_case_add_symbol(
                 ctx,
-                cstr_sv(&my identifier.name),
-                my identifier.span,
-                my identifier.type.get ? my identifier.type.get->name_span : span_null
+                cstr_sv(&my identifier->name),
+                my identifier->span,
+                my identifier->type.get ? my identifier->type.get->name_span : span_null
             );
-            c_foreach(i, vec_type, my identifier.generic_params) {
+            c_foreach(i, vec_type, my identifier->generic_params) {
                 type_compile_test_info(i.ref, ctx);
             }
         }   break;
@@ -193,7 +194,10 @@ void variable_statement_compile_test_info(VariableStatement* me, BaselineTestCas
 void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my full_span, my full_span);
-        Type t = type_identifier(cstr_clone(my name), my name_span);
+        Type t = type_identifier(c_new(IdentifierType, {
+            .name = cstr_clone(my name),
+            .span = my name_span,
+        }));
         baseline_test_case_add_type(ctx, my name_span, &t);
         type_drop(&t);
     }

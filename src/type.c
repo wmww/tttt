@@ -2,6 +2,7 @@
 #include "binding.h"
 #include "interface.h"
 #include "interface_member.h"
+#include "identifier_type.h"
 #include "ternary_type.h"
 #include "indexed_type.h"
 #include "callable_type.h"
@@ -95,9 +96,8 @@ void type_drop(Type* me) {
             break;
 
         case TYPE_IDENTIFIER:
-            cstr_drop(&my identifier.name);
-            arc_named_type_drop(&my identifier.type);
-            vec_type_drop(&my identifier.generic_params);
+            identifier_type_drop(my identifier);
+            free(my identifier);
             break;
 
         case TYPE_CALLABLE:
@@ -136,6 +136,28 @@ void type_drop(Type* me) {
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
+Type type_clone(Type me) {
+    switch (me.tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING: return me;
+        case TYPE_VALUE: return type_value(value_clone(me.value));
+        case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
+        case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
+        case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
+        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
+        case TYPE_TUPLE: return type_tuple(vec_type_clone(me.tuple));
+        case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
+        case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
+        case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
+    }
+    UNREACHABLE;
+}
+
 void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
     switch (my tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
@@ -146,23 +168,7 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
         case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
         case TYPE_VALUE: cstr_append_value_debug(target, &my value, indent); break;
-
-        case TYPE_IDENTIFIER:
-            cstr_append_sv(target, c_sv(CLR_TYPE));
-            cstr_append_s(target, my identifier.name);
-            cstr_append_sv(target, c_sv(CLR0));
-            if (!vec_type_empty(&my identifier.generic_params)) {
-                cstr_append_sv(target, c_sv("<"));
-                c_foreach(i, vec_type, my identifier.generic_params) {
-                    cstr_append_type_debug(target, i.ref, indent);
-                    if (i.ref != i.end - 1) {
-                        cstr_append_sv(target, c_sv(", "));
-                    }
-                }
-                cstr_append_sv(target, c_sv(">"));
-            }
-            break;
-
+        case TYPE_IDENTIFIER: cstr_append_identifier_type_debug(target, my identifier, indent); break;
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, my callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &my interface, indent); break;
 
@@ -209,21 +215,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_NUMBER: cstr_append_sv(target, c_sv("number")); break;
         case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
         case TYPE_VALUE: cstr_append_value_error_msg(target, &my value); break;
-
-        case TYPE_IDENTIFIER:
-            cstr_append_s(target, my identifier.name);
-            if (!vec_type_empty(&my identifier.generic_params)) {
-                cstr_append_sv(target, c_sv("<"));
-                c_foreach(i, vec_type, my identifier.generic_params) {
-                    cstr_append_type_error_msg(target, i.ref);
-                    if (i.ref != i.end - 1) {
-                        cstr_append_sv(target, c_sv(", "));
-                    }
-                }
-                cstr_append_sv(target, c_sv(">"));
-            }
-            break;
-
+        case TYPE_IDENTIFIER: cstr_append_identifier_type_error_msg(target, my identifier); break;
         case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, my callable); break;
         case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &my interface); break;
 
@@ -265,33 +257,6 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
     }
 }
 
-Type type_clone(Type me) {
-    switch (me.tag) {
-        case TYPE_ANY:
-        case TYPE_UNKNOWN:
-        case TYPE_NEVER:
-        case TYPE_VOID:
-        case TYPE_BOOLEAN:
-        case TYPE_NUMBER:
-        case TYPE_STRING: return me;
-        case TYPE_VALUE: return type_value(value_clone(me.value));
-        case TYPE_IDENTIFIER: return type_identifier_full(
-            cstr_clone(me.identifier.name),
-            me.identifier.span,
-            arc_named_type_clone(me.identifier.type),
-            vec_type_clone(me.identifier.generic_params)
-        );
-        case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
-        case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
-        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
-        case TYPE_TUPLE: return type_tuple(vec_type_clone(me.tuple));
-        case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
-        case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
-        case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
-    }
-    UNREACHABLE;
-}
-
 Generic* type_get_generic(Type const* me) {
     switch (my tag) {
         case TYPE_CALLABLE:
@@ -322,30 +287,8 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
         case TYPE_VALUE:
             break;
 
-        case TYPE_IDENTIFIER: {
-            ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name));
-            if (!result) {
-                error_ctx_error(
-                    errs,
-                    my identifier.span,
-                    2304,
-                    "Cannot find name '%s'.",
-                    cstr_str(&my identifier.name)
-                );
-                result = name_stack_get_type(names, c_sv("any"));
-            }
-            if (result) {
-                ASSERT(!my identifier.type.get);
-                my identifier.type = arc_named_type_clone(*result);
-            }
-            c_foreach(i, vec_type, my identifier.generic_params) {
-                type_resolve_names(i.ref, names, errs);
-            }
-        }   break;
-
-        case TYPE_CALLABLE:
-            callable_type_resolve_names(my callable, names, errs);
-            break;
+        case TYPE_IDENTIFIER: identifier_type_resolve_names(my identifier, names, errs); break;
+        case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
@@ -387,8 +330,8 @@ static Type const* type_resolve_internal(Type const* me, int level) {
         }
         switch (my tag) {
             case TYPE_IDENTIFIER:
-                if (my identifier.type.get) {
-                    me = my identifier.type.get->type;
+                if (my identifier->type.get) {
+                    me = my identifier->type.get->type;
                 } else {
                     me = &type_unknown;
                 }

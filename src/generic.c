@@ -6,6 +6,7 @@
 #include "callable_type.h"
 #include "interface.h"
 #include "interface_member.h"
+#include "identifier_type.h"
 #include "ternary_type.h"
 #include "expr.h"
 #include "error.h"
@@ -136,10 +137,10 @@ static void collect_generic_candidates(
             return;
 
         case TYPE_IDENTIFIER:
-            if (generic->identifier.type.get) {
+            if (generic->identifier->type.get) {
                 hmap_named_type_cptr_vec_type_value* result = hmap_named_type_cptr_vec_type_get_mut(
                     ctx.candidates,
-                    generic->identifier.type.get
+                    generic->identifier->type.get
                 );
                 if (result) {
                     vec_type_push(&result->second, type_clone(*arg));
@@ -224,10 +225,10 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
             return;
 
         case TYPE_IDENTIFIER:
-            if (my identifier.type.get) {
+            if (my identifier->type.get) {
                 hmap_named_type_cptr_vec_type_value* result = hmap_named_type_cptr_vec_type_get_mut(
                     ctx.candidates,
-                    my identifier.type.get
+                    my identifier->type.get
                 );
                 if (result) {
                     type_drop(me);

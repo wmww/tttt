@@ -4,6 +4,7 @@
 #include "value.h"
 #include "span.h"
 
+typedef struct IdentifierType IdentifierType;
 typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
 typedef struct CallableType CallableType;
@@ -38,12 +39,7 @@ typedef struct Type {
     } tag;
     union {
         Value value;
-        struct {
-            cstr name;
-            Span span;
-            ArcNamedType type;
-            VecType generic_params;
-        } identifier;
+        IdentifierType* identifier;
         CallableType* callable;
         Interface interface;
         Type* array;
@@ -73,26 +69,10 @@ static inline Type type_value(Value value) {
     };
 }
 
-static inline Type type_identifier(cstr identifier, Span span) {
+static inline Type type_identifier(IdentifierType* identifir) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
-        .identifier.name = identifier,
-        .identifier.span = span,
-    };
-}
-
-static inline Type type_identifier_full(
-    cstr identifier,
-    Span span,
-    ArcNamedType type,
-    VecType generic_params
-) {
-    return (Type){
-        .tag = TYPE_IDENTIFIER,
-        .identifier.name = identifier,
-        .identifier.span = span,
-        .identifier.type = type,
-        .identifier.generic_params = generic_params,
+        .identifier = identifir,
     };
 }
 
@@ -142,9 +122,9 @@ Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag);
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag);
 
 void type_drop(Type* me);
+Type type_clone(Type me);
 void cstr_append_type_debug(cstr* target, Type const* me, int indent);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
-Type type_clone(Type me);
 static inline Type type_move(Type* me) {
     Type ret = *me;
     my tag = TYPE_ANY;
