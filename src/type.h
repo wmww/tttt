@@ -158,7 +158,6 @@ bool type_extends(Type const* sub, Type const* super);
 bool type_extends_array(Type const* sub);
 void type_abstract_tuple_to_array(Type* me); // [number | string] -> (number | string)[]
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
-void type_simplify(Type* me);
 
 Type array_type_of(Type value);
 Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs);
