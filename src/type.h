@@ -154,6 +154,7 @@ static inline Type type_move(Type* me) {
 Generic* type_get_generic(Type const* me);
 
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs);
+Type const* type_resolve(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 bool type_extends_array(Type const* sub);
 void type_abstract_tuple_to_array(Type* me); // [number | string] -> (number | string)[]

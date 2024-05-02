@@ -6,7 +6,6 @@
 #include "indexed_type.h"
 #include "callable_type.h"
 #include "generic.h"
-#include "extends_conditional.h"
 #include "value.h"
 #include "name_stack.h"
 #include "error.h"
@@ -381,29 +380,51 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 }
 
 static Type const* type_resolve_internal(Type const* me, int level) {
-    if (level > 100) {
-        NONFATAL("Max type recursion depth exceeded");
-        return nullptr;
-    }
-    switch (my tag) {
-        case TYPE_INDEXED: return indexed_type_resolve(my indexed);
+    while (true) {
+        if (level > 100) {
+            NONFATAL("Max type recursion depth exceeded");
+            return &type_unknown;
+        }
+        switch (my tag) {
+            case TYPE_IDENTIFIER:
+                if (my identifier.type.get) {
+                    me = my identifier.type.get->type;
+                } else {
+                    me = &type_unknown;
+                }
+                break;
 
-        case TYPE_TERNARY:
-            if (type_extends_internal(&my ternary->conditional.MaybeSub, &my ternary->conditional.MaybeSuper, level)) {
-                return &my ternary->TrueType;
-            } else {
-                return &my ternary->FalseType;
-            }
+            case TYPE_INDEXED:
+                NONFATAL("Resolving index types not yet supported");
+                me = &type_any;
+                break;
 
-        default: return nullptr;
+            case TYPE_TERNARY:
+                if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, level)) {
+                    me = &my ternary->if_true;
+                } else {
+                    me = &my ternary->if_false;
+                }
+                break;
+
+            default:
+                return me;
+        }
+        level++;
     }
 }
 
+Type const* type_resolve(Type const* me) {
+    return type_resolve_internal(me, 0);
+}
+
 static bool type_extends_internal(Type const* sub, Type const* super, int level) {
-    if (level > 100) {
+    if (level > 12) {
         NONFATAL("Max type recursion depth exceeded");
-        return false;
+        return true;
     }
+    sub = type_resolve_internal(sub, level);
+    super = type_resolve_internal(super, level);
     if (sub == super) {
         return true;
     }
@@ -411,24 +432,14 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
         case TYPE_ANY: return true;
 
         case TYPE_IDENTIFIER:
-            if (sub->identifier.type.get) {
-                while (super->tag == TYPE_IDENTIFIER && super->identifier.type.get) {
-                    if (sub->identifier.type.get == super->identifier.type.get) {
-                        return true;
-                    }
-                    super = super->identifier.type.get->type;
-                }
-                return type_extends_internal(sub->identifier.type.get->type, super, level + 1);
-            }
-            return false;
-
-        case TYPE_INDEXED: return type_extends_internal(indexed_type_resolve(sub->indexed), super, level);
-        case TYPE_TERNARY: return type_extends_internal(ternary_type_resolve(sub->ternary), super, level);
+        case TYPE_INDEXED:
+        case TYPE_TERNARY:
+            UNREACHABLE; // Should be handled by resolve
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
             c_foreach(i, vec_type, sub->composite) {
-                if (!type_extends_internal(i.ref, super, level)) {
+                if (!type_extends_internal(i.ref, super, level + 1)) {
                     return false;
                 }
             }
@@ -463,12 +474,6 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
             }
             return value_strict_eq(&sub->value, &super->value);
 
-        case TYPE_IDENTIFIER:
-            if (super->identifier.type.get) {
-                return type_extends_internal(sub, super->identifier.type.get->type, level + 1);
-            }
-            return false;
-
         case TYPE_CALLABLE:
             if (sub->tag != TYPE_CALLABLE) {
                 return false;
@@ -482,13 +487,13 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
                 if (!type_extends_internal(
                     &vec_callable_arg_at(&super->callable->args, i)->binding.type,
                     &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
-                    level
+                    level + 1
                 )) {
                     return false;
                 }
             }
             // Order is not flipped for return
-            return type_extends_internal(&sub->callable->ret, &super->callable->ret, level);
+            return type_extends_internal(&sub->callable->ret, &super->callable->ret, level + 1);
 
         case TYPE_INTERFACE:
             if (sub->tag != TYPE_INTERFACE) {
@@ -498,7 +503,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
                 bool found = false;
                 c_foreach(j, vec_interface_member, sub->interface.members) {
                     if (cstr_eq(&i.ref->name, &j.ref->name)) {
-                        if (type_extends_internal(&j.ref->type, &i.ref->type, level)) {
+                        if (type_extends_internal(&j.ref->type, &i.ref->type, level + 1)) {
                             found = true;
                             break;
                         } else {
@@ -514,10 +519,10 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 
         case TYPE_ARRAY:
             if (sub->tag == TYPE_ARRAY) {
-                return type_extends_internal(sub->array, super->array, level);
+                return type_extends_internal(sub->array, super->array, level + 1);
             } else if (sub->tag == TYPE_TUPLE) {
                 c_foreach(i, vec_type, sub->tuple) {
-                    if (!type_extends_internal(i.ref, super->array, level)) {
+                    if (!type_extends_internal(i.ref, super->array, level + 1)) {
                         return false;
                     }
                 }
@@ -531,25 +536,24 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
                 return false;
             }
             for (intptr_t i = 0; i < vec_type_size(&super->tuple); i++) {
-                if (!type_extends_internal(vec_type_at(&sub->tuple, i), vec_type_at(&super->tuple, i), level)) {
+                if (!type_extends_internal(
+                    vec_type_at(&sub->tuple, i),
+                    vec_type_at(&super->tuple, i),
+                    level + 1)
+                ) {
                     return false;
                 }
             }
             return true;
 
+        case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
-        case TYPE_TERNARY: {
-            Type const* resolved = type_resolve_internal(super, level);
-            if (resolved) {
-                return type_extends_internal(sub, resolved, level);
-            } else {
-                return false;
-            }
-        }
+        case TYPE_TERNARY:
+            UNREACHABLE; // Should be handled by resolve
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
-                if (type_extends_internal(sub, i.ref, level)) {
+                if (type_extends_internal(sub, i.ref, level + 1)) {
                     return true;
                 }
             }
@@ -557,7 +561,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, super->composite) {
-                if (!type_extends_internal(sub, i.ref, level)) {
+                if (!type_extends_internal(sub, i.ref, level + 1)) {
                     return false;
                 }
             }
@@ -827,16 +831,12 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         NONFATAL("Max type recursion depth exceeeded");
         return type_never;
     }
+
+    me = type_resolve_internal(me, level);
+
     switch (my tag) {
         case TYPE_ANY:
             return type_any;
-
-        case TYPE_IDENTIFIER:
-            if (my identifier.type.get) {
-                return type_typecheck_call(my identifier.type.get->type, call, span, errs, level + 1);
-            } else {
-                return type_any;
-            }
 
         case TYPE_CALLABLE: {
             CallableType inferred = {0};
@@ -952,11 +952,10 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             return ret;
         }
 
+        case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
-            return type_typecheck_call(indexed_type_resolve(my indexed), call, span, errs, level);
-
         case TYPE_TERNARY:
-            return type_typecheck_call(ternary_type_resolve(my ternary), call, span, errs, level);
+            UNREACHABLE; // Should be handled by resolve
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: {

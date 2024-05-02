@@ -15986,7 +15986,7 @@ const baselines = {
         types: false,
     },
     'infinitelyExpandingBaseTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20306,7 +20306,7 @@ const baselines = {
         types: false,
     },
     'mutrec': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24346,7 +24346,7 @@ const baselines = {
         types: false,
     },
     'recursiveIdenticalAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24446,12 +24446,12 @@ const baselines = {
         types: false,
     },
     'recursiveTupleTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'recursiveTupleTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25406,7 +25406,7 @@ const baselines = {
         types: false,
     },
     'signatureInstantiationWithRecursiveConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28296,7 +28296,7 @@ const baselines = {
         types: false,
     },
     'typeParameterConstrainedToOuterTypeParameter2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

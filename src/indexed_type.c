@@ -30,9 +30,3 @@ void indexed_type_resolve_names(IndexedType* me, NameStack* names, ErrorCtx* err
     type_resolve_names(&my interface, names, errs);
     type_resolve_names(&my index, names, errs);
 }
-
-Type const* indexed_type_resolve(IndexedType* me) {
-    (void)me;
-    NONFATAL("Resolving index types not yet supported");
-    return &type_any;
-}

@@ -3,7 +3,6 @@ core_files = files(
     'span.c',
     'interface.c',
     'type.c',
-    'extends_conditional.c',
     'interface_member.c',
     'callable_type.c',
     'generic.c',

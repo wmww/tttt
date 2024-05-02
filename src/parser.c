@@ -10,7 +10,6 @@
 #include "callable_type.h"
 #include "indexed_type.h"
 #include "as_type_expr.h"
-#include "extends_conditional.h"
 #include "type.h"
 #include "error.h"
 
@@ -525,16 +524,16 @@ static bool parse_generic_params(Parser* parent, VecType* ret) {
 
 static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     Parser p = parser(parent);
-    Type MaybeSuper = {0};
-    Type TrueType = {0};
-    Type FalseType = {0};
+    Type maybe_super = {0};
+    Type if_true = {0};
+    Type if_false = {0};
 
     if (!hop_start_if_ends_on_word_break(&p, "extends")) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
-    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &MaybeSuper);
+    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &maybe_super);
     hop_whitespace(&p);
 
     if (!hop_char(&p, '?')) {
@@ -542,7 +541,7 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     }
     hop_whitespace(&p);
 
-    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &TrueType);
+    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_true);
     hop_whitespace(&p);
 
     if (!hop_char(&p, ':')) {
@@ -550,15 +549,13 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     }
     hop_whitespace(&p);
 
-    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &FalseType);
+    parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_false);
 
     *left_and_ret = type_ternary(c_new(TernaryType, {
-        .conditional = (ExtendsConditional){
-            .MaybeSub = *left_and_ret,
-            .MaybeSuper = MaybeSuper,
-        },
-        .TrueType = TrueType,
-        .FalseType = FalseType,
+        .maybe_sub = *left_and_ret,
+        .maybe_super = maybe_super,
+        .if_true = if_true,
+        .if_false = if_false,
     }));
     return parse_success(&p);
 }

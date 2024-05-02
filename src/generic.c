@@ -7,7 +7,6 @@
 #include "interface.h"
 #include "interface_member.h"
 #include "ternary_type.h"
-#include "extends_conditional.h"
 #include "expr.h"
 #include "error.h"
 
@@ -123,19 +122,7 @@ static void collect_generic_candidates(
     Type const* arg,
     TraverseCtx ctx
 ) {
-    switch (arg->tag) {
-        case TYPE_IDENTIFIER:
-            if (arg->identifier.type.get) {
-                collect_generic_candidates(generic, arg->identifier.type.get->type, ctx);
-            }
-            return;
-
-        case TYPE_TERNARY:
-            collect_generic_candidates(generic, ternary_type_resolve(arg->ternary), ctx);
-            return;
-
-        default: break;
-    }
+    arg = type_resolve(arg);
 
     switch (generic->tag) {
         case TYPE_ANY:
@@ -279,10 +266,10 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
             return;
 
         case TYPE_TERNARY:
-            swap_generics_for_specific_types(&my ternary->conditional.MaybeSub, ctx);
-            swap_generics_for_specific_types(&my ternary->conditional.MaybeSuper, ctx);
-            swap_generics_for_specific_types(&my ternary->TrueType, ctx);
-            swap_generics_for_specific_types(&my ternary->FalseType, ctx);
+            swap_generics_for_specific_types(&my ternary->maybe_sub, ctx);
+            swap_generics_for_specific_types(&my ternary->maybe_super, ctx);
+            swap_generics_for_specific_types(&my ternary->if_true, ctx);
+            swap_generics_for_specific_types(&my ternary->if_false, ctx);
             return;
 
         case TYPE_UNION:
