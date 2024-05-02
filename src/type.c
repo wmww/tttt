@@ -22,6 +22,8 @@ const Type type_string = { .tag = TYPE_STRING };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
+static bool type_extends_internal(Type const* sub, Type const* super, int level);
+
 Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag) {
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
@@ -278,7 +280,6 @@ Type type_clone(Type me) {
             cstr_clone(me.identifier.name),
             me.identifier.span,
             arc_named_type_clone(me.identifier.type),
-            me.identifier.generic_depth,
             vec_type_clone(me.identifier.generic_params)
         );
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
@@ -323,8 +324,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_IDENTIFIER: {
-            int generic_depth;
-            ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name), &generic_depth);
+            ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier.name));
             if (!result) {
                 error_ctx_error(
                     errs,
@@ -333,12 +333,11 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
                     "Cannot find name '%s'.",
                     cstr_str(&my identifier.name)
                 );
-                result = name_stack_get_type(names, c_sv("any"), &generic_depth);
+                result = name_stack_get_type(names, c_sv("any"));
             }
             if (result) {
                 ASSERT(!my identifier.type.get);
                 my identifier.type = arc_named_type_clone(*result);
-                my identifier.generic_depth = result->get->is_generic ? generic_depth : 0;
             }
             c_foreach(i, vec_type, my identifier.generic_params) {
                 type_resolve_names(i.ref, names, errs);
@@ -381,10 +380,32 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
+static Type const* type_resolve_internal(Type const* me, int level) {
+    if (level > 100) {
+        NONFATAL("Max type recursion depth exceeded");
+        return nullptr;
+    }
+    switch (my tag) {
+        case TYPE_INDEXED: return indexed_type_resolve(my indexed);
+
+        case TYPE_TERNARY:
+            if (type_extends_internal(&my ternary->conditional.MaybeSub, &my ternary->conditional.MaybeSuper, level)) {
+                return &my ternary->TrueType;
+            } else {
+                return &my ternary->FalseType;
+            }
+
+        default: return nullptr;
+    }
+}
+
 static bool type_extends_internal(Type const* sub, Type const* super, int level) {
     if (level > 100) {
         NONFATAL("Max type recursion depth exceeded");
         return false;
+    }
+    if (sub == super) {
+        return true;
     }
     switch (sub->tag) {
         case TYPE_ANY: return true;
@@ -516,8 +537,15 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
             }
             return true;
 
-        case TYPE_INDEXED: return type_extends_internal(sub, indexed_type_resolve(super->indexed), level);
-        case TYPE_TERNARY: return type_extends_internal(sub, ternary_type_resolve(super->ternary), level);
+        case TYPE_INDEXED:
+        case TYPE_TERNARY: {
+            Type const* resolved = type_resolve_internal(super, level);
+            if (resolved) {
+                return type_extends_internal(sub, resolved, level);
+            } else {
+                return false;
+            }
+        }
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {

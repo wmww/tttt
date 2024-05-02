@@ -98,7 +98,7 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_push_generic_frame(names, &my generic, errs);
 
-    ArcNamedType const* type_ref = name_stack_get_type(names, cstr_sv(&my name), nullptr);
+    ArcNamedType const* type_ref = name_stack_get_type(names, cstr_sv(&my name));
     if (type_ref) {
         my type_ref = arc_named_type_clone(*type_ref);
     } else {
@@ -274,7 +274,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         cstr_clone(my name),
         my name_span,
         arc_named_type_clone(my type_ref),
-        0,
         vec_type_init()
     );
     my constructor_type.ret_explicit = true;

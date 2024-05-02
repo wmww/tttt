@@ -302,7 +302,7 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             ArcNamedVariable const* var = name_stack_get_variable(names, cstr_sv(&my identifier.name));
             if (var) {
                 my identifier.var = arc_named_variable_clone(*var);
-            } else if (name_stack_get_type(names, cstr_sv(&my identifier.name), nullptr)) {
+            } else if (name_stack_get_type(names, cstr_sv(&my identifier.name))) {
                 error_ctx_error(
                     errs, my span, 2693,
                     "'%s' only refers to a type, but is being used as a value here.",

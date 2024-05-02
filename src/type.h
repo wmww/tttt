@@ -42,10 +42,6 @@ typedef struct Type {
             cstr name;
             Span span;
             ArcNamedType type;
-            // 0: this identifier is not a generic item
-            // 1: this identifier is the generic_indexth item of the first generic above this type
-            // 2+: there are generics between this type and the generic it is an item of
-            int generic_depth;
             VecType generic_params;
         } identifier;
         CallableType* callable;
@@ -89,7 +85,6 @@ static inline Type type_identifier_full(
     cstr identifier,
     Span span,
     ArcNamedType type,
-    int generic_depth,
     VecType generic_params
 ) {
     return (Type){
@@ -97,7 +92,6 @@ static inline Type type_identifier_full(
         .identifier.name = identifier,
         .identifier.span = span,
         .identifier.type = type,
-        .identifier.generic_depth = generic_depth,
         .identifier.generic_params = generic_params,
     };
 }
