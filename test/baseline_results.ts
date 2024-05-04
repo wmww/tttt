@@ -1822,7 +1822,7 @@ const baselines = {
     },
     'assignmentToAnyArrayRestParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignmentToExpandingArrayType': {
@@ -27632,7 +27632,7 @@ const baselines = {
     },
     'topFunctionTypeNotCallable': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'topLevel': {
@@ -29202,7 +29202,7 @@ const baselines = {
     },
     'unmatchedParameterPositions': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unmetTypeConstraintInImportCall': {
@@ -29222,7 +29222,7 @@ const baselines = {
     },
     'unparenthesizedFunctionTypeInUnionOrIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unqualifiedCallToClassStatic1': {
@@ -42127,7 +42127,7 @@ const baselines = {
     },
     'comparisonOperatorWithSubtypeObjectOnCallSignature': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'comparisonOperatorWithSubtypeObjectOnConstructorSignature': {
@@ -57072,7 +57072,7 @@ const baselines = {
     },
     'assignmentCompatWithCallSignaturesWithRestParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignmentCompatWithConstructSignatures': {
@@ -58372,7 +58372,7 @@ const baselines = {
     },
     'unionTypeCallSignatures4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unionTypeCallSignatures5': {
