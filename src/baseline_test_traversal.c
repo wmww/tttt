@@ -13,6 +13,7 @@
 #include "identifier_type.h"
 #include "callable_type.h"
 #include "indexed_type.h"
+#include "ternary_type.h"
 #include "name_stack.h"
 
 void generic_compile_test_info(Generic* me, BaselineTestCase* ctx) {
@@ -93,6 +94,9 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER: {
+            if (cstr_equals(&my identifier->name, "object")) {
+                break;
+            }
             baseline_test_case_add_symbol(
                 ctx,
                 cstr_sv(&my identifier->name),
@@ -128,7 +132,12 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
             type_compile_test_info(&my indexed->index, ctx);
             break;
 
-        case TYPE_TERNARY: break;
+        case TYPE_TERNARY:
+            type_compile_test_info(&my ternary->maybe_sub, ctx);
+            type_compile_test_info(&my ternary->maybe_super, ctx);
+            type_compile_test_info(&my ternary->if_true, ctx);
+            type_compile_test_info(&my ternary->if_false, ctx);
+            break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:

@@ -422,7 +422,7 @@ const baselines = {
     },
     'aliasOfGenericFunctionWithRestBehavedSameAsUnaliased': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'aliasOnMergedModuleInterface': {
@@ -8542,7 +8542,7 @@ const baselines = {
     },
     'deeplyNestedConditionalTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'deeplyNestedConstraints': {
@@ -9072,7 +9072,7 @@ const baselines = {
     },
     'discriminateObjectTypesOnly': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'discriminateWithDivergentAccessors1': {
@@ -9132,7 +9132,7 @@ const baselines = {
     },
     'distributiveConditionalTypeNeverIntersection1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'divergentAccessors1': {
@@ -11547,7 +11547,7 @@ const baselines = {
     },
     'excessPropertyCheckingIntersectionWithConditional': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'excessPropertyChecksWithNestedIntersections': {
@@ -14362,7 +14362,7 @@ const baselines = {
     },
     'genericWithNoConstraintComparableWithCurlyCurly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericWithOpenTypeParameters1': {
@@ -14697,7 +14697,7 @@ const baselines = {
     },
     'implementClausePrecedingExtends': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'implementGenericWithMismatchedTypes': {
@@ -15297,7 +15297,7 @@ const baselines = {
     },
     'inDoesNotOperateOnPrimitiveTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inKeywordAndIntersection': {
@@ -20482,7 +20482,7 @@ const baselines = {
     },
     'narrowByEquality': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'narrowByInstanceof': {
@@ -24222,12 +24222,12 @@ const baselines = {
     },
     'recursiveConditionalCrash1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveConditionalCrash2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveConditionalCrash3': {
@@ -24242,7 +24242,7 @@ const baselines = {
     },
     'recursiveConditionalEvaluationNonInfinite': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveConditionalTypes': {
@@ -26602,7 +26602,7 @@ const baselines = {
     },
     'substitutionTypeForIndexedAccessType2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'substitutionTypeForNonGenericIndexedAccessType': {
@@ -48542,7 +48542,7 @@ const baselines = {
     },
     'parserClassDeclaration3': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'parserClassDeclaration4': {
@@ -55332,7 +55332,7 @@ const baselines = {
     },
     'assignObjectToNonPrimitive': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonPrimitiveAccessProperty': {
@@ -55352,7 +55352,7 @@ const baselines = {
     },
     'nonPrimitiveAsProperty': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonPrimitiveAssignError': {
@@ -55367,7 +55367,7 @@ const baselines = {
     },
     'nonPrimitiveInFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonPrimitiveInGeneric': {
@@ -55377,17 +55377,17 @@ const baselines = {
     },
     'nonPrimitiveIndexingWithForIn': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonPrimitiveIndexingWithForInNoImplicitAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonPrimitiveIndexingWithForInSupressError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonPrimitiveNarrow': {
@@ -55397,7 +55397,7 @@ const baselines = {
     },
     'nonPrimitiveRhsSideOfInExpression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonPrimitiveStrictNull': {
@@ -55407,7 +55407,7 @@ const baselines = {
     },
     'nonPrimitiveUnionIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callSignatureWithOptionalParameterAndInitializer': {
