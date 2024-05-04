@@ -16,7 +16,7 @@
 #include "ternary_type.h"
 #include "name_stack.h"
 
-void generic_compile_test_info(Generic* me, BaselineTestCase* ctx) {
+void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
         baseline_test_case_add_symbol(ctx, cstr_sv(&i.ref->name), i.ref->name_span, i.ref->name_span);
         type_compile_test_info(&i.ref->extends, ctx);
@@ -26,7 +26,7 @@ void generic_compile_test_info(Generic* me, BaselineTestCase* ctx) {
     }
 }
 
-void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestCase* ctx) {
+void binding_compile_test_info(Binding const* me, Span scope, Span full, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
             baseline_test_case_add_type(ctx, my content_span, &type_undefined);
@@ -60,14 +60,14 @@ void binding_compile_test_info(Binding* me, Span scope, Span full, BaselineTestC
     }
 }
 
-void initialized_binding_compile_test_info(InitializedBinding* me, Span scope, Span full, BaselineTestCase* ctx) {
+void initialized_binding_compile_test_info(InitializedBinding const* me, Span scope, Span full, BaselineTestCase* ctx) {
     binding_compile_test_info(&my binding, scope, full, ctx);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
         expr_compile_test_info(&my value, my binding.tag != BINDING_ARRAY, ctx);
     }
 }
 
-void interface_compile_test_info(Interface* me, Span scope, BaselineTestCase* ctx) {
+void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {
     c_foreach(i, vec_interface_member, my members) {
         baseline_test_case_add_symbol_with_scope(
             ctx,
@@ -81,7 +81,7 @@ void interface_compile_test_info(Interface* me, Span scope, BaselineTestCase* ct
     }
 }
 
-void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
+void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -148,7 +148,7 @@ void type_compile_test_info(Type* me, BaselineTestCase* ctx) {
     }
 }
 
-void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestCase* ctx) {
+void function_impl_compile_test_info(FunctionImpl const* me, Span scope, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol_with_scope(
             ctx,
@@ -164,7 +164,7 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
     generic_compile_test_info(&my type.generic, ctx);
     intptr_t arg_size = vec_callable_arg_size(&my type.args);
     for (intptr_t i = 0; i < arg_size; i++) {
-        CallableArg* arg = vec_callable_arg_at_mut(&my type.args, i);
+        CallableArg const* arg = vec_callable_arg_at(&my type.args, i);
         Expr const* default_arg = function_impl_arg_default_at(me, i);
         binding_compile_test_info(&arg->binding, span_null, arg->span, ctx);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
@@ -177,7 +177,7 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
     block_compile_test_info(&my body, ctx);
 }
 
-void name_init_compile_test_info(NameInitData* me, Span scope, Span full, BaselineTestCase* ctx) {
+void name_init_compile_test_info(NameInitData const* me, Span scope, Span full, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol_with_scope(
         ctx,
         span_sv(&scope),
@@ -194,13 +194,13 @@ void name_init_compile_test_info(NameInitData* me, Span scope, Span full, Baseli
     }
 }
 
-void variable_statement_compile_test_info(VariableStatement* me, BaselineTestCase* ctx) {
+void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
     }
 }
 
-void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
+void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my full_span, my full_span);
         Type t = type_identifier(c_new(IdentifierType, {
@@ -227,22 +227,16 @@ void class_decl_compile_test_info(ClassDecl* me, BaselineTestCase* ctx) {
     }
 }
 
-void type_decl_compile_test_info(TypeDecl* me, BaselineTestCase* ctx) {
+void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(
         ctx,
         cstr_sv(&my name),
         my name_span,
         my full_span
     );
-    Type t = type_clone(my type);
     if (!my is_interface) {
-        baseline_test_case_add_type(
-            ctx,
-            my name_span,
-            &t
-        );
+        baseline_test_case_add_type(ctx, my name_span, &my type);
     }
-    type_drop(&t);
     generic_compile_test_info(&my generic, ctx);
     if (my is_interface && my type.tag == TYPE_INTERFACE) {
         interface_compile_test_info(&my type.interface, my name_span, ctx);
@@ -372,7 +366,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
     type_drop(&t);
 }
 
-void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
+void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
@@ -394,9 +388,9 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             int cond_size = vec_expr_size(&my if_else.conditions);
             for (int i = 0; i < statement_size; i++) {
                 if (i < cond_size) {
-                    expr_compile_test_info(vec_expr_at_mut(&my if_else.conditions, i), true, ctx);
+                    expr_compile_test_info(vec_expr_at(&my if_else.conditions, i), true, ctx);
                 }
-                statement_compile_test_info(vec_statement_at_mut(&my if_else.statements, i), ctx);
+                statement_compile_test_info(vec_statement_at(&my if_else.statements, i), ctx);
             }
         }   break;
 
@@ -454,7 +448,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     }
 }
 
-void block_compile_test_info(Block* me, BaselineTestCase* ctx) {
+void block_compile_test_info(Block const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_statement, my statements) {
         statement_compile_test_info(i.ref, ctx);
     }
