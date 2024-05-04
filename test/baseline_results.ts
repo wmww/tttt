@@ -421,7 +421,7 @@ const baselines = {
         types: false,
     },
     'aliasOfGenericFunctionWithRestBehavedSameAsUnaliased': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -16001,7 +16001,7 @@ const baselines = {
         types: false,
     },
     'infinitelyExpandingTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

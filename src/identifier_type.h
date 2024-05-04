@@ -9,6 +9,7 @@ typedef struct IdentifierType {
     Span span;
     ArcNamedType type;
     VecType generic_params;
+    Type degenericized; // A copy of the type with the generic parameters swapped in
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);

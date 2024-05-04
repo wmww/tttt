@@ -304,6 +304,7 @@ BoxBaselineTestSuite load_baseline_test_suite(
         .has_filter = filter_re != nullptr,
         .filter = filter_re ? cregex_from(filter_re, CREG_ICASE) : cregex_init(),
     });
+    ASSERT(!ret.get->filter.error);
 
     printf(CLR_STATUS "Loading saved results...\n" CLR0);
     load_saved_results(ret.get, results_path);

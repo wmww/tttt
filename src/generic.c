@@ -11,6 +11,18 @@
 #include "expr.h"
 #include "error.h"
 
+typedef NamedType const* NamedTypeCPtr;
+#define i_key_names NamedTypeCPtr, named_type_cptr
+#define i_val_class_names VecType, vec_type
+#include "wrap_stc/hmap.h"
+
+typedef struct TraverseCtx {
+    HmapNamedTypeCPtrVecType* candidates;
+    ErrorCtx* errs;
+} TraverseCtx;
+
+static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx);
+
 void generic_item_drop(GenericItem* me) {
     cstr_drop(&my name);
     type_drop(&my extends);
@@ -98,18 +110,6 @@ void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
         type_resolve_names(&i.ref->fallback, names, errs);
     }
 }
-
-typedef NamedType const* NamedTypeCPtr;
-#define i_key_names NamedTypeCPtr, named_type_cptr
-#define i_val_class_names VecType, vec_type
-#include "wrap_stc/hmap.h"
-
-typedef struct TraverseCtx {
-    HmapNamedTypeCPtrVecType* candidates;
-    ErrorCtx* errs;
-} TraverseCtx;
-
-static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx);
 
 static inline TraverseCtx traverse_ctx_make(HmapNamedTypeCPtrVecType* candidates, ErrorCtx* errs) {
     return (TraverseCtx) {
@@ -281,6 +281,34 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
             return;
     }
     UNREACHABLE;
+}
+
+Type generic_degenericize_type(Generic const* me, Type t, VecType const* generic_params) {
+    HmapNamedTypeCPtrVecType candidates = {0};
+    c_foreach(i, vec_generic_item, my items) {
+        intptr_t index = i.ref - my items.data;
+        if (i.ref->type.get) {
+            hmap_named_type_cptr_vec_type_insert(
+                &candidates,
+                i.ref->type.get,
+                c_init(vec_type, {
+                    type_clone(*(
+                        index < vec_type_size(generic_params) ?
+                            vec_type_at(generic_params, index) :
+                            i.ref->type.get->type
+                    ))
+                })
+            );
+        } else {
+            NONFATAL("Generic %s type is null", cstr_str(&i.ref->name));
+        }
+    }
+    ErrorCtx null_ctx = {0};
+    swap_generics_for_specific_types(&t, traverse_ctx_make(&candidates, &null_ctx));
+    ASSERT(error_ctx_empty(&null_ctx));
+    error_ctx_drop(&null_ctx);
+    hmap_named_type_cptr_vec_type_drop(&candidates);
+    return t;
 }
 
 CallableType generic_infer_callable_types(

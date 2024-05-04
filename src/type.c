@@ -331,7 +331,18 @@ static Type const* type_resolve_internal(Type const* me, int level) {
         switch (my tag) {
             case TYPE_IDENTIFIER:
                 if (my identifier->type.get) {
-                    me = my identifier->type.get->type;
+                    if (vec_type_empty(&my identifier->generic_params)) {
+                        me = my identifier->type.get->type;
+                    } else {
+                        if (!my identifier->degenericized.tag && my identifier->type.get->generic) {
+                            my identifier->degenericized = generic_degenericize_type(
+                                my identifier->type.get->generic,
+                                type_clone(*my identifier->type.get->type),
+                                &my identifier->generic_params
+                            );
+                        }
+                        me = &my identifier->degenericized;
+                    }
                 } else {
                     me = &type_unknown;
                 }
@@ -366,8 +377,6 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
         NONFATAL("Max type recursion depth exceeded");
         return true;
     }
-    sub = type_resolve_internal(sub, level);
-    super = type_resolve_internal(super, level);
     if (sub == super) {
         return true;
     }
@@ -377,7 +386,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_TERNARY:
-            UNREACHABLE; // Should be handled by resolve
+            return type_extends_internal(type_resolve_internal(sub, level + 1), super, level + 1);
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
@@ -492,7 +501,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_TERNARY:
-            UNREACHABLE; // Should be handled by resolve
+            return type_extends_internal(sub, type_resolve_internal(super, level + 1), level + 1);
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {

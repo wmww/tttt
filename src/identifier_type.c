@@ -7,6 +7,7 @@ void identifier_type_drop(IdentifierType* me) {
     cstr_drop(&my name);
     arc_named_type_drop(&my type);
     vec_type_drop(&my generic_params);
+    type_drop(&my degenericized);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
@@ -14,7 +15,8 @@ IdentifierType identifier_type_clone(IdentifierType me) {
         .name =  cstr_clone(me.name),
         .span = me.span,
         .type = arc_named_type_clone(me.type),
-        .generic_params = vec_type_clone(me.generic_params)
+        .generic_params = vec_type_clone(me.generic_params),
+        .degenericized = type_clone(me.degenericized),
     };
 }
 
