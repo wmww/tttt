@@ -235,7 +235,29 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         my full_span
     );
     if (!my is_interface) {
-        baseline_test_case_add_type(ctx, my name_span, &my type);
+        Type to_drop = {0};
+        Type const* t = &my type;
+        if (generic_empty(&my generic)) {
+            if (my type.tag != TYPE_IDENTIFIER ||
+                (my type.identifier->type.get && !my type.identifier->type.get->is_class)
+            ) {
+                t = type_resolve(&my type);
+            }
+        } else {
+            to_drop = type_identifier(c_new(IdentifierType, {
+                .name = cstr_clone(my name),
+                .span = my name_span,
+            }));
+            c_foreach(i, vec_generic_item, my generic.items) {
+                vec_type_push(&to_drop.identifier->generic_params, type_identifier(c_new(IdentifierType, {
+                    .name = cstr_clone(i.ref->name),
+                    .span = i.ref->name_span,
+                })));
+            }
+            t = &to_drop;
+        }
+        baseline_test_case_add_type(ctx, my name_span, t);
+        type_drop(&to_drop);
     }
     generic_compile_test_info(&my generic, ctx);
     if (my is_interface && my type.tag == TYPE_INTERFACE) {

@@ -284,11 +284,13 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
 
         case TYPE_IDENTIFIER:
             if (my identifier->inferred) {
-                name_stack_add_generic_type(
+                name_stack_add_type(
                     names,
                     cstr_clone(my identifier->name),
                     my identifier->span,
-                    &my identifier->degenericized
+                    &my identifier->degenericized,
+                    nullptr,
+                    false
                 );
                 ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier->name));
                 ASSERT(result);
@@ -522,11 +524,11 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             if (vec_callable_arg_size(&sub->callable->args) != arg_count) {
                 return false;
             }
-            for (int i = 0; i < arg_count; i++) {
+            for (intptr_t i = 0; i < arg_count; i++) {
                 // Order is flipped for arguments
                 if (!type_extends_internal(
-                    &vec_callable_arg_at(&super->callable->args, i)->binding.type,
                     &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
+                    &vec_callable_arg_at(&super->callable->args, i)->binding.type,
                     refinements,
                     level + 1
                 )) {

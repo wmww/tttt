@@ -92,7 +92,7 @@ void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
 
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
-        if (!name_stack_add_generic_type(names, cstr_clone(i.ref->name), i.ref->name_span, &i.ref->extends)) {
+        if (!name_stack_add_type(names, cstr_clone(i.ref->name), i.ref->name_span, &i.ref->extends, nullptr, false)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple generics with same name");
         }

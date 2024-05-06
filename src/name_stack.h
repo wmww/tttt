@@ -20,6 +20,7 @@ typedef struct NamedType {
     Span name_span;
     Type const* type;
     Generic const* generic;
+    bool is_class;
 } NamedType;
 
 #define i_key_names NamedType, named_type
@@ -36,9 +37,14 @@ void name_stack_push_function_frame(NameStack* me);
 void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs);
 void name_stack_pop_frame(NameStack* me);
 bool name_stack_add_variable(NameStack* me, cstr name, Span decl_name_span, Type const* type);
-bool name_stack_add_type(NameStack* me, cstr name, Span decl_name_span, Type const* type);
-bool name_stack_add_generic_type(NameStack* me, cstr name, Span decl_name_span, Type const* type);
-bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span decl_name_span, Type const* type, Generic const* generic);
+bool name_stack_add_type(
+    NameStack* me,
+    cstr name,
+    Span decl_name_span,
+    Type const* type,
+    Generic const* generic,
+    bool is_class
+);
 bool name_stack_has_function(NameStack* me);
 ArcNamedVariable const* name_stack_get_variable(NameStack* me, csview name);
 ArcNamedType const* name_stack_get_type(NameStack* me, csview name);

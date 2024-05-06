@@ -421,7 +421,7 @@ const baselines = {
         types: false,
     },
     'aliasOfGenericFunctionWithRestBehavedSameAsUnaliased': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -7653,12 +7653,12 @@ const baselines = {
     'declarationEmitInferredTypeAlias8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredTypeAlias9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInferredUndefinedPropFromFunctionInArray': {
         errors: false,
@@ -8038,37 +8038,37 @@ const baselines = {
     'declarationEmitTypeAliasTypeParameterExtendingUnknownSymbol': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters4': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeParamMergedWithPrivate': {
         errors: true,
@@ -11548,7 +11548,7 @@ const baselines = {
     'excessPropertyCheckingIntersectionWithConditional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyChecksWithNestedIntersections': {
         errors: false,
@@ -14098,7 +14098,7 @@ const baselines = {
     'genericNumberIndex': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericObjectCreationWithoutTypeArgs': {
         errors: false,
@@ -15563,7 +15563,7 @@ const baselines = {
     'indexedAccessPrivateMemberOfGenericConstraint': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessRelation': {
         errors: false,
@@ -21698,7 +21698,7 @@ const baselines = {
     'nondistributiveConditionalTypeInfer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonexistentPropertyOnUnion': {
         errors: false,
@@ -27853,12 +27853,12 @@ const baselines = {
     'typeAliasDeclarationEmit': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAliasDeclarationEmit2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAliasDeclarationEmit3': {
         errors: true,
@@ -29958,7 +29958,7 @@ const baselines = {
     'unusedTypeParameters_infer': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unusedTypeParameters_templateTag': {
         errors: false,
@@ -54423,7 +54423,7 @@ const baselines = {
     'inferTypesInvalidExtendsDeclaration': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inferTypesWithExtends1': {
         errors: false,
@@ -54433,7 +54433,7 @@ const baselines = {
     'inferTypesWithExtends2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'variance': {
         errors: false,

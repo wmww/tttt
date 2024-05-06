@@ -6,6 +6,7 @@
 #include "string_helpers.h"
 #include "error.h"
 #include "block.h"
+#include "identifier_type.h"
 #include "parser.h"
 #include "name_stack.h"
 #include "value.h"
@@ -352,7 +353,13 @@ void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Typ
     cstr str = cstr_lit(">");
     append_span_contents_without_newlines(&str, span);
     cstr_append(&str, " : ");
-    cstr_append_type_error_msg(&str, type);
+    if (type->tag == TYPE_IDENTIFIER && type->identifier->inferred) {
+        // Do identifier types upport cstr_append_type_error_msg()? Yes, but inferred identifiers in ternaries include
+        // the inferred keyword, which the tests don't like.
+        cstr_append_sv(&str, span_sv(&type->identifier->span));
+    } else {
+        cstr_append_type_error_msg(&str, type);
+    }
     vec_line_numbered_str_push(&my detail.types, (LineNumberedStr){
         .line = line,
         .str = str,

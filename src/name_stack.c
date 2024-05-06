@@ -58,7 +58,7 @@ static inline void add_builtin_variable(NameStack* me, csview name, Type const* 
 }
 
 static inline void add_builtin_type(NameStack* me, csview name, Type const* type) {
-    name_stack_add_type(me, cstr_from_sv(name), span_null, type);
+    name_stack_add_type(me, cstr_from_sv(name), span_null, type, nullptr, false);
 }
 
 static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag) {
@@ -148,33 +148,7 @@ bool name_stack_add_variable(NameStack* me, cstr name, Span name_span, Type cons
     return result.inserted;
 }
 
-bool name_stack_add_type(NameStack* me, cstr name, Span name_span, Type const* type) {
-    hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
-        &vec_stack_frame_back(&my stack)->types,
-        name,
-        arc_named_type_make((NamedType){
-            .name_span = name_span,
-            .type = type,
-            .generic = nullptr,
-        })
-    );
-    return result.inserted;
-}
-
-bool name_stack_add_generic_type(NameStack* me, cstr name, Span name_span, Type const* type) {
-    hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
-        &vec_stack_frame_back(&my stack)->types,
-        name,
-        arc_named_type_make((NamedType){
-            .name_span = name_span,
-            .type = type,
-            .generic = nullptr,
-        })
-    );
-    return result.inserted;
-}
-
-bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span name_span, Type const* type, Generic const* generic) {
+bool name_stack_add_type(NameStack* me, cstr name, Span name_span, Type const* type, Generic const* generic, bool is_class) {
     hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
         &vec_stack_frame_back(&my stack)->types,
         name,
@@ -182,6 +156,7 @@ bool name_stack_add_type_with_generic(NameStack* me, cstr name, Span name_span, 
             .name_span = name_span,
             .type = type,
             .generic = generic,
+            .is_class = is_class,
         })
     );
     return result.inserted;
