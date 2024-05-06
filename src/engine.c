@@ -180,6 +180,13 @@ static Result MUST_USE engine_eval_inc_dec(
     return result_ok(value_number(num));
 }
 
+static Result MUST_USE engine_eval_typeof(Engine* me, Value const* value) {
+    (void)me;
+    (void)value;
+    NONFATAL("typeof not yet implemented");
+    return result_ok(value_string(cstr_lit("object")));
+}
+
 static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_expr) {
     TRY_THROW(value, engine_eval_expr(me, &op_expr->expr));
     Result res = result_ok_undefined;
@@ -192,6 +199,7 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
         case UNARY_OP_LEFT_MINUS_MINUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, -1, 0); break;
         case UNARY_OP_RIGHT_PLUS_PLUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 0, 1); break;
         case UNARY_OP_RIGHT_MINUS_MINUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 0, -1); break;
+        case UNARY_OP_TYPEOF: res = engine_eval_typeof(me, &value); break;
     }
     value_drop(&value);
     return res;

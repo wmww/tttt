@@ -209,6 +209,7 @@ typedef enum UnaryOp {
     UNARY_OP_LEFT_MINUS_MINUS,
     UNARY_OP_RIGHT_PLUS_PLUS = UNARY_OP_MIN_RIGHT_HAND_OP,
     UNARY_OP_RIGHT_MINUS_MINUS,
+    UNARY_OP_TYPEOF,
 } UnaryOp;
 
 czview unary_op_get_zv(UnaryOp op);

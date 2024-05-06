@@ -593,6 +593,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_LEFT_MINUS_MINUS: ret = type_number; break;
                 case UNARY_OP_RIGHT_PLUS_PLUS: ret = type_number; break;
                 case UNARY_OP_RIGHT_MINUS_MINUS: ret = type_number; break;
+                case UNARY_OP_TYPEOF: ret = type_string; break;
             }
             type_drop(&type);
             return ret;
@@ -728,6 +729,7 @@ czview unary_op_get_zv(UnaryOp op) {
         case UNARY_OP_LEFT_MINUS_MINUS: return c_zv("--");
         case UNARY_OP_RIGHT_PLUS_PLUS: return c_zv("++");
         case UNARY_OP_RIGHT_MINUS_MINUS: return c_zv("--");
+        case UNARY_OP_TYPEOF: return c_zv("typeof ");
     }
     NONFATAL("Invalid unary operator %d", op);
     return c_zv("<INVALID_OP>");

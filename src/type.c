@@ -246,14 +246,18 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, my ternary); break;
 
         case TYPE_UNION:
-        case TYPE_INTERSECTION:
+        case TYPE_INTERSECTION: {
+            bool first = true;
             c_foreach(i, vec_type, my composite) {
-                cstr_append_type_error_msg(target, i.ref);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
+                if (i.ref->tag != (my tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY)) {
+                    if (!first) {
+                        cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
+                    }
+                    first = false;
+                    cstr_append_type_error_msg(target, i.ref);
                 }
             }
-            break;
+        }   break;
     }
 }
 
@@ -450,6 +454,22 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                 }
                 vec_type_refinement_drop(&refinements);
             }   break;
+
+            case TYPE_UNION:
+            case TYPE_INTERSECTION: {
+                bool found = false;
+                c_foreach(i, vec_type, my composite) {
+                    if (i.ref->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
+                        me = i.ref;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return me;
+                }
+                break;
+            }
 
             default:
                 return me;

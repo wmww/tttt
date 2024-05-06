@@ -60,9 +60,9 @@ typedef struct Parser {
 
 typedef enum TypePrecedence {
     TYPE_PRECEDENCE_NULL = 0,
+    TYPE_PRECEDENCE_TERNARY,
     TYPE_PRECEDENCE_UNION,
     TYPE_PRECEDENCE_INTERSECTION,
-    TYPE_PRECEDENCE_TERNARY,
 } TypePrecedence;
 
 static bool hop_token(Parser* parent);
@@ -224,7 +224,8 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
     if (span_eq_str(&s, "return") ||
         span_eq_str(&s, "throw") ||
         span_eq_str(&s, "case") ||
-        span_eq_str(&s, "in")
+        span_eq_str(&s, "in") ||
+        span_eq_str(&s, "typeof")
     ) {
         return false; // TODO: check for all keywords efficiently
     }
@@ -538,7 +539,7 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     hop_whitespace(&p);
 
     if (!hop_char(&p, '?')) {
-        error_ctx_parse_error(&p.errs, "expected '?'");
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'?' expected.");
     }
     hop_whitespace(&p);
 
@@ -546,7 +547,7 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     hop_whitespace(&p);
 
     if (!hop_char(&p, ':')) {
-        error_ctx_parse_error(&p.errs, "expected ':'");
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
     }
     hop_whitespace(&p);
 
@@ -686,6 +687,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_string;
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
+    } else if (parse_function_args(&p, nullptr, &parsed.callable)) {
+        *ret = type_callable(c_new(CallableType, parsed.callable));
     } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
         hop_whitespace(&p);
         bool inferred = false;
@@ -720,8 +723,6 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }
     } else if (parse_tuple(&p, &ret->tuple)){
         ret->tag = TYPE_TUPLE;
-    } else if (parse_function_args(&p, nullptr, &parsed.callable)) {
-        *ret = type_callable(c_new(CallableType, parsed.callable));
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
@@ -734,8 +735,9 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }
     } else if (parse_interface(&p, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
+    } else if (*p.pos == '|' || *p.pos == '&') {
+        *ret = *p.pos == '|' ? type_never : type_any;
     } else {
-        error_ctx_parse_error(&p.errs, "did not find type");
         return parse_fail(&p);
     }
 
@@ -908,6 +910,12 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
     bool is_definitely_function = false;
 
     *type_ret = (CallableType){0};
+
+    if (!func_ret) {
+        if (hop_start(&p, "new")) {
+            hop_whitespace(&p);
+        }
+    }
 
     if (parse_generic_decl(&p, &type_ret->generic)) {
         hop_whitespace(&p);
@@ -1730,7 +1738,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
         }
         hop_whitespace(&p);
         if (*p.pos != ',' && *p.pos != ')') {
-            error_ctx_parse_error(&p.errs, "expected ',' or ')' in call");
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
         }
         bool first_comma = true;
         while (*p.pos == ',') {
@@ -1936,6 +1944,8 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
         *op = UNARY_OP_PLUS;
     } else if (hop_start(parent, "-")) {
         *op = UNARY_OP_MINUS;
+    } else if (hop_start(parent, "typeof")) {
+        *op = UNARY_OP_TYPEOF;
     } else {
         return false;
     }
@@ -2583,7 +2593,7 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     hop_whitespace(&p);
 
     if (!hop_start(&p, ")")) {
-        error_ctx_parse_error(&p.errs, "expected ')' after if condition");
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
     }
     hop_whitespace(&p);
 
