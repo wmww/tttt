@@ -39,10 +39,3 @@ void cstr_append_ternary_type_error_msg(cstr* target, TernaryType* me) {
     cstr_append_sv(target, c_sv(" : "));
     cstr_append_type_error_msg(target, &my if_false);
 }
-
-void ternary_type_resolve_names(TernaryType* me, NameStack* names, ErrorCtx* errs) {
-    type_resolve_names(&my maybe_sub, names, errs);
-    type_resolve_names(&my maybe_super, names, errs);
-    type_resolve_names(&my if_true, names, errs);
-    type_resolve_names(&my if_false, names, errs);
-}

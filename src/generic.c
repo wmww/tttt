@@ -16,13 +16,6 @@ typedef NamedType const* NamedTypeCPtr;
 #define i_val_class_names VecType, vec_type
 #include "wrap_stc/hmap.h"
 
-typedef struct TraverseCtx {
-    HmapNamedTypeCPtrVecType* candidates;
-    ErrorCtx* errs;
-} TraverseCtx;
-
-static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx);
-
 void generic_item_drop(GenericItem* me) {
     cstr_drop(&my name);
     type_drop(&my extends);
@@ -111,21 +104,15 @@ void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-static inline TraverseCtx traverse_ctx_make(HmapNamedTypeCPtrVecType* candidates, ErrorCtx* errs) {
-    return (TraverseCtx) {
-        .candidates = candidates,
-        .errs = errs,
-    };
-}
-
 static void collect_generic_candidates(
-    Type const* generic,
+    Type const* me,
     Type const* arg,
-    TraverseCtx ctx
+    VecTypeRefinement* results,
+    ErrorCtx* errs
 ) {
     arg = type_resolve(arg);
 
-    switch (generic->tag) {
+    switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
         case TYPE_NEVER:
@@ -137,56 +124,55 @@ static void collect_generic_candidates(
             return;
 
         case TYPE_IDENTIFIER:
-            if (generic->identifier->type.get) {
-                hmap_named_type_cptr_vec_type_value* result = hmap_named_type_cptr_vec_type_get_mut(
-                    ctx.candidates,
-                    generic->identifier->type.get
-                );
-                if (result) {
-                    vec_type_push(&result->second, type_clone(*arg));
+            if (my identifier->type.get) {
+                c_foreach(i, vec_type_refinement, *results) {
+                    if (i.ref->target == my identifier->type.get) {
+                        i.ref->refined = arg;
+                        break;
+                    }
                 }
             }
             return;
 
         case TYPE_CALLABLE:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with callable not yet implemented"
             );
             return;
 
         case TYPE_INTERFACE:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with interface not yet implemented"
             );
             return;
 
         case TYPE_ARRAY:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with array not yet implemented"
             );
             return;
 
         case TYPE_TUPLE:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with tuple not yet implemented"
             );
             return;
 
         case TYPE_INDEXED:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with index type not yet implemented"
             );
             return;
 
         case TYPE_TERNARY:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with ternary not yet implemented"
             );
             return;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            error_ctx_error(ctx.errs, span_null, TS_CODE_NONE,
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with union/intersection not yet implemented"
             );
             return;
@@ -194,24 +180,24 @@ static void collect_generic_candidates(
     UNREACHABLE;
 }
 
-static inline void generic_swap_generics_for_specific_types(Generic* me, TraverseCtx ctx) {
+static inline void generic_replace_named_types_with(Generic* me, VecTypeRefinement const* refinements) {
     c_foreach(i, vec_generic_item, my items) {
-        swap_generics_for_specific_types(&i.ref->extends, ctx);
-        swap_generics_for_specific_types(&i.ref->fallback, ctx);
+        replace_named_types_with(&i.ref->extends, refinements);
+        replace_named_types_with(&i.ref->fallback, refinements);
     }
 }
 
-static inline void callable_swap_generics_for_specific_types(CallableType* me, TraverseCtx ctx) {
+static inline void callable_replace_named_types_with(CallableType* me, VecTypeRefinement const* refinements) {
     c_foreach(i, vec_callable_arg, my args) {
-        swap_generics_for_specific_types(&i.ref->binding.type, ctx);
+        replace_named_types_with(&i.ref->binding.type, refinements);
     }
-    swap_generics_for_specific_types(&my ret, ctx);
+    replace_named_types_with(&my ret, refinements);
 }
 
-static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
+void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
     Generic* generic = type_get_generic(me);
     if (generic) {
-        generic_swap_generics_for_specific_types(generic, ctx);
+        generic_replace_named_types_with(generic, refinements);
     }
     switch (my tag) {
         case TYPE_ANY:
@@ -226,57 +212,56 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
 
         case TYPE_IDENTIFIER:
             if (my identifier->type.get) {
-                hmap_named_type_cptr_vec_type_value* result = hmap_named_type_cptr_vec_type_get_mut(
-                    ctx.candidates,
-                    my identifier->type.get
-                );
-                if (result) {
-                    type_drop(me);
-                    if (vec_type_empty(&result->second)) {
-                        *me = type_unknown;
-                    } else {
-                        *me = type_clone(*vec_type_at(&result->second, 0));
+                Type const* refinement = nullptr;
+                c_foreach(i, vec_type_refinement, *refinements) {
+                    if (i.ref->target == my identifier->type.get) {
+                        refinement = i.ref->refined;
+                        break;
                     }
+                }
+                if (refinement) {
+                    type_drop(me);
+                    *me = type_clone(*refinement);
                 }
             }
             return;
 
         case TYPE_CALLABLE:
-            callable_swap_generics_for_specific_types(my callable, ctx);
+            callable_replace_named_types_with(my callable, refinements);
             return;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                swap_generics_for_specific_types(&i.ref->type, ctx);
+                replace_named_types_with(&i.ref->type, refinements);
             }
             return;
 
         case TYPE_ARRAY:
-            swap_generics_for_specific_types(my array, ctx);
+            replace_named_types_with(my array, refinements);
             return;
 
         case TYPE_TUPLE:
             c_foreach(i, vec_type, my tuple) {
-                swap_generics_for_specific_types(i.ref, ctx);
+                replace_named_types_with(i.ref, refinements);
             }
             return;
 
         case TYPE_INDEXED:
-            swap_generics_for_specific_types(&my indexed->interface, ctx);
-            swap_generics_for_specific_types(&my indexed->index, ctx);
+            replace_named_types_with(&my indexed->interface, refinements);
+            replace_named_types_with(&my indexed->index, refinements);
             return;
 
         case TYPE_TERNARY:
-            swap_generics_for_specific_types(&my ternary->maybe_sub, ctx);
-            swap_generics_for_specific_types(&my ternary->maybe_super, ctx);
-            swap_generics_for_specific_types(&my ternary->if_true, ctx);
-            swap_generics_for_specific_types(&my ternary->if_false, ctx);
+            replace_named_types_with(&my ternary->maybe_sub, refinements);
+            replace_named_types_with(&my ternary->maybe_super, refinements);
+            replace_named_types_with(&my ternary->if_true, refinements);
+            replace_named_types_with(&my ternary->if_false, refinements);
             return;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                swap_generics_for_specific_types(i.ref, ctx);
+                replace_named_types_with(i.ref, refinements);
             }
             return;
     }
@@ -284,30 +269,22 @@ static void swap_generics_for_specific_types(Type* me, TraverseCtx ctx) {
 }
 
 Type generic_degenericize_type(Generic const* me, Type t, VecType const* generic_params) {
-    HmapNamedTypeCPtrVecType candidates = {0};
+    VecTypeRefinement refinements = vec_type_refinement_with_capacity(vec_generic_item_size(&my items));
     c_foreach(i, vec_generic_item, my items) {
         intptr_t index = i.ref - my items.data;
         if (i.ref->type.get) {
-            hmap_named_type_cptr_vec_type_insert(
-                &candidates,
-                i.ref->type.get,
-                c_init(vec_type, {
-                    type_clone(*(
-                        index < vec_type_size(generic_params) ?
-                            vec_type_at(generic_params, index) :
-                            i.ref->type.get->type
-                    ))
-                })
-            );
+            vec_type_refinement_push(&refinements, (TypeRefinement){
+                .target = i.ref->type.get,
+                .refined = index < vec_type_size(generic_params) ?
+                    vec_type_at(generic_params, index) :
+                    i.ref->type.get->type
+            });
         } else {
             NONFATAL("Generic %s type is null", cstr_str(&i.ref->name));
         }
     }
-    ErrorCtx null_ctx = {0};
-    swap_generics_for_specific_types(&t, traverse_ctx_make(&candidates, &null_ctx));
-    ASSERT(error_ctx_empty(&null_ctx));
-    error_ctx_drop(&null_ctx);
-    hmap_named_type_cptr_vec_type_drop(&candidates);
+    replace_named_types_with(&t, &refinements);
+    vec_type_refinement_drop(&refinements);
     return t;
 }
 
@@ -319,25 +296,35 @@ CallableType generic_infer_callable_types(
 ) {
     int call_arg_count = vec_expr_size(args);
     int callable_arg_count = vec_callable_arg_size(&callable->args);
-    HmapNamedTypeCPtrVecType candidates = {0};
+    VecTypeRefinement refinements = {0};
     c_foreach(i, vec_generic_item, my items) {
         if (i.ref->type.get) {
-            hmap_named_type_cptr_vec_type_insert(&candidates, i.ref->type.get, vec_type_init());
+            vec_type_refinement_push(&refinements, (TypeRefinement){
+                .target = i.ref->type.get,
+                .refined = nullptr,
+            });
         } else {
             NONFATAL("Generic %s type is null", cstr_str(&i.ref->name));
         }
     }
+    VecType arg_types = {0};
+    c_foreach(i, vec_expr, *args) {
+        vec_type_push(&arg_types, expr_get_type_and_typecheck(i.ref, errs));
+    }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
-        Type call_arg_type = expr_get_type_and_typecheck(vec_expr_at(args, i), errs);
         collect_generic_candidates(
             &vec_callable_arg_at(&callable->args, i)->binding.type,
-            &call_arg_type,
-            traverse_ctx_make(&candidates, errs)
+            vec_type_at(&arg_types, i),
+            &refinements,
+            errs
         );
-        type_drop(&call_arg_type);
     }
+
     CallableType ret = callable_type_clone(*callable);
-    callable_swap_generics_for_specific_types(&ret, traverse_ctx_make(&candidates, errs));
-    hmap_named_type_cptr_vec_type_drop(&candidates);
+    callable_replace_named_types_with(&ret, &refinements);
+
+    vec_type_refinement_drop(&refinements);
+    vec_type_drop(&arg_types);
+
     return ret;
 }

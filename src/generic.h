@@ -2,6 +2,14 @@
 
 #include "type.h"
 
+typedef struct TypeRefinement {
+    NamedType const* target;
+    Type const* refined;
+} TypeRefinement;
+
+#define i_key_names TypeRefinement, type_refinement
+#include "wrap_stc/vec.h"
+
 typedef struct vec_expr VecExpr;
 
 typedef struct GenericItem {
@@ -32,6 +40,7 @@ Generic generic_clone(Generic me);
 void cstr_append_generic_debug(cstr* target, Generic const* me, int indent);
 void cstr_append_generic_error_msg(cstr* target, Generic const* me);
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs);
+void replace_named_types_with(Type* t, VecTypeRefinement const* refinements);
 Type generic_degenericize_type(Generic const* me, Type t, VecType const* generic_params);
 CallableType generic_infer_callable_types(
     Generic const* me,

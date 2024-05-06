@@ -22,7 +22,7 @@ const Type type_string = { .tag = TYPE_STRING };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
-static bool type_extends_internal(Type const* sub, Type const* super, int level);
+static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level);
 
 Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag) {
     if (a.tag == tag && b.tag == tag) {
@@ -270,6 +270,80 @@ Generic* type_get_generic(Type const* me) {
     return nullptr;
 }
 
+static void type_add_inferred_names(Type* me, NameStack* names) {
+    switch (my tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_VALUE:
+            break;
+
+        case TYPE_IDENTIFIER:
+            if (my identifier->inferred) {
+                name_stack_add_generic_type(
+                    names,
+                    cstr_clone(my identifier->name),
+                    my identifier->span,
+                    &my identifier->degenericized
+                );
+                ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier->name));
+                ASSERT(result);
+                if (my identifier->type.get) {
+                    NONFATAL("Inferred identifier added multiple times");
+                    arc_named_type_drop(&my identifier->type);
+                }
+                my identifier->type = arc_named_type_clone(*result);
+            }
+            break;
+
+        case TYPE_CALLABLE:
+            c_foreach(i, vec_callable_arg, my callable->args) {
+                type_add_inferred_names(&i.ref->binding.type, names);
+            }
+            type_add_inferred_names(&my callable->ret, names);
+            break;
+
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_interface_member, my interface.members) {
+                type_add_inferred_names(&i.ref->type, names);
+            }
+            break;
+
+        case TYPE_ARRAY:
+            type_add_inferred_names(my array, names);
+            break;
+
+        case TYPE_TUPLE:
+            c_foreach(i, vec_type, my tuple) {
+                type_add_inferred_names(i.ref, names);
+            }
+            break;
+
+        case TYPE_INDEXED:
+            type_add_inferred_names(&my indexed->interface, names);
+            type_add_inferred_names(&my indexed->index, names);
+            break;
+
+        case TYPE_TERNARY:
+            type_add_inferred_names(&my ternary->maybe_sub, names);
+            type_add_inferred_names(&my ternary->maybe_super, names);
+            type_add_inferred_names(&my ternary->if_true, names);
+            type_add_inferred_names(&my ternary->if_false, names);
+            break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                type_add_inferred_names(i.ref, names);
+            }
+            break;
+    }
+}
+
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
     Generic* generic = type_get_generic(me);
     if (generic) {
@@ -307,7 +381,18 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_INDEXED: indexed_type_resolve_names(my indexed, names, errs); break;
-        case TYPE_TERNARY: ternary_type_resolve_names(my ternary, names, errs); break;
+
+        case TYPE_TERNARY:
+            type_resolve_names(&my ternary->maybe_sub, names, errs);
+            type_resolve_names(&my ternary->maybe_super, names, errs);
+
+            name_stack_push_block_frame(names);
+            type_add_inferred_names(&my ternary->maybe_super, names);
+            type_resolve_names(&my ternary->if_true, names, errs);
+            name_stack_pop_frame(names);
+
+            type_resolve_names(&my ternary->if_false, names, errs);
+            break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -353,13 +438,16 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                 me = &type_any;
                 break;
 
-            case TYPE_TERNARY:
-                if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, level)) {
+            case TYPE_TERNARY: {
+                VecTypeRefinement refinements = {0};
+                if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, &refinements, level)) {
+                    replace_named_types_with(&my ternary->if_true, &refinements);
                     me = &my ternary->if_true;
                 } else {
                     me = &my ternary->if_false;
                 }
-                break;
+                vec_type_refinement_drop(&refinements);
+            }   break;
 
             default:
                 return me;
@@ -372,7 +460,7 @@ Type const* type_resolve(Type const* me) {
     return type_resolve_internal(me, 0);
 }
 
-static bool type_extends_internal(Type const* sub, Type const* super, int level) {
+static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level) {
     if (level > 12) {
         NONFATAL("Max type recursion depth exceeded");
         return true;
@@ -386,12 +474,12 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_TERNARY:
-            return type_extends_internal(type_resolve_internal(sub, level + 1), super, level + 1);
+            return type_extends_internal(type_resolve_internal(sub, level + 1), super, refinements, level + 1);
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
             c_foreach(i, vec_type, sub->composite) {
-                if (!type_extends_internal(i.ref, super, level + 1)) {
+                if (!type_extends_internal(i.ref, super, refinements, level + 1)) {
                     return false;
                 }
             }
@@ -439,13 +527,14 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
                 if (!type_extends_internal(
                     &vec_callable_arg_at(&super->callable->args, i)->binding.type,
                     &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
+                    refinements,
                     level + 1
                 )) {
                     return false;
                 }
             }
             // Order is not flipped for return
-            return type_extends_internal(&sub->callable->ret, &super->callable->ret, level + 1);
+            return type_extends_internal(&sub->callable->ret, &super->callable->ret, refinements, level + 1);
 
         case TYPE_INTERFACE:
             if (sub->tag != TYPE_INTERFACE) {
@@ -455,7 +544,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
                 bool found = false;
                 c_foreach(j, vec_interface_member, sub->interface.members) {
                     if (cstr_eq(&i.ref->name, &j.ref->name)) {
-                        if (type_extends_internal(&j.ref->type, &i.ref->type, level + 1)) {
+                        if (type_extends_internal(&j.ref->type, &i.ref->type, refinements, level + 1)) {
                             found = true;
                             break;
                         } else {
@@ -471,10 +560,10 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 
         case TYPE_ARRAY:
             if (sub->tag == TYPE_ARRAY) {
-                return type_extends_internal(sub->array, super->array, level + 1);
+                return type_extends_internal(sub->array, super->array, refinements, level + 1);
             } else if (sub->tag == TYPE_TUPLE) {
                 c_foreach(i, vec_type, sub->tuple) {
-                    if (!type_extends_internal(i.ref, super->array, level + 1)) {
+                    if (!type_extends_internal(i.ref, super->array, refinements, level + 1)) {
                         return false;
                     }
                 }
@@ -491,21 +580,35 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
                 if (!type_extends_internal(
                     vec_type_at(&sub->tuple, i),
                     vec_type_at(&super->tuple, i),
-                    level + 1)
-                ) {
+                    refinements,
+                    level + 1
+                )) {
                     return false;
                 }
             }
             return true;
 
         case TYPE_IDENTIFIER:
+            if (refinements && super->identifier->inferred) {
+                if (type_extends_internal(sub, &super->identifier->degenericized, nullptr, level + 1)) {
+                    vec_type_refinement_push(refinements, (TypeRefinement){
+                        .target = super->identifier->type.get,
+                        .refined = sub,
+                    });
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            // fallthrough
+
         case TYPE_INDEXED:
         case TYPE_TERNARY:
-            return type_extends_internal(sub, type_resolve_internal(super, level + 1), level + 1);
+            return type_extends_internal(sub, type_resolve_internal(super, level + 1), refinements, level + 1);
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
-                if (type_extends_internal(sub, i.ref, level + 1)) {
+                if (type_extends_internal(sub, i.ref, refinements, level + 1)) {
                     return true;
                 }
             }
@@ -513,7 +616,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, super->composite) {
-                if (!type_extends_internal(sub, i.ref, level + 1)) {
+                if (!type_extends_internal(sub, i.ref, refinements, level + 1)) {
                     return false;
                 }
             }
@@ -523,7 +626,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, int level)
 }
 
 bool type_extends(Type const* sub, Type const* super) {
-    return type_extends_internal(sub, super, 0);
+    return type_extends_internal(sub, super, nullptr, 0);
 }
 
 bool type_extends_array(Type const* sub) {

@@ -17,10 +17,14 @@ IdentifierType identifier_type_clone(IdentifierType me) {
         .type = arc_named_type_clone(me.type),
         .generic_params = vec_type_clone(me.generic_params),
         .degenericized = type_clone(me.degenericized),
+        .inferred = me.inferred,
     };
 }
 
 void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int indent) {
+    if (my inferred) {
+        cstr_append_sv(target, c_sv("infer "));
+    }
     cstr_append_sv(target, c_sv(CLR_TYPE));
     cstr_append_s(target, my name);
     cstr_append_sv(target, c_sv(CLR0));
@@ -37,6 +41,9 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
 }
 
 void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
+    if (my inferred) {
+        cstr_append_sv(target, c_sv("infer "));
+    }
     cstr_append_s(target, my name);
     if (!vec_type_empty(&my generic_params)) {
         cstr_append_sv(target, c_sv("<"));
@@ -51,6 +58,9 @@ void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
 }
 
 void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
+    if (my inferred) {
+        return;
+    }
     ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my name));
     if (!result) {
         error_ctx_error(

@@ -665,6 +665,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         struct {
             Span span;
             cstr name;
+            Type type;
         };
         CallableType callable;
     } parsed;
@@ -686,11 +687,32 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
     } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
+        hop_whitespace(&p);
+        bool inferred = false;
+        parsed.type = (Type){0};
+        if (cstr_equals(&parsed.name, "infer")) {
+            inferred = true;
+            cstr_drop(&parsed.name);
+            if (!parse_identifier(&p, &parsed.name, &parsed.span)) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+                parsed.span = span_null;
+                parsed.name = cstr_null;
+            }
+            hop_whitespace(&p);
+            if (hop_start(&p, "extends")) {
+                hop_whitespace(&p);
+                if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &parsed.type)) {
+                    error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+                    parsed.type = (Type){0};
+                }
+            }
+        }
         *ret = type_identifier(c_new(IdentifierType, {
             .name = parsed.name,
             .span = parsed.span,
+            .inferred = inferred,
+            .degenericized = parsed.type,
         }));
-        hop_whitespace(&p);
         if (p.whitespace != WHITESPACE_NEWLINE) {
             if (!parse_generic_params(&p, &ret->identifier->generic_params)) {
                 ret->identifier->generic_params = vec_type_init();

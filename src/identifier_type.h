@@ -10,6 +10,7 @@ typedef struct IdentifierType {
     ArcNamedType type;
     VecType generic_params;
     Type degenericized; // A copy of the type with the generic parameters swapped in
+    bool inferred;
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);

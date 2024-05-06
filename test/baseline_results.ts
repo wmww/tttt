@@ -5201,7 +5201,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypeGenericInSignatureTypeParameterConstraint': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21696,8 +21696,8 @@ const baselines = {
         types: false,
     },
     'nondistributiveConditionalTypeInfer': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'nonexistentPropertyOnUnion': {
