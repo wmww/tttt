@@ -80,6 +80,17 @@ Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
     }
 }
 
+void composite_type_simplify(Type* me) {
+    ASSERT(my tag == TYPE_UNION || my tag == TYPE_INTERSECTION);
+    Type ret = my tag == TYPE_UNION ? type_never : type_any;
+    c_foreach(i, vec_type, my composite) {
+        ret = type_composite(ret, *i.ref, my tag);
+        *i.ref = type_any;
+    }
+    type_drop(me);
+    *me = ret;
+}
+
 void type_drop(Type* me) {
     switch (my tag) {
         case TYPE_ANY:
@@ -491,7 +502,17 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
         return true;
     }
     switch (sub->tag) {
-        case TYPE_ANY: return true;
+        case TYPE_ANY:
+            switch (super->tag) {
+                case TYPE_NEVER:
+                case TYPE_UNION:
+                case TYPE_INTERSECTION: break;
+                default: return true;
+            }
+            break;
+
+        case TYPE_NEVER:
+            return true;
 
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
@@ -515,6 +536,8 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             return true;
 
         case TYPE_UNKNOWN:
+            return sub->tag == TYPE_UNKNOWN;
+
         case TYPE_NEVER:
             return false;
 
@@ -748,6 +771,37 @@ void type_abstract_literals(Type* me) {
                 type_abstract_literals(i.ref);
             }
         }   break;
+    }
+}
+
+void type_remove_null_and_undefined(Type* me) {
+    Type const* resolved = type_resolve(me);
+    if (resolved != me) {
+        Type tmp = type_clone(*resolved);
+        type_drop(me);
+        *me = tmp;
+    }
+    switch (my tag) {
+        case TYPE_VALUE:
+            switch (my value.tag) {
+                case VALUE_UNDEFINED:
+                case VALUE_NULL:
+                    *me = type_never;
+                    break;
+
+                default: break;
+            }
+            break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                type_remove_null_and_undefined(i.ref);
+            }
+            composite_type_simplify(me);
+            break;
+
+        default: break;
     }
 }
 

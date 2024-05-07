@@ -585,7 +585,8 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
             Type ret = {0};
             switch (una->op) {
                 // TODO: add typechecking
-                case UNARY_OP_BANG: ret = type_boolean; break;
+                case UNARY_OP_LEFT_BANG: ret = type_boolean; break;
+                case UNARY_OP_TYPEOF: ret = type_string; break;
                 case UNARY_OP_TILDE: ret = type_number; break;
                 case UNARY_OP_PLUS: ret = type_number; break;
                 case UNARY_OP_MINUS: ret = type_number; break;
@@ -593,7 +594,11 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_LEFT_MINUS_MINUS: ret = type_number; break;
                 case UNARY_OP_RIGHT_PLUS_PLUS: ret = type_number; break;
                 case UNARY_OP_RIGHT_MINUS_MINUS: ret = type_number; break;
-                case UNARY_OP_TYPEOF: ret = type_string; break;
+                case UNARY_OP_RIGHT_BANG:
+                    type_remove_null_and_undefined(&type);
+                    ret = type;
+                    type = type_any;
+                    break;
             }
             type_drop(&type);
             return ret;
@@ -721,7 +726,8 @@ czview binary_op_get_zv(BinaryOp op) {
 
 czview unary_op_get_zv(UnaryOp op) {
     switch (op) {
-        case UNARY_OP_BANG: return c_zv("!");
+        case UNARY_OP_LEFT_BANG: return c_zv("!");
+        case UNARY_OP_TYPEOF: return c_zv("typeof ");
         case UNARY_OP_TILDE: return c_zv("~");
         case UNARY_OP_PLUS: return c_zv("+");
         case UNARY_OP_MINUS: return c_zv("-");
@@ -729,7 +735,7 @@ czview unary_op_get_zv(UnaryOp op) {
         case UNARY_OP_LEFT_MINUS_MINUS: return c_zv("--");
         case UNARY_OP_RIGHT_PLUS_PLUS: return c_zv("++");
         case UNARY_OP_RIGHT_MINUS_MINUS: return c_zv("--");
-        case UNARY_OP_TYPEOF: return c_zv("typeof ");
+        case UNARY_OP_RIGHT_BANG: return c_zv("!");
     }
     NONFATAL("Invalid unary operator %d", op);
     return c_zv("<INVALID_OP>");

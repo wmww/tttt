@@ -120,6 +120,7 @@ static inline Type type_ternary(TernaryType* ternary) {
 
 Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag);
 Type type_composite(Type a, Type b, typeof((Type){}.tag) tag);
+void composite_type_simplify(Type* me);
 
 void type_drop(Type* me);
 Type type_clone(Type me);
@@ -139,6 +140,7 @@ bool type_extends(Type const* sub, Type const* super);
 bool type_extends_array(Type const* sub);
 void type_abstract_tuple_to_array(Type* me); // [number | string] -> (number | string)[]
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
+void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 
 Type array_type_of(Type value);
 Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs);

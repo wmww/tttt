@@ -1774,6 +1774,12 @@ static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
         *op = UNARY_OP_RIGHT_PLUS_PLUS;
     } else if (hop_start(&p, "--")) {
         *op = UNARY_OP_RIGHT_MINUS_MINUS;
+    } else if (hop_start(&p, "!")) {
+        if (*p.pos == '=') {
+            return parse_fail(&p);
+        } else {
+            *op = UNARY_OP_RIGHT_BANG;
+        }
     } else {
         return parse_fail(&p);
     }
@@ -1942,7 +1948,9 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, BinaryOp* op, Expr
 
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
     if (hop_start(parent, "!")) {
-        *op = UNARY_OP_BANG;
+        *op = UNARY_OP_LEFT_BANG;
+    } else if (hop_start(parent, "typeof")) {
+        *op = UNARY_OP_TYPEOF;
     } else if (hop_start(parent, "~")) {
         *op = UNARY_OP_TILDE;
     } else if (hop_start(parent, "++")) {
@@ -1953,8 +1961,6 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
         *op = UNARY_OP_PLUS;
     } else if (hop_start(parent, "-")) {
         *op = UNARY_OP_MINUS;
-    } else if (hop_start(parent, "typeof")) {
-        *op = UNARY_OP_TYPEOF;
     } else {
         return false;
     }

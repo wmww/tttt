@@ -21646,7 +21646,7 @@ const baselines = {
         types: false,
     },
     'nonNullFullInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

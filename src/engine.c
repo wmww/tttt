@@ -191,7 +191,8 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
     TRY_THROW(value, engine_eval_expr(me, &op_expr->expr));
     Result res = result_ok_undefined;
     switch (op_expr->op) {
-        case UNARY_OP_BANG: res.value = value_boolean(!value_to_boolean(&value)); break;
+        case UNARY_OP_LEFT_BANG: res.value = value_boolean(!value_to_boolean(&value)); break;
+        case UNARY_OP_TYPEOF: res = engine_eval_typeof(me, &value); break;
         case UNARY_OP_TILDE: res.value = value_number(~(long)value_to_number(&value)); break;
         case UNARY_OP_PLUS: res.value = value_number(value_to_number(&value)); break;
         case UNARY_OP_MINUS: res.value = value_number(-value_to_number(&value)); break;
@@ -199,7 +200,7 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
         case UNARY_OP_LEFT_MINUS_MINUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, -1, 0); break;
         case UNARY_OP_RIGHT_PLUS_PLUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 0, 1); break;
         case UNARY_OP_RIGHT_MINUS_MINUS: res = engine_eval_inc_dec(me, &op_expr->expr, &value, 0, -1); break;
-        case UNARY_OP_TYPEOF: res = engine_eval_typeof(me, &value); break;
+        case UNARY_OP_RIGHT_BANG: res.value = value; value = value_undefined; break;
     }
     value_drop(&value);
     return res;
