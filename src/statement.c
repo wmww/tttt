@@ -99,6 +99,12 @@ void statement_drop(Statement* me) {
             free(my for_each_loop);
             break;
 
+        case STATEMENT_SWITCH:
+            expr_drop(&my switch_->needle);
+            vec_switch_case_drop(&my switch_->cases);
+            free(my switch_);
+            break;
+
         case STATEMENT_TRY_CATCH:
             block_drop(&my try_catch->try_block);
             binding_drop(&my try_catch->catch_var);
@@ -193,6 +199,30 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_expr_debug(target, &my for_each_loop->iterable, indent);
             cstr_append_sv(target, c_sv(") "));
             cstr_append_statement_debug(target, &my for_each_loop->body, indent);
+            break;
+
+        case STATEMENT_SWITCH:
+            cstr_append_sv(target, c_sv("switch ("));
+            cstr_append_expr_debug(target, &my switch_->needle, indent);
+            cstr_append_sv(target, c_sv(") {\n"));
+            c_foreach(i, vec_switch_case, my switch_->cases) {
+                APPEND_INDENT(target, indent + 1);
+                if (i.ref->is_default) {
+                    cstr_append_sv(target, c_sv("default:\n"));
+                } else {
+                    cstr_append_sv(target, c_sv("case "));
+                    cstr_append_expr_debug(target, &i.ref->pattern, indent + 1);
+                    cstr_append_sv(target, c_sv(":\n"));
+                }
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    APPEND_INDENT(target, indent + 2);
+                    cstr_append_statement_debug(target, j.ref, indent + 2);
+                    cstr_append_sv(target, c_sv("\n"));
+                }
+                cstr_append_sv(target, c_sv("\n"));
+            }
+            APPEND_INDENT(target, indent);
+            cstr_append_sv(target, c_sv("}"));
             break;
 
         case STATEMENT_TRY_CATCH:
@@ -314,6 +344,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_IF_ELSE:
         case STATEMENT_FOR_LOOP:
         case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_SWITCH:
         case STATEMENT_TRY_CATCH:
         case STATEMENT_BREAK:
         case STATEMENT_EXPR:
@@ -363,6 +394,21 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             }
             expr_resolve_names(&my for_each_loop->iterable, names, errs);
             statement_resolve_names(&my for_each_loop->body, names, errs);
+            name_stack_pop_frame(names);
+            break;
+
+        case STATEMENT_SWITCH:
+            expr_resolve_names(&my switch_->needle, names, errs);
+            name_stack_push_block_frame(names);
+            c_foreach(i, vec_switch_case, my switch_->cases) {
+                expr_resolve_names(&i.ref->pattern, names, errs);
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    statement_add_names(j.ref, names, errs);
+                }
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    statement_resolve_names(j.ref, names, errs);
+                }
+            }
             name_stack_pop_frame(names);
             break;
 
@@ -454,10 +500,10 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             type_drop(&t);
             t = expr_get_type_and_typecheck(&my for_loop->afterthought, errs);
             type_drop(&t);
-            bool break_was_allowed = ctx->break_allowd;
-            ctx->break_allowd = true;
+            bool break_was_allowed = ctx->break_allowed;
+            ctx->break_allowed = true;
             statement_typecheck(&my for_loop->body, ctx, errs);
-            ctx->break_allowd = break_was_allowed;
+            ctx->break_allowed = break_was_allowed;
             break;
         }
 
@@ -559,10 +605,46 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             }
             type_drop(&var_type);
 
-            bool break_was_allowed = ctx->break_allowd;
-            ctx->break_allowd = true;
+            bool break_was_allowed = ctx->break_allowed;
+            ctx->break_allowed = true;
             statement_typecheck(&my for_each_loop->body, ctx, errs);
-            ctx->break_allowd = break_was_allowed;
+            ctx->break_allowed = break_was_allowed;
+        }   break;
+
+        case STATEMENT_SWITCH: {
+            Type needle_type = expr_get_type_and_typecheck(&my switch_->needle, errs);
+            intptr_t default_count = 0;
+            bool break_was_allowed = ctx->break_allowed;
+            ctx->break_allowed = true;
+            c_foreach(i, vec_switch_case, my switch_->cases) {
+                if (i.ref->is_default) {
+                    default_count++;
+                    if (default_count == 2) {
+                        error_ctx_error(
+                            errs,
+                            i.ref->pattern.span,
+                            1113,
+                            "A 'default' clause cannot appear more than once in a 'switch' statement."
+                        );
+                    }
+                } else {
+                    Type pattern_type = expr_get_type_and_typecheck(&i.ref->pattern, errs);
+                    if (!type_extends(&needle_type, &pattern_type) && !type_extends(&pattern_type, &needle_type)) {
+                        cstr message = cstr_lit("Type '");
+                        cstr_append_type_error_msg(&message, &pattern_type);
+                        cstr_append_sv(&message, c_sv("' is not comparable to type '"));
+                        cstr_append_type_error_msg(&message, &needle_type);
+                        cstr_append_sv(&message, c_sv("'."));
+                        error_ctx_error_s(errs, i.ref->pattern.span, 2678, message);
+                    }
+                    type_drop(&pattern_type);
+                }
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    statement_typecheck(j.ref, ctx, errs);
+                }
+            }
+            type_drop(&needle_type);
+            ctx->break_allowed = break_was_allowed;
         }   break;
 
         case STATEMENT_TRY_CATCH:
@@ -573,7 +655,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_BREAK:
-            if (!ctx->break_allowd) {
+            if (!ctx->break_allowed) {
                 error_ctx_error(
                     errs,
                     my break_span,
@@ -612,6 +694,11 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE: break;
     }
+}
+
+void switch_case_drop(SwitchCase* me) {
+    expr_drop(&my pattern);
+    vec_statement_drop(&my statements);
 }
 
 StatementCtx statement_ctx_toplevel() {

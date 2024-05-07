@@ -225,7 +225,9 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
         span_eq_str(&s, "throw") ||
         span_eq_str(&s, "case") ||
         span_eq_str(&s, "in") ||
-        span_eq_str(&s, "typeof")
+        span_eq_str(&s, "typeof") ||
+        span_eq_str(&s, "case") ||
+        span_eq_str(&s, "default")
     ) {
         return false; // TODO: check for all keywords efficiently
     }
@@ -349,6 +351,13 @@ static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* p
         }
     }
     return parse_fail(&p);
+}
+
+static inline bool starts_with_followed_by_word_break(Parser* parent, const char* prefix) {
+    Parser p = parser(parent);
+    bool ret = hop_start_if_ends_on_word_break(&p, prefix);
+    parse_fail(&p);
+    return ret;
 }
 
 static bool hop_token(Parser* parent) {
@@ -1237,7 +1246,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, ":")) {
+    if (!hop_char(&p, ':')) {
         cstr_drop(&name);
         return parse_fail(&p);
     }
@@ -2813,6 +2822,148 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     return parse_success(&p);
 }
 
+static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecStatement* ret) {
+    Parser p = parser(parent);
+
+    while(
+        *p.pos &&
+        *p.pos != '}' &&
+        !starts_with_followed_by_word_break(&p, "default") &&
+        !starts_with_followed_by_word_break(&p, "case")
+    ) {
+        Statement statement = {0};
+        if (*p.pos == ';') {
+            p.pos++;
+        } else if (parse_statement(&p, toplevel, &statement)) {
+            vec_statement_push(ret, statement);
+            bool ended_on_brace = p.pos > p.shared->file_start && *(p.pos - 1) == '}';
+            hop_whitespace(&p);
+            if (p.whitespace == WHITESPACE_NEWLINE ||
+                statement.tag == STATEMENT_NOOP ||
+                !*p.pos ||
+                ended_on_brace ||
+                *p.pos == '}'
+            ) {
+            } else if (*p.pos == ';') {
+                p.pos++;
+            } else if (*p.pos) {
+                if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
+                    error_ctx_error(&p.errs, statement.expr.span, 1434, "Unexpected keyword or identifier.");
+                } else {
+                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+                }
+            }
+        } else if (*p.pos == '\\') {
+            error_ctx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
+            p.pos++;
+        } else {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
+            // TODO: woudln't this trap us in a loop?
+        }
+        hop_whitespace(&p); // TODO: is this needed?
+    }
+
+    return parse_success(&p);
+}
+
+static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
+    Parser p = parser(parent);
+    Anchor a = span_start(&p);
+
+    if (hop_start_if_ends_on_word_break(&p, "case")) {
+        hop_whitespace(&p);
+
+        *ret = (SwitchCase){
+            .is_default = false,
+            .pattern = {0},
+            .statements = {0},
+        };
+
+        if (!parse_expr(&p, expr_ctx_null, &ret->pattern)) {
+            ret->pattern = expr_implicit_any(span_from_pos(&p));
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+        }
+        hop_whitespace(&p);
+
+        if (!hop_char(&p, ':')) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
+        }
+    } else if (hop_start_if_ends_on_word_break(&p, "default")) {
+        hop_whitespace(&p);
+
+        if (!hop_char(&p, ':')) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
+        }
+
+        *ret = (SwitchCase){
+            .is_default = true,
+            .pattern = expr_implicit_any(span_end(a)),
+            .statements = {0},
+        };
+    } else {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!parse_append_statement_sequence(&p, false, &ret->statements)) {
+        switch_case_drop(ret);
+        return parse_fail(&p);
+    }
+
+    return parse_success(&p);
+}
+
+static bool parse_switch_statement(Parser* parent, Statement* ret) {
+    Parser p = parser(parent);
+    SwitchStatement switch_ = {0};
+
+    if (!hop_start_if_ends_on_word_break(&p, "switch")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, '(')) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'(' expected.");
+    }
+    hop_whitespace(&p);
+
+    if (!parse_expr(&p, expr_ctx_null, &switch_.needle)) {
+        switch_.needle = expr_implicit_any(span_from_pos(&p));
+        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, ')')) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, '{')) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
+    }
+    hop_whitespace(&p);
+
+    while(*p.pos && *p.pos != '}') {
+        SwitchCase case_;
+        if (parse_switch_case(&p, &case_)) {
+            vec_switch_case_push(&switch_.cases, case_);
+        } else {
+            break;
+        }
+        hop_whitespace(&p);
+    }
+
+    if (!hop_char(&p, '}')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1130, "'case' or 'default' expected.");
+    }
+
+    *ret = (Statement){
+        .tag = STATEMENT_SWITCH,
+        .switch_ = c_new(SwitchStatement, switch_),
+    };
+    return parse_success(&p);
+}
+
 static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
 
@@ -3005,6 +3156,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_IF_ELSE;
     } else if (parse_for_loop_statement(&p, ret)) {
     } else if (parse_while_loop_statement(&p, ret)) {
+    } else if (parse_switch_statement(&p, ret)) {
     } else if (parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
@@ -3031,44 +3183,6 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_block_inner_append(Parser* parent, bool toplevel, Block* ret) {
-    Parser p = parser(parent);
-
-    while(*p.pos && *p.pos != '}') {
-        Statement statement = {0};
-        if (*p.pos == ';') {
-            p.pos++;
-        } else if (parse_statement(&p, toplevel, &statement)) {
-            vec_statement_push(&ret->statements, statement);
-            bool ended_on_brace = p.pos > p.shared->file_start && *(p.pos - 1) == '}';
-            hop_whitespace(&p);
-            if (p.whitespace == WHITESPACE_NEWLINE ||
-                statement.tag == STATEMENT_NOOP ||
-                !*p.pos ||
-                ended_on_brace ||
-                *p.pos == '}'
-            ) {
-            } else if (*p.pos == ';') {
-                p.pos++;
-            } else if (*p.pos) {
-                if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
-                    error_ctx_error(&p.errs, statement.expr.span, 1434, "Unexpected keyword or identifier.");
-                } else {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
-                }
-            }
-        } else if (*p.pos == '\\') {
-            error_ctx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
-            p.pos++;
-        } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
-        }
-        hop_whitespace(&p);
-    }
-
-    return parse_success(&p);
-}
-
 static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
@@ -3076,7 +3190,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     hop_whitespace(&p);
 
     *ret = (Block){0};
-    if (!parse_block_inner_append(&p, toplevel, ret)) {
+    if (!parse_append_statement_sequence(&p, toplevel, &ret->statements)) {
         *ret = (Block){0};
     }
     hop_whitespace(&p);
@@ -3109,7 +3223,7 @@ Block parse_file(const char* source, ErrorCtx* errs) {
 
     Block scope = {0};
     while (true) {
-        parse_block_inner_append(&p, true, &scope);
+        parse_append_statement_sequence(&p, true, &scope.statements);
         if (*p.pos) {
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
             hop_whitespace(&p);

@@ -441,6 +441,16 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
             statement_compile_test_info(&my for_each_loop->body, ctx);
             break;
 
+        case STATEMENT_SWITCH:
+            expr_compile_test_info(&my switch_->needle, true, ctx);
+            c_foreach(i, vec_switch_case, my switch_->cases) {
+                expr_compile_test_info(&i.ref->pattern, true, ctx);
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    statement_compile_test_info(j.ref, ctx);
+                }
+            }
+            break;
+
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
             if (my try_catch->catch_var.tag != BINDING_NOOP) {

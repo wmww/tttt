@@ -12,6 +12,7 @@ typedef struct StatementCtx StatementCtx;
 typedef struct ForLoopStatement ForLoopStatement;
 typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
+typedef struct SwitchStatement SwitchStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
 
@@ -72,6 +73,7 @@ typedef struct Statement {
         STATEMENT_IF_ELSE,
         STATEMENT_FOR_LOOP,
         STATEMENT_FOR_EACH_LOOP,
+        STATEMENT_SWITCH,
         STATEMENT_TRY_CATCH,
         STATEMENT_BREAK,
         STATEMENT_EXPR,
@@ -89,6 +91,7 @@ typedef struct Statement {
         IfStatement if_else;
         ForLoopStatement* for_loop;
         ForEachLoopStatement* for_each_loop;
+        SwitchStatement* switch_;
         TryCatchStatement* try_catch;
         Span break_span;
         struct {
@@ -154,6 +157,25 @@ typedef struct ForEachLoopStatement {
     Statement body;
 } ForEachLoopStatement;
 
+// Switch statement
+
+typedef struct SwitchCase {
+    bool is_default;
+    Expr pattern;
+    VecStatement statements;
+} SwitchCase;
+
+void switch_case_drop(SwitchCase* me);
+
+#define i_key_class_names SwitchCase, switch_case
+#define i_no_clone
+#include "wrap_stc/vec.h"
+
+typedef struct SwitchStatement {
+    Expr needle;
+    VecSwitchCase cases;
+} SwitchStatement;
+
 // Try-catch-finally statements
 
 typedef struct TryCatchStatement {
@@ -168,7 +190,7 @@ typedef struct TryCatchStatement {
 typedef struct StatementCtx {
     VecType returned_types;
     Type const* specified_return;
-    bool break_allowd;
+    bool break_allowed;
 } StatementCtx;
 
 StatementCtx statement_ctx_toplevel();

@@ -2811,12 +2811,12 @@ const baselines = {
         types: false,
     },
     'capturedLetConstInLoop11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'capturedLetConstInLoop11_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -11586,7 +11586,7 @@ const baselines = {
         types: false,
     },
     'exhaustiveSwitchWithWideningLiteralTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18296,7 +18296,7 @@ const baselines = {
         types: true,
     },
     'letConstInCaseClauses': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20436,7 +20436,7 @@ const baselines = {
         types: false,
     },
     'narrowByClauseExpressionInSwitchTrue10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20471,12 +20471,12 @@ const baselines = {
         types: false,
     },
     'narrowByClauseExpressionInSwitchTrue8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'narrowByClauseExpressionInSwitchTrue9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20661,24 +20661,24 @@ const baselines = {
         types: false,
     },
     'nestedBlockScopedBindings1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings10': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings12': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings13': {
         errors: true,
@@ -20691,22 +20691,22 @@ const baselines = {
         types: true,
     },
     'nestedBlockScopedBindings15': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings16': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20716,12 +20716,12 @@ const baselines = {
         types: false,
     },
     'nestedBlockScopedBindings5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nestedBlockScopedBindings6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20736,9 +20736,9 @@ const baselines = {
         types: true,
     },
     'nestedBlockScopedBindings9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedCallbackErrorNotFlattened': {
         errors: false,
@@ -25886,7 +25886,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationSwitch': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26896,9 +26896,9 @@ const baselines = {
         types: false,
     },
     'switchAssignmentCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchCaseCircularRefeference': {
         errors: false,
@@ -26916,9 +26916,9 @@ const baselines = {
         types: false,
     },
     'switchCases': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchCasesExpressionTypeMismatch': {
         errors: false,
@@ -26941,7 +26941,7 @@ const baselines = {
         types: false,
     },
     'switchStatementsWithMultipleDefaults1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34096,7 +34096,7 @@ const baselines = {
         types: false,
     },
     'switchWithConstrainedTypeVariable': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49081,14 +49081,14 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_SwitchStatement1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserErrorRecovery_SwitchStatement2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TypeArgumentList1': {
         errors: false,
@@ -51143,7 +51143,7 @@ const baselines = {
     'parserSwitchStatement1.d': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserThrowStatement1.d': {
         errors: false,
@@ -53861,9 +53861,9 @@ const baselines = {
         types: true,
     },
     'invalidSwitchBreakStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidWhileBreakStatements': {
         errors: false,
@@ -53873,7 +53873,7 @@ const baselines = {
     'switchBreakStatements': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'whileBreakStatements': {
         errors: false,
@@ -54782,7 +54782,7 @@ const baselines = {
     },
     'literalTypes1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'literalTypes2': {
@@ -54881,9 +54881,9 @@ const baselines = {
         types: false,
     },
     'stringLiteralsWithSwitchStatements01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralsWithSwitchStatements02': {
         errors: true,
@@ -56241,7 +56241,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralMatchedInSwitch01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -57407,7 +57407,7 @@ const baselines = {
     },
     'equalityStrictNulls': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'equalityWithEnumTypes': {
@@ -57453,7 +57453,7 @@ const baselines = {
     'switchCaseWithUnionTypes01': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeAssertionsWithIntersectionTypes01': {
         errors: false,
