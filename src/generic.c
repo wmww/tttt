@@ -211,6 +211,9 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_IDENTIFIER:
+            c_foreach(i, vec_type, my identifier->generic_params) {
+                replace_named_types_with(i.ref, refinements);
+            }
             if (my identifier->type.get) {
                 Type const* refinement = nullptr;
                 c_foreach(i, vec_type_refinement, *refinements) {

@@ -109,6 +109,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         }   break;
 
         case TYPE_CALLABLE:
+            generic_compile_test_info(&my callable->generic, ctx);
             c_foreach(i, vec_callable_arg, my callable->args) {
                 binding_compile_test_info(&i.ref->binding, span_null, i.ref->span, ctx);
             }
