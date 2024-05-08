@@ -6471,7 +6471,7 @@ const baselines = {
         types: false,
     },
     'controlFlowCommaExpressionFunctionCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9066,7 +9066,7 @@ const baselines = {
         types: false,
     },
     'discriminantsAndTypePredicates': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20496,7 +20496,7 @@ const baselines = {
         types: false,
     },
     'narrowCommaOperatorNestedWithinLHS': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28161,7 +28161,7 @@ const baselines = {
         types: false,
     },
     'typeInferenceTypePredicate2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28496,7 +28496,7 @@ const baselines = {
         types: false,
     },
     'typePredicatesInUnion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28511,7 +28511,7 @@ const baselines = {
         types: false,
     },
     'typePredicatesInUnion_noMatch': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34176,7 +34176,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitThisPredicates01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34186,7 +34186,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitThisPredicatesWithPrivateName01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

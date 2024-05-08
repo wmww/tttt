@@ -711,7 +711,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
                 parsed.name = cstr_null;
             }
             hop_whitespace(&p);
-            if (hop_start(&p, "extends")) {
+            if (hop_start_if_ends_on_word_break(&p, "extends")) {
                 hop_whitespace(&p);
                 if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &parsed.type)) {
                     error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
@@ -921,7 +921,7 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
     *type_ret = (CallableType){0};
 
     if (!func_ret) {
-        if (hop_start(&p, "new")) {
+        if (hop_start_if_ends_on_word_break(&p, "new")) {
             hop_whitespace(&p);
         }
     }
@@ -1074,6 +1074,37 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
     if (parse_ret_type) {
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type_ret->ret)) {
             type_ret->ret_explicit = true;
+            hop_whitespace(&p);
+            if (p.whitespace != WHITESPACE_NEWLINE && type_ret->ret.tag == TYPE_IDENTIFIER) {
+                if (hop_start_if_ends_on_word_break(&p, "is")) {
+                    hop_whitespace(&p);
+                    Type t;
+                    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+                        error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+                        t = type_any;
+                    }
+                    type_drop(&t);
+                    type_drop(&type_ret->ret);
+                    type_ret->ret = type_boolean;
+                } else if (csview_equals_sv(span_sv(&type_ret->ret.identifier->span), c_sv("asserts"))) {
+                    cstr param;
+                    if (parse_identifier(&p, &param, nullptr)) {
+                        hop_whitespace(&p);
+                        if (hop_start_if_ends_on_word_break(&p, "is")) {
+                            hop_whitespace(&p);
+                            Type t;
+                            if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+                                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+                                t = type_any;
+                            }
+                            type_drop(&t);
+                        }
+                        type_drop(&type_ret->ret);
+                        type_ret->ret = type_void;
+                        cstr_drop(&param);
+                    }
+                }
+            }
         } else {
             goto drop_and_fail;
         }
@@ -1862,7 +1893,7 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
 static bool parse_as_type(Parser* parent, Type* ret) {
     Parser p = parser(parent);
 
-    if (!hop_start(&p, "as")) {
+    if (!hop_start_if_ends_on_word_break(&p, "as")) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -1949,7 +1980,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, BinaryOp* op, Expr
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
     if (hop_start(parent, "!")) {
         *op = UNARY_OP_LEFT_BANG;
-    } else if (hop_start(parent, "typeof")) {
+    } else if (hop_start_if_ends_on_word_break(parent, "typeof")) {
         *op = UNARY_OP_TYPEOF;
     } else if (hop_start(parent, "~")) {
         *op = UNARY_OP_TILDE;
