@@ -20511,7 +20511,7 @@ const baselines = {
         types: false,
     },
     'narrowUnknownByTypeofObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

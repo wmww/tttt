@@ -535,11 +535,9 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
     }
 
     switch (super->tag) {
+        case TYPE_UNKNOWN:
         case TYPE_ANY:
             return true;
-
-        case TYPE_UNKNOWN:
-            return sub->tag == TYPE_UNKNOWN;
 
         case TYPE_NEVER:
             return false;
