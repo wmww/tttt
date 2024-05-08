@@ -80,6 +80,7 @@ NameStack* name_stack_new() {
     add_builtin_variable(ret, c_sv("Error"), &type_any);
     add_builtin_variable(ret, c_sv("Set"), &type_any);
     add_builtin_variable(ret, c_sv("Array"), &type_any);
+    add_builtin_variable(ret, c_sv("Object"), &type_any);
     add_builtin_variable(ret, c_sv("this"), &type_undefined);
 
     add_builtin_type(ret, c_sv("any"), &type_any);
@@ -97,6 +98,7 @@ NameStack* name_stack_new() {
     add_builtin_type(ret, c_sv("Error"), &type_any);
     add_builtin_type(ret, c_sv("Set"), &type_any);
     add_builtin_type(ret, c_sv("Array"), &type_any);
+    add_builtin_type(ret, c_sv("Object"), &type_any);
     add_builtin_type(ret, c_sv("BooleanConstructor"), &type_any);
     add_builtin_type(ret, c_sv("NumberConstructor"), &type_any);
     add_builtin_type(ret, c_sv("StringConstructor"), &type_any);

@@ -298,6 +298,9 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
             break;
 
         case TYPE_IDENTIFIER:
+            c_foreach(i, vec_type, my identifier->generic_params) {
+                type_add_inferred_names(i.ref, names);
+            }
             if (my identifier->inferred) {
                 name_stack_add_type(
                     names,

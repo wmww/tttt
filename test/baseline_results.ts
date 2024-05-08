@@ -2946,7 +2946,7 @@ const baselines = {
         types: true,
     },
     'castNewObjectBug': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5092,7 +5092,7 @@ const baselines = {
     },
     'conditionalDoesntLeakUninstantiatedTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'conditionalEqualityOnLiteralObjects': {
@@ -5741,7 +5741,7 @@ const baselines = {
         types: false,
     },
     'contextualExpressionTypecheckingDoesntBlowStack': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5796,7 +5796,7 @@ const baselines = {
         types: false,
     },
     'contextualSignatureInObjectFreeze': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12626,7 +12626,7 @@ const baselines = {
         types: false,
     },
     'fillInMissingTypeArgsOnConstructCalls': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14631,7 +14631,7 @@ const baselines = {
         types: false,
     },
     'identicalGenericConditionalsWithInferRelated': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15301,7 +15301,7 @@ const baselines = {
         types: false,
     },
     'inKeywordAndIntersection': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16976,7 +16976,7 @@ const baselines = {
         types: false,
     },
     'intersectionSatisfiesConstraint': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17351,7 +17351,7 @@ const baselines = {
         types: false,
     },
     'javascriptDefinePropertyPrototypeNonConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17441,7 +17441,7 @@ const baselines = {
         types: false,
     },
     'jsExpandoObjectDefineProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18506,7 +18506,7 @@ const baselines = {
         types: false,
     },
     'library_ObjectPrototypeProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21356,7 +21356,7 @@ const baselines = {
         types: false,
     },
     'noObjectKeysToKeyofT': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21711,7 +21711,7 @@ const baselines = {
         types: true,
     },
     'nongenericConditionalNotPartiallyComputed': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25271,8 +25271,8 @@ const baselines = {
         types: false,
     },
     'selfReferencingTypeReferenceInference': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'selfReferentialDefaultNoStackOverflow': {
@@ -26641,7 +26641,7 @@ const baselines = {
         types: false,
     },
     'subtypingTransitivity': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29166,7 +29166,7 @@ const baselines = {
         types: false,
     },
     'unknownPropertiesAreAssignableToObjectUnion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31731,7 +31731,7 @@ const baselines = {
         types: false,
     },
     'classAppearsToHaveMembersOfObject': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31801,7 +31801,7 @@ const baselines = {
         types: false,
     },
     'constructorFunctionTypeIsAssignableToBaseType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33986,7 +33986,7 @@ const baselines = {
         types: false,
     },
     'controlFlowInstanceOfGuardPrimitives': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35221,7 +35221,7 @@ const baselines = {
         types: false,
     },
     'useObjectValuesAndEntries4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42271,22 +42271,22 @@ const baselines = {
         types: false,
     },
     'commaOperatorWithSecondOperandAnyType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'commaOperatorWithSecondOperandBooleanType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'commaOperatorWithSecondOperandNumberType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'commaOperatorWithSecondOperandObjectType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42301,7 +42301,7 @@ const baselines = {
         types: false,
     },
     'commaOperatorsMultipleOperators': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42321,12 +42321,12 @@ const baselines = {
         types: false,
     },
     'conditionalOperatorConditoinIsAnyType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'conditionalOperatorConditoinIsStringType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55726,7 +55726,7 @@ const baselines = {
         types: false,
     },
     'validBooleanAssignments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55811,7 +55811,7 @@ const baselines = {
         types: false,
     },
     'validStringAssignments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
