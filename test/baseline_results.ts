@@ -871,7 +871,7 @@ const baselines = {
         types: false,
     },
     'anonymousClassExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -1201,7 +1201,7 @@ const baselines = {
         types: false,
     },
     'arrayEvery': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6476,7 +6476,7 @@ const baselines = {
         types: false,
     },
     'controlFlowDestructuringLoop': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20546,7 +20546,7 @@ const baselines = {
         types: false,
     },
     'narrowingConstrainedTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27156,7 +27156,7 @@ const baselines = {
         types: false,
     },
     'taggedPrimitiveNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30281,7 +30281,7 @@ const baselines = {
         types: true,
     },
     'voidIsInitialized': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34011,7 +34011,7 @@ const baselines = {
         types: false,
     },
     'controlFlowNoIntermediateErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34166,12 +34166,12 @@ const baselines = {
         types: false,
     },
     'declarationEmitIdentifierPredicates01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'declarationEmitIdentifierPredicatesWithPrivateName01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40643,7 +40643,7 @@ const baselines = {
     'YieldStarExpression2_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldStarExpression3_es6': {
         errors: false,
@@ -42311,7 +42311,7 @@ const baselines = {
         types: false,
     },
     'conditionalOperatorConditionIsNumberType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43176,7 +43176,7 @@ const baselines = {
         types: false,
     },
     'typeGuardTypeOfUndefined': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -43241,7 +43241,7 @@ const baselines = {
         types: false,
     },
     'typeGuardsInProperties': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -49481,7 +49481,7 @@ const baselines = {
         types: false,
     },
     'parserConstructorAmbiguity4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49623,7 +49623,7 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserGreaterThanTokenAmbiguity5': {
         errors: true,
@@ -49648,7 +49648,7 @@ const baselines = {
     'parserGreaterThanTokenAmbiguity9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMemberAccessExpression1': {
         errors: false,

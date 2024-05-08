@@ -36,7 +36,8 @@ typedef enum WhitespaceType {
 } WhitespaceType;
 
 typedef struct ExprCtx {
-    bool block_in_op;
+    bool reject_in_operator;
+    int min_precedence;
 } ExprCtx;
 
 static const ExprCtx expr_ctx_null = {0};
@@ -1838,6 +1839,7 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
 
 static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr* ret_no) {
     Parser p = parser(parent);
+    ctx.min_precedence = ternary_precedence - 1;
 
     if (!hop_char(&p, '?')) {
         return parse_fail(&p);
@@ -1958,22 +1960,31 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, BinaryOp* op, Expr* right) {
+static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
 
-    if (!parse_binary_op(&p, op)) {
+    BinaryOp op;
+    if (!parse_binary_op(&p, &op)) {
         return parse_fail(&p);
     }
-    if (ctx.block_in_op && *op == BINARY_OP_IN) {
+    int precedence = binary_op_get_precedence(op);
+    if (precedence <= ctx.min_precedence || (ctx.reject_in_operator && op == BINARY_OP_IN)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ctx, right)) {
+    Expr right;
+    ctx.min_precedence = precedence;
+    if (!parse_expr(&p, ctx, &right)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        *right = expr_undefined(span_from_pos(&p));
+        right = expr_implicit_any(span_from_pos(&p));
     }
 
+    *left_and_ret = expr_binary_op(span_between(&left_and_ret->span, &right.span), c_new(BinaryOpExpr, {
+        .left = *left_and_ret,
+        .op = op,
+        .right = right,
+    }));
     return parse_success(&p);
 }
 
@@ -2003,13 +2014,14 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     Anchor a = span_start(&p);
     UnaryOp op = 0;
-    if (!parse_left_unary_op(&p, &op)) {
+    if (!parse_left_unary_op(&p, &op) || unary_op_get_precedence(op) < ctx.min_precedence) {
         return parse_fail(&p);
     }
     Span op_span = span_end(a);
     hop_whitespace(&p);
 
     Expr expr;
+    ctx.min_precedence = unary_op_get_precedence(op);
     if (!parse_expr(&p, ctx, &expr)) {
         error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         expr = expr_undefined(span_from_pos(&p));
@@ -2142,7 +2154,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
+    if (ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
         *left_and_ret = expr_ternary(
             span_end(a),
             c_new(TernaryExpr, {
@@ -2166,7 +2178,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (parse_as_type(&p, &parsed.type)) {
+    if (as_type_precedence > ctx.min_precedence && parse_as_type(&p, &parsed.type)) {
         *left_and_ret = expr_as_type(
             span_end(a),
             c_new(AsTypeExpr, {
@@ -2203,26 +2215,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
     }
 
-    if (parse_binary_op_expr(&p, ctx, &parsed.binary.op, &parsed.binary.expr)) {
-        Expr* insert_at = &parsed.binary.expr;
-
-        while (
-            insert_at->tag == EXPR_BINARY_OP &&
-            insert_at->peren_depth == 0 &&
-            binary_op_cmp_precedence(parsed.binary.op, insert_at->binary_op->op) >= 0
-        ) {
-            insert_at->span = span_between(&left_and_ret->span, &insert_at->span);
-            insert_at = &insert_at->binary_op->left;
-        }
-
-        *insert_at = expr_binary_op(span_between(&left_and_ret->span, &insert_at->span), c_new(BinaryOpExpr, {
-            .left = *left_and_ret,
-            .op = parsed.binary.op,
-            .right = *insert_at,
-        }));
-
-        *left_and_ret = parsed.binary.expr;
-
+    if (parse_binary_op_expr(&p, ctx, left_and_ret)) {
         return parse_success(&p);
     }
 
@@ -2706,10 +2699,10 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     Statement body;
     bool keyword_is_in = false;
 
-    if (parse_variable_statement(&p, (ExprCtx){.block_in_op = true}, &statement.decl.variable)) {
+    if (parse_variable_statement(&p, (ExprCtx){.reject_in_operator = true}, &statement.decl.variable)) {
         statement.decl.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
-    } else if (parse_expr(&p, (ExprCtx){.block_in_op = true}, &statement.expr)) {
+    } else if (parse_expr(&p, (ExprCtx){.reject_in_operator = true}, &statement.expr)) {
         parse_comma_ops_right_side(&p, &statement.expr);
         statement.tag = STATEMENT_EXPR;
     } else if (*p.pos == ';') {

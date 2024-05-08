@@ -11,80 +11,8 @@
 #include "interface_member.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
-
-// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
-static inline int binary_op_get_precedence(BinaryOp op) {
-    switch (op) {
-        case BINARY_OP_STAR_STAR:
-            return 130;
-
-        case BINARY_OP_STAR:
-        case BINARY_OP_SLASH:
-        case BINARY_OP_MOD:
-            return 120;
-
-        case BINARY_OP_PLUS:
-        case BINARY_OP_MINUS:
-            return 110;
-
-        case BINARY_OP_LESS_LESS:
-        case BINARY_OP_GREATER_GREATER:
-        case BINARY_OP_GREATER_GREATER_GREATER:
-            return 100;
-
-        case BINARY_OP_LESS:
-        case BINARY_OP_LESS_EQUAL:
-        case BINARY_OP_GREATER:
-        case BINARY_OP_GREATER_EQUAL:
-        case BINARY_OP_IN:
-        case BINARY_OP_INSTANCEOF:
-            return 90;
-
-        case BINARY_OP_DOUBLE_EQUAL:
-        case BINARY_OP_NOT_EQUAL:
-        case BINARY_OP_TRIPLE_EQUAL:
-        case BINARY_OP_TRIPLE_NOT_EQUAL:
-            return 80;
-
-        case BINARY_OP_AND:
-            return 70;
-
-        case BINARY_OP_XOR:
-            return 60;
-
-        case BINARY_OP_OR:
-            return 50;
-
-        case BINARY_OP_AND_AND:
-            return 40;
-
-        case BINARY_OP_OR_OR:
-        case BINARY_OP_EH_EH:
-            return 30;
-
-        case BINARY_OP_EQUAL:
-        case BINARY_OP_PLUS_EQUAL:
-        case BINARY_OP_MINUS_EQUAL:
-        case BINARY_OP_STAR_STAR_EQUAL:
-        case BINARY_OP_STAR_EQUAL:
-        case BINARY_OP_SLASH_EQUAL:
-        case BINARY_OP_MOD_EQUAL:
-        case BINARY_OP_LESS_LESS_EQUAL:
-        case BINARY_OP_GREATER_GREATER_EQUAL:
-        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL:
-        case BINARY_OP_AND_EQUAL:
-        case BINARY_OP_XOR_EQUAL:
-        case BINARY_OP_OR_EQUAL:
-        case BINARY_OP_AND_AND_EQUAL:
-        case BINARY_OP_OR_OR_EQUAL:
-        case BINARY_OP_EH_EH_EQUAL:
-            return 20;
-
-        case BINARY_OP_COMMA:
-            return 10;
-    }
-    UNREACHABLE;
-}
+const int as_type_precedence = 90;
+const int ternary_precedence = 20;
 
 void expr_drop(Expr* me) {
     switch (my tag) {
@@ -669,10 +597,78 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
     UNREACHABLE;
 }
 
-signed char binary_op_cmp_precedence(BinaryOp a, BinaryOp b) {
-    int ap = binary_op_get_precedence(a);
-    int bp = binary_op_get_precedence(b);
-    return ap == bp ? 0 : (ap > bp ? 1 : -1);
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
+int binary_op_get_precedence(BinaryOp op) {
+    switch (op) {
+        case BINARY_OP_STAR_STAR:
+            return 130;
+
+        case BINARY_OP_STAR:
+        case BINARY_OP_SLASH:
+        case BINARY_OP_MOD:
+            return 120;
+
+        case BINARY_OP_PLUS:
+        case BINARY_OP_MINUS:
+            return 110;
+
+        case BINARY_OP_LESS_LESS:
+        case BINARY_OP_GREATER_GREATER:
+        case BINARY_OP_GREATER_GREATER_GREATER:
+            return 100;
+
+        case BINARY_OP_LESS:
+        case BINARY_OP_LESS_EQUAL:
+        case BINARY_OP_GREATER:
+        case BINARY_OP_GREATER_EQUAL:
+        case BINARY_OP_IN:
+        case BINARY_OP_INSTANCEOF:
+            return 90;
+
+        case BINARY_OP_DOUBLE_EQUAL:
+        case BINARY_OP_NOT_EQUAL:
+        case BINARY_OP_TRIPLE_EQUAL:
+        case BINARY_OP_TRIPLE_NOT_EQUAL:
+            return 80;
+
+        case BINARY_OP_AND:
+            return 70;
+
+        case BINARY_OP_XOR:
+            return 60;
+
+        case BINARY_OP_OR:
+            return 50;
+
+        case BINARY_OP_AND_AND:
+            return 40;
+
+        case BINARY_OP_OR_OR:
+        case BINARY_OP_EH_EH:
+            return 30;
+
+        case BINARY_OP_EQUAL:
+        case BINARY_OP_PLUS_EQUAL:
+        case BINARY_OP_MINUS_EQUAL:
+        case BINARY_OP_STAR_STAR_EQUAL:
+        case BINARY_OP_STAR_EQUAL:
+        case BINARY_OP_SLASH_EQUAL:
+        case BINARY_OP_MOD_EQUAL:
+        case BINARY_OP_LESS_LESS_EQUAL:
+        case BINARY_OP_GREATER_GREATER_EQUAL:
+        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL:
+        case BINARY_OP_AND_EQUAL:
+        case BINARY_OP_XOR_EQUAL:
+        case BINARY_OP_OR_EQUAL:
+        case BINARY_OP_AND_AND_EQUAL:
+        case BINARY_OP_OR_OR_EQUAL:
+        case BINARY_OP_EH_EH_EQUAL:
+            return 20;
+
+        case BINARY_OP_COMMA:
+            return 10;
+    }
+    UNREACHABLE;
 }
 
 czview binary_op_get_zv(BinaryOp op) {
@@ -722,6 +718,26 @@ czview binary_op_get_zv(BinaryOp op) {
     }
     NONFATAL("Invalid binary operator %d", op);
     return c_zv("<INVALID_OP>");
+}
+
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence
+int unary_op_get_precedence(UnaryOp op) {
+    switch (op) {
+        case UNARY_OP_LEFT_BANG:
+        case UNARY_OP_TYPEOF:
+        case UNARY_OP_TILDE:
+        case UNARY_OP_PLUS:
+        case UNARY_OP_MINUS:
+        case UNARY_OP_LEFT_PLUS_PLUS:
+        case UNARY_OP_LEFT_MINUS_MINUS:
+            return 140;
+
+        case UNARY_OP_RIGHT_PLUS_PLUS:
+        case UNARY_OP_RIGHT_MINUS_MINUS:
+        case UNARY_OP_RIGHT_BANG:
+            return 150;
+    }
+    UNREACHABLE;
 }
 
 czview unary_op_get_zv(UnaryOp op) {

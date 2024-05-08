@@ -113,6 +113,8 @@ static inline Expr expr_implicit_any(Span span) {
 }
 
 extern const Expr expr_implicit_any_no_span;
+extern const int as_type_precedence;
+extern const int ternary_precedence;
 
 void expr_drop(Expr* me);
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent);
@@ -184,10 +186,7 @@ typedef enum BinaryOp {
     BINARY_OP_COMMA,
 } BinaryOp;
 
-// (BINARY_OP_STAR, BINARY_OP_PLUS) => 1
-// (BINARY_OP_PLUS, BINARY_OP_STAR) => -1
-// (BINARY_OP_PLUS, BINARY_OP_MINUS) => 0
-signed char binary_op_cmp_precedence(BinaryOp a, BinaryOp b);
+int binary_op_get_precedence(BinaryOp op);
 czview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {
@@ -213,6 +212,7 @@ typedef enum UnaryOp {
     UNARY_OP_RIGHT_BANG,
 } UnaryOp;
 
+int unary_op_get_precedence(UnaryOp op);
 czview unary_op_get_zv(UnaryOp op);
 
 typedef struct UnaryOpExpr {
