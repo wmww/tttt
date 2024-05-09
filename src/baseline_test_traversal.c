@@ -178,23 +178,6 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
     block_compile_test_info(&my body, ctx);
 }
 
-void name_init_compile_test_info(NameInitData const* me, Span scope, Span full, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol_with_scope(
-        ctx,
-        span_sv(&scope),
-        cstr_sv(&my name),
-        my name_span,
-        span_valid(&full) ? full : my name_span
-    );
-    baseline_test_case_add_type(ctx, my name_span, &my type);
-    if (my type_explicit) {
-        type_compile_test_info(&my type, ctx);
-    }
-    if (my value_explicit) {
-        expr_compile_test_info(&my value, true, ctx);
-    }
-}
-
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
@@ -222,7 +205,7 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
         switch(i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR: function_impl_compile_test_info(&i.ref->constructor.func, my name_span, ctx); break;
             case CLASS_ITEM_MEMBER: function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx); break;
-            case CLASS_ITEM_FIELD: name_init_compile_test_info(&i.ref->field.data, my name_span, i.ref->span, ctx); break;
+            case CLASS_ITEM_FIELD: initialized_binding_compile_test_info(&i.ref->field.initializer, my name_span, i.ref->span, ctx); break;
             case CLASS_ITEM_STATIC_BLOCK: block_compile_test_info(&i.ref->static_block, ctx); break;
         }
     }

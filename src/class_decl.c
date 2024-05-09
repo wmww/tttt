@@ -1,5 +1,6 @@
 #include "class_decl.h"
 #include "name_stack.h"
+#include "statement.h"
 #include "interface_member.h"
 #include "callable_type.h"
 #include "identifier_type.h"
@@ -17,7 +18,7 @@ void class_item_drop(ClassItem* me) {
             break;
 
         case CLASS_ITEM_FIELD:
-            name_init_data_drop(&my field.data);
+            initialized_binding_drop(&my field.initializer);
             break;
 
         case CLASS_ITEM_STATIC_BLOCK:
@@ -82,7 +83,7 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                 break;
 
             case CLASS_ITEM_FIELD:
-                cstr_append_name_init_data_debug(target, &i.ref->field.data, indent + 1);
+                cstr_append_initialized_binding_debug(target, &i.ref->field.initializer, indent + 1);
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
@@ -122,41 +123,32 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_MEMBER:
-                if (!name_stack_add_variable(
-                    names,
-                    cstr_clone(i.ref->member.name),
-                    i.ref->member.name_span,
-                    callable_type_get_wrapper(&i.ref->member.func.type)
-                )) {
-                    /*
-                    error_ctx_error(
-                        errs,
+                if (i.ref->member.is_static) {
+                } else {
+                    if (!name_stack_add_variable(
+                        names,
+                        cstr_clone(i.ref->member.name),
                         i.ref->member.name_span,
-                        TS_CODE_NONE,
-                        "multiple class members/fields with same name"
-                    );
-                    */
+                        callable_type_get_wrapper(&i.ref->member.func.type)
+                    )) {
+                        /*
+                        error_ctx_error(
+                            errs,
+                            i.ref->member.name_span,
+                            TS_CODE_NONE,
+                            "multiple class members/fields with same name"
+                        );
+                        */
+                    }
                 }
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (!name_stack_add_variable(
-                    names,
-                    cstr_clone(i.ref->field.data.name),
-                    i.ref->field.data.name_span,
-                    &i.ref->field.data.type
-                )) {
-                    /*
-                    error_ctx_error(
-                        errs,
-                        i.ref->field.name_span,
-                        TS_CODE_NONE,
-                        "multiple class members/fields with same name"
-                    );
-                    */
+                if (i.ref->field.is_static) {
+                } else {
+                    binding_add_names(&i.ref->field.initializer.binding, names, errs);
                 }
-                type_resolve_names(&i.ref->field.data.type, names, errs);
-                expr_resolve_names(&i.ref->field.data.value, names, errs);
+                initialized_binding_resolve_names(&i.ref->field.initializer, names, errs);
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
@@ -208,37 +200,35 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_MEMBER:
                 function_impl_typecheck(&i.ref->member.func, errs);
-                vec_interface_member_push(
-                    &interface.members,
-                    interface_member_make(
-                        i.ref->span,
-                        cstr_clone(i.ref->member.name),
-                        i.ref->member.name_span,
-                        type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)))
-                    ));
+                if (i.ref->member.is_static) {
+                } else {
+                    vec_interface_member_push(
+                        &interface.members,
+                        interface_member_make(
+                            i.ref->span,
+                            cstr_clone(i.ref->member.name),
+                            i.ref->member.name_span,
+                            type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)))
+                        )
+                    );
+                }
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (i.ref->field.data.value_explicit) {
-                    Type expr_type = expr_get_type_and_typecheck(&i.ref->field.data.value, errs);
-                    if (i.ref->field.data.type_explicit) {
-                        check_assignable_or_error(&expr_type, &i.ref->field.data.type, i.ref->field.data.name_span, errs);
-                    } else {
-                        type_drop(&i.ref->field.data.type);
-                        i.ref->field.data.type = expr_type;
-                        expr_type = type_any;
-                        type_abstract_literals(&i.ref->field.data.type); // Perhaps not if read-only?
-                    }
-                    type_drop(&expr_type);
+                initialized_binding_typecheck(&i.ref->field.initializer, true, errs);
+                ASSERT(i.ref->field.initializer.binding.tag == BINDING_IDENTIFIER);
+                if (i.ref->field.is_static) {
+                } else {
+                    vec_interface_member_push(
+                        &interface.members,
+                        interface_member_make(
+                            i.ref->span,
+                            cstr_clone(i.ref->field.initializer.binding.identifier),
+                            i.ref->field.initializer.binding.content_span,
+                            type_clone(i.ref->field.initializer.binding.type)
+                        )
+                    );
                 }
-                vec_interface_member_push(
-                    &interface.members,
-                    interface_member_make(
-                        i.ref->span,
-                        cstr_clone(i.ref->field.data.name),
-                        i.ref->field.data.name_span,
-                        type_clone(i.ref->field.data.type)
-                    ));
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK: {

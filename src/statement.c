@@ -4,26 +4,6 @@
 #include "name_stack.h"
 #include "class_decl.h"
 
-void name_init_data_drop(NameInitData* me) {
-    cstr_drop(&my name);
-    type_drop(&my type);
-    expr_drop(&my value);
-}
-
-void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent) {
-    cstr_append_sv(target, c_sv(CLR_NAME));
-    cstr_append_s(target, my name);
-    cstr_append_sv(target, c_sv(CLR0));
-    if (my type_explicit) {
-        cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &my type, indent);
-    }
-    if (my value_explicit) {
-        cstr_append_sv(target, c_sv(" = "));
-        cstr_append_expr_debug(target, &my value, indent);
-    }
-}
-
 void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }

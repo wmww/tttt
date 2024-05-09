@@ -2,7 +2,7 @@
 
 #include "prelude.h"
 #include "function_impl.h"
-#include "statement.h" // for NameInitData
+#include "binding.h"
 
 typedef enum AccessModifier {
     ACCESS_MODIFIER_PUBLIC,
@@ -25,13 +25,15 @@ typedef struct ClassItem {
             FunctionImpl func;
         } constructor;
         struct {
+            bool is_static;
             cstr name;
             Span name_span;
             FunctionImpl func;
         } member;
         struct {
-            bool readonly;
-            NameInitData data;
+            bool is_readonly;
+            bool is_static;
+            InitializedBinding initializer; // always BINDING_IDENTIFIER
         } field;
         Block static_block;
     };

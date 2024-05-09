@@ -28346,7 +28346,7 @@ const baselines = {
         types: false,
     },
     'typeParameterExtendingUnion1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29227,8 +29227,8 @@ const baselines = {
     },
     'unqualifiedCallToClassStatic1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unreachableFlowAfterFinally': {
         errors: true,

@@ -15,25 +15,6 @@ typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct SwitchStatement SwitchStatement;
 typedef struct ImportStatement ImportStatement;
 
-// NameInitData is useful for multiple things that can optionally both values and types
-
-typedef struct NameInitData {
-    cstr name;
-    Span name_span;
-    bool type_explicit;
-    Type type;
-    Span type_span;
-    bool value_explicit;
-    Expr value;
-} NameInitData;
-
-void name_init_data_drop(NameInitData* me);
-void cstr_append_name_init_data_debug(cstr* target, NameInitData* me, int indent);
-
-#define i_key_class_names NameInitData, name_init_data
-#define i_no_clone
-#include "wrap_stc/vec.h"
-
 // Variable initialization
 
 typedef struct VariableStatement {

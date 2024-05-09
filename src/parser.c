@@ -74,8 +74,6 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
-static bool parse_name_init_with_name(Parser* parent, ExprCtx ctx, cstr name, Span name_span, NameInitData* ret);
-static bool parse_name_init(Parser* parent, ExprCtx ctx, NameInitData* ret);
 static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
@@ -83,8 +81,8 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
-static bool parse_binding_type(Parser* parent, Binding* ret);
-static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
+static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
+static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 
 static inline Parser parser(Parser* parent) {
     return (Parser){
@@ -789,11 +787,12 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     break;
 
                 case CLASS_ITEM_FIELD:
+                    ASSERT(item.field.initializer.binding.tag == BINDING_IDENTIFIER);
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
-                        cstr_move(&item.field.data.name),
-                        item.field.data.name_span,
-                        type_move(&item.field.data.type)
+                        cstr_move(&item.field.initializer.binding.identifier),
+                        item.field.initializer.binding.content_span,
+                        type_move(&item.field.initializer.binding.type)
                     ));
                     break;
 
@@ -977,18 +976,16 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
                     hop_whitespace(&p);
                 }
 
-                if (parse_binding_type(&p, &binding)) {
+                if (parse_binding_type_or_set_to_default(&p, &binding)) {
                     if (explicit_optional) {
                         binding.type = type_composite(binding.type, type_undefined, TYPE_UNION);
                     }
                     hop_whitespace(&p);
                 }
 
-                if (parse_initialization(&p, expr_ctx_null, &default_value)) {
+                if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &default_value)) {
                     optional = true;
                     hop_whitespace(&p);
-                } else {
-                    default_value = expr_implicit_any_no_span;
                 }
 
                 if (vec_callable_arg_empty(&type_ret->args) && binding.type_explicit) {
@@ -1015,7 +1012,7 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
 
                 if (p.pos == before_param) {
                     if (is_definitely_function) {
-                        // parse_name_init already added error
+                        // Error was already added? hopefully?
                         hop_token(&p);
                     } else {
                         goto drop_and_fail;
@@ -1554,13 +1551,29 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 modifier_error = INVALID_READONLY;
                 modifier_error_span = readonly_span;
             }
-        } else if (parse_name_init_with_name(&p, expr_ctx_null, name, name_span, &ret->field.data)) {
-            ret->tag = CLASS_ITEM_FIELD;
-            ret->field.readonly = span_valid(&readonly_span);
         } else {
-            error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "class member expected");
-            ret->tag = CLASS_ITEM_MEMBER;
-            ret->member = (typeof(ret->member)){0};
+            *ret = (ClassItem) {
+                .tag = CLASS_ITEM_FIELD,
+                .field = {
+                    .is_readonly = span_valid(&readonly_span),
+                    .is_static = span_valid(&static_span),
+                    .initializer = {
+                        .binding = {
+                            .tag = BINDING_IDENTIFIER,
+                            .identifier = name,
+                            .content_span = name_span,
+                        }
+                    }
+                }
+            };
+
+            if (parse_binding_type_or_set_to_default(&p, &ret->field.initializer.binding)) {
+                hop_whitespace(&p);
+            }
+
+            if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.initializer.value)) {
+                hop_whitespace(&p);
+            }
         }
     } else {
         cstr_drop(&name);
@@ -2465,68 +2478,6 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_name_init_with_name(Parser* parent, ExprCtx ctx, cstr name, Span name_span, NameInitData* ret) {
-    Parser p = parser(parent);
-
-    Type type = type_any;
-    bool type_explicit = false;
-    Anchor type_a = span_start(&p);
-    if (hop_start(&p, ":")) {
-        hop_whitespace(&p);
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-            type_explicit = true;
-        } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-            type = type_any;
-        }
-        hop_whitespace(&p);
-    }
-    Span type_span = span_end(type_a);
-
-    Expr value;
-    bool value_explicit = false;
-    if (hop_start(&p, "=")) {
-        hop_whitespace(&p);
-        if (parse_expr(&p, ctx, &value)) {
-            value_explicit = true;
-        } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        }
-    }
-    if (!value_explicit) {
-        value = expr_undefined(span_from_pos(&p));
-    }
-
-    *ret = (NameInitData) {
-        .name = name,
-        .name_span = name_span,
-        .type_explicit = type_explicit,
-        .type = type,
-        .type_span = type_span,
-        .value_explicit = value_explicit,
-        .value = value,
-    };
-    return parse_success(&p);
-}
-
-static bool parse_name_init(Parser* parent, ExprCtx ctx, NameInitData* ret) {
-    Parser p = parser(parent);
-
-    cstr name = cstr_null;
-    Span name_span;
-    if (!parse_identifier(&p, &name, &name_span)) {
-        name_span = span_from_pos(&p);
-        error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-    }
-    hop_whitespace(&p);
-
-    if (!parse_name_init_with_name(&p, ctx, name, name_span, ret)) {
-        return parse_fail(&p);
-    }
-
-    return parse_success(&p);
-}
-
 // Only parses content, sets type and value to defaults
 static bool parse_binding_content(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
@@ -2636,6 +2587,17 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     return true;
 }
 
+static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
+    if (parse_binding_type(parent, ret)) {
+        return true;
+    } else {
+        ret->type_span = span_null;
+        ret->type = type_any;
+        ret->type_explicit = false;
+        return false;
+    }
+}
+
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (!hop_char(parent, '=')) {
         return false;
@@ -2648,6 +2610,15 @@ static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
 
     return true;
+}
+
+static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret) {
+    if (parse_initialization(parent, ctx, ret)) {
+        return true;
+    } else {
+        *ret = expr_implicit_any(span_from_pos(parent));
+        return false;
+    }
 }
 
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatement* ret) {
@@ -2689,20 +2660,16 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
             }
             break;
         }
-        const char* end_of_name_init = p.pos;
+        const char* end_of_initialization = p.pos;
         hop_whitespace(&p);
 
-        if (parse_binding_type(&p, &initializer.binding)) {
-            end_of_name_init = p.pos;
+        if (parse_binding_type_or_set_to_default(&p, &initializer.binding)) {
+            end_of_initialization = p.pos;
             hop_whitespace(&p);
-        } else {
-            initializer.binding.type_span = span_null;
-            initializer.binding.type = type_any;
-            initializer.binding.type_explicit = false;
         }
 
         if (parse_initialization(&p, ctx, &initializer.value)) {
-            end_of_name_init = p.pos;
+            end_of_initialization = p.pos;
             hop_whitespace(&p);
         } else {
             initializer.value = expr_implicit_any(span_from_pos(&p));
@@ -2716,7 +2683,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
             hop_start_if_ends_on_word_break(&p, "in") ||
             hop_start_if_ends_on_word_break(&p, "of")
         ) {
-            p.pos = end_of_name_init;
+            p.pos = end_of_initialization;
             break;
         }
 
