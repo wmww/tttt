@@ -13,6 +13,7 @@ typedef struct ForLoopStatement ForLoopStatement;
 typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct SwitchStatement SwitchStatement;
+typedef struct ImportStatement ImportStatement;
 
 // NameInitData is useful for multiple things that can optionally both values and types
 
@@ -80,6 +81,7 @@ typedef struct Statement {
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
         STATEMENT_RETURN_EXPR, // also uses expr union member
         STATEMENT_THROW_EXPR, // also uses expr union member
+        STATEMENT_IMPORT,
         STATEMENT_DECL_VARIABLE,
         STATEMENT_DECL_FUNCTION,
         STATEMENT_DECL_CLASS,
@@ -94,6 +96,7 @@ typedef struct Statement {
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
         Span break_span;
+        ImportStatement* import;
         struct {
             DeclExported exported;
             union {
@@ -176,7 +179,7 @@ typedef struct SwitchStatement {
     VecSwitchCase cases;
 } SwitchStatement;
 
-// Try-catch-finally statements
+// Try-catch-finally statement
 
 typedef struct TryCatchStatement {
     Block try_block;

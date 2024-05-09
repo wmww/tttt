@@ -462,6 +462,7 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_BREAK: break;
+        case STATEMENT_IMPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_compile_test_info(&my decl.variable, ctx);

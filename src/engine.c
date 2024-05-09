@@ -496,6 +496,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return result_err(value);
         }
 
+        case STATEMENT_IMPORT:
+            NONFATAL("Importing not yet implemented");
+            return result_ok_undefined;
+
         case STATEMENT_DECL_VARIABLE: {
             // TODO: respect keyword (let, const, var)
             c_foreach(i, vec_initialized_binding, statement->decl.variable.initializers) {

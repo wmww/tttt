@@ -4,6 +4,7 @@
 #include "interface_member.h"
 #include "src/span.h"
 #include "statement.h"
+#include "import_statement.h"
 #include "identifier_type.h"
 #include "ternary_type.h"
 #include "generic.h"
@@ -219,9 +220,6 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
         return false;
     }
     Span s = span_end(a);
-    if (span) {
-        *span = s;
-    }
     if (span_eq_str(&s, "return") ||
         span_eq_str(&s, "throw") ||
         span_eq_str(&s, "case") ||
@@ -230,9 +228,15 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
         span_eq_str(&s, "case") ||
         span_eq_str(&s, "default")
     ) {
+        parent->pos = a.start;
         return false; // TODO: check for all keywords efficiently
     }
-    *ret = cstr_from_n(a.start, parent->pos - a.start);
+    if (span) {
+        *span = s;
+    }
+    if (ret) {
+        *ret = cstr_from_n(a.start, parent->pos - a.start);
+    }
     return true;
 }
 
@@ -2341,6 +2345,126 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
+    Parser p = parser(parent);
+    *ret = vec_import_item_init();
+
+    if (!hop_char(&p, '{')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    while (*p.pos && *p.pos != '}') {
+        ImportItem item = {0};
+
+        if (hop_start_if_ends_on_word_break(&p, "type")) {
+            hop_whitespace(&p);
+            item.type_only = true;
+        }
+
+        if (parse_identifier(&p, nullptr, &item.source)) {
+            hop_whitespace(&p);
+
+            if (hop_start_if_ends_on_word_break(&p, "as")) {
+                hop_whitespace(&p);
+
+                if (!parse_identifier(&p, nullptr, &item.name)) {
+                    error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+                    item.name = item.source;
+                }
+            } else {
+                item.name = item.source;
+            }
+
+            vec_import_item_push(ret, item);
+        } else {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
+            hop_whitespace(&p);
+        }
+
+        if (!hop_char(&p, ',') && *p.pos != '}') {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+        }
+        hop_whitespace(&p);
+    }
+
+    if (!hop_char(&p, '}')) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
+    }
+
+    return parse_success(&p);
+}
+
+static bool parse_import_statement(Parser* parent, Statement* ret) {
+    Parser p = parser(parent);
+    ImportStatement import = {0};
+
+    if (!hop_start_if_ends_on_word_break(&p, "import")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (hop_start_if_ends_on_word_break(&p, "type")) {
+        import.type_only = true;
+        hop_whitespace(&p);
+    }
+
+    if (hop_char(&p, '*')) {
+        hop_whitespace(&p);
+
+        if (!hop_start_if_ends_on_word_break(&p, "as")) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'as' expected.");
+        }
+        hop_whitespace(&p);
+
+        if (!parse_identifier(&p, nullptr, &import.module_name)) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
+            import.module_name = span_null;
+        }
+        hop_whitespace(&p);
+    } else {
+        if (parse_identifier(&p, nullptr, &import.default_name)) {
+            hop_whitespace(&p);
+
+            if (hop_char(&p, ',')) {
+                hop_whitespace(&p);
+
+                if (!parse_import_item_list(&p, &import.items)) {
+                    import.items = vec_import_item_init();
+                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+                }
+            }
+        } else if (!parse_import_item_list(&p, &import.items)) {
+            return parse_fail(&p);
+        }
+        hop_whitespace(&p);
+    }
+
+    if (!hop_start_if_ends_on_word_break(&p, "from")) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'from' expected.");
+    }
+    hop_whitespace(&p);
+
+    Expr path_expr;
+    if (parse_expr(&p, expr_ctx_null, &path_expr)) {
+        if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
+            import.path = path_expr.literal.string;
+            import.path_span = path_expr.span;
+        } else {
+            error_ctx_error(&p.errs, path_expr.span, 1141, "String literal expected.");
+            expr_drop(&path_expr);
+        }
+    } else {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1109, "Expression expected.");
+    }
+
+    *ret = (Statement){
+        .tag = STATEMENT_IMPORT,
+        .import = c_new(ImportStatement, import),
+    };
+    return parse_success(&p);
+}
+
 static bool parse_name_init_with_name(Parser* parent, ExprCtx ctx, cstr name, Span name_span, NameInitData* ret) {
     Parser p = parser(parent);
 
@@ -3179,6 +3303,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
             case STATEMENT_DECL_TYPE: ret->decl.type.full_span = span_end(a); break;
             default: break;
         }
+    } else if (parse_import_statement(&p, ret)) {
     } else if (parse_statement_decl(&p, DECL_EXPORTED_NO, ret)) {
     } else if (parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;

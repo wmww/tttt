@@ -1,4 +1,5 @@
 #include "statement.h"
+#include "import_statement.h"
 #include "error.h"
 #include "name_stack.h"
 #include "class_decl.h"
@@ -120,6 +121,11 @@ void statement_drop(Statement* me) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             expr_drop(&my expr);
+            break;
+
+        case STATEMENT_IMPORT:
+            import_statement_drop(my import);
+            free(my import);
             break;
 
         case STATEMENT_DECL_VARIABLE:
@@ -265,6 +271,10 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_sv(target, c_sv(";"));
             break;
 
+        case STATEMENT_IMPORT:
+            cstr_append_import_statement_debug(target, my import, indent);
+            break;
+
         case STATEMENT_DECL_VARIABLE:
             cstr_append_variable_statement_debug(target, &my decl.variable, indent);
             cstr_append_sv(target, c_sv(";"));
@@ -285,6 +295,10 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
 
 void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
+        case STATEMENT_IMPORT:
+            import_statement_add_names(my import, names, errs);
+            break;
+
         case STATEMENT_DECL_VARIABLE:
             variable_statement_add_names(&my decl.variable, names, errs);
             break;
@@ -441,6 +455,8 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             }
             expr_resolve_names(&my expr, names, errs);
             break;
+
+        case STATEMENT_IMPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_resolve_names(&my decl.variable, names, errs);
@@ -679,6 +695,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             }
             vec_type_push(&ctx->returned_types, t);
         }   break;
+
+        case STATEMENT_IMPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_typecheck(&my decl.variable, errs);
