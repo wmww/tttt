@@ -49691,7 +49691,7 @@ const baselines = {
         types: true,
     },
     'parserIndexMemberDeclaration5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

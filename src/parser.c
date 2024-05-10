@@ -1880,9 +1880,20 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             return parse_success(&p);
         }
         vec_class_item_push(&ret->items, item);
-        do {
-            hop_whitespace(&p);
-        } while (hop_char(&p, ';'));
+        hop_whitespace(&p);
+
+        if (!hop_char(&p, ';') &&
+            *p.pos != '}' &&
+            p.whitespace != WHITESPACE_NEWLINE
+        ) {
+            if (*p.pos) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+            }
+        } else {
+            do {
+                hop_whitespace(&p);
+            } while (hop_char(&p, ';'));
+        }
     }
 
     if (!hop_char(&p, '}')) {
