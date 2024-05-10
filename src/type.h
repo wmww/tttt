@@ -13,8 +13,10 @@ typedef struct NameStack NameStack;
 typedef struct NamedType NamedType;
 typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
+typedef struct Expr Expr;
 
 wrap_forward_arc(NamedType, named_type);
+wrap_forward_arc(Expr, expr);
 wrap_forward_vec(Type, type);
 
 typedef struct Type {

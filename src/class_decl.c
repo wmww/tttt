@@ -21,6 +21,10 @@ void class_item_drop(ClassItem* me) {
             initialized_binding_drop(&my field.initializer);
             break;
 
+        case CLASS_ITEM_INTERFACE_MEMBER:
+            interface_member_drop(&my interface_memeber);
+            break;
+
         case CLASS_ITEM_STATIC_BLOCK:
             block_drop(&my static_block);
             break;
@@ -84,6 +88,10 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 
             case CLASS_ITEM_FIELD:
                 cstr_append_initialized_binding_debug(target, &i.ref->field.initializer, indent + 1);
+                break;
+
+            case CLASS_ITEM_INTERFACE_MEMBER:
+                cstr_append_interface_member_debug(target, &i.ref->interface_memeber, indent + 1);
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
@@ -151,6 +159,10 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 initialized_binding_resolve_names(&i.ref->field.initializer, names, errs);
                 break;
 
+            case CLASS_ITEM_INTERFACE_MEMBER:
+                interface_member_resolve_names(&i.ref->interface_memeber, names, errs);
+                break;
+
             case CLASS_ITEM_STATIC_BLOCK:
                 block_resolve_names(&i.ref->static_block, names, errs);
                 break;
@@ -169,7 +181,8 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 function_impl_resolve_names(&i.ref->member.func, names, errs);
                 break;
 
-            case CLASS_ITEM_FIELD: break;
+            case CLASS_ITEM_FIELD:
+            case CLASS_ITEM_INTERFACE_MEMBER:
             case CLASS_ITEM_STATIC_BLOCK: break;
         }
     }
@@ -241,6 +254,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     );
                 }
                 break;
+
+            case CLASS_ITEM_INTERFACE_MEMBER: break;
 
             case CLASS_ITEM_STATIC_BLOCK: {
                 StatementCtx ctx = statement_ctx_toplevel();

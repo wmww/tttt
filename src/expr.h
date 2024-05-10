@@ -2,6 +2,7 @@
 
 #include "value.h"
 #include "span.h"
+#include "type.h" // For ArcExpr forward declare
 
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
@@ -125,6 +126,10 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs);
 #define i_no_clone
 #define i_is_forward
 #include "wrap_stc/vec.h"
+
+#define i_key_class_names Expr, expr
+#define i_is_forward
+#include "wrap_stc/arc.h"
 
 // Binary op
 

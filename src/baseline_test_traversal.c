@@ -67,17 +67,35 @@ void initialized_binding_compile_test_info(InitializedBinding const* me, Span sc
     }
 }
 
+void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
+    switch (my key.tag) {
+        case INTERFACE_KEY_NAME:
+            baseline_test_case_add_symbol_with_scope(
+                ctx,
+                span_sv(&scope),
+                cstr_sv(&my key.name),
+                my key.span,
+                my span
+            );
+            baseline_test_case_add_type(ctx, my key.span, &my type);
+            break;
+
+        case INTERFACE_KEY_INDEX:
+            baseline_test_case_add_symbol(ctx, span_sv(&my key.span), my key.span, my key.span);
+            baseline_test_case_add_type(ctx, my key.span, &my key.index);
+            type_compile_test_info(&my key.index, ctx);
+            break;
+
+        case INTERFACE_KEY_MAPPED:
+            expr_compile_test_info(my key.mapped.get, true, ctx);
+            break;
+    }
+    type_compile_test_info(&my type, ctx);
+}
+
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {
     c_foreach(i, vec_interface_member, my members) {
-        baseline_test_case_add_symbol_with_scope(
-            ctx,
-            span_sv(&scope),
-            cstr_sv(&i.ref->name),
-            i.ref->name_span,
-            i.ref->span
-        );
-        baseline_test_case_add_type(ctx, i.ref->name_span, &i.ref->type);
-        type_compile_test_info(&i.ref->type, ctx);
+        interface_member_compile_test_info(i.ref, scope, ctx);
     }
 }
 
@@ -206,6 +224,7 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
             case CLASS_ITEM_CONSTRUCTOR: function_impl_compile_test_info(&i.ref->constructor.func, my name_span, ctx); break;
             case CLASS_ITEM_MEMBER: function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx); break;
             case CLASS_ITEM_FIELD: initialized_binding_compile_test_info(&i.ref->field.initializer, my name_span, i.ref->span, ctx); break;
+            case CLASS_ITEM_INTERFACE_MEMBER: interface_member_compile_test_info(&i.ref->interface_memeber, my name_span, ctx); break;
             case CLASS_ITEM_STATIC_BLOCK: block_compile_test_info(&i.ref->static_block, ctx); break;
         }
     }

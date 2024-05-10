@@ -2,6 +2,7 @@
 
 #include "prelude.h"
 #include "function_impl.h"
+#include "interface_member.h"
 #include "binding.h"
 
 typedef enum AccessModifier {
@@ -15,6 +16,7 @@ typedef struct ClassItem {
         CLASS_ITEM_CONSTRUCTOR,
         CLASS_ITEM_MEMBER,
         CLASS_ITEM_FIELD,
+        CLASS_ITEM_INTERFACE_MEMBER,
         CLASS_ITEM_STATIC_BLOCK,
     } tag;
     AccessModifier access;
@@ -37,6 +39,7 @@ typedef struct ClassItem {
             bool optional;
             InitializedBinding initializer; // always BINDING_IDENTIFIER
         } field;
+        InterfaceMember interface_memeber;
         Block static_block;
     };
 } ClassItem;

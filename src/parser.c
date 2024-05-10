@@ -798,6 +798,11 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     ));
                     break;
 
+                case CLASS_ITEM_INTERFACE_MEMBER:
+                    vec_interface_member_push(&members, item.interface_memeber);
+                    item.interface_memeber = (InterfaceMember){0};
+                    break;
+
                 default:
                     error_ctx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "Invalid class item for interface.");
                     break;
@@ -1368,6 +1373,85 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_index_or_mapped_interface_member(Parser* parent, bool is_index, InterfaceMember* ret) {
+    Parser p = parser(parent);
+    *ret = (InterfaceMember){
+        .key.tag = is_index ? INTERFACE_KEY_INDEX : INTERFACE_KEY_MAPPED,
+    };
+
+    if (!hop_char(&p, '[')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    bool show_errors = true;
+    Anchor a = span_start(&p);
+    if (is_index) {
+        bool fail_if_no_colon = true;
+
+        if (!parse_identifier(&p, nullptr, nullptr)) {
+            return parse_fail(&p);
+        }
+        ret->key.span = span_end(a);
+        hop_whitespace(&p);
+        if (hop_char(&p, '?')) {
+            error_ctx_error(
+                &p.errs,
+                span_from_previous_char(&p),
+                1019,
+                "An index signature parameter cannot have a question mark."
+            );
+            hop_whitespace(&p);
+            fail_if_no_colon = false;
+            show_errors = false;
+        }
+
+        if (!hop_char(&p, ':')) {
+            if (fail_if_no_colon) {
+                return parse_fail(&p);
+            }
+        }
+        hop_whitespace(&p);
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.index)) {
+            if (show_errors) {
+                error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+            }
+            ret->key.index = type_any;
+        }
+    } else {
+        Expr expr;
+        if (!parse_expr(&p, expr_ctx_null, &expr)) {
+            return parse_fail(&p);
+        }
+        ret->key.mapped = arc_expr_make(expr);
+        ret->key.span = span_end(a);
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, ']')) {
+        if (show_errors) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+        }
+    }
+    hop_whitespace(&p);
+
+    if (!hop_char(&p, ':')) {
+        if (show_errors) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "':' expected.");
+        }
+    }
+    hop_whitespace(&p);
+
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->type)) {
+        if (show_errors) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+        }
+        ret->type = type_any;
+    }
+
+    return parse_success(&p);
+}
+
 // This function is a clusterfuck. I'm sorry.
 static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     Parser p = parser(parent);
@@ -1404,7 +1488,11 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     while (true) {
         cstr next_name;
         Span next_name_span;
-        if (!parse_identifier(&p, &next_name, &next_name_span)) {
+        if (parse_identifier(&p, &next_name, &next_name_span)) {
+        } else if (*p.pos == '[') {
+            next_name = cstr_null;
+            next_name_span = span_null;
+        } else {
             break;
         }
 
@@ -1507,6 +1595,10 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         name = next_name;
         name_span = next_name_span;
 
+        if (cstr_empty(&name)) {
+            break;
+        }
+
         if (p.whitespace == WHITESPACE_NEWLINE) {
             break;
         }
@@ -1555,6 +1647,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         if (parse_function_fn(&p, &func)) {
             *ret = (ClassItem) {
                 .tag = CLASS_ITEM_MEMBER,
+                .access = ret->access,
                 .member = {
                     .is_static = span_valid(&static_span),
                     .name = name,
@@ -1571,6 +1664,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         } else {
             *ret = (ClassItem) {
                 .tag = CLASS_ITEM_FIELD,
+                .access = ret->access,
                 .field = {
                     .is_readonly = span_valid(&readonly_span),
                     .is_static = span_valid(&static_span),
@@ -1595,7 +1689,13 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
     } else {
         cstr_drop(&name);
-        return parse_fail(&p);
+        if (parse_index_or_mapped_interface_member(&p, true, &ret->interface_memeber) ||
+            parse_index_or_mapped_interface_member(&p, false, &ret->interface_memeber)
+        ) {
+            ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
+        } else {
+            return parse_fail(&p);
+        }
     }
 
     switch (modifier_error) {

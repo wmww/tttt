@@ -386,7 +386,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                type_resolve_names(&i.ref->type, names, errs);
+                interface_member_resolve_names(i.ref, names, errs);
             }
             break;
 
@@ -587,9 +587,15 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                 return false;
             }
             c_foreach(i, vec_interface_member, super->interface.members) {
+                if (i.ref->key.tag != INTERFACE_KEY_NAME) {
+                    continue; // TODO
+                }
                 bool found = false;
                 c_foreach(j, vec_interface_member, sub->interface.members) {
-                    if (cstr_eq(&i.ref->name, &j.ref->name)) {
+                    if (j.ref->key.tag != INTERFACE_KEY_NAME) {
+                        continue; // TODO
+                    }
+                    if (cstr_eq(&i.ref->key.name, &j.ref->key.name)) {
                         if (type_extends_internal(&j.ref->type, &i.ref->type, refinements, level + 1)) {
                             found = true;
                             break;
