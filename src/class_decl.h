@@ -28,11 +28,13 @@ typedef struct ClassItem {
             bool is_static;
             cstr name;
             Span name_span;
+            bool optional;
             FunctionImpl func;
         } member;
         struct {
             bool is_readonly;
             bool is_static;
+            bool optional;
             InitializedBinding initializer; // always BINDING_IDENTIFIER
         } field;
         Block static_block;

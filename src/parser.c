@@ -1543,6 +1543,12 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             modifier_error_span = access_span;
         }
     } else if (!cstr_empty(&name)) {
+        bool optional = false;
+        if (hop_char(&p, '?')) {
+            hop_whitespace(&p);
+            optional = true;
+        }
+
         FunctionImpl func;
         if (parse_function_fn(&p, &func)) {
             *ret = (ClassItem) {
@@ -1551,9 +1557,11 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     .is_static = span_valid(&static_span),
                     .name = name,
                     .name_span = name_span,
+                    .optional = optional,
                     .func = func,
                 }
             };
+
             if (span_valid(&readonly_span)) {
                 modifier_error = INVALID_READONLY;
                 modifier_error_span = readonly_span;
@@ -1564,6 +1572,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .field = {
                     .is_readonly = span_valid(&readonly_span),
                     .is_static = span_valid(&static_span),
+                    .optional = optional,
                     .initializer = {
                         .binding = {
                             .tag = BINDING_IDENTIFIER,

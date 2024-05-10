@@ -202,13 +202,17 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 function_impl_typecheck(&i.ref->member.func, errs);
                 if (i.ref->member.is_static) {
                 } else {
+                    Type t = type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)));
+                    if (i.ref->member.optional) {
+                        t = type_composite(t, type_undefined, TYPE_UNION);
+                    }
                     vec_interface_member_push(
                         &interface.members,
                         interface_member_make(
                             i.ref->span,
                             cstr_clone(i.ref->member.name),
                             i.ref->member.name_span,
-                            type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)))
+                            t
                         )
                     );
                 }
@@ -216,8 +220,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_FIELD:
                 initialized_binding_typecheck(&i.ref->field.initializer, true, errs);
+                Type t = type_clone(i.ref->field.initializer.binding.type);
+                if (i.ref->member.optional) {
+                    t = type_composite(t, type_undefined, TYPE_UNION);
+                }
                 ASSERT(i.ref->field.initializer.binding.tag == BINDING_IDENTIFIER);
                 if (i.ref->field.is_static) {
+                    type_drop(&t);
                 } else {
                     vec_interface_member_push(
                         &interface.members,
@@ -225,7 +234,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                             i.ref->span,
                             cstr_clone(i.ref->field.initializer.binding.identifier),
                             i.ref->field.initializer.binding.content_span,
-                            type_clone(i.ref->field.initializer.binding.type)
+                            t
                         )
                     );
                 }
