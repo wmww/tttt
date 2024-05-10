@@ -134,6 +134,10 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
         case DECL_EXPORTED_YES_DEFAULT: cstr_append_sv(target, c_sv("export default ")); break;
     }
 
+    if (statement_tag_is_decl(my tag) && my decl.declared) {
+        cstr_append_sv(target, c_sv("declare "));
+    }
+
     switch (my tag) {
         case STATEMENT_NOOP: cstr_append_sv(target, c_sv(";")); break;
         case STATEMENT_BLOCK: cstr_append_block_debug(target, &my block, indent); break;

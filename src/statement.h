@@ -80,6 +80,7 @@ typedef struct Statement {
         ImportStatement* import;
         struct {
             DeclExported exported;
+            bool declared;
             union {
                 VariableStatement variable;
                 FunctionImpl function;
@@ -92,13 +93,23 @@ typedef struct Statement {
 
 #define statement_noop ((Statement){ .tag = STATEMENT_NOOP })
 
-static inline DeclExported statement_get_exported(Statement* me) {
-    switch (my tag) {
+static inline bool statement_tag_is_decl(typeof((Statement){}.tag) tag) {
+    switch (tag) {
         case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_FUNCTION:
-        case STATEMENT_DECL_TYPE: return my decl.exported;
-        case STATEMENT_EXPORT_DEFAULT_EXPR: return DECL_EXPORTED_YES_DEFAULT;
-        default: return DECL_EXPORTED_NO;
+        case STATEMENT_DECL_CLASS:
+        case STATEMENT_DECL_TYPE: return true;
+        default: return false;
+    }
+}
+
+static inline DeclExported statement_get_exported(Statement* me) {
+    if (statement_tag_is_decl(my tag)) {
+        return my decl.exported;
+    } else if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
+        return DECL_EXPORTED_YES_DEFAULT;
+    } else {
+        return DECL_EXPORTED_NO;
     }
 }
 

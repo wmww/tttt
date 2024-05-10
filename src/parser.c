@@ -1543,10 +1543,17 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             modifier_error_span = access_span;
         }
     } else if (!cstr_empty(&name)) {
-        if (parse_function_fn(&p, &ret->member.func)) {
-            ret->tag = CLASS_ITEM_MEMBER;
-            ret->member.name = name;
-            ret->member.name_span = name_span;
+        FunctionImpl func;
+        if (parse_function_fn(&p, &func)) {
+            *ret = (ClassItem) {
+                .tag = CLASS_ITEM_MEMBER,
+                .member = {
+                    .is_static = span_valid(&static_span),
+                    .name = name,
+                    .name_span = name_span,
+                    .func = func,
+                }
+            };
             if (span_valid(&readonly_span)) {
                 modifier_error = INVALID_READONLY;
                 modifier_error_span = readonly_span;
@@ -3184,8 +3191,9 @@ static bool parse_throw(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_statement_decl(Parser* parent, DeclExported exported, Statement* ret) {
+static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     union {
         VariableStatement variable;
@@ -3195,33 +3203,89 @@ static bool parse_statement_decl(Parser* parent, DeclExported exported, Statemen
         Expr expr;
     } parsed;
 
+    DeclExported exported = DECL_EXPORTED_NO;
+    bool declared = false;
+    bool modifier_error = false;
+
+    Anchor modifier_start = span_start(&p);
+    while (true) {
+        if (hop_start_if_ends_on_word_break(&p, "export")) {
+            if (toplevel) {
+                exported = DECL_EXPORTED_YES;
+            } else if (!modifier_error) {
+                error_ctx_error(&p.errs, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                modifier_error = true;
+            }
+        } else if (hop_start_if_ends_on_word_break(&p, "default")) {
+            if (toplevel) {
+                if (exported == DECL_EXPORTED_YES) {
+                    exported = DECL_EXPORTED_YES_DEFAULT;
+                    break;
+                } else if (!modifier_error) {
+                    error_ctx_error(&p.errs, span_end(modifier_start), 1005, "'export' expected.");
+                    modifier_error = true;
+                }
+            } else if (!modifier_error) {
+                error_ctx_error(&p.errs, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                modifier_error = true;
+            }
+        } else if (hop_start_if_ends_on_word_break(&p, "declare")) {
+            if (toplevel) {
+                declared = true;
+            } else if (!modifier_error) {
+                error_ctx_error(&p.errs, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                modifier_error = true;
+            }
+        } else {
+            break;
+        }
+        hop_whitespace(&p);
+        modifier_start = span_start(&p);
+    }
+    hop_whitespace(&p);
+
     if (exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, &parsed.variable)
     ) {
         *ret = (Statement) {
             .tag = STATEMENT_DECL_VARIABLE,
-            .decl.exported = exported,
-            .decl.variable = parsed.variable,
+            .decl = {
+                .exported = exported,
+                .declared = declared,
+                .variable = parsed.variable,
+            },
         };
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
+        parsed.function.full_span = span_end(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_FUNCTION,
-            .decl.exported = exported,
-            .decl.function = parsed.function,
+            .decl = {
+                .exported = exported,
+                .declared = declared,
+                .function = parsed.function,
+            },
         };
     } else if (parse_class_decl(&p, &parsed.class)) {
+        parsed.class.full_span = span_end(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
-            .decl.exported = exported,
-            .decl.class = c_new(ClassDecl, parsed.class),
+            .decl = {
+                .exported = exported,
+                .declared = declared,
+                .class = c_new(ClassDecl, parsed.class),
+            },
         };
     } else if (parse_interface_decl(&p, &parsed.type_decl) ||
                parse_type_decl(&p, &parsed.type_decl)
     ) {
+        parsed.type_decl.full_span = span_end(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
-            .decl.exported = exported,
-            .decl.type = parsed.type_decl,
+            .decl = {
+                .exported = exported,
+                .declared = declared,
+                .type = parsed.type_decl,
+            },
         };
     } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
         *ret = (Statement){
@@ -3241,37 +3305,8 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
     if (*p.pos == ';') {
         *ret = statement_noop;
-    } else if (hop_start_if_ends_on_word_break(&p, "export")) {
-        if (!toplevel) {
-            error_ctx_error(&p.errs, span_end(a), 1184, "Modifiers cannot appear here.");
-        }
-
-        hop_whitespace(&p);
-
-        DeclExported exported = DECL_EXPORTED_YES;
-        if (hop_start_if_ends_on_word_break(&p, "default")) {
-            exported = DECL_EXPORTED_YES_DEFAULT;
-            hop_whitespace(&p);
-        }
-
-        if (!parse_statement_decl(&p, toplevel ? exported : DECL_EXPORTED_NO, ret)) {
-            if (exported == DECL_EXPORTED_YES_DEFAULT) {
-                *ret = statement_noop;
-                error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-                return parse_success(&p);
-            } else {
-                return parse_fail(&p);
-            }
-        }
-
-        switch (ret->tag) {
-            case STATEMENT_DECL_FUNCTION: ret->decl.function.full_span = span_end(a); break;
-            case STATEMENT_DECL_CLASS: ret->decl.class->full_span = span_end(a); break;
-            case STATEMENT_DECL_TYPE: ret->decl.type.full_span = span_end(a); break;
-            default: break;
-        }
     } else if (parse_import_statement(&p, ret)) {
-    } else if (parse_statement_decl(&p, DECL_EXPORTED_NO, ret)) {
+    } else if (parse_decl_statement(&p, toplevel, ret)) {
     } else if (parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;
     } else if (parse_if_else(&p, &ret->if_else)) {
