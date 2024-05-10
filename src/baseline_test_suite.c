@@ -107,7 +107,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestCase const* tes
     bool test_has_change = baseline_test_case_has_new_pass(test) || baseline_test_case_has_new_fail(test);
     const char* name_color = test_has_change ?
         color_for_state(!baseline_test_case_has_new_fail(test), highlight_name) :
-        "";
+        (baseline_test_case_is_pass(test) ? CLR_GOOD : "");
     cstr_append_fmt(target, "%s %s " CLR0, name_color, cstr_str(&test->name));
 }
 
