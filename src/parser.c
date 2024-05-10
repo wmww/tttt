@@ -779,6 +779,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                 case CLASS_ITEM_MEMBER:
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
+                        false,
                         cstr_move(&item.member.name),
                         item.member.name_span,
                         type_callable(c_new(CallableType, item.member.func.type))
@@ -790,6 +791,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     ASSERT(item.field.initializer.binding.tag == BINDING_IDENTIFIER);
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
+                        item.field.is_readonly,
                         cstr_move(&item.field.initializer.binding.identifier),
                         item.field.initializer.binding.content_span,
                         type_move(&item.field.initializer.binding.type)

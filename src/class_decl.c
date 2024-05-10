@@ -210,6 +210,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                         &interface.members,
                         interface_member_make(
                             i.ref->span,
+                            false,
                             cstr_clone(i.ref->member.name),
                             i.ref->member.name_span,
                             t
@@ -232,6 +233,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                         &interface.members,
                         interface_member_make(
                             i.ref->span,
+                            i.ref->field.is_readonly,
                             cstr_clone(i.ref->field.initializer.binding.identifier),
                             i.ref->field.initializer.binding.content_span,
                             t

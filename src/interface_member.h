@@ -4,14 +4,16 @@
 
 typedef struct InterfaceMember {
     Span span;
+    bool readonly;
     cstr name;
     Span name_span;
     Type type;
 } InterfaceMember;
 
-static inline InterfaceMember interface_member_make(Span span, cstr name, Span name_span, Type type) {
+static inline InterfaceMember interface_member_make(Span span, bool readonly, cstr name, Span name_span, Type type) {
     return (InterfaceMember) {
         .span = span,
+        .readonly = readonly,
         .name = name,
         .name_span = name_span,
         .type = type,
