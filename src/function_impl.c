@@ -123,6 +123,14 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
                     "A rest parameter must be of an array type."
                 );
             }
+            if (default_arg->tag != EXPR_IMPLICIT_ANY) {
+                error_ctx_error(
+                    errs,
+                    i.ref->binding.content_span,
+                    1048,
+                    "A rest parameter cannot have an initializer."
+                );
+            }
         }
     }
 
