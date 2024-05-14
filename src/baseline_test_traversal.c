@@ -151,6 +151,10 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             type_compile_test_info(&my indexed->index, ctx);
             break;
 
+        case TYPE_KEYOF:
+            type_compile_test_info(&my keyof->interface, ctx);
+            break;
+
         case TYPE_TERNARY:
             type_compile_test_info(&my ternary->maybe_sub, ctx);
             type_compile_test_info(&my ternary->maybe_super, ctx);

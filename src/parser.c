@@ -697,6 +697,17 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_number;
     } else if (hop_start_if_ends_on_word_break(&p, "string")) {
         *ret = type_string;
+    } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
+        hop_whitespace(&p);
+        if (!parse_type(&p, min_precedence, &parsed.type)) {
+            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+            parsed.type = type_any;
+        }
+        *ret = type_keyof(c_new(KeyofType, {
+            .interface = parsed.type,
+            .has_cache = false,
+            .cached = {0},
+        }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
     } else if (parse_function_args(&p, nullptr, &parsed.callable)) {

@@ -7,6 +7,7 @@
 typedef struct IdentifierType IdentifierType;
 typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
+typedef struct KeyofType KeyofType;
 typedef struct CallableType CallableType;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
@@ -35,6 +36,7 @@ typedef struct Type {
         TYPE_ARRAY,
         TYPE_TUPLE,
         TYPE_INDEXED,
+        TYPE_KEYOF,
         TYPE_TERNARY,
         TYPE_UNION,
         TYPE_INTERSECTION,
@@ -47,6 +49,7 @@ typedef struct Type {
         Type* array;
         VecType tuple;
         IndexedType* indexed;
+        KeyofType* keyof;
         TernaryType* ternary;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
     };
@@ -110,6 +113,13 @@ static inline Type type_indexed(IndexedType* indexed) {
     return (Type){
         .tag = TYPE_INDEXED,
         .indexed = indexed,
+    };
+}
+
+static inline Type type_keyof(KeyofType* keyof) {
+    return (Type){
+        .tag = TYPE_KEYOF,
+        .keyof = keyof,
     };
 }
 

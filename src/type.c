@@ -23,6 +23,7 @@ const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
 static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level);
+static Type const* type_resolve_internal(Type const* me, int level);
 
 Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag) {
     if (a.tag == tag && b.tag == tag) {
@@ -134,6 +135,11 @@ void type_drop(Type* me) {
             free(my indexed);
             break;
 
+        case TYPE_KEYOF:
+            keyof_type_drop(my keyof);
+            free(my keyof);
+            break;
+
         case TYPE_TERNARY:
             ternary_type_drop(my ternary);
             free(my ternary);
@@ -163,6 +169,7 @@ Type type_clone(Type me) {
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
         case TYPE_TUPLE: return type_tuple(vec_type_clone(me.tuple));
         case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
+        case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
         case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
     }
@@ -200,6 +207,7 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             break;
 
         case TYPE_INDEXED: cstr_append_indexed_type_debug(target, my indexed, indent); break;
+        case TYPE_KEYOF: cstr_append_keyof_type_debug(target, my keyof, indent); break;
         case TYPE_TERNARY: cstr_append_ternary_type_debug(target, my ternary, indent); break;
 
         case TYPE_UNION:
@@ -254,6 +262,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
             break;
 
         case TYPE_INDEXED: cstr_append_indexed_type_error_msg(target, my indexed); break;
+        case TYPE_KEYOF: cstr_append_keyof_type_error_msg(target, my keyof); break;
         case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, my ternary); break;
 
         case TYPE_UNION:
@@ -348,6 +357,10 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
             type_add_inferred_names(&my indexed->index, names);
             break;
 
+        case TYPE_KEYOF:
+            type_add_inferred_names(&my keyof->interface, names);
+            break;
+
         case TYPE_TERNARY:
             type_add_inferred_names(&my ternary->maybe_sub, names);
             type_add_inferred_names(&my ternary->maybe_super, names);
@@ -401,6 +414,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_INDEXED: indexed_type_resolve_names(my indexed, names, errs); break;
+        case TYPE_KEYOF: keyof_type_resolve_names(my keyof, names, errs); break;
 
         case TYPE_TERNARY:
             type_resolve_names(&my ternary->maybe_sub, names, errs);
@@ -424,6 +438,52 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
     if (generic) {
         name_stack_pop_frame(names);
+    }
+}
+
+static Type type_all_keys(Type const* me, int level) {
+    me = type_resolve_internal(me, level);
+
+    switch (my tag) {
+        case TYPE_ANY:
+            return type_any;
+
+        case TYPE_NEVER:
+            return type_never;
+
+        case TYPE_INTERFACE: {
+            Type ret = type_never;
+            c_foreach(i, vec_interface_member, my interface.members) {
+                switch (i.ref->key.tag) {
+                    case INTERFACE_KEY_NAME:
+                        ret = type_composite(
+                            ret,
+                            type_value(value_string(cstr_clone(i.ref->key.name))),
+                            TYPE_UNION
+                        );
+
+                    default: break;
+                }
+            }
+            return ret;
+        }
+
+        case TYPE_ARRAY:
+        case TYPE_TUPLE:
+        case TYPE_STRING:
+            return type_number; // TODO: needs to be more complicated
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION: {
+            typeof(my tag) flipped_tag = my tag == TYPE_UNION ? TYPE_INTERSECTION : TYPE_UNION;
+            Type ret = flipped_tag == TYPE_UNION ? type_never : type_any;
+            c_foreach(i, vec_type, my composite) {
+                ret = type_composite(ret, type_all_keys(i.ref, level), flipped_tag);
+            }
+            return ret;
+        }
+
+        default: return type_never;
     }
 }
 
@@ -456,6 +516,14 @@ static Type const* type_resolve_internal(Type const* me, int level) {
             case TYPE_INDEXED:
                 NONFATAL("Resolving index types not yet supported");
                 me = &type_any;
+                break;
+
+            case TYPE_KEYOF:
+                if (!my keyof->has_cache) {
+                    my keyof->cached = type_all_keys(&my keyof->interface, level);
+                    my keyof->has_cache = true;
+                }
+                me = &my keyof->cached;
                 break;
 
             case TYPE_TERNARY: {
@@ -519,6 +587,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
 
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
+        case TYPE_KEYOF:
         case TYPE_TERNARY:
             return type_extends_internal(type_resolve_internal(sub, level + 1), super, refinements, level + 1);
 
@@ -655,6 +724,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             // fallthrough
 
         case TYPE_INDEXED:
+        case TYPE_KEYOF:
         case TYPE_TERNARY:
             return type_extends_internal(sub, type_resolve_internal(super, level + 1), refinements, level + 1);
 
@@ -721,6 +791,7 @@ void type_abstract_literals(Type* me) {
         case TYPE_INTERFACE:
         case TYPE_ARRAY:
         case TYPE_INDEXED:
+        case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_UNION:
         case TYPE_INTERSECTION:

@@ -164,6 +164,12 @@ static void collect_generic_candidates(
             );
             return;
 
+        case TYPE_KEYOF:
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with keyof type not yet implemented"
+            );
+            return;
+
         case TYPE_TERNARY:
             error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with ternary not yet implemented"
@@ -235,6 +241,11 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
+                switch(i.ref->key.tag) {
+                    case INTERFACE_KEY_NAME: break;
+                    case INTERFACE_KEY_INDEX: replace_named_types_with(&i.ref->key.index, refinements); break;
+                    case INTERFACE_KEY_MAPPED: break;
+                }
                 replace_named_types_with(&i.ref->type, refinements);
             }
             return;
@@ -252,6 +263,15 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
         case TYPE_INDEXED:
             replace_named_types_with(&my indexed->interface, refinements);
             replace_named_types_with(&my indexed->index, refinements);
+            return;
+
+        case TYPE_KEYOF:
+            replace_named_types_with(&my keyof->interface, refinements);
+            if (my keyof->has_cache) {
+                type_drop(&my keyof->cached);
+                my keyof->cached = (Type){0};
+                my keyof->has_cache = false;
+            }
             return;
 
         case TYPE_TERNARY:

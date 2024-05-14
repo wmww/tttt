@@ -5216,7 +5216,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypeSubclassExtendsTypeParam': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7448,7 +7448,7 @@ const baselines = {
     'declarationEmitDistributiveConditionalWithInfer': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitDoesNotUseReexportedNamespaceAsLocal': {
         errors: false,
@@ -14022,7 +14022,7 @@ const baselines = {
     },
     'genericInferenceDefaultTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericInheritedDefaultConstructors': {
@@ -15807,7 +15807,7 @@ const baselines = {
     },
     'inferenceFromIncompleteSource': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferenceFromParameterlessLambda': {
@@ -16321,7 +16321,7 @@ const baselines = {
         types: false,
     },
     'inlinedAliasAssignableToConstraintSameAsAlias': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26598,7 +26598,7 @@ const baselines = {
     'substitutionTypeForIndexedAccessType1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'substitutionTypeForIndexedAccessType2': {
         errors: true,
@@ -55362,8 +55362,8 @@ const baselines = {
     },
     'nonPrimitiveConstraintOfIndexAccessType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nonPrimitiveInFunction': {
         errors: false,

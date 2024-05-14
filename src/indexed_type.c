@@ -30,3 +30,30 @@ void indexed_type_resolve_names(IndexedType* me, NameStack* names, ErrorCtx* err
     type_resolve_names(&my interface, names, errs);
     type_resolve_names(&my index, names, errs);
 }
+
+void keyof_type_drop(KeyofType* me) {
+    type_drop(&my interface);
+    type_drop(&my cached);
+}
+
+KeyofType keyof_type_clone(KeyofType me) {
+    return (KeyofType){
+        .interface = type_clone(me.interface),
+        .has_cache = false,
+        .cached = {0},
+    };
+}
+
+void cstr_append_keyof_type_debug(cstr* target, KeyofType* me, int indent) {
+    cstr_append_sv(target, c_sv("keyof "));
+    cstr_append_type_debug(target, &my interface, indent);
+}
+
+void cstr_append_keyof_type_error_msg(cstr* target, KeyofType* me) {
+    cstr_append_sv(target, c_sv("keyof "));
+    cstr_append_type_error_msg(target, &my interface);
+}
+
+void keyof_type_resolve_names(KeyofType* me, NameStack* names, ErrorCtx* errs) {
+    type_resolve_names(&my interface, names, errs);
+}
