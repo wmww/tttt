@@ -77,7 +77,7 @@ static bool parse_interface(Parser* parent, Interface* ret);
 static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
-static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_ret, CallableType* type_ret);
+static bool parse_function_args(Parser* parent, bool is_type, FunctionImpl /*nullable*/* func_ret, CallableType* type_ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
@@ -710,7 +710,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
-    } else if (parse_function_args(&p, nullptr, &parsed.callable)) {
+    } else if (parse_function_args(&p, true, nullptr, &parsed.callable)) {
         *ret = type_callable(c_new(CallableType, parsed.callable));
     } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
         hop_whitespace(&p);
@@ -935,14 +935,18 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     return parse_success(&p);
 }
 
-// If func_ret is null it is parsed like a type instead of a function implementation
-static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_ret, CallableType* type_ret) {
+static bool parse_function_args(
+    Parser* parent,
+    bool is_type,
+    FunctionImpl /*nullable*/* func_ret,
+    CallableType* type_ret
+) {
     Parser p = parser(parent);
     bool is_definitely_function = false;
 
     *type_ret = (CallableType){0};
 
-    if (!func_ret) {
+    if (is_type || !func_ret) {
         if (hop_start_if_ends_on_word_break(&p, "new")) {
             hop_whitespace(&p);
         }
@@ -1026,6 +1030,15 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
                     vec_expr_push(&func_ret->arg_defaults, default_value);
                 } else {
                     expr_drop(&default_value);
+                    // TODO: this might should be added in the typecheck phase
+                    if (default_value.tag != EXPR_IMPLICIT_ANY) {
+                        error_ctx_error(
+                            &p.errs,
+                            span_end(arg_start),
+                            2371,
+                            "A parameter initializer is only allowed in a function or constructor implementation."
+                        );
+                    }
                 }
 
                 if (p.pos == before_param) {
@@ -1068,17 +1081,7 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
     }
 
     bool parse_ret_type = true;
-    if (func_ret) {
-        Parser type_p = parser(&p);
-        hop_whitespace(&type_p);
-
-        if (hop_start(&type_p, ":")) {
-            parse_success(&type_p);
-        } else {
-            parse_fail(&type_p);
-            parse_ret_type = false;
-        }
-    } else {
+    if (is_type) {
         hop_whitespace(&p);
 
         if (!hop_start(&p, "=>")){
@@ -1087,6 +1090,16 @@ static bool parse_function_args(Parser* parent, FunctionImpl /*nullable*/* func_
             } else {
                 goto drop_and_fail;
             }
+        }
+    } else {
+        Parser type_p = parser(&p);
+        hop_whitespace(&type_p);
+
+        if (hop_start(&type_p, ":")) {
+            parse_success(&type_p);
+        } else {
+            parse_fail(&type_p);
+            parse_ret_type = false;
         }
     }
     hop_whitespace(&p);
@@ -1149,7 +1162,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     Span lone_arg_span;
     *ret = (FunctionImpl){0};
 
-    if (parse_function_args(&p, ret, &ret->type)) {
+    if (parse_function_args(&p, false, ret, &ret->type)) {
 
         is_definitely_function =
             !vec_callable_arg_empty(&ret->type.args) &&
@@ -1217,7 +1230,7 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     Anchor a = span_start(&p);
     *ret = (FunctionImpl){0};
 
-    if (!parse_function_args(&p, ret, &ret->type)) {
+    if (!parse_function_args(&p, false, ret, &ret->type)) {
         return parse_fail(&p);
     }
 
@@ -1230,7 +1243,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Anchor a = span_start(&p);
     *ret = (FunctionImpl){0};
 
-    if (!parse_function_args(&p, ret, &ret->type)) {
+    if (!parse_function_args(&p, false, ret, &ret->type)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -1700,23 +1713,21 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
     } else {
         cstr_drop(&name);
-        FunctionImpl fn;
+        CallableType callable;
         if (parse_index_or_mapped_interface_member(&p, true, &ret->interface_memeber) ||
             parse_index_or_mapped_interface_member(&p, false, &ret->interface_memeber)
         ) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.span = span_end(a);
             ret->interface_memeber.readonly = span_valid(&readonly_span);
-        } else if (parse_function_header(&p, &fn)) {
+        } else if (parse_function_args(&p, false, nullptr, &callable)) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
                 .span = span_end(a),
                 .readonly = span_valid(&readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
-                .type = type_callable(c_new(CallableType, fn.type))
+                .type = type_callable(c_new(CallableType, callable))
             };
-            fn.type = (CallableType){0};
-            function_impl_drop(&fn);
         } else {
             return parse_fail(&p);
         }
