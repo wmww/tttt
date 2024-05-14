@@ -89,6 +89,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         case INTERFACE_KEY_MAPPED:
             expr_compile_test_info(my key.mapped.get, true, ctx);
             break;
+
+        case INTERFACE_KEY_CALLABLE: break;
     }
     type_compile_test_info(&my type, ctx);
 }

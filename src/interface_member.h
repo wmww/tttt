@@ -11,6 +11,7 @@ typedef struct InterfaceMember {
             INTERFACE_KEY_NAME,
             INTERFACE_KEY_INDEX,
             INTERFACE_KEY_MAPPED,
+            INTERFACE_KEY_CALLABLE, // No key data, and type must be callable
         } tag;
         union {
             cstr name;

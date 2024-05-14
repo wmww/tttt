@@ -1700,10 +1700,23 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
     } else {
         cstr_drop(&name);
+        FunctionImpl fn;
         if (parse_index_or_mapped_interface_member(&p, true, &ret->interface_memeber) ||
             parse_index_or_mapped_interface_member(&p, false, &ret->interface_memeber)
         ) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
+            ret->interface_memeber.span = span_end(a);
+            ret->interface_memeber.readonly = span_valid(&readonly_span);
+        } else if (parse_function_header(&p, &fn)) {
+            ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
+            ret->interface_memeber = (InterfaceMember){
+                .span = span_end(a),
+                .readonly = span_valid(&readonly_span),
+                .key.tag = INTERFACE_KEY_CALLABLE,
+                .type = type_callable(c_new(CallableType, fn.type))
+            };
+            fn.type = (CallableType){0};
+            function_impl_drop(&fn);
         } else {
             return parse_fail(&p);
         }
