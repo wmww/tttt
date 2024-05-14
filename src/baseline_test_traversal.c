@@ -213,6 +213,12 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
             .name = cstr_clone(my name),
             .span = my name_span,
         }));
+        c_foreach(i, vec_generic_item, my generic.items) {
+            vec_type_push(&t.identifier->generic_params, type_identifier(c_new(IdentifierType, {
+                .name = cstr_clone(i.ref->name),
+                .span = i.ref->name_span,
+            })));
+        }
         baseline_test_case_add_type(ctx, my name_span, &t);
         type_drop(&t);
     }
@@ -226,7 +232,23 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_class_item, my items) {
         switch(i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR: function_impl_compile_test_info(&i.ref->constructor.func, my name_span, ctx); break;
-            case CLASS_ITEM_MEMBER: function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx); break;
+
+            case CLASS_ITEM_MEMBER:
+                baseline_test_case_add_symbol_with_scope(
+                    ctx,
+                    span_sv(&my name_span),
+                    cstr_sv(&i.ref->member.name),
+                    i.ref->span,
+                    i.ref->span
+                );
+                baseline_test_case_add_type(
+                    ctx,
+                    i.ref->member.name_span,
+                    callable_type_get_wrapper(&i.ref->member.func.type)
+                );
+                function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx);
+                break;
+
             case CLASS_ITEM_FIELD: initialized_binding_compile_test_info(&i.ref->field.initializer, my name_span, i.ref->span, ctx); break;
             case CLASS_ITEM_INTERFACE_MEMBER: interface_member_compile_test_info(&i.ref->interface_memeber, my name_span, ctx); break;
             case CLASS_ITEM_STATIC_BLOCK: block_compile_test_info(&i.ref->static_block, ctx); break;
