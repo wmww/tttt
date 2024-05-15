@@ -519,6 +519,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                         case TYPE_INTERFACE:
                         case TYPE_CALLABLE:
                             // TODO: there def needs to be more nuance in this check
+                            // TODO: maybe do keyof and then index of the returned union?
                             var_type = type_string;
                             break;
 
@@ -539,7 +540,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
                 case FOR_EACH_LOOP_OF:
                     if (type_extends_array(&iterable_type) || type_extends(&iterable_type, &type_string)) {
-                        var_type = array_type_of(iterable_type);
+                        var_type = index_type_of(&iterable_type, &type_number, span_null, nullptr);
                         iterable_type = type_any;
                     } else {
                         cstr msg = cstr_lit("Type '");
@@ -629,7 +630,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     }
                 } else {
                     Type pattern_type = expr_get_type_and_typecheck(&i.ref->pattern, errs);
-                    if (!type_extends(&needle_type, &pattern_type) && !type_extends(&pattern_type, &needle_type)) {
+                    if (!type_overlaps(&needle_type, &pattern_type)) {
                         cstr message = cstr_lit("Type '");
                         cstr_append_type_error_msg(&message, &pattern_type);
                         cstr_append_sv(&message, c_sv("' is not comparable to type '"));

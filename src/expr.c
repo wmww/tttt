@@ -410,7 +410,7 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_TRIPLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_NOT_EQUAL:
-            if (!type_extends(&left, &right) && !type_extends(&right, &left)) {
+            if (!type_overlaps(&left, &right)) {
                 if (errs) {
                     cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
                     cstr_append_type_error_msg(&message, &left);
@@ -535,7 +535,10 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_PROPERTY: {
             Type value = expr_get_type_and_typecheck(&my property->expr, errs);
             Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
-            return property_type_of(value, prop, my property->prop.span, errs);
+            Type ret = index_type_of(&value, &prop, my property->prop.span, errs);
+            type_drop(&value);
+            type_drop(&prop);
+            return ret;
         }
 
         case EXPR_AS_TYPE: {

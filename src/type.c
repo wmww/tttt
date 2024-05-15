@@ -25,6 +25,11 @@ const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level);
 static Type const* type_resolve_internal(Type const* me, int level);
 
+Type type_composite_base(typeof((Type){}.tag) tag) {
+    ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
+    return tag == TYPE_UNION ? type_never : type_any;
+}
+
 Type type_composite_without_simplify(Type a, Type b, typeof((Type){}.tag) tag) {
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
@@ -83,7 +88,7 @@ Type type_composite(Type a, Type b, typeof((Type){}.tag) tag) {
 
 void composite_type_simplify(Type* me) {
     ASSERT(my tag == TYPE_UNION || my tag == TYPE_INTERSECTION);
-    Type ret = my tag == TYPE_UNION ? type_never : type_any;
+    Type ret = type_composite_base(my tag);
     c_foreach(i, vec_type, my composite) {
         ret = type_composite(ret, *i.ref, my tag);
         *i.ref = type_any;
@@ -476,7 +481,7 @@ static Type type_all_keys(Type const* me, int level) {
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
             typeof(my tag) flipped_tag = my tag == TYPE_UNION ? TYPE_INTERSECTION : TYPE_UNION;
-            Type ret = flipped_tag == TYPE_UNION ? type_never : type_any;
+            Type ret = type_composite_base(flipped_tag);
             c_foreach(i, vec_type, my composite) {
                 ret = type_composite(ret, type_all_keys(i.ref, level), flipped_tag);
             }
@@ -751,6 +756,10 @@ bool type_extends(Type const* sub, Type const* super) {
     return type_extends_internal(sub, super, nullptr, 0);
 }
 
+bool type_overlaps(Type const* a, Type const* b) {
+    return type_extends(a, b) || type_extends(b, a); // TODO: do this correctly
+}
+
 bool type_extends_array(Type const* sub) {
     static Type array_any = {
         .tag = TYPE_ARRAY,
@@ -884,83 +893,201 @@ void type_remove_null_and_undefined(Type* me) {
     }
 }
 
-Type array_type_of(Type value) {
-    Type ret = type_any;
-    switch (value.tag) {
+static Type index_type_of_internal(Type const* me, Type const* index, Span index_span, ErrorCtx* errs, int level) {
+    if (level > 100) {
+        NONFATAL("Max type recursion depth exceeded");
+        return type_any;
+    }
+
+    index = type_resolve_internal(index, level);
+    bool index_invalid = false;
+
+    switch (index->tag) {
+        case TYPE_ANY:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+            break;
+
         case TYPE_VALUE:
-            if (value.value.tag == VALUE_STRING) {
-                ret = type_string;
+            switch (index->value.tag) {
+                case VALUE_NUMBER:
+                case VALUE_STRING:
+                    break;
+
+                default: index_invalid = true; break;
             }
             break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION: {
+            Type ret = type_composite_base(index->tag);
+            c_foreach(i, vec_type, index->composite) {
+                ret = type_composite(ret, index_type_of_internal(me, i.ref, index_span, errs, level + 1), index->tag);
+            }
+            return ret;
+        }
+
+        default: index_invalid = true; break;
+    }
+
+    if (index_invalid) {
+        if (errs) {
+            cstr msg = cstr_lit("Type '");
+            cstr_append_type_error_msg(&msg, index);
+            cstr_append_sv(&msg, c_sv("' cannot be used as an index type."));
+            error_ctx_error_s(errs, index_span, 2538, msg);
+        }
+        return type_any;
+    }
+
+    Type const* me_original = me;
+    me = type_resolve_internal(me, level);
+
+    switch (my tag) {
+        case TYPE_NEVER:
+        case TYPE_VOID:
+            return type_never;
+
+        case TYPE_UNKNOWN:
+        case TYPE_ANY:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_CALLABLE:
+            return type_any;
+
+        case TYPE_VALUE:
+            switch (my value.tag) {
+                case VALUE_UNDEFINED:
+                case VALUE_NULL:
+                case VALUE_BOOLEAN:
+                case VALUE_NUMBER:
+                case VALUE_OBJECT:
+                case VALUE_ARRAY:
+                case VALUE_JS_FUNC:
+                case VALUE_NATIVE_FUNC:
+                    return type_any;
+
+                case VALUE_STRING:
+                    break;
+            }
+            // Falls through if string
+            // Fallthrough
 
         case TYPE_STRING:
-            ret = type_string;
-            break;
+            if (type_extends(index, &type_number)) {
+                return type_string;
+            } else {
+                return type_any;
+            }
+
+        case TYPE_INTERFACE: {
+            Type ret = type_composite_base(TYPE_UNION);
+            bool found = false;
+            c_foreach(i, vec_interface_member, my interface.members) {
+                switch (i.ref->key.tag) {
+                    case INTERFACE_KEY_NAME: {
+                        // Don't clone the string, and don't drop it. Hacky but safe.
+                        Type key = type_value(value_string(i.ref->key.name));
+                        if (type_extends(&key, index)) {
+                            ret = type_composite(ret, type_clone(i.ref->type), TYPE_UNION);
+                            found = true;
+                        }
+                    }   break;
+
+                    case INTERFACE_KEY_INDEX:
+                        if (type_overlaps(&i.ref->key.index, index)) {
+                            ret = type_composite(ret, type_clone(i.ref->type), TYPE_UNION);
+                            found = true;
+                        }
+                        break;
+
+                    case INTERFACE_KEY_MAPPED:
+                        // TODO
+                        break;
+
+                    case INTERFACE_KEY_CALLABLE:
+                        break;
+                }
+            }
+            if (!found) {
+                type_drop(&ret);
+                ret = type_any;
+                if (errs) {
+                    cstr msg = cstr_lit("Property '");
+                    if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
+                        cstr_append_s(&msg, index->value.string);
+                    } else {
+                        cstr_append_type_error_msg(&msg, index);
+                    }
+                    cstr_append_sv(&msg, c_sv("' does not exist on type '"));
+                    cstr_append_type_error_msg(&msg, me_original);
+                    cstr_append_sv(&msg, c_sv("'."));
+                    error_ctx_error_s(errs, index_span, 2551, msg);
+                }
+            }
+            return ret;
+        }
 
         case TYPE_ARRAY:
-            ret = *value.array;
-            *value.array = type_any;
-            break;
-
-        case TYPE_TUPLE:
-            ret = type_never;
-            c_foreach(i, vec_type, value.tuple) {
-                ret = type_composite(ret, *i.ref, TYPE_UNION);
-                *i.ref = type_any;
-            }
-            break;
-
-        default: break;
-    }
-    type_drop(&value);
-    return ret;
-}
-
-Type property_type_of(Type value, Type prop, Span prop_span, ErrorCtx* errs) {
-    if (type_extends(&prop, &type_number)) {
-        Type ret = type_any;
-        if (value.tag == TYPE_TUPLE && prop.tag == TYPE_VALUE) {
-            if (value_is_int(&prop.value) &&
-                prop.value.number >= 0 &&
-                (long)prop.value.number < vec_type_size(&value.tuple)
-            ) {
-                ret = *vec_type_at(&value.tuple, (long)prop.value.number);
-                *vec_type_at_mut(&value.tuple, (long)prop.value.number) = type_any;
+            if (type_extends(index, &type_number)) {
+                return type_clone(*my array);
             } else {
+                return type_any;
+            }
+
+        case TYPE_TUPLE: {
+            if (index->tag == TYPE_VALUE &&
+                index->value.tag == VALUE_NUMBER &&
+                index->value.number >= vec_type_size(&my tuple) &&
+                errs
+            ) {
                 cstr msg = cstr_lit("Tuple type '");
-                cstr_append_type_error_msg(&msg, &value);
+                cstr_append_type_error_msg(&msg, me);
                 cstr_append_fmt(
                     &msg,
                     "' of length '%ld' has no element at index '",
-                    vec_type_size(&value.tuple)
+                    vec_type_size(&my tuple)
                 );
-                cstr_append_value_error_msg(&msg, &prop.value);
+                cstr_append_value_error_msg(&msg, &index->value);
                 cstr_append_sv(&msg, c_sv("'."));
-                error_ctx_error_s(errs, prop_span, 2493, msg);
+                error_ctx_error_s(errs, index_span, 2493, msg);
             }
-        } else {
-            ret = array_type_of(value);
-            value = type_any;
+
+            if (!type_extends(index, &type_number)) {
+                return type_any;
+            }
+
+            Type ret = type_composite_base(TYPE_UNION);
+            c_foreach(i, vec_type, my tuple) {
+                intptr_t j = i.ref - my tuple.data;
+                Type key = type_value(value_number(j));
+                if (type_extends(&key, index)) {
+                    ret = type_composite(ret, type_clone(*i.ref), TYPE_UNION);
+                }
+            }
+            return ret;
         }
-        type_drop(&value);
-        type_drop(&prop);
-        return ret;
-    } else if (type_extends(&prop, &type_string)) {
-        // TODO
-        type_drop(&value);
-        type_drop(&prop);
-        return type_any;
-    } else {
-        // TODO: support number | string as index type
-        // TODO: refine type in error message, only report on possible subtypes that can't be used as index types
-        cstr msg = cstr_lit("Type '");
-        cstr_append_type_error_msg(&msg, &prop);
-        cstr_append_sv(&msg, c_sv("' cannot be used as an index type."));
-        error_ctx_error_s(errs, prop_span, 2538, msg);
-        type_drop(&value);
-        type_drop(&prop);
-        return type_any;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION: {
+            Type ret = type_composite_base(my tag);
+            c_foreach(i, vec_type, my composite) {
+                ret = type_composite(ret, index_type_of_internal(i.ref, index, index_span, errs, level + 1), my tag);
+            }
+            return ret;
+        }
+
+        case TYPE_IDENTIFIER:
+        case TYPE_INDEXED:
+        case TYPE_KEYOF:
+        case TYPE_TERNARY:
+            PANIC("Type with tag %d should have been resolved away", my tag);
     }
+    UNREACHABLE;
+}
+
+Type index_type_of(Type const* me, Type const* index, Span index_span, ErrorCtx* errs) {
+    return index_type_of_internal(me, index, index_span, errs, 0);
 }
 
 static bool check_assignable_or_error_internal(
@@ -1169,7 +1296,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
-            Type ret = my tag == TYPE_UNION ? type_never : type_any;
+            Type ret = type_composite_base(my tag);
             c_foreach(i, vec_type, my composite) {
                 ret = type_composite(ret, type_typecheck_call(i.ref, call, span, errs, level), my tag);
             }
