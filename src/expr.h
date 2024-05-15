@@ -45,6 +45,7 @@ typedef struct Expr {
         Value literal;
         struct {
             cstr name;
+            Span span;
             ArcNamedVariable var;
         } identifier;
         BinaryOpExpr* binary_op;
@@ -66,7 +67,7 @@ static inline Expr expr_literal(Span span, Value value) {
 }
 
 static inline Expr expr_identifier(Span span, cstr identifier) {
-    return (Expr){ .span = span, .tag = EXPR_IDENTIFIER, .identifier.name = identifier };
+    return (Expr){ .span = span, .tag = EXPR_IDENTIFIER, .identifier.name = identifier, .identifier.span = span };
 }
 
 static inline Expr expr_binary_op(Span span, BinaryOpExpr* op) {

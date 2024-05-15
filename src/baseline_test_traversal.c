@@ -179,7 +179,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             ctx,
             span_sv(&scope),
             cstr_sv(&my name),
-            my full_span,
+            my name_span,
             my full_span
         );
         Type t = type_callable(c_new(CallableType, callable_type_clone(my type)));
@@ -210,7 +210,7 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
 
 void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
-        baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my full_span, my full_span);
+        baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my name_span, my full_span);
         Type t = type_identifier(c_new(IdentifierType, {
             .name = cstr_clone(my name),
             .span = my name_span,
@@ -240,7 +240,7 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
                     ctx,
                     span_sv(&my name_span),
                     cstr_sv(&i.ref->member.name),
-                    i.ref->span,
+                    i.ref->member.name_span,
                     i.ref->span
                 );
                 baseline_test_case_add_type(
@@ -333,7 +333,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
                 baseline_test_case_add_symbol(
                     ctx,
                     cstr_sv(&my identifier.name),
-                    my span,
+                    my identifier.span,
                     my identifier.var.get->name_span
                 );
             }
@@ -348,15 +348,51 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
             expr_compile_test_info(&my unary_op->expr, true, ctx);
             break;
 
-        case EXPR_PROPERTY:
-            expr_compile_test_info(&my property->expr, true, ctx);
-            if (my property->form != PROPERTY_EXPR_DOT) {
-                expr_compile_test_info(&my property->prop, true, ctx);
+        case EXPR_PROPERTY: {
+            bool has_compiled_expr_info = false;
+            ErrorCtx null_errs = {0};
+            Type expr_t = expr_get_type_and_typecheck(&my property->expr, &null_errs);
+            Type prop_t = expr_get_type_and_typecheck(&my property->prop, &null_errs);
+
+            if (expr_t.tag == TYPE_INTERFACE && prop_t.tag == TYPE_VALUE && prop_t.value.tag == VALUE_STRING) {
+                c_foreach(i, vec_interface_member, expr_t.interface.members) {
+                    if (i.ref->key.tag == INTERFACE_KEY_NAME && cstr_eq(&i.ref->key.name, &prop_t.value.string)) {
+                        if (my property->form == PROPERTY_EXPR_DOT) {
+                            baseline_test_case_add_symbol(
+                                ctx,
+                                cstr_sv(&i.ref->key.name),
+                                my span,
+                                i.ref->key.span
+                            );
+                        }
+                        expr_compile_test_info(&my property->expr, true, ctx);
+                        has_compiled_expr_info = true;
+                        baseline_test_case_add_symbol(
+                            ctx,
+                            cstr_sv(&i.ref->key.name),
+                            my property->prop.span,
+                            i.ref->key.span
+                        );
+                        break;
+                    }
+                }
             }
-            if (my property->form == PROPERTY_EXPR_DOT) {
+
+            error_ctx_drop(&null_errs);
+            type_drop(&prop_t);
+            type_drop(&expr_t);
+
+            if (!has_compiled_expr_info) {
+                expr_compile_test_info(&my property->expr, true, ctx);
+            }
+
+            if (my property->form == PROPERTY_EXPR_BRACKET) {
+                expr_compile_test_info(&my property->prop, true, ctx);
+            } else {
                 baseline_test_case_add_type(ctx, my property->prop.span, &t);
             }
-            break;
+
+        }   break;
 
         case EXPR_AS_TYPE:
             if (my as_type->angle_bracket_syntax) {

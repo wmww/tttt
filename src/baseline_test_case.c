@@ -271,7 +271,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, csview name, Span span,
 
 void baseline_test_case_add_symbol_with_scope(BaselineTestCase* me, csview scope, csview name, Span span, Span decl_span) {
     unsigned line_for_placement = span_line_index(&span);
-    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SV(name));
+    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SV(span_sv(&span)));
     if (!csview_empty(scope)) {
         cstr_append_sv(&text, scope);
         cstr_append_sv(&text, c_sv("."));

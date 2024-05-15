@@ -3742,7 +3742,7 @@ const baselines = {
     },
     'classMemberInitializerWithLamdaScoping5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classMemberWithMissingIdentifier': {
@@ -4212,7 +4212,7 @@ const baselines = {
     },
     'collisionRestParameterUnderscoreIUsage': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'collisionSuperAndLocalFunctionInAccessors': {
@@ -4257,7 +4257,7 @@ const baselines = {
     },
     'collisionSuperAndNameResolution': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'collisionSuperAndParameter': {
@@ -4317,7 +4317,7 @@ const baselines = {
     },
     'collisionThisExpressionAndLocalVarInFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'collisionThisExpressionAndLocalVarInLambda': {
@@ -4347,7 +4347,7 @@ const baselines = {
     },
     'collisionThisExpressionAndNameResolution': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'collisionThisExpressionAndParameter': {
@@ -6557,7 +6557,7 @@ const baselines = {
     },
     'controlFlowNullTypeAndLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowOuterVariable': {
@@ -12807,7 +12807,7 @@ const baselines = {
     },
     'freshLiteralInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'freshLiteralTypesInIntersections': {
@@ -13632,7 +13632,7 @@ const baselines = {
     },
     'genericArrayPropertyAssignment': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericArrayWithoutTypeAnnotation': {
@@ -16982,7 +16982,7 @@ const baselines = {
     },
     'intersectionTypeInference1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionTypeNormalization': {
@@ -18202,7 +18202,7 @@ const baselines = {
     },
     'keywordField': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'knockout': {
@@ -20977,7 +20977,7 @@ const baselines = {
     },
     'noCollisionThisExpressionAndLocalVarInFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noCollisionThisExpressionAndLocalVarInLambda': {
@@ -21002,7 +21002,7 @@ const baselines = {
     },
     'noCollisionThisExpressionInFunctionAndVarInGlobal': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noConstraintInReturnType1': {
@@ -21957,7 +21957,7 @@ const baselines = {
     },
     'objectLitTargetTypeCallSite': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteral1': {
@@ -23747,7 +23747,7 @@ const baselines = {
     },
     'propertyAccess1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertyAccess2': {
@@ -25767,7 +25767,7 @@ const baselines = {
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues3': {
@@ -27972,7 +27972,7 @@ const baselines = {
     },
     'typeAssertionToGenericFunctionType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeCheckExportsVariable': {
@@ -28072,7 +28072,7 @@ const baselines = {
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty3': {
@@ -33917,7 +33917,7 @@ const baselines = {
     },
     'controlFlowDeleteOperator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowDestructuringDeclaration': {
@@ -35472,7 +35472,7 @@ const baselines = {
     },
     'logicalAssignment9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es2022IntlAPIs': {
@@ -36297,7 +36297,7 @@ const baselines = {
     },
     'emitClassDeclarationWithPropertyAccessInHeritageClause1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitClassDeclarationWithPropertyAssignmentInES6': {
@@ -41077,7 +41077,7 @@ const baselines = {
     },
     'emitCompoundExponentiationAssignmentWithPropertyAccessingOnLHS1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitCompoundExponentiationOperator1': {
@@ -42672,7 +42672,7 @@ const baselines = {
     },
     'nullishCoalescingOperator8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nullishCoalescingOperator9': {
@@ -54007,7 +54007,7 @@ const baselines = {
     },
     'ES5For-of10': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ES5For-of11': {
@@ -54177,7 +54177,7 @@ const baselines = {
     },
     'ES5For-of9': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ES5For-ofTypeCheck1': {
@@ -58087,7 +58087,7 @@ const baselines = {
     },
     'genericCallWithConstructorTypedArguments5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericCallWithFunctionTypedArguments': {
@@ -58112,7 +58112,7 @@ const baselines = {
     },
     'genericCallWithFunctionTypedArguments5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericCallWithGenericSignatureArguments': {
@@ -58147,7 +58147,7 @@ const baselines = {
     },
     'genericCallWithObjectTypeArgs2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericCallWithObjectTypeArgsAndConstraints': {
