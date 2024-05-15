@@ -85,9 +85,30 @@ void expr_drop(Expr* me) {
 }
 
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
+    switch (my tag) {
+        case EXPR_IMPLICIT_ANY:
+        case EXPR_LITERAL:
+        case EXPR_AS_TYPE:
+        case EXPR_IDENTIFIER:
+        case EXPR_OBJECT:
+        case EXPR_ARRAY:
+            break;
+
+        default: {
+            ErrorCtx null_errs = {0};
+            Type t = expr_get_type_and_typecheck(me, &null_errs);
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT "<" CLR0));
+            cstr_append_type_debug(target, &t, indent);
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT ">" CLR0));
+            type_drop(&t);
+            error_ctx_drop(&null_errs);
+        }
+    }
+
     for (int i = 0; i < my peren_depth; i++) {
         cstr_append_sv(target, c_sv("("));
     }
+
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: cstr_append_sv(target, c_sv("/* implicit any */")); break;
 
@@ -131,7 +152,12 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
         }   break;
 
         case EXPR_PROPERTY: {
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            }
+
             cstr_append_expr_debug(target, &my property->expr, indent);
+
             switch (my property->form) {
                 case PROPERTY_EXPR_DOT:
                     cstr_append_sv(target, c_sv("."));
@@ -144,24 +170,36 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
                     cstr_append_expr_debug(target, &my property->prop, indent);
                     cstr_append_sv(target, c_sv("]"));
             }
+
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            }
         }   break;
 
         case EXPR_AS_TYPE: {
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            }
             cstr_append_expr_debug(target, &my as_type->expr, indent);
             cstr_append_sv(target, c_sv(" as "));
             cstr_append_type_debug(target, &my as_type->type, indent);
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            }
         }   break;
 
         case EXPR_TERNARY: {
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
+            }
             cstr_append_expr_debug(target, &my ternary->condition, indent);
             cstr_append_sv(target, c_sv(" ? "));
             cstr_append_expr_debug(target, &my ternary->yes, indent);
             cstr_append_sv(target, c_sv(" : "));
             cstr_append_expr_debug(target, &my ternary->no, indent);
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            if (!my peren_depth) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            }
         }   break;
 
         case EXPR_CALL: {
