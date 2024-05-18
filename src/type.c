@@ -833,6 +833,7 @@ void type_abstract_literals(Type* me) {
                             false,
                             cstr_clone(i.ref->first),
                             span_null,
+                            false,
                             type_value(value_clone(i.ref->second.value))
                         );
                         type_abstract_literals(&member.type);

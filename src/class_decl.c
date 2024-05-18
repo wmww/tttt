@@ -226,6 +226,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                             false,
                             cstr_clone(i.ref->member.name),
                             i.ref->member.name_span,
+                            i.ref->member.name_is_value,
                             t
                         )
                     );
@@ -249,6 +250,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                             i.ref->field.is_readonly,
                             cstr_clone(i.ref->field.initializer.binding.identifier),
                             i.ref->field.initializer.binding.content_span,
+                            i.ref->field.name_is_value,
                             t
                         )
                     );

@@ -817,6 +817,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         false,
                         cstr_move(&item.member.name),
                         item.member.name_span,
+                        item.member.name_is_value,
                         type_callable(c_new(CallableType, item.member.func.type))
                     ));
                     item.member.func.type = (CallableType){0};
@@ -829,6 +830,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         item.field.is_readonly,
                         cstr_move(&item.field.initializer.binding.identifier),
                         item.field.initializer.binding.content_span,
+                        item.field.name_is_value,
                         type_move(&item.field.initializer.binding.type)
                     ));
                     break;
@@ -1002,7 +1004,6 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
         }
     }
-
 
     *ret = (TypeDecl) {
         .full_span = span_end(a),
@@ -1588,15 +1589,24 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
     cstr name = cstr_null;
     Span name_span = span_null;
+    bool name_is_value = false;
 
     ret->access = ACCESS_MODIFIER_PUBLIC;
     while (true) {
         cstr next_name;
         Span next_name_span;
+        Value value;
+        Anchor name_start = span_start(&p);
         if (parse_identifier(&p, &next_name, &next_name_span)) {
         } else if (*p.pos == '[') {
             next_name = cstr_null;
             next_name_span = span_null;
+        } else if (parse_literal(&p, &value)) {
+            cstr_clear(&name);
+            cstr_append_value_js(&name, &value);
+            name_span = span_end(name_start);
+            name_is_value = true;
+            break;
         } else {
             break;
         }
@@ -1716,7 +1726,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
-    if (!is_type && cstr_equals(&name, "constructor")) {
+    if (!is_type && !name_is_value && cstr_equals(&name, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
         name_span = span_end(a);
         if (!parse_function_fn(&p, &ret->constructor.func)) {
@@ -1729,7 +1739,12 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
         }
-    } else if (!is_type && cstr_equals(&name, "static") && parse_block(&p, false, &ret->static_block)) {
+    } else if (
+        !is_type &&
+        !name_is_value &&
+        cstr_equals(&name, "static") &&
+        parse_block(&p, false, &ret->static_block)
+    ) {
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
         if (span_valid(&async_span)) {
             modifier_error = MODIFIERS_CANNOT_APPEAR;
@@ -1758,6 +1773,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     .name = name,
                     .name_span = name_span,
                     .optional = optional,
+                    .name_is_value = name_is_value,
                     .func = func,
                 }
             };
@@ -1774,6 +1790,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     .is_readonly = span_valid(&readonly_span),
                     .is_static = span_valid(&static_span),
                     .optional = optional,
+                    .name_is_value = name_is_value,
                     .initializer = {
                         .binding = {
                             .tag = BINDING_IDENTIFIER,

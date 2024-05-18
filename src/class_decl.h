@@ -31,12 +31,14 @@ typedef struct ClassItem {
             cstr name;
             Span name_span;
             bool optional;
+            bool name_is_value;
             FunctionImpl func;
         } member;
         struct {
             bool is_readonly;
             bool is_static;
             bool optional;
+            bool name_is_value;
             InitializedBinding initializer; // always BINDING_IDENTIFIER
         } field;
         InterfaceMember interface_memeber;

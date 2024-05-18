@@ -14,7 +14,10 @@ typedef struct InterfaceMember {
             INTERFACE_KEY_CALLABLE, // No key data, and type must be callable
         } tag;
         union {
-            cstr name;
+            struct {
+                cstr name;
+                bool name_is_value;
+            };
             Type index;
             ArcExpr mapped;
         };
@@ -27,6 +30,7 @@ static inline InterfaceMember interface_member_make(
     bool readonly,
     cstr name,
     Span name_span,
+    bool name_is_value,
     Type type
 ) {
     return (InterfaceMember) {
@@ -36,6 +40,7 @@ static inline InterfaceMember interface_member_make(
             .span = name_span,
             .tag = INTERFACE_KEY_NAME,
             .name = name,
+            .name_is_value = name_is_value,
         },
         .type = type,
     };

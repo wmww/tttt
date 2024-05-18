@@ -26,7 +26,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     }
 }
 
-void binding_compile_test_info(Binding const* me, Span scope, Span full, BaselineTestCase* ctx) {
+void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
             baseline_test_case_add_type(ctx, my content_span, &type_undefined);
@@ -38,6 +38,7 @@ void binding_compile_test_info(Binding const* me, Span scope, Span full, Baselin
                 span_sv(&scope),
                 cstr_sv(&my identifier),
                 my content_span,
+                name_is_value,
                 span_valid(&full) ? full : my content_span
             );
             baseline_test_case_add_type(ctx, my content_span, &my type);
@@ -45,13 +46,13 @@ void binding_compile_test_info(Binding const* me, Span scope, Span full, Baselin
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_compile_test_info(i.ref, scope, i.ref->content_span, ctx);
+                binding_compile_test_info(i.ref, false, scope, i.ref->content_span, ctx);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_compile_test_info(&i.ref->target, scope, i.ref->target.content_span, ctx);
+                binding_compile_test_info(&i.ref->target, false, scope, i.ref->target.content_span, ctx);
             }
             break;
     }
@@ -60,8 +61,14 @@ void binding_compile_test_info(Binding const* me, Span scope, Span full, Baselin
     }
 }
 
-void initialized_binding_compile_test_info(InitializedBinding const* me, Span scope, Span full, BaselineTestCase* ctx) {
-    binding_compile_test_info(&my binding, scope, full, ctx);
+void initialized_binding_compile_test_info(
+    InitializedBinding const* me,
+    bool name_is_value,
+    Span scope,
+    Span full,
+    BaselineTestCase* ctx
+) {
+    binding_compile_test_info(&my binding, name_is_value, scope, full, ctx);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
         expr_compile_test_info(&my value, my binding.tag != BINDING_ARRAY, ctx);
     }
@@ -75,6 +82,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 span_sv(&scope),
                 cstr_sv(&my key.name),
                 my key.span,
+                my key.name_is_value,
                 my span
             );
             baseline_test_case_add_type(ctx, my key.span, &my type);
@@ -131,7 +139,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_CALLABLE:
             generic_compile_test_info(&my callable->generic, ctx);
             c_foreach(i, vec_callable_arg, my callable->args) {
-                binding_compile_test_info(&i.ref->binding, span_null, i.ref->span, ctx);
+                binding_compile_test_info(&i.ref->binding, false, span_null, i.ref->span, ctx);
             }
             type_compile_test_info(&my callable->ret, ctx);
             break;
@@ -180,6 +188,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             span_sv(&scope),
             cstr_sv(&my name),
             my name_span,
+            false,
             my full_span
         );
         Type t = type_callable(c_new(CallableType, callable_type_clone(my type)));
@@ -191,7 +200,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
     for (intptr_t i = 0; i < arg_size; i++) {
         CallableArg const* arg = vec_callable_arg_at(&my type.args, i);
         Expr const* default_arg = function_impl_arg_default_at(me, i);
-        binding_compile_test_info(&arg->binding, span_null, arg->span, ctx);
+        binding_compile_test_info(&arg->binding, false, span_null, arg->span, ctx);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(default_arg, arg->binding.tag != BINDING_ARRAY, ctx);
         }
@@ -204,7 +213,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
+        initialized_binding_compile_test_info(i.ref, false, span_null, span_null, ctx);
     }
 }
 
@@ -233,7 +242,9 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
     }
     c_foreach(i, vec_class_item, my items) {
         switch(i.ref->tag) {
-            case CLASS_ITEM_CONSTRUCTOR: function_impl_compile_test_info(&i.ref->constructor.func, my name_span, ctx); break;
+            case CLASS_ITEM_CONSTRUCTOR:
+                function_impl_compile_test_info(&i.ref->constructor.func, my name_span, ctx);
+                break;
 
             case CLASS_ITEM_MEMBER:
                 baseline_test_case_add_symbol_with_scope(
@@ -241,6 +252,7 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
                     span_sv(&my name_span),
                     cstr_sv(&i.ref->member.name),
                     i.ref->member.name_span,
+                    i.ref->member.name_is_value,
                     i.ref->span
                 );
                 baseline_test_case_add_type(
@@ -251,9 +263,22 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
                 function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx);
                 break;
 
-            case CLASS_ITEM_FIELD: initialized_binding_compile_test_info(&i.ref->field.initializer, my name_span, i.ref->span, ctx); break;
-            case CLASS_ITEM_INTERFACE_MEMBER: interface_member_compile_test_info(&i.ref->interface_memeber, my name_span, ctx); break;
-            case CLASS_ITEM_STATIC_BLOCK: block_compile_test_info(&i.ref->static_block, ctx); break;
+            case CLASS_ITEM_FIELD:
+                initialized_binding_compile_test_info(
+                    &i.ref->field.initializer,
+                    i.ref->field.name_is_value,
+                    my name_span,
+                    i.ref->span,
+                    ctx
+                );
+                break;
+            case CLASS_ITEM_INTERFACE_MEMBER:
+                interface_member_compile_test_info(&i.ref->interface_memeber, my name_span, ctx);
+                break;
+
+            case CLASS_ITEM_STATIC_BLOCK:
+                block_compile_test_info(&i.ref->static_block, ctx);
+                break;
         }
     }
 }
@@ -524,7 +549,7 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
             if (my try_catch->catch_var.tag != BINDING_NOOP) {
-                binding_compile_test_info(&my try_catch->catch_var, span_null, span_null, ctx);
+                binding_compile_test_info(&my try_catch->catch_var, false, span_null, span_null, ctx);
                 block_compile_test_info(&my try_catch->catch_block, ctx);
             }
             block_compile_test_info(&my try_catch->finally_block, ctx);

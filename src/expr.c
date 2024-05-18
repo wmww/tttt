@@ -616,6 +616,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         false,
                         cstr_clone(i.ref->name),
                         i.ref->name_span,
+                        false,
                         t
                     )
                 );

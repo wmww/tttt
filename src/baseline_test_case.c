@@ -266,17 +266,31 @@ void baseline_test_case_clear_detail(BaselineTestCase* me) {
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, csview name, Span span, Span decl_span) {
-    baseline_test_case_add_symbol_with_scope(me, c_sv(""), name, span, decl_span);
+    baseline_test_case_add_symbol_with_scope(me, c_sv(""), name, span, false, decl_span);
 }
 
-void baseline_test_case_add_symbol_with_scope(BaselineTestCase* me, csview scope, csview name, Span span, Span decl_span) {
+void baseline_test_case_add_symbol_with_scope(
+    BaselineTestCase* me,
+    csview scope,
+    csview name,
+    Span span,
+    bool name_is_value,
+    Span decl_span
+) {
     unsigned line_for_placement = span_line_index(&span);
     cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SV(span_sv(&span)));
-    if (!csview_empty(scope)) {
+    if (csview_empty(scope)) {
+        cstr_append_sv(&text, name);
+    } else if (name_is_value) {
+        cstr_append_sv(&text, scope);
+        cstr_append_sv(&text, c_sv("["));
+        cstr_append_sv(&text, span_sv(&span));
+        cstr_append_sv(&text, c_sv("]"));
+    } else {
         cstr_append_sv(&text, scope);
         cstr_append_sv(&text, c_sv("."));
+        cstr_append_sv(&text, name);
     }
-    cstr_append_sv(&text, name);
 
     if (span_valid(&decl_span)) {
         bool keep_going = true;
