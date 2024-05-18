@@ -147,11 +147,11 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_INTERFACE: interface_compile_test_info(&my interface, span_null, ctx); break;
 
         case TYPE_ARRAY:
-            type_compile_test_info(my array, ctx);
+            type_compile_test_info(my array.element, ctx);
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_type, my tuple) {
+            c_foreach(i, vec_type, my tuple.elements) {
                 type_compile_test_info(i.ref, ctx);
             }
             break;
@@ -331,7 +331,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
     if (my tag == EXPR_ARRAY) {
         if (vec_expr_empty(&my array)) {
             type_drop(&t);
-            t = type_array(c_new(Type, type_undefined));
+            t = type_array(c_new(Type, type_undefined), false);
         } else {
             type_abstract_literals(&t);
             if (abstract_arrays) {

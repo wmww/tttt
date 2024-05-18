@@ -114,8 +114,8 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
         }
 
         default:
+            value_drop(&value);
             TRY_CATCH_DROP(engine_eval_expr(me, target), res_err, {
-                value_drop(&value);
                 return res_err;
             });
             return result_err(value_string(cstr_lit("SyntaxError: invalid assignment left-hand side")));

@@ -46,8 +46,14 @@ typedef struct Type {
         IdentifierType* identifier;
         CallableType* callable;
         Interface interface;
-        Type* array;
-        VecType tuple;
+        struct {
+            Type* element;
+            bool readonly;
+        } array;
+        struct {
+            VecType elements;
+            bool readonly;
+        } tuple;
         IndexedType* indexed;
         KeyofType* keyof;
         TernaryType* ternary;
@@ -95,17 +101,23 @@ static inline Type type_interface(Interface interface) {
     };
 }
 
-static inline Type type_array(Type* member) {
+static inline Type type_array(Type* element, bool readonly) {
     return (Type){
         .tag = TYPE_ARRAY,
-        .array = member,
+        .array = {
+            .element = element,
+            .readonly = readonly,
+        }
     };
 }
 
-static inline Type type_tuple(VecType members) {
+static inline Type type_tuple(VecType elements, bool readonly) {
     return (Type){
         .tag = TYPE_TUPLE,
-        .tuple = members,
+        .tuple = {
+            .elements = elements,
+            .readonly = readonly,
+        }
     };
 }
 

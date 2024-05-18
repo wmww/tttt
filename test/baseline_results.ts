@@ -15607,8 +15607,8 @@ const baselines = {
     },
     'indexer2A': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'indexer3': {
         errors: true,
@@ -25471,7 +25471,7 @@ const baselines = {
         types: true,
     },
     'sliceResultCast': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33646,7 +33646,7 @@ const baselines = {
         types: false,
     },
     'overrideInterfaceProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33941,7 +33941,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccessNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50153,7 +50153,7 @@ const baselines = {
     'parserObjectType6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserParameterList1': {
         errors: false,

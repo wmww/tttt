@@ -127,12 +127,12 @@ void type_drop(Type* me) {
             break;
 
         case TYPE_ARRAY:
-            type_drop(my array);
-            free(my array);
+            type_drop(my array.element);
+            free(my array.element);
             break;
 
         case TYPE_TUPLE:
-            vec_type_drop(&my tuple);
+            vec_type_drop(&my tuple.elements);
             break;
 
         case TYPE_INDEXED:
@@ -171,8 +171,8 @@ Type type_clone(Type me) {
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
-        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array)));
-        case TYPE_TUPLE: return type_tuple(vec_type_clone(me.tuple));
+        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array.element)), me.array.readonly);
+        case TYPE_TUPLE: return type_tuple(vec_type_clone(me.tuple.elements), me.tuple.readonly);
         case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
         case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
@@ -196,13 +196,19 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &my interface, indent); break;
 
         case TYPE_ARRAY:
-            cstr_append_type_debug(target, my array, indent);
+            if (my array.readonly) {
+                cstr_append_sv(target, c_sv("readonly "));
+            }
+            cstr_append_type_debug(target, my array.element, indent);
             cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
             break;
 
         case TYPE_TUPLE:
+            if (my tuple.readonly) {
+                cstr_append_sv(target, c_sv("readonly "));
+            }
             cstr_append_sv(target, c_sv("["));
-            c_foreach(i, vec_type, my tuple) {
+            c_foreach(i, vec_type, my tuple.elements) {
                 cstr_append_type_debug(target, i.ref, indent);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, c_sv(", "));
@@ -244,11 +250,14 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &my interface); break;
 
         case TYPE_ARRAY: {
-            bool needs_peren = my array->tag == TYPE_UNION || my array->tag == TYPE_INTERSECTION;
+            bool needs_peren = my array.element->tag == TYPE_UNION || my array.element->tag == TYPE_INTERSECTION;
             if (needs_peren) {
                 cstr_append_sv(target, c_sv("("));
             }
-            cstr_append_type_error_msg(target, my array);
+            if (my array.readonly) {
+                cstr_append_sv(target, c_sv("readonly "));
+            }
+            cstr_append_type_error_msg(target, my array.element);
             if (needs_peren) {
                 cstr_append_sv(target, c_sv(")"));
             }
@@ -256,8 +265,11 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
         }   break;
 
         case TYPE_TUPLE:
+            if (my tuple.readonly) {
+                cstr_append_sv(target, c_sv("readonly "));
+            }
             cstr_append_sv(target, c_sv("["));
-            c_foreach(i, vec_type, my tuple) {
+            c_foreach(i, vec_type, my tuple.elements) {
                 cstr_append_type_error_msg(target, i.ref);
                 if (i.ref != i.end - 1) {
                     cstr_append_sv(target, c_sv(", "));
@@ -348,11 +360,11 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
             break;
 
         case TYPE_ARRAY:
-            type_add_inferred_names(my array, names);
+            type_add_inferred_names(my array.element, names);
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_type, my tuple) {
+            c_foreach(i, vec_type, my tuple.elements) {
                 type_add_inferred_names(i.ref, names);
             }
             break;
@@ -409,11 +421,11 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_ARRAY:
-            type_resolve_names(my array, names, errs);
+            type_resolve_names(my array.element, names, errs);
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_type, my tuple) {
+            c_foreach(i, vec_type, my tuple.elements) {
                 type_resolve_names(i.ref, names, errs);
             }
             break;
@@ -686,10 +698,16 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
 
         case TYPE_ARRAY:
             if (sub->tag == TYPE_ARRAY) {
-                return type_extends_internal(sub->array, super->array, refinements, level + 1);
+                if (sub->array.readonly && !super->array.readonly) {
+                    return false;
+                }
+                return type_extends_internal(sub->array.element, super->array.element, refinements, level + 1);
             } else if (sub->tag == TYPE_TUPLE) {
-                c_foreach(i, vec_type, sub->tuple) {
-                    if (!type_extends_internal(i.ref, super->array, refinements, level + 1)) {
+                if (sub->tuple.readonly && !super->array.readonly) {
+                    return false;
+                }
+                c_foreach(i, vec_type, sub->tuple.elements) {
+                    if (!type_extends_internal(i.ref, super->array.element, refinements, level + 1)) {
                         return false;
                     }
                 }
@@ -699,13 +717,16 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             }
 
         case TYPE_TUPLE:
-            if (sub->tag != TYPE_TUPLE || vec_type_size(&super->tuple) != vec_type_size(&sub->tuple)) {
+            if (sub->tag != TYPE_TUPLE ||
+                vec_type_size(&super->tuple.elements) != vec_type_size(&sub->tuple.elements) ||
+                (sub->tuple.readonly && !super->tuple.readonly)
+            ) {
                 return false;
             }
-            for (intptr_t i = 0; i < vec_type_size(&super->tuple); i++) {
+            for (intptr_t i = 0; i < vec_type_size(&super->tuple.elements); i++) {
                 if (!type_extends_internal(
-                    vec_type_at(&sub->tuple, i),
-                    vec_type_at(&super->tuple, i),
+                    vec_type_at(&sub->tuple.elements, i),
+                    vec_type_at(&super->tuple.elements, i),
                     refinements,
                     level + 1
                 )) {
@@ -763,7 +784,10 @@ bool type_overlaps(Type const* a, Type const* b) {
 bool type_extends_array(Type const* sub) {
     static Type array_any = {
         .tag = TYPE_ARRAY,
-        .array = (Type*)&type_any,
+        .array = {
+            .element = (Type*)&type_any,
+            .readonly = true
+        }
     };
     return type_extends(sub, &array_any);
 }
@@ -771,18 +795,19 @@ bool type_extends_array(Type const* sub) {
 void type_abstract_tuple_to_array(Type* me) {
     if (my tag == TYPE_TUPLE) {
         type_abstract_literals(me);
-        Type ret = vec_type_empty(&my tuple) ? type_any : type_never;
-        c_foreach(i, vec_type, my tuple) {
+        Type ret = vec_type_empty(&my tuple.elements) ? type_any : type_never;
+        c_foreach(i, vec_type, my tuple.elements) {
             if (i.ref->tag != TYPE_VALUE || i.ref->value.tag != VALUE_UNDEFINED) {
                 ret = type_composite(ret, *i.ref, TYPE_UNION);
                 *i.ref = type_any;
             }
         }
+        bool readonly = my tuple.readonly;
         type_drop(me);
         if (ret.tag == TYPE_NEVER) {
             ret = type_undefined;
         }
-        *me = type_array(c_new(Type, ret));
+        *me = type_array(c_new(Type, ret), readonly);
     }
 }
 
@@ -856,7 +881,7 @@ void type_abstract_literals(Type* me) {
             break;
 
         case TYPE_TUPLE: {
-            c_foreach(i, vec_type, my tuple) {
+            c_foreach(i, vec_type, my tuple.elements) {
                 type_abstract_literals(i.ref);
             }
         }   break;
@@ -1031,7 +1056,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
 
         case TYPE_ARRAY:
             if (type_extends(index, &type_number)) {
-                return type_clone(*my array);
+                return type_clone(*my array.element);
             } else {
                 return type_any;
             }
@@ -1039,7 +1064,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
         case TYPE_TUPLE: {
             if (index->tag == TYPE_VALUE &&
                 index->value.tag == VALUE_NUMBER &&
-                index->value.number >= vec_type_size(&my tuple) &&
+                index->value.number >= vec_type_size(&my tuple.elements) &&
                 errs
             ) {
                 cstr msg = cstr_lit("Tuple type '");
@@ -1047,7 +1072,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                 cstr_append_fmt(
                     &msg,
                     "' of length '%ld' has no element at index '",
-                    vec_type_size(&my tuple)
+                    vec_type_size(&my tuple.elements)
                 );
                 cstr_append_value_error_msg(&msg, &index->value);
                 cstr_append_sv(&msg, c_sv("'."));
@@ -1059,8 +1084,8 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
             }
 
             Type ret = type_composite_base(TYPE_UNION);
-            c_foreach(i, vec_type, my tuple) {
-                intptr_t j = i.ref - my tuple.data;
+            c_foreach(i, vec_type, my tuple.elements) {
+                intptr_t j = i.ref - my tuple.elements.data;
                 Type key = type_value(value_number(j));
                 if (type_extends(&key, index)) {
                     ret = type_composite(ret, type_clone(*i.ref), TYPE_UNION);
@@ -1138,8 +1163,8 @@ static intptr_t min_args_of_callable(CallableType const* me) {
     intptr_t ret = args_size;
     if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
         Type const* rest_type = &vec_callable_arg_at(&my args, args_size - 1)->binding.type;
-        if (rest_type->tag == TYPE_TUPLE && vec_type_size(&rest_type->tuple) > 0) {
-            return args_size - 1 + vec_type_size(&rest_type->tuple);
+        if (rest_type->tag == TYPE_TUPLE && vec_type_size(&rest_type->tuple.elements) > 0) {
+            return args_size - 1 + vec_type_size(&rest_type->tuple.elements);
         } else {
             ret--;
         }
@@ -1155,7 +1180,7 @@ static intptr_t max_args_of_callable(CallableType const* me) {
     if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
         Type const* rest_type = &vec_callable_arg_at(&my args, args_size - 1)->binding.type;
         if (rest_type->tag == TYPE_TUPLE) {
-            return args_size - 1 + vec_type_size(&rest_type->tuple);
+            return args_size - 1 + vec_type_size(&rest_type->tuple.elements);
         } else {
             return INTPTR_MAX;
         }
@@ -1270,7 +1295,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             }
 
             if (last_arg_rest) {
-                Type rest_type = type_tuple(rest_tuple);
+                Type rest_type = type_tuple(rest_tuple, false);
                 if (check_types_against_callable) {
                     check_assignable_or_error_internal(
                         "Argument of type",

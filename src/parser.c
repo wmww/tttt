@@ -613,7 +613,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     hop_whitespace(&p);
 
-    if (hop_char(&p, '[')) {
+    if (p.whitespace != WHITESPACE_NEWLINE && hop_char(&p, '[')) {
         hop_whitespace(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
             hop_whitespace(&p);
@@ -629,7 +629,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
             if (!hop_char(&p, ']')) {
                 error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
             }
-            *left_and_ret = type_array(c_new(Type, *left_and_ret));
+            *left_and_ret = type_array(c_new(Type, *left_and_ret), false);
             return parse_success(&p);
         }
     }
@@ -730,12 +730,20 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     union {
         IdentifierType identifier;
         CallableType callable;
         Type type;
+        VecType types;
     } parsed;
+
+    Span readonly_span = span_null;
+    if (hop_start_if_ends_on_word_break(&p, "readonly")) {
+        readonly_span = span_end(a);
+        hop_whitespace(&p);
+    }
 
     if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
@@ -750,6 +758,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (hop_start_if_ends_on_word_break(&p, "number")) {
         *ret = type_number;
     } else if (hop_start_if_ends_on_word_break(&p, "string")) {
+        *ret = type_string;
+    } else if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
         hop_whitespace(&p);
@@ -768,8 +778,9 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_callable(c_new(CallableType, parsed.callable));
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
-    } else if (parse_tuple(&p, &ret->tuple)){
-        ret->tag = TYPE_TUPLE;
+    } else if (parse_tuple(&p, &parsed.types)){
+        *ret = type_tuple(parsed.types, span_valid(&readonly_span));
+        readonly_span = span_null;
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
@@ -788,7 +799,22 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         return parse_fail(&p);
     }
 
-    while (parse_type_right_side(&p, min_precedence, ret)) {}
+    if (parse_type_right_side(&p, min_precedence, ret)) {
+        if (ret->tag == TYPE_ARRAY && span_valid(&readonly_span)) {
+            ret->array.readonly = true;
+            readonly_span = span_null;
+        }
+        while (parse_type_right_side(&p, min_precedence, ret)) {}
+    }
+
+    if (span_valid(&readonly_span)) {
+        error_ctx_error(
+            &p.errs,
+            readonly_span,
+            1354,
+            "'readonly' type modifier is only permitted on array and tuple literal types."
+        );
+    }
 
     return parse_success(&p);
 }

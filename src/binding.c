@@ -200,11 +200,11 @@ void binding_set_assigned_type(Binding* me, Type assigned, bool absract_literals
         }
         type_abstract_tuple_to_array(&my type);
         if (my type.tag == TYPE_ARRAY &&
-            my type.array->tag == TYPE_VALUE &&
-            my type.array->value.tag == VALUE_UNDEFINED
+            my type.array.element->tag == TYPE_VALUE &&
+            my type.array.element->value.tag == VALUE_UNDEFINED
         ) {
-            type_drop(my type.array);
-            *my type.array = type_any;
+            type_drop(my type.array.element);
+            *my type.array.element = type_any;
         }
     }
     type_drop(&assigned);
