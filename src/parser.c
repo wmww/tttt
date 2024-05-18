@@ -671,16 +671,70 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
     return parse_fail(&p);
 }
 
+static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
+    Parser p = parser(parent);
+    bool inferred = false;
+    Type type = {0};
+    VecType generic_params = {0};
+
+    cstr name;
+    Span span;
+    if (!parse_identifier(&p, &name, &span)) {
+        return false;
+    }
+    const char* end = p.pos;
+
+    hop_whitespace(&p);
+
+    if (cstr_equals(&name, "infer")) {
+        inferred = true;
+        cstr_drop(&name);
+        if (parse_identifier(&p, &name, &span)) {
+            end = p.pos;
+        } else {
+            error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+            span = span_null;
+            name = cstr_null;
+        }
+        hop_whitespace(&p);
+        if (hop_start_if_ends_on_word_break(&p, "extends")) {
+            end = p.pos;
+            hop_whitespace(&p);
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+                end = p.pos;
+            } else {
+                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+                type = (Type){0};
+            }
+        }
+    }
+
+    if (!inferred && p.whitespace != WHITESPACE_NEWLINE) {
+        if (parse_generic_params(&p, &generic_params)) {
+            end = p.pos;
+        } else {
+            generic_params = vec_type_init();
+        }
+    }
+
+    p.pos = end;
+    *ret = (IdentifierType){
+        .name = name,
+        .span = span,
+        .generic_params = generic_params,
+        .degenericized = type,
+        .inferred = inferred,
+    };
+    return parse_success(&p);
+}
+
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
     Parser p = parser(parent);
 
     union {
-        struct {
-            Span span;
-            cstr name;
-            Type type;
-        };
+        IdentifierType identifier;
         CallableType callable;
+        Type type;
     } parsed;
 
     if (hop_start_if_ends_on_word_break(&p, "any")) {
@@ -712,38 +766,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         ret->tag = TYPE_VALUE;
     } else if (parse_function_args(&p, true, nullptr, &parsed.callable)) {
         *ret = type_callable(c_new(CallableType, parsed.callable));
-    } else if (parse_identifier(&p, &parsed.name, &parsed.span)) {
-        hop_whitespace(&p);
-        bool inferred = false;
-        parsed.type = (Type){0};
-        if (cstr_equals(&parsed.name, "infer")) {
-            inferred = true;
-            cstr_drop(&parsed.name);
-            if (!parse_identifier(&p, &parsed.name, &parsed.span)) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-                parsed.span = span_null;
-                parsed.name = cstr_null;
-            }
-            hop_whitespace(&p);
-            if (hop_start_if_ends_on_word_break(&p, "extends")) {
-                hop_whitespace(&p);
-                if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &parsed.type)) {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-                    parsed.type = (Type){0};
-                }
-            }
-        }
-        *ret = type_identifier(c_new(IdentifierType, {
-            .name = parsed.name,
-            .span = parsed.span,
-            .inferred = inferred,
-            .degenericized = parsed.type,
-        }));
-        if (p.whitespace != WHITESPACE_NEWLINE) {
-            if (!parse_generic_params(&p, &ret->identifier->generic_params)) {
-                ret->identifier->generic_params = vec_type_init();
-            }
-        }
+    } else if (parse_identifier_type(&p, &parsed.identifier)) {
+        *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &ret->tuple)){
         ret->tag = TYPE_TUPLE;
     } else if (hop_char(&p, '(')) {
@@ -917,12 +941,68 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
+    vec_spanned_type extends = {0};
     Interface interface;
-    if (!parse_interface(&p, &interface)) {
-        cstr_drop(&name);
-        generic_drop(&generic);
-        return parse_fail(&p);
+    if (hop_start_if_ends_on_word_break(&p, "extends")) {
+        hop_whitespace(&p);
+
+        Span last_comma_span = span_null;
+        Span second_last_comma_span = span_null;
+        Type last_type = type_any;
+        Span last_type_span = span_null;
+
+        while (*p.pos) {
+            Type t;
+            Anchor type_start = span_start(&p);
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+                if (span_valid(&last_type_span)) {
+                    vec_spanned_type_push(&extends, (SpannedType){.type = last_type, .span = last_type_span});
+                }
+                last_type_span = span_end(type_start);
+                last_type = t;
+                if (!span_valid(&last_comma_span) && last_type.tag == TYPE_INTERFACE) {
+                    second_last_comma_span = span_null;
+                    break;
+                }
+                hop_whitespace(&p);
+            } else {
+                if (!span_valid(&last_type_span) || span_valid(&last_comma_span)) {
+                    error_ctx_error(&p.errs, hop_token_get_span(&p), 1109, "Expression expected.");
+                } else {
+                    break;
+                }
+            }
+
+            second_last_comma_span = last_comma_span;
+
+            if (hop_char(&p, ',')) {
+                last_comma_span = span_from_previous_char(&p);
+            } else if (*p.pos == '{' || !*p.pos) {
+                last_comma_span = span_null;
+            } else {
+                last_comma_span = hop_token_get_span(&p);
+                error_ctx_error(&p.errs, last_comma_span, 1005, "',' expected.");
+            }
+            hop_whitespace(&p);
+        }
+
+        if (last_type.tag == TYPE_INTERFACE) {
+            interface = last_type.interface;
+            if (span_valid(&second_last_comma_span)) {
+                error_ctx_error(&p.errs, second_last_comma_span, 1009, "Trailing comma not allowed.");
+            }
+        } else {
+            vec_spanned_type_push(&extends, (SpannedType){.type = last_type, .span = last_type_span});
+            interface = (Interface){0};
+            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        }
+    } else {
+        if (!parse_interface(&p, &interface)) {
+            interface = (Interface){0};
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
+        }
     }
+
 
     *ret = (TypeDecl) {
         .full_span = span_end(a),
@@ -930,6 +1010,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         .name = name,
         .name_span = name_span,
         .generic = generic,
+        .interface_extends = extends,
         .type = type_interface(interface),
     };
     return parse_success(&p);

@@ -292,6 +292,9 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     }
     generic_compile_test_info(&my generic, ctx);
     if (my is_interface && my type.tag == TYPE_INTERFACE) {
+        c_foreach(i, vec_spanned_type, my interface_extends) {
+            type_compile_test_info(&i.ref->type, ctx);
+        }
         interface_compile_test_info(&my type.interface, my name_span, ctx);
     } else {
         type_compile_test_info(&my type, ctx);

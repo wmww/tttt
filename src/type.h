@@ -163,3 +163,13 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 #define i_key_class_names Type, type
 #define i_is_forward
 #include "wrap_stc/vec.h"
+
+typedef struct SpannedType {
+    Type type;
+    Span span;
+} SpannedType;
+
+#define i_key_names SpannedType, spanned_type
+#define i_keydrop(self) type_drop(&self->type)
+#define i_keyclone(self) ((SpannedType){.type = type_clone(self.type), .span = self.span})
+#include "wrap_stc/vec.h"

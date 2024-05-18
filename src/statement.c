@@ -3,6 +3,7 @@
 #include "error.h"
 #include "name_stack.h"
 #include "class_decl.h"
+#include "identifier_type.h"
 
 void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
@@ -459,6 +460,9 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE:
             name_stack_push_generic_frame(names, &my decl.type.generic, errs);
+            c_foreach(i, vec_spanned_type, my decl.type.interface_extends) {
+                type_resolve_names(&i.ref->type, names, errs);
+            }
             type_resolve_names(&my decl.type.type, names, errs);
             name_stack_pop_frame(names);
             break;
@@ -695,7 +699,30 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             class_decl_typecheck(my decl.class, errs);
             break;
 
-        case STATEMENT_DECL_TYPE: break;
+        case STATEMENT_DECL_TYPE:
+            c_foreach(i, vec_spanned_type, my decl.type.interface_extends) {
+                if (i.ref->type.tag == TYPE_IDENTIFIER) {
+                    /*
+                    if (!type_extends(&i.ref->type, &my decl.type.type)) {
+                        error_ctx_error(
+                            errs,
+                            my decl.type.name_span,
+                            2430,
+                            "Interface '%.*s' incorrectly extends interface '%.*s'.",
+                            c_SV(span_sv(&my decl.type.name_span)),
+                            c_SV(span_sv(&i.ref->type.identifier->span))
+                        );
+                    }
+                    */
+                } else {
+                    error_ctx_error(
+                        errs,
+                        i.ref->span,
+                        2499,
+                        "An interface can only extend an identifier/qualified-name with optional type arguments."
+                    );
+                }
+            }
     }
 }
 

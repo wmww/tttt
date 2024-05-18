@@ -9,6 +9,7 @@ typedef struct TypeDecl {
     cstr name;
     Span name_span;
     Generic generic;
+    VecSpannedType interface_extends; // Only used if is_interface is true
     Type type;
 } TypeDecl;
 
