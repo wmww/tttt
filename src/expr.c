@@ -608,11 +608,13 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
             Interface interface = {0};
             c_foreach(i, vec_object_expr_item, my object) {
                 Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
+                type_abstract_tuple_to_array(&t);
                 type_abstract_literals(&t);
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
                         span_between(&i.ref->name_span, &i.ref->value.span),
+                        false,
                         false,
                         cstr_clone(i.ref->name),
                         i.ref->name_span,

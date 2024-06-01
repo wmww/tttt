@@ -841,6 +841,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
                         false,
+                        item.member.is_optional,
                         cstr_move(&item.member.name),
                         item.member.name_span,
                         item.member.name_is_value,
@@ -854,6 +855,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
                         item.field.is_readonly,
+                        item.field.is_optional,
                         cstr_move(&item.field.initializer.binding.identifier),
                         item.field.initializer.binding.content_span,
                         item.field.name_is_value,
@@ -1907,7 +1909,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     .is_static = span_valid(&static_span),
                     .name = name,
                     .name_span = name_span,
-                    .optional = optional,
+                    .is_optional = optional,
                     .name_is_value = name_is_value,
                     .func = func,
                 }
@@ -1924,7 +1926,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .field = {
                     .is_readonly = span_valid(&readonly_span),
                     .is_static = span_valid(&static_span),
-                    .optional = optional,
+                    .is_optional = optional,
                     .name_is_value = name_is_value,
                     .initializer = {
                         .binding = {

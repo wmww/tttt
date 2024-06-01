@@ -5,6 +5,7 @@
 typedef struct InterfaceMember {
     Span span;
     bool readonly; // NOT used for mapped types
+    bool optional; // NOT used for mapped types
     struct {
         Span span;
         enum {
@@ -38,6 +39,7 @@ typedef struct InterfaceMember {
 static inline InterfaceMember interface_member_make(
     Span span,
     bool readonly,
+    bool optional,
     cstr name,
     Span name_span,
     bool name_is_value,
@@ -46,6 +48,7 @@ static inline InterfaceMember interface_member_make(
     return (InterfaceMember) {
         .span = span,
         .readonly = readonly,
+        .optional = optional,
         .key = {
             .span = name_span,
             .tag = INTERFACE_KEY_NAME,

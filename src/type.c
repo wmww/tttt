@@ -856,6 +856,7 @@ void type_abstract_literals(Type* me) {
                         InterfaceMember member = interface_member_make(
                             span_null,
                             false,
+                            false,
                             cstr_clone(i.ref->first),
                             span_null,
                             false,
@@ -1016,6 +1017,9 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                         Type key = type_value(value_string(i.ref->key.name));
                         if (type_extends(&key, index)) {
                             ret = type_composite(ret, type_clone(i.ref->type), TYPE_UNION);
+                            if (i.ref->optional) {
+                                ret = type_composite(ret, type_undefined, TYPE_UNION);
+                            }
                             found = true;
                         }
                     }   break;
@@ -1023,6 +1027,9 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                     case INTERFACE_KEY_INDEX:
                         if (type_overlaps(&i.ref->key.index, index)) {
                             ret = type_composite(ret, type_clone(i.ref->type), TYPE_UNION);
+                            if (i.ref->optional) {
+                                ret = type_composite(ret, type_undefined, TYPE_UNION);
+                            }
                             found = true;
                         }
                         break;

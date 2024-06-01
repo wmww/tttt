@@ -216,14 +216,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 if (i.ref->member.is_static) {
                 } else {
                     Type t = type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)));
-                    if (i.ref->member.optional) {
-                        t = type_composite(t, type_undefined, TYPE_UNION);
-                    }
                     vec_interface_member_push(
                         &interface.members,
                         interface_member_make(
                             i.ref->span,
                             false,
+                            i.ref->member.is_optional,
                             cstr_clone(i.ref->member.name),
                             i.ref->member.name_span,
                             i.ref->member.name_is_value,
@@ -236,7 +234,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_FIELD:
                 initialized_binding_typecheck(&i.ref->field.initializer, true, errs);
                 Type t = type_clone(i.ref->field.initializer.binding.type);
-                if (i.ref->member.optional) {
+                if (i.ref->member.is_optional) {
                     t = type_composite(t, type_undefined, TYPE_UNION);
                 }
                 ASSERT(i.ref->field.initializer.binding.tag == BINDING_IDENTIFIER);
@@ -248,6 +246,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                         interface_member_make(
                             i.ref->span,
                             i.ref->field.is_readonly,
+                            i.ref->field.is_optional,
                             cstr_clone(i.ref->field.initializer.binding.identifier),
                             i.ref->field.initializer.binding.content_span,
                             i.ref->field.name_is_value,

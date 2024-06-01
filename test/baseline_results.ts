@@ -5548,7 +5548,7 @@ const baselines = {
     'constraintOfRecursivelyMappedTypeWithConditionalIsResolvable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constraintPropagationThroughReturnTypes': {
         errors: true,
@@ -18763,7 +18763,7 @@ const baselines = {
     'mappedTypePartialNonHomomorphicBaseConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeRecursiveInference': {
         errors: false,
@@ -54631,7 +54631,7 @@ const baselines = {
         types: false,
     },
     'intersectionOfUnionNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55223,7 +55223,7 @@ const baselines = {
     'objectTypeWithStringAndNumberIndexSignatureToAny': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeWithStringIndexerHidingObjectIndexer': {
         errors: false,

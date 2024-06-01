@@ -266,11 +266,13 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
                     i.ref->member.name_is_value,
                     i.ref->span
                 );
+                Type t = type_clone(*callable_type_get_wrapper(&i.ref->member.func.type));
                 baseline_test_case_add_type(
                     ctx,
                     i.ref->member.name_span,
-                    callable_type_get_wrapper(&i.ref->member.func.type)
+                    &t
                 );
+                type_drop(&t);
                 function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx);
                 break;
 
@@ -309,6 +311,18 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
                 (my type.identifier->type.get && !my type.identifier->type.get->is_class)
             ) {
                 t = type_resolve(&my type);
+                switch (t->tag) {
+                    case TYPE_ANY:
+                    case TYPE_UNKNOWN:
+                    case TYPE_NEVER:
+                    case TYPE_VOID:
+                    case TYPE_BOOLEAN:
+                    case TYPE_NUMBER:
+                    case TYPE_STRING:
+                    case TYPE_VALUE:
+                    case TYPE_IDENTIFIER: break;
+                    default: t = &my type;
+                }
             }
         } else {
             to_drop = type_identifier(c_new(IdentifierType, {
@@ -469,6 +483,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
                     i.ref->name_span
                 );
                 Type t = expr_get_type_and_typecheck(&i.ref->value, nullptr);
+                type_abstract_tuple_to_array(&t);
                 type_abstract_literals(&t);
                 baseline_test_case_add_type(
                     ctx,
