@@ -94,8 +94,19 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             type_compile_test_info(&my key.index, ctx);
             break;
 
+        case INTERFACE_KEY_EXPR:
+            expr_compile_test_info(my key.expr.get, true, ctx);
+            break;
+
         case INTERFACE_KEY_MAPPED:
-            expr_compile_test_info(my key.mapped.get, true, ctx);
+            baseline_test_case_add_symbol(
+                ctx,
+                span_sv(&my key.mapped.type_name_span),
+                my key.mapped.type_name_span,
+                my key.mapped.type_name_span
+            );
+            type_compile_test_info(&my key.mapped.in_type, ctx);
+            type_compile_test_info(&my key.mapped.as_type, ctx);
             break;
 
         case INTERFACE_KEY_CALLABLE: break;

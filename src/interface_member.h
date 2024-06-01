@@ -4,12 +4,13 @@
 
 typedef struct InterfaceMember {
     Span span;
-    bool readonly;
+    bool readonly; // NOT used for mapped types
     struct {
         Span span;
         enum {
             INTERFACE_KEY_NAME,
             INTERFACE_KEY_INDEX,
+            INTERFACE_KEY_EXPR,
             INTERFACE_KEY_MAPPED,
             INTERFACE_KEY_CALLABLE, // No key data, and type must be callable
         } tag;
@@ -19,7 +20,16 @@ typedef struct InterfaceMember {
                 bool name_is_value;
             };
             Type index;
-            ArcExpr mapped;
+            ArcExpr expr;
+            struct {
+                cstr type_name;
+                Span type_name_span;
+                Type in_type;
+                Type as_type;
+                bool has_as_type;
+                signed char readonly; // -1 for remove, +1 for add
+                signed char optional; // -1 for remove, +1 for add
+            } mapped;
         };
     } key;
     Type type;

@@ -1027,6 +1027,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                         }
                         break;
 
+                    case INTERFACE_KEY_EXPR:
                     case INTERFACE_KEY_MAPPED:
                         // TODO
                         break;

@@ -1505,10 +1505,118 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_index_or_mapped_interface_member(Parser* parent, bool is_index, InterfaceMember* ret) {
+static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) {
+    Parser p = parser(parent);
+    Anchor a = span_start(&p);
+    *ret = (InterfaceMember){
+        .key.tag = INTERFACE_KEY_MAPPED,
+    };
+
+    if (hop_char(&p, '+')) {
+        ret->key.mapped.readonly = 1;
+        hop_whitespace(&p);
+    } else if (hop_char(&p, '-')) {
+        ret->key.mapped.readonly = -1;
+        hop_whitespace(&p);
+    }
+
+    if (hop_start_if_ends_on_word_break(&p, "readonly")) {
+        if (ret->key.mapped.readonly == 0) {
+            ret->key.mapped.readonly = 1;
+        }
+        hop_whitespace(&p);
+    } else if (ret->key.mapped.readonly != 0) {
+        return parse_fail(&p);
+    }
+
+    if (!hop_char(&p, '[')) {
+        if (ret->key.mapped.readonly == 0) {
+            return parse_fail(&p);
+        } else {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'[' expected.");
+        }
+    }
+    hop_whitespace(&p);
+
+    if (!parse_identifier(&p, nullptr, &ret->key.mapped.type_name_span)) {
+        if (ret->key.mapped.readonly == 0) {
+            return parse_fail(&p);
+        } else {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
+        }
+    }
+    hop_whitespace(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "in")) {
+        if (ret->key.mapped.readonly == 0) {
+            return parse_fail(&p);
+        } else {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'in' expected.");
+        }
+    }
+    hop_whitespace(&p);
+
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.in_type)) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
+        ret->key.mapped.in_type = type_any;
+    }
+    hop_whitespace(&p);
+
+    if (hop_start_if_ends_on_word_break(&p, "as")) {
+        hop_whitespace(&p);
+        ret->key.mapped.has_as_type = true;
+
+        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.as_type)) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
+            ret->key.mapped.as_type = type_any;
+        }
+        hop_whitespace(&p);
+    }
+
+    if (!hop_char(&p, ']')) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "']' expected.");
+    }
+    ret->key.span = span_end(a);
+    hop_whitespace(&p);
+
+   if (hop_char(&p, '+')) {
+        ret->key.mapped.optional = 1;
+        ret->key.span = span_end(a);
+        hop_whitespace(&p);
+    } else if (hop_char(&p, '-')) {
+        ret->key.mapped.optional = -1;
+        ret->key.span = span_end(a);
+        hop_whitespace(&p);
+    }
+
+    if (hop_char(&p, '?')) {
+        if (ret->key.mapped.optional == 0) {
+            ret->key.mapped.optional = 1;
+        }
+        ret->key.span = span_end(a);
+        hop_whitespace(&p);
+    } else if (ret->key.mapped.optional != 0) {
+        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'?' expected.");
+    }
+
+    if (!hop_char(&p, ':')) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
+    }
+    hop_whitespace(&p);
+
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->type)) {
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
+        ret->type = type_any;
+    }
+
+    ret->key.mapped.type_name = cstr_from_sv(span_sv(&ret->key.mapped.type_name_span));
+    return parse_success(&p);
+}
+
+static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, InterfaceMember* ret) {
     Parser p = parser(parent);
     *ret = (InterfaceMember){
-        .key.tag = is_index ? INTERFACE_KEY_INDEX : INTERFACE_KEY_MAPPED,
+        .key.tag = is_index ? INTERFACE_KEY_INDEX : INTERFACE_KEY_EXPR,
     };
 
     if (!hop_char(&p, '[')) {
@@ -1555,7 +1663,7 @@ static bool parse_index_or_mapped_interface_member(Parser* parent, bool is_index
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
             return parse_fail(&p);
         }
-        ret->key.mapped = arc_expr_make(expr);
+        ret->key.expr = arc_expr_make(expr);
         ret->key.span = span_end(a);
     }
     hop_whitespace(&p);
@@ -1630,6 +1738,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         } else if (parse_literal(&p, &value)) {
             cstr_clear(&name);
             cstr_append_value_js(&name, &value);
+            value_drop(&value);
             name_span = span_end(name_start);
             name_is_value = true;
             break;
@@ -1838,8 +1947,9 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     } else {
         cstr_drop(&name);
         CallableType callable;
-        if (parse_index_or_mapped_interface_member(&p, true, &ret->interface_memeber) ||
-            parse_index_or_mapped_interface_member(&p, false, &ret->interface_memeber)
+        if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
+            parse_index_or_expr_interface_member(&p, true, &ret->interface_memeber) ||
+            parse_index_or_expr_interface_member(&p, false, &ret->interface_memeber)
         ) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.span = span_end(a);

@@ -927,7 +927,7 @@ const baselines = {
     },
     'anyMappedTypesError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'anyPlusAny1': {
@@ -3247,13 +3247,13 @@ const baselines = {
     },
     'circularBaseTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'circularConstrainedMappedTypeNoCrash': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'circularConstraintYieldsAppropriateError': {
         errors: false,
@@ -3293,7 +3293,7 @@ const baselines = {
     'circularMappedTypeConstraint': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'circularModuleImports': {
         errors: false,
@@ -4942,7 +4942,7 @@ const baselines = {
     },
     'comparisonOfPartialDeepAndIndexedAccessTerminatesWithoutError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'compilerOptionsDeclarationAndNoEmit': {
@@ -5187,7 +5187,7 @@ const baselines = {
     },
     'conditionalTypeContextualTypeSimplificationsSuceeds': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable': {
@@ -5546,8 +5546,8 @@ const baselines = {
         types: true,
     },
     'constraintOfRecursivelyMappedTypeWithConditionalIsResolvable': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'constraintPropagationThroughReturnTypes': {
@@ -7181,8 +7181,8 @@ const baselines = {
         types: true,
     },
     'declarationEmitArrowFunctionNoRenaming': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitBindingPatternWithReservedWord': {
@@ -8246,8 +8246,8 @@ const baselines = {
         types: false,
     },
     'declarationQuotedMembers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationTypecheckNoUseBeforeReferenceCheck': {
@@ -14001,7 +14001,7 @@ const baselines = {
         types: true,
     },
     'genericIndexedAccessMethodIntersectionCanBeAccessed': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15382,7 +15382,7 @@ const baselines = {
     },
     'incorrectRecursiveMappedTypeConstraint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'incrementOnNullAssertion': {
@@ -15557,7 +15557,7 @@ const baselines = {
     },
     'indexedAccessNormalization': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'indexedAccessPrivateMemberOfGenericConstraint': {
@@ -15732,7 +15732,7 @@ const baselines = {
     },
     'inferRestArgumentsMappedTuple': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferSecondaryParameter': {
@@ -15768,7 +15768,7 @@ const baselines = {
     'inferTypeConstraintInstantiationCircularity': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inferTypeParameterConstraints': {
         errors: false,
@@ -16996,7 +16996,7 @@ const baselines = {
         types: true,
     },
     'intersectionType_useDefineForClassFields': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18666,13 +18666,13 @@ const baselines = {
         types: false,
     },
     'mappedTypeCircularReferenceInAccessor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'mappedTypeContextualTypesApplied': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeGenericIndexedAccess': {
@@ -18688,7 +18688,7 @@ const baselines = {
     'mappedTypeGenericInstantiationPreservesInlineForm': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mappedTypeGenericWithKnownKeys': {
         errors: false,
@@ -18697,7 +18697,7 @@ const baselines = {
     },
     'mappedTypeIndexedAccess': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeIndexedAccessConstraint': {
@@ -18707,7 +18707,7 @@ const baselines = {
     },
     'mappedTypeInferenceAliasSubstitution': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeInferenceCircularity': {
@@ -18717,8 +18717,8 @@ const baselines = {
     },
     'mappedTypeInferenceFromApparentType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mappedTypeInferenceToMappedType': {
         errors: false,
@@ -18727,7 +18727,7 @@ const baselines = {
     },
     'mappedTypeMultiInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeNestedGenericInstantiation': {
@@ -18747,13 +18747,13 @@ const baselines = {
     },
     'mappedTypeOverArrayWithBareAnyRestCanBeUsedAsRestParam1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mappedTypeParameterConstraint': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mappedTypePartialConstraints': {
         errors: false,
@@ -18761,8 +18761,8 @@ const baselines = {
         types: false,
     },
     'mappedTypePartialNonHomomorphicBaseConstraint': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mappedTypeRecursiveInference': {
@@ -18782,7 +18782,7 @@ const baselines = {
     },
     'mappedTypeUnionConstrainTupleTreatedAsArrayLike': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeUnionConstraintInferences': {
@@ -20773,7 +20773,7 @@ const baselines = {
     'nestedHomomorphicMappedTypesWithArrayConstraint1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nestedIfStatement': {
         errors: true,
@@ -21652,7 +21652,7 @@ const baselines = {
     },
     'nonNullMappedType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonNullParameterExtendingStringAssignableToString': {
@@ -22798,7 +22798,7 @@ const baselines = {
     'parenthesisDoesNotBlockAliasSymbolCreation': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parenthesizedArrowExpressionASI': {
         errors: true,
@@ -24507,7 +24507,7 @@ const baselines = {
     },
     'recursivelyExpandingUnionNoStackoverflow': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursivelySpecializedConstructorDeclaration': {
@@ -25001,9 +25001,9 @@ const baselines = {
         types: false,
     },
     'restParamUsingMappedTypeOverUnionConstraint': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'restParameterAssignmentCompatibility': {
         errors: false,
@@ -25122,7 +25122,7 @@ const baselines = {
     },
     'reverseMappedContravariantInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reverseMappedPartiallyInferableTypes': {
@@ -25142,7 +25142,7 @@ const baselines = {
     },
     'reverseMappedTypeContextualTypeNotCircular': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reverseMappedTypeContextualTypesPerElementOfTupleConstraint': {
@@ -25151,8 +25151,8 @@ const baselines = {
         types: false,
     },
     'reverseMappedTypeDeepDeclarationEmit': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'reverseMappedTypeIntersectionConstraint': {
@@ -25162,12 +25162,12 @@ const baselines = {
     },
     'reverseMappedTypeLimitedConstraint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reverseMappedTypePrimitiveConstraintProperty': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reverseMappedUnionInference': {
@@ -26626,8 +26626,8 @@ const baselines = {
         types: false,
     },
     'substitutionTypesInIndexedAccessTypes': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'subtypeReductionUnionConstraints': {
@@ -54416,7 +54416,7 @@ const baselines = {
         types: false,
     },
     'inferTypes2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54672,7 +54672,7 @@ const baselines = {
     },
     'intersectionTypeInference2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionTypeInference3': {
@@ -54727,7 +54727,7 @@ const baselines = {
     },
     'keyofAndForIn': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keyofAndIndexedAccess': {
@@ -55007,7 +55007,7 @@ const baselines = {
     },
     'mappedTypeErrors2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeIndexSignatureModifiers': {
@@ -55347,7 +55347,7 @@ const baselines = {
     },
     'nonPrimitiveAndTypeVariables': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonPrimitiveAsProperty': {
@@ -58237,12 +58237,12 @@ const baselines = {
     },
     'genericContextualTypes2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericContextualTypes3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericFunctionParameters': {
@@ -58266,7 +58266,7 @@ const baselines = {
         types: false,
     },
     'keyofInferenceLowerPriorityThanReturn': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

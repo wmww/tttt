@@ -244,7 +244,11 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                 switch(i.ref->key.tag) {
                     case INTERFACE_KEY_NAME: break;
                     case INTERFACE_KEY_INDEX: replace_named_types_with(&i.ref->key.index, refinements); break;
-                    case INTERFACE_KEY_MAPPED: break;
+                    case INTERFACE_KEY_EXPR: break;
+                    case INTERFACE_KEY_MAPPED:
+                        replace_named_types_with(&i.ref->key.mapped.in_type, refinements);
+                        replace_named_types_with(&i.ref->key.mapped.as_type, refinements);
+                        break;
                     case INTERFACE_KEY_CALLABLE: break;
                 }
                 replace_named_types_with(&i.ref->type, refinements);
