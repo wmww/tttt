@@ -13,6 +13,7 @@
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
 const int ternary_precedence = 20;
+const int new_keyword_precedence = 170;
 
 void expr_drop(Expr* me) {
     switch (my tag) {

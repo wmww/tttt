@@ -1057,8 +1057,16 @@ static bool parse_function_args(
     *type_ret = (CallableType){0};
 
     if (is_type || !func_ret) {
+        if (hop_start_if_ends_on_word_break(&p, "abstract")) {
+            type_ret->is_abstract_constructor = true;
+            hop_whitespace(&p);
+        }
+
         if (hop_start_if_ends_on_word_break(&p, "new")) {
             hop_whitespace(&p);
+            type_ret->is_constructor = true;
+        } else if (type_ret->is_abstract_constructor) {
+            return parse_fail(&p);
         }
     }
 
@@ -2082,6 +2090,10 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         .interface = type_any,
         .extends = expr_implicit_any(span_null),
         .implements = {0},
+        .constructor_type = {
+            .is_constructor = true,
+            .is_abstract_constructor = is_abstract,
+        }
     };
     if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
         ret->name = cstr_null;
@@ -2547,7 +2559,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         FunctionImpl function;
     } parsed;
 
-    if (parse_call_args(&p, &parsed.args)) {
+    if (new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
         *left_and_ret = expr_call(
             span_end(a),
             c_new(CallExpr, {
@@ -2690,22 +2702,17 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         *ret = expr_class_decl(span_end(a), c_new(ClassDecl, parsed.class_decl));
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
         hop_whitespace(&p);
-        if (!parse_expr(&p, ctx, ret)) {
+        ExprCtx sub_ctx = ctx;
+        sub_ctx.min_precedence = new_keyword_precedence;
+        CallExpr call = { .uses_new = true };
+        if (!parse_expr(&p, sub_ctx, &call.callable)) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-            *ret = expr_undefined(span_end(a));
+            call.callable = expr_undefined(span_end(a));
         }
-        if (ret->tag == EXPR_CALL) {
-            ret->call->uses_new = true;
-        } else {
-            *ret = expr_call(
-                span_end(a),
-                c_new(CallExpr, {
-                    .uses_new = true,
-                    .callable = *ret,
-                    .args = vec_expr_init(),
-                })
-            );
+        if (!parse_call_args(&p, &call.args)) {
+            call.args = vec_expr_init();
         }
+        *ret = expr_call(span_end(a), c_new(CallExpr, call));
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));

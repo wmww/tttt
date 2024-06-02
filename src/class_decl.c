@@ -196,6 +196,14 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type extends_type = expr_get_type_and_typecheck(&my extends, errs);
+        if (extends_type.tag == TYPE_VALUE && extends_type.value.tag == VALUE_NULL) {
+        } else if (extends_type.tag == TYPE_CALLABLE && extends_type.callable->is_constructor) {
+        } else {
+            cstr msg = cstr_lit("Type '");
+            cstr_append_type_error_msg(&msg, &extends_type);
+            cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
+            error_ctx_error_s(errs, my extends.span, 2507, msg);
+        }
         type_drop(&extends_type);
     }
 
@@ -295,6 +303,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }));
     my constructor_type.ret_explicit = true;
     my constructor_type.is_constructor = true;
+    my constructor_type.is_abstract_constructor = my is_abstract;
     callable_type_get_wrapper(&my constructor_type);
 
     c_foreach(i, vec_type, my implements) {

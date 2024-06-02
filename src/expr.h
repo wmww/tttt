@@ -117,6 +117,7 @@ static inline Expr expr_implicit_any(Span span) {
 extern const Expr expr_implicit_any_no_span;
 extern const int as_type_precedence;
 extern const int ternary_precedence;
+extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent);

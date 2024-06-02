@@ -221,7 +221,7 @@ const baselines = {
         types: false,
     },
     'abstractClassInLocalScopeIsAbstract': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -1476,9 +1476,9 @@ const baselines = {
         types: false,
     },
     'assignToInvalidLHS': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignToModule': {
         errors: false,
@@ -3406,7 +3406,7 @@ const baselines = {
         types: false,
     },
     'classDeclaredBeforeClassFactory': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -12356,7 +12356,7 @@ const baselines = {
         types: false,
     },
     'extendNonClassSymbol2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -16996,7 +16996,7 @@ const baselines = {
         types: true,
     },
     'intersectionType_useDefineForClassFields': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -31721,7 +31721,7 @@ const baselines = {
         types: false,
     },
     'classExtendingNonConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31791,7 +31791,7 @@ const baselines = {
         types: false,
     },
     'classExtendsValidConstructorFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32141,7 +32141,7 @@ const baselines = {
         types: false,
     },
     'classConstructorAccessibility4': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -33327,7 +33327,7 @@ const baselines = {
     },
     'mixinAbstractClassesReturnTypeInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mixinAccessModifiers': {
@@ -33646,7 +33646,7 @@ const baselines = {
         types: false,
     },
     'overrideInterfaceProperty': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46486,7 +46486,7 @@ const baselines = {
         types: false,
     },
     'extendsTag1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -49303,7 +49303,7 @@ const baselines = {
     'parserInvocationOfMemberAccessOffOfObjectCreationExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMemberAccessAfterPostfixExpression1': {
         errors: false,
@@ -49313,7 +49313,7 @@ const baselines = {
     'parserObjectCreation2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserPostfixPostfixExpression1': {
         errors: false,
@@ -49466,12 +49466,12 @@ const baselines = {
         types: false,
     },
     'parserConstructorAmbiguity1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserConstructorAmbiguity2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

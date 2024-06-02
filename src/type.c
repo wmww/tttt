@@ -1213,6 +1213,31 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             CallableType inferred = {0};
             CallableType const* callable = my callable;
 
+            if (call->uses_new) {
+                if (!callable->is_constructor) {
+                    // TODO: add this check only in strict mode
+                    /*
+                    error_ctx_error(
+                        errs,
+                        span,
+                        7009,
+                        "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type."
+                    );
+                    */
+                } else if (callable->is_abstract_constructor) {
+                    error_ctx_error(errs, span, 2511, "Cannot create an instance of an abstract class.");
+                }
+            } else {
+                if (callable->is_constructor) {
+                    error_ctx_error(
+                        errs,
+                        span,
+                        2348,
+                        "Value of type 'typeof Foo' is not callable. Did you mean to include 'new'?"
+                    );
+                }
+            }
+
             if (!generic_empty(&callable->generic)) {
                 inferred = generic_infer_callable_types(
                     &callable->generic,
@@ -1318,7 +1343,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 type_drop(&rest_type);
             }
 
-            Type ret = type_clone(callable->ret);
+            Type ret = (call->uses_new && callable->is_abstract_constructor) ? type_any : type_clone(callable->ret);
             callable_type_drop(&inferred);
             return ret;
         }

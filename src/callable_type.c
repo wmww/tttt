@@ -28,10 +28,17 @@ CallableType callable_type_clone(CallableType me) {
         .ret_explicit = me.ret_explicit,
         .ret = type_clone(me.ret),
         .is_constructor = me.is_constructor,
+        .is_abstract_constructor = me.is_abstract_constructor,
     };
 }
 
 void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent) {
+    if (my is_abstract_constructor) {
+        cstr_append_sv(target, c_sv("abstract "));
+    }
+    if (my is_constructor) {
+        cstr_append_sv(target, c_sv("new "));
+    }
     cstr_append_generic_debug(target, &my generic, indent);
     cstr_append_sv(target, c_sv("("));
     c_foreach(i, vec_callable_arg, my args) {
