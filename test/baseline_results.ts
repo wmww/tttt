@@ -626,7 +626,7 @@ const baselines = {
         types: false,
     },
     'ambientClassDeclaredBeforeBase': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -751,7 +751,7 @@ const baselines = {
         types: false,
     },
     'ambientNameRestrictions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7731,9 +7731,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitLocalClassHasRequiredDeclare': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitMappedPrivateTypeTypeParameter': {
         errors: false,
@@ -7796,7 +7796,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitNamespaceMergedWithInterfaceNestedFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7836,7 +7836,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitOfFuncspace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8166,7 +8166,7 @@ const baselines = {
         types: false,
     },
     'declarationFilesGeneratingTypeReferences': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11936,7 +11936,7 @@ const baselines = {
         types: false,
     },
     'exportDefaultProperty2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14541,9 +14541,9 @@ const baselines = {
         types: false,
     },
     'globalIsContextualKeyword': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'globalThis': {
         errors: false,
@@ -28111,7 +28111,7 @@ const baselines = {
         types: false,
     },
     'typeGuardOnContainerTypeNoHang': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29311,7 +29311,7 @@ const baselines = {
         types: false,
     },
     'unusedClassesinNamespace3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29486,12 +29486,12 @@ const baselines = {
         types: false,
     },
     'unusedInterfaceinNamespace4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'unusedInterfaceinNamespace5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43791,7 +43791,7 @@ const baselines = {
         types: false,
     },
     'es6modulekindWithES5Target7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43861,7 +43861,7 @@ const baselines = {
         types: false,
     },
     'esnextmodulekindWithES5Target7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45156,7 +45156,7 @@ const baselines = {
         types: false,
     },
     'asiPreventsParsingAsInterface03': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45681,7 +45681,7 @@ const baselines = {
         types: true,
     },
     'asiPreventsParsingAsNamespace03': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46616,7 +46616,7 @@ const baselines = {
         types: false,
     },
     'jsdocImplements_namespacedInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47086,9 +47086,9 @@ const baselines = {
         types: false,
     },
     'seeTag1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'seeTag2': {
         errors: true,
@@ -56716,7 +56716,7 @@ const baselines = {
         types: true,
     },
     'asiPreventsParsingAsTypeAlias02': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

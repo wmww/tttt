@@ -125,6 +125,11 @@ void statement_drop(Statement* me) {
         case STATEMENT_DECL_TYPE:
             type_decl_drop(&my decl.type);
             break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            cstr_drop(&my decl.namespace.name);
+            block_drop(&my decl.namespace.contents);
+            break;
     }
 }
 
@@ -275,6 +280,13 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
         case STATEMENT_DECL_CLASS: cstr_append_class_decl_debug(target, my decl.class, indent); break;
 
         case STATEMENT_DECL_TYPE: cstr_append_type_decl_debug(target, &my decl.type, indent); break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            cstr_append_sv(target, c_sv("function " CLR_NAME));
+            cstr_append_s(target, my decl.namespace.name);
+            cstr_append_sv(target, c_sv(CLR0 " "));
+            cstr_append_block_debug(target, &my decl.namespace.contents, indent);
+            break;
     }
 }
 
@@ -336,6 +348,10 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
+            break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            NONFATAL("namespace add names not implemented");
             break;
 
         case STATEMENT_NOOP:
@@ -465,6 +481,10 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             }
             type_resolve_names(&my decl.type.type, names, errs);
             name_stack_pop_frame(names);
+            break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            block_resolve_names(&my decl.namespace.contents, names, errs);
             break;
 
         case STATEMENT_NOOP:
@@ -727,6 +747,11 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     );
                 }
             }
+            break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            block_typecheck(&my decl.namespace.contents, ctx, errs);
+            break;
     }
 }
 

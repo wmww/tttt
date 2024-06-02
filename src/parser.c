@@ -3591,6 +3591,50 @@ static bool parse_throw(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_start_if_ends_on_word_break(&p, "namespace")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (p.whitespace == WHITESPACE_NEWLINE) {
+        return parse_fail(&p);
+    }
+
+    *ret = (typeof((Statement){}.decl.namespace)){0};
+
+    if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
+        Value val;
+        Anchor a = span_start(&p);
+        if (*p.pos == '{') {
+            error_ctx_error(&p.errs, span_from_token(&p), 1437, "Namespace must be given a name.");
+        } else if (parse_literal(&p, &val)) {
+            if (val.tag == VALUE_STRING) {
+                error_ctx_error(&p.errs, span_end(a), 1003, "Identifier expected.");
+            } else {
+                cstr msg = cstr_lit("Namespace name cannot be '");
+                cstr_append_value_error_msg(&msg, &val);
+                cstr_append_sv(&msg, c_sv("'."));
+                error_ctx_error_s(&p.errs, span_end(a), 2819, msg);
+            }
+            value_drop(&val);
+            return parse_success(&p);
+        } else {
+            return parse_fail(&p);
+        }
+    }
+    hop_whitespace(&p);
+
+    if (!parse_block(&p, true, &ret->contents)) {
+        ret->contents = (Block){0};
+        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
@@ -3691,6 +3735,15 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         *ret = (Statement){
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
+        };
+    } else if (exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
+        *ret = (Statement){
+            .tag = STATEMENT_DECL_NAMESPACE,
+            .decl = {
+                .exported = exported,
+                .declared = declared,
+                .namespace = ret->decl.namespace,
+            },
         };
     } else {
         return parse_fail(&p);

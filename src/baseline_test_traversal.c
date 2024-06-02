@@ -610,6 +610,10 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
         case STATEMENT_DECL_TYPE:
             type_decl_compile_test_info(&my decl.type, ctx);
             break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            block_compile_test_info(&my decl.namespace.contents, ctx);
+            break;
     }
 }
 

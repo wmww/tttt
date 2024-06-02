@@ -525,6 +525,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return result_ok_undefined;
 
         case STATEMENT_DECL_TYPE: return result_ok_undefined;
+
+        case STATEMENT_DECL_NAMESPACE:
+            NONFATAL("Creating namespaces not yet implementated");
+            return result_ok_undefined;
     }
     UNREACHABLE;
 }

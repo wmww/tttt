@@ -67,6 +67,7 @@ typedef struct Statement {
         STATEMENT_DECL_FUNCTION,
         STATEMENT_DECL_CLASS,
         STATEMENT_DECL_TYPE,
+        STATEMENT_DECL_NAMESPACE,
     } tag;
     union {
         Block block;
@@ -86,6 +87,11 @@ typedef struct Statement {
                 FunctionImpl function;
                 ClassDecl* class;
                 TypeDecl type;
+                struct {
+                    cstr name;
+                    Span name_span;
+                    Block contents;
+                } namespace;
             };
         } decl;
     };
