@@ -246,7 +246,14 @@ void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        expr_compile_test_info(&my extends, true, ctx);
+        Type t = expr_get_type_and_typecheck(&my extends, nullptr);
+        if (t.tag == TYPE_CALLABLE && t.callable->is_constructor) {
+            baseline_test_case_add_type(ctx, my extends.span, &t.callable->ret);
+            expr_compile_test_info_inner(&my extends, ctx);
+        } else {
+            expr_compile_test_info(&my extends, true, ctx);
+        }
+        type_drop(&t);
     }
     c_foreach(i, vec_type, my implements) {
         type_compile_test_info(i.ref, ctx);
@@ -351,23 +358,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     }
 }
 
-void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
-    Type t = expr_get_type_and_typecheck(me, nullptr);
-    if (my tag == EXPR_ARRAY) {
-        if (vec_expr_empty(&my array)) {
-            type_drop(&t);
-            t = type_array(c_new(Type, type_undefined), false);
-        } else {
-            type_abstract_literals(&t);
-            if (abstract_arrays) {
-                type_abstract_tuple_to_array(&t);
-            }
-        }
-    }
-    if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
-        baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
-    }
-
+void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
 
@@ -442,7 +433,9 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
             if (my property->form == PROPERTY_EXPR_BRACKET) {
                 expr_compile_test_info(&my property->prop, true, ctx);
             } else {
+                Type t = expr_get_type_and_typecheck(me, nullptr);
                 baseline_test_case_add_type(ctx, my property->prop.span, &t);
+                type_drop(&t);
             }
 
         }   break;
@@ -505,8 +498,22 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
             class_decl_compile_test_info(my class_decl, ctx);
             break;
     }
+}
 
-    type_drop(&t);
+void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
+    if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
+        Type t = expr_get_type_and_typecheck(me, nullptr);
+        if (my tag == EXPR_ARRAY) {
+            type_abstract_literals(&t);
+            if (abstract_arrays) {
+                type_abstract_tuple_to_array(&t);
+            }
+        }
+        baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
+        type_drop(&t);
+    }
+
+    expr_compile_test_info_inner(me, ctx);
 }
 
 void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {

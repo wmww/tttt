@@ -795,7 +795,7 @@ bool type_extends_array(Type const* sub) {
 void type_abstract_tuple_to_array(Type* me) {
     if (my tag == TYPE_TUPLE) {
         type_abstract_literals(me);
-        Type ret = vec_type_empty(&my tuple.elements) ? type_any : type_never;
+        Type ret = vec_type_empty(&my tuple.elements) ? type_undefined : type_never;
         c_foreach(i, vec_type, my tuple.elements) {
             if (i.ref->tag != TYPE_VALUE || i.ref->value.tag != VALUE_UNDEFINED) {
                 ret = type_composite(ret, *i.ref, TYPE_UNION);

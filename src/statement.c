@@ -513,7 +513,12 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_FOR_EACH_LOOP: {
             Type iterable_type = expr_get_type_and_typecheck(&my for_each_loop->iterable, errs);
-            type_abstract_tuple_to_array(&iterable_type);
+            if (iterable_type.tag == TYPE_TUPLE && vec_type_empty(&iterable_type.tuple.elements)) {
+                type_drop(&iterable_type);
+                iterable_type = type_any;
+            } else {
+                type_abstract_tuple_to_array(&iterable_type);
+            }
             Type var_type = type_any;
 
             switch (my for_each_loop->keyword) {
