@@ -228,21 +228,25 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
     }
 }
 
-void class_decl_compile_test_info(ClassDecl const* me, BaselineTestCase* ctx) {
+void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTestCase* ctx) {
     if (!cstr_empty(&my name)) {
         baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my name_span, my full_span);
-        Type t = type_identifier(c_new(IdentifierType, {
-            .name = cstr_clone(my name),
-            .span = my name_span,
-        }));
-        c_foreach(i, vec_generic_item, my generic.items) {
-            vec_type_push(&t.identifier->generic_params, type_identifier(c_new(IdentifierType, {
-                .name = cstr_clone(i.ref->name),
-                .span = i.ref->name_span,
-            })));
+        if (is_expr) {
+            baseline_test_case_add_type(ctx, my name_span, &my constructor_type.wrapper_type_do_not_drop);
+        } else {
+            Type t = type_identifier(c_new(IdentifierType, {
+                .name = cstr_clone(my name),
+                .span = my name_span,
+            }));
+            c_foreach(i, vec_generic_item, my generic.items) {
+                vec_type_push(&t.identifier->generic_params, type_identifier(c_new(IdentifierType, {
+                    .name = cstr_clone(i.ref->name),
+                    .span = i.ref->name_span,
+                })));
+            }
+            baseline_test_case_add_type(ctx, my name_span, &t);
+            type_drop(&t);
         }
-        baseline_test_case_add_type(ctx, my name_span, &t);
-        type_drop(&t);
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
@@ -495,7 +499,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CLASS_DECL:
-            class_decl_compile_test_info(my class_decl, ctx);
+            class_decl_compile_test_info(my class_decl, true, ctx);
             break;
     }
 }
@@ -600,7 +604,7 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_CLASS:
-            class_decl_compile_test_info(my decl.class, ctx);
+            class_decl_compile_test_info(my decl.class, false, ctx);
             break;
 
         case STATEMENT_DECL_TYPE:

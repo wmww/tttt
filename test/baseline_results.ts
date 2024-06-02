@@ -3408,7 +3408,7 @@ const baselines = {
     'classDeclaredBeforeClassFactory': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExpressionAssignment': {
         errors: false,
@@ -3493,7 +3493,7 @@ const baselines = {
     'classExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendingAbstractClassWithMemberCalledTheSameAsItsOwnTypeParam': {
         errors: false,
@@ -31878,12 +31878,12 @@ const baselines = {
     'classExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExpression2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExpression3': {
         errors: false,
@@ -31948,7 +31948,7 @@ const baselines = {
     'modifierOnClassExpressionMemberInFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock1': {
         errors: false,
@@ -36388,12 +36388,12 @@ const baselines = {
     'classExpressionES61': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExpressionES62': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExpressionES63': {
         errors: false,
