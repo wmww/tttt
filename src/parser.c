@@ -679,14 +679,27 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     cstr name;
     Span span;
+    VecSpan namespaces = vec_span_init();
     if (!parse_identifier(&p, &name, &span)) {
-        return false;
+        return parse_fail(&p);
     }
     const char* end = p.pos;
 
     hop_whitespace(&p);
+    while (hop_char(&p, '.')) {
+        cstr_drop(&name);
+        vec_span_push(&namespaces, span);
+        hop_whitespace(&p);
+        if (!parse_identifier(&p, &name, &span)) {
+            span = hop_token_get_span(&p);
+            name = cstr_null;
+            error_ctx_error(&p.errs, span, 1003, "Identifier expected.");
+        }
+        end = p.pos;
+        hop_whitespace(&p);
+    }
 
-    if (cstr_equals(&name, "infer")) {
+    if (vec_span_empty(&namespaces) && cstr_equals(&name, "infer")) {
         inferred = true;
         cstr_drop(&name);
         if (parse_identifier(&p, &name, &span)) {
@@ -719,6 +732,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     p.pos = end;
     *ret = (IdentifierType){
+        .namespaces = namespaces,
         .name = name,
         .span = span,
         .generic_params = generic_params,
@@ -2468,6 +2482,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
 static bool parse_number(Parser* parent, double* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     cstr number_str;
     if (!parse_number_str(&p, &number_str)) {
@@ -2477,7 +2492,7 @@ static bool parse_number(Parser* parent, double* ret) {
         char* end;
         *ret = strtod(cstr_str(&number_str), &end);
         if (end != cstr_str(&number_str) + cstr_size(&number_str)) {
-            error_ctx_parse_error(&p.errs, "invalid number");
+            error_ctx_error(&p.errs, span_end(a), TS_CODE_NONE, "invalid number");
         }
         cstr_drop(&number_str);
         return parse_success(&p);

@@ -4,6 +4,7 @@
 #include "error.h"
 
 void identifier_type_drop(IdentifierType* me) {
+    vec_span_drop(&my namespaces);
     cstr_drop(&my name);
     arc_named_type_drop(&my type);
     vec_type_drop(&my generic_params);
@@ -12,6 +13,7 @@ void identifier_type_drop(IdentifierType* me) {
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     return (IdentifierType){
+        .namespaces = vec_span_clone(me.namespaces),
         .name =  cstr_clone(me.name),
         .span = me.span,
         .type = arc_named_type_clone(me.type),
@@ -26,6 +28,10 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
         cstr_append_sv(target, c_sv("infer "));
     }
     cstr_append_sv(target, c_sv(CLR_TYPE));
+    c_foreach(i, vec_span, my namespaces) {
+        cstr_append_sv(target, span_sv(i.ref));
+        cstr_append_sv(target, c_sv("."));
+    }
     cstr_append_s(target, my name);
     cstr_append_sv(target, c_sv(CLR0));
     if (!vec_type_empty(&my generic_params)) {

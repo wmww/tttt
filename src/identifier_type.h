@@ -5,6 +5,7 @@
 typedef struct ErrorCtx ErrorCtx;
 
 typedef struct IdentifierType {
+    VecSpan namespaces;
     cstr name;
     Span span;
     ArcNamedType type;
