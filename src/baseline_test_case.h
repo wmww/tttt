@@ -52,7 +52,7 @@ void baseline_test_case_add_symbol_with_scope(
 );
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type);
 void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Type const* type, int paren_depth);
-void baseline_test_case_run(BaselineTestCase* me, bool noisy); // returns if test ran successfully, NOT if it passed
+void baseline_test_case_run(BaselineTestCase* me, bool show_errs, bool show_syms, bool show_typs);
 bool baseline_test_case_is_pass(BaselineTestCase const* me);
 bool baseline_test_case_was_pass(BaselineTestCase const* me);
 // Both *_has_new_pass() and *_has_new_fail() can be true at once, _has_new_pass() does not imply *_is_pass()

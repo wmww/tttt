@@ -111,7 +111,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestCase const* tes
     cstr_append_fmt(target, "%s %s " CLR0, name_color, cstr_str(&test->name));
 }
 
-void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
+void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_syms, bool show_typs) {
     intptr_t test_count = vec_baseline_test_case_size(&my cases);
     int passed = 0, failed = 0, new_passed = 0, new_failed = 0;
     cstr display = cstr_null;
@@ -130,7 +130,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool noisy) {
         printf("        \x1b[1;44m%5s " CLR0 "  %s", cstr_str(&display), cstr_str(&i.ref->name));
         fflush(stdout);
 
-        baseline_test_case_run(i.ref, noisy);
+        baseline_test_case_run(i.ref, show_errs, show_syms, show_typs);
         baseline_test_case_clear_detail(i.ref);
 
         bool is_pass = baseline_test_case_is_pass(i.ref);

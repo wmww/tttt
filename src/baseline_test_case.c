@@ -393,7 +393,8 @@ void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Typ
     }
 }
 
-void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
+void baseline_test_case_run(BaselineTestCase* me, bool show_errs, bool show_syms, bool show_typs) {
+    bool noisy = show_errs || show_syms || show_typs;
     const char* name = cstr_str(&my name);
     const char* dir = my suite->tests_dir;
     cstr errors_path = cstr_from_fmt("%s/baselines/reference/%s.errors.txt", dir, name);
@@ -496,7 +497,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         "errors",
         cstr_str(&errors_path),
         cstr_sv(&errors_result),
-        noisy
+        show_errs
     );
 
     my symbols_passed = compare_outputs(
@@ -504,7 +505,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         "symbols",
         cstr_str(&symbols_path),
         cstr_sv(&symbols_results),
-        noisy
+        show_syms
     );
 
     my types_passed = compare_outputs(
@@ -512,7 +513,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool noisy) {
         "types",
         cstr_str(&types_path),
         cstr_sv(&types_results),
-        noisy
+        show_typs
     );
 
     my has_run = true;

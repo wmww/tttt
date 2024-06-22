@@ -7,7 +7,9 @@ const char* tests_dir = default_tests_dir;
 const char* test_filter = nullptr;
 const char* const default_results_path = "test/baseline_results.ts";
 const char* results_path = default_results_path;
-bool show_diffs = false;
+bool show_errs = false;
+bool show_syms = false;
+bool show_typs = false;
 bool save_results = false;
 
 // TODO: expose as command line argument
@@ -18,10 +20,13 @@ static void show_help(FILE* target) {
   --dir [PATH]              path to TypeScript tests directory\n\
                             (default = %s)\n\n\
   -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n\
-  -d, --diffs               if to show diffs for failing tests\n\n\
   -s, --save                save test results to results path\n\n\
   --results-path [PATH]     path to file where test results are loaded/saved\n\n\
                             (default = %s)\n\n\
+  -d, --diffs               if to show all diffs for failing tests\n\n\
+  --err                     show errors diffs for failing tests\n\n\
+  --sym                     show symbols diffs for failing tests\n\n\
+  --typ                     show types diffs for failing tests\n\n\
 ", default_tests_dir, default_results_path);
 }
 
@@ -49,7 +54,15 @@ static bool parse_args(int argc, const char** argv) {
                 return false;
             }
         } else if (streq(argv[i], "-d") || streq(argv[i], "--diffs")) {
-            show_diffs = true;
+            show_errs = true;
+            show_syms = true;
+            show_typs = true;
+        } else if (streq(argv[i], "--err")) {
+            show_errs = true;
+        } else if (streq(argv[i], "--sym")) {
+            show_syms = true;
+        } else if (streq(argv[i], "--typ")) {
+            show_typs = true;
         } else if (streq(argv[i], "--results-path")) {
             i++;
             if (i < argc && *argv[i] != '-') {
@@ -86,7 +99,7 @@ int main(int argc, const char** argv) {
     }
 
     BoxBaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter, results_path);
-    baseline_test_suite_run(suite.get, show_diffs);
+    baseline_test_suite_run(suite.get, show_errs, show_syms, show_typs);
 
     if (save_results) {
         baseline_test_suite_save_results(suite.get, results_path);
