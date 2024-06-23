@@ -96,13 +96,11 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             break;
 
         default: {
-            ErrorCtx null_errs = {0};
-            Type t = expr_get_type_and_typecheck(me, &null_errs);
+            Type t = expr_get_type_and_typecheck(me, nullptr);
             cstr_append_sv(target, c_sv(CLR_IMPLICIT "<" CLR0));
             cstr_append_type_debug(target, &t, indent);
             cstr_append_sv(target, c_sv(CLR_IMPLICIT ">" CLR0));
             type_drop(&t);
-            error_ctx_drop(&null_errs);
         }
     }
 

@@ -398,9 +398,8 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
-            ErrorCtx null_errs = {0};
-            Type expr_t = expr_get_type_and_typecheck(&my property->expr, &null_errs);
-            Type prop_t = expr_get_type_and_typecheck(&my property->prop, &null_errs);
+            Type expr_t = expr_get_type_and_typecheck(&my property->expr, nullptr);
+            Type prop_t = expr_get_type_and_typecheck(&my property->prop, nullptr);
 
             if (expr_t.tag == TYPE_INTERFACE && prop_t.tag == TYPE_VALUE && prop_t.value.tag == VALUE_STRING) {
                 c_foreach(i, vec_interface_member, expr_t.interface.members) {
@@ -426,7 +425,6 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 }
             }
 
-            error_ctx_drop(&null_errs);
             type_drop(&prop_t);
             type_drop(&expr_t);
 
@@ -441,7 +439,6 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 baseline_test_case_add_type(ctx, my property->prop.span, &t);
                 type_drop(&t);
             }
-
         }   break;
 
         case EXPR_AS_TYPE:

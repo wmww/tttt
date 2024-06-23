@@ -7,7 +7,7 @@
 
 int main(int argc, const char** argv) {
     cstr contents = cstr_null;
-    ErrorCtx errs = {0};
+    ErrorCtx errs = error_ctx_init();
     Block ast = {0};
     int ret = 0;
 
@@ -28,7 +28,7 @@ int main(int argc, const char** argv) {
     if (!error_ctx_empty(&errs)) {
         error_ctx_display(&errs);
         error_ctx_drop(&errs);
-        errs = (ErrorCtx){0};
+        errs = error_ctx_init();
         ret = 1;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, const char** argv) {
     if (!error_ctx_empty(&errs)) {
         error_ctx_display(&errs);
         error_ctx_drop(&errs);
-        errs = (ErrorCtx){0};
+        errs = error_ctx_init();
         ret = 1;
     }
 
@@ -56,7 +56,7 @@ int main(int argc, const char** argv) {
     if (!error_ctx_empty(&errs)) {
         error_ctx_display(&errs);
         error_ctx_drop(&errs);
-        errs = (ErrorCtx){0};
+        errs = error_ctx_init();
         ret = 1;
     }
 
