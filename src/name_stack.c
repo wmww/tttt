@@ -54,11 +54,11 @@ StackFrame stack_frame_clone(StackFrame me) {
 }
 
 static inline void add_builtin_variable(NameStack* me, csview name, Type const* type) {
-    name_stack_add_variable(me, cstr_from_sv(name), span_null, type);
+    name_stack_add_variable_s(me, cstr_from_sv(name), span_null, type);
 }
 
 static inline void add_builtin_type(NameStack* me, csview name, Type const* type) {
-    name_stack_add_type(me, cstr_from_sv(name), span_null, type, nullptr, false);
+    name_stack_add_type_s(me, cstr_from_sv(name), span_null, type, nullptr, false);
 }
 
 static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag) {
@@ -143,24 +143,32 @@ void name_stack_pop_frame(NameStack* me) {
     vec_stack_frame_pop(&my stack);
 }
 
-bool name_stack_add_variable(NameStack* me, cstr name, Span name_span, Type const* type) {
+bool name_stack_add_variable(NameStack* me, Span name, Type const* type) {
+    return name_stack_add_variable_s(me, cstr_from_span(&name), name, type);
+
+}
+bool name_stack_add_type(NameStack* me, Span name, Type const* type, Generic const* generic, bool is_class) {
+    return name_stack_add_type_s(me, cstr_from_span(&name), name, type, generic, is_class);
+}
+
+bool name_stack_add_variable_s(NameStack* me, cstr name_string, Span name_span, Type const* type) {
     hmap_str_arc_named_variable_result result = hmap_str_arc_named_variable_insert(
         &vec_stack_frame_back(&my stack)->variables,
-        name,
+        name_string,
         arc_named_variable_make((NamedVariable){
-            .name_span = name_span,
+            .name = name_span,
             .type = type,
         })
     );
     return result.inserted;
 }
 
-bool name_stack_add_type(NameStack* me, cstr name, Span name_span, Type const* type, Generic const* generic, bool is_class) {
+bool name_stack_add_type_s(NameStack* me, cstr name_string, Span name_span, Type const* type, Generic const* generic, bool is_class) {
     hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
         &vec_stack_frame_back(&my stack)->types,
-        name,
+        name_string,
         arc_named_type_make((NamedType){
-            .name_span = name_span,
+            .name = name_span,
             .type = type,
             .generic = generic,
             .is_class = is_class,

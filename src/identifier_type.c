@@ -5,7 +5,6 @@
 
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
-    cstr_drop(&my name);
     arc_named_type_drop(&my type);
     vec_type_drop(&my generic_params);
     type_drop(&my degenericized);
@@ -14,11 +13,10 @@ void identifier_type_drop(IdentifierType* me) {
 IdentifierType identifier_type_clone(IdentifierType me) {
     return (IdentifierType){
         .namespaces = vec_span_clone(me.namespaces),
-        .name =  cstr_clone(me.name),
-        .span = me.span,
+        .name = me.name,
         .type = arc_named_type_clone(me.type),
         .generic_params = vec_type_clone(me.generic_params),
-        .degenericized = type_clone(me.degenericized),
+        .degenericized = type_any,
         .inferred = me.inferred,
     };
 }
@@ -32,7 +30,7 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
         cstr_append_sv(target, span_sv(i.ref));
         cstr_append_sv(target, c_sv("."));
     }
-    cstr_append_s(target, my name);
+    cstr_append_span(target, &my name);
     cstr_append_sv(target, c_sv(CLR0));
     if (!vec_type_empty(&my generic_params)) {
         cstr_append_sv(target, c_sv("<"));
@@ -50,7 +48,7 @@ void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
     if (my inferred) {
         cstr_append_sv(target, c_sv("infer "));
     }
-    cstr_append_s(target, my name);
+    cstr_append_span(target, &my name);
     if (!vec_type_empty(&my generic_params)) {
         cstr_append_sv(target, c_sv("<"));
         c_foreach(i, vec_type, my generic_params) {
@@ -67,14 +65,14 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
     if (my inferred) {
         return;
     }
-    ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my name));
+    ArcNamedType const* result = name_stack_get_type(names, span_sv(&my name));
     if (!result) {
         error_ctx_error(
             errs,
-            my span,
+            my name,
             2304,
-            "Cannot find name '%s'.",
-            cstr_str(&my name)
+            "Cannot find name '%.*s'.",
+            c_SV(span_sv(&my name))
         );
         result = name_stack_get_type(names, c_sv("any"));
     }

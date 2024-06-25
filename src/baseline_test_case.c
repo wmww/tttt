@@ -370,7 +370,7 @@ void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Typ
     if (type->tag == TYPE_IDENTIFIER && type->identifier->inferred) {
         // Do identifier types upport cstr_append_type_error_msg()? Yes, but inferred identifiers in ternaries include
         // the inferred keyword, which the tests don't like.
-        cstr_append_sv(&str, span_sv(&type->identifier->span));
+        cstr_append_span(&str, &type->identifier->name);
     } else {
         cstr_append_type_error_msg(&str, type);
     }

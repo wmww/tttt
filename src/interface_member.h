@@ -17,14 +17,13 @@ typedef struct InterfaceMember {
         } tag;
         union {
             struct {
-                cstr name;
+                cstr name_string;
                 bool name_is_value;
             };
             Type index;
             ArcExpr expr;
             struct {
-                cstr type_name;
-                Span type_name_span;
+                Span type_name;
                 Type in_type;
                 Type as_type;
                 bool has_as_type;
@@ -40,7 +39,7 @@ static inline InterfaceMember interface_member_make(
     Span span,
     bool readonly,
     bool optional,
-    cstr name,
+    cstr name_string,
     Span name_span,
     bool name_is_value,
     Type type
@@ -52,7 +51,7 @@ static inline InterfaceMember interface_member_make(
         .key = {
             .span = name_span,
             .tag = INTERFACE_KEY_NAME,
-            .name = name,
+            .name_string = name_string,
             .name_is_value = name_is_value,
         },
         .type = type,

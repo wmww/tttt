@@ -1112,7 +1112,7 @@ const baselines = {
     },
     'arityErrorRelatedSpanBindingPattern': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrayAssignmentTest1': {
@@ -6517,7 +6517,7 @@ const baselines = {
     },
     'controlFlowInitializedDestructuringVariables': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowInstanceof': {
@@ -7432,7 +7432,7 @@ const baselines = {
     },
     'declarationEmitDestructuringWithOptionalBindingParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitDetachedComment1': {
@@ -8593,7 +8593,7 @@ const baselines = {
     'defaultIndexProps1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'defaultIndexProps2': {
         errors: true,
@@ -8892,42 +8892,42 @@ const baselines = {
     },
     'destructuringInVariableDeclarations1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInitializerContextualTypeFromContext': {
@@ -8972,12 +8972,12 @@ const baselines = {
     },
     'destructuringWithNewExpression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringWithNumberLiteral': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'detachedCommentAtStartOfConstructor1': {
@@ -13743,7 +13743,7 @@ const baselines = {
     'genericClasses0': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericClasses1': {
         errors: false,
@@ -13753,7 +13753,7 @@ const baselines = {
     'genericClasses2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericClasses3': {
         errors: false,
@@ -15932,7 +15932,7 @@ const baselines = {
     },
     'inferredRestTypeFixedOnce': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferrenceInfiniteLoopWithSubtyping': {
@@ -18856,7 +18856,7 @@ const baselines = {
         types: false,
     },
     'memberVariableDeclarations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20502,7 +20502,7 @@ const baselines = {
     },
     'narrowRefinedConstLikeParameterBIndingElementNameInInnerScope': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'narrowTypeByInstanceof': {
@@ -21122,7 +21122,7 @@ const baselines = {
     },
     'noImplicitAnyDestructuringInPrivateMethod': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noImplicitAnyDestructuringParameterDeclaration': {
@@ -22776,14 +22776,14 @@ const baselines = {
         types: true,
     },
     'parameterReferencesOtherParameter1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterReferencesOtherParameter2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'paramsOnlyHaveLiteralTypesWhenAppropriatelyContextualized': {
         errors: false,
@@ -23742,8 +23742,8 @@ const baselines = {
     },
     'propertiesAndIndexersForNumericNames': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'propertyAccess1': {
         errors: false,
@@ -23798,7 +23798,7 @@ const baselines = {
     'propertyAccessibility1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'propertyAccessibility2': {
         errors: false,
@@ -25027,7 +25027,7 @@ const baselines = {
     },
     'restParameterWithBindingPattern1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restParameterWithBindingPattern2': {
@@ -25792,12 +25792,12 @@ const baselines = {
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern3': {
@@ -26057,7 +26057,7 @@ const baselines = {
     },
     'spreadExpressionContainingObjectExpressionContextualType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadExpressionContextualType': {
@@ -26407,7 +26407,7 @@ const baselines = {
     },
     'strictModeUseContextualKeyword': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'strictModeWordInExportDeclaration': {
@@ -26487,8 +26487,8 @@ const baselines = {
     },
     'stringIndexerAndConstructor1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'stringIndexerAssignments1': {
         errors: false,
@@ -26641,9 +26641,9 @@ const baselines = {
         types: false,
     },
     'subtypingTransitivity': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'super': {
         errors: false,
@@ -37232,13 +37232,13 @@ const baselines = {
     },
     'declarationInAmbientContext': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationWithNoInitializer': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationsAndAssignments': {
         errors: false,
@@ -37287,7 +37287,7 @@ const baselines = {
     },
     'destructuringCatch': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringControlFlow': {
@@ -37327,7 +37327,7 @@ const baselines = {
     },
     'destructuringObjectBindingPatternAndAssignment4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringObjectBindingPatternAndAssignment5': {
@@ -37407,12 +37407,12 @@ const baselines = {
     },
     'destructuringParameterDeclaration7ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringParameterDeclaration7ES5iterable': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringParameterDeclaration8': {
@@ -37857,7 +37857,7 @@ const baselines = {
     },
     'objectBindingPatternKeywordIdentifiers05': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers06': {
@@ -37872,7 +37872,7 @@ const baselines = {
     },
     'optionalBindingParameters2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'optionalBindingParameters3': {
@@ -44827,12 +44827,12 @@ const baselines = {
     },
     'functionWithUseStrictAndSimpleParameterList': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionWithUseStrictAndSimpleParameterList_es2016': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parameterInitializersBackwardReferencing': {
@@ -53962,8 +53962,8 @@ const baselines = {
     },
     'for-inStatementsDestructuring2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'for-inStatementsDestructuring3': {
         errors: false,
@@ -55121,7 +55121,7 @@ const baselines = {
         types: false,
     },
     'classWithPublicProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

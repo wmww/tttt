@@ -6,8 +6,7 @@
 typedef struct TypeDecl {
     Span full_span;
     bool is_interface;
-    cstr name;
-    Span name_span;
+    Span name;
     Generic generic;
     VecSpannedType interface_extends; // Only used if is_interface is true
     Type type;

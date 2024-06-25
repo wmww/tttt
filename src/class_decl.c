@@ -13,12 +13,14 @@ void class_item_drop(ClassItem* me) {
             break;
 
         case CLASS_ITEM_MEMBER:
-            cstr_drop(&my member.name);
+            cstr_drop(&my member.name_string);
             function_impl_drop(&my member.func);
             break;
 
         case CLASS_ITEM_FIELD:
-            initialized_binding_drop(&my field.initializer);
+            cstr_drop(&my field.name_string);
+            type_drop(&my field.type);
+            expr_drop(&my field.value);
             break;
 
         case CLASS_ITEM_INTERFACE_MEMBER:
@@ -32,7 +34,6 @@ void class_item_drop(ClassItem* me) {
 }
 
 void class_decl_drop(ClassDecl* me) {
-    cstr_drop(&my name);
     generic_drop(&my generic);
     type_drop(&my interface);
     expr_drop(&my extends);
@@ -49,13 +50,13 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
         cstr_append_sv(target, c_sv("abstract "));
     }
     cstr_append_sv(target, c_sv("class "));
-    if (!cstr_empty(&my name)) {
+    if (span_valid(&my name)) {
         cstr_append_sv(target, c_sv(CLR_NAME));
-        cstr_append_s(target, my name);
+        cstr_append_span(target, &my name);
         cstr_append_sv(target, c_sv(CLR0));
     }
     cstr_append_generic_debug(target, &my generic, indent);
-    if (!cstr_empty(&my name) || !generic_empty(&my generic)) {
+    if (span_valid(&my name) || !generic_empty(&my generic)) {
         cstr_append_sv(target, c_sv(CLR0 " "));
     }
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
@@ -80,14 +81,36 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                 break;
 
             case CLASS_ITEM_MEMBER:
+                if (i.ref->member.is_static) {
+                    cstr_append_sv(target, c_sv("static "));
+                }
                 cstr_append_sv(target, c_sv(CLR_NAME));
-                cstr_append_s(target, i.ref->member.name);
+                cstr_append_s(target, i.ref->member.name_string);
                 cstr_append_sv(target, c_sv(CLR0));
+                if (i.ref->member.is_optional) {
+                    cstr_append_sv(target, c_sv("?"));
+                }
                 cstr_append_function_impl_debug(target, &i.ref->member.func, false, indent + 1);
                 break;
 
             case CLASS_ITEM_FIELD:
-                cstr_append_initialized_binding_debug(target, &i.ref->field.initializer, indent + 1);
+                if (i.ref->field.is_static) {
+                    cstr_append_sv(target, c_sv("static "));
+                }
+                if (i.ref->field.is_readonly) {
+                    cstr_append_sv(target, c_sv("readonly "));
+                }
+                cstr_append_sv(target, c_sv(CLR_NAME));
+                cstr_append_s(target, i.ref->field.name_string);
+                cstr_append_sv(target, c_sv(CLR0));
+                if (i.ref->field.is_optional) {
+                    cstr_append_sv(target, c_sv("?"));
+                }
+                if (i.ref->field.type_explicit) {
+                    cstr_append_sv(target, c_sv(": "));
+                    cstr_append_type_debug(target, &i.ref->field.type, indent);
+                }
+                cstr_append_expr_debug(target, &i.ref->field.value, indent);
                 break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
@@ -108,12 +131,12 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_push_generic_frame(names, &my generic, errs);
 
-    ArcNamedType const* type_ref = name_stack_get_type(names, cstr_sv(&my name));
+    ArcNamedType const* type_ref = name_stack_get_type(names, span_sv(&my name));
     if (type_ref) {
         my type_ref = arc_named_type_clone(*type_ref);
     } else {
         my type_ref = arc_named_type_make((NamedType){
-            .name_span = my name_span,
+            .name = my name,
             .type = callable_type_get_wrapper(&my constructor_type),
             .generic = &my generic,
         });
@@ -128,14 +151,15 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
+                // Names in function resolved below
                 break;
 
             case CLASS_ITEM_MEMBER:
                 if (i.ref->member.is_static) {
                 } else {
-                    if (!name_stack_add_variable(
+                    if (!name_stack_add_variable_s(
                         names,
-                        cstr_clone(i.ref->member.name),
+                        cstr_clone(i.ref->member.name_string),
                         i.ref->member.name_span,
                         callable_type_get_wrapper(&i.ref->member.func.type)
                     )) {
@@ -149,14 +173,30 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                         */
                     }
                 }
+                // Names in function resolved below
                 break;
 
             case CLASS_ITEM_FIELD:
                 if (i.ref->field.is_static) {
                 } else {
-                    binding_add_names(&i.ref->field.initializer.binding, names, errs);
+                    if (!name_stack_add_variable_s(
+                        names,
+                        cstr_clone(i.ref->field.name_string),
+                        i.ref->field.name_span,
+                        &i.ref->field.type
+                    )) {
+                        /*
+                        error_ctx_error(
+                            errs,
+                            i.ref->field.name_span,
+                            TS_CODE_NONE,
+                            "multiple class members/fields with same name"
+                        );
+                        */
+                    }
                 }
-                initialized_binding_resolve_names(&i.ref->field.initializer, names, errs);
+                type_resolve_names(&i.ref->field.type, names, errs);
+                expr_resolve_names(&i.ref->field.value, names, errs);
                 break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
@@ -170,7 +210,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 
     name_stack_push_class_frame(names);
-    name_stack_add_variable(names, cstr_lit("this"), span_null, &my interface);
+    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my interface);
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
@@ -230,7 +270,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                             i.ref->span,
                             false,
                             i.ref->member.is_optional,
-                            cstr_clone(i.ref->member.name),
+                            cstr_clone(i.ref->member.name_string),
                             i.ref->member.name_span,
                             i.ref->member.name_is_value,
                             t
@@ -239,13 +279,28 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 }
                 break;
 
-            case CLASS_ITEM_FIELD:
-                initialized_binding_typecheck(&i.ref->field.initializer, true, errs);
-                Type t = type_clone(i.ref->field.initializer.binding.type);
+            case CLASS_ITEM_FIELD: {
+                Type value = expr_get_type_and_typecheck(&i.ref->field.value, errs);
+                if (i.ref->field.type_explicit) {
+                    check_assignable_or_error(&value, &i.ref->field.type, i.ref->field.name_span, errs);
+                } else {
+                    type_drop(&i.ref->field.type);
+                    i.ref->field.type = type_move(&value);
+                    type_abstract_literals(&i.ref->field.type);
+                    type_abstract_tuple_to_array(&i.ref->field.type);
+                    if (i.ref->field.type.tag == TYPE_ARRAY &&
+                        i.ref->field.type.array.element->tag == TYPE_VALUE &&
+                        i.ref->field.type.array.element->value.tag == VALUE_UNDEFINED
+                    ) {
+                        type_drop(i.ref->field.type.array.element);
+                        *i.ref->field.type.array.element = type_any;
+                    }
+                }
+                type_drop(&value);
+                Type t = type_clone(i.ref->field.type);
                 if (i.ref->member.is_optional) {
                     t = type_composite(t, type_undefined, TYPE_UNION);
                 }
-                ASSERT(i.ref->field.initializer.binding.tag == BINDING_IDENTIFIER);
                 if (i.ref->field.is_static) {
                     type_drop(&t);
                 } else {
@@ -255,14 +310,14 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                             i.ref->span,
                             i.ref->field.is_readonly,
                             i.ref->field.is_optional,
-                            cstr_clone(i.ref->field.initializer.binding.identifier),
-                            i.ref->field.initializer.binding.content_span,
+                            cstr_clone(i.ref->field.name_string),
+                            i.ref->field.name_span,
                             i.ref->field.name_is_value,
                             t
                         )
                     );
                 }
-                break;
+            }   break;
 
             case CLASS_ITEM_INTERFACE_MEMBER: break;
 
@@ -297,8 +352,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     type_drop(&my constructor_type.ret);
     my constructor_type.ret = type_identifier(c_new(IdentifierType, {
-        .name = cstr_clone(my name),
-        .span = my name_span,
+        .name = my name,
         .type = arc_named_type_clone(my type_ref),
     }));
     my constructor_type.ret_explicit = true;

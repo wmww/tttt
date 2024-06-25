@@ -76,7 +76,7 @@ static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, V
 // Returns result_ok_undefined on success, not the value. Consumes value.
 static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value) {
     switch (target->tag) {
-        case EXPR_IDENTIFIER: return engine_assign_identifier(me, cstr_sv(&target->identifier.name), value);
+        case EXPR_IDENTIFIER: return engine_assign_identifier(me, span_sv(&target->identifier.name), value);
 
         case EXPR_PROPERTY: {
             TRY_CATCH(target_value, engine_eval_expr(me, &target->property->expr), res_err, {
@@ -107,7 +107,7 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
                     return result_ok(value);
 
                 case VALUE_OBJECT:
-                    js_object_set(target_value.object.get, cstr_clone(target->identifier.name), value);
+                    js_object_set(target_value.object.get, cstr_from_span(&target->identifier.name), value);
                     return result_ok_undefined;
             }
             UNREACHABLE;
@@ -274,7 +274,6 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
             NONFATAL("Rest arguments not supported in engine");
         }
         if (arg->binding.tag == BINDING_IDENTIFIER) {
-            cstr name = cstr_clone(arg->binding.identifier);
             Value value = value_undefined;
             if (i < given_arg_num) {
                 // TODO: don't clone all args
@@ -286,13 +285,12 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
                     engine_eval_expr(me, function_impl_arg_default_at(func->impl, i)),
                     res_err,
                 {
-                    cstr_drop(&name);
                     vec_stack_frame_pop(&my stack);
                     return res_err;
                 });
                 value = default_value;
             }
-            js_object_set(locals, name, value);
+            js_object_set(locals, cstr_from_span(&arg->binding.content_span), value);
         } else {
             NONFATAL("Structured binding function arguments not yet supported in engine");
         }
@@ -349,7 +347,7 @@ static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr
             value_drop(&ret);
             return res_err;
         });
-        js_object_set(ret.object.get, cstr_clone(i.ref->name), value);
+        js_object_set(ret.object.get, cstr_clone(i.ref->name_string), value);
     }
     return result_ok(ret);
 }
@@ -371,7 +369,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return result_ok(value_undefined);
         case EXPR_LITERAL: return result_ok(value_clone(expr->literal));
-        case EXPR_IDENTIFIER: return engine_eval_identifier(me, cstr_sv(&expr->identifier.name));
+        case EXPR_IDENTIFIER: return engine_eval_identifier(me, span_sv(&expr->identifier.name));
         case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);
         case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
         case EXPR_PROPERTY: return engine_eval_property(me, expr->property);
@@ -433,7 +431,7 @@ static Result MUST_USE engine_run_binding(Engine* me, Binding const* binding, Va
             break;
 
         case BINDING_IDENTIFIER: {
-            cstr name = cstr_clone(binding->identifier);
+            cstr name = cstr_from_span(&binding->content_span);
             JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);
         }   break;
@@ -510,10 +508,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_DECL_FUNCTION: {
-            if (cstr_empty(&statement->decl.function.name)) {
+            if (!span_valid(&statement->decl.function.name)) {
                 return result_ok_undefined;
             }
-            cstr name = cstr_clone(statement->decl.function.name);
+            cstr name = cstr_from_span(&statement->decl.function.name);
             Value value = value_js_func(&statement->decl.function);
             JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);

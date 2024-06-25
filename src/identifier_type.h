@@ -6,8 +6,7 @@ typedef struct ErrorCtx ErrorCtx;
 
 typedef struct IdentifierType {
     VecSpan namespaces;
-    cstr name;
-    Span span;
+    Span name;
     ArcNamedType type;
     VecType generic_params;
     Type degenericized; // A copy of the type with the generic parameters swapped in

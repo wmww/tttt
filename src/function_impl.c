@@ -6,7 +6,6 @@
 #include "error.h"
 
 void function_impl_drop(FunctionImpl* me) {
-    cstr_drop(&my name);
     callable_type_drop(&my type);
     vec_expr_drop(&my arg_defaults);
     block_drop(&my body);

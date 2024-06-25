@@ -3,7 +3,6 @@
 #include "prelude.h"
 #include "function_impl.h"
 #include "interface_member.h"
-#include "binding.h"
 
 typedef enum AccessModifier {
     ACCESS_MODIFIER_PUBLIC,
@@ -28,18 +27,23 @@ typedef struct ClassItem {
         } constructor;
         struct {
             bool is_static;
-            cstr name;
-            Span name_span;
             bool is_optional;
+            cstr name_string;
+            Span name_span;
             bool name_is_value;
             FunctionImpl func;
         } member;
         struct {
-            bool is_readonly;
             bool is_static;
+            bool is_readonly;
             bool is_optional;
+            cstr name_string;
+            Span name_span;
             bool name_is_value;
-            InitializedBinding initializer; // always BINDING_IDENTIFIER
+            Type type;
+            Span type_span;
+            bool type_explicit;
+            Expr value;
         } field;
         InterfaceMember interface_memeber;
         Block static_block;
@@ -54,8 +58,7 @@ void class_item_drop(ClassItem* me);
 
 typedef struct ClassDecl {
     Span full_span;
-    cstr name;
-    Span name_span;
+    Span name;
     bool is_abstract;
     Generic generic;
     Type interface;

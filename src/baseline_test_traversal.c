@@ -18,7 +18,7 @@
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
-        baseline_test_case_add_symbol(ctx, cstr_sv(&i.ref->name), i.ref->name_span, i.ref->name_span);
+        baseline_test_case_add_symbol(ctx, span_sv(&i.ref->name), i.ref->name, i.ref->name);
         type_compile_test_info(&i.ref->extends, ctx);
         if (i.ref->fallback_explicit) {
             type_compile_test_info(&i.ref->fallback, ctx);
@@ -36,7 +36,7 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
             baseline_test_case_add_symbol_with_scope(
                 ctx,
                 span_sv(&scope),
-                cstr_sv(&my identifier),
+                span_sv(&my content_span),
                 my content_span,
                 name_is_value,
                 span_valid(&full) ? full : my content_span
@@ -80,7 +80,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             baseline_test_case_add_symbol_with_scope(
                 ctx,
                 span_sv(&scope),
-                cstr_sv(&my key.name),
+                cstr_sv(&my key.name_string),
                 my key.span,
                 my key.name_is_value,
                 my span
@@ -101,9 +101,9 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         case INTERFACE_KEY_MAPPED:
             baseline_test_case_add_symbol(
                 ctx,
-                span_sv(&my key.mapped.type_name_span),
-                my key.mapped.type_name_span,
-                my key.mapped.type_name_span
+                span_sv(&my key.mapped.type_name),
+                my key.mapped.type_name,
+                my key.mapped.type_name
             );
             type_compile_test_info(&my key.mapped.in_type, ctx);
             type_compile_test_info(&my key.mapped.as_type, ctx);
@@ -133,14 +133,14 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER: {
-            if (cstr_equals(&my identifier->name, "object")) {
+            if (span_eq_str(&my identifier->name, "object")) {
                 break;
             }
             baseline_test_case_add_symbol(
                 ctx,
-                cstr_sv(&my identifier->name),
-                my identifier->span,
-                my identifier->type.get ? my identifier->type.get->name_span : span_null
+                span_sv(&my identifier->name),
+                my identifier->name,
+                my identifier->type.get ? my identifier->type.get->name : span_null
             );
             c_foreach(i, vec_type, my identifier->generic_params) {
                 type_compile_test_info(i.ref, ctx);
@@ -193,17 +193,17 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 }
 
 void function_impl_compile_test_info(FunctionImpl const* me, Span scope, BaselineTestCase* ctx) {
-    if (!cstr_empty(&my name)) {
+    if (span_valid(&my name)) {
         baseline_test_case_add_symbol_with_scope(
             ctx,
             span_sv(&scope),
-            cstr_sv(&my name),
-            my name_span,
+            span_sv(&my name),
+            my name,
             false,
             my full_span
         );
         Type t = type_callable(c_new(CallableType, callable_type_clone(my type)));
-        baseline_test_case_add_type(ctx, my name_span, &t);
+        baseline_test_case_add_type(ctx, my name, &t);
         type_drop(&t);
     }
     generic_compile_test_info(&my type.generic, ctx);
@@ -228,23 +228,74 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
     }
 }
 
+void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCase* ctx) {
+    switch(my tag) {
+        case CLASS_ITEM_CONSTRUCTOR:
+            function_impl_compile_test_info(&my constructor.func, class_name, ctx);
+            break;
+
+        case CLASS_ITEM_MEMBER:
+            baseline_test_case_add_symbol_with_scope(
+                ctx,
+                span_sv(&class_name),
+                cstr_sv(&my member.name_string),
+                my member.name_span,
+                my member.name_is_value,
+                my span
+            );
+            Type t = type_clone(*callable_type_get_wrapper(&my member.func.type));
+            baseline_test_case_add_type(
+                ctx,
+                my member.name_span,
+                &t
+            );
+            type_drop(&t);
+            function_impl_compile_test_info(&my member.func, class_name, ctx);
+            break;
+
+        case CLASS_ITEM_FIELD:
+            baseline_test_case_add_symbol_with_scope(
+                ctx,
+                span_sv(&class_name),
+                span_sv(&my field.name_span),
+                my field.name_span,
+                my field.name_is_value,
+                span_valid(&my span) ? my span : my field.name_span
+            );
+            baseline_test_case_add_type(ctx, my field.name_span, &my field.type);
+            if (my field.type_explicit) {
+                type_compile_test_info(&my field.type, ctx);
+            }
+            if (my field.value.tag != EXPR_IMPLICIT_ANY) {
+                expr_compile_test_info(&my field.value, true, ctx);
+            }
+            break;
+
+        case CLASS_ITEM_INTERFACE_MEMBER:
+            interface_member_compile_test_info(&my interface_memeber, class_name, ctx);
+            break;
+
+        case CLASS_ITEM_STATIC_BLOCK:
+            block_compile_test_info(&my static_block, ctx);
+            break;
+    }
+}
+
 void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTestCase* ctx) {
-    if (!cstr_empty(&my name)) {
-        baseline_test_case_add_symbol(ctx, cstr_sv(&my name), my name_span, my full_span);
+    if (span_valid(&my name)) {
+        baseline_test_case_add_symbol(ctx, span_sv(&my name), my name, my full_span);
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name_span, &my constructor_type.wrapper_type_do_not_drop);
+            baseline_test_case_add_type(ctx, my name, &my constructor_type.wrapper_type_do_not_drop);
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
-                .name = cstr_clone(my name),
-                .span = my name_span,
+                .name = my name,
             }));
             c_foreach(i, vec_generic_item, my generic.items) {
                 vec_type_push(&t.identifier->generic_params, type_identifier(c_new(IdentifierType, {
-                    .name = cstr_clone(i.ref->name),
-                    .span = i.ref->name_span,
+                    .name = i.ref->name,
                 })));
             }
-            baseline_test_case_add_type(ctx, my name_span, &t);
+            baseline_test_case_add_type(ctx, my name, &t);
             type_drop(&t);
         }
     }
@@ -263,55 +314,15 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
         type_compile_test_info(i.ref, ctx);
     }
     c_foreach(i, vec_class_item, my items) {
-        switch(i.ref->tag) {
-            case CLASS_ITEM_CONSTRUCTOR:
-                function_impl_compile_test_info(&i.ref->constructor.func, my name_span, ctx);
-                break;
-
-            case CLASS_ITEM_MEMBER:
-                baseline_test_case_add_symbol_with_scope(
-                    ctx,
-                    span_sv(&my name_span),
-                    cstr_sv(&i.ref->member.name),
-                    i.ref->member.name_span,
-                    i.ref->member.name_is_value,
-                    i.ref->span
-                );
-                Type t = type_clone(*callable_type_get_wrapper(&i.ref->member.func.type));
-                baseline_test_case_add_type(
-                    ctx,
-                    i.ref->member.name_span,
-                    &t
-                );
-                type_drop(&t);
-                function_impl_compile_test_info(&i.ref->member.func, my name_span, ctx);
-                break;
-
-            case CLASS_ITEM_FIELD:
-                initialized_binding_compile_test_info(
-                    &i.ref->field.initializer,
-                    i.ref->field.name_is_value,
-                    my name_span,
-                    i.ref->span,
-                    ctx
-                );
-                break;
-            case CLASS_ITEM_INTERFACE_MEMBER:
-                interface_member_compile_test_info(&i.ref->interface_memeber, my name_span, ctx);
-                break;
-
-            case CLASS_ITEM_STATIC_BLOCK:
-                block_compile_test_info(&i.ref->static_block, ctx);
-                break;
-        }
+        class_item_compile_test_info(i.ref, my name, ctx);
     }
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(
         ctx,
-        cstr_sv(&my name),
-        my name_span,
+        span_sv(&my name),
+        my name,
         my full_span
     );
     if (!my is_interface) {
@@ -337,18 +348,19 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
             }
         } else {
             to_drop = type_identifier(c_new(IdentifierType, {
-                .name = cstr_clone(my name),
-                .span = my name_span,
+                .name = my name,
             }));
             c_foreach(i, vec_generic_item, my generic.items) {
-                vec_type_push(&to_drop.identifier->generic_params, type_identifier(c_new(IdentifierType, {
-                    .name = cstr_clone(i.ref->name),
-                    .span = i.ref->name_span,
-                })));
+                vec_type_push(
+                    &to_drop.identifier->generic_params,
+                    type_identifier(c_new(IdentifierType, {
+                        .name = i.ref->name,
+                    }))
+                );
             }
             t = &to_drop;
         }
-        baseline_test_case_add_type(ctx, my name_span, t);
+        baseline_test_case_add_type(ctx, my name, t);
         type_drop(&to_drop);
     }
     generic_compile_test_info(&my generic, ctx);
@@ -356,7 +368,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         c_foreach(i, vec_spanned_type, my interface_extends) {
             type_compile_test_info(&i.ref->type, ctx);
         }
-        interface_compile_test_info(&my type.interface, my name_span, ctx);
+        interface_compile_test_info(&my type.interface, my name, ctx);
     } else {
         type_compile_test_info(&my type, ctx);
     }
@@ -374,15 +386,15 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 
         case EXPR_IDENTIFIER: {
             if (my identifier.var.get && (
-                    !cstr_equals(&my identifier.name, "this") ||
-                    span_valid(&my identifier.var.get->name_span)
+                    !span_eq_str(&my identifier.name, "this") ||
+                    span_valid(&my identifier.var.get->name)
                 )
             ) {
                 baseline_test_case_add_symbol(
                     ctx,
-                    cstr_sv(&my identifier.name),
-                    my identifier.span,
-                    my identifier.var.get->name_span
+                    span_sv(&my identifier.name),
+                    my identifier.name,
+                    my identifier.var.get->name
                 );
             }
         }   break;
@@ -403,11 +415,13 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 
             if (expr_t.tag == TYPE_INTERFACE && prop_t.tag == TYPE_VALUE && prop_t.value.tag == VALUE_STRING) {
                 c_foreach(i, vec_interface_member, expr_t.interface.members) {
-                    if (i.ref->key.tag == INTERFACE_KEY_NAME && cstr_eq(&i.ref->key.name, &prop_t.value.string)) {
+                    if (i.ref->key.tag == INTERFACE_KEY_NAME &&
+                        cstr_eq(&i.ref->key.name_string, &prop_t.value.string)
+                    ) {
                         if (my property->form == PROPERTY_EXPR_DOT) {
                             baseline_test_case_add_symbol(
                                 ctx,
-                                cstr_sv(&i.ref->key.name),
+                                cstr_sv(&i.ref->key.name_string),
                                 my span,
                                 i.ref->key.span
                             );
@@ -416,7 +430,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                         has_compiled_expr_info = true;
                         baseline_test_case_add_symbol(
                             ctx,
-                            cstr_sv(&i.ref->key.name),
+                            cstr_sv(&i.ref->key.name_string),
                             my property->prop.span,
                             i.ref->key.span
                         );
@@ -472,7 +486,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
             c_foreach(i, vec_object_expr_item, my object) {
                 baseline_test_case_add_symbol(
                     ctx,
-                    cstr_sv(&i.ref->name),
+                    cstr_sv(&i.ref->name_string),
                     i.ref->name_span,
                     i.ref->name_span
                 );
@@ -485,6 +499,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     &t
                 );
                 type_drop(&t);
+
                 expr_compile_test_info(&i.ref->value, true, ctx);
             }
             break;

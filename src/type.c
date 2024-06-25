@@ -330,13 +330,12 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
             if (my identifier->inferred) {
                 name_stack_add_type(
                     names,
-                    cstr_clone(my identifier->name),
-                    my identifier->span,
+                    my identifier->name,
                     &my identifier->degenericized,
                     nullptr,
                     false
                 );
-                ArcNamedType const* result = name_stack_get_type(names, cstr_sv(&my identifier->name));
+                ArcNamedType const* result = name_stack_get_type(names, span_sv(&my identifier->name));
                 ASSERT(result);
                 if (my identifier->type.get) {
                     NONFATAL("Inferred identifier added multiple times");
@@ -475,7 +474,7 @@ static Type type_all_keys(Type const* me, int level) {
                     case INTERFACE_KEY_NAME:
                         ret = type_composite(
                             ret,
-                            type_value(value_string(cstr_clone(i.ref->key.name))),
+                            type_value(value_string(cstr_clone(i.ref->key.name_string))),
                             TYPE_UNION
                         );
 
@@ -681,7 +680,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                     if (j.ref->key.tag != INTERFACE_KEY_NAME) {
                         continue; // TODO
                     }
-                    if (cstr_eq(&i.ref->key.name, &j.ref->key.name)) {
+                    if (cstr_eq(&i.ref->key.name_string, &j.ref->key.name_string)) {
                         if (type_extends_internal(&j.ref->type, &i.ref->type, refinements, level + 1)) {
                             found = true;
                             break;
@@ -1013,8 +1012,8 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
             c_foreach(i, vec_interface_member, my interface.members) {
                 switch (i.ref->key.tag) {
                     case INTERFACE_KEY_NAME: {
-                        // Don't clone the string, and don't drop it. Hacky but safe.
-                        Type key = type_value(value_string(i.ref->key.name));
+                        // Don't clone the string, and don't drop it the type. Hacky but safe.
+                        Type key = type_value(value_string(i.ref->key.name_string));
                         if (type_extends(&key, index)) {
                             ret = type_composite(ret, type_clone(i.ref->type), TYPE_UNION);
                             if (i.ref->optional) {

@@ -17,7 +17,6 @@ typedef NamedType const* NamedTypeCPtr;
 #include "wrap_stc/hmap.h"
 
 void generic_item_drop(GenericItem* me) {
-    cstr_drop(&my name);
     type_drop(&my extends);
     type_drop(&my fallback);
     arc_named_type_drop(&my type);
@@ -25,8 +24,7 @@ void generic_item_drop(GenericItem* me) {
 
 GenericItem generic_item_clone(GenericItem me) {
     return (GenericItem){
-        .name = cstr_clone(me.name),
-        .name_span = me.name_span,
+        .name = me.name,
         .extends = type_clone(me.extends),
         .fallback_explicit = me.fallback_explicit,
         .fallback = type_clone(me.fallback),
@@ -51,7 +49,7 @@ void cstr_append_generic_debug(cstr* target, Generic const* me, int indent) {
     cstr_append_sv(target, c_sv("<"));
     c_foreach(i, vec_generic_item, my items) {
         cstr_append_sv(target, c_sv(CLR_TYPE));
-        cstr_append_s(target, i.ref->name);
+        cstr_append_span(target, &i.ref->name);
         cstr_append_sv(target, c_sv(CLR0));
         if (i.ref->extends.tag != TYPE_ANY) {
             cstr_append_sv(target, c_sv(" extends "));
@@ -74,7 +72,7 @@ void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
     }
     cstr_append_sv(target, c_sv("<"));
     c_foreach(i, vec_generic_item, my items) {
-        cstr_append_s(target, i.ref->name);
+        cstr_append_span(target, &i.ref->name);
         if (i.ref->extends.tag != TYPE_ANY) {
             cstr_append_sv(target, c_sv(" extends "));
             cstr_append_type_error_msg(target, &i.ref->extends);
@@ -92,11 +90,11 @@ void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
 
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
-        if (!name_stack_add_type(names, cstr_clone(i.ref->name), i.ref->name_span, &i.ref->extends, nullptr, false)) {
+        if (!name_stack_add_type(names, i.ref->name, &i.ref->extends, nullptr, false)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple generics with same name");
         }
-        i.ref->type = arc_named_type_clone(*name_stack_get_type(names, cstr_sv(&i.ref->name)));
+        i.ref->type = arc_named_type_clone(*name_stack_get_type(names, span_sv(&i.ref->name)));
     }
     c_foreach(i, vec_generic_item, my items) {
         type_resolve_names(&i.ref->extends, names, errs);
@@ -308,7 +306,7 @@ Type generic_degenericize_type(Generic const* me, Type t, VecType const* generic
                     i.ref->type.get->type
             });
         } else {
-            NONFATAL("Generic %s type is null", cstr_str(&i.ref->name));
+            NONFATAL("Generic %.*s type is null", c_SV(span_sv(&i.ref->name)));
         }
     }
     replace_named_types_with(&t, &refinements);
@@ -332,7 +330,7 @@ CallableType generic_infer_callable_types(
                 .refined = nullptr,
             });
         } else {
-            NONFATAL("Generic %s type is null", cstr_str(&i.ref->name));
+            NONFATAL("Generic %.*s type is null", c_SV(span_sv(&i.ref->name)));
         }
     }
     VecType arg_types = {0};

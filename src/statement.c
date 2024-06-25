@@ -127,7 +127,6 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            cstr_drop(&my decl.namespace.name);
             block_drop(&my decl.namespace.contents);
             break;
     }
@@ -272,7 +271,7 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
 
         case STATEMENT_DECL_FUNCTION:
             cstr_append_sv(target, c_sv("function " CLR_NAME));
-            cstr_append_s(target, my decl.function.name);
+            cstr_append_span(target, &my decl.function.name);
             cstr_append_sv(target, c_sv(CLR0));
             cstr_append_function_impl_debug(target, &my decl.function, false, indent);
             break;
@@ -283,7 +282,7 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
 
         case STATEMENT_DECL_NAMESPACE:
             cstr_append_sv(target, c_sv("function " CLR_NAME));
-            cstr_append_s(target, my decl.namespace.name);
+            cstr_append_span(target, &my decl.namespace.name);
             cstr_append_sv(target, c_sv(CLR0 " "));
             cstr_append_block_debug(target, &my decl.namespace.contents, indent);
             break;
@@ -301,9 +300,9 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            if (!name_stack_add_variable(
+            if (!name_stack_add_variable_s(
                 names,
-                cstr_clone(my decl.function.name),
+                cstr_from_span(&my decl.function.name),
                 my decl.function.full_span,
                 callable_type_get_wrapper(&my decl.function.type)
             )) {
@@ -313,9 +312,9 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_CLASS:
-            if (!name_stack_add_variable(
+            if (!name_stack_add_variable_s(
                 names,
-                cstr_clone(my decl.class->name),
+                cstr_from_span(&my decl.class->name),
                 my decl.class->full_span,
                 callable_type_get_wrapper(&my decl.class->constructor_type)
             )) {
@@ -323,9 +322,9 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 error_ctx_type_error(errs, "multiple values declared with same name");
             }
 
-            if (!name_stack_add_type(
+            if (!name_stack_add_type_s(
                 names,
-                cstr_clone(my decl.class->name),
+                cstr_from_span(&my decl.class->name),
                 my decl.class->full_span,
                 &my decl.class->interface,
                 &my decl.class->generic,
@@ -337,9 +336,9 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            if (!name_stack_add_type(
+            if (!name_stack_add_type_s(
                 names,
-                cstr_clone(my decl.type.name),
+                cstr_from_span(&my decl.type.name),
                 my decl.type.full_span,
                 &my decl.type.type,
                 &my decl.type.generic,
@@ -465,7 +464,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION:
             name_stack_push_block_frame(names);
-            name_stack_add_variable(names, cstr_lit("this"), span_null, &type_any);
+            name_stack_add_variable_s(names, cstr_lit("this"), span_null, &type_any);
             function_impl_resolve_names(&my decl.function, names, errs);
             name_stack_pop_frame(names);
             break;

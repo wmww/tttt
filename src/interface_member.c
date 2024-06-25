@@ -5,11 +5,10 @@
 
 void interface_member_drop(InterfaceMember* me) {
     switch (my key.tag) {
-        case INTERFACE_KEY_NAME: cstr_drop(&my key.name); break;
+        case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
         case INTERFACE_KEY_INDEX: type_drop(&my key.index); break;
         case INTERFACE_KEY_EXPR: arc_expr_drop(&my key.expr); break;
         case INTERFACE_KEY_MAPPED:
-            cstr_drop(&my key.mapped.type_name);
             type_drop(&my key.mapped.in_type);
             type_drop(&my key.mapped.as_type);
             break;
@@ -20,11 +19,10 @@ void interface_member_drop(InterfaceMember* me) {
 
 InterfaceMember interface_member_clone(InterfaceMember me) {
     switch (me.key.tag) {
-        case INTERFACE_KEY_NAME: me.key.name = cstr_clone(me.key.name); break;
+        case INTERFACE_KEY_NAME: me.key.name_string = cstr_clone(me.key.name_string); break;
         case INTERFACE_KEY_INDEX: me.key.index = type_clone(me.key.index); break;
         case INTERFACE_KEY_EXPR: me.key.expr = arc_expr_clone(me.key.expr); break;
         case INTERFACE_KEY_MAPPED:
-            me.key.mapped.type_name = cstr_clone(me.key.mapped.type_name);
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
             me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
             break;
@@ -41,8 +39,8 @@ void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me,
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
             cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_s(target, my key.name);
-            cstr_append_sv(target, c_sv(CLR0 ": "));
+            cstr_append_s(target, my key.name_string);
+            cstr_append_sv(target, c_sv(CLR0));
             break;
 
         case INTERFACE_KEY_INDEX:
@@ -50,13 +48,13 @@ void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me,
             cstr_append_sv(target, span_sv(&my key.span));
             cstr_append_sv(target, c_sv(CLR0 ": "));
             cstr_append_type_debug(target, &my key.index, indent);
-            cstr_append_sv(target, c_sv("]: "));
+            cstr_append_sv(target, c_sv("]"));
             break;
 
         case INTERFACE_KEY_EXPR:
             cstr_append_sv(target, c_sv("["));
             cstr_append_expr_debug(target, my key.expr.get, indent);
-            cstr_append_sv(target, c_sv("]: "));
+            cstr_append_sv(target, c_sv("]"));
             break;
 
         case INTERFACE_KEY_MAPPED:
@@ -65,7 +63,7 @@ void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me,
                 cstr_append_sv(target, c_sv("readonly "));
             }
             cstr_append_sv(target, c_sv("["));
-            cstr_append_s(target, my key.mapped.type_name);
+            cstr_append_span(target, &my key.mapped.type_name);
             cstr_append_sv(target, c_sv(" in "));
             cstr_append_type_debug(target, &my key.mapped.in_type, indent);
             if (my key.mapped.has_as_type) {
@@ -76,12 +74,19 @@ void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me,
             if (my key.mapped.optional) {
                 cstr_append_sv(target, my key.mapped.optional > 0 ? c_sv("+?") : c_sv("-?"));
             }
-            cstr_append_sv(target, c_sv(": "));
             break;
 
         case INTERFACE_KEY_CALLABLE:
             break;
     }
+
+    if (my key.tag != INTERFACE_KEY_CALLABLE) {
+        if (my optional) {
+            cstr_append_sv(target, c_sv("?"));
+        }
+        cstr_append_sv(target, c_sv(": "));
+    }
+
     cstr_append_type_debug(target, &my type, indent);
 }
 
@@ -91,7 +96,7 @@ void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const*
         }
         switch (my key.tag) {
         case INTERFACE_KEY_NAME:
-            cstr_append_s(target, my key.name);
+            cstr_append_s(target, my key.name_string);
             cstr_append_sv(target, c_sv(": "));
             break;
 
@@ -115,7 +120,7 @@ void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const*
                 cstr_append_sv(target, c_sv("readonly "));
             }
             cstr_append_sv(target, c_sv("["));
-            cstr_append_s(target, my key.mapped.type_name);
+            cstr_append_span(target, &my key.mapped.type_name);
             cstr_append_sv(target, c_sv(" in "));
             cstr_append_type_error_msg(target, &my key.mapped.in_type);
             if (my key.mapped.has_as_type) {
@@ -147,8 +152,7 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
             name_stack_push_block_frame(names);
             name_stack_add_type(
                 names,
-                cstr_clone(my key.mapped.type_name),
-                my key.mapped.type_name_span,
+                my key.mapped.type_name,
                 &type_any,
                 nullptr,
                 false

@@ -10,8 +10,7 @@ typedef struct CallableTypeArg CallableTypeArg;
 
 typedef struct FunctionImpl {
     Span full_span;
-    cstr name;
-    Span name_span;
+    Span name;
     CallableType type;
     VecExpr arg_defaults; // May have less elements than there are args, these are assumed to be implicit any
     Span args_span;

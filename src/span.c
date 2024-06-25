@@ -46,14 +46,6 @@ const char* span_line_end(Span const* me) {
     return pos;
 }
 
-csview span_sv(Span const* me) {
-    if (!my file_start) {
-        return c_sv("");
-    } else {
-        return csview_from_n(my file_start + my offset, my length);
-    }
-}
-
 Span span_between(Span const* a, Span const* b) {
     if (!span_valid(a)) {
         return *b;
@@ -92,4 +84,8 @@ bool span_eq_str(Span const* me, const char* str) {
         }
     }
     return str[my length] == 0;
+}
+
+void cstr_append_span(cstr* target, Span const* me) {
+    cstr_append_sv(target, span_sv(me));
 }

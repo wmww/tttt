@@ -4,8 +4,10 @@
 
 void binding_drop(Binding* me) {
     switch (my tag) {
-        case BINDING_NOOP: break;
-        case BINDING_IDENTIFIER: cstr_drop(&my identifier); break;
+        case BINDING_NOOP:
+        case BINDING_IDENTIFIER:
+            break;
+
         case BINDING_ARRAY: vec_binding_drop(&my array); break;
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
@@ -14,8 +16,10 @@ void binding_drop(Binding* me) {
 
 Binding binding_clone(Binding me) {
     switch (me.tag) {
-        case BINDING_NOOP: break;
-        case BINDING_IDENTIFIER: me.identifier = cstr_clone(me.identifier); break;
+        case BINDING_NOOP:
+        case BINDING_IDENTIFIER:
+            break;
+
         case BINDING_ARRAY: me.array = vec_binding_clone(me.array); break;
         case BINDING_OBJECT: me.object = vec_object_binding_item_clone(me.object); break;
     }
@@ -29,7 +33,7 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, i
 
         case BINDING_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_s(target, my identifier);
+            cstr_append_span(target, &my content_span);
             cstr_append_sv(target, c_sv(CLR0));
             break;
 
@@ -73,7 +77,7 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optiona
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            cstr_append_s(target, my identifier);
+            cstr_append_span(target, &my content_span);
             break;
 
         case BINDING_ARRAY:
@@ -116,7 +120,6 @@ void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs) {
         case BINDING_IDENTIFIER:
             if (!name_stack_add_variable(
                 names,
-                cstr_clone(my identifier),
                 my content_span,
                 &my type
             )) {
@@ -169,9 +172,9 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
                 errs,
                 my content_span,
                 toplevel ? 7006 : 7031,
-                "%s '%s' implicitly has an 'any' type.",
+                "%s '%.*s' implicitly has an 'any' type.",
                 toplevel ? "Parameter" : "Binding element",
-                cstr_str(&my identifier)
+                c_SV(span_sv(&my content_span))
             );
             break;
 

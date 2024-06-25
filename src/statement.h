@@ -88,8 +88,7 @@ typedef struct Statement {
                 ClassDecl* class;
                 TypeDecl type;
                 struct {
-                    cstr name;
-                    Span name_span;
+                    Span name;
                     Block contents;
                 } namespace;
             };

@@ -57,7 +57,6 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
     if (span_valid(&my default_name)) {
         name_stack_add_type(
             names,
-            cstr_from_sv(span_sv(&my default_name)),
             my default_name,
             &type_any,
             nullptr,
@@ -66,7 +65,6 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
         if (!my type_only) {
             name_stack_add_variable(
                 names,
-                cstr_from_sv(span_sv(&my default_name)),
                 my default_name,
                 &type_any
             );
@@ -75,7 +73,6 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
     if (span_valid(&my module_name)) {
         name_stack_add_type(
             names,
-            cstr_from_sv(span_sv(&my module_name)),
             my module_name,
             &type_any,
             nullptr,
@@ -84,7 +81,6 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
         if (!my type_only) {
             name_stack_add_variable(
                 names,
-                cstr_from_sv(span_sv(&my module_name)),
                 my module_name,
                 &type_any
             );
@@ -93,7 +89,6 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
     c_foreach(i, vec_import_item, my items) {
         name_stack_add_type(
             names,
-            cstr_from_sv(span_sv(&i.ref->name)),
             i.ref->name,
             &type_any,
             nullptr,
@@ -102,7 +97,6 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
         if (!my type_only && !i.ref->type_only) {
             name_stack_add_variable(
                 names,
-                cstr_from_sv(span_sv(&i.ref->name)),
                 i.ref->name,
                 &type_any
             );

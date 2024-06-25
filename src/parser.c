@@ -212,7 +212,8 @@ static inline bool hop_identifier_or_keyword(Parser* parent) {
     }
 }
 
-static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
+// span can be nullptr
+static bool parse_identifier(Parser* parent, Span* span) {
     Anchor a = span_start(parent);
     if (!hop_identifier_or_keyword(parent)) {
         return false;
@@ -231,9 +232,6 @@ static bool parse_identifier(Parser* parent, cstr* ret, Span* span) {
     }
     if (span) {
         *span = s;
-    }
-    if (ret) {
-        *ret = cstr_from_n(a.start, parent->pos - a.start);
     }
     return true;
 }
@@ -421,10 +419,9 @@ static Span hop_token_get_span(Parser* parent) {
 
 static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
-    cstr name = cstr_null;
-    Span name_span = span_from_pos(&p);
+    Span name = span_from_pos(&p);
 
-    if (!parse_identifier(&p, &name, &name_span)) {
+    if (!parse_identifier(&p, &name)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -451,7 +448,6 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
 
     *ret = (GenericItem){
         .name = name,
-        .name_span = name_span,
         .extends = extends,
         .fallback_explicit = fallback_explicit,
         .fallback = fallback,
@@ -677,37 +673,32 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Type type = {0};
     VecType generic_params = {0};
 
-    cstr name;
-    Span span;
+    Span name;
     VecSpan namespaces = vec_span_init();
-    if (!parse_identifier(&p, &name, &span)) {
+    if (!parse_identifier(&p, &name)) {
         return parse_fail(&p);
     }
     const char* end = p.pos;
 
     hop_whitespace(&p);
     while (hop_char(&p, '.')) {
-        cstr_drop(&name);
-        vec_span_push(&namespaces, span);
+        vec_span_push(&namespaces, name);
         hop_whitespace(&p);
-        if (!parse_identifier(&p, &name, &span)) {
-            span = hop_token_get_span(&p);
-            name = cstr_null;
-            error_ctx_error(&p.errs, span, 1003, "Identifier expected.");
+        if (!parse_identifier(&p, &name)) {
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
+            name = span_null;
         }
         end = p.pos;
         hop_whitespace(&p);
     }
 
-    if (vec_span_empty(&namespaces) && cstr_equals(&name, "infer")) {
+    if (vec_span_empty(&namespaces) && span_eq_str(&name, "infer")) {
         inferred = true;
-        cstr_drop(&name);
-        if (parse_identifier(&p, &name, &span)) {
+        if (parse_identifier(&p, &name)) {
             end = p.pos;
         } else {
             error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-            span = span_null;
-            name = cstr_null;
+            name = span_null;
         }
         hop_whitespace(&p);
         if (hop_start_if_ends_on_word_break(&p, "extends")) {
@@ -734,7 +725,6 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     *ret = (IdentifierType){
         .namespaces = namespaces,
         .name = name,
-        .span = span,
         .generic_params = generic_params,
         .degenericized = type,
         .inferred = inferred,
@@ -856,7 +846,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         item.span,
                         false,
                         item.member.is_optional,
-                        cstr_move(&item.member.name),
+                        cstr_move(&item.member.name_string),
                         item.member.name_span,
                         item.member.name_is_value,
                         type_callable(c_new(CallableType, item.member.func.type))
@@ -865,15 +855,14 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     break;
 
                 case CLASS_ITEM_FIELD:
-                    ASSERT(item.field.initializer.binding.tag == BINDING_IDENTIFIER);
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
                         item.field.is_readonly,
                         item.field.is_optional,
-                        cstr_move(&item.field.initializer.binding.identifier),
-                        item.field.initializer.binding.content_span,
+                        cstr_move(&item.field.name_string),
+                        item.field.name_span,
                         item.field.name_is_value,
-                        type_move(&item.field.initializer.binding.type)
+                        type_move(&item.field.type)
                     ));
                     break;
 
@@ -925,9 +914,8 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
         return parse_fail(&p);
     }
 
-    cstr name;
-    Span name_span;
-    if (!parse_identifier(&p, &name, &name_span)) {
+    Span name;
+    if (!parse_identifier(&p, &name)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -954,7 +942,6 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
         .full_span = span_end(a),
         .is_interface = false,
         .name = name,
-        .name_span = name_span,
         .generic = generic,
         .type = type,
     };
@@ -970,12 +957,10 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
-    cstr name;
-    Span name_span;
-    if (!parse_identifier(&p, &name, &name_span)) {
-        error_ctx_parse_error(&p.errs, "interface does not have a name");
-        name = cstr_null;
-        name_span = span_null;
+    Span name;
+    if (!parse_identifier(&p, &name)) {
+        error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "interface does not have a name");
+        name = span_null;
     }
     hop_whitespace(&p);
 
@@ -1051,7 +1036,6 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         .full_span = span_end(a),
         .is_interface = true,
         .name = name,
-        .name_span = name_span,
         .generic = generic,
         .interface_extends = extends,
         .type = type_interface(interface),
@@ -1251,9 +1235,9 @@ static bool parse_function_args(
                     type_drop(&t);
                     type_drop(&type_ret->ret);
                     type_ret->ret = type_boolean;
-                } else if (csview_equals_sv(span_sv(&type_ret->ret.identifier->span), c_sv("asserts"))) {
-                    cstr param;
-                    if (parse_identifier(&p, &param, nullptr)) {
+                } else if (csview_equals_sv(span_sv(&type_ret->ret.identifier->name), c_sv("asserts"))) {
+                    Span param;
+                    if (parse_identifier(&p, &param)) {
                         hop_whitespace(&p);
                         if (hop_start_if_ends_on_word_break(&p, "is")) {
                             hop_whitespace(&p);
@@ -1266,7 +1250,6 @@ static bool parse_function_args(
                         }
                         type_drop(&type_ret->ret);
                         type_ret->ret = type_void;
-                        cstr_drop(&param);
                     }
                 }
             }
@@ -1290,8 +1273,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
     Anchor a = span_start(&p);
     bool is_definitely_function = false;
-    cstr lone_arg_name;
-    Span lone_arg_span;
+    Span lone_arg_name;
     *ret = (FunctionImpl){0};
 
     if (parse_function_args(&p, false, ret, &ret->type)) {
@@ -1300,14 +1282,13 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
             !vec_callable_arg_empty(&ret->type.args) &&
             vec_callable_arg_at(&ret->type.args, 0)->binding.type_explicit;
 
-    } else if (parse_identifier(&p, &lone_arg_name, &lone_arg_span)) {
+    } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
 
-        ret->args_span = lone_arg_span;
+        ret->args_span = lone_arg_name;
         Binding binding = {
             .tag = BINDING_IDENTIFIER,
-            .identifier = cstr_clone(lone_arg_name),
-            .content_span = lone_arg_span,
+            .content_span = lone_arg_name,
         };
         vec_callable_arg_push(&ret->type.args, (CallableArg){ .binding = binding });
 
@@ -1401,11 +1382,9 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace(&p);
 
-    cstr name;
-    Span name_span;
-    if (!parse_identifier(&p, &name, &name_span)) {
-        name = cstr_null;
-        name_span = span_null;
+    Span name;
+    if (!parse_identifier(&p, &name)) {
+        name = span_null;
     }
 
     if (!parse_non_arrow_function(&p, ret)) {
@@ -1414,7 +1393,6 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     }
 
     ret->name = name;
-    ret->name_span = name_span;
     ret->full_span = span_end(a);
     return parse_success(&p);
 }
@@ -1422,28 +1400,31 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
 static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
-    cstr name;
     Span name_span;
-    Value name_value;
+    cstr name_string;
 
-    if (parse_identifier(&p, &name, &name_span)) {
-    } else if (parse_literal(&p, &name_value)) {
-        if (name_value.tag == VALUE_STRING) {
-            name = name_value.string;
-            name_span = span_end(a);
+    {
+        Value name_value;
+        if (parse_identifier(&p, &name_span)) {
+            name_string = cstr_from_span(&name_span);
+        } else if (parse_literal(&p, &name_value)) {
+            if (name_value.tag == VALUE_STRING) {
+                name_string = name_value.string;
+                name_span = span_end(a);
+            } else {
+                name_string = cstr_null;
+                cstr_append_value_js(&name_string, &name_value);
+                name_span = span_end(a);
+                value_drop(&name_value);
+            }
         } else {
-            name = cstr_null;
-            cstr_append_value_js(&name, &name_value);
-            name_span = span_end(a);
-            value_drop(&name_value);
-        }
-    } else {
             return parse_fail(&p);
+        }
     }
     hop_whitespace(&p);
 
     if (!hop_char(&p, ':')) {
-        cstr_drop(&name);
+        cstr_drop(&name_string);
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -1455,7 +1436,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
 
     *ret = (ObjectExprItem){
-        .name = name,
+        .name_string = name_string,
         .name_span = name_span,
         .value = value,
     };
@@ -1562,11 +1543,12 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     }
     hop_whitespace(&p);
 
-    if (!parse_identifier(&p, nullptr, &ret->key.mapped.type_name_span)) {
+    if (!parse_identifier(&p, &ret->key.mapped.type_name)) {
         if (ret->key.mapped.readonly == 0) {
             return parse_fail(&p);
         } else {
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
+            ret->key.mapped.type_name = span_null;
         }
     }
     hop_whitespace(&p);
@@ -1633,7 +1615,6 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         ret->type = type_any;
     }
 
-    ret->key.mapped.type_name = cstr_from_sv(span_sv(&ret->key.mapped.type_name_span));
     return parse_success(&p);
 }
 
@@ -1653,7 +1634,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     if (is_index) {
         bool fail_if_no_colon = true;
 
-        if (!parse_identifier(&p, nullptr, nullptr)) {
+        if (!parse_identifier(&p, nullptr)) {
             return parse_fail(&p);
         }
         ret->key.span = span_end(a);
@@ -1745,23 +1726,20 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     Span static_span = span_null;
     Span async_span = span_null;
 
-    cstr name = cstr_null;
+    cstr name_string = cstr_null;
     Span name_span = span_null;
     bool name_is_value = false;
 
     ret->access = ACCESS_MODIFIER_PUBLIC;
     while (true) {
-        cstr next_name;
         Span next_name_span;
         Value value;
         Anchor name_start = span_start(&p);
-        if (parse_identifier(&p, &next_name, &next_name_span)) {
+        if (parse_identifier(&p, &next_name_span)) {
         } else if (*p.pos == '[') {
-            next_name = cstr_null;
             next_name_span = span_null;
         } else if (parse_literal(&p, &value)) {
-            cstr_clear(&name);
-            cstr_append_value_js(&name, &value);
+            cstr_append_value_js(&name_string, &value);
             value_drop(&value);
             name_span = span_end(name_start);
             name_is_value = true;
@@ -1770,7 +1748,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
         }
 
-        if (cstr_equals(&name, "readonly")) {
+        if (span_eq_str(&name_span, "readonly")) {
             if (span_valid(&readonly_span)) {
                 if (!modifier_error) {
                     modifier_error = READONLY_ALREADY_SEEN;
@@ -1779,7 +1757,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             } else {
                 readonly_span = name_span;
             }
-        } else if (cstr_equals(&name, "static")) {
+        } else if (span_eq_str(&name_span, "static")) {
             if (span_valid(&static_span)) {
                 if (!modifier_error) {
                     modifier_error = UNEXPECTED_IDENT;
@@ -1798,12 +1776,12 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     modifier_error_span = name_span;
                 }
             }
-        } else if (cstr_equals(&name, "export")) {
+        } else if (span_eq_str(&name_span, "export")) {
             if (!modifier_error) {
                 modifier_error = EXPORT_INVALID;
                 modifier_error_span = name_span;
             }
-        } else if (cstr_equals(&name, "async")) {
+        } else if (span_eq_str(&name_span, "async")) {
             if (span_valid(&async_span)) {
                 if (!modifier_error) {
                     modifier_error = UNEXPECTED_IDENT;
@@ -1819,16 +1797,20 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     modifier_error_span = name_span;
                 }
             }
-        } else if (cstr_equals(&name, "declare")) {
-        } else if (cstr_equals(&name, "get")) {
+        } else if (span_eq_str(&name_span, "declare")) {
+        } else if (span_eq_str(&name_span, "get")) {
             getter_setter = IS_GETTER;
-        } else if (cstr_equals(&name, "set")) {
+        } else if (span_eq_str(&name_span, "set")) {
             getter_setter = IS_SETTER;
-        } else if (cstr_equals(&name, "public") || cstr_equals(&name, "protected") || cstr_equals(&name, "private")) {
-            if (cstr_equals(&name, "public")) {
-            } else if (cstr_equals(&name, "protected")) {
+        } else if (
+            span_eq_str(&name_span, "public") ||
+            span_eq_str(&name_span, "protected") ||
+            span_eq_str(&name_span, "private")
+        ) {
+            if (span_eq_str(&name_span, "public")) {
+            } else if (span_eq_str(&name_span, "protected")) {
                 if (!span_valid(&access_span)) ret->access = ACCESS_MODIFIER_PROTECTED;
-            } else if (cstr_equals(&name, "private")) {
+            } else if (span_eq_str(&name_span, "private")) {
                 if (!span_valid(&access_span)) ret->access = ACCESS_MODIFIER_PRIVATE;
             }
 
@@ -1854,9 +1836,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             if (!span_valid(&access_span)) {
                 access_span = name_span;
             }
-        } else if (!cstr_empty(&name) && !modifier_error) {
-            if (cstr_equals(&name, "var")) {
-                cstr_drop(&name);
+        } else if (span_valid(&name_span) && !modifier_error) {
+            if (span_eq_str(&name_span, "var")) {
                 return parse_fail(&p);
             }
             // If previous name is not empty
@@ -1865,11 +1846,9 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
         hop_whitespace(&p);
 
-        cstr_drop(&name);
-        name = next_name;
         name_span = next_name_span;
 
-        if (cstr_empty(&name)) {
+        if (!span_valid(&name_span)) {
             break;
         }
 
@@ -1885,7 +1864,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
-    if (!is_type && !name_is_value && cstr_equals(&name, "constructor")) {
+    if (!is_type && !name_is_value && span_eq_str(&name_span, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
         name_span = span_end(a);
         if (!parse_function_fn(&p, &ret->constructor.func)) {
@@ -1901,7 +1880,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     } else if (
         !is_type &&
         !name_is_value &&
-        cstr_equals(&name, "static") &&
+        span_eq_str(&name_span, "static") &&
         parse_block(&p, false, &ret->static_block)
     ) {
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
@@ -1915,7 +1894,11 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             modifier_error = MODIFIERS_CANNOT_APPEAR;
             modifier_error_span = access_span;
         }
-    } else if (!cstr_empty(&name)) {
+    } else if (span_valid(&name_span)) {
+        if (span_valid(&name_span) && cstr_empty(&name_string)) {
+            name_string = cstr_from_span(&name_span);
+        }
+
         bool optional = false;
         if (hop_char(&p, '?')) {
             hop_whitespace(&p);
@@ -1929,7 +1912,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .access = ret->access,
                 .member = {
                     .is_static = span_valid(&static_span),
-                    .name = name,
+                    .name_string = cstr_move(&name_string),
                     .name_span = name_span,
                     .is_optional = optional,
                     .name_is_value = name_is_value,
@@ -1949,27 +1932,25 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     .is_readonly = span_valid(&readonly_span),
                     .is_static = span_valid(&static_span),
                     .is_optional = optional,
+                    .name_string = cstr_move(&name_string),
+                    .name_span = name_span,
                     .name_is_value = name_is_value,
-                    .initializer = {
-                        .binding = {
-                            .tag = BINDING_IDENTIFIER,
-                            .identifier = name,
-                            .content_span = name_span,
-                        }
-                    }
                 }
             };
 
-            if (parse_binding_type_or_set_to_default(&p, &ret->field.initializer.binding)) {
+            Binding binding;
+            if (parse_binding_type_or_set_to_default(&p, &binding)) {
+                ret->field.type = binding.type;
+                ret->field.type_span = binding.type_span;
+                ret->field.type_explicit = binding.type_explicit;
                 hop_whitespace(&p);
             }
 
-            if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.initializer.value)) {
+            if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value)) {
                 hop_whitespace(&p);
             }
         }
     } else {
-        cstr_drop(&name);
         CallableType callable;
         if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
             parse_index_or_expr_interface_member(&p, true, &ret->interface_memeber) ||
@@ -1987,9 +1968,11 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .type = type_callable(c_new(CallableType, callable))
             };
         } else {
+            cstr_drop(&name_string);
             return parse_fail(&p);
         }
     }
+    cstr_drop(&name_string);
 
     switch (modifier_error) {
         case MODIFIER_ERROR_NONE: break;
@@ -2109,9 +2092,8 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             .is_abstract_constructor = is_abstract,
         }
     };
-    if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
-        ret->name = cstr_null;
-        ret->name_span = span_null;
+    if (!parse_identifier(&p, &ret->name)) {
+        ret->name = span_null;
     }
     hop_whitespace(&p);
 
@@ -2270,13 +2252,12 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    cstr prop;
-    Span prop_span;
-    if (!parse_identifier(&p, &prop, &prop_span)) {
+    Span prop;
+    if (!parse_identifier(&p, &prop)) {
         return parse_fail(&p);
     }
 
-    *ret = expr_literal(prop_span, value_string(prop));
+    *ret = expr_literal(prop, value_string(cstr_from_span(&prop)));
     return parse_success(&p);
 }
 
@@ -2702,7 +2683,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     ret->peren_depth = 0;
 
     union {
-        cstr name;
+        Span name;
         FunctionImpl function;
         ClassDecl class_decl;
     } parsed;
@@ -2731,8 +2712,8 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
-    } else if (parse_identifier(&p, &parsed.name, nullptr)) {
-        *ret = expr_identifier(span_end(a), parsed.name);
+    } else if (parse_identifier(&p, &parsed.name)) {
+        *ret = expr_identifier(parsed.name);
     } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
@@ -2797,13 +2778,13 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
             item.type_only = true;
         }
 
-        if (parse_identifier(&p, nullptr, &item.source)) {
+        if (parse_identifier(&p, &item.source)) {
             hop_whitespace(&p);
 
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
 
-                if (!parse_identifier(&p, nullptr, &item.name)) {
+                if (!parse_identifier(&p, &item.name)) {
                     error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
                     item.name = item.source;
                 }
@@ -2852,13 +2833,13 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
         }
         hop_whitespace(&p);
 
-        if (!parse_identifier(&p, nullptr, &import.module_name)) {
+        if (!parse_identifier(&p, &import.module_name)) {
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
             import.module_name = span_null;
         }
         hop_whitespace(&p);
     } else {
-        if (parse_identifier(&p, nullptr, &import.default_name)) {
+        if (parse_identifier(&p, &import.default_name)) {
             hop_whitespace(&p);
 
             if (hop_char(&p, ',')) {
@@ -2904,13 +2885,11 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 static bool parse_binding_content(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
-
-    cstr identifier;
     Binding binding;
 
-    if (parse_identifier(&p, &identifier, nullptr)) {
+    if (parse_identifier(&p, nullptr)) {
         ret->tag = BINDING_IDENTIFIER;
-        ret->identifier = identifier;
+        // Name is accessed via content_span, which is set at the end
     } else if (hop_char(&p, '[')) {
         hop_whitespace(&p);
         ret->tag = BINDING_ARRAY;
@@ -2940,10 +2919,9 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         hop_whitespace(&p);
         ret->tag = BINDING_OBJECT;
         ret->object = vec_object_binding_item_init();
-        while (*p.pos && *p.pos != ']') {
-            if (parse_identifier(&p, &identifier, nullptr)) {
-                Span identifier_span = span_end(a);
-
+        while (*p.pos && *p.pos != '}') {
+            Span name;
+            if (parse_identifier(&p, &name)) {
                 hop_whitespace(&p);
 
                 if (hop_char(&p, ':')) {
@@ -2956,18 +2934,17 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                     }
 
                     vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                        .source = value_string(cstr_clone(identifier)),
-                        .source_span = identifier_span,
+                        .source = value_string(cstr_from_span(&name)),
+                        .source_span = name,
                         .target = binding,
                     });
                 } else {
                     vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                        .source = value_string(cstr_clone(identifier)),
-                        .source_span = identifier_span,
+                        .source = value_string(cstr_from_span(&name)),
+                        .source_span = name,
                         .target = (Binding){
                             .tag = BINDING_IDENTIFIER,
-                            .identifier = identifier,
-                            .content_span = identifier_span,
+                            .content_span = name,
                         },
                     });
                 }
@@ -3620,7 +3597,7 @@ static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)
 
     *ret = (typeof((Statement){}.decl.namespace)){0};
 
-    if (!parse_identifier(&p, &ret->name, &ret->name_span)) {
+    if (!parse_identifier(&p, &ret->name)) {
         Value val;
         Anchor a = span_start(&p);
         if (*p.pos == '{') {
@@ -3793,7 +3770,10 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         parse_comma_ops_right_side(&p, &ret->expr);
-        if (ret->tag == STATEMENT_EXPR && ret->expr.tag == EXPR_IDENTIFIER && cstr_equals(&ret->expr.identifier.name, "static")) {
+        if (ret->tag == STATEMENT_EXPR &&
+            ret->expr.tag == EXPR_IDENTIFIER &&
+            span_eq_str(&ret->expr.identifier.name, "static")
+        ) {
             hop_whitespace(&p);
             if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != '}') {
                 statement_drop(ret);

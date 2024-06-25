@@ -25,7 +25,6 @@ void expr_drop(Expr* me) {
             break;
 
         case EXPR_IDENTIFIER:
-            cstr_drop(&my identifier.name);
             arc_named_variable_drop(&my identifier.var);
             break;
 
@@ -115,7 +114,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
 
         case EXPR_IDENTIFIER:
             cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_s(target, my identifier.name);
+            cstr_append_span(target, &my identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
             break;
 
@@ -228,7 +227,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_sv(target, c_sv("{\n"));
             c_foreach(i, vec_object_expr_item, my object) {
                 APPEND_INDENT(target, indent + 1);
-                cstr_append_s(target, i.ref->name);
+                cstr_append_s(target, i.ref->name_string);
                 cstr_append_sv(target, c_sv(": "));
                 cstr_append_expr_debug(target, &i.ref->value, indent + 1);
                 cstr_append_sv(target, c_sv(",\n"));
@@ -264,17 +263,17 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_IDENTIFIER: {
-            ArcNamedVariable const* var = name_stack_get_variable(names, cstr_sv(&my identifier.name));
+            ArcNamedVariable const* var = name_stack_get_variable(names, span_sv(&my identifier.name));
             if (var) {
                 my identifier.var = arc_named_variable_clone(*var);
-            } else if (name_stack_get_type(names, cstr_sv(&my identifier.name))) {
+            } else if (name_stack_get_type(names, span_sv(&my identifier.name))) {
                 error_ctx_error(
                     errs, my span, 2693,
-                    "'%s' only refers to a type, but is being used as a value here.",
-                    cstr_str(&my identifier.name)
+                    "'%.*s' only refers to a type, but is being used as a value here.",
+                    c_SV(span_sv(&my identifier.name))
                 );
             } else {
-                error_ctx_error(errs, my span, 2304, "Cannot find name '%s'.", cstr_str(&my identifier.name));
+                error_ctx_error(errs, my span, 2304, "Cannot find name '%.*s'.", c_SV(span_sv(&my identifier.name)));
             }
         }   break;
 
@@ -615,7 +614,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         span_between(&i.ref->name_span, &i.ref->value.span),
                         false,
                         false,
-                        cstr_clone(i.ref->name),
+                        cstr_clone(i.ref->name_string),
                         i.ref->name_span,
                         false,
                         t
@@ -802,13 +801,13 @@ czview unary_op_get_zv(UnaryOp op) {
 }
 
 void object_expr_item_drop(ObjectExprItem* me) {
-    cstr_drop(&my name);
+    cstr_drop(&my name_string);
     expr_drop(&my value);
 }
 
 ObjectExprItem* object_expr_get(ObjectExpr* me, const char* name) {
     c_foreach(i, vec_object_expr_item, *me) {
-        if (strcmp(cstr_str(&i.ref->name), name) == 0) {
+        if (strcmp(cstr_str(&i.ref->name_string), name) == 0) {
             return i.ref;
         }
     }
