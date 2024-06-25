@@ -31,7 +31,7 @@ typedef struct Generic {
 } Generic;
 
 static inline bool generic_empty(Generic const* me) {
-    return vec_generic_item_empty(&my items);
+    return !me || vec_generic_item_empty(&my items);
 }
 
 void generic_drop(Generic* me);

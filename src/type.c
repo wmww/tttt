@@ -513,7 +513,11 @@ static Type const* type_resolve_internal(Type const* me, int level) {
             case TYPE_IDENTIFIER:
                 if (my identifier->type.get) {
                     if (vec_type_empty(&my identifier->generic_params)) {
-                        me = my identifier->type.get->type;
+                        if (generic_empty(my identifier->type.get->generic)) {
+                            me = my identifier->type.get->type;
+                        } else {
+                            me = &type_any;
+                        }
                     } else {
                         if (!my identifier->degenericized.tag && my identifier->type.get->generic) {
                             my identifier->degenericized = generic_degenericize_type(

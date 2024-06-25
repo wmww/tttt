@@ -411,28 +411,33 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
             Type expr_t = expr_get_type_and_typecheck(&my property->expr, nullptr);
+            Type const* expr_t_resolved = type_resolve(&expr_t);
             Type prop_t = expr_get_type_and_typecheck(&my property->prop, nullptr);
 
-            if (expr_t.tag == TYPE_INTERFACE && prop_t.tag == TYPE_VALUE && prop_t.value.tag == VALUE_STRING) {
-                c_foreach(i, vec_interface_member, expr_t.interface.members) {
+            if (expr_t_resolved->tag == TYPE_INTERFACE && prop_t.tag == TYPE_VALUE && prop_t.value.tag == VALUE_STRING) {
+                c_foreach(i, vec_interface_member, expr_t_resolved->interface.members) {
                     if (i.ref->key.tag == INTERFACE_KEY_NAME &&
                         cstr_eq(&i.ref->key.name_string, &prop_t.value.string)
                     ) {
                         if (my property->form == PROPERTY_EXPR_DOT) {
-                            baseline_test_case_add_symbol(
+                            baseline_test_case_add_symbol_with_scope(
                                 ctx,
+                                expr_t.tag == TYPE_IDENTIFIER ? span_sv(&expr_t.identifier->name) : c_sv(""),
                                 cstr_sv(&i.ref->key.name_string),
                                 my span,
-                                i.ref->key.span
+                                i.ref->key.name_is_value,
+                                i.ref->span
                             );
                         }
                         expr_compile_test_info(&my property->expr, true, ctx);
                         has_compiled_expr_info = true;
-                        baseline_test_case_add_symbol(
+                        baseline_test_case_add_symbol_with_scope(
                             ctx,
+                            expr_t.tag == TYPE_IDENTIFIER ? span_sv(&expr_t.identifier->name) : c_sv(""),
                             cstr_sv(&i.ref->key.name_string),
                             my property->prop.span,
-                            i.ref->key.span
+                            i.ref->key.name_is_value,
+                            i.ref->span
                         );
                         break;
                     }
