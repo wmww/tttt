@@ -147,54 +147,19 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         type_resolve_names(i.ref, names, errs);
     }
 
-    name_stack_push_class_frame(names);
+    name_stack_push_block_frame(names);
+    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my interface);
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
-                // Names in function resolved below
+                function_impl_resolve_names(&i.ref->constructor.func, names, errs);
                 break;
 
             case CLASS_ITEM_MEMBER:
-                if (i.ref->member.is_static) {
-                } else {
-                    if (!name_stack_add_variable_s(
-                        names,
-                        cstr_clone(i.ref->member.name_string),
-                        i.ref->member.name_span,
-                        callable_type_get_wrapper(&i.ref->member.func.type)
-                    )) {
-                        /*
-                        error_ctx_error(
-                            errs,
-                            i.ref->member.name_span,
-                            TS_CODE_NONE,
-                            "multiple class members/fields with same name"
-                        );
-                        */
-                    }
-                }
-                // Names in function resolved below
+                function_impl_resolve_names(&i.ref->member.func, names, errs);
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (i.ref->field.is_static) {
-                } else {
-                    if (!name_stack_add_variable_s(
-                        names,
-                        cstr_clone(i.ref->field.name_string),
-                        i.ref->field.name_span,
-                        &i.ref->field.type
-                    )) {
-                        /*
-                        error_ctx_error(
-                            errs,
-                            i.ref->field.name_span,
-                            TS_CODE_NONE,
-                            "multiple class members/fields with same name"
-                        );
-                        */
-                    }
-                }
                 type_resolve_names(&i.ref->field.type, names, errs);
                 expr_resolve_names(&i.ref->field.value, names, errs);
                 break;
@@ -208,26 +173,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 break;
         }
     }
-
-    name_stack_push_class_frame(names);
-    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my interface);
-    c_foreach(i, vec_class_item, my items) {
-        switch (i.ref->tag) {
-            case CLASS_ITEM_CONSTRUCTOR:
-                function_impl_resolve_names(&i.ref->constructor.func, names, errs);
-                break;
-
-            case CLASS_ITEM_MEMBER:
-                function_impl_resolve_names(&i.ref->member.func, names, errs);
-                break;
-
-            case CLASS_ITEM_FIELD:
-            case CLASS_ITEM_INTERFACE_MEMBER:
-            case CLASS_ITEM_STATIC_BLOCK: break;
-        }
-    }
-    name_stack_pop_frame(names);
-    name_stack_pop_frame(names);
+    name_stack_pop_frame(names); // frame containing "this"
     name_stack_pop_frame(names); // generics
 }
 

@@ -276,9 +276,9 @@ const baselines = {
         types: false,
     },
     'accessStaticMemberFromInstanceMethod01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'accessorAccidentalCallDiagnostic': {
         errors: false,
@@ -40562,7 +40562,7 @@ const baselines = {
     },
     'YieldExpression14_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'YieldExpression15_es6': {

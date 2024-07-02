@@ -32,8 +32,6 @@ NameStack* name_stack_new();
 void name_stack_destroy(NameStack* me);
 void name_stack_push_block_frame(NameStack* me);
 void name_stack_push_function_frame(NameStack* me);
-void name_stack_push_class_frame(NameStack* me);
-void name_stack_push_function_frame(NameStack* me);
 void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs);
 void name_stack_pop_frame(NameStack* me);
 bool name_stack_add_variable(NameStack* me, Span name, Type const* type);
