@@ -5578,7 +5578,7 @@ const baselines = {
     'constraintsUsedInPrototypeProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructorArgWithGenericCallSignature': {
         errors: false,
@@ -14137,8 +14137,8 @@ const baselines = {
     },
     'genericPrototypeProperty': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericPrototypeProperty2': {
         errors: true,
@@ -23877,8 +23877,8 @@ const baselines = {
     },
     'prototypeInstantiatedWithBaseConstraint': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'prototypeOnConstructorFunctions': {
         errors: true,
@@ -28707,8 +28707,8 @@ const baselines = {
     },
     'typedGenericPrototypeMember': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeofAmbientExternalModules': {
         errors: false,
@@ -56792,7 +56792,7 @@ const baselines = {
     },
     'callGenericFunctionWithZeroTypeArguments': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callNonGenericFunctionWithTypeArguments': {
@@ -56887,12 +56887,12 @@ const baselines = {
     },
     'wrappedAndRecursiveConstraints3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'wrappedAndRecursiveConstraints4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterAsBaseType': {

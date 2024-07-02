@@ -180,9 +180,15 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(instance_type_ref); // Should have just been added above
     instance_type_ref->get->is_class = true;
     ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
+    VecType generic_params = {0};
+    c_foreach(i, vec_generic_item, my generic.items) {
+        // Is it the fallback type, always any or something else? unclear.
+        vec_type_push(&generic_params, type_clone(i.ref->fallback));
+    }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
         .type = arc_named_type_clone(*instance_type_ref),
+        .generic_params = generic_params,
     }));
 
     ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
