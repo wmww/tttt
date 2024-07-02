@@ -33,16 +33,26 @@ void class_item_drop(ClassItem* me) {
     }
 }
 
+bool class_item_is_static(ClassItem* me) {
+    switch (my tag) {
+        case CLASS_ITEM_CONSTRUCTOR: return false;
+        case CLASS_ITEM_MEMBER: return my member.is_static;
+        case CLASS_ITEM_FIELD: return my field.is_static;
+        case CLASS_ITEM_INTERFACE_MEMBER: return false;
+        case CLASS_ITEM_STATIC_BLOCK: return true;
+    }
+    UNREACHABLE;
+}
+
 void class_decl_drop(ClassDecl* me) {
     generic_drop(&my generic);
-    type_drop(&my interface);
     expr_drop(&my extends);
     vec_type_drop(&my implements);
-    callable_type_drop(&my constructor_type);
     vec_class_item_drop(&my items);
-    if (my type_ref.get) {
-        arc_named_type_drop(&my type_ref);
-    }
+    type_drop(&my instance_type);
+    type_drop(&my class_type);
+    type_drop(&my instance_identifier_type);
+    type_drop(&my class_identifier_type);
 }
 
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent) {
@@ -110,6 +120,7 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                     cstr_append_sv(target, c_sv(": "));
                     cstr_append_type_debug(target, &i.ref->field.type, indent);
                 }
+                cstr_append_sv(target, c_sv(" = "));
                 cstr_append_expr_debug(target, &i.ref->field.value, indent);
                 break;
 
@@ -122,25 +133,81 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                 cstr_append_block_debug(target, &i.ref->static_block, indent + 1);
                 break;
         }
-        cstr_append_sv(target, i.ref == i.end - 1 ? c_sv("\n") : c_sv("\n\n"));
+        cstr_append_sv(target, c_sv("\n"));
     }
     APPEND_INDENT(target, indent);
     cstr_append_sv(target, c_sv("}"));
 }
 
+void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
+    switch (my tag) {
+        case CLASS_ITEM_CONSTRUCTOR:
+            function_impl_resolve_names(&my constructor.func, names, errs);
+            break;
+
+        case CLASS_ITEM_MEMBER:
+            function_impl_resolve_names(&my member.func, names, errs);
+            break;
+
+        case CLASS_ITEM_FIELD:
+            type_resolve_names(&my field.type, names, errs);
+            expr_resolve_names(&my field.value, names, errs);
+            break;
+
+        case CLASS_ITEM_INTERFACE_MEMBER:
+            interface_member_resolve_names(&my interface_memeber, names, errs);
+            break;
+
+        case CLASS_ITEM_STATIC_BLOCK:
+            block_resolve_names(&my static_block, names, errs);
+            break;
+    }
+}
+
+void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+    if (!name_stack_add_type_s(
+        names,
+        cstr_from_span(&my name),
+        my full_span,
+        &my instance_type,
+        &my generic
+    )) {
+        // name is cstr_str(&result.ref->first)
+        error_ctx_type_error(errs, "multiple values declared with same name");
+    }
+
+    ArcNamedType const* instance_type_ref = name_stack_get_type(names, span_sv(&my name));
+    ASSERT(instance_type_ref); // Should have just been added above
+    instance_type_ref->get->is_class = true;
+    ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
+    my instance_identifier_type = type_identifier(c_new(IdentifierType, {
+        .name = my name,
+        .type = arc_named_type_clone(*instance_type_ref),
+    }));
+
+    ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
+    my class_identifier_type = type_identifier(c_new(IdentifierType, {
+        .name = my name,
+        .type = arc_named_type_make((NamedType){
+            .name = my name,
+            .type = &my class_type,
+            .is_typeof_class = true,
+        }),
+    }));
+
+    if (!name_stack_add_variable_s(
+        names,
+        cstr_from_span(&my name),
+        my full_span,
+        &my class_identifier_type
+    )) {
+        // name is cstr_str(&result.ref->first)
+        error_ctx_type_error(errs, "multiple values declared with same name");
+    }
+}
+
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_push_generic_frame(names, &my generic, errs);
-
-    ArcNamedType const* type_ref = name_stack_get_type(names, span_sv(&my name));
-    if (type_ref) {
-        my type_ref = arc_named_type_clone(*type_ref);
-    } else {
-        my type_ref = arc_named_type_make((NamedType){
-            .name = my name,
-            .type = callable_type_get_wrapper(&my constructor_type),
-            .generic = &my generic,
-        });
-    }
 
     expr_resolve_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
@@ -148,80 +215,113 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 
     name_stack_push_block_frame(names);
-    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my interface);
+    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my class_type);
     c_foreach(i, vec_class_item, my items) {
-        switch (i.ref->tag) {
-            case CLASS_ITEM_CONSTRUCTOR:
-                function_impl_resolve_names(&i.ref->constructor.func, names, errs);
-                break;
-
-            case CLASS_ITEM_MEMBER:
-                function_impl_resolve_names(&i.ref->member.func, names, errs);
-                break;
-
-            case CLASS_ITEM_FIELD:
-                type_resolve_names(&i.ref->field.type, names, errs);
-                expr_resolve_names(&i.ref->field.value, names, errs);
-                break;
-
-            case CLASS_ITEM_INTERFACE_MEMBER:
-                interface_member_resolve_names(&i.ref->interface_memeber, names, errs);
-                break;
-
-            case CLASS_ITEM_STATIC_BLOCK:
-                block_resolve_names(&i.ref->static_block, names, errs);
-                break;
+        if (class_item_is_static(i.ref)) {
+            class_item_resolve_names(i.ref, names, errs);
         }
     }
     name_stack_pop_frame(names); // frame containing "this"
+
+    name_stack_push_block_frame(names);
+    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my instance_type);
+    c_foreach(i, vec_class_item, my items) {
+        if (!class_item_is_static(i.ref)) {
+            class_item_resolve_names(i.ref, names, errs);
+        }
+    }
+    name_stack_pop_frame(names); // frame containing "this"
+
     name_stack_pop_frame(names); // generics
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
-    Interface interface = {0};
+    if (my has_typechecked) {
+        return;
+    }
+    my has_typechecked = true;
+
+    Interface class_interface = {0};
+    Interface instance_interface = {0};
+
+    vec_interface_member_push(&class_interface.members, interface_member_make(
+        span_null,
+        true,
+        false,
+        cstr_lit("prototype"),
+        span_null,
+        false,
+        type_clone(my instance_identifier_type))
+    );
+
+    // TODO: Use the declaration in Object of lib.es5.d.ts instead
+    vec_interface_member_push(&class_interface.members, interface_member_make(
+        span_null,
+        true,
+        false,
+        cstr_lit("hasOwnProperty"),
+        span_null,
+        false,
+        type_callable(c_new(CallableType, {
+            .args = c_init(vec_callable_arg, {{.binding = {
+                .tag = BINDING_IDENTIFIER,
+                .type_explicit = true,
+                .type = type_string,
+            }}}),
+            .ret_explicit = true,
+            .ret = type_boolean,
+        }))
+    ));
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type extends_type = expr_get_type_and_typecheck(&my extends, errs);
         if (extends_type.tag == TYPE_VALUE && extends_type.value.tag == VALUE_NULL) {
-        } else if (extends_type.tag == TYPE_CALLABLE && extends_type.callable->is_constructor) {
         } else {
-            cstr msg = cstr_lit("Type '");
-            cstr_append_type_error_msg(&msg, &extends_type);
-            cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
-            error_ctx_error_s(errs, my extends.span, 2507, msg);
+            CallExpr call_expr = {
+                .uses_new = true,
+                .is_extends = true,
+                .callable = expr_implicit_any(my extends.span),
+                .args = vec_expr_init(),
+            };
+            Type extends_result = type_typecheck_call(&extends_type, &call_expr, my extends.span, errs, 0);
+            type_drop(&extends_result);
         }
         type_drop(&extends_type);
     }
 
+    InterfaceMember constructor_member;
     int constructor_count = 0;
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
                 function_impl_typecheck(&i.ref->constructor.func, errs);
                 if (constructor_count == 0) {
-                    callable_type_drop(&my constructor_type);
-                    my constructor_type = callable_type_clone(i.ref->constructor.func.type);
+                    constructor_member = (InterfaceMember){
+                        .span = i.ref->constructor.func.full_span,
+                        .key.span = i.ref->constructor.name_span,
+                        .key.tag = INTERFACE_KEY_CALLABLE,
+                        .type = type_callable(c_new(CallableType, callable_type_clone(i.ref->constructor.func.type))),
+                    };
                 }
                 constructor_count++;
                 break;
 
             case CLASS_ITEM_MEMBER:
                 function_impl_typecheck(&i.ref->member.func, errs);
+                Type t = type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)));
+                InterfaceMember member = interface_member_make(
+                    i.ref->span,
+                    false,
+                    i.ref->member.is_optional,
+                    cstr_clone(i.ref->member.name_string),
+                    i.ref->member.name_span,
+                    i.ref->member.name_is_value,
+                    t
+                );
                 if (i.ref->member.is_static) {
+                    vec_interface_member_push(&class_interface.members, member);
                 } else {
-                    Type t = type_callable(c_new(CallableType, callable_type_clone(i.ref->member.func.type)));
-                    vec_interface_member_push(
-                        &interface.members,
-                        interface_member_make(
-                            i.ref->span,
-                            false,
-                            i.ref->member.is_optional,
-                            cstr_clone(i.ref->member.name_string),
-                            i.ref->member.name_span,
-                            i.ref->member.name_is_value,
-                            t
-                        )
-                    );
+                    vec_interface_member_push(&instance_interface.members, member);
                 }
                 break;
 
@@ -244,28 +344,30 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 }
                 type_drop(&value);
                 Type t = type_clone(i.ref->field.type);
-                if (i.ref->member.is_optional) {
+                if (i.ref->field.is_optional) {
                     t = type_composite(t, type_undefined, TYPE_UNION);
                 }
+                InterfaceMember field = interface_member_make(
+                    i.ref->span,
+                    i.ref->field.is_readonly,
+                    i.ref->field.is_optional,
+                    cstr_clone(i.ref->field.name_string),
+                    i.ref->field.name_span,
+                    i.ref->field.name_is_value,
+                    t
+                );
                 if (i.ref->field.is_static) {
-                    type_drop(&t);
+                    vec_interface_member_push(&class_interface.members, field);
                 } else {
-                    vec_interface_member_push(
-                        &interface.members,
-                        interface_member_make(
-                            i.ref->span,
-                            i.ref->field.is_readonly,
-                            i.ref->field.is_optional,
-                            cstr_clone(i.ref->field.name_string),
-                            i.ref->field.name_span,
-                            i.ref->field.name_is_value,
-                            t
-                        )
-                    );
+                    vec_interface_member_push(&instance_interface.members, field);
                 }
             }   break;
 
-            case CLASS_ITEM_INTERFACE_MEMBER: break;
+            case CLASS_ITEM_INTERFACE_MEMBER:
+                vec_interface_member_push(
+                    &instance_interface.members,
+                    interface_member_clone(i.ref->interface_memeber));
+                break;
 
             case CLASS_ITEM_STATIC_BLOCK: {
                 StatementCtx ctx = statement_ctx_toplevel();
@@ -275,12 +377,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
 
-    type_drop(&my interface);
-    my interface = type_interface(interface);
-
     if (constructor_count == 0) {
-        callable_type_drop(&my constructor_type);
-        my constructor_type = (CallableType){0};
+        constructor_member = (InterfaceMember){
+            .key.tag = INTERFACE_KEY_CALLABLE,
+            .type = type_callable(c_new(CallableType, (CallableType){})),
+        };
     } else if (constructor_count > 1) {
         c_foreach(i, vec_class_item, my items) {
             if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -296,15 +397,16 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
 
-    type_drop(&my constructor_type.ret);
-    my constructor_type.ret = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .type = arc_named_type_clone(my type_ref),
-    }));
-    my constructor_type.ret_explicit = true;
-    my constructor_type.is_constructor = true;
-    my constructor_type.is_abstract_constructor = my is_abstract;
-    callable_type_get_wrapper(&my constructor_type);
+    type_drop(&constructor_member.type.callable->ret);
+    constructor_member.type.callable->ret = type_clone(my instance_identifier_type);
+    constructor_member.type.callable->ret_explicit = true;
+    constructor_member.type.callable->is_constructor = true;
+    constructor_member.type.callable->is_abstract_constructor = my is_abstract;
+    callable_type_get_wrapper(constructor_member.type.callable);
+    vec_interface_member_push(&class_interface.members, constructor_member);
+
+    my class_type = type_interface(class_interface);
+    my instance_type = type_interface(instance_interface);
 
     c_foreach(i, vec_type, my implements) {
         // TODO: check that we do, in fact, implement each type

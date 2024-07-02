@@ -57,25 +57,22 @@ void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent)
 
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
     if (my is_constructor) {
-        cstr_append_sv(target, c_sv("typeof "));
-        cstr_append_generic_error_msg(target, &my generic);
-        cstr_append_type_error_msg(target, &my ret);
-    } else {
-        cstr_append_generic_error_msg(target, &my generic);
-        cstr_append_sv(target, c_sv("("));
-        c_foreach(i, vec_callable_arg, my args) {
-            if (i.ref->rest) {
-                cstr_append_sv(target, c_sv("..."));
-            }
-            cstr_append_binding_error_msg(target, &i.ref->binding, i.ref->optional);
-            if (i.ref != i.end - 1) {
-                cstr_append_sv(target, c_sv(", "));
-            }
-        }
-        cstr_append_sv(target, c_sv(")"));
-        cstr_append_sv(target, c_sv(" => "));
-        cstr_append_type_error_msg(target, &my ret);
+        cstr_append_sv(target, c_sv("new "));
     }
+    cstr_append_generic_error_msg(target, &my generic);
+    cstr_append_sv(target, c_sv("("));
+    c_foreach(i, vec_callable_arg, my args) {
+        if (i.ref->rest) {
+            cstr_append_sv(target, c_sv("..."));
+        }
+        cstr_append_binding_error_msg(target, &i.ref->binding, i.ref->optional);
+        if (i.ref != i.end - 1) {
+            cstr_append_sv(target, c_sv(", "));
+        }
+    }
+    cstr_append_sv(target, c_sv(")"));
+    cstr_append_sv(target, c_sv(" => "));
+    cstr_append_type_error_msg(target, &my ret);
 }
 
 void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs) {

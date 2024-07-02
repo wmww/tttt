@@ -1741,9 +1741,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         } else if (parse_literal(&p, &value)) {
             cstr_append_value_js(&name_string, &value);
             value_drop(&value);
-            name_span = span_end(name_start);
+            next_name_span = span_end(name_start);
             name_is_value = true;
-            break;
         } else {
             break;
         }
@@ -1857,6 +1856,10 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
 
         if (getter_setter) {
+            break;
+        }
+
+        if (name_is_value) {
             break;
         }
     }
@@ -2084,13 +2087,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
     *ret = (ClassDecl){
         .is_abstract = is_abstract,
-        .interface = type_any,
-        .extends = expr_implicit_any(span_null),
-        .implements = {0},
-        .constructor_type = {
-            .is_constructor = true,
-            .is_abstract_constructor = is_abstract,
-        }
+        .extends = expr_implicit_any_no_span,
     };
     if (!parse_identifier(&p, &ret->name)) {
         ret->name = span_null;
@@ -2107,7 +2104,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         hop_whitespace(&p);
 
         if (!parse_expr(&p, expr_ctx_null, &ret->extends)) {
-            ret->extends = expr_implicit_any(span_null);
+            ret->extends = expr_implicit_any_no_span;
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
         }
         hop_whitespace(&p);

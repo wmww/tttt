@@ -332,8 +332,7 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
                     names,
                     my identifier->name,
                     &my identifier->degenericized,
-                    nullptr,
-                    false
+                    nullptr
                 );
                 ArcNamedType const* result = name_stack_get_type(names, span_sv(&my identifier->name));
                 ASSERT(result);
@@ -650,26 +649,36 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             return value_strict_eq(&sub->value, &super->value);
 
         case TYPE_CALLABLE:
-            if (sub->tag != TYPE_CALLABLE) {
+            if (sub->tag == TYPE_INTERFACE) {
+                c_foreach(i, vec_interface_member, sub->interface.members) {
+                    if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                        if (type_extends_internal(&i.ref->type, super, refinements, level + 1)) {
+                            return true;
+                        }
+                    }
+                }
                 return false;
-            }
-            long arg_count = vec_callable_arg_size(&super->callable->args);
-            if (vec_callable_arg_size(&sub->callable->args) != arg_count) {
-                return false;
-            }
-            for (intptr_t i = 0; i < arg_count; i++) {
-                // Order is flipped for arguments
-                if (!type_extends_internal(
-                    &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
-                    &vec_callable_arg_at(&super->callable->args, i)->binding.type,
-                    refinements,
-                    level + 1
-                )) {
+            } else if (sub->tag == TYPE_CALLABLE) {
+                long arg_count = vec_callable_arg_size(&super->callable->args);
+                if (vec_callable_arg_size(&sub->callable->args) != arg_count) {
                     return false;
                 }
+                for (intptr_t i = 0; i < arg_count; i++) {
+                    // Order is flipped for arguments
+                    if (!type_extends_internal(
+                        &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
+                        &vec_callable_arg_at(&super->callable->args, i)->binding.type,
+                        refinements,
+                        level + 1
+                    )) {
+                        return false;
+                    }
+                }
+                // Order is not flipped for return
+                return type_extends_internal(&sub->callable->ret, &super->callable->ret, refinements, level + 1);
+            } else {
+                return false;
             }
-            // Order is not flipped for return
-            return type_extends_internal(&sub->callable->ret, &super->callable->ret, refinements, level + 1);
 
         case TYPE_INTERFACE:
             if (sub->tag != TYPE_INTERFACE) {
@@ -1216,7 +1225,11 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             CallableType inferred = {0};
             CallableType const* callable = my callable;
 
-            if (call->uses_new) {
+            if (call->is_extends) {
+                if (!callable->is_constructor) {
+                    break;
+                }
+            } else if (call->uses_new) {
                 if (!callable->is_constructor) {
                     // TODO: add this check only in strict mode
                     /*
@@ -1365,8 +1378,25 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             return ret;
         }
 
-        default:
-            error_ctx_error(errs, call->callable.span, 2349, "This expression is not callable.");
-            return type_any;
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_interface_member, my interface.members) {
+                // TODO: add to overload list instead of selecting first option
+                if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                    return type_typecheck_call(&i.ref->type, call, span, errs, level);
+                }
+            }
+            break;
+
+        default: break;
     }
+
+    if (call->is_extends) {
+        cstr msg = cstr_lit("Type '");
+        cstr_append_type_error_msg(&msg, me);
+        cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
+        error_ctx_error_s(errs, call->callable.span, 2507, msg);
+    } else {
+        error_ctx_error(errs, call->callable.span, 2349, "This expression is not callable.");
+    }
+    return type_any;
 }

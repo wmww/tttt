@@ -249,6 +249,7 @@ typedef struct TernaryExpr {
 
 typedef struct CallExpr {
     bool uses_new;
+    bool is_extends;
     Expr callable;
     VecExpr args;
 } CallExpr;

@@ -25,6 +25,9 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
     if (my inferred) {
         cstr_append_sv(target, c_sv("infer "));
     }
+    if (my type.get && my type.get->is_typeof_class) {
+        cstr_append_sv(target, c_sv("typeof "));
+    }
     cstr_append_sv(target, c_sv(CLR_TYPE));
     c_foreach(i, vec_span, my namespaces) {
         cstr_append_sv(target, span_sv(i.ref));
@@ -47,6 +50,9 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
 void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
     if (my inferred) {
         cstr_append_sv(target, c_sv("infer "));
+    }
+    if (my type.get && my type.get->is_typeof_class) {
+        cstr_append_sv(target, c_sv("typeof "));
     }
     cstr_append_span(target, &my name);
     if (!vec_type_empty(&my generic_params)) {

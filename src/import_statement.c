@@ -59,8 +59,7 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             names,
             my default_name,
             &type_any,
-            nullptr,
-            false
+            nullptr
         );
         if (!my type_only) {
             name_stack_add_variable(
@@ -75,8 +74,7 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             names,
             my module_name,
             &type_any,
-            nullptr,
-            false
+            nullptr
         );
         if (!my type_only) {
             name_stack_add_variable(
@@ -91,8 +89,7 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             names,
             i.ref->name,
             &type_any,
-            nullptr,
-            false
+            nullptr
         );
         if (!my type_only && !i.ref->type_only) {
             name_stack_add_variable(

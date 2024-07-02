@@ -285,7 +285,7 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
     if (span_valid(&my name)) {
         baseline_test_case_add_symbol(ctx, span_sv(&my name), my name, my full_span);
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my constructor_type.wrapper_type_do_not_drop);
+            baseline_test_case_add_type(ctx, my name, &my class_identifier_type);
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
                 .name = my name,
@@ -302,8 +302,11 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type t = expr_get_type_and_typecheck(&my extends, nullptr);
-        if (t.tag == TYPE_CALLABLE && t.callable->is_constructor) {
-            baseline_test_case_add_type(ctx, my extends.span, &t.callable->ret);
+        if (t.tag == TYPE_IDENTIFIER && t.identifier->type.get && t.identifier->type.get->is_typeof_class) {
+            // Extremely hacky but whatever. No idea why tsc does this.
+            t.identifier->type.get->is_typeof_class = false;
+            baseline_test_case_add_type_with_peren(ctx, my extends.span, &t, my extends.peren_depth);
+            t.identifier->type.get->is_typeof_class = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
             expr_compile_test_info(&my extends, true, ctx);

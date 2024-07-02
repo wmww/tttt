@@ -312,27 +312,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_CLASS:
-            if (!name_stack_add_variable_s(
-                names,
-                cstr_from_span(&my decl.class->name),
-                my decl.class->full_span,
-                callable_type_get_wrapper(&my decl.class->constructor_type)
-            )) {
-                // name is cstr_str(&result.ref->first)
-                error_ctx_type_error(errs, "multiple values declared with same name");
-            }
-
-            if (!name_stack_add_type_s(
-                names,
-                cstr_from_span(&my decl.class->name),
-                my decl.class->full_span,
-                &my decl.class->interface,
-                &my decl.class->generic,
-                true
-            )) {
-                // name is cstr_str(&result.ref->first)
-                error_ctx_type_error(errs, "multiple values declared with same name");
-            }
+            class_decl_add_names(my decl.class, names, errs);
             break;
 
         case STATEMENT_DECL_TYPE:
@@ -341,8 +321,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 cstr_from_span(&my decl.type.name),
                 my decl.type.full_span,
                 &my decl.type.type,
-                &my decl.type.generic,
-                false
+                &my decl.type.generic
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");

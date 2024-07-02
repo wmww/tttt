@@ -9,6 +9,7 @@
 #include "generic.h"
 #include "class_decl.h"
 #include "interface_member.h"
+#include "identifier_type.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -326,6 +327,9 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_CLASS_DECL:
+            name_stack_push_block_frame(names);
+            class_decl_add_names(my class_decl, names, errs);
+            name_stack_pop_frame(names);
             class_decl_resolve_names(my class_decl, names, errs);
             break;
     }
@@ -635,7 +639,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            return type_callable(c_new(CallableType, callable_type_clone(my class_decl->constructor_type)));
+            return type_clone(my class_decl->class_identifier_type);
     }
     UNREACHABLE;
 }

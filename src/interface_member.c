@@ -154,8 +154,7 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
                 names,
                 my key.mapped.type_name,
                 &type_any,
-                nullptr,
-                false
+                nullptr
             );
             break;
 

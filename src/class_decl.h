@@ -51,6 +51,7 @@ typedef struct ClassItem {
 } ClassItem;
 
 void class_item_drop(ClassItem* me);
+bool class_item_is_static(ClassItem* me);
 
 #define i_key_class_names ClassItem, class_item
 #define i_no_clone
@@ -60,16 +61,19 @@ typedef struct ClassDecl {
     Span full_span;
     Span name;
     bool is_abstract;
+    bool has_typechecked;
     Generic generic;
-    Type interface;
     Expr extends;
     VecType implements;
-    CallableType constructor_type;
     VecClassItem items;
-    ArcNamedType type_ref;
+    Type instance_type;
+    Type class_type;
+    Type instance_identifier_type;
+    Type class_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent);
+void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);
