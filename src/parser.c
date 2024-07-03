@@ -14,6 +14,7 @@
 #include "as_type_expr.h"
 #include "type.h"
 #include "error.h"
+#include "math_helpers.h"
 
 #define i_key uint8_t
 #define i_type vec_u8
@@ -516,7 +517,7 @@ static bool parse_generic_params(Parser* parent, VecType* ret) {
             trailing_comma_span = span_from_previous_char(&p);
         } else if (*p.pos == '>') {
         } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
         }
         hop_whitespace(&p);
     }
@@ -2673,6 +2674,46 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }
 
+static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
+    Parser p = parser(parent);
+
+    Span name;
+    if (!parse_identifier(&p, &name)) {
+        return parse_fail(&p);
+    }
+    *ret = expr_identifier(name);
+
+    Parser generic_p = parser(&p);
+    hop_whitespace(&generic_p);
+    if (parse_generic_params(&generic_p, &ret->identifier.generic_params)) {
+        if (error_ctx_empty(&generic_p.errs)) {
+            Parser next_p = parser(&generic_p);
+            Expr expr;
+            hop_whitespace(&next_p);
+            ctx.min_precedence = imax(ctx.min_precedence, binary_op_get_precedence(BINARY_OP_GREATER));
+            if (next_p.whitespace != WHITESPACE_NEWLINE && *next_p.pos != '(' && parse_expr(&next_p, ctx, &expr)) {
+                expr_drop(&expr);
+                vec_type_drop(&ret->identifier.generic_params);
+                ret->identifier.generic_params = vec_type_init();
+                parse_fail(&next_p);
+                parse_fail(&generic_p);
+            } else {
+                parse_fail(&next_p);
+                parse_success(&generic_p);
+            }
+        } else {
+            vec_type_drop(&ret->identifier.generic_params);
+            ret->identifier.generic_params = vec_type_init();
+            parse_fail(&generic_p);
+        }
+    } else {
+        ret->identifier.generic_params = vec_type_init();
+        parse_fail(&generic_p);
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
@@ -2680,7 +2721,6 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     ret->peren_depth = 0;
 
     union {
-        Span name;
         FunctionImpl function;
         ClassDecl class_decl;
     } parsed;
@@ -2709,8 +2749,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
-    } else if (parse_identifier(&p, &parsed.name)) {
-        *ret = expr_identifier(parsed.name);
+    } else if (parse_identifier_expr(&p, ctx, ret)) {
     } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {

@@ -27,6 +27,7 @@ void expr_drop(Expr* me) {
 
         case EXPR_IDENTIFIER:
             arc_named_variable_drop(&my identifier.var);
+            vec_type_drop(&my identifier.generic_params);
             break;
 
         case EXPR_BINARY_OP:
@@ -117,6 +118,16 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_sv(target, c_sv(CLR_NAME));
             cstr_append_span(target, &my identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
+            if (!vec_type_empty(&my identifier.generic_params)) {
+                cstr_append_sv(target, c_sv("<"));
+                c_foreach(i, vec_type, my identifier.generic_params) {
+                    cstr_append_type_debug(target, i.ref, indent);
+                    if (i.ref != i.end - 1) {
+                        cstr_append_sv(target, c_sv(", "));
+                    }
+                }
+                cstr_append_sv(target, c_sv(">"));
+            }
             break;
 
         case EXPR_BINARY_OP: {
@@ -274,7 +285,16 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
                     c_SV(span_sv(&my identifier.name))
                 );
             } else {
-                error_ctx_error(errs, my span, 2304, "Cannot find name '%.*s'.", c_SV(span_sv(&my identifier.name)));
+                error_ctx_error(
+                    errs,
+                    my identifier.name,
+                    2304,
+                    "Cannot find name '%.*s'.",
+                    c_SV(span_sv(&my identifier.name))
+                );
+            }
+            c_foreach(i, vec_type, my identifier.generic_params) {
+                type_resolve_names(i.ref, names, errs);
             }
         }   break;
 

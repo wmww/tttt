@@ -65,7 +65,8 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             name_stack_add_variable(
                 names,
                 my default_name,
-                &type_any
+                &type_any,
+                nullptr
             );
         }
     }
@@ -80,7 +81,8 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             name_stack_add_variable(
                 names,
                 my module_name,
-                &type_any
+                &type_any,
+                nullptr
             );
         }
     }
@@ -95,7 +97,8 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             name_stack_add_variable(
                 names,
                 i.ref->name,
-                &type_any
+                &type_any,
+                nullptr
             );
         }
     }

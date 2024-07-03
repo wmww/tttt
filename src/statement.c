@@ -304,7 +304,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 names,
                 cstr_from_span(&my decl.function.name),
                 my decl.function.full_span,
-                callable_type_get_wrapper(&my decl.function.type)
+                callable_type_get_wrapper(&my decl.function.type),
+                &my decl.function.type.generic
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -443,7 +444,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION:
             name_stack_push_block_frame(names);
-            name_stack_add_variable_s(names, cstr_lit("this"), span_null, &type_any);
+            name_stack_add_variable_s(names, cstr_lit("this"), span_null, &type_any, nullptr);
             function_impl_resolve_names(&my decl.function, names, errs);
             name_stack_pop_frame(names);
             break;

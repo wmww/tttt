@@ -192,6 +192,7 @@ static inline void generic_replace_named_types_with(Generic* me, VecTypeRefineme
 }
 
 static inline void callable_replace_named_types_with(CallableType* me, VecTypeRefinement const* refinements) {
+    generic_replace_named_types_with(&my generic, refinements);
     c_foreach(i, vec_callable_arg, my args) {
         replace_named_types_with(&i.ref->binding.type, refinements);
     }

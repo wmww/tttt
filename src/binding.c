@@ -118,11 +118,7 @@ void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs) {
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            if (!name_stack_add_variable(
-                names,
-                my content_span,
-                &my type
-            )) {
+            if (!name_stack_add_variable(names, my content_span, &my type, nullptr)) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_error(errs, my content_span, TS_CODE_NONE, "multiple values declared with same name");
             }

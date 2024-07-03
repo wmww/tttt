@@ -400,6 +400,9 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     my identifier.var.get->name
                 );
             }
+            c_foreach(i, vec_type, my identifier.generic_params) {
+                type_compile_test_info(i.ref, ctx);
+            }
         }   break;
 
         case EXPR_BINARY_OP:

@@ -205,7 +205,8 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         names,
         cstr_from_span(&my name),
         my full_span,
-        &my class_identifier_type
+        &my class_identifier_type,
+        &my generic
     )) {
         // name is cstr_str(&result.ref->first)
         error_ctx_type_error(errs, "multiple values declared with same name");
@@ -221,7 +222,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 
     name_stack_push_block_frame(names);
-    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my class_type);
+    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my class_type, nullptr);
     c_foreach(i, vec_class_item, my items) {
         if (class_item_is_static(i.ref)) {
             class_item_resolve_names(i.ref, names, errs);
@@ -230,7 +231,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_pop_frame(names); // frame containing "this"
 
     name_stack_push_block_frame(names);
-    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my instance_type);
+    name_stack_add_variable_s(names, cstr_lit("this"), span_null, &my instance_type, nullptr);
     c_foreach(i, vec_class_item, my items) {
         if (!class_item_is_static(i.ref)) {
             class_item_resolve_names(i.ref, names, errs);
