@@ -1273,11 +1273,11 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             if (call_arg_count < min_args || call_arg_count > max_args) {
                 check_types_against_callable = false;
 
-                Span span = call->callable.span;
+                Span span = call->callable.inner_span;
                 if (call_arg_count > max_args) {
                     span = span_between(
-                        &vec_expr_at(&call->args, max_args)->span,
-                        &vec_expr_at(&call->args, call_arg_count - 1)->span
+                        &vec_expr_at(&call->args, max_args)->outer_span,
+                        &vec_expr_at(&call->args, call_arg_count - 1)->outer_span
                     );
                 }
 
@@ -1329,14 +1329,14 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                         "parameter of type",
                         &vec_callable_arg_at(&callable->args, index)->binding.type,
                         2345,
-                        i.ref->span,
+                        i.ref->outer_span,
                         errs
                     )) {
                         check_types_against_callable = false;
                     }
                     type_drop(&arg_type);
                 } else if (last_arg_rest) {
-                    rest_span = span_between(&rest_span, &i.ref->span);
+                    rest_span = span_between(&rest_span, &i.ref->outer_span);
                     vec_type_push(&rest_tuple, arg_type);
                 } else {
                     type_drop(&arg_type);
@@ -1394,9 +1394,9 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         cstr msg = cstr_lit("Type '");
         cstr_append_type_error_msg(&msg, me);
         cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
-        error_ctx_error_s(errs, call->callable.span, 2507, msg);
+        error_ctx_error_s(errs, call->callable.outer_span, 2507, msg);
     } else {
-        error_ctx_error(errs, call->callable.span, 2349, "This expression is not callable.");
+        error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
     }
     return type_any;
 }

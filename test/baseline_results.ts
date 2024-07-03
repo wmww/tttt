@@ -2758,7 +2758,7 @@ const baselines = {
     'callWithWrongNumberOfTypeArguments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackArgsDifferByOptionality': {
         errors: false,
@@ -4623,7 +4623,7 @@ const baselines = {
     'commentOnParenthesizedExpressionOpenParen1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnSignature1': {
         errors: false,
@@ -4663,7 +4663,7 @@ const baselines = {
     'commentsAfterFunctionExpression1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsAfterSpread': {
         errors: false,
@@ -10098,7 +10098,7 @@ const baselines = {
     'emptyTypeArgumentList': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyTypeArgumentListWithNew': {
         errors: false,
@@ -13673,12 +13673,12 @@ const baselines = {
     'genericCallWithFixedArguments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithNonGenericArgs1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectLiteralArguments1': {
         errors: false,
@@ -13693,7 +13693,7 @@ const baselines = {
     'genericCallbackInvokedInsideItsContainingFunction1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallbacksAndClassHierarchy': {
         errors: false,
@@ -14573,7 +14573,7 @@ const baselines = {
     'grammarAmbiguities1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'heterogeneousArrayAndOverloads': {
         errors: false,
@@ -15378,7 +15378,7 @@ const baselines = {
     'incorrectNumberOfTypeArgumentsDuringErrorReporting': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incorrectRecursiveMappedTypeConstraint': {
         errors: false,
@@ -22803,7 +22803,7 @@ const baselines = {
     'parenthesizedArrowExpressionASI': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parenthesizedAsyncArrowFunction': {
         errors: false,
@@ -22813,7 +22813,7 @@ const baselines = {
     'parenthesizedExpressionInternalComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parenthesizedJSDocCastAtReturnStatement': {
         errors: false,
@@ -23278,7 +23278,7 @@ const baselines = {
     'primitiveConstraints1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'primitiveConstraints2': {
         errors: false,
@@ -27963,7 +27963,7 @@ const baselines = {
     'typeArgumentsOnFunctionsWithNoTypeParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentsShouldDisallowNonGenericOverloads': {
         errors: false,
@@ -35343,17 +35343,17 @@ const baselines = {
     'bigintMissingES2019': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bigintMissingES2020': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bigintMissingESNext': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructBigint': {
         errors: false,
@@ -42488,7 +42488,7 @@ const baselines = {
     'functionCalls': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'grammarAmbiguities': {
         errors: true,
@@ -42538,7 +42538,7 @@ const baselines = {
     'typeArgumentInferenceErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentInferenceTransitiveConstraints': {
         errors: false,
@@ -49428,7 +49428,7 @@ const baselines = {
     'parserAmbiguity1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserAmbiguity2': {
         errors: true,
@@ -50613,7 +50613,7 @@ const baselines = {
     'parserRegularExpressionDivideAmbiguity7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserSkippedTokens1': {
         errors: true,
@@ -54343,7 +54343,7 @@ const baselines = {
     'anyAsConstructor': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anyAsFunctionCall': {
         errors: true,
@@ -54353,7 +54353,7 @@ const baselines = {
     'anyAsGenericFunctionCall': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anyPropertyAccess': {
         errors: true,
@@ -54598,7 +54598,7 @@ const baselines = {
     'importWithTypeArguments': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'commonTypeIntersection': {
         errors: false,
@@ -55373,7 +55373,7 @@ const baselines = {
     'nonPrimitiveInGeneric': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nonPrimitiveIndexingWithForIn': {
         errors: false,

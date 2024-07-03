@@ -105,7 +105,12 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
         }
     }
 
-    for (int i = 0; i < my peren_depth; i++) {
+    intptr_t paren_depth = 0;
+    for (const char* c = span_start_ptr(&my outer_span); c < span_start_ptr(&my inner_span); c++) {
+        if (*c == '(') paren_depth++;
+    }
+
+    for (int i = 0; i < paren_depth; i++) {
         cstr_append_sv(target, c_sv("("));
     }
 
@@ -131,7 +136,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             break;
 
         case EXPR_BINARY_OP: {
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
             cstr_append_expr_debug(target, &my binary_op->left, indent);
@@ -139,13 +144,13 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_sv(target, czview_sv(binary_op_get_zv(my binary_op->op)));
             cstr_append_sv(target, c_sv(" "));
             cstr_append_expr_debug(target, &my binary_op->right, indent);
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
 
         case EXPR_UNARY_OP: {
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
             UnaryOp op = my unary_op->op;
@@ -156,13 +161,13 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 cstr_append_sv(target, czview_sv(unary_op_get_zv(op)));
             }
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
 
         case EXPR_PROPERTY: {
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
 
@@ -181,25 +186,25 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
                     cstr_append_sv(target, c_sv("]"));
             }
 
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
 
         case EXPR_AS_TYPE: {
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
             cstr_append_expr_debug(target, &my as_type->expr, indent);
             cstr_append_sv(target, c_sv(" as "));
             cstr_append_type_debug(target, &my as_type->type, indent);
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
 
         case EXPR_TERNARY: {
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
             }
             cstr_append_expr_debug(target, &my ternary->condition, indent);
@@ -207,7 +212,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_expr_debug(target, &my ternary->yes, indent);
             cstr_append_sv(target, c_sv(" : "));
             cstr_append_expr_debug(target, &my ternary->no, indent);
-            if (!my peren_depth) {
+            if (!paren_depth) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             }
         }   break;
@@ -263,7 +268,7 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_class_decl_debug(target, my class_decl, indent);
             break;
     }
-    for (int i = 0; i < my peren_depth; i++) {
+    for (int i = 0; i < paren_depth; i++) {
         cstr_append_sv(target, c_sv(")"));
     }
 }
@@ -280,7 +285,7 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
                 my identifier.var = arc_named_variable_clone(*var);
             } else if (name_stack_get_type(names, span_sv(&my identifier.name))) {
                 error_ctx_error(
-                    errs, my span, 2693,
+                    errs, my identifier.name, 2693,
                     "'%.*s' only refers to a type, but is being used as a value here.",
                     c_SV(span_sv(&my identifier.name))
                 );
@@ -401,7 +406,7 @@ static Type binary_op_get_type_and_typecheck(
                 cstr_append_sv(&message, c_sv("' and '"));
                 cstr_append_type_error_msg(&message, &right);
                 cstr_append_sv(&message, c_sv("'."));
-                error_ctx_error_s(errs, expr->span, 2365, message);
+                error_ctx_error_s(errs, expr->inner_span, 2365, message);
                 ret = type_any;
             }
             break;
@@ -420,7 +425,7 @@ static Type binary_op_get_type_and_typecheck(
             if (!type_extends(&left, &type_number)) {
                 error_ctx_error(
                     errs,
-                    expr->binary_op->left.span,
+                    expr->binary_op->left.outer_span,
                     2362,
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
@@ -428,7 +433,7 @@ static Type binary_op_get_type_and_typecheck(
             if (!type_extends(&right, &type_number)) {
                 error_ctx_error(
                     errs,
-                    expr->binary_op->right.span,
+                    expr->binary_op->right.outer_span,
                     2363,
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
@@ -443,7 +448,7 @@ static Type binary_op_get_type_and_typecheck(
                         check_assignable_or_error(
                             &right,
                             expr->binary_op->left.identifier.var.get->type,
-                            expr->binary_op->left.span,
+                            expr->binary_op->left.outer_span,
                             errs
                         );
                     }
@@ -456,7 +461,7 @@ static Type binary_op_get_type_and_typecheck(
                 default:
                     error_ctx_error(
                         errs,
-                        expr->binary_op->left.span,
+                        expr->binary_op->left.outer_span,
                         2364,
                         "The left-hand side of an assignment expression must be a variable or a property access."
                     );
@@ -477,7 +482,7 @@ static Type binary_op_get_type_and_typecheck(
                     cstr_append_sv(&message, c_sv("' and '"));
                     cstr_append_type_error_msg(&message, &right);
                     cstr_append_sv(&message, c_sv("' have no overlap."));
-                    error_ctx_error_s(errs, expr->span, 2367, message);
+                    error_ctx_error_s(errs, expr->outer_span, 2367, message);
                 }
             }
             ret = type_boolean;
@@ -595,7 +600,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_PROPERTY: {
             Type value = expr_get_type_and_typecheck(&my property->expr, errs);
             Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
-            Type ret = index_type_of(&value, &prop, my property->prop.span, errs);
+            Type ret = index_type_of(&value, &prop, my property->prop.outer_span, errs);
             type_drop(&value);
             type_drop(&prop);
             return ret;
@@ -617,7 +622,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CALL: {
             Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
-            Type ret = type_typecheck_call(&callable, my call, my span, errs, 0);
+            Type ret = type_typecheck_call(&callable, my call, my outer_span, errs, 0);
             type_drop(&callable);
             return ret;
         }
@@ -635,7 +640,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
-                        span_between(&i.ref->name_span, &i.ref->value.span),
+                        span_between(&i.ref->name_span, &i.ref->value.outer_span),
                         false,
                         false,
                         cstr_clone(i.ref->name_string),

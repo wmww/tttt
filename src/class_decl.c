@@ -287,10 +287,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             CallExpr call_expr = {
                 .uses_new = true,
                 .is_extends = true,
-                .callable = expr_implicit_any(my extends.span),
+                .callable = expr_implicit_any(my extends.outer_span),
                 .args = vec_expr_init(),
             };
-            Type extends_result = type_typecheck_call(&extends_type, &call_expr, my extends.span, errs, 0);
+            Type extends_result = type_typecheck_call(&extends_type, &call_expr, my extends.outer_span, errs, 0);
             type_drop(&extends_result);
         }
         type_drop(&extends_type);

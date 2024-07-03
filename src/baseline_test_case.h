@@ -51,7 +51,7 @@ void baseline_test_case_add_symbol_with_scope(
     Span decl_span
 );
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type);
-void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Type const* type, int paren_depth);
+void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Type const* type);
 void baseline_test_case_run(BaselineTestCase* me, bool show_errs, bool show_syms, bool show_typs);
 bool baseline_test_case_is_pass(BaselineTestCase const* me);
 bool baseline_test_case_was_pass(BaselineTestCase const* me);

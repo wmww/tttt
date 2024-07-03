@@ -2402,7 +2402,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         right = expr_implicit_any(span_from_pos(&p));
     }
 
-    *left_and_ret = expr_binary_op(span_between(&left_and_ret->span, &right.span), c_new(BinaryOpExpr, {
+    *left_and_ret = expr_binary_op(span_between(&left_and_ret->outer_span, &right.outer_span), c_new(BinaryOpExpr, {
         .left = *left_and_ret,
         .op = op,
         .right = right,
@@ -2533,7 +2533,7 @@ static bool parse_literal(Parser* parent, Value* ret) {
 
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
-    Anchor a = span_starting_at(&p, left_and_ret->span);
+    Anchor a = span_starting_at(&p, left_and_ret->outer_span);
 
     hop_whitespace(&p);
     bool hit_newline = p.whitespace == WHITESPACE_NEWLINE;
@@ -2615,7 +2615,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>') {
         Parser sub_p = parser(&p);
-        sub_p.pos = span_start_ptr(&left_and_ret->span);
+        sub_p.pos = span_start_ptr(&left_and_ret->outer_span);
 
         if (parse_arrow_function(&sub_p, ctx, &parsed.function)) {
             parse_success(&sub_p);
@@ -2647,7 +2647,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     Parser p = parser(parent);
-    Anchor a = span_starting_at(&p, left_and_ret->span);
+    Anchor a = span_starting_at(&p, left_and_ret->outer_span);
     Expr expr;
     bool parsed_commas = false;
 
@@ -2718,12 +2718,12 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
-    ret->peren_depth = 0;
 
     union {
         FunctionImpl function;
         ClassDecl class_decl;
     } parsed;
+    bool inner_span_set = false;
 
     if (parse_literal(&p, &ret->literal)) {
         ret->tag = EXPR_LITERAL;
@@ -2750,6 +2750,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (parse_identifier_expr(&p, ctx, ret)) {
+        inner_span_set = true;
     } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
@@ -2762,7 +2763,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         if (!hop_char(&p, ')')) {
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
         }
-        ret->peren_depth++;
+        inner_span_set = true;
     } else if (hop_char(&p, '<')) {
         Type t;
         Expr e;
@@ -2790,7 +2791,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         return parse_fail(&p);
     }
 
-    ret->span = span_end(a);
+    if (!inner_span_set) {
+        ret->inner_span = span_end(a);
+    }
+    ret->outer_span = span_end(a);
 
     while (parse_expr_right_side(&p, ctx, ret)) {}
 
@@ -2901,9 +2905,9 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     if (parse_expr(&p, expr_ctx_null, &path_expr)) {
         if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
             import.path = path_expr.literal.string;
-            import.path_span = path_expr.span;
+            import.path_span = path_expr.inner_span;
         } else {
-            error_ctx_error(&p.errs, path_expr.span, 1141, "String literal expected.");
+            error_ctx_error(&p.errs, path_expr.inner_span, 1141, "String literal expected.");
             expr_drop(&path_expr);
         }
     } else {
@@ -3404,7 +3408,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
                 p.pos++;
             } else if (*p.pos) {
                 if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
-                    error_ctx_error(&p.errs, statement.expr.span, 1434, "Unexpected keyword or identifier.");
+                    error_ctx_error(&p.errs, statement.expr.inner_span, 1434, "Unexpected keyword or identifier.");
                 } else {
                     error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
                 }

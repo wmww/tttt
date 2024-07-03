@@ -428,7 +428,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             if (!name_stack_has_function(names)) {
                 error_ctx_error(
                     errs,
-                    my expr.span,
+                    my expr.outer_span,
                     1108,
                     "A 'return' statement can only be used within a function body."
                 );
@@ -540,7 +540,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
                             cstr_append_type_error_msg(&msg, &iterable_type);
                             cstr_append_sv(&msg, c_sv("'."));
-                            error_ctx_error_s(errs, my for_each_loop->iterable.span, 2407, msg);
+                            error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
                             var_type = type_string;
                         }   break;
                     }
@@ -553,7 +553,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                         cstr msg = cstr_lit("Type '");
                         cstr_append_type_error_msg(&msg, &iterable_type);
                         cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
-                        error_ctx_error_s(errs, my for_each_loop->iterable.span, 2495, msg);
+                        error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2495, msg);
                     }
                     break;
             }
@@ -606,7 +606,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
                 case FOR_EACH_LOOP_EXPR: {
                     Type existing_var_type = expr_get_type_and_typecheck(&my for_each_loop->variable.expr, errs);
-                    check_assignable_or_error(&var_type, &existing_var_type, my for_each_loop->variable.expr.span, errs);
+                    check_assignable_or_error(&var_type, &existing_var_type, my for_each_loop->variable.expr.outer_span, errs);
                     type_drop(&existing_var_type);
                     break;
                 }
@@ -630,7 +630,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     if (default_count == 2) {
                         error_ctx_error(
                             errs,
-                            i.ref->pattern.span,
+                            i.ref->pattern.outer_span,
                             1113,
                             "A 'default' clause cannot appear more than once in a 'switch' statement."
                         );
@@ -643,7 +643,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                         cstr_append_sv(&message, c_sv("' is not comparable to type '"));
                         cstr_append_type_error_msg(&message, &needle_type);
                         cstr_append_sv(&message, c_sv("'."));
-                        error_ctx_error_s(errs, i.ref->pattern.span, 2678, message);
+                        error_ctx_error_s(errs, i.ref->pattern.outer_span, 2678, message);
                     }
                     type_drop(&pattern_type);
                 }
@@ -683,7 +683,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
         case STATEMENT_RETURN_EXPR: {
             Type t = expr_get_type_and_typecheck(&my expr, errs);
             if (ctx->specified_return) {
-                check_assignable_or_error(&t, ctx->specified_return, my expr.span, errs);
+                check_assignable_or_error(&t, ctx->specified_return, my expr.outer_span, errs);
             }
             vec_type_push(&ctx->returned_types, t);
         }   break;

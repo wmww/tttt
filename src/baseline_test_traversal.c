@@ -305,7 +305,7 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
         if (t.tag == TYPE_IDENTIFIER && t.identifier->type.get && t.identifier->type.get->is_typeof_class) {
             // Extremely hacky but whatever. No idea why tsc does this.
             t.identifier->type.get->is_typeof_class = false;
-            baseline_test_case_add_type_with_peren(ctx, my extends.span, &t, my extends.peren_depth);
+            baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &t);
             t.identifier->type.get->is_typeof_class = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
@@ -382,8 +382,8 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
         case EXPR_IMPLICIT_ANY: break;
 
         case EXPR_LITERAL:
-            if (my literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(&my span), "undefined")) {
-                baseline_test_case_add_symbol(ctx, c_sv("undefined"), my span, span_null);
+            if (my literal.tag == VALUE_UNDEFINED && csview_equals(span_sv(&my inner_span), "undefined")) {
+                baseline_test_case_add_symbol(ctx, c_sv("undefined"), my inner_span, span_null);
             }
             break;
 
@@ -430,7 +430,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                                 ctx,
                                 expr_t.tag == TYPE_IDENTIFIER ? span_sv(&expr_t.identifier->name) : c_sv(""),
                                 cstr_sv(&i.ref->key.name_string),
-                                my span,
+                                my outer_span,
                                 i.ref->key.name_is_value,
                                 i.ref->span
                             );
@@ -441,7 +441,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                             ctx,
                             expr_t.tag == TYPE_IDENTIFIER ? span_sv(&expr_t.identifier->name) : c_sv(""),
                             cstr_sv(&i.ref->key.name_string),
-                            my property->prop.span,
+                            my property->prop.outer_span,
                             i.ref->key.name_is_value,
                             i.ref->span
                         );
@@ -461,7 +461,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 expr_compile_test_info(&my property->prop, true, ctx);
             } else {
                 Type t = expr_get_type_and_typecheck(me, nullptr);
-                baseline_test_case_add_type(ctx, my property->prop.span, &t);
+                baseline_test_case_add_type(ctx, my property->prop.outer_span, &t);
                 type_drop(&t);
             }
         }   break;
@@ -536,7 +536,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
                 type_abstract_tuple_to_array(&t);
             }
         }
-        baseline_test_case_add_type_with_peren(ctx, my span, &t, my peren_depth);
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
         type_drop(&t);
     }
 

@@ -110,7 +110,7 @@ void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const*
 
         case INTERFACE_KEY_EXPR:
             cstr_append_sv(target, c_sv("["));
-            cstr_append_sv(target, span_sv(&my key.expr.get->span));
+            cstr_append_sv(target, span_sv(&my key.expr.get->outer_span));
             cstr_append_sv(target, c_sv("]: "));
             break;
 

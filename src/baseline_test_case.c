@@ -359,13 +359,34 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
 }
 
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type) {
-    baseline_test_case_add_type_with_peren(me, span, type, 0);
+    baseline_test_case_add_type_recursive(me, span, span, type);
 }
 
-void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Type const* type, int paren_depth) {
-    unsigned line = span_line_index(&span);
+void baseline_test_case_add_type_recursive(
+    BaselineTestCase* me,
+    Span outer_span,
+    Span inner_span,
+    Type const* type
+) {
+    const char* outer_start = span_start_ptr(&outer_span);
+    const char* outer_last = span_end_ptr(&outer_span) - 1;
+    const char* inner_start = span_start_ptr(&inner_span);
+    const char* inner_last = span_end_ptr(&inner_span) - 1;
+
+    while (outer_start < inner_start && *outer_start != '(') outer_start++;
+    while (outer_last > inner_last && *outer_last != ')') outer_last--;
+
+    bool base_case = false;
+    if (outer_start == inner_start || outer_last == inner_last) {
+        outer_start = inner_start;
+        outer_last = inner_last;
+        base_case = true;
+    }
+    outer_span = span_make(inner_span.file_start, outer_start - inner_span.file_start, outer_last + 1 - outer_start );
+
+    unsigned line = span_line_index(&outer_span);
     cstr str = cstr_lit(">");
-    append_span_contents_without_newlines(&str, span);
+    append_span_contents_without_newlines(&str, outer_span);
     cstr_append(&str, " : ");
     if (type->tag == TYPE_IDENTIFIER && type->identifier->inferred) {
         // Do identifier types upport cstr_append_type_error_msg()? Yes, but inferred identifiers in ternaries include
@@ -378,18 +399,10 @@ void baseline_test_case_add_type_with_peren(BaselineTestCase* me, Span span, Typ
         .line = line,
         .str = str,
     });
-    if (paren_depth) {
-        const char* start = span_start_ptr(&span);
-        const char* end = span_end_ptr(&span);
-        if (start < end && *start == '(' && *(end - 1) == ')') {
-            start++;
-            end--;
-            // If this gets too annoying (ex if we need comments) we can just make the parser emit nested AST nodes
-            while (start < end && (*start == ' ' || *start == '\n' || *start == '\r')) start--;
-            while (start < end && (*end == ' ' || *end == '\n' || *end == '\r')) end--;
-            Span subspan = span_make(span.file_start, start - span.file_start, end - start);
-            baseline_test_case_add_type_with_peren(me, subspan, type, paren_depth - 1);
-        }
+    if (!base_case) {
+        outer_span.offset++;
+        outer_span.length -= 2;
+        baseline_test_case_add_type_recursive(me, outer_span, inner_span, type);
     }
 }
 

@@ -24,8 +24,8 @@ wrap_forward_vec(Expr, expr);
 wrap_forward_arc(NamedVariable, named_variable);
 
 typedef struct Expr {
-    Span span;
-    int peren_depth;
+    Span inner_span; // Just the content (also does not include identifier generic params)
+    Span outer_span; // Includes parentheses
     enum {
         EXPR_IMPLICIT_ANY,
         EXPR_LITERAL,
@@ -63,47 +63,47 @@ typedef struct Expr {
 } Expr;
 
 static inline Expr expr_literal(Span span, Value value) {
-    return (Expr){ .span = span, .tag = EXPR_LITERAL, .literal = value };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_LITERAL, .literal = value };
 }
 
 static inline Expr expr_identifier(Span name) {
-    return (Expr){ .span = name, .tag = EXPR_IDENTIFIER, .identifier.name = name };
+    return (Expr){ .inner_span = name, .outer_span = name, .tag = EXPR_IDENTIFIER, .identifier.name = name };
 }
 
 static inline Expr expr_binary_op(Span span, BinaryOpExpr* op) {
-    return (Expr){ .span = span, .tag = EXPR_BINARY_OP, .binary_op = op };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_BINARY_OP, .binary_op = op };
 }
 
 static inline Expr expr_unary_op(Span span, UnaryOpExpr* op) {
-    return (Expr){ .span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
 }
 
 static inline Expr expr_property(Span span, PropertyExpr* property) {
-    return (Expr){ .span = span, .tag = EXPR_PROPERTY, .property = property };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_PROPERTY, .property = property };
 }
 
 static inline Expr expr_as_type(Span span, AsTypeExpr* as_type) {
-    return (Expr){ .span = span, .tag = EXPR_AS_TYPE, .as_type = as_type };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_AS_TYPE, .as_type = as_type };
 }
 
 static inline Expr expr_ternary(Span span, TernaryExpr* ternary) {
-    return (Expr){ .span = span, .tag = EXPR_TERNARY, .ternary = ternary };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_TERNARY, .ternary = ternary };
 }
 
 static inline Expr expr_call(Span span, CallExpr* call) {
-    return (Expr){ .span = span, .tag = EXPR_CALL, .call = call };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_CALL, .call = call };
 }
 
 static inline Expr expr_function(Span span, FunctionImpl* function) {
-    return (Expr){ .span = span, .tag = EXPR_FUNCTION, .function = function };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_FUNCTION, .function = function };
 }
 
 static inline Expr expr_object(Span span, ObjectExpr object) {
-    return (Expr){ .span = span, .tag = EXPR_OBJECT, .object = object };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_OBJECT, .object = object };
 }
 
 static inline Expr expr_class_decl(Span span, ClassDecl* class_decl) {
-    return (Expr){ .span = span, .tag = EXPR_CLASS_DECL, .class_decl = class_decl };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_CLASS_DECL, .class_decl = class_decl };
 }
 
 static inline Expr expr_undefined(Span span) {
@@ -111,7 +111,7 @@ static inline Expr expr_undefined(Span span) {
 }
 
 static inline Expr expr_implicit_any(Span span) {
-    return (Expr){ .span = span, .tag = EXPR_IMPLICIT_ANY };
+    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_IMPLICIT_ANY };
 }
 
 extern const Expr expr_implicit_any_no_span;
