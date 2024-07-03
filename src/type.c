@@ -863,7 +863,7 @@ void type_abstract_literals(Type* me) {
                     break;
 
                 case VALUE_OBJECT: {
-                    Interface interface;
+                    Interface interface = {0};
                     c_foreach(i, hmap_str_object_item, my value.object.get->items) {
                         InterfaceMember member = interface_member_make(
                             span_null,
