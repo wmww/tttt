@@ -14,3 +14,4 @@ typedef struct TypeDecl {
 
 void type_decl_drop(TypeDecl* me);
 void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent);
+void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);

@@ -703,29 +703,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            c_foreach(i, vec_spanned_type, my decl.type.interface_extends) {
-                if (i.ref->type.tag == TYPE_IDENTIFIER) {
-                    /*
-                    if (!type_extends(&i.ref->type, &my decl.type.type)) {
-                        error_ctx_error(
-                            errs,
-                            my decl.type.name_span,
-                            2430,
-                            "Interface '%.*s' incorrectly extends interface '%.*s'.",
-                            c_SV(span_sv(&my decl.type.name_span)),
-                            c_SV(span_sv(&i.ref->type.identifier->span))
-                        );
-                    }
-                    */
-                } else {
-                    error_ctx_error(
-                        errs,
-                        i.ref->span,
-                        2499,
-                        "An interface can only extend an identifier/qualified-name with optional type arguments."
-                    );
-                }
-            }
+            type_decl_typecheck(&my decl.type, errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:
