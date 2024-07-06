@@ -216,8 +216,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_IDENTIFIER:
-            c_foreach(i, vec_type, my identifier->generic_params) {
-                replace_named_types_with(i.ref, refinements);
+            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
+                replace_named_types_with(&i.ref->type, refinements);
             }
             if (my identifier->type.get) {
                 Type const* refinement = nullptr;
@@ -295,16 +295,16 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
     UNREACHABLE;
 }
 
-Type generic_degenericize_type(Generic const* me, Type t, VecType const* generic_params) {
+Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* generic_params) {
     VecTypeRefinement refinements = vec_type_refinement_with_capacity(vec_generic_item_size(&my items));
     c_foreach(i, vec_generic_item, my items) {
         intptr_t index = i.ref - my items.data;
         if (i.ref->type.get) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
                 .target = i.ref->type.get,
-                .refined = index < vec_type_size(generic_params) ?
-                    vec_type_at(generic_params, index) :
-                    i.ref->type.get->type
+                .refined = index < vec_spanned_type_size(generic_params) ?
+                    &vec_spanned_type_at(generic_params, index)->type :
+                    &type_unknown
             });
         } else {
             NONFATAL("Generic %.*s type is null", c_SV(span_sv(&i.ref->name)));

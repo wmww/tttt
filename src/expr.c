@@ -27,7 +27,7 @@ void expr_drop(Expr* me) {
 
         case EXPR_IDENTIFIER:
             arc_named_variable_drop(&my identifier.var);
-            vec_type_drop(&my identifier.generic_params);
+            vec_spanned_type_drop(&my identifier.generic_params);
             break;
 
         case EXPR_BINARY_OP:
@@ -123,10 +123,10 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
             cstr_append_sv(target, c_sv(CLR_NAME));
             cstr_append_span(target, &my identifier.name);
             cstr_append_sv(target, c_sv(CLR0));
-            if (!vec_type_empty(&my identifier.generic_params)) {
+            if (!vec_spanned_type_empty(&my identifier.generic_params)) {
                 cstr_append_sv(target, c_sv("<"));
-                c_foreach(i, vec_type, my identifier.generic_params) {
-                    cstr_append_type_debug(target, i.ref, indent);
+                c_foreach(i, vec_spanned_type, my identifier.generic_params) {
+                    cstr_append_type_debug(target, &i.ref->type, indent);
                     if (i.ref != i.end - 1) {
                         cstr_append_sv(target, c_sv(", "));
                     }
@@ -298,8 +298,8 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
                     c_SV(span_sv(&my identifier.name))
                 );
             }
-            c_foreach(i, vec_type, my identifier.generic_params) {
-                type_resolve_names(i.ref, names, errs);
+            c_foreach(i, vec_spanned_type, my identifier.generic_params) {
+                type_resolve_names(&i.ref->type, names, errs);
             }
         }   break;
 
@@ -558,7 +558,28 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER:
             if (my identifier.var.get) {
-                return type_clone(*my identifier.var.get->type);
+                Type ret = type_clone(*my identifier.var.get->type);
+                if (!vec_spanned_type_empty(&my identifier.generic_params)) {
+                    if (generic_empty(my identifier.var.get->generic)) {
+                        error_ctx_error(
+                            errs,
+                            span_between(
+                                &vec_spanned_type_at(&my identifier.generic_params, 0)->span,
+                                &(vec_spanned_type_end(&my identifier.generic_params).end - 1)->span
+                            ),
+                            2558,
+                            "Expected 0 type arguments, but got %zd.",
+                            vec_spanned_type_size(&my identifier.generic_params)
+                        );
+                    } else {
+                        ret = generic_degenericize_type(
+                            my identifier.var.get->generic,
+                            ret,
+                            &my identifier.generic_params
+                        );
+                    }
+                }
+                return ret;
             } else {
                 return type_any;
             }

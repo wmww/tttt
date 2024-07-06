@@ -177,11 +177,12 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 #include "wrap_stc/vec.h"
 
 typedef struct SpannedType {
-    Type type;
     Span span;
+    Type type;
 } SpannedType;
+static inline SpannedType spanned_type(Span span, Type type) { return (SpannedType){span, type}; }
+static inline void spanned_type_drop(SpannedType* me) { type_drop(&my type); }
+static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedType){.span = me.span, .type = type_clone(me.type)}; }
 
-#define i_key_names SpannedType, spanned_type
-#define i_keydrop(self) type_drop(&self->type)
-#define i_keyclone(self) ((SpannedType){.type = type_clone(self.type), .span = self.span})
+#define i_key_class_names SpannedType, spanned_type
 #include "wrap_stc/vec.h"

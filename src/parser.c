@@ -491,9 +491,9 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
     return parse_success(&p);
 }
 
-static bool parse_generic_params(Parser* parent, VecType* ret) {
+static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
     Parser p = parser(parent);
-    *ret = vec_type_init();
+    *ret = vec_spanned_type_init();
 
     if (!hop_char(&p, '<')) {
         return parse_fail(&p);
@@ -504,8 +504,9 @@ static bool parse_generic_params(Parser* parent, VecType* ret) {
     while (*p.pos && *p.pos != '>') {
         trailing_comma_span = span_null;
         Type t;
+        Anchor type_a = span_start(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-            vec_type_push(ret, t);
+            vec_spanned_type_push(ret, spanned_type(span_end(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
             error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
@@ -672,7 +673,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Parser p = parser(parent);
     bool inferred = false;
     Type type = {0};
-    VecType generic_params = {0};
+    VecSpannedType generic_params = {0};
 
     Span name;
     VecSpan namespaces = vec_span_init();
@@ -718,7 +719,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         if (parse_generic_params(&p, &generic_params)) {
             end = p.pos;
         } else {
-            generic_params = vec_type_init();
+            generic_params = vec_spanned_type_init();
         }
     }
 
@@ -986,7 +987,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
             Anchor type_start = span_start(&p);
             if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
                 if (span_valid(&last_type_span)) {
-                    vec_spanned_type_push(&extends, (SpannedType){.type = last_type, .span = last_type_span});
+                    vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
                 }
                 last_type_span = span_end(type_start);
                 last_type = t;
@@ -1022,7 +1023,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
                 error_ctx_error(&p.errs, second_last_comma_span, 1009, "Trailing comma not allowed.");
             }
         } else {
-            vec_spanned_type_push(&extends, (SpannedType){.type = last_type, .span = last_type_span});
+            vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
             interface = (Interface){0};
             error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
         }
@@ -2693,8 +2694,8 @@ static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             ctx.min_precedence = imax(ctx.min_precedence, binary_op_get_precedence(BINARY_OP_GREATER));
             if (next_p.whitespace != WHITESPACE_NEWLINE && *next_p.pos != '(' && parse_expr(&next_p, ctx, &expr)) {
                 expr_drop(&expr);
-                vec_type_drop(&ret->identifier.generic_params);
-                ret->identifier.generic_params = vec_type_init();
+                vec_spanned_type_drop(&ret->identifier.generic_params);
+                ret->identifier.generic_params = vec_spanned_type_init();
                 parse_fail(&next_p);
                 parse_fail(&generic_p);
             } else {
@@ -2702,12 +2703,12 @@ static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
                 parse_success(&generic_p);
             }
         } else {
-            vec_type_drop(&ret->identifier.generic_params);
-            ret->identifier.generic_params = vec_type_init();
+            vec_spanned_type_drop(&ret->identifier.generic_params);
+            ret->identifier.generic_params = vec_spanned_type_init();
             parse_fail(&generic_p);
         }
     } else {
-        ret->identifier.generic_params = vec_type_init();
+        ret->identifier.generic_params = vec_spanned_type_init();
         parse_fail(&generic_p);
     }
 

@@ -1171,7 +1171,7 @@ const baselines = {
         types: true,
     },
     'arrayConcat2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -1186,7 +1186,7 @@ const baselines = {
         types: false,
     },
     'arrayConstructors1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -13591,7 +13591,7 @@ const baselines = {
         types: true,
     },
     'genericAndNonGenericOverload1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -13923,7 +13923,7 @@ const baselines = {
     'genericFunctions0': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctions1': {
         errors: true,
@@ -16473,7 +16473,7 @@ const baselines = {
     'instantiatedTypeAliasDisplay': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intTypeCheck': {
         errors: false,
@@ -17076,7 +17076,7 @@ const baselines = {
         types: false,
     },
     'invalidSymbolInTypeParameter1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -25983,7 +25983,7 @@ const baselines = {
     'specializeVarArgs1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'specializedInheritedConstructors1': {
         errors: false,
@@ -28926,7 +28926,7 @@ const baselines = {
         types: false,
     },
     'undefinedTypeArgument1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -49476,7 +49476,7 @@ const baselines = {
         types: false,
     },
     'parserConstructorAmbiguity3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56911,7 +56911,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessOnTypeParameterWithConstraints': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

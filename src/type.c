@@ -324,8 +324,8 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
             break;
 
         case TYPE_IDENTIFIER:
-            c_foreach(i, vec_type, my identifier->generic_params) {
-                type_add_inferred_names(i.ref, names);
+            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
+                type_add_inferred_names(&i.ref->type, names);
             }
             if (my identifier->inferred) {
                 name_stack_add_type(
@@ -511,7 +511,7 @@ static Type const* type_resolve_internal(Type const* me, int level) {
         switch (my tag) {
             case TYPE_IDENTIFIER:
                 if (my identifier->type.get) {
-                    if (vec_type_empty(&my identifier->generic_params)) {
+                    if (vec_spanned_type_empty(&my identifier->generic_params)) {
                         if (generic_empty(my identifier->type.get->generic)) {
                             me = my identifier->type.get->type;
                         } else {

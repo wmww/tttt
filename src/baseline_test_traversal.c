@@ -142,8 +142,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 my identifier->name,
                 my identifier->type.get ? my identifier->type.get->name : span_null
             );
-            c_foreach(i, vec_type, my identifier->generic_params) {
-                type_compile_test_info(i.ref, ctx);
+            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
+                type_compile_test_info(&i.ref->type, ctx);
             }
         }   break;
 
@@ -291,9 +291,10 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
                 .name = my name,
             }));
             c_foreach(i, vec_generic_item, my generic.items) {
-                vec_type_push(&t.identifier->generic_params, type_identifier(c_new(IdentifierType, {
-                    .name = i.ref->name,
-                })));
+                vec_spanned_type_push(&t.identifier->generic_params, spanned_type(
+                    i.ref->name,
+                    type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
+                ));
             }
             baseline_test_case_add_type(ctx, my name, &t);
             type_drop(&t);
@@ -354,12 +355,10 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
                 .name = my name,
             }));
             c_foreach(i, vec_generic_item, my generic.items) {
-                vec_type_push(
-                    &to_drop.identifier->generic_params,
-                    type_identifier(c_new(IdentifierType, {
-                        .name = i.ref->name,
-                    }))
-                );
+                vec_spanned_type_push(&to_drop.identifier->generic_params, spanned_type(
+                    i.ref->name,
+                    type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
+                ));
             }
             t = &to_drop;
         }
@@ -400,8 +399,8 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     my identifier.var.get->name
                 );
             }
-            c_foreach(i, vec_type, my identifier.generic_params) {
-                type_compile_test_info(i.ref, ctx);
+            c_foreach(i, vec_spanned_type, my identifier.generic_params) {
+                type_compile_test_info(&i.ref->type, ctx);
             }
         }   break;
 
@@ -528,7 +527,10 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 }
 
 void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
-    if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
+    if (my tag == EXPR_IDENTIFIER && my identifier.var.get) {
+        // Do NOT degenericize
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, my identifier.var.get->type);
+    } else if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
         Type t = expr_get_type_and_typecheck(me, nullptr);
         if (my tag == EXPR_ARRAY) {
             type_abstract_literals(&t);

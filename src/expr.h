@@ -46,7 +46,7 @@ typedef struct Expr {
         struct {
             Span name;
             ArcNamedVariable var;
-            VecType generic_params;
+            VecSpannedType generic_params;
         } identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;

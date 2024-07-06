@@ -40,7 +40,7 @@ void cstr_append_generic_debug(cstr* target, Generic const* me, int indent);
 void cstr_append_generic_error_msg(cstr* target, Generic const* me);
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs);
 void replace_named_types_with(Type* t, VecTypeRefinement const* refinements);
-Type generic_degenericize_type(Generic const* me, Type t, VecType const* generic_params);
+Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* generic_params);
 CallableType generic_infer_callable_types(
     Generic const* me,
     CallableType const* callable,

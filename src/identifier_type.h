@@ -8,7 +8,7 @@ typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
     ArcNamedType type;
-    VecType generic_params;
+    VecSpannedType generic_params;
     Type degenericized; // A copy of the type with the generic parameters swapped in
     bool inferred;
 } IdentifierType;

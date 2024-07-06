@@ -6,7 +6,7 @@
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
     arc_named_type_drop(&my type);
-    vec_type_drop(&my generic_params);
+    vec_spanned_type_drop(&my generic_params);
     type_drop(&my degenericized);
 }
 
@@ -15,7 +15,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
         .namespaces = vec_span_clone(me.namespaces),
         .name = me.name,
         .type = arc_named_type_clone(me.type),
-        .generic_params = vec_type_clone(me.generic_params),
+        .generic_params = vec_spanned_type_clone(me.generic_params),
         .degenericized = type_any,
         .inferred = me.inferred,
     };
@@ -35,10 +35,10 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
     }
     cstr_append_span(target, &my name);
     cstr_append_sv(target, c_sv(CLR0));
-    if (!vec_type_empty(&my generic_params)) {
+    if (!vec_spanned_type_empty(&my generic_params)) {
         cstr_append_sv(target, c_sv("<"));
-        c_foreach(i, vec_type, my generic_params) {
-            cstr_append_type_debug(target, i.ref, indent);
+        c_foreach(i, vec_spanned_type, my generic_params) {
+            cstr_append_type_debug(target, &i.ref->type, indent);
             if (i.ref != i.end - 1) {
                 cstr_append_sv(target, c_sv(", "));
             }
@@ -55,10 +55,10 @@ void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
         cstr_append_sv(target, c_sv("typeof "));
     }
     cstr_append_span(target, &my name);
-    if (!vec_type_empty(&my generic_params)) {
+    if (!vec_spanned_type_empty(&my generic_params)) {
         cstr_append_sv(target, c_sv("<"));
-        c_foreach(i, vec_type, my generic_params) {
-            cstr_append_type_error_msg(target, i.ref);
+        c_foreach(i, vec_spanned_type, my generic_params) {
+            cstr_append_type_error_msg(target, &i.ref->type);
             if (i.ref != i.end - 1) {
                 cstr_append_sv(target, c_sv(", "));
             }
@@ -86,7 +86,7 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
         ASSERT(!my type.get);
         my type = arc_named_type_clone(*result);
     }
-    c_foreach(i, vec_type, my generic_params) {
-        type_resolve_names(i.ref, names, errs);
+    c_foreach(i, vec_spanned_type, my generic_params) {
+        type_resolve_names(&i.ref->type, names, errs);
     }
 }
