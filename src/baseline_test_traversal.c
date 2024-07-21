@@ -85,7 +85,9 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 my key.name_is_value,
                 my span
             );
-            baseline_test_case_add_type(ctx, my key.span, &my type);
+            if (my type.tag == INTERFACE_TYPE_INSTANTIATED) {
+                baseline_test_case_add_type(ctx, my key.span, &my type.instantiated);
+            }
             break;
 
         case INTERFACE_KEY_INDEX:
@@ -111,7 +113,9 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
 
         case INTERFACE_KEY_CALLABLE: break;
     }
-    type_compile_test_info(&my type, ctx);
+    if (my type.tag == INTERFACE_TYPE_INSTANTIATED) {
+        type_compile_test_info(&my type.instantiated, ctx);
+    }
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {

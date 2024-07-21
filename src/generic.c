@@ -250,7 +250,7 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                         break;
                     case INTERFACE_KEY_CALLABLE: break;
                 }
-                replace_named_types_with(&i.ref->type, refinements);
+                replace_named_types_with(interface_member_instantiate_type(i.ref), refinements);
             }
             return;
 

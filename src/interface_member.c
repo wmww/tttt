@@ -14,7 +14,15 @@ void interface_member_drop(InterfaceMember* me) {
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
-    type_drop(&my type);
+    switch (my type.tag) {
+        case INTERFACE_TYPE_UNINSTANTIATED:
+        case INTERFACE_TYPE_INSTANTIATING:
+            break;
+
+        case INTERFACE_TYPE_INSTANTIATED:
+            type_drop(&my type.instantiated);
+            break;
+    }
 }
 
 InterfaceMember interface_member_clone(InterfaceMember me) {
@@ -28,7 +36,15 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
-    me.type = type_clone(me.type);
+    switch (me.type.tag) {
+        case INTERFACE_TYPE_UNINSTANTIATED:
+        case INTERFACE_TYPE_INSTANTIATING:
+            break;
+
+        case INTERFACE_TYPE_INSTANTIATED:
+            me.type.instantiated = type_clone(me.type.instantiated);
+            break;
+    }
     return me;
 }
 
@@ -87,7 +103,16 @@ void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me,
         cstr_append_sv(target, c_sv(": "));
     }
 
-    cstr_append_type_debug(target, &my type, indent);
+    switch (my type.tag) {
+        case INTERFACE_TYPE_UNINSTANTIATED:
+        case INTERFACE_TYPE_INSTANTIATING:
+            cstr_append_sv(target, c_sv(CLR_TYPE "/* uninstantiated */" CLR0));
+            break;
+
+        case INTERFACE_TYPE_INSTANTIATED:
+            cstr_append_type_debug(target, &my type.instantiated, indent);
+            break;
+    }
 }
 
 void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const* me) {
@@ -137,7 +162,17 @@ void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const*
         case INTERFACE_KEY_CALLABLE:
             break;
     }
-    cstr_append_type_error_msg(target, &my type);
+
+    switch (my type.tag) {
+        case INTERFACE_TYPE_UNINSTANTIATED:
+        case INTERFACE_TYPE_INSTANTIATING:
+            cstr_append_sv(target, c_sv(CLR_TYPE "/* uninstantiated */" CLR0));
+            break;
+
+        case INTERFACE_TYPE_INSTANTIATED:
+            cstr_append_type_error_msg(target, &my type.instantiated);
+            break;
+    }
 }
 
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
@@ -161,9 +196,43 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
         case INTERFACE_KEY_CALLABLE: break;
     }
 
-    type_resolve_names(&my type, names, errs);
+    switch (my type.tag) {
+        case INTERFACE_TYPE_UNINSTANTIATED:
+        case INTERFACE_TYPE_INSTANTIATING:
+            break;
+
+        case INTERFACE_TYPE_INSTANTIATED:
+            type_resolve_names(&my type.instantiated, names, errs);
+            break;
+    }
 
     if (my key.tag == INTERFACE_KEY_MAPPED) {
         name_stack_pop_frame(names);
     }
+}
+
+Type* interface_member_instantiate_type(InterfaceMember* me) {
+    switch (my type.tag) {
+        case INTERFACE_TYPE_UNINSTANTIATED: {
+            my type.tag = INTERFACE_TYPE_INSTANTIATING;
+            Type type = expr_get_type_and_typecheck(my type.uninstantiated, nullptr);
+            if (my type.tag == INTERFACE_TYPE_INSTANTIATED) {
+                // This type was determined to be recursive
+                type_drop(&type);
+            } else {
+                my type.tag = INTERFACE_TYPE_INSTANTIATED;
+                my type.instantiated = type;
+            }
+        }   break;
+
+        case INTERFACE_TYPE_INSTANTIATING:
+            my type.tag = INTERFACE_TYPE_INSTANTIATED;
+            my type.instantiated = type_any;
+            // TODO: flag that this type has a recursion error, so a future typecheck pass can surface it
+            break;
+
+        case INTERFACE_TYPE_INSTANTIATED:
+            break;
+    }
+    return &my type.instantiated;
 }

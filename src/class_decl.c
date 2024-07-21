@@ -307,7 +307,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                         .span = i.ref->constructor.func.full_span,
                         .key.span = i.ref->constructor.name_span,
                         .key.tag = INTERFACE_KEY_CALLABLE,
-                        .type = type_callable(c_new(CallableType, callable_type_clone(i.ref->constructor.func.type))),
+                        .type = {
+                            .tag = INTERFACE_TYPE_INSTANTIATED,
+                            .instantiated = type_callable(c_new(CallableType, callable_type_clone(i.ref->constructor.func.type))),
+                        },
                     };
                 }
                 constructor_count++;
@@ -387,7 +390,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (constructor_count == 0) {
         constructor_member = (InterfaceMember){
             .key.tag = INTERFACE_KEY_CALLABLE,
-            .type = type_callable(c_new(CallableType, (CallableType){})),
+            .type = {
+                .tag = INTERFACE_TYPE_INSTANTIATED,
+                .instantiated = type_callable(c_new(CallableType, (CallableType){})),
+            },
         };
     } else if (constructor_count > 1) {
         c_foreach(i, vec_class_item, my items) {
@@ -404,12 +410,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
 
-    type_drop(&constructor_member.type.callable->ret);
-    constructor_member.type.callable->ret = type_clone(my instance_identifier_type);
-    constructor_member.type.callable->ret_explicit = true;
-    constructor_member.type.callable->is_constructor = true;
-    constructor_member.type.callable->is_abstract_constructor = my is_abstract;
-    callable_type_get_wrapper(constructor_member.type.callable);
+    type_drop(&constructor_member.type.instantiated.callable->ret);
+    constructor_member.type.instantiated.callable->ret = type_clone(my instance_identifier_type);
+    constructor_member.type.instantiated.callable->ret_explicit = true;
+    constructor_member.type.instantiated.callable->is_constructor = true;
+    constructor_member.type.instantiated.callable->is_abstract_constructor = my is_abstract;
+    callable_type_get_wrapper(constructor_member.type.instantiated.callable);
     vec_interface_member_push(&class_interface.members, constructor_member);
 
     my class_type = type_interface(class_interface);

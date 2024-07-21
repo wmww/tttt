@@ -22,7 +22,12 @@ const Type type_string = { .tag = TYPE_STRING };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
-static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level);
+static bool type_extends_internal(
+    Type const* sub,
+    Type const* super,
+    VecTypeRefinement* refinements,
+    int level
+);
 static Type const* type_resolve_internal(Type const* me, int level);
 
 Type type_composite_base(typeof((Type){}.tag) tag) {
@@ -353,7 +358,9 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                type_add_inferred_names(&i.ref->type, names);
+                if (i.ref->type.tag == INTERFACE_TYPE_INSTANTIATED) {
+                    type_add_inferred_names(&i.ref->type.instantiated, names);
+                }
             }
             break;
 
@@ -652,7 +659,12 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             if (sub->tag == TYPE_INTERFACE) {
                 c_foreach(i, vec_interface_member, sub->interface.members) {
                     if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                        if (type_extends_internal(&i.ref->type, super, refinements, level + 1)) {
+                        if (type_extends_internal(
+                            interface_member_instantiate_type(i.ref),
+                            super,
+                            refinements,
+                            level + 1)
+                        ) {
                             return true;
                         }
                     }
@@ -694,7 +706,12 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                         continue; // TODO
                     }
                     if (cstr_eq(&i.ref->key.name_string, &j.ref->key.name_string)) {
-                        if (type_extends_internal(&j.ref->type, &i.ref->type, refinements, level + 1)) {
+                        if (type_extends_internal(
+                            interface_member_instantiate_type(j.ref),
+                            interface_member_instantiate_type(i.ref),
+                            refinements,
+                            level + 1)
+                        ) {
                             found = true;
                             break;
                         } else {
@@ -874,7 +891,8 @@ void type_abstract_literals(Type* me) {
                             false,
                             type_value(value_clone(i.ref->second.value))
                         );
-                        type_abstract_literals(&member.type);
+                        ASSERT(member.type.tag == INTERFACE_TYPE_INSTANTIATED);
+                        type_abstract_literals(&member.type.instantiated);
                         vec_interface_member_push(&interface.members, member);
                     }
                     type_drop(me);
@@ -1028,7 +1046,11 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                         // Don't clone the string, and don't drop it the type. Hacky but safe.
                         Type key = type_value(value_string(i.ref->key.name_string));
                         if (type_extends(&key, index)) {
-                            ret = type_composite(TYPE_UNION, ret, type_clone(i.ref->type));
+                            ret = type_composite(
+                                TYPE_UNION,
+                                ret,
+                                type_clone(*interface_member_instantiate_type(i.ref))
+                            );
                             if (i.ref->optional) {
                                 ret = type_composite(TYPE_UNION, ret, type_undefined);
                             }
@@ -1038,7 +1060,11 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
 
                     case INTERFACE_KEY_INDEX:
                         if (type_overlaps(&i.ref->key.index, index)) {
-                            ret = type_composite(TYPE_UNION, ret, type_clone(i.ref->type));
+                            ret = type_composite(
+                                TYPE_UNION,
+                                ret,
+                                type_clone(*interface_member_instantiate_type(i.ref))
+                            );
                             if (i.ref->optional) {
                                 ret = type_composite(TYPE_UNION, ret, type_undefined);
                             }
@@ -1382,7 +1408,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             c_foreach(i, vec_interface_member, my interface.members) {
                 // TODO: add to overload list instead of selecting first option
                 if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    return type_typecheck_call(&i.ref->type, call, span, errs, level);
+                    return type_typecheck_call(interface_member_instantiate_type(i.ref), call, span, errs, level);
                 }
             }
             break;

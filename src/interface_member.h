@@ -32,7 +32,17 @@ typedef struct InterfaceMember {
             } mapped;
         };
     } key;
-    Type type;
+    struct {
+        enum {
+            INTERFACE_TYPE_UNINSTANTIATED,
+            INTERFACE_TYPE_INSTANTIATING,
+            INTERFACE_TYPE_INSTANTIATED,
+        } tag;
+        union {
+            Expr const* uninstantiated;
+            Type instantiated;
+        };
+    } type;
 } InterfaceMember;
 
 static inline InterfaceMember interface_member_make(
@@ -54,7 +64,10 @@ static inline InterfaceMember interface_member_make(
             .name_string = name_string,
             .name_is_value = name_is_value,
         },
-        .type = type,
+        .type = {
+            .tag = INTERFACE_TYPE_INSTANTIATED,
+            .instantiated = type,
+        },
     };
 }
 
@@ -63,6 +76,7 @@ InterfaceMember interface_member_clone(InterfaceMember me);
 void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me, int indent);
 void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const* me);
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs);
+Type* interface_member_instantiate_type(InterfaceMember* me);
 
 #define i_key_class_names InterfaceMember, interface_member
 #define i_is_forward
