@@ -352,7 +352,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 type_drop(&value);
                 Type t = type_clone(i.ref->field.type);
                 if (i.ref->field.is_optional) {
-                    t = type_composite(t, type_undefined, TYPE_UNION);
+                    t = type_composite(TYPE_UNION, t, type_undefined);
                 }
                 InterfaceMember field = interface_member_make(
                     i.ref->span,

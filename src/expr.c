@@ -637,7 +637,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
             Type condition_type = expr_get_type_and_typecheck(&my ternary->condition, errs);
             type_drop(&condition_type);
             Type ret_type = expr_get_type_and_typecheck(&my ternary->yes, errs);
-            ret_type = type_composite(ret_type, expr_get_type_and_typecheck(&my ternary->no, errs), TYPE_UNION);
+            ret_type = type_composite(TYPE_UNION, ret_type, expr_get_type_and_typecheck(&my ternary->no, errs));
             return ret_type;
         }
 

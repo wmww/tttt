@@ -647,7 +647,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
                 type = type_any;
             }
 
-            *left_and_ret = type_composite_without_simplify(*left_and_ret, type, TYPE_INTERSECTION);
+            *left_and_ret = type_composite_without_simplify(TYPE_INTERSECTION, *left_and_ret, type);
             return parse_success(&p);
         }
     }
@@ -661,7 +661,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
                 type = type_any;
             }
 
-            *left_and_ret = type_composite_without_simplify(*left_and_ret, type, TYPE_UNION);
+            *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, type);
             return parse_success(&p);
         }
     }
@@ -1118,7 +1118,7 @@ static bool parse_function_args(
 
                 if (parse_binding_type_or_set_to_default(&p, &binding)) {
                     if (explicit_optional) {
-                        binding.type = type_composite(binding.type, type_undefined, TYPE_UNION);
+                        binding.type = type_composite(TYPE_UNION, binding.type, type_undefined);
                     }
                     hop_whitespace(&p);
                 }
