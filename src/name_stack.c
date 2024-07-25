@@ -10,6 +10,14 @@
 #define i_val_class_names ArcNamedVariable, arc_named_variable
 #include "wrap_stc/hmap.h"
 
+void named_variable_drop(NamedVariable* me) {
+    lazy_type_drop(&my type);
+}
+
+void named_type_drop(NamedType* me) {
+    lazy_type_drop(&my type);
+}
+
 typedef enum StackFrameTag {
     STACK_FRAME_BLOCK,
     STACK_FRAME_FUNCTION,
@@ -55,11 +63,11 @@ StackFrame stack_frame_clone(StackFrame me) {
 }
 
 static inline void add_builtin_variable(NameStack* me, csview name, Type const* type) {
-    name_stack_add_variable_s(me, cstr_from_sv(name), span_null, type, nullptr);
+    name_stack_add_variable_s(me, cstr_from_sv(name), span_null, lazy_type_ref(type), nullptr);
 }
 
 static inline void add_builtin_type(NameStack* me, csview name, Type const* type) {
-    name_stack_add_type_s(me, cstr_from_sv(name), span_null, type, nullptr);
+    name_stack_add_type_s(me, cstr_from_sv(name), span_null, lazy_type_ref(type), nullptr);
 }
 
 static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag) {
@@ -144,16 +152,16 @@ void name_stack_pop_frame(NameStack* me) {
     vec_stack_frame_pop(&my stack);
 }
 
-bool name_stack_add_variable(NameStack* me, Span name, Type const* type, Generic const* generic) {
+bool name_stack_add_variable(NameStack* me, Span name, LazyType type, Generic const* generic) {
     return name_stack_add_variable_s(me, cstr_from_span(&name), name, type, generic);
 
 }
 
-bool name_stack_add_type(NameStack* me, Span name, Type const* type, Generic const* generic) {
+bool name_stack_add_type(NameStack* me, Span name, LazyType type, Generic const* generic) {
     return name_stack_add_type_s(me, cstr_from_span(&name), name, type, generic);
 }
 
-bool name_stack_add_variable_s(NameStack* me, cstr name_string, Span name_span, Type const* type, Generic const* generic) {
+bool name_stack_add_variable_s(NameStack* me, cstr name_string, Span name_span, LazyType type, Generic const* generic) {
     if (generic_empty(generic)) {
         generic = nullptr;
     }
@@ -169,7 +177,7 @@ bool name_stack_add_variable_s(NameStack* me, cstr name_string, Span name_span, 
     return result.inserted;
 }
 
-bool name_stack_add_type_s(NameStack* me, cstr name_string, Span name_span, Type const* type, Generic const* generic) {
+bool name_stack_add_type_s(NameStack* me, cstr name_string, Span name_span, LazyType type, Generic const* generic) {
     if (generic_empty(generic)) {
         generic = nullptr;
     }

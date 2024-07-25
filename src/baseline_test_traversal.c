@@ -85,9 +85,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 my key.name_is_value,
                 my span
             );
-            if (my type.tag == INTERFACE_TYPE_INSTANTIATED) {
-                baseline_test_case_add_type(ctx, my key.span, &my type.instantiated);
-            }
+            baseline_test_case_add_type(ctx, my key.span, lazy_type_assert_get(&my type));
             break;
 
         case INTERFACE_KEY_INDEX:
@@ -113,9 +111,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
 
         case INTERFACE_KEY_CALLABLE: break;
     }
-    if (my type.tag == INTERFACE_TYPE_INSTANTIATED) {
-        type_compile_test_info(&my type.instantiated, ctx);
-    }
+    type_compile_test_info(lazy_type_assert_get(&my type), ctx);
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {
@@ -206,22 +202,22 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             false,
             my full_span
         );
-        Type t = type_callable(c_new(CallableType, callable_type_clone(my type)));
+        Type t = type_callable(c_new(CallableType, callable_type_clone(my callable)));
         baseline_test_case_add_type(ctx, my name, &t);
         type_drop(&t);
     }
-    generic_compile_test_info(&my type.generic, ctx);
-    intptr_t arg_size = vec_callable_arg_size(&my type.args);
+    generic_compile_test_info(&my callable.generic, ctx);
+    intptr_t arg_size = vec_callable_arg_size(&my callable.args);
     for (intptr_t i = 0; i < arg_size; i++) {
-        CallableArg const* arg = vec_callable_arg_at(&my type.args, i);
+        CallableArg const* arg = vec_callable_arg_at(&my callable.args, i);
         Expr const* default_arg = function_impl_arg_default_at(me, i);
         binding_compile_test_info(&arg->binding, false, span_null, arg->span, ctx);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(default_arg, arg->binding.tag != BINDING_ARRAY, ctx);
         }
     }
-    if (my type.ret_explicit) {
-        type_compile_test_info(&my type.ret, ctx);
+    if (my callable.ret_explicit) {
+        type_compile_test_info(&my callable.ret, ctx);
     }
     block_compile_test_info(&my body, ctx);
 }
@@ -247,7 +243,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 my member.name_is_value,
                 my span
             );
-            Type t = type_clone(*callable_type_get_wrapper(&my member.func.type));
+            Type t = type_clone(*callable_type_get_wrapper(&my member.func.callable));
             baseline_test_case_add_type(
                 ctx,
                 my member.name_span,
@@ -533,7 +529,12 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
     if (my tag == EXPR_IDENTIFIER && my identifier.var.get) {
         // Do NOT degenericize
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, my identifier.var.get->type);
+        baseline_test_case_add_type_recursive(
+            ctx,
+            my outer_span,
+            my inner_span,
+            lazy_type_assert_get(&my identifier.var.get->type)
+        );
     } else if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
         Type t = expr_get_type_and_typecheck(me, nullptr);
         if (my tag == EXPR_ARRAY) {

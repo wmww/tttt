@@ -25,7 +25,12 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
 
 void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        binding_add_names(&i.ref->binding, names, errs);
+        binding_add_names(
+            &i.ref->binding,
+            lazy_type_expr(&i.ref->value, my keyword != VAR_INIT_CONST),
+            names,
+            errs
+        );
     }
 }
 
@@ -38,7 +43,7 @@ void variable_statement_resolve_names(VariableStatement* me, NameStack* names, E
 
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_typecheck(i.ref, my keyword != VAR_INIT_CONST, errs);
+        initialized_binding_typecheck(i.ref, errs);
     }
 }
 
@@ -304,8 +309,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 names,
                 cstr_from_span(&my decl.function.name),
                 my decl.function.full_span,
-                callable_type_get_wrapper(&my decl.function.type),
-                &my decl.function.type.generic
+                lazy_type_function(&my decl.function),
+                &my decl.function.callable.generic
             )) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_type_error(errs, "multiple values declared with same name");
@@ -321,7 +326,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 names,
                 cstr_from_span(&my decl.type.name),
                 my decl.type.full_span,
-                &my decl.type.type,
+                type_decl_unresolved_lazy_type(&my decl.type),
                 &my decl.type.generic
             )) {
                 // name is cstr_str(&result.ref->first)
@@ -410,7 +415,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
             name_stack_push_block_frame(names);
-            binding_add_names(&my try_catch->catch_var, names, errs);
+            binding_add_names(&my try_catch->catch_var, lazy_type_ref(&type_any), names, errs);
             binding_resolve_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);
             name_stack_pop_frame(names);
@@ -444,7 +449,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION:
             name_stack_push_block_frame(names);
-            name_stack_add_variable_s(names, cstr_lit("this"), span_null, &type_any, nullptr);
+            name_stack_add_variable_s(names, cstr_lit("this"), span_null, lazy_type_ref(&type_any), nullptr);
             function_impl_resolve_names(&my decl.function, names, errs);
             name_stack_pop_frame(names);
             break;
@@ -682,10 +687,16 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_RETURN_EXPR: {
             Type t = expr_get_type_and_typecheck(&my expr, errs);
+
             if (ctx->specified_return) {
                 check_assignable_or_error(&t, ctx->specified_return, my expr.outer_span, errs);
             }
-            vec_type_push(&ctx->returned_types, t);
+
+            if (ctx->collect_returned_types) {
+                ctx->impl_return = type_composite(TYPE_UNION, ctx->impl_return, t);
+            } else {
+                type_drop(&t);
+            }
         }   break;
 
         case STATEMENT_IMPORT: break;
@@ -721,12 +732,14 @@ StatementCtx statement_ctx_toplevel() {
     return (StatementCtx){0};
 }
 
-StatementCtx statement_ctx_function(Type const* specified_return) {
+StatementCtx statement_ctx_function(Type const* specified_return, bool collect_returned_types) {
     return (StatementCtx){
         .specified_return = specified_return,
+        .collect_returned_types = collect_returned_types,
+        .impl_return = type_never,
     };
 }
 
 void statement_ctx_drop(StatementCtx* me) {
-    vec_type_drop(&my returned_types);
+    type_drop(&my impl_return);
 }

@@ -122,6 +122,7 @@ extern const int new_keyword_precedence;
 void expr_drop(Expr* me);
 void cstr_append_expr_debug(cstr* target, Expr const* me, int indent);
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs);
+// PERF: maybe make this return a lazy type?
 Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs);
 
 #define i_key_class_names Expr, expr
@@ -252,6 +253,7 @@ typedef struct CallExpr {
     bool uses_new;
     bool is_extends;
     Expr callable;
+    // PERF: types of each argument should be cached
     VecExpr args;
 } CallExpr;
 

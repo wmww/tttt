@@ -188,11 +188,12 @@ typedef struct TryCatchStatement {
 // Statement context
 
 typedef struct StatementCtx {
-    VecType returned_types;
+    bool collect_returned_types;
+    Type impl_return;
     Type const* specified_return;
     bool break_allowed;
 } StatementCtx;
 
 StatementCtx statement_ctx_toplevel();
-StatementCtx statement_ctx_function(Type const* specified_return);
+StatementCtx statement_ctx_function(Type const* specified_return, bool collect_returned_types);
 void statement_ctx_drop(StatementCtx* me);

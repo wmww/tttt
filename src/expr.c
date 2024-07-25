@@ -133,6 +133,11 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
                 }
                 cstr_append_sv(target, c_sv(">"));
             }
+            if (!my identifier.var.get) {
+                cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
+            } else if (!lazy_type_try_get(&my identifier.var.get->type)) {
+                cstr_append_sv(target, c_sv(CLR_ERR " /* untypechecked */" CLR0));
+            }
             break;
 
         case EXPR_BINARY_OP: {
@@ -447,7 +452,7 @@ static Type binary_op_get_type_and_typecheck(
                     if (expr->binary_op->left.identifier.var.get) {
                         check_assignable_or_error(
                             &right,
-                            expr->binary_op->left.identifier.var.get->type,
+                            lazy_type_resolve(&expr->binary_op->left.identifier.var.get->type),
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -558,7 +563,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER:
             if (my identifier.var.get) {
-                Type ret = type_clone(*my identifier.var.get->type);
+                Type ret = type_clone(*lazy_type_resolve(&my identifier.var.get->type));
                 if (!vec_spanned_type_empty(&my identifier.generic_params)) {
                     if (generic_empty(my identifier.var.get->generic)) {
                         error_ctx_error(
@@ -630,6 +635,8 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+            Type t = expr_get_type_and_typecheck(&my as_type->expr, errs);
+            type_drop(&t);
             return type_clone(my as_type->type);
         }
 
@@ -643,6 +650,10 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CALL: {
             Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
+            c_foreach(i, vec_expr, my call->args) {
+                Type t = expr_get_type_and_typecheck(i.ref, errs);
+                type_drop(&t);
+            }
             Type ret = type_typecheck_call(&callable, my call, my outer_span, errs, 0);
             type_drop(&callable);
             return ret;
@@ -650,7 +661,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_FUNCTION:
             function_impl_typecheck(my function, errs);
-            return type_callable(c_new(CallableType, callable_type_clone(my function->type)));
+            return type_clone(*function_impl_resolve_type(my function));
 
         case EXPR_OBJECT: {
             Interface interface = {0};
@@ -667,7 +678,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         cstr_clone(i.ref->name_string),
                         i.ref->name_span,
                         false,
-                        t
+                        lazy_type_value(t)
                     )
                 );
             }

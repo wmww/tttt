@@ -6,20 +6,20 @@
 #include "error.h"
 
 void function_impl_drop(FunctionImpl* me) {
-    callable_type_drop(&my type);
+    callable_type_drop(&my callable);
     vec_expr_drop(&my arg_defaults);
     block_drop(&my body);
 }
 
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent) {
-    cstr_append_generic_debug(target, &my type.generic, indent);
+    cstr_append_generic_debug(target, &my callable.generic, indent);
     cstr_append_sv(target, c_sv("("));
-    c_foreach(i, vec_callable_arg, my type.args) {
+    c_foreach(i, vec_callable_arg, my callable.args) {
         if (i.ref->rest) {
             cstr_append_sv(target, c_sv("..."));
         }
         cstr_append_binding_debug(target, &i.ref->binding, i.ref->explicit_optional, indent);
-        intptr_t index = i.ref - my type.args.data;
+        intptr_t index = i.ref - my callable.args.data;
         Expr const* default_arg = function_impl_arg_default_at(me, index);
         if (default_arg->tag != EXPR_IMPLICIT_ANY) {
             cstr_append_sv(target, c_sv(" = "));
@@ -30,9 +30,9 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
         }
     }
     cstr_append_sv(target, c_sv(")"));
-    if (my type.ret_explicit) {
+    if (my callable.ret_explicit) {
         cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &my type.ret, indent);
+        cstr_append_type_debug(target, &my callable.ret, indent);
     }
     if (my has_block) {
         cstr_append_sv(target, include_arrow ? c_sv(" => ") : c_sv(" "));
@@ -44,18 +44,24 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
 
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
     // Handle generics
-    name_stack_push_generic_frame(names, &my type.generic, errs);
+    name_stack_push_generic_frame(names, &my callable.generic, errs);
 
     // First, resolve names in the callable type
-    callable_type_resolve_names(&my type, names, errs);
+    callable_type_resolve_names(&my callable, names, errs);
 
     // Push a stack frame for arguments to live in
     // This is the function *implementation*, so we do not push a generic stack frame
     name_stack_push_function_frame(names);
 
     // Loop through all arguments and add them to the namespace
-    c_foreach(i, vec_callable_arg, my type.args) {
-        binding_add_names(&i.ref->binding, names, errs);
+    c_foreach(i, vec_callable_arg, my callable.args) {
+        intptr_t index = i.ref - my callable.args.data;
+        binding_add_names(
+            &i.ref->binding,
+            lazy_type_expr(function_impl_arg_default_at(me, index), true),
+            names,
+            errs
+        );
     }
 
     // Loop through all argument defaults and resolve names
@@ -74,13 +80,34 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     name_stack_pop_frame(names);
 }
 
+Type const* function_impl_resolve_type(FunctionImpl* me) {
+    if (!my ret_type_resolved && !my callable.ret_explicit) {
+
+        StatementCtx ctx = statement_ctx_function(&type_any, true);
+
+        block_typecheck(&my body, &ctx, nullptr);
+        if (ctx.impl_return.tag == TYPE_NEVER) {
+            // This will need to be improved
+            my callable.ret = type_void;
+        } else {
+            my callable.ret = type_move(&ctx.impl_return);
+        }
+        type_abstract_literals(&my callable.ret);
+
+        statement_ctx_drop(&ctx);
+
+        my ret_type_resolved = true;
+    }
+    return callable_type_get_wrapper(&my callable);
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     bool found_optional = false;
     bool required_after_optional = false;
     bool rest_not_last = false;
 
-    c_foreach(i, vec_callable_arg, my type.args) {
-        intptr_t index = i.ref - my type.args.data;
+    c_foreach(i, vec_callable_arg, my callable.args) {
+        intptr_t index = i.ref - my callable.args.data;
         Expr const* default_arg = function_impl_arg_default_at(me, index);
 
         if (i.ref->rest && i.ref != i.end - 1 && !rest_not_last) {
@@ -110,7 +137,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             // TODO: only run this check in strict mode
             binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
         } else {
-            binding_set_assigned_type(&i.ref->binding, expr_get_type_and_typecheck(default_arg, errs), true, errs);
+            Type default_arg_type = expr_get_type_and_typecheck(default_arg, errs);
+            binding_typecheck(&i.ref->binding, &default_arg_type, errs);
+            type_drop(&default_arg_type);
         }
 
         if (i.ref->rest) {
@@ -137,22 +166,10 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         error_ctx_error(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
-    StatementCtx ctx = statement_ctx_function(&my type.ret);
+    // PERF: if !my ret_type_resolved, only typecheck the block once
+    function_impl_resolve_type(me);
 
+    StatementCtx ctx = statement_ctx_function(my callable.ret_explicit ? &my callable.ret : &type_any, false);
     block_typecheck(&my body, &ctx, errs);
-
-    if (!my type.ret_explicit) {
-        int type_count = vec_type_size(&ctx.returned_types);
-        type_drop(&my type.ret);
-        if (type_count == 0) {
-            my type.ret = type_void;
-        } else if (type_count == 1) {
-            my type.ret = vec_type_pull(&ctx.returned_types);
-            type_abstract_literals(&my type.ret);
-        } else {
-            error_ctx_error(errs, span_null, TS_CODE_NONE, "Multiple function return types not yet implemented.");
-        }
-    }
-
     statement_ctx_drop(&ctx);
 }

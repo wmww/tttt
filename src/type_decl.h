@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "lazy_type.h"
 #include "generic.h"
 
 typedef struct TypeDecl {
@@ -14,4 +15,6 @@ typedef struct TypeDecl {
 
 void type_decl_drop(TypeDecl* me);
 void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent);
+LazyType type_decl_unresolved_lazy_type(TypeDecl* me);
+Type type_decl_make_interface_type(TypeDecl* me);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);

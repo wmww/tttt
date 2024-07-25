@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "lazy_type.h"
 #include "expr.h"
 #include "value.h"
 
@@ -36,10 +37,10 @@ void binding_drop(Binding* me);
 Binding binding_clone(Binding me);
 void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, int indent);
 void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optional);
-void binding_add_names(Binding* me, NameStack* names, ErrorCtx* errs);
+void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* errs);
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
-void binding_set_assigned_type(Binding* me, Type assigned, bool absract_literals, ErrorCtx* errs);
+void binding_typecheck(Binding* me, Type const* assigned, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 ObjectBindingItem object_binding_item_clone(ObjectBindingItem me);
@@ -60,7 +61,7 @@ typedef struct InitializedBinding {
 void initialized_binding_drop(InitializedBinding* me);
 void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent);
 void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs);
-void initialized_binding_typecheck(InitializedBinding* me, bool absract_literals, ErrorCtx* errs);
+void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 
 #define i_key_class_names InitializedBinding, initialized_binding
 #define i_no_clone

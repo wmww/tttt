@@ -1,0 +1,175 @@
+#include "lazy_type.h"
+#include "expr.h"
+#include "function_impl.h"
+#include "class_decl.h"
+#include "type_decl.h"
+
+LazyType lazy_type_interface(TypeDecl* interface) {
+    ASSERT(interface->is_interface);
+    return (LazyType){
+        .tag = LAZY_TYPE_INTERFACE,
+        .interface = interface,
+    };
+}
+
+LazyType lazy_type_indexed(ArcLazyType source, Value index) {
+    return (LazyType){
+        .tag = LAZY_TYPE_INDEXED,
+        .indexed = {
+            .source = source,
+            .index = c_new(Type, type_value(index)),
+        }
+    };
+}
+
+void lazy_type_drop(LazyType* me) {
+    switch (my tag) {
+        case LAZY_TYPE_VALUE:
+            type_drop(&my value);
+            break;
+
+        case LAZY_TYPE_INDEXED:
+            arc_lazy_type_drop(&my indexed.source);
+            type_drop(my indexed.index);
+            free(my indexed.index);
+            break;
+
+        case LAZY_TYPE_REF:
+        case LAZY_TYPE_RECURSIVE_ERROR:
+        case LAZY_TYPE_EVALUATING:
+        case LAZY_TYPE_EXPR:
+        case LAZY_TYPE_FUNCTION:
+        case LAZY_TYPE_CLASS_INSTANCE:
+        case LAZY_TYPE_CLASS_CLASS:
+        case LAZY_TYPE_INTERFACE:
+            break;
+    }
+}
+
+LazyType lazy_type_clone(LazyType me) {
+    switch (me.tag) {
+        case LAZY_TYPE_VALUE:
+            me.value = type_clone(me.value);
+            break;
+
+        case LAZY_TYPE_INDEXED:
+            me.indexed.source = arc_lazy_type_clone(me.indexed.source);
+            me.indexed.index = c_new(Type, type_clone(*me.indexed.index));
+            break;
+
+        case LAZY_TYPE_REF:
+        case LAZY_TYPE_RECURSIVE_ERROR:
+        case LAZY_TYPE_EVALUATING:
+        case LAZY_TYPE_EXPR:
+        case LAZY_TYPE_FUNCTION:
+        case LAZY_TYPE_CLASS_INSTANCE:
+        case LAZY_TYPE_CLASS_CLASS:
+        case LAZY_TYPE_INTERFACE:
+            break;
+    }
+    return me;
+}
+
+void cstr_append_lazy_type_debug(cstr* target, LazyType const* me, int indent) {
+    Type const* t = lazy_type_try_get(me);
+    if (t) {
+        cstr_append_type_debug(target, t, indent);
+    } else {
+        cstr_append_sv(target, c_sv(CLR_TYPE "/* unevaluated */" CLR0));
+    }
+}
+
+void cstr_append_lazy_type_error_msg(cstr* target, LazyType const* me) {
+    Type const* t = lazy_type_try_get(me);
+    if (t) {
+        cstr_append_type_error_msg(target, t);
+    } else {
+        cstr_append_sv(target, c_sv(CLR_TYPE "/* unevaluated */" CLR0));
+    }
+}
+
+Type const* lazy_type_resolve(LazyType* me) {
+    switch (my tag) {
+        case LAZY_TYPE_VALUE:
+        case LAZY_TYPE_REF:
+        case LAZY_TYPE_RECURSIVE_ERROR:
+            break;
+
+        case LAZY_TYPE_EVALUATING:
+            my tag = LAZY_TYPE_RECURSIVE_ERROR;
+            break;
+
+        case LAZY_TYPE_EXPR: {
+            my tag = LAZY_TYPE_EVALUATING;
+
+            bool abstract_literals = my expr.abstract_literals;
+            Type resolved = expr_get_type_and_typecheck(my expr.ptr, nullptr);
+            type_resolve(&resolved);
+
+            if (my tag == LAZY_TYPE_EVALUATING) {
+                if (abstract_literals) {
+                    type_abstract_literals(&resolved);
+                    type_abstract_tuple_to_array(&resolved);
+                    if (resolved.tag == TYPE_ARRAY &&
+                        resolved.array.element->tag == TYPE_VALUE &&
+                        resolved.array.element->value.tag == VALUE_UNDEFINED
+                    ) {
+                        type_drop(resolved.array.element);
+                        *resolved.array.element = type_any;
+                    }
+                }
+
+                *me = lazy_type_value(resolved);
+            } else {
+                type_drop(&resolved);
+            }
+        }   break;
+
+        case LAZY_TYPE_FUNCTION: {
+            my tag = LAZY_TYPE_EVALUATING;
+            Type const* resolved = type_resolve(function_impl_resolve_type(my function));
+            if (my tag == LAZY_TYPE_EVALUATING) {
+                *me = lazy_type_ref(resolved);
+            }
+        }   break;
+
+        case LAZY_TYPE_CLASS_INSTANCE:
+        case LAZY_TYPE_CLASS_CLASS: {
+            my tag = LAZY_TYPE_EVALUATING;
+            Type resolved = class_decl_make_type(my class, my tag == LAZY_TYPE_CLASS_INSTANCE);
+            type_resolve(&resolved);
+            if (my tag == LAZY_TYPE_EVALUATING) {
+                *me = lazy_type_value(resolved);
+            } else {
+                type_drop(&resolved);
+            }
+        }   break;
+
+        case LAZY_TYPE_INTERFACE: {
+            my tag = LAZY_TYPE_EVALUATING;
+            Type resolved = type_decl_make_interface_type(my interface);
+            type_resolve(&resolved);
+            if (my tag == LAZY_TYPE_EVALUATING) {
+                *me = lazy_type_value(resolved);
+            } else {
+                type_drop(&resolved);
+            }
+        }   break;
+
+        case LAZY_TYPE_INDEXED: {
+            my tag = LAZY_TYPE_EVALUATING;
+            Type const* source = lazy_type_resolve(my indexed.source.get);
+            if (my tag == LAZY_TYPE_EVALUATING) {
+                Type result = index_type_of(source, my indexed.index, span_null, nullptr);
+                type_resolve(&result);
+                if (my tag == LAZY_TYPE_EVALUATING) {
+                    lazy_type_drop(me);
+                    *me = lazy_type_value(result);
+                } else {
+                    type_drop(&result);
+                }
+            }
+        }   break;
+    }
+    return lazy_type_assert_get(me);
+}

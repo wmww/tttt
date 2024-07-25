@@ -66,8 +66,6 @@ typedef struct ClassDecl {
     Expr extends;
     VecType implements;
     VecClassItem items;
-    Type instance_type;
-    Type class_type;
     Type instance_identifier_type;
     Type class_identifier_type;
 } ClassDecl;
@@ -76,4 +74,5 @@ void class_decl_drop(ClassDecl* me);
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent);
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
+Type class_decl_make_type(ClassDecl* me, bool make_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

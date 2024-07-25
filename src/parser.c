@@ -844,6 +844,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         if (parse_class_item(&p, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_MEMBER:
+                    ASSERT(item.member.func.callable.ret_explicit);
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
                         false,
@@ -851,9 +852,9 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         cstr_move(&item.member.name_string),
                         item.member.name_span,
                         item.member.name_is_value,
-                        type_callable(c_new(CallableType, item.member.func.type))
+                        lazy_type_value(type_callable(c_new(CallableType, item.member.func.callable)))
                     ));
-                    item.member.func.type = (CallableType){0};
+                    item.member.func.callable = (CallableType){0};
                     break;
 
                 case CLASS_ITEM_FIELD:
@@ -864,7 +865,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         cstr_move(&item.field.name_string),
                         item.field.name_span,
                         item.field.name_is_value,
-                        type_move(&item.field.type)
+                        lazy_type_value(type_move(&item.field.type))
                     ));
                     break;
 
@@ -1278,11 +1279,11 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     Span lone_arg_name;
     *ret = (FunctionImpl){0};
 
-    if (parse_function_args(&p, false, ret, &ret->type)) {
+    if (parse_function_args(&p, false, ret, &ret->callable)) {
 
         is_definitely_function =
-            !vec_callable_arg_empty(&ret->type.args) &&
-            vec_callable_arg_at(&ret->type.args, 0)->binding.type_explicit;
+            !vec_callable_arg_empty(&ret->callable.args) &&
+            vec_callable_arg_at(&ret->callable.args, 0)->binding.type_explicit;
 
     } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
@@ -1292,7 +1293,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
             .tag = BINDING_IDENTIFIER,
             .content_span = lone_arg_name,
         };
-        vec_callable_arg_push(&ret->type.args, (CallableArg){ .binding = binding });
+        vec_callable_arg_push(&ret->callable.args, (CallableArg){ .binding = binding });
 
     } else {
         return parse_fail(&p);
@@ -1345,8 +1346,13 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     Anchor a = span_start(&p);
     *ret = (FunctionImpl){0};
 
-    if (!parse_function_args(&p, false, ret, &ret->type)) {
+    if (!parse_function_args(&p, false, ret, &ret->callable)) {
         return parse_fail(&p);
+    }
+
+    if (!ret->callable.ret_explicit) {
+        ret->callable.ret_explicit = true;
+        ret->callable.ret = type_void;
     }
 
     ret->full_span = span_end(a);
@@ -1358,7 +1364,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Anchor a = span_start(&p);
     *ret = (FunctionImpl){0};
 
-    if (!parse_function_args(&p, false, ret, &ret->type)) {
+    if (!parse_function_args(&p, false, ret, &ret->callable)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -1612,11 +1618,12 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     }
     hop_whitespace(&p);
 
-    ret->type.tag = INTERFACE_TYPE_INSTANTIATED;
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->type.instantiated)) {
+    Type type;
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
         error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
-        ret->type.instantiated = type_any;
+        type = type_any;
     }
+    ret->type = lazy_type_value(type);
 
     return parse_success(&p);
 }
@@ -1690,13 +1697,14 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     }
     hop_whitespace(&p);
 
-    ret->type.tag = INTERFACE_TYPE_INSTANTIATED;
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->type.instantiated)) {
+    Type type;
+    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
         if (show_errors) {
             error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
         }
-        ret->type.instantiated = type_any;
+        type = type_any;
     }
+    ret->type = lazy_type_value(type);
 
     return parse_success(&p);
 }
@@ -1972,10 +1980,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .span = span_end(a),
                 .readonly = span_valid(&readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
-                .type = {
-                    .tag = INTERFACE_TYPE_INSTANTIATED,
-                    .instantiated = type_callable(c_new(CallableType, callable)),
-                },
+                .type = lazy_type_value(type_callable(c_new(CallableType, callable))),
             };
         } else {
             cstr_drop(&name_string);

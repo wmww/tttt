@@ -58,14 +58,14 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
         name_stack_add_type(
             names,
             my default_name,
-            &type_any,
+            lazy_type_ref(&type_any),
             nullptr
         );
         if (!my type_only) {
             name_stack_add_variable(
                 names,
                 my default_name,
-                &type_any,
+                lazy_type_ref(&type_any),
                 nullptr
             );
         }
@@ -74,14 +74,14 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
         name_stack_add_type(
             names,
             my module_name,
-            &type_any,
+            lazy_type_ref(&type_any),
             nullptr
         );
         if (!my type_only) {
             name_stack_add_variable(
                 names,
                 my module_name,
-                &type_any,
+                lazy_type_ref(&type_any),
                 nullptr
             );
         }
@@ -90,14 +90,14 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
         name_stack_add_type(
             names,
             i.ref->name,
-            &type_any,
+            lazy_type_ref(&type_any),
             nullptr
         );
         if (!my type_only && !i.ref->type_only) {
             name_stack_add_variable(
                 names,
                 i.ref->name,
-                &type_any,
+                lazy_type_ref(&type_any),
                 nullptr
             );
         }

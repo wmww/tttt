@@ -37,6 +37,24 @@ void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent) {
     cstr_append_type_debug(target, &my type, indent);
 }
 
+LazyType type_decl_unresolved_lazy_type(TypeDecl* me) {
+    if (!my is_interface || vec_spanned_type_empty(&my interface_extends)) {
+        return lazy_type_ref(&my type);
+    } else {
+        return lazy_type_interface(me);
+    }
+}
+
+Type type_decl_make_interface_type(TypeDecl* me) {
+    ASSERT(my is_interface);
+    Type ret = type_composite_base(TYPE_INTERSECTION);
+    c_foreach(i, vec_spanned_type, my interface_extends) {
+        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i.ref->type));
+    }
+    ret = type_composite(TYPE_INTERSECTION, ret, type_clone(my type));
+    return ret;
+}
+
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     if (my is_interface) {
         ASSERT(my type.tag == TYPE_INTERFACE);

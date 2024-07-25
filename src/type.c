@@ -316,7 +316,7 @@ Generic* type_get_generic(Type const* me) {
     return nullptr;
 }
 
-static void type_add_inferred_names(Type* me, NameStack* names) {
+static void type_add_inferred_names(Type const* me, NameStack* names) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -336,7 +336,7 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
                 name_stack_add_type(
                     names,
                     my identifier->name,
-                    &my identifier->degenericized,
+                    lazy_type_ref(&my identifier->degenericized),
                     nullptr
                 );
                 ArcNamedType const* result = name_stack_get_type(names, span_sv(&my identifier->name));
@@ -358,8 +358,9 @@ static void type_add_inferred_names(Type* me, NameStack* names) {
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                if (i.ref->type.tag == INTERFACE_TYPE_INSTANTIATED) {
-                    type_add_inferred_names(&i.ref->type.instantiated, names);
+                Type const* member = lazy_type_try_get(&i.ref->type);
+                if (member) {
+                    type_add_inferred_names(member, names);
                 }
             }
             break;
@@ -520,7 +521,7 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                 if (my identifier->type.get) {
                     if (vec_spanned_type_empty(&my identifier->generic_params)) {
                         if (generic_empty(my identifier->type.get->generic)) {
-                            me = my identifier->type.get->type;
+                            me = lazy_type_resolve(&my identifier->type.get->type);
                         } else {
                             me = &type_any;
                         }
@@ -528,7 +529,7 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                         if (!my identifier->degenericized.tag && my identifier->type.get->generic) {
                             my identifier->degenericized = generic_degenericize_type(
                                 my identifier->type.get->generic,
-                                type_clone(*my identifier->type.get->type),
+                                type_clone(*lazy_type_resolve(&my identifier->type.get->type)),
                                 &my identifier->generic_params
                             );
                         }
@@ -567,8 +568,9 @@ static Type const* type_resolve_internal(Type const* me, int level) {
             case TYPE_INTERSECTION: {
                 bool found = false;
                 c_foreach(i, vec_type, my composite) {
-                    if (i.ref->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
-                        me = i.ref;
+                    Type const* resolved = type_resolve_internal(i.ref, level + 1);
+                    if (resolved->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
+                        me = resolved;
                         found = true;
                         break;
                     }
@@ -660,7 +662,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                 c_foreach(i, vec_interface_member, sub->interface.members) {
                     if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
                         if (type_extends_internal(
-                            interface_member_instantiate_type(i.ref),
+                            lazy_type_resolve(&i.ref->type),
                             super,
                             refinements,
                             level + 1)
@@ -707,8 +709,8 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                     }
                     if (cstr_eq(&i.ref->key.name_string, &j.ref->key.name_string)) {
                         if (type_extends_internal(
-                            interface_member_instantiate_type(j.ref),
-                            interface_member_instantiate_type(i.ref),
+                            lazy_type_resolve(&j.ref->type),
+                            lazy_type_resolve(&i.ref->type),
                             refinements,
                             level + 1)
                         ) {
@@ -879,7 +881,7 @@ void type_abstract_literals(Type* me) {
                     *me = type_string;
                     break;
 
-                case VALUE_OBJECT: {
+                case VALUE_OBJECT: /*{
                     Interface interface = {0};
                     c_foreach(i, hmap_str_object_item, my value.object.get->items) {
                         InterfaceMember member = interface_member_make(
@@ -897,7 +899,9 @@ void type_abstract_literals(Type* me) {
                     }
                     type_drop(me);
                     *me = type_interface(interface);
-                }   break;
+                }   break; */
+                    NONFATAL("type_abstract_literals() not implemented for objects");
+                    break;
 
                 case VALUE_ARRAY:
                     NONFATAL("type_abstract_literals() not implemented for arrays");
@@ -1049,7 +1053,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                             ret = type_composite(
                                 TYPE_UNION,
                                 ret,
-                                type_clone(*interface_member_instantiate_type(i.ref))
+                                type_clone(*lazy_type_resolve(&i.ref->type))
                             );
                             if (i.ref->optional) {
                                 ret = type_composite(TYPE_UNION, ret, type_undefined);
@@ -1063,7 +1067,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
                             ret = type_composite(
                                 TYPE_UNION,
                                 ret,
-                                type_clone(*interface_member_instantiate_type(i.ref))
+                                type_clone(*lazy_type_resolve(&i.ref->type))
                             );
                             if (i.ref->optional) {
                                 ret = type_composite(TYPE_UNION, ret, type_undefined);
@@ -1347,7 +1351,8 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 
             c_foreach(i, vec_expr, call->args) {
                 intptr_t index = i.ref - call->args.data;
-                Type arg_type = expr_get_type_and_typecheck(i.ref, errs);
+                // Don't report errors, errors inside argument expressions are reported elsewhere
+                Type arg_type = expr_get_type_and_typecheck(i.ref, nullptr);
                 if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
                     if (!check_assignable_or_error_internal(
                         "Argument of type",
@@ -1408,7 +1413,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             c_foreach(i, vec_interface_member, my interface.members) {
                 // TODO: add to overload list instead of selecting first option
                 if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    return type_typecheck_call(interface_member_instantiate_type(i.ref), call, span, errs, level);
+                    return type_typecheck_call(lazy_type_resolve(&i.ref->type), call, span, errs, level);
                 }
             }
             break;

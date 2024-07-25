@@ -1,6 +1,5 @@
 #include "interface.h"
 #include "interface_member.h"
-#include "type.h"
 
 void interface_drop(Interface* me) {
     vec_interface_member_drop(&my members);
@@ -25,10 +24,10 @@ void cstr_append_interface_debug(cstr* target, Interface const* me, int indent) 
 
 void cstr_append_interface_error_msg(cstr* target, Interface const* me) {
     if (vec_interface_member_size(&my members) == 1 &&
-        my members.data->key.tag == INTERFACE_KEY_CALLABLE &&
-        my members.data->type.tag == INTERFACE_TYPE_INSTANTIATED
+        my members.data->key.tag == INTERFACE_KEY_CALLABLE
     ) {
-        cstr_append_type_error_msg(target, &my members.data->type.instantiated);
+        // This interface has a single callable member, so display it as if it were just a callable
+        cstr_append_lazy_type_error_msg(target, &my members.data->type);
         return;
     }
 

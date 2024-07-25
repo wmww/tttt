@@ -45,6 +45,11 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
         }
         cstr_append_sv(target, c_sv(">"));
     }
+    if (!my type.get) {
+        cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
+    } else if (!lazy_type_try_get(&my type.get->type)) {
+        cstr_append_sv(target, c_sv(CLR_ERR " /* untypechecked */" CLR0));
+    }
 }
 
 void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
@@ -71,19 +76,19 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
     if (my inferred) {
         return;
     }
-    ArcNamedType const* result = name_stack_get_type(names, span_sv(&my name));
-    if (!result) {
-        error_ctx_error(
-            errs,
-            my name,
-            2304,
-            "Cannot find name '%.*s'.",
-            c_SV(span_sv(&my name))
-        );
-        result = name_stack_get_type(names, c_sv("any"));
-    }
-    if (result) {
-        ASSERT(!my type.get);
+    if (!my type.get) {
+        ArcNamedType const* result = name_stack_get_type(names, span_sv(&my name));
+        if (!result) {
+            error_ctx_error(
+                errs,
+                my name,
+                2304,
+                "Cannot find name '%.*s'.",
+                c_SV(span_sv(&my name))
+            );
+            result = name_stack_get_type(names, c_sv("any"));
+            ASSERT(result);
+        }
         my type = arc_named_type_clone(*result);
     }
     c_foreach(i, vec_spanned_type, my generic_params) {

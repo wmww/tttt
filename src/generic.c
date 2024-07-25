@@ -90,7 +90,7 @@ void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
 
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
-        if (!name_stack_add_type(names, i.ref->name, &i.ref->extends, nullptr)) {
+        if (!name_stack_add_type(names, i.ref->name, lazy_type_ref(&i.ref->extends), nullptr)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple generics with same name");
         }
@@ -250,7 +250,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                         break;
                     case INTERFACE_KEY_CALLABLE: break;
                 }
-                replace_named_types_with(interface_member_instantiate_type(i.ref), refinements);
+                lazy_type_resolve(&i.ref->type);
+                if (i.ref->type.tag == LAZY_TYPE_VALUE) {
+                    replace_named_types_with(&i.ref->type.value, refinements);
+                }
             }
             return;
 
@@ -336,7 +339,7 @@ CallableType generic_infer_callable_types(
     }
     VecType arg_types = {0};
     c_foreach(i, vec_expr, *args) {
-        vec_type_push(&arg_types, expr_get_type_and_typecheck(i.ref, errs));
+        vec_type_push(&arg_types, expr_get_type_and_typecheck(i.ref, nullptr));
     }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         collect_generic_candidates(

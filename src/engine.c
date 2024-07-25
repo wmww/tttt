@@ -265,11 +265,11 @@ static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const
 
 static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
     vec_stack_frame_push(&my stack, stack_frame_new());
-    int defined_arg_num = vec_callable_arg_size(&func->impl->type.args);
+    int defined_arg_num = vec_callable_arg_size(&func->impl->callable.args);
     int given_arg_num = vec_value_size(args);
     JsObject* locals = engine_get_locals(me);
     for (int i = 0; i < defined_arg_num; i++) {
-        CallableArg const* arg = vec_callable_arg_at(&func->impl->type.args, i);
+        CallableArg const* arg = vec_callable_arg_at(&func->impl->callable.args, i);
         if (arg->rest) {
             NONFATAL("Rest arguments not supported in engine");
         }

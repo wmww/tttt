@@ -186,6 +186,7 @@ void native_func_value_drop(NativeFuncValue* me);
 #define value_null ((Value){ .tag = VALUE_NULL })
 static inline Value value_boolean(bool value) { return (Value){ .tag = VALUE_BOOLEAN, .boolean = value }; }
 static inline Value value_number(double value) { return (Value){ .tag = VALUE_NUMBER, .number = value }; }
+// PERF: switch to value_sv() and value_cstr() and use value_sv() wherever possible
 static inline Value value_string(cstr value) { return (Value){ .tag = VALUE_STRING, .string = value }; }
 
 static inline Value value_object_from_n(ObjectItemInit* items, int n) {
