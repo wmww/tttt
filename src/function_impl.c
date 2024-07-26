@@ -7,6 +7,7 @@
 
 void function_impl_drop(FunctionImpl* me) {
     callable_type_drop(&my callable);
+    named_variable_destroy(my named_var);
     vec_expr_drop(&my arg_defaults);
     block_drop(&my body);
 }
@@ -39,6 +40,14 @@ void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool includ
         cstr_append_block_debug(target, &my body, indent);
     } else {
         cstr_append_sv(target, c_sv(";"));
+    }
+}
+
+void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
+    ASSERT(!my named_var);
+    my named_var = make_named_variable(my full_span, lazy_type_function(me), &my callable.generic);
+    if (!name_stack_add_variable_s(names, cstr_from_span(&my name), my named_var)) {
+        error_ctx_error(errs, my name, TS_CODE_NONE, "multiple values declared with same name");
     }
 }
 
@@ -86,6 +95,8 @@ Type const* function_impl_resolve_type(FunctionImpl* me) {
         StatementCtx ctx = statement_ctx_function(&type_any, true);
 
         block_typecheck(&my body, &ctx, nullptr);
+
+        type_drop(&my callable.ret);
         if (ctx.impl_return.tag == TYPE_NEVER) {
             // This will need to be improved
             my callable.ret = type_void;

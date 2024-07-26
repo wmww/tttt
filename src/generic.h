@@ -17,7 +17,7 @@ typedef struct GenericItem {
     Type extends;
     bool fallback_explicit;
     Type fallback;
-    ArcNamedType type;
+    NamedType* type; // owned
 } GenericItem;
 
 void generic_item_drop(GenericItem* me);

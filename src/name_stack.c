@@ -2,20 +2,49 @@
 #include "generic.h"
 #include "identifier_type.h"
 
+typedef NamedType* NamedTypePtr;
+typedef NamedVariable* NamedVariablePtr;
+
 #define i_key_ssv
-#define i_val_class_names ArcNamedType, arc_named_type
+#define i_val_names NamedTypePtr, named_type_ptr
 #include "wrap_stc/hmap.h"
 
 #define i_key_ssv
-#define i_val_class_names ArcNamedVariable, arc_named_variable
+#define i_val_names NamedVariablePtr, named_variable_ptr
 #include "wrap_stc/hmap.h"
 
-void named_variable_drop(NamedVariable* me) {
-    lazy_type_drop(&my type);
+NamedVariable* make_named_variable(Span name, LazyType type, Generic const* generic) {
+    if (generic_empty(generic)) {
+        generic = nullptr;
+    }
+    return c_new(NamedVariable, {
+        .name = name,
+        .type = type,
+        .generic = generic,
+    });
 }
 
-void named_type_drop(NamedType* me) {
+void named_variable_destroy(NamedVariable* me) {
+    if (!me) return;
     lazy_type_drop(&my type);
+    free(me);
+}
+
+NamedType* make_named_type(Span name, LazyType type, Generic const* generic) {
+    if (generic_empty(generic)) {
+        generic = nullptr;
+    }
+    return c_new(NamedType, {
+        .name = name,
+        .type = type,
+        .generic = generic,
+    });
+}
+
+void named_type_destroy(NamedType* me) {
+    if (!me) return;
+    lazy_type_drop(&my type);
+    free(me);
 }
 
 typedef enum StackFrameTag {
@@ -27,8 +56,8 @@ typedef enum StackFrameTag {
 
 typedef struct StackFrame {
     StackFrameTag tag;
-    HmapStrArcNamedType types;
-    HmapStrArcNamedVariable variables;
+    HmapStrNamedTypePtr types;
+    HmapStrNamedVariablePtr variables;
 } StackFrame;
 
 StackFrame stack_frame_init(StackFrameTag tag);
@@ -45,29 +74,21 @@ typedef struct NameStack {
 StackFrame stack_frame_init(StackFrameTag tag) {
     return (StackFrame){
         .tag = tag,
-        .types = hmap_str_arc_named_type_init(),
-        .variables = hmap_str_arc_named_variable_init(),
+        .types = hmap_str_named_type_ptr_init(),
+        .variables = hmap_str_named_variable_ptr_init(),
     };
 }
 
 void stack_frame_drop(StackFrame* me) {
-    hmap_str_arc_named_type_drop(&my types);
-    hmap_str_arc_named_variable_drop(&my variables);
+    hmap_str_named_type_ptr_drop(&my types);
+    hmap_str_named_variable_ptr_drop(&my variables);
 }
 
 StackFrame stack_frame_clone(StackFrame me) {
     return (StackFrame){
-        .types = hmap_str_arc_named_type_clone(me.types),
-        .variables = hmap_str_arc_named_variable_clone(me.variables),
+        .types = hmap_str_named_type_ptr_clone(me.types),
+        .variables = hmap_str_named_variable_ptr_clone(me.variables),
     };
-}
-
-static inline void add_builtin_variable(NameStack* me, csview name, Type const* type) {
-    name_stack_add_variable_s(me, cstr_from_sv(name), span_null, lazy_type_ref(type), nullptr);
-}
-
-static inline void add_builtin_type(NameStack* me, csview name, Type const* type) {
-    name_stack_add_type_s(me, cstr_from_sv(name), span_null, lazy_type_ref(type), nullptr);
 }
 
 static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag) {
@@ -80,37 +101,60 @@ NameStack* name_stack_new() {
     });
     name_stack_push_frame_private(ret, STACK_FRAME_BLOCK);
 
-    add_builtin_variable(ret, c_sv("console"), &type_any);
-    add_builtin_variable(ret, c_sv("String"), &type_any);
-    add_builtin_variable(ret, c_sv("Number"), &type_any);
-    add_builtin_variable(ret, c_sv("Boolean"), &type_any);
-    add_builtin_variable(ret, c_sv("NaN"), &type_any);
-    add_builtin_variable(ret, c_sv("Date"), &type_any);
-    add_builtin_variable(ret, c_sv("Error"), &type_any);
-    add_builtin_variable(ret, c_sv("Set"), &type_any);
-    add_builtin_variable(ret, c_sv("Array"), &type_any);
-    add_builtin_variable(ret, c_sv("Object"), &type_any);
-    add_builtin_variable(ret, c_sv("this"), &type_undefined);
+#define BUILTIN_VAR(name, t) \
+    static NamedVariable name = {0}; \
+    name.type = lazy_type_value(t)
 
-    add_builtin_type(ret, c_sv("any"), &type_any);
-    add_builtin_type(ret, c_sv("unknown"), &type_unknown);
-    add_builtin_type(ret, c_sv("never"), &type_never);
-    add_builtin_type(ret, c_sv("void"), &type_void);
-    add_builtin_type(ret, c_sv("object"), &type_object);
-    add_builtin_type(ret, c_sv("boolean"), &type_boolean);
-    add_builtin_type(ret, c_sv("number"), &type_number);
-    add_builtin_type(ret, c_sv("string"), &type_string);
-    add_builtin_type(ret, c_sv("String"), &type_string);
-    add_builtin_type(ret, c_sv("Number"), &type_number);
-    add_builtin_type(ret, c_sv("Boolean"), &type_boolean);
-    add_builtin_type(ret, c_sv("Date"), &type_any);
-    add_builtin_type(ret, c_sv("Error"), &type_any);
-    add_builtin_type(ret, c_sv("Set"), &type_any);
-    add_builtin_type(ret, c_sv("Array"), &type_any);
-    add_builtin_type(ret, c_sv("Object"), &type_any);
-    add_builtin_type(ret, c_sv("BooleanConstructor"), &type_any);
-    add_builtin_type(ret, c_sv("NumberConstructor"), &type_any);
-    add_builtin_type(ret, c_sv("StringConstructor"), &type_any);
+#define BUILTIN_TYPE(name, t) \
+    static NamedType name = {0}; \
+    name.type = lazy_type_value(t)
+
+    BUILTIN_VAR(builtin_var_any, type_any);
+    BUILTIN_VAR(builtin_var_undefined, type_undefined);
+
+    BUILTIN_TYPE(builtin_type_any, type_any);
+    BUILTIN_TYPE(builtin_type_unkown, type_unknown);
+    BUILTIN_TYPE(builtin_type_never, type_never);
+    BUILTIN_TYPE(builtin_type_void, type_void);
+    BUILTIN_TYPE(builtin_type_object, type_object);
+    BUILTIN_TYPE(builtin_type_boolean, type_boolean);
+    BUILTIN_TYPE(builtin_type_number, type_number);
+    BUILTIN_TYPE(builtin_type_string, type_string);
+
+#undef BUILTIN_VAR
+#undef BUILTIN_TYPE
+
+    name_stack_add_variable_s(ret, cstr_lit("console"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("String"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Number"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Boolean"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("NaN"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Date"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Error"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Set"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Array"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("Object"), &builtin_var_any);
+    name_stack_add_variable_s(ret, cstr_lit("this"), &builtin_var_undefined);
+
+    name_stack_add_type_s(ret, cstr_lit("any"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("unknown"), &builtin_type_unkown);
+    name_stack_add_type_s(ret, cstr_lit("never"), &builtin_type_never);
+    name_stack_add_type_s(ret, cstr_lit("void"), &builtin_type_void);
+    name_stack_add_type_s(ret, cstr_lit("object"), &builtin_type_object);
+    name_stack_add_type_s(ret, cstr_lit("boolean"), &builtin_type_boolean);
+    name_stack_add_type_s(ret, cstr_lit("number"), &builtin_type_number);
+    name_stack_add_type_s(ret, cstr_lit("string"), &builtin_type_string);
+    name_stack_add_type_s(ret, cstr_lit("String"), &builtin_type_string);
+    name_stack_add_type_s(ret, cstr_lit("Number"), &builtin_type_number);
+    name_stack_add_type_s(ret, cstr_lit("Boolean"), &builtin_type_boolean);
+    name_stack_add_type_s(ret, cstr_lit("Date"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("Error"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("Set"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("Array"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("Object"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("BooleanConstructor"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("NumberConstructor"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("StringConstructor"), &builtin_type_any);
 
     return ret;
 }
@@ -152,43 +196,29 @@ void name_stack_pop_frame(NameStack* me) {
     vec_stack_frame_pop(&my stack);
 }
 
-bool name_stack_add_variable(NameStack* me, Span name, LazyType type, Generic const* generic) {
-    return name_stack_add_variable_s(me, cstr_from_span(&name), name, type, generic);
+bool name_stack_add_variable(NameStack* me, NamedVariable* var) {
+    return name_stack_add_variable_s(me, cstr_from_span(&var->name), var);
 
 }
 
-bool name_stack_add_type(NameStack* me, Span name, LazyType type, Generic const* generic) {
-    return name_stack_add_type_s(me, cstr_from_span(&name), name, type, generic);
+bool name_stack_add_type(NameStack* me, NamedType* type) {
+    return name_stack_add_type_s(me, cstr_from_span(&type->name), type);
 }
 
-bool name_stack_add_variable_s(NameStack* me, cstr name_string, Span name_span, LazyType type, Generic const* generic) {
-    if (generic_empty(generic)) {
-        generic = nullptr;
-    }
-    hmap_str_arc_named_variable_result result = hmap_str_arc_named_variable_insert(
+bool name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
+    hmap_str_named_variable_ptr_result result = hmap_str_named_variable_ptr_insert(
         &vec_stack_frame_back(&my stack)->variables,
         name_string,
-        arc_named_variable_make((NamedVariable){
-            .name = name_span,
-            .type = type,
-            .generic = generic
-        })
+        var
     );
     return result.inserted;
 }
 
-bool name_stack_add_type_s(NameStack* me, cstr name_string, Span name_span, LazyType type, Generic const* generic) {
-    if (generic_empty(generic)) {
-        generic = nullptr;
-    }
-    hmap_str_arc_named_type_result result = hmap_str_arc_named_type_insert(
+bool name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
+    hmap_str_named_type_ptr_result result = hmap_str_named_type_ptr_insert(
         &vec_stack_frame_back(&my stack)->types,
         name_string,
-        arc_named_type_make((NamedType){
-            .name = name_span,
-            .type = type,
-            .generic = generic,
-        })
+        type
     );
     return result.inserted;
 }
@@ -202,21 +232,21 @@ bool name_stack_has_function(NameStack* me) {
     return false;
 }
 
-ArcNamedVariable const* name_stack_get_variable(NameStack* me, csview name) {
+NamedVariable* name_stack_get_variable(NameStack* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        hmap_str_arc_named_variable_value const* result = hmap_str_arc_named_variable_get(&i.ref->variables, name);
+        hmap_str_named_variable_ptr_value const* result = hmap_str_named_variable_ptr_get(&i.ref->variables, name);
         if (result) {
-            return &result->second;
+            return result->second;
         }
     }
     return nullptr;
 }
 
-ArcNamedType const* name_stack_get_type(NameStack* me, csview name) {
+NamedType* name_stack_get_type(NameStack* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        hmap_str_arc_named_type_value const* result = hmap_str_arc_named_type_get(&i.ref->types, name);
+        hmap_str_named_type_ptr_value const* result = hmap_str_named_type_ptr_get(&i.ref->types, name);
         if (result) {
-            return &result->second;
+            return result->second;
         }
     }
     return nullptr;

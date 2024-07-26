@@ -41,7 +41,9 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
                 name_is_value,
                 span_valid(&full) ? full : my content_span
             );
-            baseline_test_case_add_type(ctx, my content_span, &my type);
+            if (my identifier) {
+                baseline_test_case_add_type(ctx, my content_span, lazy_type_assert_get(&my identifier->type));
+            }
             break;
 
         case BINDING_ARRAY:
@@ -140,7 +142,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 ctx,
                 span_sv(&my identifier->name),
                 my identifier->name,
-                my identifier->type.get ? my identifier->type.get->name : span_null
+                my identifier->type ? my identifier->type->name : span_null
             );
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 type_compile_test_info(&i.ref->type, ctx);
@@ -189,6 +191,10 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 type_compile_test_info(i.ref, ctx);
             }
             break;
+
+        case TYPE_REF:
+            type_compile_test_info(my ref, ctx);
+            break;
     }
 }
 
@@ -216,7 +222,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             expr_compile_test_info(default_arg, arg->binding.tag != BINDING_ARRAY, ctx);
         }
     }
-    if (my callable.ret_explicit) {
+    if (my callable.ret_explicit && !my callable.is_constructor) {
         type_compile_test_info(&my callable.ret, ctx);
     }
     block_compile_test_info(&my body, ctx);
@@ -303,11 +309,14 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type t = expr_get_type_and_typecheck(&my extends, nullptr);
-        if (t.tag == TYPE_IDENTIFIER && t.identifier->type.get && t.identifier->type.get->is_typeof_class) {
+        while (t.tag == TYPE_REF) {
+            t = type_clone(*t.ref);
+        }
+        if (t.tag == TYPE_IDENTIFIER && t.identifier->type && t.identifier->type->is_typeof_class) {
             // Extremely hacky but whatever. No idea why tsc does this.
-            t.identifier->type.get->is_typeof_class = false;
+            t.identifier->type->is_typeof_class = false;
             baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &t);
-            t.identifier->type.get->is_typeof_class = true;
+            t.identifier->type->is_typeof_class = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
             expr_compile_test_info(&my extends, true, ctx);
@@ -334,7 +343,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         Type const* t = &my type;
         if (generic_empty(&my generic)) {
             if (my type.tag != TYPE_IDENTIFIER ||
-                (my type.identifier->type.get && !my type.identifier->type.get->is_class)
+                (my type.identifier->type && !my type.identifier->type->is_class)
             ) {
                 t = type_resolve(&my type);
                 switch (t->tag) {
@@ -387,16 +396,16 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_IDENTIFIER: {
-            if (my identifier.var.get && (
+            if (my identifier.var && (
                     !span_eq_str(&my identifier.name, "this") ||
-                    span_valid(&my identifier.var.get->name)
+                    span_valid(&my identifier.var->name)
                 )
             ) {
                 baseline_test_case_add_symbol(
                     ctx,
                     span_sv(&my identifier.name),
                     my identifier.name,
-                    my identifier.var.get->name
+                    my identifier.var->name
                 );
             }
             c_foreach(i, vec_spanned_type, my identifier.generic_params) {
@@ -527,13 +536,13 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 }
 
 void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
-    if (my tag == EXPR_IDENTIFIER && my identifier.var.get) {
+    if (my tag == EXPR_IDENTIFIER && my identifier.var) {
         // Do NOT degenericize
         baseline_test_case_add_type_recursive(
             ctx,
             my outer_span,
             my inner_span,
-            lazy_type_assert_get(&my identifier.var.get->type)
+            lazy_type_assert_get(&my identifier.var->type)
         );
     } else if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
         Type t = expr_get_type_and_typecheck(me, nullptr);

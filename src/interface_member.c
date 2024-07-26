@@ -11,6 +11,7 @@ void interface_member_drop(InterfaceMember* me) {
         case INTERFACE_KEY_MAPPED:
             type_drop(&my key.mapped.in_type);
             type_drop(&my key.mapped.as_type);
+            named_type_destroy(my key.mapped.named_type);
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -25,6 +26,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
         case INTERFACE_KEY_MAPPED:
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
             me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
+            me.key.mapped.named_type = nullptr;
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -151,12 +153,10 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
             type_resolve_names(&my key.mapped.in_type, names, errs);
             type_resolve_names(&my key.mapped.as_type, names, errs);
             name_stack_push_block_frame(names);
-            name_stack_add_type(
-                names,
-                my key.mapped.type_name,
-                lazy_type_ref(&type_any),
-                nullptr
-            );
+            if (!my key.mapped.named_type) {
+                my key.mapped.named_type = make_named_type(my key.mapped.type_name, lazy_type_value(type_any), nullptr);
+            }
+            name_stack_add_type(names, my key.mapped.named_type);
             break;
 
         case INTERFACE_KEY_CALLABLE: break;

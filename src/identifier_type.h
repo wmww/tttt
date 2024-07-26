@@ -7,7 +7,9 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
-    ArcNamedType type;
+    // Owned IFF inferred is true (TODO: split inferred identifiers into a different struct, make it less stupid some
+    // other way)
+    NamedType* type;
     VecSpannedType generic_params;
     Type degenericized; // A copy of the type with the generic parameters swapped in
     bool inferred;

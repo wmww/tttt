@@ -30,6 +30,7 @@ typedef struct InterfaceMember {
                 bool has_as_type;
                 signed char readonly; // -1 for remove, +1 for add
                 signed char optional; // -1 for remove, +1 for add
+                NamedType* named_type;
             } mapped;
         };
     } key;

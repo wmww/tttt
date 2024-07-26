@@ -1224,7 +1224,9 @@ static bool parse_function_args(
     hop_whitespace(&p);
 
     if (parse_ret_type) {
+        Anchor ret_a = span_start(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type_ret->ret)) {
+            type_ret->ret_span = span_end(ret_a);
             type_ret->ret_explicit = true;
             hop_whitespace(&p);
             if (p.whitespace != WHITESPACE_NEWLINE && type_ret->ret.tag == TYPE_IDENTIFIER) {
@@ -1352,7 +1354,7 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
 
     if (!ret->callable.ret_explicit) {
         ret->callable.ret_explicit = true;
-        ret->callable.ret = type_void;
+        ret->callable.ret = type_any;
     }
 
     ret->full_span = span_end(a);
@@ -1394,6 +1396,7 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     if (!parse_identifier(&p, &name)) {
         name = span_null;
     }
+    hop_whitespace(&p);
 
     if (!parse_non_arrow_function(&p, ret)) {
         error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "Expected function.");
@@ -1888,6 +1891,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
         ret->constructor.name_span = name_span;
         ret->constructor.func.full_span = span_end(a);
+        ret->constructor.func.callable.is_constructor = true;
         if (span_valid(&readonly_span)) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
@@ -2166,6 +2170,9 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             );
             ret->full_span = span_end(a);
             return parse_success(&p);
+        }
+        if (is_abstract && item.tag == CLASS_ITEM_CONSTRUCTOR) {
+            item.constructor.func.callable.is_abstract_constructor = true;
         }
         vec_class_item_push(&ret->items, item);
         hop_whitespace(&p);
@@ -2939,7 +2946,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
     Binding binding;
 
     if (parse_identifier(&p, nullptr)) {
-        ret->tag = BINDING_IDENTIFIER;
+        *ret = (Binding){ .tag = BINDING_IDENTIFIER };
         // Name is accessed via content_span, which is set at the end
     } else if (hop_char(&p, '[')) {
         hop_whitespace(&p);

@@ -21,7 +21,6 @@ typedef struct NamedVariable NamedVariable;
 
 wrap_forward_vec(ObjectExprItem, object_expr_item);
 wrap_forward_vec(Expr, expr);
-wrap_forward_arc(NamedVariable, named_variable);
 
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
@@ -45,7 +44,7 @@ typedef struct Expr {
         Value literal;
         struct {
             Span name;
-            ArcNamedVariable var;
+            NamedVariable* var;
             VecSpannedType generic_params;
         } identifier;
         BinaryOpExpr* binary_op;

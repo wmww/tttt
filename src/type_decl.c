@@ -4,11 +4,13 @@
 #include "interface_member.h"
 #include "interface.h"
 #include "type.h"
+#include "name_stack.h"
 
 void type_decl_drop(TypeDecl* me) {
     generic_drop(&my generic);
     vec_spanned_type_drop(&my interface_extends);
     type_drop(&my type);
+    named_type_destroy(my named_type);
 }
 
 void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent) {
@@ -37,11 +39,14 @@ void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent) {
     cstr_append_type_debug(target, &my type, indent);
 }
 
-LazyType type_decl_unresolved_lazy_type(TypeDecl* me) {
-    if (!my is_interface || vec_spanned_type_empty(&my interface_extends)) {
-        return lazy_type_ref(&my type);
-    } else {
-        return lazy_type_interface(me);
+void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
+    ASSERT(!my named_type);
+    LazyType lazy_type = (my is_interface && ! vec_spanned_type_empty(&my interface_extends)) ?
+        lazy_type_interface(me) :
+        lazy_type_ref(&my type);
+    my named_type = make_named_type(my full_span, lazy_type, &my generic);
+    if (!name_stack_add_type_s(names, cstr_from_span(&my name), my named_type)) {
+        error_ctx_error(errs, my name, TS_CODE_NONE, "multiple values declared with same name");
     }
 }
 

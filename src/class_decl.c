@@ -49,6 +49,10 @@ void class_decl_drop(ClassDecl* me) {
     expr_drop(&my extends);
     vec_type_drop(&my implements);
     vec_class_item_drop(&my items);
+    named_type_destroy(my instance_named_type);
+    named_type_destroy(my class_named_type);
+    named_variable_destroy(my instance_named_var);
+    named_variable_destroy(my class_named_var);
     type_drop(&my instance_identifier_type);
     type_drop(&my class_identifier_type);
 }
@@ -163,20 +167,24 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
-    if (!name_stack_add_type_s(
-        names,
-        cstr_from_span(&my name),
-        my full_span,
-        lazy_type_class_instance(me),
-        &my generic
-    )) {
+    ASSERT(!my instance_named_type);
+    my instance_named_type = make_named_type(my full_span, lazy_type_class_instance(me), &my generic);
+    my instance_named_type->is_class = true;
+    if (!name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type)) {
         // name is cstr_str(&result.ref->first)
         error_ctx_type_error(errs, "multiple values declared with same name");
     }
 
-    ArcNamedType const* instance_named_type = name_stack_get_type(names, span_sv(&my name));
-    ASSERT(instance_named_type); // Should have just been added above
-    instance_named_type->get->is_class = true;
+    ASSERT(!my instance_named_var);
+    my instance_named_var = make_named_variable(
+        my full_span,
+        lazy_type_value(type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .type = my instance_named_type,
+        }))),
+        nullptr
+    );
+
     ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
     VecSpannedType generic_params = {0};
     c_foreach(i, vec_generic_item, my generic.items) {
@@ -185,33 +193,39 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
-        .type = arc_named_type_clone(*instance_named_type),
+        .type = my instance_named_type,
         .generic_params = generic_params,
     }));
 
-    ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
-    my class_identifier_type = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .type = arc_named_type_make((NamedType){
-            .name = my name,
-            .type = lazy_type_class_class(me),
-            .is_typeof_class = true,
-        }),
-    }));
+    ASSERT(!my class_named_type);
+    my class_named_type = make_named_type(my name, lazy_type_class_class(me), &my generic);
+    my class_named_type->is_typeof_class = true;
 
-    if (!name_stack_add_variable_s(
-        names,
-        cstr_from_span(&my name),
+    ASSERT(!my class_named_var);
+    my class_named_var = make_named_variable(
         my full_span,
-        lazy_type_ref(&my class_identifier_type),
+        lazy_type_value(type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .type = my class_named_type,
+        }))),
         &my generic
-    )) {
+    );
+    if (!name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var)) {
         // name is cstr_str(&result.ref->first)
         error_ctx_type_error(errs, "multiple values declared with same name");
     }
 
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
+            if (i.ref->constructor.func.callable.ret_explicit) {
+                error_ctx_error(
+                    errs,
+                    i.ref->constructor.func.callable.ret_span,
+                    1093,
+                    "Type annotation cannot appear on a constructor declaration."
+                );
+                type_drop(&i.ref->constructor.func.callable.ret);
+            }
             ASSERT(i.ref->constructor.func.callable.ret.tag == TYPE_ANY);
             i.ref->constructor.func.ret_type_resolved = true;
             i.ref->constructor.func.callable.ret = type_clone(my instance_identifier_type);
@@ -228,7 +242,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 
     name_stack_push_block_frame(names);
-    name_stack_add_variable_s(names, cstr_lit("this"), span_null, lazy_type_ref(&my class_identifier_type), nullptr);
+    name_stack_add_variable_s(names, cstr_lit("this"), my class_named_var);
     c_foreach(i, vec_class_item, my items) {
         if (class_item_is_static(i.ref)) {
             class_item_resolve_names(i.ref, names, errs);
@@ -237,7 +251,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_pop_frame(names); // frame containing "this"
 
     name_stack_push_block_frame(names);
-    name_stack_add_variable_s(names, cstr_lit("this"), span_null, lazy_type_ref(&my instance_identifier_type), nullptr);
+    name_stack_add_variable_s(names, cstr_lit("this"), my instance_named_var);
     c_foreach(i, vec_class_item, my items) {
         if (!class_item_is_static(i.ref)) {
             class_item_resolve_names(i.ref, names, errs);

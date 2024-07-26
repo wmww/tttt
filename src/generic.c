@@ -19,7 +19,7 @@ typedef NamedType const* NamedTypeCPtr;
 void generic_item_drop(GenericItem* me) {
     type_drop(&my extends);
     type_drop(&my fallback);
-    arc_named_type_drop(&my type);
+    named_type_destroy(my type);
 }
 
 GenericItem generic_item_clone(GenericItem me) {
@@ -28,7 +28,7 @@ GenericItem generic_item_clone(GenericItem me) {
         .extends = type_clone(me.extends),
         .fallback_explicit = me.fallback_explicit,
         .fallback = type_clone(me.fallback),
-        .type = arc_named_type_clone(me.type),
+        .type = nullptr,
     };
 }
 
@@ -90,11 +90,13 @@ void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
 
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
-        if (!name_stack_add_type(names, i.ref->name, lazy_type_ref(&i.ref->extends), nullptr)) {
+        if (!i.ref->type) {
+            i.ref->type = make_named_type(i.ref->name, lazy_type_ref(&i.ref->extends), nullptr);
+        }
+        if (!name_stack_add_type(names, i.ref->type)) {
             // name is cstr_str(&result.ref->first)
             error_ctx_type_error(errs, "multiple generics with same name");
         }
-        i.ref->type = arc_named_type_clone(*name_stack_get_type(names, span_sv(&i.ref->name)));
     }
     c_foreach(i, vec_generic_item, my items) {
         type_resolve_names(&i.ref->extends, names, errs);
@@ -122,9 +124,9 @@ static void collect_generic_candidates(
             return;
 
         case TYPE_IDENTIFIER:
-            if (my identifier->type.get) {
+            if (my identifier->type) {
                 c_foreach(i, vec_type_refinement, *results) {
-                    if (i.ref->target == my identifier->type.get) {
+                    if (i.ref->target == my identifier->type) {
                         i.ref->refined = arg;
                         break;
                     }
@@ -174,6 +176,12 @@ static void collect_generic_candidates(
             );
             return;
 
+        case TYPE_REF:
+            error_ctx_error(errs, span_null, TS_CODE_NONE,
+                "inferring types of generic with reference not yet implemented"
+            );
+            return;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             error_ctx_error(errs, span_null, TS_CODE_NONE,
@@ -219,10 +227,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 replace_named_types_with(&i.ref->type, refinements);
             }
-            if (my identifier->type.get) {
+            if (my identifier->type) {
                 Type const* refinement = nullptr;
                 c_foreach(i, vec_type_refinement, *refinements) {
-                    if (i.ref->target == my identifier->type.get) {
+                    if (i.ref->target == my identifier->type) {
                         refinement = i.ref->refined;
                         break;
                     }
@@ -294,6 +302,11 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                 replace_named_types_with(i.ref, refinements);
             }
             return;
+
+        case TYPE_REF:
+            *me = type_clone(*my ref);
+            replace_named_types_with(me, refinements);
+            return;
     }
     UNREACHABLE;
 }
@@ -302,9 +315,9 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
     VecTypeRefinement refinements = vec_type_refinement_with_capacity(vec_generic_item_size(&my items));
     c_foreach(i, vec_generic_item, my items) {
         intptr_t index = i.ref - my items.data;
-        if (i.ref->type.get) {
+        if (i.ref->type) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->type.get,
+                .target = i.ref->type,
                 .refined = index < vec_spanned_type_size(generic_params) ?
                     &vec_spanned_type_at(generic_params, index)->type :
                     &type_unknown
@@ -328,9 +341,9 @@ CallableType generic_infer_callable_types(
     int callable_arg_count = vec_callable_arg_size(&callable->args);
     VecTypeRefinement refinements = {0};
     c_foreach(i, vec_generic_item, my items) {
-        if (i.ref->type.get) {
+        if (i.ref->type) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->type.get,
+                .target = i.ref->type,
                 .refined = nullptr,
             });
         } else {

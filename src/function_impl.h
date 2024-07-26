@@ -12,6 +12,7 @@ typedef struct FunctionImpl {
     Span full_span;
     Span name;
     CallableType callable;
+    NamedVariable* named_var;
     VecExpr arg_defaults; // May have less elements than there are args, these are assumed to be implicit any
     Span args_span;
     Span arrow_span;
@@ -24,6 +25,7 @@ typedef struct FunctionImpl {
 
 void function_impl_drop(FunctionImpl* me);
 void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent);
+void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 Type const* function_impl_resolve_type(FunctionImpl* me);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

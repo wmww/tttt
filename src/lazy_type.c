@@ -104,7 +104,6 @@ Type const* lazy_type_resolve(LazyType* me) {
 
             bool abstract_literals = my expr.abstract_literals;
             Type resolved = expr_get_type_and_typecheck(my expr.ptr, nullptr);
-            type_resolve(&resolved);
 
             if (my tag == LAZY_TYPE_EVALUATING) {
                 if (abstract_literals) {
@@ -118,7 +117,6 @@ Type const* lazy_type_resolve(LazyType* me) {
                         *resolved.array.element = type_any;
                     }
                 }
-
                 *me = lazy_type_value(resolved);
             } else {
                 type_drop(&resolved);
@@ -127,7 +125,7 @@ Type const* lazy_type_resolve(LazyType* me) {
 
         case LAZY_TYPE_FUNCTION: {
             my tag = LAZY_TYPE_EVALUATING;
-            Type const* resolved = type_resolve(function_impl_resolve_type(my function));
+            Type const* resolved = function_impl_resolve_type(my function);
             if (my tag == LAZY_TYPE_EVALUATING) {
                 *me = lazy_type_ref(resolved);
             }
@@ -137,7 +135,6 @@ Type const* lazy_type_resolve(LazyType* me) {
         case LAZY_TYPE_CLASS_CLASS: {
             my tag = LAZY_TYPE_EVALUATING;
             Type resolved = class_decl_make_type(my class, my tag == LAZY_TYPE_CLASS_INSTANCE);
-            type_resolve(&resolved);
             if (my tag == LAZY_TYPE_EVALUATING) {
                 *me = lazy_type_value(resolved);
             } else {
@@ -148,7 +145,6 @@ Type const* lazy_type_resolve(LazyType* me) {
         case LAZY_TYPE_INTERFACE: {
             my tag = LAZY_TYPE_EVALUATING;
             Type resolved = type_decl_make_interface_type(my interface);
-            type_resolve(&resolved);
             if (my tag == LAZY_TYPE_EVALUATING) {
                 *me = lazy_type_value(resolved);
             } else {
@@ -157,18 +153,18 @@ Type const* lazy_type_resolve(LazyType* me) {
         }   break;
 
         case LAZY_TYPE_INDEXED: {
+            LazyType local_me = *me;
             my tag = LAZY_TYPE_EVALUATING;
-            Type const* source = lazy_type_resolve(my indexed.source.get);
+            Type const* source_resolved = lazy_type_resolve(my indexed.source.get);
             if (my tag == LAZY_TYPE_EVALUATING) {
-                Type result = index_type_of(source, my indexed.index, span_null, nullptr);
-                type_resolve(&result);
+                Type result = index_type_of(source_resolved, my indexed.index, span_null, nullptr);
                 if (my tag == LAZY_TYPE_EVALUATING) {
-                    lazy_type_drop(me);
                     *me = lazy_type_value(result);
                 } else {
                     type_drop(&result);
                 }
             }
+            lazy_type_drop(&local_me);
         }   break;
     }
     return lazy_type_assert_get(me);

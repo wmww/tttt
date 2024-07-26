@@ -3,6 +3,7 @@
 #include "error.h"
 #include "name_stack.h"
 #include "class_decl.h"
+#include "function_impl.h"
 #include "identifier_type.h"
 
 void variable_statement_drop(VariableStatement* me) {
@@ -305,16 +306,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            if (!name_stack_add_variable_s(
-                names,
-                cstr_from_span(&my decl.function.name),
-                my decl.function.full_span,
-                lazy_type_function(&my decl.function),
-                &my decl.function.callable.generic
-            )) {
-                // name is cstr_str(&result.ref->first)
-                error_ctx_type_error(errs, "multiple values declared with same name");
-            }
+            function_impl_add_names(&my decl.function, names, errs);
             break;
 
         case STATEMENT_DECL_CLASS:
@@ -322,16 +314,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            if (!name_stack_add_type_s(
-                names,
-                cstr_from_span(&my decl.type.name),
-                my decl.type.full_span,
-                type_decl_unresolved_lazy_type(&my decl.type),
-                &my decl.type.generic
-            )) {
-                // name is cstr_str(&result.ref->first)
-                error_ctx_type_error(errs, "multiple values declared with same name");
-            }
+            type_decl_add_names(&my decl.type, names, errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:
@@ -447,12 +430,17 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             variable_statement_resolve_names(&my decl.variable, names, errs);
             break;
 
-        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_FUNCTION: {
             name_stack_push_block_frame(names);
-            name_stack_add_variable_s(names, cstr_lit("this"), span_null, lazy_type_ref(&type_any), nullptr);
+
+            static NamedVariable this_var;
+            this_var = (NamedVariable){ .type = lazy_type_value(type_any) };
+            name_stack_add_variable_s(names, cstr_lit("this"), &this_var);
+
             function_impl_resolve_names(&my decl.function, names, errs);
+
             name_stack_pop_frame(names);
-            break;
+        }   break;
 
         case STATEMENT_DECL_CLASS:
             class_decl_resolve_names(my decl.class, names, errs);

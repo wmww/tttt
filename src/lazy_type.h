@@ -36,7 +36,7 @@ typedef struct LazyType {
         TypeDecl* interface;
         struct {
             ArcLazyType source;
-            Type* index; // Owned by the lazy type
+            Type* index; // Owned
         } indexed;
     };
 } LazyType;
@@ -114,7 +114,9 @@ static inline Type const* lazy_type_assert_get(LazyType const* me) {
         case LAZY_TYPE_VALUE: return &my value;
         case LAZY_TYPE_REF: return my ref;
         case LAZY_TYPE_RECURSIVE_ERROR: return &type_unknown;
-        default: PANIC("Tried to get unresolved lazy type with tag %d", my tag);
+        default:
+            NONFATAL("Tried to get unresolved lazy type with tag %d", my tag);
+            return &type_unknown;
     }
 }
 

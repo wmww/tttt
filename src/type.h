@@ -16,7 +16,6 @@ typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
 
-wrap_forward_arc(NamedType, named_type);
 wrap_forward_arc(Expr, expr);
 wrap_forward_vec(Type, type);
 
@@ -40,6 +39,7 @@ typedef struct Type {
         TYPE_TERNARY,
         TYPE_UNION,
         TYPE_INTERSECTION,
+        TYPE_REF,
     } tag;
     union {
         Value value;
@@ -58,6 +58,7 @@ typedef struct Type {
         KeyofType* keyof;
         TernaryType* ternary;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
+        Type const* ref;
     };
 } Type;
 
@@ -139,6 +140,13 @@ static inline Type type_ternary(TernaryType* ternary) {
     return (Type){
         .tag = TYPE_TERNARY,
         .ternary = ternary,
+    };
+}
+
+static inline Type type_ref(Type const* ref) {
+    return (Type){
+        .tag = TYPE_REF,
+        .ref = ref,
     };
 }
 

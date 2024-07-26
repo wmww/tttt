@@ -111,6 +111,7 @@ void type_drop(Type* me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_REF:
             break;
 
         case TYPE_VALUE:
@@ -171,7 +172,8 @@ Type type_clone(Type me) {
         case TYPE_VOID:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
-        case TYPE_STRING: return me;
+        case TYPE_STRING:
+        case TYPE_REF: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
@@ -237,6 +239,8 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             }
             cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             break;
+
+        case TYPE_REF: cstr_append_type_debug(target, my ref, indent); break;
     }
 }
 
@@ -300,6 +304,8 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
                 }
             }
         }   break;
+
+        case TYPE_REF: cstr_append_type_error_msg(target, my ref); break;
     }
 }
 
@@ -333,19 +339,16 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
                 type_add_inferred_names(&i.ref->type, names);
             }
             if (my identifier->inferred) {
-                name_stack_add_type(
-                    names,
-                    my identifier->name,
-                    lazy_type_ref(&my identifier->degenericized),
-                    nullptr
-                );
-                ArcNamedType const* result = name_stack_get_type(names, span_sv(&my identifier->name));
-                ASSERT(result);
-                if (my identifier->type.get) {
+                if (my identifier->type) {
                     NONFATAL("Inferred identifier added multiple times");
-                    arc_named_type_drop(&my identifier->type);
+                } else {
+                    my identifier->type = make_named_type(
+                        my identifier->name,
+                        lazy_type_ref(&my identifier->degenericized),
+                        nullptr
+                    );
+                    name_stack_add_type(names, my identifier->type);
                 }
-                my identifier->type = arc_named_type_clone(*result);
             }
             break;
 
@@ -397,6 +400,8 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
                 type_add_inferred_names(i.ref, names);
             }
             break;
+
+        case TYPE_REF: break;
     }
 }
 
@@ -457,6 +462,8 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
                 type_resolve_names(i.ref, names, errs);
             }
             break;
+
+        case TYPE_REF: break;
     }
 
     if (generic) {
@@ -506,6 +513,8 @@ static Type type_all_keys(Type const* me, int level) {
             return ret;
         }
 
+        case TYPE_REF: return type_all_keys(my ref, level);
+
         default: return type_never;
     }
 }
@@ -518,18 +527,18 @@ static Type const* type_resolve_internal(Type const* me, int level) {
         }
         switch (my tag) {
             case TYPE_IDENTIFIER:
-                if (my identifier->type.get) {
+                if (my identifier->type) {
                     if (vec_spanned_type_empty(&my identifier->generic_params)) {
-                        if (generic_empty(my identifier->type.get->generic)) {
-                            me = lazy_type_resolve(&my identifier->type.get->type);
+                        if (!my identifier->type->generic) {
+                            me = lazy_type_resolve(&my identifier->type->type);
                         } else {
                             me = &type_any;
                         }
                     } else {
-                        if (!my identifier->degenericized.tag && my identifier->type.get->generic) {
+                        if (my identifier->degenericized.tag == 0 && my identifier->type->generic) {
                             my identifier->degenericized = generic_degenericize_type(
-                                my identifier->type.get->generic,
-                                type_clone(*lazy_type_resolve(&my identifier->type.get->type)),
+                                my identifier->type->generic,
+                                type_clone(*lazy_type_resolve(&my identifier->type->type)),
                                 &my identifier->generic_params
                             );
                         }
@@ -581,6 +590,8 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                 break;
             }
 
+            case TYPE_REF: me = my ref; break;
+
             default:
                 return me;
         }
@@ -617,6 +628,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
+        case TYPE_REF:
             return type_extends_internal(type_resolve_internal(sub, level + 1), super, refinements, level + 1);
 
         case TYPE_UNION:
@@ -770,7 +782,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             if (refinements && super->identifier->inferred) {
                 if (type_extends_internal(sub, &super->identifier->degenericized, nullptr, level + 1)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
-                        .target = super->identifier->type.get,
+                        .target = super->identifier->type,
                         .refined = sub,
                     });
                     return true;
@@ -783,6 +795,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
+        case TYPE_REF:
             return type_extends_internal(sub, type_resolve_internal(super, level + 1), refinements, level + 1);
 
         case TYPE_UNION:
@@ -920,6 +933,11 @@ void type_abstract_literals(Type* me) {
                 type_abstract_literals(i.ref);
             }
         }   break;
+
+        case TYPE_REF:
+            *me = type_clone(*my ref);
+            type_abstract_literals(me);
+            break;
     }
 }
 
@@ -1157,6 +1175,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
+        case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);
     }
     UNREACHABLE;

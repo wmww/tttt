@@ -17,7 +17,7 @@ typedef struct Binding {
         BINDING_OBJECT,
     } tag;
     union {
-        // The only content needed for BINDING_IDENTIFIER is content_span, and BINDING_NOOP has no data
+        NamedVariable* identifier;
         VecBinding array;
         VecObjectBindingItem object;
     };

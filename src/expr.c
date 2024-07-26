@@ -26,7 +26,6 @@ void expr_drop(Expr* me) {
             break;
 
         case EXPR_IDENTIFIER:
-            arc_named_variable_drop(&my identifier.var);
             vec_spanned_type_drop(&my identifier.generic_params);
             break;
 
@@ -133,9 +132,9 @@ void cstr_append_expr_debug(cstr* target, Expr const* me, int indent) {
                 }
                 cstr_append_sv(target, c_sv(">"));
             }
-            if (!my identifier.var.get) {
+            if (!my identifier.var) {
                 cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
-            } else if (!lazy_type_try_get(&my identifier.var.get->type)) {
+            } else if (!lazy_type_try_get(&my identifier.var->type)) {
                 cstr_append_sv(target, c_sv(CLR_ERR " /* untypechecked */" CLR0));
             }
             break;
@@ -285,9 +284,8 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_IDENTIFIER: {
-            ArcNamedVariable const* var = name_stack_get_variable(names, span_sv(&my identifier.name));
-            if (var) {
-                my identifier.var = arc_named_variable_clone(*var);
+            my identifier.var = name_stack_get_variable(names, span_sv(&my identifier.name));
+            if (my identifier.var) {
             } else if (name_stack_get_type(names, span_sv(&my identifier.name))) {
                 error_ctx_error(
                     errs, my identifier.name, 2693,
@@ -449,10 +447,10 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_EQUAL:
             switch (expr->binary_op->left.tag) {
                 case EXPR_IDENTIFIER:
-                    if (expr->binary_op->left.identifier.var.get) {
+                    if (expr->binary_op->left.identifier.var) {
                         check_assignable_or_error(
                             &right,
-                            lazy_type_resolve(&expr->binary_op->left.identifier.var.get->type),
+                            lazy_type_resolve(&expr->binary_op->left.identifier.var->type),
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -562,10 +560,10 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
             return type_value(value_clone(my literal));
 
         case EXPR_IDENTIFIER:
-            if (my identifier.var.get) {
-                Type ret = type_clone(*lazy_type_resolve(&my identifier.var.get->type));
+            if (my identifier.var) {
+                Type ret = type_ref(lazy_type_resolve(&my identifier.var->type));
                 if (!vec_spanned_type_empty(&my identifier.generic_params)) {
-                    if (generic_empty(my identifier.var.get->generic)) {
+                    if (generic_empty(my identifier.var->generic)) {
                         error_ctx_error(
                             errs,
                             span_between(
@@ -578,7 +576,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         );
                     } else {
                         ret = generic_degenericize_type(
-                            my identifier.var.get->generic,
+                            my identifier.var->generic,
                             ret,
                             &my identifier.generic_params
                         );

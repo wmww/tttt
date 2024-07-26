@@ -11,10 +11,11 @@ typedef struct TypeDecl {
     Generic generic;
     VecSpannedType interface_extends; // Only used if is_interface is true
     Type type;
+    NamedType* named_type;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
 void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent);
-LazyType type_decl_unresolved_lazy_type(TypeDecl* me);
+void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs);
 Type type_decl_make_interface_type(TypeDecl* me);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);

@@ -84,6 +84,7 @@ typedef struct Statement {
             bool declared;
             union {
                 VariableStatement variable;
+                // PERF: FunctionImpl is big and somewhat rare, perhaps this should be an owned pointer
                 FunctionImpl function;
                 ClassDecl* class;
                 TypeDecl type;

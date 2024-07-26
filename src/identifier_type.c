@@ -5,7 +5,9 @@
 
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
-    arc_named_type_drop(&my type);
+    if (my inferred) {
+        named_type_destroy(my type);
+    }
     vec_spanned_type_drop(&my generic_params);
     type_drop(&my degenericized);
 }
@@ -14,7 +16,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
     return (IdentifierType){
         .namespaces = vec_span_clone(me.namespaces),
         .name = me.name,
-        .type = arc_named_type_clone(me.type),
+        .type = nullptr,
         .generic_params = vec_spanned_type_clone(me.generic_params),
         .degenericized = type_any,
         .inferred = me.inferred,
@@ -25,7 +27,7 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
     if (my inferred) {
         cstr_append_sv(target, c_sv("infer "));
     }
-    if (my type.get && my type.get->is_typeof_class) {
+    if (my type && my type->is_typeof_class) {
         cstr_append_sv(target, c_sv("typeof "));
     }
     cstr_append_sv(target, c_sv(CLR_TYPE));
@@ -45,9 +47,9 @@ void cstr_append_identifier_type_debug(cstr* target, IdentifierType* me, int ind
         }
         cstr_append_sv(target, c_sv(">"));
     }
-    if (!my type.get) {
+    if (!my type) {
         cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
-    } else if (!lazy_type_try_get(&my type.get->type)) {
+    } else if (!lazy_type_try_get(&my type->type)) {
         cstr_append_sv(target, c_sv(CLR_ERR " /* untypechecked */" CLR0));
     }
 }
@@ -56,7 +58,7 @@ void cstr_append_identifier_type_error_msg(cstr* target, IdentifierType* me) {
     if (my inferred) {
         cstr_append_sv(target, c_sv("infer "));
     }
-    if (my type.get && my type.get->is_typeof_class) {
+    if (my type && my type->is_typeof_class) {
         cstr_append_sv(target, c_sv("typeof "));
     }
     cstr_append_span(target, &my name);
@@ -76,9 +78,9 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
     if (my inferred) {
         return;
     }
-    if (!my type.get) {
-        ArcNamedType const* result = name_stack_get_type(names, span_sv(&my name));
-        if (!result) {
+    if (!my type) {
+        my type = name_stack_get_type(names, span_sv(&my name));
+        if (!my type) {
             error_ctx_error(
                 errs,
                 my name,
@@ -86,10 +88,9 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
                 "Cannot find name '%.*s'.",
                 c_SV(span_sv(&my name))
             );
-            result = name_stack_get_type(names, c_sv("any"));
-            ASSERT(result);
+            my type = name_stack_get_type(names, c_sv("any"));
+            ASSERT(my type);
         }
-        my type = arc_named_type_clone(*result);
     }
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_resolve_names(&i.ref->type, names, errs);

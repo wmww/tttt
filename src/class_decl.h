@@ -66,6 +66,11 @@ typedef struct ClassDecl {
     Expr extends;
     VecType implements;
     VecClassItem items;
+    // Perf: do these all need to be separate allocations?
+    NamedType* instance_named_type;
+    NamedType* class_named_type;
+    NamedVariable* instance_named_var;
+    NamedVariable* class_named_var;
     Type instance_identifier_type;
     Type class_identifier_type;
 } ClassDecl;
