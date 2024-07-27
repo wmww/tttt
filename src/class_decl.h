@@ -66,6 +66,10 @@ typedef struct ClassDecl {
     Expr extends;
     VecType implements;
     VecClassItem items;
+    ResolveState instance_resolve_state;
+    Type instance_type;
+    ResolveState class_resolve_state;
+    Type class_type;
     // Perf: do these all need to be separate allocations?
     NamedType* instance_named_type;
     NamedType* class_named_type;
@@ -79,5 +83,5 @@ void class_decl_drop(ClassDecl* me);
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent);
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
-Type class_decl_make_type(ClassDecl* me, bool make_instance);
+Type const* class_decl_resolve_type(ClassDecl* me, bool instance_type);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

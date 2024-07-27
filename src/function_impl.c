@@ -90,25 +90,42 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
 }
 
 Type const* function_impl_resolve_type(FunctionImpl* me) {
-    if (!my ret_type_resolved && !my callable.ret_explicit) {
-
-        StatementCtx ctx = statement_ctx_function(&type_any, true);
-
-        block_typecheck(&my body, &ctx, nullptr);
-
-        type_drop(&my callable.ret);
-        if (ctx.impl_return.tag == TYPE_NEVER) {
-            // This will need to be improved
-            my callable.ret = type_void;
-        } else {
-            my callable.ret = type_move(&ctx.impl_return);
-        }
-        type_abstract_literals(&my callable.ret);
-
-        statement_ctx_drop(&ctx);
-
-        my ret_type_resolved = true;
+    if (my callable.ret_explicit) {
+        my ret_resolve_state = RESOLVE_STATE_DONE;
     }
+
+    switch (my ret_resolve_state) {
+        case RESOLVE_STATE_UNINITIALIZED:
+            type_drop(&my callable.ret);
+            my ret_resolve_state = RESOLVE_STATE_IN_FLIGHT;
+
+            StatementCtx ctx = statement_ctx_function(&type_any, true);
+            block_typecheck(&my body, &ctx, nullptr);
+
+            if (my ret_resolve_state == RESOLVE_STATE_IN_FLIGHT) {
+                if (ctx.impl_return.tag == TYPE_NEVER) {
+                    // This will need to be improved
+                    my callable.ret = type_void;
+                } else {
+                    my callable.ret = type_move(&ctx.impl_return);
+                    type_abstract_literals(&my callable.ret);
+                }
+                my ret_resolve_state = RESOLVE_STATE_DONE;
+            }
+
+            statement_ctx_drop(&ctx);
+
+            break;
+
+        case RESOLVE_STATE_IN_FLIGHT:
+            type_drop(&my callable.ret);
+            my callable.ret = type_self_referential_error;
+            my ret_resolve_state = RESOLVE_STATE_DONE;
+            break;
+
+        case RESOLVE_STATE_DONE: break;
+    }
+
     return callable_type_get_wrapper(&my callable);
 }
 

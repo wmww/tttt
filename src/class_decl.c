@@ -49,6 +49,8 @@ void class_decl_drop(ClassDecl* me) {
     expr_drop(&my extends);
     vec_type_drop(&my implements);
     vec_class_item_drop(&my items);
+    type_drop(&my instance_type);
+    type_drop(&my class_type);
     named_type_destroy(my instance_named_type);
     named_type_destroy(my class_named_type);
     named_variable_destroy(my instance_named_var);
@@ -227,7 +229,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
                 type_drop(&i.ref->constructor.func.callable.ret);
             }
             ASSERT(i.ref->constructor.func.callable.ret.tag == TYPE_ANY);
-            i.ref->constructor.func.ret_type_resolved = true;
+            i.ref->constructor.func.ret_resolve_state = RESOLVE_STATE_DONE;
             i.ref->constructor.func.callable.ret = type_clone(my instance_identifier_type);
         }
     }
@@ -262,10 +264,28 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_pop_frame(names); // generics
 }
 
-Type class_decl_make_type(ClassDecl* me, bool make_instance) {
+Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
 
-    if (!make_instance) {
+    ResolveState* const resolve_state = resolve_instance ? &my instance_resolve_state : &my class_resolve_state;
+    Type* const type = resolve_instance ? &my instance_type : &my class_type;
+
+    switch (*resolve_state) {
+        case RESOLVE_STATE_UNINITIALIZED:
+            break;
+
+        case RESOLVE_STATE_IN_FLIGHT:
+            *type = type_self_referential_error;
+            *resolve_state = RESOLVE_STATE_DONE;
+            break;
+
+        case RESOLVE_STATE_DONE:
+            return type;
+    }
+
+    *resolve_state = RESOLVE_STATE_IN_FLIGHT;
+
+    if (!resolve_instance) {
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
             true,
@@ -301,7 +321,7 @@ Type class_decl_make_type(ClassDecl* me, bool make_instance) {
     c_foreach(i, vec_class_item, my items) {
         switch (i.ref->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
-                if (!make_instance && !has_constructor) {
+                if (!resolve_instance && !has_constructor) {
                     has_constructor = true;
                     InterfaceMember member = {
                         .span = i.ref->constructor.func.full_span,
@@ -314,7 +334,7 @@ Type class_decl_make_type(ClassDecl* me, bool make_instance) {
                 break;
 
             case CLASS_ITEM_MEMBER:
-                if (i.ref->member.is_static == make_instance) {
+                if (i.ref->member.is_static == resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i.ref->span,
                         false,
@@ -329,7 +349,7 @@ Type class_decl_make_type(ClassDecl* me, bool make_instance) {
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (i.ref->field.is_static == make_instance) {
+                if (i.ref->field.is_static == resolve_instance) {
                     LazyType type = i.ref->field.type_explicit ?
                         lazy_type_ref(&i.ref->field.type) :
                         lazy_type_expr(&i.ref->field.value, true);
@@ -347,7 +367,7 @@ Type class_decl_make_type(ClassDecl* me, bool make_instance) {
                 break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
-                if (make_instance) {
+                if (resolve_instance) {
                     vec_interface_member_push(&interface.members, interface_member_clone(i.ref->interface_memeber));
                 }
                 break;
@@ -356,7 +376,26 @@ Type class_decl_make_type(ClassDecl* me, bool make_instance) {
         }
     }
 
-    return type_interface(interface);
+    if (!resolve_instance && !has_constructor) {
+        CallableType constructor = {
+            .ret = type_clone(my instance_identifier_type),
+            .is_constructor = true,
+            .is_abstract_constructor = my is_abstract,
+        };
+        InterfaceMember member = {
+            .key.tag = INTERFACE_KEY_CALLABLE,
+            .type = lazy_type_value(type_callable(c_new(CallableType, constructor))),
+        };
+        vec_interface_member_push(&interface.members, member);
+    }
+
+    if (*resolve_state == RESOLVE_STATE_IN_FLIGHT) {
+        *resolve_state = RESOLVE_STATE_DONE;
+        *type = type_interface(interface);
+    } else {
+        interface_drop(&interface);
+    }
+    return type;
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {

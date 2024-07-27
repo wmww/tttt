@@ -16,7 +16,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
     return (IdentifierType){
         .namespaces = vec_span_clone(me.namespaces),
         .name = me.name,
-        .type = nullptr,
+        .type = me.inferred ? nullptr : me.type,
         .generic_params = vec_spanned_type_clone(me.generic_params),
         .degenericized = type_any,
         .inferred = me.inferred,

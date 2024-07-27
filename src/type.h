@@ -42,6 +42,9 @@ typedef struct Type {
         TYPE_REF,
     } tag;
     union {
+        struct {
+            bool self_referential_error;
+        } unkown;
         Value value;
         IdentifierType* identifier;
         CallableType* callable;
@@ -64,6 +67,7 @@ typedef struct Type {
 
 extern const Type type_any;
 extern const Type type_unknown;
+extern const Type type_self_referential_error;
 extern const Type type_never;
 extern const Type type_void;
 extern const Type type_object;

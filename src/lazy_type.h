@@ -14,8 +14,7 @@ typedef struct LazyType {
     enum {
         LAZY_TYPE_VALUE = 0,
         LAZY_TYPE_REF,
-        LAZY_TYPE_RECURSIVE_ERROR,
-        LAZY_TYPE_EVALUATING,
+        LAZY_TYPE_IN_FLIGHT,
         LAZY_TYPE_EXPR,
         LAZY_TYPE_FUNCTION,
         LAZY_TYPE_CLASS_INSTANCE,
@@ -104,7 +103,6 @@ static inline Type const* lazy_type_try_get(LazyType const* me) {
     switch (my tag) {
         case LAZY_TYPE_VALUE: return &my value;
         case LAZY_TYPE_REF: return my ref;
-        case LAZY_TYPE_RECURSIVE_ERROR: return &type_unknown;
         default: return nullptr;
     }
 }
@@ -113,7 +111,6 @@ static inline Type const* lazy_type_assert_get(LazyType const* me) {
     switch (my tag) {
         case LAZY_TYPE_VALUE: return &my value;
         case LAZY_TYPE_REF: return my ref;
-        case LAZY_TYPE_RECURSIVE_ERROR: return &type_unknown;
         default:
             NONFATAL("Tried to get unresolved lazy type with tag %d", my tag);
             return &type_unknown;

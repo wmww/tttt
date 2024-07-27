@@ -13,6 +13,7 @@
 
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
+const Type type_self_referential_error = { .tag = TYPE_UNKNOWN, .unkown.self_referential_error = true, };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
 const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
@@ -191,7 +192,6 @@ Type type_clone(Type me) {
 void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
     switch (my tag) {
         case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
-        case TYPE_UNKNOWN: cstr_append_sv(target, c_sv(CLR_TYPE "unknown" CLR0)); break;
         case TYPE_NEVER: cstr_append_sv(target, c_sv(CLR_TYPE "never" CLR0)); break;
         case TYPE_VOID: cstr_append_sv(target, c_sv(CLR_TYPE "void" CLR0)); break;
         case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
@@ -201,6 +201,13 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
         case TYPE_IDENTIFIER: cstr_append_identifier_type_debug(target, my identifier, indent); break;
         case TYPE_CALLABLE: cstr_append_callable_type_debug(target, my callable, indent); break;
         case TYPE_INTERFACE: cstr_append_interface_debug(target, &my interface, indent); break;
+
+        case TYPE_UNKNOWN:
+            cstr_append_sv(target, c_sv(CLR_TYPE "unknown" CLR0));
+            if (my unkown.self_referential_error) {
+                cstr_append_sv(target, c_sv(CLR_ERR " /* self-referential */" CLR0));
+            }
+            break;
 
         case TYPE_ARRAY:
             if (my array.readonly) {

@@ -54,7 +54,6 @@ typedef struct Expr {
         TernaryExpr* ternary;
         CallExpr* call;
         FunctionImpl* function;
-        // TODO: perhaps optimize lookup somehow? (currently linear)
         ObjectExpr object;
         VecExpr array;
         ClassDecl* class_decl;

@@ -11,6 +11,7 @@ typedef struct CallableTypeArg CallableTypeArg;
 typedef struct FunctionImpl {
     Span full_span;
     Span name;
+    ResolveState ret_resolve_state;
     CallableType callable;
     NamedVariable* named_var;
     VecExpr arg_defaults; // May have less elements than there are args, these are assumed to be implicit any
@@ -19,7 +20,6 @@ typedef struct FunctionImpl {
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
     bool has_block;
-    bool ret_type_resolved;
     Block body; // Initialized to empty block if has_block is false
 } FunctionImpl;
 

@@ -38,3 +38,9 @@ void uninhibit_nonfatals();
 #define CLR_TYPE "\x1b[0;32m"
 #define CLR_NAME "\x1b[0;35m"
 #define CLR_IMPLICIT "\x1b[0;37m"
+
+typedef enum ResolveState {
+    RESOLVE_STATE_UNINITIALIZED = 0,
+    RESOLVE_STATE_IN_FLIGHT,
+    RESOLVE_STATE_DONE,
+} ResolveState;
