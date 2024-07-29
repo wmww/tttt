@@ -52,41 +52,7 @@ void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs)
 }
 
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
-    // Handle generics
-    name_stack_push_generic_frame(names, &my callable.generic, errs);
-
-    // First, resolve names in the callable type
-    callable_type_resolve_names(&my callable, names, errs);
-
-    // Push a stack frame for arguments to live in
-    // This is the function *implementation*, so we do not push a generic stack frame
-    name_stack_push_function_frame(names);
-
-    // Loop through all arguments and add them to the namespace
-    c_foreach(i, vec_callable_arg, my callable.args) {
-        intptr_t index = i.ref - my callable.args.data;
-        binding_add_names(
-            &i.ref->binding,
-            lazy_type_expr(function_impl_arg_default_at(me, index), true),
-            names,
-            errs
-        );
-    }
-
-    // Loop through all argument defaults and resolve names
-    c_foreach(i, vec_expr, my arg_defaults) {
-        expr_resolve_names(i.ref, names, errs);
-    }
-
-    // Resolve names in the function body, don't push a stack frame since the toplevel function body should be the same
-    // namespace as the arguments
-    block_resolve_names_without_stack_frame(&my body, names, errs);
-
-    // Pop the stack frame we pushed above
-    name_stack_pop_frame(names);
-
-    // Pop the generics frame
-    name_stack_pop_frame(names);
+    callable_type_resolve_names(&my callable, me, names, errs);
 }
 
 Type const* function_impl_resolve_type(FunctionImpl* me) {
@@ -130,72 +96,12 @@ Type const* function_impl_resolve_type(FunctionImpl* me) {
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
-    bool found_optional = false;
-    bool required_after_optional = false;
-    bool rest_not_last = false;
-
-    c_foreach(i, vec_callable_arg, my callable.args) {
-        intptr_t index = i.ref - my callable.args.data;
-        Expr const* default_arg = function_impl_arg_default_at(me, index);
-
-        if (i.ref->rest && i.ref != i.end - 1 && !rest_not_last) {
-            rest_not_last = true;
-            error_ctx_error(
-                errs,
-                i.ref->rest_span,
-                1014,
-                "A rest parameter must be last in a parameter list."
-            );
-        }
-
-        if (i.ref->rest) {
-        } else if (i.ref->explicit_optional) {
-            found_optional = true;
-        } else if (found_optional && default_arg->tag == EXPR_IMPLICIT_ANY && !required_after_optional) {
-            required_after_optional = true;
-            error_ctx_error(
-                errs,
-                i.ref->binding.content_span,
-                1016,
-                "A required parameter cannot follow an optional parameter."
-            );
-        }
-
-        if (!i.ref->binding.type_explicit && default_arg->tag == EXPR_IMPLICIT_ANY) {
-            // TODO: only run this check in strict mode
-            binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
-        } else {
-            Type default_arg_type = expr_get_type_and_typecheck(default_arg, errs);
-            binding_typecheck(&i.ref->binding, &default_arg_type, errs);
-            type_drop(&default_arg_type);
-        }
-
-        if (i.ref->rest) {
-            if (!type_extends_array(&i.ref->binding.type)) {
-                error_ctx_error(
-                    errs,
-                    i.ref->span,
-                    2370,
-                    "A rest parameter must be of an array type."
-                );
-            }
-            if (default_arg->tag != EXPR_IMPLICIT_ANY) {
-                error_ctx_error(
-                    errs,
-                    i.ref->binding.content_span,
-                    1048,
-                    "A rest parameter cannot have an initializer."
-                );
-            }
-        }
-    }
+    function_impl_resolve_type(me);
+    callable_type_typecheck(&my callable, me, errs);
 
     if (my newline_before_arrow) {
         error_ctx_error(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
-
-    // PERF: if !my ret_type_resolved, only typecheck the block once
-    function_impl_resolve_type(me);
 
     StatementCtx ctx = statement_ctx_function(my callable.ret_explicit ? &my callable.ret : &type_any, false);
     block_typecheck(&my body, &ctx, errs);

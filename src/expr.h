@@ -26,7 +26,7 @@ typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
     Span outer_span; // Includes parentheses
     enum {
-        EXPR_IMPLICIT_ANY,
+        EXPR_IMPLICIT_ANY = 0,
         EXPR_LITERAL,
         EXPR_IDENTIFIER,
         EXPR_BINARY_OP,

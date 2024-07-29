@@ -96,3 +96,9 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
         type_resolve_names(&i.ref->type, names, errs);
     }
 }
+
+void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
+    c_foreach(i, vec_spanned_type, my generic_params) {
+        type_typecheck(&i.ref->type, errs);
+    }
+}

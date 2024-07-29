@@ -164,3 +164,12 @@ Type const* lazy_type_resolve(LazyType* me) {
     }
     return lazy_type_assert_get(me);
 }
+
+void lazy_type_typecheck(LazyType* me, ErrorCtx* errs) {
+    lazy_type_resolve(me);
+    switch (my tag) {
+        case LAZY_TYPE_VALUE: type_typecheck(&my value, errs); break;
+        case LAZY_TYPE_REF: break;
+        default: PANIC("LazyType failed to resolve with tag %d", my tag);
+    }
+}

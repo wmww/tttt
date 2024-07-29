@@ -208,10 +208,6 @@ static inline void callable_replace_named_types_with(CallableType* me, VecTypeRe
 }
 
 void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
-    Generic* generic = type_get_generic(me);
-    if (generic) {
-        generic_replace_named_types_with(generic, refinements);
-    }
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -370,4 +366,11 @@ CallableType generic_infer_callable_types(
     vec_type_drop(&arg_types);
 
     return ret;
+}
+
+void generic_typecheck(Generic const* me, ErrorCtx* errs) {
+    c_foreach(i, vec_generic_item, my items) {
+        type_typecheck(&i.ref->extends, errs);
+        type_typecheck(&i.ref->fallback, errs);
+    }
 }

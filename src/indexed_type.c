@@ -31,6 +31,11 @@ void indexed_type_resolve_names(IndexedType* me, NameStack* names, ErrorCtx* err
     type_resolve_names(&my index, names, errs);
 }
 
+void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
+    type_typecheck(&my interface, errs);
+    type_typecheck(&my index, errs);
+}
+
 void keyof_type_drop(KeyofType* me) {
     type_drop(&my interface);
     type_drop(&my cached);
@@ -56,4 +61,8 @@ void cstr_append_keyof_type_error_msg(cstr* target, KeyofType* me) {
 
 void keyof_type_resolve_names(KeyofType* me, NameStack* names, ErrorCtx* errs) {
     type_resolve_names(&my interface, names, errs);
+}
+
+void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs) {
+    type_typecheck(&my interface, errs);
 }

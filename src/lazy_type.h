@@ -97,6 +97,7 @@ LazyType lazy_type_clone(LazyType me);
 void cstr_append_lazy_type_debug(cstr* target, LazyType const* me, int indent);
 void cstr_append_lazy_type_error_msg(cstr* target, LazyType const* me);
 Type const* lazy_type_resolve(LazyType* me);
+void lazy_type_typecheck(LazyType* me, ErrorCtx* errs);
 
 // May return NULL
 static inline Type const* lazy_type_try_get(LazyType const* me) {

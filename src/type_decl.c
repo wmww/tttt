@@ -61,9 +61,12 @@ Type type_decl_make_interface_type(TypeDecl* me) {
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
+    generic_typecheck(&my generic, errs);
+
     if (my is_interface) {
         ASSERT(my type.tag == TYPE_INTERFACE);
         c_foreach(extends, vec_spanned_type, my interface_extends) {
+            type_typecheck(&extends.ref->type, errs);
             Type const* resolved = type_resolve(&extends.ref->type);
             if (extends.ref->type.tag != TYPE_IDENTIFIER) {
                 error_ctx_error(
@@ -97,5 +100,7 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
             }
             //my effective_type = type_composite(my effective_type, type_clone(extends.ref->type), TYPE_INTERSECTION);
         }
+    } else {
+        type_typecheck(&my type, errs);
     }
 }

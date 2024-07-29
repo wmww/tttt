@@ -168,10 +168,9 @@ static inline Type type_move(Type* me) {
     my tag = TYPE_ANY;
     return ret;
 }
-// Returns the non-empty generic of the toplevel type, or null
-Generic* type_get_generic(Type const* me);
 
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs);
+void type_typecheck(Type const* me, ErrorCtx* errs);
 Type const* type_resolve(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 bool type_overlaps(Type const* a, Type const* b);

@@ -65,6 +65,7 @@ InterfaceMember interface_member_clone(InterfaceMember me);
 void cstr_append_interface_member_debug(cstr* target, InterfaceMember const* me, int indent);
 void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const* me);
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs);
+void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs);
 
 #define i_key_class_names InterfaceMember, interface_member
 #define i_is_forward

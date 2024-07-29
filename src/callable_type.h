@@ -34,7 +34,8 @@ void callable_type_drop(CallableType* me);
 CallableType callable_type_clone(CallableType me);
 void cstr_append_callable_type_debug(cstr* target, CallableType* me, int indent);
 void cstr_append_callable_type_error_msg(cstr* target, CallableType* me);
-void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs);
+void callable_type_resolve_names(CallableType* me, FunctionImpl const* optional_func, NameStack* names, ErrorCtx* errs);
+void callable_type_typecheck(CallableType const* me, FunctionImpl const* optional_func, ErrorCtx* errs);
 
 // HACK: returns a pointer to the generic version of this callable type. Returned type should never be dropped, and
 // is invalidated by moving or dropping the given callable type.

@@ -18,7 +18,7 @@ void cstr_append_block_debug(cstr* target, Block* me, int indent) {
     cstr_append_sv(target, c_sv("}"));
 }
 
-void block_resolve_names_without_stack_frame(Block* me, NameStack* names, ErrorCtx* errs) {
+void block_resolve_names_without_stack_frame(Block const* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_statement, my statements) {
         statement_add_names(i.ref, names, errs);
     }
@@ -27,7 +27,7 @@ void block_resolve_names_without_stack_frame(Block* me, NameStack* names, ErrorC
     }
 }
 
-void block_resolve_names(Block* me, NameStack* names, ErrorCtx* errs) {
+void block_resolve_names(Block const* me, NameStack* names, ErrorCtx* errs) {
     name_stack_push_block_frame(names);
     block_resolve_names_without_stack_frame(me, names, errs);
     name_stack_pop_frame(names);

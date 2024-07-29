@@ -26,6 +26,9 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
 
 void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
+        if (my keyword == VAR_INIT_CONST && i.ref->value.tag == EXPR_IMPLICIT_ANY) {
+            error_ctx_error(errs, i.ref->binding.content_span, 1155, "'const' declarations must be initialized.");
+        }
         binding_add_names(
             &i.ref->binding,
             lazy_type_expr(&i.ref->value, my keyword != VAR_INIT_CONST),
@@ -650,6 +653,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_TRY_CATCH:
             block_typecheck(&my try_catch->try_block, ctx, errs);
+            binding_typecheck(&my try_catch->catch_var, &type_any, errs);
             // No need to typecheck catch variable
             block_typecheck(&my try_catch->catch_block, ctx, errs);
             block_typecheck(&my try_catch->finally_block, ctx, errs);

@@ -17,8 +17,8 @@ typedef struct Block {
 
 void block_drop(Block* me);
 void cstr_append_block_debug(cstr* target, Block* me, int indent);
-void block_resolve_names_without_stack_frame(Block* me, NameStack* names, ErrorCtx* errs);
-void block_resolve_names(Block* me, NameStack* names, ErrorCtx* errs);
+void block_resolve_names_without_stack_frame(Block const* me, NameStack* names, ErrorCtx* errs);
+void block_resolve_names(Block const* me, NameStack* names, ErrorCtx* errs);
 void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs);
 void block_resolve_names_toplevel(Block* me, ErrorCtx* errs);
 void block_typecheck_toplevel(Block* me, ErrorCtx* errs);

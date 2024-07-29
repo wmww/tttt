@@ -83,5 +83,5 @@ void class_decl_drop(ClassDecl* me);
 void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent);
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
-Type const* class_decl_resolve_type(ClassDecl* me, bool instance_type);
+Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

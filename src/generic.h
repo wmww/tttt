@@ -47,3 +47,4 @@ CallableType generic_infer_callable_types(
     VecExpr const* args,
     ErrorCtx* errs
 );
+void generic_typecheck(Generic const* me, ErrorCtx* errs);

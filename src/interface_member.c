@@ -170,3 +170,29 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
         name_stack_pop_frame(names);
     }
 }
+
+void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs) {
+    switch (my key.tag) {
+        case INTERFACE_KEY_NAME: break;
+
+        case INTERFACE_KEY_INDEX:
+            type_typecheck(&my key.index, errs);
+            break;
+
+        case INTERFACE_KEY_EXPR: {
+            Type t = expr_get_type_and_typecheck(my key.expr.get, errs);
+            type_drop(&t);
+        }   break;
+
+        case INTERFACE_KEY_MAPPED:
+            type_typecheck(&my key.mapped.in_type, errs);
+            type_typecheck(&my key.mapped.as_type, errs);
+            if (my key.mapped.named_type) {
+                lazy_type_typecheck(&my key.mapped.named_type->type, errs);
+            }
+            break;
+
+        case INTERFACE_KEY_CALLABLE: break;
+    }
+    lazy_type_typecheck(&my type, errs);
+}

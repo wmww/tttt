@@ -316,19 +316,6 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
     }
 }
 
-Generic* type_get_generic(Type const* me) {
-    switch (my tag) {
-        case TYPE_CALLABLE:
-            if (!generic_empty(&my callable->generic)) {
-                return &my callable->generic;
-            }
-            break;
-
-        default: break;
-    }
-    return nullptr;
-}
-
 static void type_add_inferred_names(Type const* me, NameStack* names) {
     switch (my tag) {
         case TYPE_ANY:
@@ -413,11 +400,6 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
 }
 
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
-    Generic* generic = type_get_generic(me);
-    if (generic) {
-        name_stack_push_generic_frame(names, generic, errs);
-    }
-
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -430,7 +412,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_IDENTIFIER: identifier_type_resolve_names(my identifier, names, errs); break;
-        case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
+        case TYPE_CALLABLE: callable_type_resolve_names(my callable, nullptr, names, errs); break;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
@@ -472,9 +454,68 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
         case TYPE_REF: break;
     }
+}
 
-    if (generic) {
-        name_stack_pop_frame(names);
+void type_typecheck(Type const* me, ErrorCtx* errs) {
+    switch (my tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_VALUE:
+            break;
+
+        case TYPE_IDENTIFIER:
+            identifier_type_typecheck(my identifier, errs);
+            break;
+
+        case TYPE_CALLABLE:
+            callable_type_typecheck(my callable, nullptr, errs);
+            break;
+
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_interface_member, my interface.members) {
+                interface_member_typecheck(i.ref, errs);
+            }
+            break;
+
+        case TYPE_ARRAY:
+            type_typecheck(my array.element, errs);
+            break;
+
+        case TYPE_TUPLE:
+            c_foreach(i, vec_type, my tuple.elements) {
+                type_typecheck(i.ref, errs);
+            }
+            break;
+
+        case TYPE_INDEXED:
+            indexed_type_typecheck(my indexed, errs);
+            break;
+
+        case TYPE_KEYOF:
+            keyof_type_typecheck(my keyof, errs);
+            break;
+
+        case TYPE_TERNARY:
+            type_typecheck(&my ternary->maybe_sub, errs);
+            type_typecheck(&my ternary->maybe_super, errs);
+            type_typecheck(&my ternary->if_true, errs);
+            type_typecheck(&my ternary->if_false, errs);
+            break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                type_typecheck(i.ref, errs);
+            }
+            break;
+
+        case TYPE_REF:
+            break;
     }
 }
 

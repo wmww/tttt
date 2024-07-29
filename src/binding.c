@@ -33,6 +33,10 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, i
             cstr_append_sv(target, c_sv(CLR0));
             if (!my identifier) {
                 cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
+            } else if (!my type_explicit && lazy_type_try_get(&my identifier->type)) {
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT " /* " CLR0));
+                cstr_append_type_debug(target, lazy_type_try_get(&my identifier->type), indent);
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT " */ " CLR0));
             }
             break;
 
@@ -215,7 +219,12 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 
 void binding_typecheck(Binding* me, Type const* assigned, ErrorCtx* errs) {
     if (my type_explicit) {
+        type_typecheck(&my type, errs);
         check_assignable_or_error(assigned, &my type, my content_span, errs);
+    } else {
+        my type = type_clone(*assigned);
+        type_abstract_literals(&my type);
+        my type_explicit = true;
     }
 
     switch (my tag) {
@@ -271,9 +280,11 @@ void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names,
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
-    if (my value.tag != EXPR_IMPLICIT_ANY) {
+    if (my value.tag == EXPR_IMPLICIT_ANY) {
         Type type = expr_get_type_and_typecheck(&my value, errs);
         binding_typecheck(&my binding, &type, errs);
         type_drop(&type);
+    } else {
+        binding_typecheck(&my binding, &type_any, errs);
     }
 }

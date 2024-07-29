@@ -563,6 +563,9 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
             if (my identifier.var) {
                 Type ret = type_ref(lazy_type_resolve(&my identifier.var->type));
                 if (!vec_spanned_type_empty(&my identifier.generic_params)) {
+                    c_foreach(i, vec_spanned_type, my identifier.generic_params) {
+                        type_typecheck(&i.ref->type, errs);
+                    }
                     if (generic_empty(my identifier.var->generic)) {
                         error_ctx_error(
                             errs,
@@ -633,6 +636,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+            type_typecheck(&my as_type->type, errs);
             Type t = expr_get_type_and_typecheck(&my as_type->expr, errs);
             type_drop(&t);
             return type_clone(my as_type->type);

@@ -404,6 +404,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
     my has_typechecked = true;
 
+    generic_typecheck(&my generic, errs);
+    type_typecheck(class_decl_resolve_type(me, true), errs);
+    type_typecheck(class_decl_resolve_type(me, false), errs);
+
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type extends_type = expr_get_type_and_typecheck(&my extends, errs);
         if (extends_type.tag == TYPE_VALUE && extends_type.value.tag == VALUE_NULL) {
