@@ -638,7 +638,13 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_PROPERTY: {
             Type value = expr_get_type_and_typecheck(&my property->expr, errs);
             Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
-            ret = index_type_of(&value, &prop, my property->prop.outer_span, errs);
+            ret = index_type_of(
+                &value,
+                &prop,
+                my property->prop.outer_span,
+                my property->form == PROPERTY_EXPR_BRACKET,
+                errs
+            );
             type_drop(&value);
             type_drop(&prop);
         }   break;

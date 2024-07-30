@@ -141,8 +141,9 @@ Type const* lazy_type_resolve(LazyType* me) {
 
         case LAZY_TYPE_CLASS_INSTANCE:
         case LAZY_TYPE_CLASS_CLASS: {
+            bool resolve_instance = (my tag == LAZY_TYPE_CLASS_INSTANCE);
             my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* resolved = class_decl_resolve_type(my class, my tag == LAZY_TYPE_CLASS_INSTANCE);
+            Type const* resolved = class_decl_resolve_type(my class, resolve_instance);
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
                 *me = lazy_type_ref(resolved);
             }
@@ -161,7 +162,7 @@ Type const* lazy_type_resolve(LazyType* me) {
             my tag = LAZY_TYPE_IN_FLIGHT;
             Type const* source_resolved = lazy_type_resolve(my indexed.source.get);
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                Type result = index_type_of(source_resolved, my indexed.index, span_null, nullptr);
+                Type result = index_type_of(source_resolved, my indexed.index, span_null, false, nullptr);
                 if (my tag == LAZY_TYPE_IN_FLIGHT) {
                     *me = lazy_type_value(result);
                 } else {

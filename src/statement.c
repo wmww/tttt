@@ -24,9 +24,9 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
     }
 }
 
-void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
+void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        if (my keyword == VAR_INIT_CONST && i.ref->value.tag == EXPR_IMPLICIT_ANY) {
+        if (my keyword == VAR_INIT_CONST && i.ref->value.tag == EXPR_IMPLICIT_ANY && !declared) {
             error_ctx_error(errs, i.ref->binding.content_span, 1155, "'const' declarations must be initialized.");
         }
         initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, names, errs);
@@ -97,7 +97,7 @@ Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me) {
 
                 case FOR_EACH_LOOP_OF:
                     if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
-                        var_type = index_type_of(iterable_type, &type_number, span_null, nullptr);
+                        var_type = index_type_of(iterable_type, &type_number, span_null, false, nullptr);
                     }
                     break;
             }
@@ -372,7 +372,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_VARIABLE:
-            variable_statement_add_names(&my decl.variable, names, errs);
+            variable_statement_add_names(&my decl.variable, my decl.declared, names, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:

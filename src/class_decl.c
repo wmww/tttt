@@ -305,8 +305,8 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("prototype"),
             span_null,
             false,
-            lazy_type_ref(&my instance_identifier_type))
-        );
+            lazy_type_ref(&my instance_identifier_type)
+        ));
 
         // TODO: Use the declaration in Object of lib.es5.d.ts instead
         // Or at least use a global instance of the type
@@ -346,7 +346,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                 break;
 
             case CLASS_ITEM_MEMBER:
-                if (i.ref->member.is_static == resolve_instance) {
+                if (i.ref->member.is_static != resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i.ref->span,
                         false,
@@ -361,7 +361,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (i.ref->field.is_static == resolve_instance) {
+                if (i.ref->field.is_static != resolve_instance) {
                     LazyType type = i.ref->field.has_explicit_type ?
                         lazy_type_ref(&i.ref->field.explicit_type) :
                         lazy_type_expr(&i.ref->field.value, true);

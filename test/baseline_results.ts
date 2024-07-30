@@ -946,7 +946,7 @@ const baselines = {
         types: false,
     },
     'argumentsAsPropertyName': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -24401,7 +24401,7 @@ const baselines = {
         types: false,
     },
     'recursiveObjectLiteral': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },

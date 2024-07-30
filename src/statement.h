@@ -28,7 +28,7 @@ typedef struct VariableStatement {
 
 void variable_statement_drop(VariableStatement* me);
 void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent);
-void variable_statement_add_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
+void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs);
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 

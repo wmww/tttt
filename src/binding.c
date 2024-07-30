@@ -310,5 +310,7 @@ void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names,
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
+    Type t = expr_get_type_and_typecheck(&my value, errs);
+    type_drop(&t);
     binding_typecheck(&my binding, errs);
 }

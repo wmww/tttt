@@ -244,7 +244,11 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
             break;
 
-        case TYPE_REF: cstr_append_type_debug(target, my ref, indent); break;
+        case TYPE_REF:
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT "-> (" CLR0));
+            cstr_append_type_debug(target, my ref, indent);
+            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
+            break;
     }
 
     if (type_is_self_referential(me)) {
@@ -577,14 +581,8 @@ static Type const* type_resolve_internal(Type const* me, int level) {
         switch (my tag) {
             case TYPE_IDENTIFIER:
                 if (my identifier->type) {
-                    if (vec_spanned_type_empty(&my identifier->generic_params)) {
-                        if (!my identifier->type->generic) {
-                            me = lazy_type_resolve(&my identifier->type->type);
-                        } else {
-                            me = &type_any;
-                        }
-                    } else {
-                        if (my identifier->degenericized.tag == 0 && my identifier->type->generic) {
+                    if (my identifier->type->generic) {
+                        if (my identifier->degenericized.tag == 0) {
                             my identifier->degenericized = generic_degenericize_type(
                                 my identifier->type->generic,
                                 type_clone(*lazy_type_resolve(&my identifier->type->type)),
@@ -592,6 +590,8 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                             );
                         }
                         me = &my identifier->degenericized;
+                    } else {
+                        me = lazy_type_resolve(&my identifier->type->type);
                     }
                 } else {
                     me = &type_unknown;
@@ -1021,7 +1021,14 @@ void type_remove_null_and_undefined(Type* me) {
     }
 }
 
-static Type index_type_of_internal(Type const* me, Type const* index, Span index_span, ErrorCtx* errs, int level) {
+static Type index_type_of_internal(
+    Type const* me,
+    Type const* index,
+    Span index_span,
+    bool allow_not_found,
+    ErrorCtx* errs,
+    int level
+) {
     if (level > 100) {
         NONFATAL("Max type recursion depth exceeded");
         return type_any;
@@ -1050,7 +1057,11 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
         case TYPE_INTERSECTION: {
             Type ret = type_composite_base(index->tag);
             c_foreach(i, vec_type, index->composite) {
-                ret = type_composite(index->tag, ret, index_type_of_internal(me, i.ref, index_span, errs, level + 1));
+                ret = type_composite(
+                    index->tag,
+                    ret,
+                    index_type_of_internal(me, i.ref, index_span, allow_not_found, errs, level + 1)
+                );
             }
             return ret;
         }
@@ -1158,7 +1169,7 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
             if (!found) {
                 type_drop(&ret);
                 ret = type_any;
-                if (errs) {
+                if (errs && !allow_not_found) {
                     cstr msg = cstr_lit("Property '");
                     if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
                         cstr_append_s(&msg, index->value.string);
@@ -1218,7 +1229,11 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
         case TYPE_INTERSECTION: {
             Type ret = type_composite_base(my tag);
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite(my tag, ret, index_type_of_internal(i.ref, index, index_span, errs, level + 1));
+                ret = type_composite(
+                    my tag,
+                    ret,
+                    index_type_of_internal(i.ref, index, index_span, allow_not_found, errs, level + 1)
+                );
             }
             return ret;
         }
@@ -1233,8 +1248,8 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
     UNREACHABLE;
 }
 
-Type index_type_of(Type const* me, Type const* index, Span index_span, ErrorCtx* errs) {
-    return index_type_of_internal(me, index, index_span, errs, 0);
+Type index_type_of(Type const* me, Type const* index, Span index_span, bool allow_not_found, ErrorCtx* errs) {
+    return index_type_of_internal(me, index, index_span, allow_not_found, errs, 0);
 }
 
 static bool check_assignable_or_error_internal(
