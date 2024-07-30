@@ -217,6 +217,18 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         error_ctx_type_error(errs, "multiple values declared with same name");
     }
 
+    ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
+    generic_params = (VecSpannedType){0};
+    c_foreach(i, vec_generic_item, my generic.items) {
+        // Is it the fallback type, always any or something else? unclear.
+        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
+    }
+    my class_identifier_type = type_identifier(c_new(IdentifierType, {
+        .name = my name,
+        .type = my class_named_type,
+        .generic_params = generic_params,
+    }));
+
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
             if (i.ref->constructor.func.callable.ret_explicit) {
@@ -308,8 +320,8 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             lazy_type_value(type_callable(c_new(CallableType, {
                 .args = c_init(vec_callable_arg, {{.binding = {
                     .tag = BINDING_IDENTIFIER,
-                    .type_explicit = true,
-                    .type = type_string,
+                    .has_explicit_type = true,
+                    .explicit_type = type_string,
                 }}}),
                 .ret_explicit = true,
                 .ret = type_boolean,

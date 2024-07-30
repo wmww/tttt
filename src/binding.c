@@ -9,7 +9,8 @@ void binding_drop(Binding* me) {
         case BINDING_ARRAY: vec_binding_drop(&my array); break;
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
-    type_drop(&my type);
+    type_drop(&my explicit_type);
+    lazy_type_drop(&my assigned_type);
 }
 
 Binding binding_clone(Binding me) {
@@ -19,7 +20,8 @@ Binding binding_clone(Binding me) {
         case BINDING_ARRAY: me.array = vec_binding_clone(me.array); break;
         case BINDING_OBJECT: me.object = vec_object_binding_item_clone(me.object); break;
     }
-    me.type = type_clone(me.type);
+    me.explicit_type = type_clone(me.explicit_type);
+    me.assigned_type = lazy_type_clone(me.assigned_type);
     return me;
 }
 
@@ -33,7 +35,7 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, i
             cstr_append_sv(target, c_sv(CLR0));
             if (!my identifier) {
                 cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
-            } else if (!my type_explicit && lazy_type_try_get(&my identifier->type)) {
+            } else if (!my has_explicit_type && lazy_type_try_get(&my identifier->type)) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT " /* " CLR0));
                 cstr_append_type_debug(target, lazy_type_try_get(&my identifier->type), indent);
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT " */ " CLR0));
@@ -69,9 +71,9 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, i
         cstr_append_sv(target, c_sv("?"));
     }
 
-    if (my type_explicit) {
+    if (my has_explicit_type) {
         cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &my type, indent);
+        cstr_append_type_debug(target, &my explicit_type, indent);
     }
 }
 
@@ -112,26 +114,20 @@ void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optiona
         cstr_append_sv(target, c_sv("?"));
     }
 
-    if (my type_explicit) {
-        cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_error_msg(target, &my type);
-    }
+    cstr_append_sv(target, c_sv(": "));
+    cstr_append_type_error_msg(target, binding_get_type((Binding*)me));
 }
 
-void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* errs) {
-    if (my type_explicit) {
-        lazy_type_drop(&input);
-        input = lazy_type_ref(&my type);
-    }
+void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCtx* errs) {
+    ASSERT(my assigned_type.tag == 0 && my assigned_type.value.tag == 0);
+    my assigned_type = assigned;
 
     switch (my tag) {
-        case BINDING_NOOP:
-            lazy_type_drop(&input);
-            break;
+        case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
             ASSERT(!my identifier);
-            my identifier = make_named_variable(my content_span, input, nullptr);
+            my identifier = make_named_variable(my content_span, binding_get_lazy_type(me), nullptr);
             if (!name_stack_add_variable(names, my identifier)) {
                 // name is cstr_str(&result.ref->first)
                 error_ctx_error(errs, my content_span, TS_CODE_NONE, "multiple values declared with same name");
@@ -139,7 +135,7 @@ void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* 
             break;
 
         case BINDING_ARRAY: {
-            ArcLazyType source = arc_lazy_type_make(input);
+            ArcLazyType source = arc_lazy_type_make(binding_get_lazy_type(me));
             c_foreach(i, vec_binding, my array) {
                 intptr_t index = i.ref - my array.data;
                 binding_add_names(
@@ -153,7 +149,7 @@ void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* 
         }   break;
 
         case BINDING_OBJECT: {
-            ArcLazyType source = arc_lazy_type_make(input);
+            ArcLazyType source = arc_lazy_type_make(binding_get_lazy_type(me));
             c_foreach(i, vec_object_binding_item, my object) {
                 binding_add_names(
                     &i.ref->target,
@@ -164,6 +160,22 @@ void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* 
             }
             arc_lazy_type_drop(&source);
         }   break;
+    }
+}
+
+LazyType binding_get_lazy_type(Binding const* me) {
+    if (my has_explicit_type) {
+        return lazy_type_value(type_clone(my explicit_type));
+    } else {
+        return lazy_type_clone(my assigned_type);
+    }
+}
+
+Type const* binding_get_type(Binding* me) {
+    if (my has_explicit_type) {
+        return &my explicit_type;
+    } else {
+        return lazy_type_resolve(&my assigned_type);
     }
 }
 
@@ -185,7 +197,7 @@ void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
     }
-    type_resolve_names(&my type, names, errs);
+    type_resolve_names(&my explicit_type, names, errs);
 }
 
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
@@ -217,14 +229,15 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
     }
 }
 
-void binding_typecheck(Binding* me, Type const* assigned, ErrorCtx* errs) {
-    if (my type_explicit) {
-        type_typecheck(&my type, errs);
-        check_assignable_or_error(assigned, &my type, my content_span, errs);
-    } else {
-        my type = type_clone(*assigned);
-        type_abstract_literals(&my type);
-        my type_explicit = true;
+void binding_typecheck(Binding* me, ErrorCtx* errs) {
+    if (my has_explicit_type) {
+        type_typecheck(&my explicit_type, errs);
+        check_assignable_or_error(
+            lazy_type_resolve(&my assigned_type),
+            &my explicit_type,
+            my content_span,
+            errs
+        );
     }
 
     switch (my tag) {
@@ -238,13 +251,13 @@ void binding_typecheck(Binding* me, Type const* assigned, ErrorCtx* errs) {
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_typecheck(i.ref, &type_any, errs);
+                binding_typecheck(i.ref, errs);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_typecheck(&i.ref->target, &type_any, errs);
+                binding_typecheck(&i.ref->target, errs);
             }
             break;
     }
@@ -274,6 +287,10 @@ void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding cons
     }
 }
 
+void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs) {
+    binding_add_names(&my binding, lazy_type_expr(&my value, abstract_literals), names, errs);
+}
+
 void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs) {
     binding_resolve_names(&my binding, names, errs);
     expr_resolve_names(&my value, names, errs);
@@ -281,10 +298,8 @@ void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names,
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     if (my value.tag == EXPR_IMPLICIT_ANY) {
-        Type type = expr_get_type_and_typecheck(&my value, errs);
-        binding_typecheck(&my binding, &type, errs);
-        type_drop(&type);
+        binding_typecheck(&my binding, errs);
     } else {
-        binding_typecheck(&my binding, &type_any, errs);
+        binding_typecheck(&my binding, errs);
     }
 }

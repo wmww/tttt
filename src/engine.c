@@ -438,10 +438,12 @@ static Result MUST_USE engine_run_binding(Engine* me, Binding const* binding, Va
 
         case BINDING_ARRAY:
             NONFATAL("Array structured bindings not supported");
+            value_drop(&value);
             break;
 
         case BINDING_OBJECT:
             NONFATAL("Object structured bindings not supported");
+            value_drop(&value);
             break;
     }
     return result_ok_undefined;

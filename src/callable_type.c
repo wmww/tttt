@@ -89,10 +89,13 @@ void callable_type_resolve_names(CallableType* me, FunctionImpl const* optional_
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_callable_arg, my args) {
         intptr_t index = i.ref - my args.data;
-        LazyType assigned = optional_func ?
-            lazy_type_expr(function_impl_arg_default_at(optional_func, index), true) :
-            lazy_type_value(type_any);
+        Expr const* default_arg = optional_func ? function_impl_arg_default_at(optional_func, index) : nullptr;
+        LazyType assigned = default_arg ? lazy_type_expr(default_arg, true) : lazy_type_value(type_any);
         binding_add_names(&i.ref->binding, assigned, names, errs);
+        if (!i.ref->binding.has_explicit_type && (!default_arg || default_arg->tag == EXPR_IMPLICIT_ANY)) {
+            // TODO: only run this check in strict mode
+            binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
+        }
     }
 
     c_foreach(i, vec_callable_arg, my args) {
@@ -160,17 +163,10 @@ void callable_type_typecheck(CallableType const* me, FunctionImpl const* optiona
             );
         }
 
-        if (!i.ref->binding.type_explicit && default_arg->tag == EXPR_IMPLICIT_ANY) {
-            // TODO: only run this check in strict mode
-            binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
-        } else {
-            Type default_arg_type = expr_get_type_and_typecheck(default_arg, errs);
-            binding_typecheck(&i.ref->binding, &default_arg_type, errs);
-            type_drop(&default_arg_type);
-        }
+        binding_typecheck(&i.ref->binding, errs);
 
         if (i.ref->rest) {
-            if (!type_extends_array(&i.ref->binding.type)) {
+            if (!type_extends_array(binding_get_type(&i.ref->binding))) {
                 error_ctx_error(
                     errs,
                     i.ref->span,

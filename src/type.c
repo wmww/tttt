@@ -348,7 +348,7 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_arg, my callable->args) {
-                type_add_inferred_names(&i.ref->binding.type, names);
+                type_add_inferred_names(&i.ref->binding.explicit_type, names);
             }
             type_add_inferred_names(&my callable->ret, names);
             break;
@@ -740,8 +740,8 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                 for (intptr_t i = 0; i < arg_count; i++) {
                     // Order is flipped for arguments
                     if (!type_extends_internal(
-                        &vec_callable_arg_at(&sub->callable->args, i)->binding.type,
-                        &vec_callable_arg_at(&super->callable->args, i)->binding.type,
+                        binding_get_type(&vec_callable_arg_at_mut(&sub->callable->args, i)->binding),
+                        binding_get_type(&vec_callable_arg_at_mut(&super->callable->args, i)->binding),
                         refinements,
                         level + 1
                     )) {
@@ -1275,11 +1275,11 @@ void check_assignable_or_error(Type const* source, Type const* target, Span span
     check_assignable_or_error_internal("Type", source, "type", target, 2322, span, errs);
 }
 
-static intptr_t min_args_of_callable(CallableType const* me) {
+static intptr_t min_args_of_callable(CallableType* me) {
     intptr_t args_size = vec_callable_arg_size(&my args);
     intptr_t ret = args_size;
     if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
-        Type const* rest_type = &vec_callable_arg_at(&my args, args_size - 1)->binding.type;
+        Type const* rest_type = binding_get_type(&vec_callable_arg_at_mut(&my args, args_size - 1)->binding);
         if (rest_type->tag == TYPE_TUPLE && vec_type_size(&rest_type->tuple.elements) > 0) {
             return args_size - 1 + vec_type_size(&rest_type->tuple.elements);
         } else {
@@ -1292,10 +1292,10 @@ static intptr_t min_args_of_callable(CallableType const* me) {
     return ret;
 }
 
-static intptr_t max_args_of_callable(CallableType const* me) {
+static intptr_t max_args_of_callable(CallableType* me) {
     intptr_t args_size = vec_callable_arg_size(&my args);
     if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
-        Type const* rest_type = &vec_callable_arg_at(&my args, args_size - 1)->binding.type;
+        Type const* rest_type = binding_get_type(&vec_callable_arg_at_mut(&my args, args_size - 1)->binding);
         if (rest_type->tag == TYPE_TUPLE) {
             return args_size - 1 + vec_type_size(&rest_type->tuple.elements);
         } else {
@@ -1320,7 +1320,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 
         case TYPE_CALLABLE: {
             CallableType inferred = {0};
-            CallableType const* callable = my callable;
+            CallableType* callable = my callable;
 
             if (call->is_extends) {
                 if (!callable->is_constructor) {
@@ -1425,7 +1425,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                         "Argument of type",
                         &arg_type,
                         "parameter of type",
-                        &vec_callable_arg_at(&callable->args, index)->binding.type,
+                        binding_get_type(&vec_callable_arg_at_mut(&callable->args, index)->binding),
                         2345,
                         i.ref->outer_span,
                         errs
@@ -1448,7 +1448,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                         "Argument of type",
                         &rest_type,
                         "parameter of type",
-                        &vec_callable_arg_at(&callable->args, callable_arg_count - 1)->binding.type,
+                        binding_get_type(&vec_callable_arg_at_mut(&callable->args, callable_arg_count - 1)->binding),
                         2345,
                         span_valid(&rest_span) ? rest_span : span,
                         errs

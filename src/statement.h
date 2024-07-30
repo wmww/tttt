@@ -154,9 +154,14 @@ typedef struct ForEachLoopStatement {
             Expr expr;
         };
     } variable;
+    ResolveState types_resolve_state;
+    Type iterable_type;
+    Type var_type;
     Expr iterable;
     Statement body;
 } ForEachLoopStatement;
+
+Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me);
 
 // Switch statement
 

@@ -58,8 +58,8 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
             }
             break;
     }
-    if (my type_explicit) {
-        type_compile_test_info(&my type, ctx);
+    if (my has_explicit_type) {
+        type_compile_test_info(&my explicit_type, ctx);
     }
 }
 

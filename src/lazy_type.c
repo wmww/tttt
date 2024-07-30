@@ -1,5 +1,6 @@
 #include "lazy_type.h"
 #include "expr.h"
+#include "statement.h"
 #include "function_impl.h"
 #include "class_decl.h"
 #include "type_decl.h"
@@ -37,6 +38,7 @@ void lazy_type_drop(LazyType* me) {
         case LAZY_TYPE_REF:
         case LAZY_TYPE_IN_FLIGHT:
         case LAZY_TYPE_EXPR:
+        case LAZY_TYPE_FOR_EACH_LOOP_VAR:
         case LAZY_TYPE_FUNCTION:
         case LAZY_TYPE_CLASS_INSTANCE:
         case LAZY_TYPE_CLASS_CLASS:
@@ -59,6 +61,7 @@ LazyType lazy_type_clone(LazyType me) {
         case LAZY_TYPE_REF:
         case LAZY_TYPE_IN_FLIGHT:
         case LAZY_TYPE_EXPR:
+        case LAZY_TYPE_FOR_EACH_LOOP_VAR:
         case LAZY_TYPE_FUNCTION:
         case LAZY_TYPE_CLASS_INSTANCE:
         case LAZY_TYPE_CLASS_CLASS:
@@ -117,6 +120,14 @@ Type const* lazy_type_resolve(LazyType* me) {
                 *me = lazy_type_value(resolved);
             } else {
                 type_drop(&resolved);
+            }
+        }   break;
+
+        case LAZY_TYPE_FOR_EACH_LOOP_VAR: {
+            my tag = LAZY_TYPE_IN_FLIGHT;
+            Type const* resolved = for_each_loop_statement_resolve_var_type(my for_each_loop_var);
+            if (my tag == LAZY_TYPE_IN_FLIGHT) {
+                *me = lazy_type_ref(resolved);
             }
         }   break;
 

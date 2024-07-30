@@ -1119,7 +1119,7 @@ static bool parse_function_args(
 
                 if (parse_binding_type_or_set_to_default(&p, &binding)) {
                     if (explicit_optional) {
-                        binding.type = type_composite(TYPE_UNION, binding.type, type_undefined);
+                        binding.explicit_type = type_composite(TYPE_UNION, binding.explicit_type, type_undefined);
                     }
                     hop_whitespace(&p);
                 }
@@ -1129,7 +1129,7 @@ static bool parse_function_args(
                     hop_whitespace(&p);
                 }
 
-                if (vec_callable_arg_empty(&type_ret->args) && binding.type_explicit) {
+                if (vec_callable_arg_empty(&type_ret->args) && binding.has_explicit_type) {
                     is_definitely_function = true;
                 }
 
@@ -1285,7 +1285,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
 
         is_definitely_function =
             !vec_callable_arg_empty(&ret->callable.args) &&
-            vec_callable_arg_at(&ret->callable.args, 0)->binding.type_explicit;
+            vec_callable_arg_at(&ret->callable.args, 0)->binding.has_explicit_type;
 
     } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
@@ -1959,9 +1959,9 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
             Binding binding;
             if (parse_binding_type_or_set_to_default(&p, &binding)) {
-                ret->field.type = binding.type;
+                ret->field.type = binding.explicit_type;
                 ret->field.type_span = binding.type_span;
-                ret->field.type_explicit = binding.type_explicit;
+                ret->field.type_explicit = binding.has_explicit_type;
                 hop_whitespace(&p);
             }
 
@@ -3034,11 +3034,12 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     hop_whitespace(parent);
 
     Anchor a = span_start(parent);
-    if (!parse_type(parent, TYPE_PRECEDENCE_NULL, &ret->type)) {
+    if (!parse_type(parent, TYPE_PRECEDENCE_NULL, &ret->explicit_type)) {
         error_ctx_error(&parent->errs, span_from_token(parent), 1110, "Type expected.");
-        ret->type = type_any;
+        ret->explicit_type = type_any;
     }
-    ret->type_explicit = true;
+    ret->has_explicit_type = true;
+    ret->assigned_type = (LazyType){0};
     ret->type_span = span_end(a);
 
     return true;
@@ -3049,8 +3050,9 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
         return true;
     } else {
         ret->type_span = span_null;
-        ret->type = type_any;
-        ret->type_explicit = false;
+        ret->explicit_type = type_any;
+        ret->has_explicit_type = false;
+        ret->assigned_type = (LazyType){0};
         return false;
     }
 }

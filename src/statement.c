@@ -29,19 +29,13 @@ void variable_statement_add_names(VariableStatement* me, NameStack* names, Error
         if (my keyword == VAR_INIT_CONST && i.ref->value.tag == EXPR_IMPLICIT_ANY) {
             error_ctx_error(errs, i.ref->binding.content_span, 1155, "'const' declarations must be initialized.");
         }
-        binding_add_names(
-            &i.ref->binding,
-            lazy_type_expr(&i.ref->value, my keyword != VAR_INIT_CONST),
-            names,
-            errs
-        );
+        initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, names, errs);
     }
 }
 
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        type_resolve_names(&i.ref->binding.type, names, errs);
-        expr_resolve_names(&i.ref->value, names, errs);
+        initialized_binding_resolve_names(i.ref, names, errs);
     }
 }
 
@@ -57,6 +51,77 @@ czview for_each_loop_statement_keyword_str(ForEachLoopStatement* me) {
         case FOR_EACH_LOOP_IN: return c_zv("in");
     }
     UNREACHABLE;
+}
+
+Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me) {
+    switch (my types_resolve_state) {
+        case RESOLVE_STATE_UNINITIALIZED: {
+            my types_resolve_state = RESOLVE_STATE_IN_FLIGHT;
+
+            Type owned_iterable_type = expr_get_type_and_typecheck(&my iterable, nullptr);
+            Type const* iterable_type = type_resolve(&owned_iterable_type);
+            if (iterable_type->tag == TYPE_TUPLE) {
+                if (vec_type_empty(&iterable_type->tuple.elements)) {
+                    iterable_type = &type_any;
+                } else {
+                    Type temp = type_clone(*iterable_type);
+                    type_drop(&owned_iterable_type);
+                    owned_iterable_type = temp;
+                    type_abstract_tuple_to_array(&owned_iterable_type);
+                    iterable_type = type_resolve(&owned_iterable_type);
+                }
+            }
+
+            Type var_type = type_any;
+            switch (my keyword) {
+                case FOR_EACH_LOOP_IN:
+                    switch (iterable_type->tag) {
+                        case TYPE_ANY:
+                        case TYPE_INTERFACE:
+                        case TYPE_CALLABLE:
+                            // TODO: there def needs to be more nuance in this check
+                            // TODO: maybe do keyof and then index of the returned union?
+                            var_type = type_string;
+                            break;
+
+                        case TYPE_ARRAY:
+                        case TYPE_TUPLE:
+                            var_type = type_any;
+                            break;
+
+                        default:
+                            var_type = type_string;
+                            break;
+                    }
+                    break;
+
+                case FOR_EACH_LOOP_OF:
+                    if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
+                        var_type = index_type_of(iterable_type, &type_number, span_null, nullptr);
+                    }
+                    break;
+            }
+
+            if (my types_resolve_state == RESOLVE_STATE_IN_FLIGHT) {
+                my iterable_type = owned_iterable_type;
+                my var_type = var_type;
+                my types_resolve_state = RESOLVE_STATE_DONE;
+            } else {
+                type_drop(&owned_iterable_type);
+                type_drop(&var_type);
+            }
+        }   break;
+
+        case RESOLVE_STATE_IN_FLIGHT:
+            my iterable_type = type_self_referential_error;
+            my var_type = type_self_referential_error;
+            my types_resolve_state = RESOLVE_STATE_DONE;
+            break;
+
+        case RESOLVE_STATE_DONE: break;
+    }
+
+    return &my var_type;
 }
 
 void statement_drop(Statement* me) {
@@ -85,6 +150,8 @@ void statement_drop(Statement* me) {
                 case FOR_EACH_LOOP_STATEMENT: variable_statement_drop(&my for_each_loop->variable.statement); break;
                 case FOR_EACH_LOOP_EXPR: expr_drop(&my for_each_loop->variable.expr); break;
             }
+            type_drop(&my for_each_loop->iterable_type);
+            type_drop(&my for_each_loop->var_type);
             expr_drop(&my for_each_loop->iterable);
             statement_drop(&my for_each_loop->body);
             free(my for_each_loop);
@@ -369,8 +436,50 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             name_stack_push_block_frame(names);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
-                    variable_statement_add_names(&my for_each_loop->variable.statement, names, errs);
-                    variable_statement_resolve_names(&my for_each_loop->variable.statement, names, errs);
+                    VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
+                    intptr_t var_size = vec_initialized_binding_size(initializers);
+                    if (var_size > 1) {
+                        error_ctx_error(
+                            errs,
+                            vec_initialized_binding_at(initializers, 1)->binding.content_span,
+                            my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
+                            "Only a single variable declaration is allowed in a 'for...%s' statement.",
+                            for_each_loop_statement_keyword_str(my for_each_loop).str
+                        );
+                    } else if (var_size == 0) {
+                        // Error added by parser
+                    } else {
+                        InitializedBinding* initializer = initializers->data;
+                        if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
+                            error_ctx_error(
+                                errs,
+                                initializer->binding.content_span,
+                                1189,
+                                "The variable declaration of a 'for...%s' statement cannot have an initializer.",
+                                for_each_loop_statement_keyword_str(my for_each_loop).str
+                            );
+                        } else if (initializer->binding.has_explicit_type) {
+                            error_ctx_error(
+                                errs,
+                                initializer->binding.content_span,
+                                2404,
+                                "The left-hand side of a 'for...%s' statement cannot use a type annotation.",
+                                for_each_loop_statement_keyword_str(my for_each_loop).str
+                            );
+                        }
+                    }
+                    c_foreach(i, vec_initialized_binding, *initializers) {
+                        if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
+                            expr_drop(&i.ref->value);
+                            i.ref->value = expr_implicit_any(span_null);
+                        }
+                        if (i.ref->binding.has_explicit_type) {
+                            type_drop(&i.ref->binding.explicit_type);
+                            i.ref->binding.explicit_type = type_any;
+                        }
+                        binding_add_names(&i.ref->binding, lazy_type_for_each_loop_var(my for_each_loop), names, errs);
+                        binding_resolve_names(&i.ref->binding, names, errs);
+                    }
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
@@ -507,107 +616,58 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
         }
 
         case STATEMENT_FOR_EACH_LOOP: {
-            Type iterable_type = expr_get_type_and_typecheck(&my for_each_loop->iterable, errs);
-            if (iterable_type.tag == TYPE_TUPLE && vec_type_empty(&iterable_type.tuple.elements)) {
-                type_drop(&iterable_type);
-                iterable_type = type_any;
-            } else {
-                type_abstract_tuple_to_array(&iterable_type);
-            }
-            Type var_type = type_any;
+            for_each_loop_statement_resolve_var_type(my for_each_loop);
 
             switch (my for_each_loop->keyword) {
                 case FOR_EACH_LOOP_IN:
-                    switch (iterable_type.tag) {
+                    switch (my for_each_loop->iterable_type.tag) {
                         case TYPE_ANY:
                         case TYPE_INTERFACE:
                         case TYPE_CALLABLE:
-                            // TODO: there def needs to be more nuance in this check
-                            // TODO: maybe do keyof and then index of the returned union?
-                            var_type = type_string;
-                            break;
-
                         case TYPE_ARRAY:
                         case TYPE_TUPLE:
-                            var_type = type_any;
                             break;
 
                         default: {
                             cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
-                            cstr_append_type_error_msg(&msg, &iterable_type);
+                            cstr_append_type_error_msg(&msg, &my for_each_loop->iterable_type);
                             cstr_append_sv(&msg, c_sv("'."));
                             error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
-                            var_type = type_string;
                         }   break;
                     }
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    if (type_extends_array(&iterable_type) || type_extends(&iterable_type, &type_string)) {
-                        var_type = index_type_of(&iterable_type, &type_number, span_null, nullptr);
-                    } else {
+                    if (!type_extends_array(&my for_each_loop->iterable_type) &&
+                        !type_extends(&my for_each_loop->iterable_type, &type_string)
+                    ) {
                         cstr msg = cstr_lit("Type '");
-                        cstr_append_type_error_msg(&msg, &iterable_type);
+                        cstr_append_type_error_msg(&msg, &my for_each_loop->iterable_type);
                         cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
                         error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2495, msg);
                     }
                     break;
             }
-            type_drop(&iterable_type);
 
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT: {
-                    VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
-                    intptr_t var_size = vec_initialized_binding_size(initializers);
-                    if (var_size > 1) {
-                        error_ctx_error(
-                            errs,
-                            vec_initialized_binding_at(initializers, 1)->binding.content_span,
-                            my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
-                            "Only a single variable declaration is allowed in a 'for...%s' statement.",
-                            for_each_loop_statement_keyword_str(my for_each_loop).str
-                        );
-                    } else if (var_size == 0) {
-                        // Error added by parser
-                    } else {
-                        InitializedBinding* initializer = initializers->data;
-                        if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
-                            error_ctx_error(
-                                errs,
-                                initializer->binding.content_span,
-                                1189,
-                                "The variable declaration of a 'for...%s' statement cannot have an initializer.",
-                                for_each_loop_statement_keyword_str(my for_each_loop).str
-                            );
-                        } else if (initializer->binding.type_explicit) {
-                            error_ctx_error(
-                                errs,
-                                initializer->binding.content_span,
-                                2404,
-                                "The left-hand side of a 'for...%s' statement cannot use a type annotation.",
-                                for_each_loop_statement_keyword_str(my for_each_loop).str
-                            );
-                        }
-                    }
-                    c_foreach(i, vec_initialized_binding, *initializers) {
-                        type_drop(&i.ref->binding.type);
-                        if (i.ref == i.end - 1) {
-                            i.ref->binding.type = var_type;
-                            var_type = type_any;
-                        } else {
-                            i.ref->binding.type = type_clone(var_type);
-                        }
+                    c_foreach(i, vec_initialized_binding, my for_each_loop->variable.statement.initializers) {
+                        binding_typecheck(&i.ref->binding, errs);
                     }
                 }   break;
 
                 case FOR_EACH_LOOP_EXPR: {
                     Type existing_var_type = expr_get_type_and_typecheck(&my for_each_loop->variable.expr, errs);
-                    check_assignable_or_error(&var_type, &existing_var_type, my for_each_loop->variable.expr.outer_span, errs);
+                    check_assignable_or_error(
+                        &my for_each_loop->var_type,
+                        &existing_var_type,
+                        my for_each_loop->variable.expr.outer_span,
+                        errs
+                    );
                     type_drop(&existing_var_type);
                     break;
                 }
             }
-            type_drop(&var_type);
 
             bool break_was_allowed = ctx->break_allowed;
             ctx->break_allowed = true;
@@ -653,7 +713,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_TRY_CATCH:
             block_typecheck(&my try_catch->try_block, ctx, errs);
-            binding_typecheck(&my try_catch->catch_var, &type_any, errs);
+            binding_typecheck(&my try_catch->catch_var, errs);
             // No need to typecheck catch variable
             block_typecheck(&my try_catch->catch_block, ctx, errs);
             block_typecheck(&my try_catch->finally_block, ctx, errs);

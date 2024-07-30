@@ -202,7 +202,18 @@ static inline void generic_replace_named_types_with(Generic* me, VecTypeRefineme
 static inline void callable_replace_named_types_with(CallableType* me, VecTypeRefinement const* refinements) {
     generic_replace_named_types_with(&my generic, refinements);
     c_foreach(i, vec_callable_arg, my args) {
-        replace_named_types_with(&i.ref->binding.type, refinements);
+        if (i.ref->binding.has_explicit_type) {
+            replace_named_types_with(&i.ref->binding.explicit_type, refinements);
+        } else {
+            if (i.ref->binding.assigned_type.tag != LAZY_TYPE_VALUE) {
+                LazyType temp = i.ref->binding.assigned_type;
+                i.ref->binding.assigned_type = lazy_type_value(type_clone(*lazy_type_resolve(
+                    &i.ref->binding.assigned_type
+                )));
+                lazy_type_drop(&temp);
+            }
+            replace_named_types_with(&i.ref->binding.assigned_type.value, refinements);
+        }
     }
     replace_named_types_with(&my ret, refinements);
 }
@@ -329,7 +340,7 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
 
 CallableType generic_infer_callable_types(
     Generic const* me,
-    CallableType const* callable,
+    CallableType* callable,
     VecExpr const* args,
     ErrorCtx* errs
 ) {
@@ -352,7 +363,7 @@ CallableType generic_infer_callable_types(
     }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         collect_generic_candidates(
-            &vec_callable_arg_at(&callable->args, i)->binding.type,
+            binding_get_type(&vec_callable_arg_at_mut(&callable->args, i)->binding),
             vec_type_at(&arg_types, i),
             &refinements,
             errs

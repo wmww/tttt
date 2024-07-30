@@ -3,6 +3,7 @@
 #include "type.h"
 
 typedef struct Expr Expr;
+typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ClassDecl ClassDecl;
 typedef struct TypeDecl TypeDecl;
@@ -16,6 +17,7 @@ typedef struct LazyType {
         LAZY_TYPE_REF,
         LAZY_TYPE_IN_FLIGHT,
         LAZY_TYPE_EXPR,
+        LAZY_TYPE_FOR_EACH_LOOP_VAR,
         LAZY_TYPE_FUNCTION,
         LAZY_TYPE_CLASS_INSTANCE,
         LAZY_TYPE_CLASS_CLASS,
@@ -30,6 +32,7 @@ typedef struct LazyType {
             Expr const* ptr;
             bool abstract_literals;
         } expr;
+        ForEachLoopStatement* for_each_loop_var;
         FunctionImpl* function;
         ClassDecl* class;
         TypeDecl* interface;
@@ -62,6 +65,13 @@ static inline LazyType lazy_type_expr(Expr const* expr, bool abstract_literals) 
             .ptr = expr,
             .abstract_literals = abstract_literals,
         },
+    };
+}
+
+static inline LazyType lazy_type_for_each_loop_var(ForEachLoopStatement* for_each) {
+    return (LazyType){
+        .tag = LAZY_TYPE_FOR_EACH_LOOP_VAR,
+        .for_each_loop_var = for_each,
     };
 }
 
