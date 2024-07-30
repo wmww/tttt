@@ -3831,7 +3831,7 @@ const baselines = {
         types: true,
     },
     'classStaticPropertyTypeGuard': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -21006,7 +21006,7 @@ const baselines = {
         types: false,
     },
     'noConstraintInReturnType1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -52911,7 +52911,7 @@ const baselines = {
         types: false,
     },
     'thisPropertyAssignmentCircular': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -56886,7 +56886,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints3': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -58426,7 +58426,7 @@ const baselines = {
         types: false,
     },
     'unionTypeReduction': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },

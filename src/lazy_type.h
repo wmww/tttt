@@ -31,6 +31,7 @@ typedef struct LazyType {
             // PERF: figure out how to not always calculate types for expressions twice
             Expr const* ptr;
             bool abstract_literals;
+            bool abstract_tuple_to_array;
         } expr;
         ForEachLoopStatement* for_each_loop_var;
         FunctionImpl* function;
@@ -58,12 +59,13 @@ static inline LazyType lazy_type_ref(Type const* ref) {
     };
 }
 
-static inline LazyType lazy_type_expr(Expr const* expr, bool abstract_literals) {
+static inline LazyType lazy_type_expr(Expr const* expr, bool abstract_literals, bool abstract_tuple_to_array) {
     return (LazyType){
         .tag = LAZY_TYPE_EXPR,
         .expr = {
             .ptr = expr,
             .abstract_literals = abstract_literals,
+            .abstract_tuple_to_array = abstract_tuple_to_array,
         },
     };
 }
@@ -129,8 +131,7 @@ static inline Type const* lazy_type_assert_get(LazyType const* me) {
         case LAZY_TYPE_VALUE: return &my value;
         case LAZY_TYPE_REF: return my ref;
         default:
-            NONFATAL("Tried to get unresolved lazy type with tag %d", my tag);
-            return &type_unknown;
+            PANIC("Tried to get unresolved lazy type with tag %d", my tag);
     }
 }
 

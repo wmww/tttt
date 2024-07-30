@@ -89,8 +89,12 @@ void callable_type_resolve_names(CallableType* me, FunctionImpl const* optional_
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_callable_arg, my args) {
         intptr_t index = i.ref - my args.data;
-        Expr const* default_arg = optional_func ? function_impl_arg_default_at(optional_func, index) : nullptr;
-        LazyType assigned = default_arg ? lazy_type_expr(default_arg, true) : lazy_type_value(type_any);
+        Expr const* default_arg = optional_func ?
+            function_impl_arg_default_at(optional_func, index) :
+            &expr_implicit_any_no_span;
+        LazyType assigned = (default_arg->tag == EXPR_IMPLICIT_ANY && i.ref->binding.has_explicit_type) ?
+            lazy_type_value(type_never) :
+            lazy_type_expr(default_arg, true, true);
         binding_add_names(&i.ref->binding, assigned, names, errs);
         if (!i.ref->binding.has_explicit_type && (!default_arg || default_arg->tag == EXPR_IMPLICIT_ANY)) {
             // TODO: only run this check in strict mode

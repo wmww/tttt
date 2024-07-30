@@ -301,7 +301,17 @@ void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding cons
 }
 
 void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs) {
-    binding_add_names(&my binding, lazy_type_expr(&my value, abstract_literals), names, errs);
+    bool type_abstract_tuple_to_array = true;
+    if (my binding.has_explicit_type) {
+        abstract_literals = false;
+        type_abstract_tuple_to_array = false;
+    }
+    binding_add_names(
+        &my binding,
+        lazy_type_expr(&my value, abstract_literals, type_abstract_tuple_to_array),
+        names,
+        errs
+    );
 }
 
 void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs) {

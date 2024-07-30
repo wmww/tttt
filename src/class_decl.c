@@ -364,7 +364,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                 if (i.ref->field.is_static != resolve_instance) {
                     LazyType type = i.ref->field.has_explicit_type ?
                         lazy_type_ref(&i.ref->field.explicit_type) :
-                        lazy_type_expr(&i.ref->field.value, true);
+                        lazy_type_expr(&i.ref->field.value, true, true);
                     InterfaceMember field = interface_member_make(
                         i.ref->span,
                         i.ref->field.is_readonly,

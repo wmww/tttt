@@ -103,19 +103,22 @@ Type const* lazy_type_resolve(LazyType* me) {
             my tag = LAZY_TYPE_IN_FLIGHT;
 
             bool abstract_literals = my expr.abstract_literals;
+            bool abstract_tuple_to_array = my expr.abstract_tuple_to_array;
             Type resolved = expr_get_type_and_typecheck(my expr.ptr, nullptr);
 
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
                 if (abstract_literals) {
                     type_abstract_literals(&resolved);
                 }
-                type_abstract_tuple_to_array(&resolved);
-                if (resolved.tag == TYPE_ARRAY &&
-                    resolved.array.element->tag == TYPE_VALUE &&
-                    resolved.array.element->value.tag == VALUE_UNDEFINED
-                ) {
-                    type_drop(resolved.array.element);
-                    *resolved.array.element = type_any;
+                if (abstract_tuple_to_array) {
+                    type_abstract_tuple_to_array(&resolved);
+                    if (resolved.tag == TYPE_ARRAY &&
+                        resolved.array.element->tag == TYPE_VALUE &&
+                        resolved.array.element->value.tag == VALUE_UNDEFINED
+                    ) {
+                        type_drop(resolved.array.element);
+                        *resolved.array.element = type_any;
+                    }
                 }
                 *me = lazy_type_value(resolved);
             } else {

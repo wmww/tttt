@@ -42,7 +42,7 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
                 span_valid(&full) ? full : my content_span
             );
             if (my identifier) {
-                baseline_test_case_add_type(ctx, my content_span, lazy_type_assert_get(&my identifier->type));
+                baseline_test_case_add_type(ctx, my content_span, lazy_type_resolve(&my identifier->type));
             }
             break;
 
@@ -273,7 +273,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             // in constructors
             LazyType field_type = my field.has_explicit_type ?
                 lazy_type_ref(&my field.explicit_type) :
-                lazy_type_expr(&my field.value, true);
+                lazy_type_expr(&my field.value, true, true);
             baseline_test_case_add_type(ctx, my field.name_span, lazy_type_resolve(&field_type));
             lazy_type_drop(&field_type);
 
