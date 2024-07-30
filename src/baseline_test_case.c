@@ -184,7 +184,6 @@ static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, Ve
     }
 }
 
-
 static cstr load_test_source(const char* path, bool noisy) {
     cstr contents_s = cstr_null;
     cstr ret = cstr_null;
@@ -201,7 +200,7 @@ static cstr load_test_source(const char* path, bool noisy) {
 
     bool has_line = false;
     c_foreach(i, lines_sv, contents_sv) {
-        if (!csview_starts_with(i.line, "// @")) {
+        if (!csview_starts_with(i.line, "// @") && !csview_starts_with(i.line, "//@")) {
             cstr_append_sv(&ret, i.line);
             if ((has_line || csview_size(i.line)) &&
                 i.line.buf + i.line.size < contents_sv.buf + contents_sv.size
