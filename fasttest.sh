@@ -2,8 +2,8 @@
 set -euo pipefail
 
 rm -f vgcore.*
-if test ! -e build; then
-    meson setup build
+if test ! -e build-release; then
+    meson setup build-release --buildtype release
 fi
-ninja -C build
-./build/baseline_tests "$@"
+ninja -C build-release
+./build-release/baseline_tests "$@"
