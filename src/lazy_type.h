@@ -109,6 +109,12 @@ void cstr_append_lazy_type_error_msg(cstr* target, LazyType const* me);
 Type const* lazy_type_resolve(LazyType* me);
 void lazy_type_typecheck(LazyType* me, ErrorCtx* errs);
 
+static inline void lazy_type_resolve_names(LazyType* me, NameStack* names, ErrorCtx* errs) {
+    if (my tag == LAZY_TYPE_VALUE) {
+        type_resolve_names(&my value, names, errs);
+    }
+}
+
 // May return NULL
 static inline Type const* lazy_type_try_get(LazyType const* me) {
     switch (my tag) {

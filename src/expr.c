@@ -17,6 +17,7 @@ const int ternary_precedence = 20;
 const int new_keyword_precedence = 170;
 
 void expr_drop(Expr* me) {
+    free(my currently_getting_type);
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
             break;
@@ -552,16 +553,26 @@ static Type binary_op_get_type_and_typecheck(
 }
 
 Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
+    Type ret;
+    if (my currently_getting_type) {
+        if (*my currently_getting_type) {
+            return type_self_referential_error;
+        }
+        *my currently_getting_type = true;
+    }
+
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
-            return type_any;
+            ret = type_any;
+            break;
 
         case EXPR_LITERAL:
-            return type_value(value_clone(my literal));
+            ret = type_value(value_clone(my literal));
+            break;
 
         case EXPR_IDENTIFIER:
             if (my identifier.var) {
-                Type ret = type_ref(lazy_type_resolve(&my identifier.var->type));
+                ret = type_ref(lazy_type_resolve(&my identifier.var->type));
                 if (!vec_spanned_type_empty(&my identifier.generic_params)) {
                     c_foreach(i, vec_spanned_type, my identifier.generic_params) {
                         type_typecheck(&i.ref->type, errs);
@@ -585,24 +596,25 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         );
                     }
                 }
-                return ret;
             } else {
-                return type_any;
+                ret = type_any;
             }
+            break;
 
         case EXPR_BINARY_OP:
-            return binary_op_get_type_and_typecheck(
+            ret = binary_op_get_type_and_typecheck(
                 expr_get_type_and_typecheck(&my binary_op->left, errs),
                 my binary_op->op,
                 expr_get_type_and_typecheck(&my binary_op->right, errs),
                 me,
                 errs
             );
+            break;
 
         case EXPR_UNARY_OP: {
             UnaryOpExpr* una = my unary_op;
             Type type = expr_get_type_and_typecheck(&una->expr, errs);
-            Type ret = {0};
+            ret = type_any;
             switch (una->op) {
                 // TODO: add typechecking
                 case UNARY_OP_LEFT_BANG: ret = type_boolean; break;
@@ -621,17 +633,15 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                     break;
             }
             type_drop(&type);
-            return ret;
-        }
+        }   break;
 
         case EXPR_PROPERTY: {
             Type value = expr_get_type_and_typecheck(&my property->expr, errs);
             Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
-            Type ret = index_type_of(&value, &prop, my property->prop.outer_span, errs);
+            ret = index_type_of(&value, &prop, my property->prop.outer_span, errs);
             type_drop(&value);
             type_drop(&prop);
-            return ret;
-        }
+        }   break;
 
         case EXPR_AS_TYPE: {
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
@@ -639,16 +649,15 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
             type_typecheck(&my as_type->type, errs);
             Type t = expr_get_type_and_typecheck(&my as_type->expr, errs);
             type_drop(&t);
-            return type_clone(my as_type->type);
-        }
+            ret = type_clone(my as_type->type);
+        }   break;
 
         case EXPR_TERNARY: {
             Type condition_type = expr_get_type_and_typecheck(&my ternary->condition, errs);
             type_drop(&condition_type);
-            Type ret_type = expr_get_type_and_typecheck(&my ternary->yes, errs);
-            ret_type = type_composite(TYPE_UNION, ret_type, expr_get_type_and_typecheck(&my ternary->no, errs));
-            return ret_type;
-        }
+            ret = expr_get_type_and_typecheck(&my ternary->yes, errs);
+            ret = type_composite(TYPE_UNION, ret, expr_get_type_and_typecheck(&my ternary->no, errs));
+        }   break;
 
         case EXPR_CALL: {
             Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
@@ -656,14 +665,14 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
                 type_drop(&t);
             }
-            Type ret = type_typecheck_call(&callable, my call, my outer_span, errs, 0);
+            ret = type_typecheck_call(&callable, my call, my outer_span, errs, 0);
             type_drop(&callable);
-            return ret;
-        }
+        }   break;
 
         case EXPR_FUNCTION:
             function_impl_typecheck(my function, errs);
-            return type_clone(*function_impl_resolve_type(my function));
+            ret = type_clone(*function_impl_resolve_type(my function));
+            break;
 
         case EXPR_OBJECT: {
             Interface interface = {0};
@@ -684,23 +693,32 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                     )
                 );
             }
-            return type_interface(interface);
-        }
+            ret = type_interface(interface);
+        }   break;
 
         case EXPR_ARRAY: {
-            Type tuple_type = type_tuple(vec_type_init(), false);
+            ret = type_tuple(vec_type_init(), false);
             c_foreach(i, vec_expr, my array) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
-                vec_type_push(&tuple_type.tuple.elements, t);
+                vec_type_push(&ret.tuple.elements, t);
             }
-            return tuple_type;
-        }
+        }   break;
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            return type_clone(my class_decl->class_identifier_type);
+            ret = type_clone(my class_decl->class_identifier_type);
+            break;
     }
-    UNREACHABLE;
+
+    if (my currently_getting_type) {
+        if (!*my currently_getting_type) {
+            type_drop(&ret);
+            return type_self_referential_error;
+        }
+        *my currently_getting_type = false;
+    }
+
+    return ret;
 }
 
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence

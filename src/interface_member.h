@@ -67,6 +67,8 @@ void cstr_append_interface_member_error_msg(cstr* target, InterfaceMember const*
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs);
 void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs);
 
+bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super);
+
 #define i_key_class_names InterfaceMember, interface_member
 #define i_is_forward
 #include "wrap_stc/vec.h"

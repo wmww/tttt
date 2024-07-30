@@ -196,3 +196,17 @@ void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs) {
     }
     lazy_type_typecheck(&my type, errs);
 }
+
+bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super) {
+    if (sub->key.tag == INTERFACE_KEY_CALLABLE && super->key.tag == INTERFACE_KEY_CALLABLE) {
+        return true;
+    } else if (sub->key.tag == INTERFACE_KEY_NAME &&
+        super->key.tag == INTERFACE_KEY_NAME &&
+        cstr_eq(&sub->key.name_string, &super->key.name_string)
+    ) {
+        return true;
+    } else {
+        // TODO
+        return false;
+    }
+}

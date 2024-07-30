@@ -25,6 +25,7 @@ wrap_forward_vec(Expr, expr);
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
     Span outer_span; // Includes parentheses
+    bool* currently_getting_type;
     enum {
         EXPR_IMPLICIT_ANY = 0,
         EXPR_LITERAL,

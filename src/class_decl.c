@@ -19,7 +19,7 @@ void class_item_drop(ClassItem* me) {
 
         case CLASS_ITEM_FIELD:
             cstr_drop(&my field.name_string);
-            type_drop(&my field.type);
+            type_drop(&my field.explicit_type);
             expr_drop(&my field.value);
             break;
 
@@ -120,9 +120,9 @@ void cstr_append_class_decl_debug(cstr* target, ClassDecl const* me, int indent)
                 if (i.ref->field.is_optional) {
                     cstr_append_sv(target, c_sv("?"));
                 }
-                if (i.ref->field.type_explicit) {
+                if (i.ref->field.has_explicit_type) {
                     cstr_append_sv(target, c_sv(": "));
-                    cstr_append_type_debug(target, &i.ref->field.type, indent);
+                    cstr_append_type_debug(target, &i.ref->field.explicit_type, indent);
                 }
                 cstr_append_sv(target, c_sv(" = "));
                 cstr_append_expr_debug(target, &i.ref->field.value, indent);
@@ -154,7 +154,7 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_FIELD:
-            type_resolve_names(&my field.type, names, errs);
+            type_resolve_names(&my field.explicit_type, names, errs);
             expr_resolve_names(&my field.value, names, errs);
             break;
 
@@ -362,8 +362,8 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
 
             case CLASS_ITEM_FIELD:
                 if (i.ref->field.is_static == resolve_instance) {
-                    LazyType type = i.ref->field.type_explicit ?
-                        lazy_type_ref(&i.ref->field.type) :
+                    LazyType type = i.ref->field.has_explicit_type ?
+                        lazy_type_ref(&i.ref->field.explicit_type) :
                         lazy_type_expr(&i.ref->field.value, true);
                     InterfaceMember field = interface_member_make(
                         i.ref->span,
@@ -450,8 +450,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_FIELD: {
                 Type value = expr_get_type_and_typecheck(&i.ref->field.value, errs);
-                if (i.ref->field.type_explicit) {
-                    check_assignable_or_error(&value, &i.ref->field.type, i.ref->field.name_span, errs);
+                if (i.ref->field.has_explicit_type) {
+                    check_assignable_or_error(&value, &i.ref->field.explicit_type, i.ref->field.name_span, errs);
                 }
                 type_drop(&value);
             }   break;

@@ -38,7 +38,7 @@ void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, i
             } else if (!my has_explicit_type && lazy_type_try_get(&my identifier->type)) {
                 cstr_append_sv(target, c_sv(CLR_IMPLICIT " /* " CLR0));
                 cstr_append_type_debug(target, lazy_type_try_get(&my identifier->type), indent);
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT " */ " CLR0));
+                cstr_append_sv(target, c_sv(CLR_IMPLICIT " */" CLR0));
             }
             break;
 
@@ -183,7 +183,11 @@ void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case BINDING_NOOP: break;
 
-        case BINDING_IDENTIFIER: break;
+        case BINDING_IDENTIFIER:
+            if (my identifier) {
+                lazy_type_resolve_names(&my identifier->type, names, errs);
+            }
+            break;
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
@@ -198,6 +202,7 @@ void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
             break;
     }
     type_resolve_names(&my explicit_type, names, errs);
+    lazy_type_resolve_names(&my assigned_type, names, errs);
 }
 
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
@@ -245,7 +250,15 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 
         case BINDING_IDENTIFIER:
             if (my identifier) {
-                lazy_type_resolve(&my identifier->type);
+                Type const* type = type_resolve(lazy_type_resolve(&my identifier->type));
+                if (type_is_self_referential(type)) {
+                    cstr msg = cstr_lit("'");
+                    cstr_append_sv(&msg, span_sv(&my content_span));
+                    cstr_append_sv(&msg, c_sv("' implicitly has type '"));
+                    cstr_append_type_error_msg(&msg, type);
+                    cstr_append_sv(&msg, c_sv("' because it does not have a type annotation and is referenced directly or indirectly in its own initializer."));
+                    error_ctx_error_s(errs, my content_span, 7022, msg);
+                }
             }
             break;
 
@@ -297,9 +310,5 @@ void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names,
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
-    if (my value.tag == EXPR_IMPLICIT_ANY) {
-        binding_typecheck(&my binding, errs);
-    } else {
-        binding_typecheck(&my binding, errs);
-    }
+    binding_typecheck(&my binding, errs);
 }

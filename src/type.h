@@ -44,7 +44,7 @@ typedef struct Type {
     union {
         struct {
             bool self_referential_error;
-        } unkown;
+        } any;
         Value value;
         IdentifierType* identifier;
         CallableType* callable;
@@ -152,6 +152,10 @@ static inline Type type_ref(Type const* ref) {
         .tag = TYPE_REF,
         .ref = ref,
     };
+}
+
+static inline bool type_is_self_referential(Type const* me) {
+    return my tag == TYPE_ANY && my any.self_referential_error;
 }
 
 Type type_composite_base(typeof((Type){}.tag) tag);

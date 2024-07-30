@@ -13,7 +13,7 @@
 
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
-const Type type_self_referential_error = { .tag = TYPE_UNKNOWN, .unkown.self_referential_error = true, };
+const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true, };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
 const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
@@ -204,9 +204,6 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
 
         case TYPE_UNKNOWN:
             cstr_append_sv(target, c_sv(CLR_TYPE "unknown" CLR0));
-            if (my unkown.self_referential_error) {
-                cstr_append_sv(target, c_sv(CLR_ERR " /* self-referential */" CLR0));
-            }
             break;
 
         case TYPE_ARRAY:
@@ -248,6 +245,10 @@ void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
             break;
 
         case TYPE_REF: cstr_append_type_debug(target, my ref, indent); break;
+    }
+
+    if (type_is_self_referential(me)) {
+        cstr_append_sv(target, c_sv(CLR_ERR " /* self-referential */" CLR0));
     }
 }
 
@@ -1069,6 +1070,9 @@ static Type index_type_of_internal(Type const* me, Type const* index, Span index
 
     Type const* me_original = me;
     me = type_resolve_internal(me, level);
+    if (type_is_self_referential(me)) {
+        return type_clone(*me);
+    }
 
     switch (my tag) {
         case TYPE_NEVER:

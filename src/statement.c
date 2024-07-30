@@ -469,14 +469,6 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                         }
                     }
                     c_foreach(i, vec_initialized_binding, *initializers) {
-                        if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
-                            expr_drop(&i.ref->value);
-                            i.ref->value = expr_implicit_any(span_null);
-                        }
-                        if (i.ref->binding.has_explicit_type) {
-                            type_drop(&i.ref->binding.explicit_type);
-                            i.ref->binding.explicit_type = type_any;
-                        }
                         binding_add_names(&i.ref->binding, lazy_type_for_each_loop_var(my for_each_loop), names, errs);
                         binding_resolve_names(&i.ref->binding, names, errs);
                     }
@@ -487,6 +479,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                     break;
             }
             expr_resolve_names(&my for_each_loop->iterable, names, errs);
+            statement_add_names(&my for_each_loop->body, names, errs);
             statement_resolve_names(&my for_each_loop->body, names, errs);
             name_stack_pop_frame(names);
             break;
@@ -617,10 +610,11 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_FOR_EACH_LOOP: {
             for_each_loop_statement_resolve_var_type(my for_each_loop);
+            Type const* iterable_type = type_resolve(&my for_each_loop->iterable_type);
 
             switch (my for_each_loop->keyword) {
                 case FOR_EACH_LOOP_IN:
-                    switch (my for_each_loop->iterable_type.tag) {
+                    switch (iterable_type->tag) {
                         case TYPE_ANY:
                         case TYPE_INTERFACE:
                         case TYPE_CALLABLE:
@@ -630,7 +624,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
                         default: {
                             cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
-                            cstr_append_type_error_msg(&msg, &my for_each_loop->iterable_type);
+                            cstr_append_type_error_msg(&msg, iterable_type);
                             cstr_append_sv(&msg, c_sv("'."));
                             error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
                         }   break;
@@ -638,11 +632,9 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    if (!type_extends_array(&my for_each_loop->iterable_type) &&
-                        !type_extends(&my for_each_loop->iterable_type, &type_string)
-                    ) {
+                    if (!type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
                         cstr msg = cstr_lit("Type '");
-                        cstr_append_type_error_msg(&msg, &my for_each_loop->iterable_type);
+                        cstr_append_type_error_msg(&msg, iterable_type);
                         cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
                         error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2495, msg);
                     }

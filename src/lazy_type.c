@@ -150,11 +150,9 @@ Type const* lazy_type_resolve(LazyType* me) {
 
         case LAZY_TYPE_INTERFACE: {
             my tag = LAZY_TYPE_IN_FLIGHT;
-            Type resolved = type_decl_make_interface_type(my interface);
+            Type const* resolved = type_decl_resolve_interface_type(my interface);
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                *me = lazy_type_value(resolved);
-            } else {
-                type_drop(&resolved);
+                *me = lazy_type_ref(resolved);
             }
         }   break;
 

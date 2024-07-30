@@ -23,9 +23,9 @@ typedef struct Binding {
     };
     Span content_span; // Just the name/array/object, not the type/value
     bool has_explicit_type;
+    Span explicit_type_span;
     Type explicit_type;
     LazyType assigned_type;
-    Span type_span;
 } Binding;
 
 typedef struct ObjectBindingItem {

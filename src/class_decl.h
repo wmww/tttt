@@ -40,9 +40,9 @@ typedef struct ClassItem {
             cstr name_string;
             Span name_span;
             bool name_is_value;
-            Type type;
-            Span type_span;
-            bool type_explicit;
+            bool has_explicit_type;
+            Span explicit_type_span;
+            Type explicit_type;
             Expr value;
         } field;
         InterfaceMember interface_memeber;

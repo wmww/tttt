@@ -865,7 +865,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         cstr_move(&item.field.name_string),
                         item.field.name_span,
                         item.field.name_is_value,
-                        lazy_type_value(type_move(&item.field.type))
+                        lazy_type_value(type_move(&item.field.explicit_type))
                     ));
                     break;
 
@@ -1959,9 +1959,9 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
             Binding binding;
             if (parse_binding_type_or_set_to_default(&p, &binding)) {
-                ret->field.type = binding.explicit_type;
-                ret->field.type_span = binding.type_span;
-                ret->field.type_explicit = binding.has_explicit_type;
+                ret->field.explicit_type = binding.explicit_type;
+                ret->field.explicit_type_span = binding.explicit_type_span;
+                ret->field.has_explicit_type = binding.has_explicit_type;
                 hop_whitespace(&p);
             }
 
@@ -2736,6 +2736,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
+    ret->currently_getting_type = nullptr;
 
     union {
         FunctionImpl function;
@@ -2813,6 +2814,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->inner_span = span_end(a);
     }
     ret->outer_span = span_end(a);
+    if (!ret->currently_getting_type) {
+        ret->currently_getting_type = c_new(bool, false);
+    }
 
     while (parse_expr_right_side(&p, ctx, ret)) {}
 
@@ -2922,12 +2926,12 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     Expr path_expr;
     if (parse_expr(&p, expr_ctx_null, &path_expr)) {
         if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-            import.path = path_expr.literal.string;
+            import.path = cstr_move(&path_expr.literal.string);
             import.path_span = path_expr.inner_span;
         } else {
             error_ctx_error(&p.errs, path_expr.inner_span, 1141, "String literal expected.");
-            expr_drop(&path_expr);
         }
+        expr_drop(&path_expr);
     } else {
         error_ctx_error(&p.errs, hop_token_get_span(&p), 1109, "Expression expected.");
     }
@@ -3040,7 +3044,7 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     }
     ret->has_explicit_type = true;
     ret->assigned_type = (LazyType){0};
-    ret->type_span = span_end(a);
+    ret->explicit_type_span = span_end(a);
 
     return true;
 }
@@ -3049,7 +3053,7 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
     if (parse_binding_type(parent, ret)) {
         return true;
     } else {
-        ret->type_span = span_null;
+        ret->explicit_type_span = span_null;
         ret->explicit_type = type_any;
         ret->has_explicit_type = false;
         ret->assigned_type = (LazyType){0};

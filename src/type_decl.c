@@ -10,6 +10,7 @@ void type_decl_drop(TypeDecl* me) {
     generic_drop(&my generic);
     vec_spanned_type_drop(&my interface_extends);
     type_drop(&my type);
+    type_drop(&my resolved_type);
     named_type_destroy(my named_type);
 }
 
@@ -50,14 +51,66 @@ void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-Type type_decl_make_interface_type(TypeDecl* me) {
+Type const* type_decl_resolve_interface_type(TypeDecl* me) {
     ASSERT(my is_interface);
-    Type ret = type_composite_base(TYPE_INTERSECTION);
-    c_foreach(i, vec_spanned_type, my interface_extends) {
-        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i.ref->type));
+    ASSERT(my type.tag == TYPE_INTERFACE);
+
+    switch (my type_resolve_state) {
+        case RESOLVE_STATE_UNINITIALIZED:
+            my type_resolve_state = RESOLVE_STATE_IN_FLIGHT;
+            VecInterfaceMember members = {0};
+
+            c_foreach(extends, vec_spanned_type, my interface_extends) {
+                Type const* extends_resolved = type_resolve(&extends.ref->type);
+                if (extends_resolved->tag == TYPE_INTERFACE) {
+                    c_foreach(extends_member, vec_interface_member, extends_resolved->interface.members) {
+                        bool found_match = false;
+                        c_foreach(previous_member, vec_interface_member, members) {
+                            if (interface_key_extends(extends_member.ref, previous_member.ref)) {
+                                found_match = true;
+                                break;
+                            }
+                        }
+                        if (!found_match) {
+                            c_foreach(type_member, vec_interface_member, my type.interface.members) {
+                                if (interface_key_extends(extends_member.ref, type_member.ref)) {
+                                    found_match = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!found_match) {
+                            vec_interface_member_push(&members, interface_member_clone(*extends_member.ref));
+                        }
+                    }
+                }
+            }
+
+            if (!vec_interface_member_empty(&members)) {
+                c_foreach(i, vec_interface_member, my type.interface.members) {
+                    vec_interface_member_push(&members, interface_member_clone(*i.ref));
+                }
+            }
+
+            if (my type_resolve_state == RESOLVE_STATE_IN_FLIGHT) {
+                if (vec_interface_member_empty(&members)) {
+                    my resolved_type = type_ref(&my type);
+                } else {
+                    my resolved_type = type_interface((Interface){ .members = members });
+                }
+                my type_resolve_state = RESOLVE_STATE_DONE;
+            }
+            break;
+
+        case RESOLVE_STATE_IN_FLIGHT:
+            my resolved_type = type_self_referential_error;
+            my type_resolve_state = RESOLVE_STATE_DONE;
+            break;
+
+        case RESOLVE_STATE_DONE: break;
     }
-    ret = type_composite(TYPE_INTERSECTION, ret, type_clone(my type));
-    return ret;
+
+    return &my resolved_type;
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
