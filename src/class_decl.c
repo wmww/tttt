@@ -178,17 +178,23 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 
     ASSERT(!my instance_named_var);
+    VecSpannedType generic_params = {0};
+    c_foreach(i, vec_generic_item, my generic.items) {
+        // Is it the fallback type, always any or something else? unclear.
+        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
+    }
     my instance_named_var = make_named_variable(
         my full_span,
         lazy_type_value(type_identifier(c_new(IdentifierType, {
             .name = my name,
             .type = my instance_named_type,
+            .generic_params = generic_params,
         }))),
         nullptr
     );
 
     ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
-    VecSpannedType generic_params = {0};
+    generic_params = (VecSpannedType){0};
     c_foreach(i, vec_generic_item, my generic.items) {
         // Is it the fallback type, always any or something else? unclear.
         vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));

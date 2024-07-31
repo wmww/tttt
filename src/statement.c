@@ -469,6 +469,10 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                         }
                     }
                     c_foreach(i, vec_initialized_binding, *initializers) {
+                        // If we set has_explicit_type = false here but don't clear the type, the type will still show
+                        // up in test AST traversial (as required), but will not be typechecked (as required). This
+                        // is dumb but it works.
+                        i.ref->binding.has_explicit_type = false;
                         binding_add_names(&i.ref->binding, lazy_type_for_each_loop_var(my for_each_loop), names, errs);
                         binding_resolve_names(&i.ref->binding, names, errs);
                     }

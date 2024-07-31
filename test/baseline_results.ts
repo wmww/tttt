@@ -4026,7 +4026,7 @@ const baselines = {
         types: false,
     },
     'collisionArgumentsInterfaceMembers': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46631,7 +46631,7 @@ const baselines = {
         types: false,
     },
     'jsdocImportType': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
