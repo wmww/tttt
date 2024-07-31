@@ -40,6 +40,7 @@ typedef struct LazyType {
         struct {
             ArcLazyType source;
             Type* index; // Owned
+            bool require_array; // This might go away in a newer version of typescript
         } indexed;
     };
 } LazyType;
@@ -99,7 +100,7 @@ static inline LazyType lazy_type_class_class(ClassDecl* class) {
 }
 
 LazyType lazy_type_interface(TypeDecl* interface);
-LazyType lazy_type_indexed(ArcLazyType source, Value index);
+LazyType lazy_type_indexed(ArcLazyType source, Value index, bool require_array);
 
 void lazy_type_drop(LazyType* me);
 // PERF: remove lazy_type_clone(), cloning implies lazy types may be resolved multiple times. code should be

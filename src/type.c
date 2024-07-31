@@ -59,7 +59,11 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
 
 Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
-    if (a.tag == TYPE_NEVER || a.tag == TYPE_ANY || b.tag == TYPE_NEVER || b.tag == TYPE_ANY) {
+    if (a.tag == TYPE_REF) {
+        return type_composite(tag, type_clone(*a.ref), b);
+    } else if (b.tag == TYPE_REF) {
+        return type_composite(tag, a, type_clone(*b.ref));
+    } else if (a.tag == TYPE_NEVER || a.tag == TYPE_ANY || b.tag == TYPE_NEVER || b.tag == TYPE_ANY) {
         typeof((Type){}.tag) override_tag = tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER;
         typeof((Type){}.tag) ignore_tag = tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY;
         if (a.tag == override_tag || b.tag == override_tag) {

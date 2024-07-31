@@ -25001,7 +25001,7 @@ const baselines = {
         types: false,
     },
     'restParamUsingMappedTypeOverUnionConstraint': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },

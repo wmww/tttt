@@ -13,12 +13,13 @@ LazyType lazy_type_interface(TypeDecl* interface) {
     };
 }
 
-LazyType lazy_type_indexed(ArcLazyType source, Value index) {
+LazyType lazy_type_indexed(ArcLazyType source, Value index, bool require_array) {
     return (LazyType){
         .tag = LAZY_TYPE_INDEXED,
         .indexed = {
             .source = source,
             .index = c_new(Type, type_value(index)),
+            .require_array = require_array,
         }
     };
 }
@@ -164,6 +165,9 @@ Type const* lazy_type_resolve(LazyType* me) {
             LazyType local_me = *me;
             my tag = LAZY_TYPE_IN_FLIGHT;
             Type const* source_resolved = lazy_type_resolve(my indexed.source.get);
+            if (my indexed.require_array && !type_extends_array(source_resolved)) {
+                source_resolved = &type_any;
+            }
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
                 Type result = index_type_of(source_resolved, my indexed.index, span_null, false, nullptr);
                 if (my tag == LAZY_TYPE_IN_FLIGHT) {

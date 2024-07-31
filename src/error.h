@@ -7,6 +7,7 @@ typedef enum ErrorPhase {
     ERROR_PHASE_PARSE,
     ERROR_PHASE_RESOLVE_NAMES,
     ERROR_PHASE_TYPECHECK,
+    ERROR_PHASE_TYPECHECK_2,
 } ErrorPhase;
 
 typedef struct Error {

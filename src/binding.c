@@ -140,7 +140,7 @@ void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCt
                 intptr_t index = i.ref - my array.data;
                 binding_add_names(
                     i.ref,
-                    lazy_type_indexed(arc_lazy_type_clone(source), value_number(index)),
+                    lazy_type_indexed(arc_lazy_type_clone(source), value_number(index), true),
                     names,
                     errs
                 );
@@ -153,7 +153,7 @@ void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCt
             c_foreach(i, vec_object_binding_item, my object) {
                 binding_add_names(
                     &i.ref->target,
-                    lazy_type_indexed(arc_lazy_type_clone(source), value_clone(i.ref->source)),
+                    lazy_type_indexed(arc_lazy_type_clone(source), value_clone(i.ref->source), true),
                     names,
                     errs
                 );
@@ -263,6 +263,12 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             break;
 
         case BINDING_ARRAY:
+            if (!type_extends_array(binding_get_type(me))) {
+                cstr msg = cstr_lit("Type '");
+                cstr_append_type_error_msg(&msg, binding_get_type(me));
+                cstr_append_sv(&msg, c_sv("' is not an array type."));
+                error_ctx_error_s(errs, my content_span, 2461, msg);
+            }
             c_foreach(i, vec_binding, my array) {
                 binding_typecheck(i.ref, errs);
             }
