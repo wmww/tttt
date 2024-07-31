@@ -192,6 +192,18 @@ static void collect_generic_candidates(
     UNREACHABLE;
 }
 
+static inline void lazy_type_resplace_named_types_with(LazyType* me, VecTypeRefinement const* refinements) {
+    if (my tag != LAZY_TYPE_VALUE) {
+        Type const* resolved = lazy_type_resolve(me);
+        if (my tag != LAZY_TYPE_VALUE) {
+            LazyType temp = lazy_type_value(type_clone(*resolved));
+            lazy_type_drop(me);
+            *me = temp;
+        }
+    }
+    replace_named_types_with(&my value, refinements);
+}
+
 static inline void generic_replace_named_types_with(Generic* me, VecTypeRefinement const* refinements) {
     c_foreach(i, vec_generic_item, my items) {
         replace_named_types_with(&i.ref->extends, refinements);
@@ -205,14 +217,7 @@ static inline void callable_replace_named_types_with(CallableType* me, VecTypeRe
         if (i.ref->binding.has_explicit_type) {
             replace_named_types_with(&i.ref->binding.explicit_type, refinements);
         } else {
-            if (i.ref->binding.assigned_type.tag != LAZY_TYPE_VALUE) {
-                LazyType temp = i.ref->binding.assigned_type;
-                i.ref->binding.assigned_type = lazy_type_value(type_clone(*lazy_type_resolve(
-                    &i.ref->binding.assigned_type
-                )));
-                lazy_type_drop(&temp);
-            }
-            replace_named_types_with(&i.ref->binding.assigned_type.value, refinements);
+            lazy_type_resplace_named_types_with(&i.ref->binding.assigned_type, refinements);
         }
     }
     replace_named_types_with(&my ret, refinements);
@@ -265,10 +270,7 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                         break;
                     case INTERFACE_KEY_CALLABLE: break;
                 }
-                lazy_type_resolve(&i.ref->type);
-                if (i.ref->type.tag == LAZY_TYPE_VALUE) {
-                    replace_named_types_with(&i.ref->type.value, refinements);
-                }
+                lazy_type_resplace_named_types_with(&i.ref->type, refinements);
             }
             return;
 

@@ -41,9 +41,13 @@ NamedType* make_named_type(Span name, LazyType type, Generic const* generic) {
     });
 }
 
+void named_type_drop(NamedType* me) {
+    lazy_type_drop(&my type);
+}
+
 void named_type_destroy(NamedType* me) {
     if (!me) return;
-    lazy_type_drop(&my type);
+    named_type_drop(me);
     free(me);
 }
 

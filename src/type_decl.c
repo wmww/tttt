@@ -35,6 +35,9 @@ void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent) {
         cstr_append_span(target, &my name);
         cstr_append_sv(target, c_sv(CLR0));
         cstr_append_generic_debug(target, &my generic, indent);
+        cstr_append_sv(target, c_sv(CLR_IMPLICIT " /* " CLR0));
+        cstr_append_type_debug(target, type_resolve(&my type), indent);
+        cstr_append_sv(target, c_sv(CLR_IMPLICIT " */" CLR0));
         cstr_append_sv(target, c_sv(" = "));
     }
     cstr_append_type_debug(target, &my type, indent);

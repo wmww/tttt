@@ -25,7 +25,14 @@ typedef struct NamedType {
 } NamedType;
 
 NamedType* make_named_type(Span name, LazyType type, Generic const* generic);
+void named_type_drop(NamedType* me);
 void named_type_destroy(NamedType* me);
+
+#define i_key_class_names NamedType, named_type
+#define i_opt c_no_atomic
+#define i_is_forward
+#define i_no_hash
+#include "wrap_stc/arc.h"
 
 NameStack* name_stack_new();
 void name_stack_destroy(NameStack* me);

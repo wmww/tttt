@@ -206,7 +206,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }));
 
     ASSERT(!my class_named_type);
-    my class_named_type = make_named_type(my name, lazy_type_class_class(me), &my generic);
+    my class_named_type = make_named_type(my name, lazy_type_class_class(me), nullptr);
     my class_named_type->is_typeof_class = true;
 
     ASSERT(!my class_named_var);
@@ -224,15 +224,9 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 
     ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
-    generic_params = (VecSpannedType){0};
-    c_foreach(i, vec_generic_item, my generic.items) {
-        // Is it the fallback type, always any or something else? unclear.
-        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
-    }
     my class_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
         .type = my class_named_type,
-        .generic_params = generic_params,
     }));
 
     c_foreach(i, vec_class_item, my items) {

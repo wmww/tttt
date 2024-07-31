@@ -342,14 +342,15 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
                 type_add_inferred_names(&i.ref->type, names);
             }
             if (my identifier->inferred) {
-                if (my identifier->type) {
+                if (my identifier->inferred_type.get) {
                     NONFATAL("Inferred identifier added multiple times");
                 } else {
-                    my identifier->type = make_named_type(
+                    my identifier->inferred_type = arc_named_type_from_ptr(make_named_type(
                         my identifier->name,
                         lazy_type_ref(&my identifier->degenericized),
                         nullptr
-                    );
+                    ));
+                    my identifier->type = my identifier->inferred_type.get;
                     name_stack_add_type(names, my identifier->type);
                 }
             }

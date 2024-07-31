@@ -5,21 +5,20 @@
 
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
-    if (my inferred) {
-        named_type_destroy(my type);
-    }
     vec_spanned_type_drop(&my generic_params);
     type_drop(&my degenericized);
+    arc_named_type_drop(&my inferred_type);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     return (IdentifierType){
         .namespaces = vec_span_clone(me.namespaces),
         .name = me.name,
-        .type = me.inferred ? nullptr : me.type,
+        .type = me.type,
         .generic_params = vec_spanned_type_clone(me.generic_params),
         .degenericized = type_any,
         .inferred = me.inferred,
+        .inferred_type = me.inferred_type.get ? arc_named_type_clone(me.inferred_type) : (ArcNamedType){0},
     };
 }
 
