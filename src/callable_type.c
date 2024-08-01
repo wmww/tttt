@@ -187,6 +187,9 @@ void callable_type_typecheck(CallableType const* me, FunctionImpl const* optiona
                 );
             }
         }
+
+        Type t = expr_get_type_and_typecheck(default_arg, errs);
+        type_drop(&t);
     }
 
     type_typecheck(&my ret, errs);

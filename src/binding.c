@@ -308,7 +308,7 @@ void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding cons
 
 void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs) {
     bool type_abstract_tuple_to_array = true;
-    if (my binding.has_explicit_type) {
+    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER) {
         abstract_literals = false;
         type_abstract_tuple_to_array = false;
     }

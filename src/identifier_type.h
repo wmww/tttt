@@ -9,6 +9,7 @@ typedef struct IdentifierType {
     Span name;
     NamedType* type;
     VecSpannedType generic_params;
+    ResolveState degenericized_state;
     Type degenericized; // A copy of the type with the generic parameters swapped in
     bool inferred;
     ArcNamedType inferred_type;

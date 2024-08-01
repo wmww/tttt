@@ -3247,7 +3247,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     hop_whitespace(&p);
 
     bool is_for_each = false;
-    Statement statement;
+    Statement statement = {0};
     Expr left_expr;
     Expr right_expr;
     Statement body;

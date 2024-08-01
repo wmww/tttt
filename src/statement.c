@@ -26,7 +26,10 @@ void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, i
 
 void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        if (my keyword == VAR_INIT_CONST && i.ref->value.tag == EXPR_IMPLICIT_ANY && !declared) {
+        if (my keyword == VAR_INIT_CONST &&
+            i.ref->value.tag == EXPR_IMPLICIT_ANY &&
+            !declared
+        ) {
             error_ctx_error(errs, i.ref->binding.content_span, 1155, "'const' declarations must be initialized.");
         }
         initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, names, errs);

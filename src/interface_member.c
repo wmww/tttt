@@ -205,6 +205,8 @@ bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* su
         cstr_eq(&sub->key.name_string, &super->key.name_string)
     ) {
         return true;
+    } else if (sub->key.tag == INTERFACE_KEY_INDEX && super->key.tag == INTERFACE_KEY_INDEX) {
+        return type_extends(&sub->key.index, &super->key.index);
     } else {
         // TODO
         return false;

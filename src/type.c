@@ -587,12 +587,27 @@ static Type const* type_resolve_internal(Type const* me, int level) {
             case TYPE_IDENTIFIER:
                 if (my identifier->type) {
                     if (my identifier->type->generic) {
-                        if (my identifier->degenericized.tag == 0) {
-                            my identifier->degenericized = generic_degenericize_type(
-                                my identifier->type->generic,
-                                type_clone(*lazy_type_resolve(&my identifier->type->type)),
-                                &my identifier->generic_params
-                            );
+                        switch (my identifier->degenericized_state) {
+                            case RESOLVE_STATE_UNINITIALIZED:
+                                my identifier->degenericized_state = RESOLVE_STATE_IN_FLIGHT;
+                                Type degenericized = generic_degenericize_type(
+                                    my identifier->type->generic,
+                                    type_clone(*lazy_type_resolve(&my identifier->type->type)),
+                                    &my identifier->generic_params
+                                );
+                                if (my identifier->degenericized_state == RESOLVE_STATE_IN_FLIGHT) {
+                                    my identifier->degenericized = degenericized;
+                                    my identifier->degenericized_state = RESOLVE_STATE_DONE;
+                                } else {
+                                    type_drop(&degenericized);
+                                }
+                                break;
+
+                            case RESOLVE_STATE_IN_FLIGHT:
+                                my identifier->degenericized = type_self_referential_error;
+                                my identifier->degenericized_state = RESOLVE_STATE_DONE;
+
+                            case RESOLVE_STATE_DONE: break;
                         }
                         me = &my identifier->degenericized;
                     } else {
