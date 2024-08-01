@@ -80,10 +80,14 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
 static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
+static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
+static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, Type* ret);
+static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
 static bool parse_function_args(Parser* parent, bool is_type, FunctionImpl /*nullable*/* func_ret, CallableType* type_ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
+static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -232,8 +236,8 @@ static inline bool hop_identifier_or_keyword(Parser* parent) {
     }
 }
 
-// span can be nullptr
-static bool parse_identifier(Parser* parent, Span* span) {
+// ret can be nullptr
+static bool parse_identifier(Parser* parent, Span* ret) {
     Anchor a = span_start(parent);
     if (!hop_identifier_or_keyword(parent)) {
         return false;
@@ -248,12 +252,22 @@ static bool parse_identifier(Parser* parent, Span* span) {
         span_eq_str(&s, "default")
     ) {
         parent->pos = a.start;
-        return false; // TODO: check for all keywords efficiently
+        return false; // PERF: check for keywords efficiently
     }
-    if (span) {
-        *span = s;
+    if (ret) {
+        *ret = s;
     }
     return true;
+}
+
+static inline bool expect_identifier(Parser* parent, Span* ret) {
+    if (parse_identifier(parent, ret)) {
+        return true;
+    } else {
+        error_ctx_error(&parent->errs, span_from_token(parent), 1003, "Identifier expected.");
+        *ret = span_null;
+        return false;
+    }
 }
 
 static bool parse_number_str(Parser* parent, cstr* ret) {
@@ -364,6 +378,23 @@ static inline bool hop_char(Parser* parent, char c) {
     }
 }
 
+static inline bool expect_char(Parser* parent, char c) {
+    if (hop_char(parent, c)) {
+        return true;
+    } else {
+        error_ctx_error(&parent->errs, span_from_token(parent), 1005, "'%c' expected.", c);
+        return false;
+    }
+}
+
+static void expected_token_error(Parser* parent, const char* expected) {
+    error_ctx_error(&parent->errs, span_from_token(parent), 1005, "'%s' expected.", expected);
+}
+
+static void expected_expression_error(Parser* parent) {
+    error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
+}
+
 static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
     Parser p = parser(parent);
     if (hop_start(&p, prefix)) {
@@ -449,9 +480,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Type extends = type_any;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &extends)) {
-            extends = type_any;
-        }
+        parse_type_or_set_to_default(&p, TYPE_PRECEDENCE_NULL, &extends);
         hop_whitespace(&p);
     }
 
@@ -495,17 +524,10 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
             break;
         }
 
-        if (hop_char(&p, ',')) {
-        } else if (*p.pos == '>') {
-        } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-        }
+        __( *p.pos == '>' || expect_char(&p, ',') );
         hop_whitespace(&p);
     }
-
-    if (!hop_char(&p, '>')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'>' expected.");
-    }
+    expect_char(&p, '>');
 
     return parse_success(&p);
 }
@@ -533,11 +555,12 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
             break;
         }
 
-        if (hop_char(&p, ',')) {
-            trailing_comma_span = span_from_previous_char(&p);
-        } else if (*p.pos == '>') {
-        } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+        if (*p.pos != '>') {
+            if (expect_char(&p, ',')) {
+                trailing_comma_span = span_from_previous_char(&p);
+            } else {
+                hop_token(&p);
+            }
         }
         hop_whitespace(&p);
     }
@@ -546,9 +569,7 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
         error_ctx_error(&p.errs, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
-    if (!hop_char(&p, '>')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'>' expected.");
-    }
+    expect_char(&p, '>');
 
     return parse_success(&p);
 }
@@ -567,17 +588,13 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     parse_type(&p, TYPE_PRECEDENCE_TERNARY, &maybe_super);
     hop_whitespace(&p);
 
-    if (!hop_char(&p, '?')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'?' expected.");
-    }
+    expect_char(&p, '?');
     hop_whitespace(&p);
 
     parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_true);
     hop_whitespace(&p);
 
-    if (!hop_char(&p, ':')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
-    }
+    expect_char(&p, ':');
     hop_whitespace(&p);
 
     parse_type(&p, TYPE_PRECEDENCE_TERNARY, &if_false);
@@ -602,23 +619,17 @@ static bool parse_tuple(Parser* parent, VecType* ret) {
     hop_whitespace(&p);
 
     while (*p.pos && *p.pos != ']') {
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
+        if (expect_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
             vec_type_push(ret, t);
-        } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
         }
         hop_whitespace(&p);
 
-        if (*p.pos != ']' && !hop_char(&p, ',')) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+        if (*p.pos != ']' && !expect_char(&p, ',')) {
             return parse_success(&p);
         }
         hop_whitespace(&p);
     }
-
-    if (!hop_char(&p, ']')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
-    }
+    expect_char(&p, ']');
 
     return parse_success(&p);
 
@@ -634,18 +645,14 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         hop_whitespace(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
             hop_whitespace(&p);
-            if (!hop_char(&p, ']')) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
-            }
+            expect_char(&p, ']');
             *left_and_ret = type_indexed(c_new(IndexedType, {
                 .interface = *left_and_ret,
                 .index = type,
             }));
             return parse_success(&p);
         } else {
-            if (!hop_char(&p, ']')) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
-            }
+            expect_char(&p, ']');
             *left_and_ret = type_array(c_new(Type, *left_and_ret), false);
             return parse_success(&p);
         }
@@ -661,11 +668,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         if (hop_char(&p, '&') && *p.pos != '&' && *p.pos != '=') {
             hop_whitespace(&p);
 
-            if (!parse_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type)) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-                type = type_any;
-            }
-
+            expect_type(&p, TYPE_PRECEDENCE_INTERSECTION, &type);
             *left_and_ret = type_composite_without_simplify(TYPE_INTERSECTION, *left_and_ret, type);
             return parse_success(&p);
         }
@@ -675,11 +678,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         if (hop_char(&p, '|') && *p.pos != '|' && *p.pos != '=') {
             hop_whitespace(&p);
 
-            if (!parse_type(&p, TYPE_PRECEDENCE_UNION, &type)) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-                type = type_any;
-            }
-
+            expect_type(&p, TYPE_PRECEDENCE_UNION, &type);
             *left_and_ret = type_composite_without_simplify(TYPE_UNION, *left_and_ret, type);
             return parse_success(&p);
         }
@@ -705,31 +704,22 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     while (hop_char(&p, '.')) {
         vec_span_push(&namespaces, name);
         hop_whitespace(&p);
-        if (!parse_identifier(&p, &name)) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
-            name = span_null;
-        }
+        expect_identifier(&p, &name);
         end = p.pos;
         hop_whitespace(&p);
     }
 
     if (vec_span_empty(&namespaces) && span_eq_str(&name, "infer")) {
         inferred = true;
-        if (parse_identifier(&p, &name)) {
+        if (expect_identifier(&p, &name)) {
             end = p.pos;
-        } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-            name = span_null;
         }
         hop_whitespace(&p);
         if (hop_start_if_ends_on_word_break(&p, "extends")) {
             end = p.pos;
             hop_whitespace(&p);
-            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
+            if (expect_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
                 end = p.pos;
-            } else {
-                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-                type = (Type){0};
             }
         }
     }
@@ -788,10 +778,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
         hop_whitespace(&p);
-        if (!parse_type(&p, min_precedence, &parsed.type)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
-            parsed.type = type_any;
-        }
+        expect_type(&p, min_precedence, &parsed.type);
         *ret = type_keyof(c_new(KeyofType, {
             .interface = parsed.type,
             .has_cache = false,
@@ -808,14 +795,9 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         readonly_span = span_null;
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-            *ret = type_any;
-        }
+        expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
         hop_whitespace(&p);
-        if (!hop_char(&p, ')')) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
-        }
+        expect_char(&p, ')');
     } else if (parse_interface(&p, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
     } else if (*p.pos == '|' || *p.pos == '&') {
@@ -842,6 +824,25 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     }
 
     return parse_success(&p);
+}
+
+static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, Type* ret) {
+    if (parse_type(parent, min_precedence, ret)) {
+        return true;
+    } else {
+        *ret = (Type){0};
+        return false;
+    }
+}
+
+static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
+    if (parse_type(parent, min_precedence, ret)) {
+        return true;
+    } else {
+        error_ctx_error(&parent->errs, span_from_token(parent), 1110, "Type expected.");
+        *ret = (Type){0};
+        return false;
+    }
 }
 
 static bool parse_interface(Parser* parent, Interface* ret) {
@@ -907,18 +908,15 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
         // Typescript accepts EITHER , ; or newlines in interfaces. You can MIX them!
         if (!hop_char(&p, ',') &&
-            !hop_char(&p, ';') &&
             *p.pos != '}' &&
             p.whitespace != WHITESPACE_NEWLINE
         ) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+            expect_char(&p, ';');
         }
         hop_whitespace(&p);
     }
 
-    if (!hop_char(&p, '}')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
-    }
+    expect_char(&p, '}');
 
     *ret = (Interface) {
         .members = members,
@@ -951,14 +949,10 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     hop_whitespace(&p);
 
     Type type;
-    if (hop_start(&p, "=")) {
+    if (expect_char(&p, '=')) {
         hop_whitespace(&p);
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
-            type = type_any;
-        }
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
     } else {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=' expected.");
         type = type_any;
     }
 
@@ -1020,7 +1014,8 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
                 hop_whitespace(&p);
             } else {
                 if (!span_valid(&last_type_span) || span_valid(&last_comma_span)) {
-                    error_ctx_error(&p.errs, hop_token_get_span(&p), 1109, "Expression expected.");
+                    hop_whitespace(&p);
+                    expected_expression_error(&p);
                 } else {
                     break;
                 }
@@ -1028,13 +1023,12 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
 
             second_last_comma_span = last_comma_span;
 
-            if (hop_char(&p, ',')) {
-                last_comma_span = span_from_previous_char(&p);
-            } else if (*p.pos == '{' || !*p.pos) {
+            if (*p.pos == '{' || !*p.pos) {
                 last_comma_span = span_null;
+            } else if (expect_char(&p, ',')) {
+                last_comma_span = span_from_previous_char(&p);
             } else {
                 last_comma_span = hop_token_get_span(&p);
-                error_ctx_error(&p.errs, last_comma_span, 1005, "',' expected.");
             }
             hop_whitespace(&p);
         }
@@ -1047,12 +1041,13 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         } else {
             vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
             interface = (Interface){0};
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+            expected_token_error(&p, "{");
         }
     } else {
         if (!parse_interface(&p, &interface)) {
             interface = (Interface){0};
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
+            expected_token_error(&p, "{");
+            hop_token(&p);
         }
         c_foreach(i, vec_interface_member, interface.members) {
             i.ref->origin_interface_name = name;
@@ -1193,28 +1188,24 @@ static bool parse_function_args(
                     }
                 } else {
                     hop_whitespace(&p);
-
-                    if (*p.pos != ')' && !hop_char(&p, ',')) {
-                        error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-                    }
+                    __( *p.pos == ')' || expect_char(&p, ',') );
                 }
             }
 
             hop_whitespace(&p);
         }
 
-        if (!hop_char(&p, ')')) {
+        if (!expect_char(&p, ')')) {
             if (func_ret) {
                 vec_expr_drop(&func_ret->arg_defaults);
                 func_ret->arg_defaults = vec_expr_init();
             }
             callable_type_drop(type_ret);
             *type_ret = (CallableType){0};
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
             return parse_success(&p);
         }
     } else if (is_definitely_function) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'(' expected.");
+        expected_token_error(&p, "(");
     } else {
         goto drop_and_fail;
     }
@@ -1229,7 +1220,7 @@ static bool parse_function_args(
 
         if (!hop_start(&p, "=>")){
             if (is_definitely_function) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=>' expected.");
+                expected_token_error(&p, "=>");
             } else {
                 goto drop_and_fail;
             }
@@ -1257,10 +1248,7 @@ static bool parse_function_args(
                 if (hop_start_if_ends_on_word_break(&p, "is")) {
                     hop_whitespace(&p);
                     Type t;
-                    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                        error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-                        t = type_any;
-                    }
+                    expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
                     type_drop(&t);
                     type_drop(&type_ret->ret);
                     type_ret->ret = type_boolean;
@@ -1271,10 +1259,7 @@ static bool parse_function_args(
                         if (hop_start_if_ends_on_word_break(&p, "is")) {
                             hop_whitespace(&p);
                             Type t;
-                            if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                                error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-                                t = type_any;
-                            }
+                            expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
                             type_drop(&t);
                         }
                         type_drop(&type_ret->ret);
@@ -1333,7 +1318,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
         function_impl_drop(ret);
         if (is_definitely_function) {
             *ret = (FunctionImpl){0};
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'=>' expected.");
+            expected_token_error(&p, "=>");
             ret->full_span = span_end(a);
             return parse_success(&p);
         } else {
@@ -1350,9 +1335,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
 
     if (!parse_block(&p, false, &ret->body)) {
         Expr expr;
-        if (!parse_expr(&p, ctx, &expr)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-            expr = expr_implicit_any(span_from_pos(&p));
+        if (!expect_expr(&p, ctx, &expr)) {
             p.pos = span_end_ptr(&ret->arrow_span);
         }
         ret->body = (Block){0};
@@ -1465,10 +1448,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     hop_whitespace(&p);
 
     Expr value;
-    if (!parse_expr(&p, expr_ctx_null, &value)) {
-        error_ctx_parse_error(&p.errs, "bad expression in object");
-        value = expr_undefined(span_from_pos(&p));
-    }
+    expect_expr(&p, expr_ctx_null, &value);
 
     *ret = (ObjectExprItem){
         .name_string = name_string,
@@ -1498,16 +1478,11 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
         }
         hop_whitespace(&p);
 
-        if (!hop_char(&p, ',') && *p.pos != '}') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-            hop_char(&p, ';'); // Optional
-        }
+        __( *p.pos == '}' || expect_char(&p, ',') || hop_char(&p, ';') );
         hop_whitespace(&p);
     }
 
-    if (!hop_char(&p, '}')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
-    }
+    expect_char(&p, '}');
 
     return parse_success(&p);
 }
@@ -1532,15 +1507,11 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
         }
         hop_whitespace(&p);
 
-        if (!hop_char(&p, ',') && *p.pos != ']') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-        }
+        __( *p.pos == ']' || expect_char(&p, ',') );
         hop_whitespace(&p);
     }
 
-    if (!hop_char(&p, ']')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
-    }
+    expect_char(&p, ']');
 
     return parse_success(&p);
 }
@@ -1569,22 +1540,13 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         return parse_fail(&p);
     }
 
-    if (!hop_char(&p, '[')) {
-        if (ret->key.mapped.readonly == 0) {
-            return parse_fail(&p);
-        } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'[' expected.");
-        }
+    if (!expect_char(&p, '[') && ret->key.mapped.readonly == 0) {
+        return parse_fail(&p);
     }
     hop_whitespace(&p);
 
-    if (!parse_identifier(&p, &ret->key.mapped.type_name)) {
-        if (ret->key.mapped.readonly == 0) {
-            return parse_fail(&p);
-        } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
-            ret->key.mapped.type_name = span_null;
-        }
+    if (!expect_identifier(&p, &ret->key.mapped.type_name) && ret->key.mapped.readonly == 0) {
+        return parse_fail(&p);
     }
     hop_whitespace(&p);
 
@@ -1592,31 +1554,23 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         if (ret->key.mapped.readonly == 0) {
             return parse_fail(&p);
         } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'in' expected.");
+            expected_token_error(&p, "in");
         }
     }
     hop_whitespace(&p);
 
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.in_type)) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
-        ret->key.mapped.in_type = type_any;
-    }
+    expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.in_type);
     hop_whitespace(&p);
 
     if (hop_start_if_ends_on_word_break(&p, "as")) {
         hop_whitespace(&p);
         ret->key.mapped.has_as_type = true;
 
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.as_type)) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
-            ret->key.mapped.as_type = type_any;
-        }
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.as_type);
         hop_whitespace(&p);
     }
 
-    if (!hop_char(&p, ']')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "']' expected.");
-    }
+    expect_char(&p, ']');
     ret->key.span = span_end(a);
     hop_whitespace(&p);
 
@@ -1630,26 +1584,21 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         hop_whitespace(&p);
     }
 
-    if (hop_char(&p, '?')) {
-        if (ret->key.mapped.optional == 0) {
+    if (ret->key.mapped.optional == 0) {
+        if (hop_char(&p, '?')) {
             ret->key.mapped.optional = 1;
         }
-        ret->key.span = span_end(a);
-        hop_whitespace(&p);
-    } else if (ret->key.mapped.optional != 0) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'?' expected.");
+    } else {
+        expect_char(&p, '?');
     }
+    ret->key.span = span_end(a);
+    hop_whitespace(&p);
 
-    if (!hop_char(&p, ':')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
-    }
+    expect_char(&p, ':');
     hop_whitespace(&p);
 
     Type type;
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1110, "Type expected.");
-        type = type_any;
-    }
+    expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
     ret->type = lazy_type_value(type);
 
     return parse_success(&p);
@@ -1694,12 +1643,8 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
             }
         }
         hop_whitespace(&p);
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.index)) {
-            if (show_errors) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
-            }
-            ret->key.index = type_any;
-        }
+
+        (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index);
     } else {
         Expr expr;
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
@@ -1710,27 +1655,14 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     }
     hop_whitespace(&p);
 
-    if (!hop_char(&p, ']')) {
-        if (show_errors) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
-        }
-    }
+    (show_errors ? expect_char : hop_char)(&p, ']');
     hop_whitespace(&p);
 
-    if (!hop_char(&p, ':')) {
-        if (show_errors) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "':' expected.");
-        }
-    }
+    (show_errors ? expect_char : hop_char)(&p, ':');
     hop_whitespace(&p);
 
     Type type;
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-        if (show_errors) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
-        }
-        type = type_any;
-    }
+    (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &type);
     ret->type = lazy_type_value(type);
 
     return parse_success(&p);
@@ -2143,10 +2075,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, expr_ctx_null, &ret->extends)) {
-            ret->extends = expr_implicit_any_no_span;
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        }
+        expect_expr(&p, expr_ctx_null, &ret->extends);
         hop_whitespace(&p);
 
         if (hop_char(&p, ',')) {
@@ -2161,23 +2090,21 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
         while (true) {
             Type t;
-            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                vec_type_push(&ret->implements, t);
-
-                hop_whitespace(&p);
-                if (!hop_char(&p, ',')) {
-                    break;
-                }
-                hop_whitespace(&p);
-            } else {
-                error_ctx_error(&p.errs, span_from_token(&p), 1109, "Type expected.");
+            if (!expect_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
                 break;
             }
+
+            vec_type_push(&ret->implements, t);
+
+            hop_whitespace(&p);
+            if (!hop_char(&p, ',')) {
+                break;
+            }
+            hop_whitespace(&p);
         }
     }
 
-    if (!hop_char(&p, '{')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+    if (!expect_char(&p, '{')) {
         ret->full_span = span_end(a);
         return parse_success(&p);
     }
@@ -2201,23 +2128,17 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         vec_class_item_push(&ret->items, item);
         hop_whitespace(&p);
 
-        if (!hop_char(&p, ';') &&
-            *p.pos != '}' &&
-            p.whitespace != WHITESPACE_NEWLINE
-        ) {
-            if (*p.pos) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
-            }
-        } else {
-            do {
-                hop_whitespace(&p);
-            } while (hop_char(&p, ';'));
+        if (!*p.pos || *p.pos == '}') {
+            break;
+        } else if (p.whitespace != WHITESPACE_NEWLINE) {
+            expect_char(&p, ';');
         }
-    }
 
-    if (!hop_char(&p, '}')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
+        do {
+            hop_whitespace(&p);
+        } while (hop_char(&p, ';'));
     }
+    expect_char(&p, '}');
 
     ret->full_span = span_end(a);
     return parse_success(&p);
@@ -2234,33 +2155,29 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     *args = vec_expr_init();
     while (*p.pos && *p.pos != ')') {
         Expr arg = {0};
-        if (parse_expr(&p, expr_ctx_null, &arg)) {
+        if (expect_expr(&p, expr_ctx_null, &arg)) {
             vec_expr_push(args, arg);
         } else {
-            error_ctx_parse_error(&p.errs, "invald expression in call");
             while (*p.pos && *p.pos != ')' && *p.pos != ',') {
                 p.pos++;
             }
         }
         hop_whitespace(&p);
-        if (*p.pos != ',' && *p.pos != ')') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-        }
+
+        __( *p.pos == ')' || (expect_char(&p, ',') && p.pos--) );
+
         bool first_comma = true;
         while (*p.pos == ',') {
             p.pos++;
             hop_whitespace(&p);
             if (!first_comma) {
-                error_ctx_parse_error(&p.errs, "expected argument before ','");
+                error_ctx_error(&p.errs, span_from_token(&p), 1135, "Argument expression expected.");
             }
             first_comma = false;
         }
     }
-    if (*p.pos == ')') {
-        p.pos++;
-    } else {
-        error_ctx_parse_error(&p.errs, "expected ')' at end of call");
-    }
+    expect_char(&p, ')');
+
     return parse_success(&p);
 }
 
@@ -2310,24 +2227,19 @@ static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr*
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ctx, ret_yes)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        *ret_yes = expr_undefined(span_from_pos(&p));
+    if (!expect_expr(&p, ctx, ret_yes)) {
         *ret_no = expr_undefined(span_from_pos(&p));
         return parse_success(&p);
     }
     hop_whitespace(&p);
 
-    if (!hop_char(&p, ':')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "':' expected.");
+    if (!expect_char(&p, ':')) {
         *ret_no = expr_undefined(span_from_pos(&p));
         return parse_success(&p);
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, ctx, ret_no)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        *ret_no = expr_undefined(span_from_pos(&p));
+    if (!expect_expr(&p, ctx, ret_no)) {
         return parse_success(&p);
     }
 
@@ -2342,14 +2254,11 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, expr_ctx_null, ret)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        *ret = expr_undefined(span_from_pos(&p));
+    if (!expect_expr(&p, expr_ctx_null, ret)) {
         return parse_success(&p);
     }
 
-    if (!hop_char(&p, ']')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
+    if (!expect_char(&p, ']')) {
         return parse_success(&p);
     }
 
@@ -2364,10 +2273,7 @@ static bool parse_as_type(Parser* parent, Type* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_type(&p, TYPE_PRECEDENCE_NULL, ret)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-        *ret = type_any;
-    }
+    expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
 
     return parse_success(&p);
 }
@@ -2439,10 +2345,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
 
     Expr right;
     ctx.min_precedence = precedence;
-    if (!parse_expr(&p, ctx, &right)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        right = expr_implicit_any(span_from_pos(&p));
-    }
+    expect_expr(&p, ctx, &right);
 
     *left_and_ret = expr_binary_op(span_between(&left_and_ret->outer_span, &right.outer_span), c_new(BinaryOpExpr, {
         .left = *left_and_ret,
@@ -2486,10 +2389,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     Expr expr;
     ctx.min_precedence = unary_op_get_precedence(op);
-    if (!parse_expr(&p, ctx, &expr)) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        expr = expr_undefined(span_from_pos(&p));
-    }
+    expect_expr(&p, ctx, &expr);
 
     *ret = expr_unary_op(
         op_span,
@@ -2701,8 +2601,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
         parsed_commas = true;
         hop_whitespace(&p);
 
-        if (!parse_expr(&p, expr_ctx_null, &expr)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
+        if (!expect_expr(&p, expr_ctx_null, &expr)) {
             return parse_success(&p);
         }
 
@@ -2783,10 +2682,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ExprCtx sub_ctx = ctx;
         sub_ctx.min_precedence = new_keyword_precedence;
         CallExpr call = { .uses_new = true };
-        if (!parse_expr(&p, sub_ctx, &call.callable)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-            call.callable = expr_undefined(span_end(a));
-        }
+        expect_expr(&p, sub_ctx, &call.callable);
         if (!parse_call_args(&p, &call.args)) {
             call.args = vec_expr_init();
         }
@@ -2805,28 +2701,20 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         }
         parse_comma_ops_right_side(&p, ret);
         hop_whitespace(&p);
-        if (!hop_char(&p, ')')) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
-        }
+        expect_char(&p, ')');
         inner_span_set = true;
     } else if (hop_char(&p, '<')) {
         Type t;
         Expr e;
         hop_whitespace(&p);
-        if (!parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
-            t = type_any;
-        }
+
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
         hop_whitespace(&p);
-        if (!hop_char(&p, '>')) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'>' expected.");
-        }
+
+        expect_char(&p, '>');
         hop_whitespace(&p);
-        if (!parse_expr(&p, ctx, &e)) {
-            Span s = hop_token_get_span(&p);
-            error_ctx_error(&p.errs, s, 1109, "Expression expected.");
-            e = expr_undefined(s);
-        }
+
+        expect_expr(&p, ctx, &e);
         *ret = expr_as_type(span_end(a), c_new(AsTypeExpr, {
             .expr = e,
             .type = t,
@@ -2849,6 +2737,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     return parse_success(&p);
 }
 
+static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
+    if (parse_expr(parent, ctx, ret)) {
+        return true;
+    } else {
+        expected_expression_error(parent);
+        *ret = expr_implicit_any(span_from_pos(parent));
+        return false;
+    }
+}
+
 static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
     Parser p = parser(parent);
     *ret = vec_import_item_init();
@@ -2866,35 +2764,26 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
             item.type_only = true;
         }
 
-        if (parse_identifier(&p, &item.source)) {
+        if (expect_identifier(&p, &item.source)) {
             hop_whitespace(&p);
 
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-
-                if (!parse_identifier(&p, &item.name)) {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
-                    item.name = item.source;
-                }
+                expect_identifier(&p, &item.name);
             } else {
                 item.name = item.source;
             }
 
             vec_import_item_push(ret, item);
         } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
-            hop_whitespace(&p);
-        }
-
-        if (!hop_char(&p, ',') && *p.pos != '}') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
+            hop_token(&p);
         }
         hop_whitespace(&p);
-    }
 
-    if (!hop_char(&p, '}')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
+        __( *p.pos == '}' || expect_char(&p, ',') );
+        hop_whitespace(&p);
     }
+    expect_char(&p, '}');
 
     return parse_success(&p);
 }
@@ -2917,14 +2806,11 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
         hop_whitespace(&p);
 
         if (!hop_start_if_ends_on_word_break(&p, "as")) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'as' expected.");
+            expected_token_error(&p, "as");
         }
         hop_whitespace(&p);
 
-        if (!parse_identifier(&p, &import.module_name)) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1003, "Identifier expected.");
-            import.module_name = span_null;
-        }
+        expect_identifier(&p, &import.module_name);
         hop_whitespace(&p);
     } else {
         if (parse_identifier(&p, &import.default_name)) {
@@ -2935,7 +2821,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 
                 if (!parse_import_item_list(&p, &import.items)) {
                     import.items = vec_import_item_init();
-                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+                    expected_token_error(&p, "{");
                 }
             }
         } else if (!parse_import_item_list(&p, &import.items)) {
@@ -2945,12 +2831,12 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     }
 
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'from' expected.");
+        expected_token_error(&p, "from");
     }
     hop_whitespace(&p);
 
     Expr path_expr;
-    if (parse_expr(&p, expr_ctx_null, &path_expr)) {
+    if (expect_expr(&p, expr_ctx_null, &path_expr)) {
         if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
             import.path = cstr_move(&path_expr.literal.string);
             import.path_span = path_expr.inner_span;
@@ -2958,8 +2844,6 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
             error_ctx_error(&p.errs, path_expr.inner_span, 1141, "String literal expected.");
         }
         expr_drop(&path_expr);
-    } else {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1109, "Expression expected.");
     }
 
     *ret = (Statement){
@@ -2995,14 +2879,10 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             }
             hop_whitespace(&p);
 
-            if (!hop_char(&p, ',') && *p.pos != ']') {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-            }
+            __( *p.pos == ']' || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
-        if (!hop_char(&p, ']')) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "']' expected.");
-        }
+        expect_char(&p, ']');
     } else if (hop_char(&p, '{')) {
         hop_whitespace(&p);
         ret->tag = BINDING_OBJECT;
@@ -3041,14 +2921,10 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             }
             hop_whitespace(&p);
 
-            if (!hop_char(&p, ',') && *p.pos != '}') {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-            }
+            __( *p.pos == '}' || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
-        if (!hop_char(&p, '}')) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
-        }
+        expect_char(&p, '}');
     } else {
         return parse_fail(&p);
     }
@@ -3064,10 +2940,7 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     hop_whitespace(parent);
 
     Anchor a = span_start(parent);
-    if (!parse_type(parent, TYPE_PRECEDENCE_NULL, &ret->explicit_type)) {
-        error_ctx_error(&parent->errs, span_from_token(parent), 1110, "Type expected.");
-        ret->explicit_type = type_any;
-    }
+    expect_type(parent, TYPE_PRECEDENCE_NULL, &ret->explicit_type);
     ret->has_explicit_type = true;
     ret->assigned_type = (LazyType){0};
     ret->explicit_type_span = span_end(a);
@@ -3093,10 +2966,7 @@ static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
     hop_whitespace(parent);
 
-    if (!parse_expr(parent, ctx, ret)) {
-        error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
-        *ret = expr_implicit_any(span_from_pos(parent));
-    }
+    expect_expr(parent, ctx, ret);
 
     return true;
 }
@@ -3176,15 +3046,17 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
             break;
         }
 
-        if (hop_char(&p, ',')) {
+        if (p.whitespace == WHITESPACE_NEWLINE) {
+            if (hop_char(&p, ',')) {
+                comma_span = span_from_previous_char(&p);
+            } else {
+                comma_span = span_null;
+                break;
+            }
+        } else if (expect_char(&p, ',')) {
             comma_span = span_from_previous_char(&p);
         } else {
             comma_span = span_null;
-            if (p.whitespace == WHITESPACE_NEWLINE) {
-                break;
-            } else {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "',' expected.");
-            }
         }
         hop_whitespace(&p);
     }
@@ -3200,26 +3072,16 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, "(")) {
-        error_ctx_parse_error(&p.errs, "expected '(' after if");
-    }
+    expect_char(&p, '(');
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, expr_ctx_null, condition)) {
-        error_ctx_parse_error(&p.errs, "invalid if condition");
-        *condition = expr_literal(span_from_pos(&p), value_boolean(false));
-    }
+    expect_expr(&p, expr_ctx_null, condition);
     hop_whitespace(&p);
 
-    if (!hop_start(&p, ")")) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
-    }
+    expect_char(&p, ')');
     hop_whitespace(&p);
 
-    if (!parse_statement(&p, false, statement)) {
-        error_ctx_parse_error(&p.errs, "invalid if body");
-        *statement = statement_noop;
-    }
+    expect_statement(&p, false, statement);
     return parse_success(&p);
 }
 
@@ -3234,11 +3096,9 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
         if (!parse_if_arm(&p, &condition, &statement)) {
             if (vec_expr_empty(&conditions)) {
                 return parse_fail(&p);
-            } else if (parse_statement(&p, false, &statement)) {
+            } else if (expect_statement(&p, false, &statement)) {
                 vec_statement_push(&statements, statement);
                 break;
-            } else {
-                error_ctx_parse_error(&p.errs, "expected else statement");
             }
         }
 
@@ -3267,9 +3127,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, "(")) {
-        error_ctx_parse_error(&p.errs, "expected '(' after for");
-    }
+    expect_char(&p, '(');
     hop_whitespace(&p);
 
     bool is_for_each = false;
@@ -3288,7 +3146,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     } else if (*p.pos == ';') {
         statement = statement_noop;
     } else {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1009, "Expression expected.");
+        expected_expression_error(&p);
         statement = statement_noop;
     }
     hop_whitespace(&p);
@@ -3303,7 +3161,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         }
         hop_whitespace(&p);
 
-        if (hop_start(&p, ";")) {
+        if (expect_char(&p, ';')) {
             hop_whitespace(&p);
             if (parse_expr(&p, expr_ctx_null, &right_expr)) {
                 parse_comma_ops_right_side(&p, &right_expr);
@@ -3312,7 +3170,6 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
             }
             hop_whitespace(&p);
         } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
             right_expr = expr_undefined(span_from_pos(&p));
             hop_token(&p);
         }
@@ -3325,29 +3182,22 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
 
         hop_whitespace(&p);
 
-        if (parse_expr(&p, expr_ctx_null, &right_expr)) {
+        if (expect_expr(&p, expr_ctx_null, &right_expr)) {
             parse_comma_ops_right_side(&p, &right_expr);
-        } else {
-            error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
-            right_expr = expr_undefined(span_from_pos(&p));
         }
         hop_whitespace(&p);
     } else {
-        // Unclear why this is the error message in this case
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "',' expected.");
+        // Unclear why "',' expected" is the error message in this case
+        expected_token_error(&p, ",");
         left_expr = expr_undefined(span_from_pos(&p));
         right_expr = expr_undefined(span_from_pos(&p));
     }
     hop_whitespace(&p);
 
-    if (hop_start(&p, ")")) {
+    if (expect_char(&p, ')')) {
         hop_whitespace(&p);
-        if (!parse_statement(&p, false, &body)) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1009, "Expression expected.");
-            body = statement_noop;
-        }
+        expect_statement(&p, false, &body);
     } else {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
         body = statement_noop;
     }
 
@@ -3397,28 +3247,20 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, "(")) {
-        error_ctx_parse_error(&p.errs, "expected '(' after while");
-    }
+    expect_char(&p, '(');
     hop_whitespace(&p);
 
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
     Statement body = statement_noop;
-    if (parse_expr(&p, expr_ctx_null, &condition)) {
+    if (expect_expr(&p, expr_ctx_null, &condition)) {
         parse_comma_ops_right_side(&p, &condition);
-    } else {
-        error_ctx_parse_error(&p.errs, "expected expression before ')'");
     }
     hop_whitespace(&p);
 
-    if (!hop_start(&p, ")")) {
-        error_ctx_parse_error(&p.errs, "expected ')' at end of for header");
-    }
+    expect_char(&p, ')');
     hop_whitespace(&p);
 
-    if (!parse_statement(&p, false, &body)) {
-        error_ctx_parse_error(&p.errs, "expected while loop body");
-    }
+    expect_statement(&p, false, &body);
 
     *ret = (Statement){
         .tag = STATEMENT_FOR_LOOP,
@@ -3454,13 +3296,12 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
                 ended_on_brace ||
                 *p.pos == '}'
             ) {
-            } else if (*p.pos == ';') {
-                p.pos++;
+            } else if (hop_char(&p, ';')) {
             } else if (*p.pos) {
                 if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
                     error_ctx_error(&p.errs, statement.expr.inner_span, 1434, "Unexpected keyword or identifier.");
                 } else {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "';' expected.");
+                    expected_token_error(&p, ";");
                 }
             }
         } else if (*p.pos == '\\') {
@@ -3489,21 +3330,14 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
             .statements = {0},
         };
 
-        if (!parse_expr(&p, expr_ctx_null, &ret->pattern)) {
-            ret->pattern = expr_implicit_any(span_from_pos(&p));
-            error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-        }
+        expect_expr(&p, expr_ctx_null, &ret->pattern);
         hop_whitespace(&p);
 
-        if (!hop_char(&p, ':')) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
-        }
+        expect_char(&p, ':');
     } else if (hop_start_if_ends_on_word_break(&p, "default")) {
         hop_whitespace(&p);
 
-        if (!hop_char(&p, ':')) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "':' expected.");
-        }
+        expect_char(&p, ':');
 
         *ret = (SwitchCase){
             .is_pattern = false,
@@ -3532,25 +3366,16 @@ static bool parse_switch_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_char(&p, '(')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'(' expected.");
-    }
+    expect_char(&p, '(');
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, expr_ctx_null, &switch_.needle)) {
-        switch_.needle = expr_implicit_any(span_from_pos(&p));
-        error_ctx_error(&p.errs, span_from_token(&p), 1109, "Expression expected.");
-    }
+    expect_expr(&p, expr_ctx_null, &switch_.needle);
     hop_whitespace(&p);
 
-    if (!hop_char(&p, ')')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "')' expected.");
-    }
+    expect_char(&p, ')');
     hop_whitespace(&p);
 
-    if (!hop_char(&p, '{')) {
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
-    }
+    expect_char(&p, '{');
     hop_whitespace(&p);
 
     while(*p.pos && *p.pos != '}') {
@@ -3601,13 +3426,11 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 }
                 hop_whitespace(&p);
 
-                if (!hop_char(&p, ')')) {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1005, "')' expected.");
-                }
+                expect_char(&p, ')');
                 hop_whitespace(&p);
             }
             if (!parse_block(&p, false, &try_catch.catch_block)) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+                expected_token_error(&p, "{");
                 try_catch.catch_block = (Block){0};
             }
             hop_whitespace(&p);
@@ -3619,7 +3442,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
             has_finally = true;
             hop_whitespace(&p);
             if (!parse_block(&p, false, &try_catch.finally_block)) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+                expected_token_error(&p, "{");
                 try_catch.finally_block = (Block){0};
             }
         } else {
@@ -3630,7 +3453,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
             error_ctx_error(&p.errs, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
         }
     } else {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'{' expected.");
+        expected_token_error(&p, "{");
         try_catch.try_block = (Block){0};
     }
 
@@ -3711,7 +3534,7 @@ static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)
 
     if (!parse_block(&p, true, &ret->contents)) {
         ret->contents = (Block){0};
-        error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
+        expected_token_error(&p, "{");
     }
 
     return parse_success(&p);
@@ -3748,7 +3571,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                     exported = DECL_EXPORTED_YES_DEFAULT;
                     break;
                 } else if (!modifier_error) {
-                    error_ctx_error(&p.errs, span_end(modifier_start), 1005, "'export' expected.");
+                    expected_token_error(&p, "export");
                     modifier_error = true;
                 }
             } else if (!modifier_error) {
@@ -3878,6 +3701,16 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     return parse_success(&p);
 }
 
+static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret) {
+    if (parse_statement(parent, toplevel, ret)) {
+        return true;
+    } else {
+        expected_expression_error(parent);
+        *ret = statement_noop;
+        return false;
+    }
+}
+
 static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     Parser p = parser(parent);
 
@@ -3890,9 +3723,7 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     }
     hop_whitespace(&p);
 
-    if (!hop_char(&p, '}')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1005, "'}' expected.");
-    }
+    expect_char(&p, '}');
     return parse_success(&p);
 }
 

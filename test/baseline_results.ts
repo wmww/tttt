@@ -1432,7 +1432,7 @@ const baselines = {
     },
     'assertInWrapSomeTypeParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assertionFunctionWildcardImport1': {
@@ -3277,7 +3277,7 @@ const baselines = {
     },
     'circularInferredTypeOfVariable': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'circularInlineMappedGenericTupleTypeNoCrash': {
@@ -18737,8 +18737,8 @@ const baselines = {
     },
     'mappedTypeNoTypeNoCrash': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mappedTypeNotMistakenlyHomomorphic': {
         errors: false,
@@ -21457,7 +21457,7 @@ const baselines = {
     },
     'noUsedBeforeDefinedErrorInTypeContext': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nodeColonModuleResolution': {
@@ -22712,7 +22712,7 @@ const baselines = {
     },
     'parameterDestructuringObjectLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parameterInitializerBeforeDestructuringEmit': {
@@ -22807,7 +22807,7 @@ const baselines = {
     },
     'parenthesizedAsyncArrowFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parenthesizedExpressionInternalComments': {
@@ -22853,7 +22853,7 @@ const baselines = {
     'parseCommaSeparatedNewlineNew': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseCommaSeparatedNewlineNumber': {
         errors: false,
@@ -25477,7 +25477,7 @@ const baselines = {
     },
     'slightlyIndirectedDeepObjectLiteralElaborations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMap-Comment1': {
@@ -28762,7 +28762,7 @@ const baselines = {
     },
     'typeofSimple': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeofStrictNull': {
@@ -39387,12 +39387,12 @@ const baselines = {
     },
     'templateStringInTypeAssertion': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInTypeAssertionES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateStringInTypeOf': {
@@ -41107,7 +41107,7 @@ const baselines = {
     },
     'emitExponentiationOperator4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitExponentiationOperatorInTempalteString4': {
@@ -41197,7 +41197,7 @@ const baselines = {
     },
     'exponentiationOperatorWithInvalidSimpleUnaryExpressionOperands': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exponentiationOperatorWithNew': {
@@ -43528,7 +43528,7 @@ const baselines = {
     'logicalNotOperatorInvalidOperations': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalNotOperatorWithAnyOtherType': {
         errors: false,
@@ -48971,7 +48971,7 @@ const baselines = {
         types: true,
     },
     'parserErrorRecoveryIfStatement1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48986,7 +48986,7 @@ const baselines = {
         types: false,
     },
     'parserErrorRecoveryIfStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
