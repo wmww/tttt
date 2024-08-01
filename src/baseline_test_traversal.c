@@ -623,7 +623,9 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
         case STATEMENT_SWITCH:
             expr_compile_test_info(&my switch_->needle, true, ctx);
             c_foreach(i, vec_switch_case, my switch_->cases) {
-                expr_compile_test_info(&i.ref->pattern, true, ctx);
+                if (i.ref->is_pattern) {
+                    expr_compile_test_info(&i.ref->pattern, true, ctx);
+                }
                 c_foreach(j, vec_statement, i.ref->statements) {
                     statement_compile_test_info(j.ref, ctx);
                 }

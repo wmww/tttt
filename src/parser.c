@@ -3463,7 +3463,7 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
         hop_whitespace(&p);
 
         *ret = (SwitchCase){
-            .is_default = false,
+            .is_pattern = true,
             .pattern = {0},
             .statements = {0},
         };
@@ -3485,8 +3485,8 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
         }
 
         *ret = (SwitchCase){
-            .is_default = true,
-            .pattern = expr_implicit_any(span_end(a)),
+            .is_pattern = false,
+            .default_span = span_end(a),
             .statements = {0},
         };
     } else {

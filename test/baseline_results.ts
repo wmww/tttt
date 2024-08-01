@@ -4648,17 +4648,17 @@ const baselines = {
     'commentsAfterCaseClauses1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsAfterCaseClauses2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsAfterCaseClauses3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsAfterFunctionExpression1': {
         errors: false,
@@ -18328,7 +18328,7 @@ const baselines = {
     'letDeclarations-scopes-duplicates': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'letDeclarations-scopes-duplicates2': {
         errors: false,
@@ -25888,7 +25888,7 @@ const baselines = {
     'sourceMapValidationSwitch': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationTryCatchFinally': {
         errors: true,
@@ -26908,7 +26908,7 @@ const baselines = {
     'switchCaseInternalComments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchCaseNarrowsMatchingClausesEvenWhenNonMatchingClausesExist': {
         errors: true,
@@ -26933,7 +26933,7 @@ const baselines = {
     'switchFallThroughs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchStatementsWithMultipleDefaults': {
         errors: false,
@@ -26943,7 +26943,7 @@ const baselines = {
     'switchStatementsWithMultipleDefaults1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolLinkDeclarationEmitModuleNames': {
         errors: false,
@@ -29818,7 +29818,7 @@ const baselines = {
     'unusedSwitchStatement': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedTypeParameterInFunction1': {
         errors: false,
@@ -51693,7 +51693,7 @@ const baselines = {
     'parserS12.11_A3_T4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserS7.2_A1.5_T2': {
         errors: false,

@@ -166,8 +166,11 @@ Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me);
 // Switch statement
 
 typedef struct SwitchCase {
-    bool is_default;
-    Expr pattern;
+    bool is_pattern; // else default
+    union {
+        Expr pattern;
+        Span default_span;
+    };
     VecStatement statements;
 } SwitchCase;
 

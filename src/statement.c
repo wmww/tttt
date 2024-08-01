@@ -281,12 +281,12 @@ void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
             cstr_append_sv(target, c_sv(") {\n"));
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 APPEND_INDENT(target, indent + 1);
-                if (i.ref->is_default) {
-                    cstr_append_sv(target, c_sv("default:\n"));
-                } else {
+                if (i.ref->is_pattern) {
                     cstr_append_sv(target, c_sv("case "));
                     cstr_append_expr_debug(target, &i.ref->pattern, indent + 1);
                     cstr_append_sv(target, c_sv(":\n"));
+                } else {
+                    cstr_append_sv(target, c_sv("default:\n"));
                 }
                 c_foreach(j, vec_statement, i.ref->statements) {
                     APPEND_INDENT(target, indent + 2);
@@ -495,7 +495,9 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             expr_resolve_names(&my switch_->needle, names, errs);
             name_stack_push_block_frame(names);
             c_foreach(i, vec_switch_case, my switch_->cases) {
-                expr_resolve_names(&i.ref->pattern, names, errs);
+                if (i.ref->is_pattern) {
+                    expr_resolve_names(&i.ref->pattern, names, errs);
+                }
                 c_foreach(j, vec_statement, i.ref->statements) {
                     statement_add_names(j.ref, names, errs);
                 }
@@ -714,17 +716,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             bool break_was_allowed = ctx->break_allowed;
             ctx->break_allowed = true;
             c_foreach(i, vec_switch_case, my switch_->cases) {
-                if (i.ref->is_default) {
-                    default_count++;
-                    if (default_count == 2) {
-                        error_ctx_error(
-                            errs,
-                            i.ref->pattern.outer_span,
-                            1113,
-                            "A 'default' clause cannot appear more than once in a 'switch' statement."
-                        );
-                    }
-                } else {
+                if (i.ref->is_pattern) {
                     Type pattern_type = expr_get_type_and_typecheck(&i.ref->pattern, errs);
                     if (!type_overlaps(&needle_type, &pattern_type)) {
                         cstr message = cstr_lit("Type '");
@@ -735,6 +727,16 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                         error_ctx_error_s(errs, i.ref->pattern.outer_span, 2678, message);
                     }
                     type_drop(&pattern_type);
+                } else {
+                    default_count++;
+                    if (default_count == 2) {
+                        error_ctx_error(
+                            errs,
+                            i.ref->default_span,
+                            1113,
+                            "A 'default' clause cannot appear more than once in a 'switch' statement."
+                        );
+                    }
                 }
                 c_foreach(j, vec_statement, i.ref->statements) {
                     statement_typecheck(j.ref, ctx, errs);
@@ -809,7 +811,9 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 }
 
 void switch_case_drop(SwitchCase* me) {
-    expr_drop(&my pattern);
+    if (my is_pattern) {
+        expr_drop(&my pattern);
+    }
     vec_statement_drop(&my statements);
 }
 
