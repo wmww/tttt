@@ -847,6 +847,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     ASSERT(item.member.func.callable.ret_explicit);
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
+                        span_null,
                         false,
                         item.member.is_optional,
                         cstr_move(&item.member.name_string),
@@ -860,6 +861,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                 case CLASS_ITEM_FIELD:
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
+                        span_null,
                         item.field.is_readonly,
                         item.field.is_optional,
                         cstr_move(&item.field.name_string),
@@ -1032,6 +1034,9 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         if (!parse_interface(&p, &interface)) {
             interface = (Interface){0};
             error_ctx_error(&p.errs, hop_token_get_span(&p), 1005, "'{' expected.");
+        }
+        c_foreach(i, vec_interface_member, interface.members) {
+            i.ref->origin_interface_name = name;
         }
     }
 

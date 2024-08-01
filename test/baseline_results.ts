@@ -12367,7 +12367,7 @@ const baselines = {
     },
     'extendedInterfaceGenericType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'extendedInterfacesWithDuplicateTypeParameters': {
@@ -14327,7 +14327,7 @@ const baselines = {
     },
     'genericTypeWithMultipleBases3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericTypeWithNonGenericBaseMisMatch': {
@@ -21622,7 +21622,7 @@ const baselines = {
     },
     'nonInferrableTypePropagation1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonInferrableTypePropagation2': {
@@ -25982,7 +25982,7 @@ const baselines = {
     },
     'specializeVarArgs1': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: true,
     },
     'specializedInheritedConstructors1': {
@@ -55432,7 +55432,7 @@ const baselines = {
     },
     'callSignaturesThatDifferOnlyByReturnType2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callSignaturesThatDifferOnlyByReturnType3': {

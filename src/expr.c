@@ -690,6 +690,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                     &interface.members,
                     interface_member_make(
                         span_between(&i.ref->name_span, &i.ref->value.outer_span),
+                        span_null,
                         false,
                         false,
                         cstr_clone(i.ref->name_string),

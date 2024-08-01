@@ -5,6 +5,7 @@
 
 typedef struct InterfaceMember {
     Span span;
+    Span origin_interface_name; // The original interface this member came from, used in tests
     bool readonly; // NOT used for mapped types
     bool optional; // NOT used for mapped types
     struct {
@@ -39,6 +40,7 @@ typedef struct InterfaceMember {
 
 static inline InterfaceMember interface_member_make(
     Span span,
+    Span origin_interface_name,
     bool readonly,
     bool optional,
     cstr name_string,
@@ -48,6 +50,7 @@ static inline InterfaceMember interface_member_make(
 ) {
     return (InterfaceMember) {
         .span = span,
+        .origin_interface_name = origin_interface_name,
         .readonly = readonly,
         .optional = optional,
         .key = {

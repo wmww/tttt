@@ -300,6 +300,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
     if (!resolve_instance) {
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
+            my name,
             true,
             false,
             cstr_lit("prototype"),
@@ -311,6 +312,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
         // TODO: Use the declaration in Object of lib.es5.d.ts instead
         // Or at least use a global instance of the type
         vec_interface_member_push(&interface.members, interface_member_make(
+            span_null,
             span_null,
             true,
             false,
@@ -337,6 +339,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                     has_constructor = true;
                     InterfaceMember member = {
                         .span = i.ref->constructor.func.full_span,
+                        .origin_interface_name = my name,
                         .key.span = i.ref->constructor.name_span,
                         .key.tag = INTERFACE_KEY_CALLABLE,
                         .type = lazy_type_function(&i.ref->constructor.func),
@@ -349,6 +352,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                 if (i.ref->member.is_static != resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i.ref->span,
+                        my name,
                         false,
                         i.ref->member.is_optional,
                         cstr_clone(i.ref->member.name_string),
@@ -367,6 +371,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                         lazy_type_expr(&i.ref->field.value, true, true);
                     InterfaceMember field = interface_member_make(
                         i.ref->span,
+                        my name,
                         i.ref->field.is_readonly,
                         i.ref->field.is_optional,
                         cstr_clone(i.ref->field.name_string),
@@ -395,6 +400,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             .is_abstract_constructor = my is_abstract,
         };
         InterfaceMember member = {
+            .origin_interface_name = my name,
             .key.tag = INTERFACE_KEY_CALLABLE,
             .type = lazy_type_value(type_callable(c_new(CallableType, constructor))),
         };

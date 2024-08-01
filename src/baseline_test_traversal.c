@@ -433,10 +433,6 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
             Type expr_t = expr_get_type_and_typecheck(&my property->expr, nullptr);
-            Type const* expr_t_deref = &expr_t;
-            while (expr_t_deref->tag == TYPE_REF) {
-                expr_t_deref = expr_t_deref->ref;
-            }
             Type const* expr_t_resolved = type_resolve(&expr_t);
             Type prop_t = expr_get_type_and_typecheck(&my property->prop, nullptr);
 
@@ -448,7 +444,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                         if (my property->form == PROPERTY_EXPR_DOT) {
                             baseline_test_case_add_symbol_with_scope(
                                 ctx,
-                                expr_t_deref->tag == TYPE_IDENTIFIER ? span_sv(&expr_t_deref->identifier->name) : c_sv(""),
+                                span_sv(&i.ref->origin_interface_name),
                                 cstr_sv(&i.ref->key.name_string),
                                 my outer_span,
                                 i.ref->key.name_is_value,
@@ -459,7 +455,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                         has_compiled_expr_info = true;
                         baseline_test_case_add_symbol_with_scope(
                             ctx,
-                            expr_t_deref->tag == TYPE_IDENTIFIER ? span_sv(&expr_t_deref->identifier->name) : c_sv(""),
+                            span_sv(&i.ref->origin_interface_name),
                             cstr_sv(&i.ref->key.name_string),
                             my property->prop.outer_span,
                             i.ref->key.name_is_value,
