@@ -19,6 +19,10 @@ add_project_arguments([
     '-Werror=incompatible-pointer-types',
 ], language: 'c')
 
+if get_option('buildtype').startswith('debug')
+  add_project_arguments('-DDEBUG_BUILD', language : 'c')
+endif
+
 subdir('thirdparty')
 subdir('src')
 

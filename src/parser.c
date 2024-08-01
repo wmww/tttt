@@ -52,13 +52,16 @@ typedef enum FailCacheFlag {
 
 typedef struct Parser Parser;
 typedef struct Parser {
-    ParserShared* shared;
+    ParserShared* shared; // State that is shared across all parsers parsing a single document
     Parser* parent; // the parser this parser was created from (and will merge it's result into on success)
     const char* pos; // current position in the code
     WhitespaceType whitespace; // the type of whitespace detected in the most recent call to hop_whitespace()
     const char* whitespace_end; // the end of the most recent whitespace (whitespace type is retained if same as pos)
     uint8_t fail_cache_flag;
     ErrorCtx errs;
+#ifdef DEBUG_BUILD
+    bool already_has_child_parser;
+#endif
 } Parser;
 
 typedef enum TypePrecedence {
@@ -86,6 +89,10 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 
 static inline Parser parser(Parser* parent) {
+#ifdef DEBUG_BUILD
+    ASSERT(!parent->already_has_child_parser);
+    parent->already_has_child_parser = true;
+#endif
     return (Parser){
         .shared = parent->shared,
         .parent = parent,
@@ -98,6 +105,10 @@ static inline Parser parser(Parser* parent) {
 
 /// Must not be used on the root parser, always returns true, drops parser
 static inline bool parse_success(Parser* me) {
+#ifdef DEBUG_BUILD
+    ASSERT(my parent->already_has_child_parser);
+    my parent->already_has_child_parser = false;
+#endif
     my parent->pos = my pos;
     my parent->whitespace = my whitespace;
     my parent->whitespace_end = my whitespace_end;
@@ -107,6 +118,10 @@ static inline bool parse_success(Parser* me) {
 
 /// Must not be used on the root parser, always returns false, drops parser
 static inline bool parse_fail(Parser* me) {
+#ifdef DEBUG_BUILD
+    ASSERT(my parent->already_has_child_parser);
+    my parent->already_has_child_parser = false;
+#endif
     error_ctx_drop(&my errs);
     if (my fail_cache_flag &&
         my shared->fail_cache_start &&
@@ -123,7 +138,7 @@ static inline bool parse_fail(Parser* me) {
 
 // Returns true if this position has already failed for this flag
 static bool fail_cache_register_and_check(Parser* parser, FailCacheFlag flag) {
-    // TODO: only activate fail cache once a threashold number of failures has been hit
+    // PERF: only activate fail cache once a threashold number of failures has been hit
     if (!parser->shared->fail_cache_start) {
         parser->shared->fail_cache_start = parser->pos;
     }
@@ -137,7 +152,11 @@ static bool fail_cache_register_and_check(Parser* parser, FailCacheFlag flag) {
         return false;
     }
 }
+#ifdef DEBUG_BUILD
+#define FAIL_CACHE_HOOK(parser, flag) if (fail_cache_register_and_check(parser, flag)) return parse_fail(parser)
+#else
 #define FAIL_CACHE_HOOK(parser, flag) if (fail_cache_register_and_check(parser, flag)) return false
+#endif
 
 static void reset_fail_cache(Parser* me) {
     my shared->fail_cache_start = nullptr;
@@ -2645,6 +2664,8 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             expr_drop(left_and_ret);
             *left_and_ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
             return parse_success(&p);
+        } else {
+            parse_fail(&sub_p);
         }
     }
 
