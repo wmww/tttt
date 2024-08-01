@@ -16,7 +16,8 @@ void import_statement_drop(ImportStatement* me) {
 }
 
 void cstr_append_import_statement_debug(cstr* target, ImportStatement* me, int indent) {
-    (void)indent;
+    __ indent;
+
     cstr_append_sv(target, c_sv("import "));
     if (my type_only) {
         cstr_append_sv(target, c_sv("type "));
@@ -62,11 +63,13 @@ void cstr_append_import_statement_debug(cstr* target, ImportStatement* me, int i
 }
 
 void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx* errs) {
-    (void)errs;
+    __ errs;
+
     ASSERT(!my default_named_var);
     ASSERT(!my default_named_type);
     ASSERT(!my module_named_var);
     ASSERT(!my module_named_type);
+
     if (span_valid(&my default_name)) {
         my default_named_type = make_named_type(my default_name, lazy_type_ref(&type_any), nullptr);
         name_stack_add_type(names, my default_named_type);

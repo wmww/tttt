@@ -181,8 +181,8 @@ static Result MUST_USE engine_eval_inc_dec(
 }
 
 static Result MUST_USE engine_eval_typeof(Engine* me, Value const* value) {
-    (void)me;
-    (void)value;
+    __ me;
+    __ value;
     NONFATAL("typeof not yet implemented");
     return result_ok(value_string(cstr_lit("object")));
 }
@@ -551,7 +551,7 @@ static Result MUST_USE engine_run_block_in_stack_frame(Engine* me, Block const* 
 }
 
 static Result console_log_impl(Engine* engine, int argc, Value const argv[], void* data) {
-    (void)engine; (void)data;
+    __ engine; __ data;
     cstr str = cstr_null;
     for (int i = 0; i < argc; i++) {
         cstr_append_value_js(&str, &argv[i]);
@@ -565,7 +565,7 @@ static Result console_log_impl(Engine* engine, int argc, Value const argv[], voi
 }
 
 static Result string_impl(Engine* engine, int argc, Value const argv[], void* data) {
-    (void)engine; (void)data;
+    __ engine; __ data;
     if (argc > 0) {
         cstr ret = cstr_null;
         cstr_append_value_js(&ret, argv);
@@ -576,12 +576,12 @@ static Result string_impl(Engine* engine, int argc, Value const argv[], void* da
 }
 
 static Result number_impl(Engine* engine, int argc, Value const argv[], void* data) {
-    (void)engine; (void)data;
+    __ engine; __ data;
     return result_ok(value_number(argc > 0 ? value_to_number(argv) : 0));
 }
 
 static Result boolean_impl(Engine* engine, int argc, Value const argv[], void* data) {
-    (void)engine; (void)data;
+    __ engine; __ data;
     return result_ok(value_boolean(argc > 0 ? value_to_boolean(argv) : false));
 }
 

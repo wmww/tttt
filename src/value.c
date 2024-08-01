@@ -144,7 +144,8 @@ void cstr_append_value_error_msg(cstr* target, Value const* me) {
 }
 
 void cstr_append_value_debug(cstr* target, Value const* me, int indent) {
-    (void)indent;
+    __ indent;
+
     switch (my tag) {
         case VALUE_UNDEFINED: cstr_append_sv(target, c_sv(CLR_VALUE "undefined" CLR0)); break;
         case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
@@ -328,7 +329,7 @@ JsArray js_array_clone(JsArray me) {
 }
 
 void js_func_value_drop(JsFuncValue* me) {
-    (void)me;
+    __ me;
 }
 
 void native_func_value_drop(NativeFuncValue* me) {

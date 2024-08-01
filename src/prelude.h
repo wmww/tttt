@@ -9,6 +9,7 @@
 #include "wrap_stc/forward.h"
 
 #define my me->
+#define __ (void)
 
 __attribute__((noreturn))
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
