@@ -46,7 +46,6 @@ void error_ctx_sort(ErrorCtx* me);
 void error_ctx_display(ErrorCtx* me);
 bool error_ctx_empty(ErrorCtx* me);
 void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other);
-void error_ctx_type_error(ErrorCtx* me, const char* static_message);
 /// Returned Error can be used to add related errors, but is owned by the ErrorCtx.
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
 /// noop and returns null if me is null. Returned Error can be used to add related errors, but is owned by the ErrorCtx.

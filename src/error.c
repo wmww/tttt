@@ -158,18 +158,6 @@ void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other) {
     error_ctx_drop(&other);
 }
 
-void error_ctx_type_error(ErrorCtx* me, const char* static_message) {
-    if (!me) {
-        return;
-    }
-    error_ctx_append_error(me, (Error){
-        .message = cstr_from(static_message),
-        .span = {0},
-        .ts_code = TS_CODE_NONE,
-        .phase = my phase,
-    });
-}
-
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
     if (!me) {
         // Inefficient to create owned string if it's just going to be dropped, so warn
