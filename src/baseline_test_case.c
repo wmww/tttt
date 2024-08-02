@@ -198,6 +198,39 @@ static void render_errors(ErrorCtx* errs, const char* filename, cstr* header, Ve
     }
 }
 
+static bool parse_tag(csview line, csview* key, csview* value) {
+    line = csview_trim_whitespace(line);
+    if (!csview_starts_with(line, "//")) {
+        return false;
+    }
+    const char* p = line.buf + 2;
+    const char* end = csview_end_ptr(line);
+    while (p < end && *p == ' ') p++;
+    if (*p != '@') {
+        return false;
+    }
+    const char* key_start = p + 1;
+    while (p < end && *p != ':') p++;
+    if (p < end) {
+        *key = csview_trim_whitespace(csview_from_n(key_start, p - key_start));
+        p++;
+        *value = csview_trim_whitespace(csview_from_n(p, end - p));
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool tag_equals(csview tag, const char* str) {
+    for (const char* p = tag.buf; p < csview_end_ptr(tag); p++) {
+        if (*p != *str && *p != *str - 'a' + 'A') {
+            return false;
+        }
+        str++;
+    }
+    return true;
+}
+
 static cstr load_test_source(const char* path, bool noisy) {
     cstr contents_s = cstr_null;
     cstr ret = cstr_null;
@@ -213,8 +246,21 @@ static cstr load_test_source(const char* path, bool noisy) {
     }
 
     bool has_line = false;
+    bool has_filename = false;
     c_foreach(i, lines_sv, contents_sv) {
-        if (!csview_starts_with(i.line, "// @") && !csview_starts_with(i.line, "//@")) {
+        csview tag_key, tag_value;
+        if (parse_tag(i.line, &tag_key, &tag_value)) {
+            if (tag_equals(tag_key, "filename")) {
+                if (has_filename) {
+                    // We do not yet support multi-file tests
+                    cstr_drop(&contents_s);
+                    cstr_drop(&ret);
+                    return cstr_null;
+                } else {
+                    has_filename = true;
+                }
+            }
+        } else {
             cstr_append_sv(&ret, i.line);
             if ((has_line || csview_size(i.line)) &&
                 i.line.buf + i.line.size < contents_sv.buf + contents_sv.size
