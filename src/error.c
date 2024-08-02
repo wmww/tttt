@@ -3,6 +3,7 @@
 
 void error_drop(Error* me) {
     cstr_drop(&my message);
+    vec_error_drop(&my related_errors);
 }
 
 Error error_clone(Error me) {
@@ -12,11 +13,18 @@ Error error_clone(Error me) {
 
 void cstr_append_error_debug(cstr* target, Error const* me) {
     int line = span_line_index(&my span) + 1;
+    cstr prefix = cstr_null;
+    if (my phase == ERROR_PHASE_RELATED) {
+        prefix = cstr_lit(CLR_IMPLICIT " |  " CLR0);
+    }
 
     cstr_append_fmt(
         target,
-        "%d - " CLR_ERR "error TS%d:" CLR0 CLR_STR " %s" CLR0,
-        line, my ts_code,
+        "%s" CLR_PATH "%d " CLR0 CLR_ERR_CODE "[%s TS%d]" CLR0 CLR_ERR " %s" CLR0,
+        cstr_str(&prefix),
+        line,
+        my phase == ERROR_PHASE_RELATED ? "related" : "error",
+        my ts_code,
         cstr_str(&my message)
     );
 
@@ -27,8 +35,13 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
 
         cstr_append_fmt(
             target,
-            "\n\n%.*s\n",
-            (int)(line_end - line_start), line_start
+            "\n%s\n%s%.*s%s\n%s",
+            cstr_str(&prefix),
+            cstr_str(&prefix),
+            (int)(line_end - line_start),
+            line_start,
+            cstr_str(&prefix),
+            cstr_str(&prefix)
         );
 
         for (int i = 0; i < col; i++) {
@@ -41,6 +54,36 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
         }
         cstr_append_sv(target, c_sv(CLR0));
     }
+
+    c_foreach(i, vec_error, my related_errors) {
+        cstr_append_sv(target, c_sv("\n"));
+        cstr_append_error_debug(target, i.ref);
+    }
+}
+
+void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
+    if (!me) {
+        cstr_drop(&message);
+        return;
+    }
+    vec_error_push(&my related_errors, (Error){
+        .message = message,
+        .span = span,
+        .ts_code = ts_code,
+        .phase = ERROR_PHASE_RELATED,
+    });
+}
+
+void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) {
+    if (!me) {
+        return;
+    }
+    cstr message = cstr_null;
+    va_list args;
+    va_start(args, fmt);
+    cstr_vfmt(&message, 0, fmt, args);
+    va_end(args);
+    error_related_error_s(me, span, ts_code, message);
 }
 
 void error_ctx_drop(ErrorCtx* me) {
@@ -86,6 +129,7 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
         if (cmp < 0) {
             return i;
         } else if (cmp == 0) {
+            // If two errors are in the same place and the the same phase, discard all but the first
             return -1;
         }
         i--;
@@ -93,15 +137,16 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     return 0;
 }
 
-void error_ctx_append_error(ErrorCtx* me, Error error) {
+static Error* error_ctx_append_error(ErrorCtx* me, Error error) {
     if (error.phase == ERROR_PHASE_UNKOWN) {
         NONFATAL("Error added with unkown phase: %s", cstr_str(&error.message));
     }
     intptr_t insertion_index = insertion_index_for_span(me, &error);
     if (insertion_index >= 0) {
-        vec_error_insert_n(&my errors, insertion_index, &error, 1);
+        return vec_error_insert_n(&my errors, insertion_index, &error, 1).ref;
     } else {
         error_drop(&error);
+        return nullptr;
     }
 }
 
@@ -125,12 +170,14 @@ void error_ctx_type_error(ErrorCtx* me, const char* static_message) {
     });
 }
 
-void error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
+Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
     if (!me) {
+        // Inefficient to create owned string if it's just going to be dropped, so warn
+        NONFATAL("error_ctx_error_s() called with null ErrorCtx: %s", cstr_str(&message));
         cstr_drop(&message);
-        return;
+        return nullptr;
     }
-    error_ctx_append_error(me, (Error){
+    return error_ctx_append_error(me, (Error){
         .message = message,
         .span = span,
         .ts_code = ts_code,
@@ -138,14 +185,14 @@ void error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) 
     });
 }
 
-void error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) {
+Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) {
     if (!me) {
-        return;
+        return nullptr;
     }
     cstr message = cstr_null;
     va_list args;
     va_start(args, fmt);
     cstr_vfmt(&message, 0, fmt, args);
     va_end(args);
-    error_ctx_error_s(me, span, ts_code, message);
+    return error_ctx_error_s(me, span, ts_code, message);
 }

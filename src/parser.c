@@ -387,12 +387,12 @@ static inline bool expect_char(Parser* parent, char c) {
     }
 }
 
-static void expected_token_error(Parser* parent, const char* expected) {
-    error_ctx_error(&parent->errs, span_from_token(parent), 1005, "'%s' expected.", expected);
+static Error* expected_token_error(Parser* parent, const char* expected) {
+    return error_ctx_error(&parent->errs, span_from_token(parent), 1005, "'%s' expected.", expected);
 }
 
-static void expected_expression_error(Parser* parent) {
-    error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
+static Error* expected_expression_error(Parser* parent) {
+    return error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
 }
 
 static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
@@ -3072,13 +3072,21 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     }
     hop_whitespace(&p);
 
-    expect_char(&p, '(');
+    Span open_token;
+    if (expect_char(&p, '(')) {
+        open_token = span_from_previous_char(&p);
+    } else {
+        open_token = span_null;
+    }
     hop_whitespace(&p);
 
     expect_expr(&p, expr_ctx_null, condition);
     hop_whitespace(&p);
 
-    expect_char(&p, ')');
+    if (!hop_char(&p, ')')) {
+        Error* error = expected_token_error(&p, ")");
+        error_related_error(error, open_token, 1007, "The parser expected to find a ')' to match the '(' token here.");
+    }
     hop_whitespace(&p);
 
     expect_statement(&p, false, statement);
@@ -3706,7 +3714,10 @@ static inline bool expect_statement(Parser* parent, bool toplevel, Statement* re
         return true;
     } else {
         expected_expression_error(parent);
-        *ret = statement_noop;
+        *ret = (Statement){
+            .tag = STATEMENT_EXPR,
+            .expr = expr_implicit_any(span_from_pos(parent)),
+        };
         return false;
     }
 }

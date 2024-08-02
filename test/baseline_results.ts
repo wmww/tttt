@@ -48973,22 +48973,22 @@ const baselines = {
     'parserErrorRecoveryIfStatement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecoveryIfStatement2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecoveryIfStatement3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecoveryIfStatement4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecoveryIfStatement5': {
         errors: true,

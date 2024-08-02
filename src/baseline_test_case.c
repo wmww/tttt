@@ -143,17 +143,17 @@ static cstr render_lines_woven_with_file(
     return ret;
 }
 
-static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, VecLineNumberedStr* lines) {
-    c_foreach(i, vec_error, errs->errors) {
-        int line = span_line_index(&i.ref->span);
-        int col = span_col_index(&i.ref->span);
+static void render_errors(ErrorCtx* errs, const char* filename, cstr* header, VecLineNumberedStr* lines) {
+    c_foreach(error, vec_error, errs->errors) {
+        int line = span_line_index(&error.ref->span);
+        int col = span_col_index(&error.ref->span);
 
         cstr_append_fmt(
             header,
             "%s(%d,%d): error TS%d: %s\r\n",
             filename, line + 1, col + 1,
-            i.ref->ts_code,
-            cstr_str(&i.ref->message)
+            error.ref->ts_code,
+            cstr_str(&error.ref->message)
         );
 
         LineNumberedStr item = {
@@ -161,11 +161,11 @@ static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, Ve
             .str = cstr_null,
         };
 
-        if (span_valid(&i.ref->span)) {
+        if (span_valid(&error.ref->span)) {
             for (int j = 0; j < col + 4; j++) {
                 cstr_append_sv(&item.str, c_sv(" "));
             }
-            for (unsigned j = 0; j < i.ref->span.length; j++) {
+            for (unsigned j = 0; j < error.ref->span.length; j++) {
                 cstr_append_sv(&item.str, c_sv("~"));
             }
             cstr_append(&item.str, "\r\n");
@@ -176,9 +176,23 @@ static void render_errros(ErrorCtx* errs, const char* filename, cstr* header, Ve
         cstr_append_fmt(
             &item.str,
             "!!! error TS%d: %s",
-            i.ref->ts_code,
-            cstr_str(&i.ref->message)
+            error.ref->ts_code,
+            cstr_str(&error.ref->message)
         );
+
+        c_foreach(related, vec_error, error.ref->related_errors) {
+            int related_line = span_line_index(&related.ref->span);
+            int related_col = span_col_index(&related.ref->span);
+            cstr_append_fmt(
+                &item.str,
+                "\r\n!!! related TS%d %s:%d:%d: %s",
+                related.ref->ts_code,
+                filename,
+                related_line + 1,
+                related_col + 1,
+                cstr_str(&related.ref->message)
+            );
+        }
 
         vec_line_numbered_str_push(lines, item);
     }
@@ -472,7 +486,7 @@ void baseline_test_case_run(BaselineTestCase* me, bool show_errs, bool show_syms
     if (!error_ctx_empty(&my detail.errs)) {
         const char* source_basename = basename_of(cstr_str(&my source_path));
         VecLineNumberedStr error_lines = vec_line_numbered_str_init();
-        render_errros(&my detail.errs, source_basename, &errors_result, &error_lines);
+        render_errors(&my detail.errs, source_basename, &errors_result, &error_lines);
         cstr_append_fmt(
             &errors_result,
             "\r\n\r\n==== %s (%ld errors) ====\r\n",
