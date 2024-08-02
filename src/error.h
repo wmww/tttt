@@ -45,10 +45,12 @@ void error_ctx_drop(ErrorCtx* me);
 void error_ctx_sort(ErrorCtx* me);
 void error_ctx_display(ErrorCtx* me);
 bool error_ctx_empty(ErrorCtx* me);
-void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other);
-/// Returned Error can be used to add related errors, but is owned by the ErrorCtx.
+Error* error_ctx_append_error(ErrorCtx* me, Error error);
+/// Returned Error can be used to add related errors, but is owned by the ErrorCtx. Additional calls into this ErrorCtx
+/// invalidate returned Error.
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
 /// noop and returns null if me is null. Returned Error can be used to add related errors, but is owned by the ErrorCtx.
+/// Additional calls into this ErrorCtx invalidate returned Error.
 Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 
 #define TS_CODE_NONE 0

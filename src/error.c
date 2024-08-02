@@ -137,7 +137,7 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     return 0;
 }
 
-static Error* error_ctx_append_error(ErrorCtx* me, Error error) {
+Error* error_ctx_append_error(ErrorCtx* me, Error error) {
     if (error.phase == ERROR_PHASE_UNKOWN) {
         NONFATAL("Error added with unkown phase: %s", cstr_str(&error.message));
     }
@@ -148,14 +148,6 @@ static Error* error_ctx_append_error(ErrorCtx* me, Error error) {
         error_drop(&error);
         return nullptr;
     }
-}
-
-void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other) {
-    c_foreach(i, vec_error, other.errors) {
-        error_ctx_append_error(me, *i.ref);
-        *i.ref = (Error){0};
-    }
-    error_ctx_drop(&other);
 }
 
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {

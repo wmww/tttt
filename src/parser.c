@@ -22,14 +22,18 @@
 #include "wrap_stc/vec.h"
 typedef vec_u8 VecU8;
 
+#define MAX_ERRORS 500 // Must be less than the max value storable in Parser.error_count
+
 typedef struct ParserShared {
     const char* const file_start;
     const char* fail_cache_start;
     VecU8 fail_cache;
+    VecError errors;
 } ParserShared;
 
 void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
+    vec_error_drop(&my errors);
 }
 
 typedef enum WhitespaceType {
@@ -59,9 +63,9 @@ typedef struct Parser {
     WhitespaceType whitespace; // the type of whitespace detected in the most recent call to hop_whitespace()
     const char* whitespace_end; // the end of the most recent whitespace (whitespace type is retained if same as pos)
     uint8_t fail_cache_flag;
-    ErrorCtx errs;
+    uint16_t error_count;
 #ifdef DEBUG_BUILD
-    bool already_has_child_parser;
+    bool has_panding_child;
 #endif
 } Parser;
 
@@ -95,8 +99,8 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
 
 static inline Parser parser(Parser* parent) {
 #ifdef DEBUG_BUILD
-    ASSERT(!parent->already_has_child_parser);
-    parent->already_has_child_parser = true;
+    ASSERT(!parent->has_panding_child);
+    parent->has_panding_child = true;
 #endif
     return (Parser){
         .shared = parent->shared,
@@ -104,30 +108,36 @@ static inline Parser parser(Parser* parent) {
         .pos = parent->pos,
         .whitespace = parent->whitespace,
         .whitespace_end = parent->whitespace_end,
-        .errs = { .phase = ERROR_PHASE_PARSE },
+        .error_count = 0,
     };
 }
 
 /// Must not be used on the root parser, always returns true, drops parser
 static inline bool parse_success(Parser* me) {
 #ifdef DEBUG_BUILD
-    ASSERT(my parent->already_has_child_parser);
-    my parent->already_has_child_parser = false;
+    ASSERT(my parent->has_panding_child);
+    my parent->has_panding_child = false;
 #endif
     my parent->pos = my pos;
     my parent->whitespace = my whitespace;
     my parent->whitespace_end = my whitespace_end;
-    error_ctx_append_consume(&my parent->errs, my errs);
+    my parent->error_count += my error_count;
     return true;
 }
 
 /// Must not be used on the root parser, always returns false, drops parser
 static inline bool parse_fail(Parser* me) {
 #ifdef DEBUG_BUILD
-    ASSERT(my parent->already_has_child_parser);
-    my parent->already_has_child_parser = false;
+    ASSERT(my parent->has_panding_child);
+    my parent->has_panding_child = false;
 #endif
-    error_ctx_drop(&my errs);
+    if (my error_count) {
+        vec_error_erase_n(
+            &my shared->errors,
+            vec_error_size(&my shared->errors) - my error_count,
+            my error_count
+        );
+    }
     if (my fail_cache_flag &&
         my shared->fail_cache_start &&
         my parent->pos >= my shared->fail_cache_start
@@ -171,12 +181,28 @@ static void reset_fail_cache(Parser* me) {
 
 static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) {
+#ifdef DEBUG_BUILD
+    ASSERT(!my has_panding_child);
+#endif
     cstr message = cstr_null;
-    va_list args;
-    va_start(args, fmt);
-    cstr_vfmt(&message, 0, fmt, args);
-    va_end(args);
-    return error_ctx_error_s(&my errs, span, ts_code, message);
+    if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
+        return nullptr;
+    } else if (vec_error_size(&my shared->errors) == MAX_ERRORS - 1) {
+        ts_code = TS_CODE_NONE;
+        message = cstr_lit("Too many errors, additional errors not shown.");
+    } else {
+        va_list args;
+        va_start(args, fmt);
+        cstr_vfmt(&message, 0, fmt, args);
+        va_end(args);
+    }
+    my error_count++;
+    return vec_error_push(&my shared->errors, (Error){
+        .message = message,
+        .span = span,
+        .ts_code = ts_code,
+        .phase = ERROR_PHASE_PARSE,
+    });
 }
 
 typedef struct Anchor {
@@ -1964,17 +1990,16 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         case MODIFIER_ERROR_NONE: break;
 
         case READONLY_ALREADY_SEEN:
-            // Put error into parent errors because we know we will return success, and this will fix the ordering
-            parse_error(parent, modifier_error_span, 1030, "'readonly' modifier already seen.");
+            parse_error(&p, modifier_error_span, 1030, "'readonly' modifier already seen.");
             break;
 
         case ACCCESS_ALREADY_SEEN:
-            parse_error(parent, modifier_error_span, 1028, "Accessibility modifier already seen.");
+            parse_error(&p, modifier_error_span, 1028, "Accessibility modifier already seen.");
             break;
 
         case MUST_PRECEDE_READONLY:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'readonly' modifier.",
@@ -1984,7 +2009,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case MUST_PRECEDE_STATIC:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'static' modifier.",
@@ -1994,7 +2019,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case MUST_PRECEDE_ASYNC:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'async' modifier.",
@@ -2004,7 +2029,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case INVALID_READONLY:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1024,
                 "'readonly' modifier can only appear on a property declaration or index signature."
@@ -2013,7 +2038,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case UNEXPECTED_IDENT:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1434,
                 "Unexpected keyword or identifier."
@@ -2022,7 +2047,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case MODIFIERS_CANNOT_APPEAR:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1184,
                 "Modifiers cannot appear here."
@@ -2031,7 +2056,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case MODIFIER_ON_TYPE:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1070,
                 "'%.*s' modifier cannot appear on a type member.",
@@ -2041,7 +2066,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case EXPORT_INVALID:
             parse_error(
-                parent,
+                &p,
                 modifier_error_span,
                 1031,
                 "'export' modifier cannot appear on class elements of this kind."
@@ -2640,7 +2665,7 @@ static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser generic_p = parser(&p);
     hop_whitespace(&generic_p);
     if (parse_generic_params(&generic_p, &ret->identifier.generic_params)) {
-        if (error_ctx_empty(&generic_p.errs)) {
+        if (generic_p.error_count == 0) {
             Parser next_p = parser(&generic_p);
             Expr expr;
             hop_whitespace(&next_p);
@@ -3754,13 +3779,14 @@ Block parse_file(const char* source, ErrorCtx* errs) {
     ParserShared shared = {
         .file_start = source,
         .fail_cache_start = source,
+        .errors = vec_error_init(),
     };
 
     Parser p = {
         .shared = &shared,
         .parent = nullptr,
         .pos = source,
-        .errs = { .phase = ERROR_PHASE_PARSE },
+        .error_count = 0,
     };
 
     if (p.pos[0] == '\xEF' && p.pos[1] == '\xBB' && p.pos[2] == '\xBF') {
@@ -3781,8 +3807,11 @@ Block parse_file(const char* source, ErrorCtx* errs) {
         }
     }
 
-    parser_shared_drop(&shared);
+    c_foreach(i, vec_error, shared.errors) {
+        error_ctx_append_error(errs, *i.ref);
+        *i.ref = (Error){0};
+    }
 
-    error_ctx_append_consume(errs, p.errs);
+    parser_shared_drop(&shared);
     return scope;
 }
