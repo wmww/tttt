@@ -113,18 +113,6 @@ void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other) {
     error_ctx_drop(&other);
 }
 
-void error_ctx_parse_error(ErrorCtx* me, const char* static_message) {
-    if (!me) {
-        return;
-    }
-    error_ctx_append_error(me, (Error){
-        .message = cstr_from(static_message),
-        .span = {0},
-        .ts_code = TS_CODE_NONE,
-        .phase = my phase,
-    });
-}
-
 void error_ctx_type_error(ErrorCtx* me, const char* static_message) {
     if (!me) {
         return;

@@ -37,7 +37,6 @@ void error_ctx_display(ErrorCtx* me);
 bool error_ctx_empty(ErrorCtx* me);
 void error_ctx_append_error(ErrorCtx* me, Error error);
 void error_ctx_append_consume(ErrorCtx* me, ErrorCtx other);
-void error_ctx_parse_error(ErrorCtx* me, const char* static_message);
 void error_ctx_type_error(ErrorCtx* me, const char* static_message);
 void error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
 void error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
