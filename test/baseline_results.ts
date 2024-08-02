@@ -9701,12 +9701,12 @@ const baselines = {
         types: false,
     },
     'duplicateTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'duplicateTypeParameters2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -12901,7 +12901,7 @@ const baselines = {
         types: false,
     },
     'functionCall15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14426,7 +14426,7 @@ const baselines = {
         types: false,
     },
     'genericsWithDuplicateTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38191,7 +38191,7 @@ const baselines = {
         types: true,
     },
     'for-of52': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56991,7 +56991,7 @@ const baselines = {
         types: false,
     },
     'typesWithDuplicateTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

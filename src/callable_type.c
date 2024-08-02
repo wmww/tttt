@@ -80,7 +80,7 @@ void cstr_append_callable_type_error_msg(cstr* target, CallableType* me) {
 
 void callable_type_resolve_names(CallableType* me, FunctionImpl const* optional_func, NameStack* names, ErrorCtx* errs) {
     // Handle generics (includes adding names)
-    name_stack_push_generic_frame(names, &my generic, errs);
+    name_stack_push_generic_frame(names, &my generic);
 
     // Push a stack frame for arguments to live in
     // This is the function *implementation*, so we do not push a generic stack frame

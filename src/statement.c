@@ -561,7 +561,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            name_stack_push_generic_frame(names, &my decl.type.generic, errs);
+            name_stack_push_generic_frame(names, &my decl.type.generic);
             c_foreach(i, vec_spanned_type, my decl.type.interface_extends) {
                 type_resolve_names(&i.ref->type, names, errs);
             }

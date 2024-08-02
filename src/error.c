@@ -20,10 +20,10 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
 
     cstr_append_fmt(
         target,
-        "%s" CLR_PATH "%d " CLR0 CLR_ERR_CODE "[%s TS%d]" CLR0 CLR_ERR " %s" CLR0,
+        "%s" CLR_PATH "%s" CLR0 CLR_ERR_CODE ":%d" CLR0 CLR_IMPLICIT " [TS%d]" CLR0 CLR_ERR " %s" CLR0,
         cstr_str(&prefix),
+        "filename.ts",
         line,
-        my phase == ERROR_PHASE_RELATED ? "related" : "error",
         my ts_code,
         cstr_str(&my message)
     );

@@ -1,6 +1,7 @@
 #include "name_stack.h"
 #include "generic.h"
 #include "identifier_type.h"
+#include "error.h"
 
 typedef NamedType* NamedTypePtr;
 typedef NamedVariable* NamedVariablePtr;
@@ -54,7 +55,6 @@ void named_type_destroy(NamedType* me) {
 typedef enum StackFrameTag {
     STACK_FRAME_BLOCK,
     STACK_FRAME_FUNCTION,
-    STACK_FRAME_CLASS,
     STACK_FRAME_GENERIC,
 } StackFrameTag;
 
@@ -73,6 +73,7 @@ StackFrame stack_frame_clone(StackFrame me);
 
 typedef struct NameStack {
     VecStackFrame stack;
+    ErrorCtx* errs;
 } NameStack;
 
 StackFrame stack_frame_init(StackFrameTag tag) {
@@ -99,9 +100,10 @@ static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag ta
     vec_stack_frame_push(&my stack, stack_frame_init(tag));
 }
 
-NameStack* name_stack_new() {
+NameStack* name_stack_new(ErrorCtx* errs) {
     NameStack* ret = c_new(NameStack, {
-        .stack = vec_stack_frame_init()
+        .stack = vec_stack_frame_init(),
+        .errs = errs,
     });
     name_stack_push_frame_private(ret, STACK_FRAME_BLOCK);
 
@@ -171,10 +173,6 @@ void name_stack_push_function_frame(NameStack* me) {
     name_stack_push_frame_private(me, STACK_FRAME_FUNCTION);
 }
 
-void name_stack_push_class_frame(NameStack* me) {
-    name_stack_push_frame_private(me, STACK_FRAME_CLASS);
-}
-
 void name_stack_destroy(NameStack* me) {
     if (vec_stack_frame_size(&my stack) != 1) {
         PANIC("stack size %ld on destroy, 1 expected", vec_stack_frame_size(&my stack));
@@ -183,13 +181,13 @@ void name_stack_destroy(NameStack* me) {
     free(me);
 }
 
-void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs) {
+void name_stack_push_generic_frame(NameStack* me, Generic* generic) {
     if (generic_empty(generic)) {
         // Frame is only needed so a frame can be unconditionally popped later
         name_stack_push_frame_private(me, STACK_FRAME_BLOCK);
     } else {
         name_stack_push_frame_private(me, STACK_FRAME_GENERIC);
-        generic_resolve_names(generic, me, errs);
+        generic_resolve_names(generic, me, my errs);
     }
 }
 
@@ -200,31 +198,93 @@ void name_stack_pop_frame(NameStack* me) {
     vec_stack_frame_pop(&my stack);
 }
 
-bool name_stack_add_variable(NameStack* me, NamedVariable* var) {
-    return name_stack_add_variable_s(me, cstr_from_span(&var->name), var);
+void name_stack_add_variable(NameStack* me, NamedVariable* var) {
+    name_stack_add_variable_s(me, cstr_from_span(&var->name), var);
 
 }
 
-bool name_stack_add_type(NameStack* me, NamedType* type) {
-    return name_stack_add_type_s(me, cstr_from_span(&type->name), type);
+void name_stack_add_type(NameStack* me, NamedType* type) {
+    name_stack_add_type_s(me, cstr_from_span(&type->name), type);
 }
 
-bool name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
+void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
+    Span name_span = var->name;
     hmap_str_named_variable_ptr_result result = hmap_str_named_variable_ptr_insert(
         &vec_stack_frame_back(&my stack)->variables,
         name_string,
         var
     );
-    return result.inserted;
+    if (!result.inserted) {
+        switch (vec_stack_frame_back(&my stack)->tag) {
+            case STACK_FRAME_BLOCK:
+                error_ctx_error(
+                    my errs,
+                    name_span,
+                    2451,
+                    "Cannot redeclare block-scoped variable '%.*s'.",
+                    c_SV(span_sv(&name_span))
+                );
+                error_ctx_error(
+                    my errs,
+                    result.ref->second->name,
+                    2451,
+                    "Cannot redeclare block-scoped variable '%.*s'.",
+                    c_SV(span_sv(&result.ref->second->name))
+                );
+                break;
+
+            case STACK_FRAME_FUNCTION:
+            case STACK_FRAME_GENERIC:
+                error_ctx_error(
+                    my errs,
+                    name_span,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SV(span_sv(&name_span))
+                );
+                error_ctx_error(
+                    my errs,
+                    result.ref->second->name,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SV(span_sv(&result.ref->second->name))
+                );
+                break;
+        }
+    }
 }
 
-bool name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
+void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
+    Span name_span = type->name;
     hmap_str_named_type_ptr_result result = hmap_str_named_type_ptr_insert(
         &vec_stack_frame_back(&my stack)->types,
         name_string,
         type
     );
-    return result.inserted;
+    if (!result.inserted) {
+        switch (vec_stack_frame_back(&my stack)->tag) {
+            case STACK_FRAME_BLOCK:
+            case STACK_FRAME_FUNCTION:
+                error_ctx_error(
+                    my errs,
+                    result.ref->second->name,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SV(span_sv(&result.ref->second->name))
+                );
+                // Fallthrough
+
+            case STACK_FRAME_GENERIC:
+                error_ctx_error(
+                    my errs,
+                    name_span,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SV(span_sv(&name_span))
+                );
+                break;
+        }
+    }
 }
 
 bool name_stack_has_function(NameStack* me) {

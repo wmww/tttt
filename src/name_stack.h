@@ -34,16 +34,16 @@ void named_type_destroy(NamedType* me);
 #define i_no_hash
 #include "wrap_stc/arc.h"
 
-NameStack* name_stack_new();
+NameStack* name_stack_new(ErrorCtx* errs);
 void name_stack_destroy(NameStack* me);
 void name_stack_push_block_frame(NameStack* me);
 void name_stack_push_function_frame(NameStack* me);
-void name_stack_push_generic_frame(NameStack* me, Generic* generic, ErrorCtx* errs);
+void name_stack_push_generic_frame(NameStack* me, Generic* generic);
 void name_stack_pop_frame(NameStack* me);
-bool name_stack_add_variable(NameStack* me, NamedVariable* var);
-bool name_stack_add_type(NameStack* me, NamedType* type);
-bool name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var);
-bool name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type);
+void name_stack_add_variable(NameStack* me, NamedVariable* var);
+void name_stack_add_type(NameStack* me, NamedType* type);
+void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var);
+void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type);
 bool name_stack_has_function(NameStack* me);
 NamedVariable* name_stack_get_variable(NameStack* me, csview name);
 NamedType* name_stack_get_type(NameStack* me, csview name);

@@ -93,10 +93,7 @@ void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
         if (!i.ref->type) {
             i.ref->type = make_named_type(i.ref->name, lazy_type_ref(&i.ref->extends), nullptr);
         }
-        if (!name_stack_add_type(names, i.ref->type)) {
-            // name is cstr_str(&result.ref->first)
-            error_ctx_type_error(errs, "multiple generics with same name");
-        }
+        name_stack_add_type(names, i.ref->type);
     }
     c_foreach(i, vec_generic_item, my items) {
         type_resolve_names(&i.ref->extends, names, errs);

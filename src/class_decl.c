@@ -172,10 +172,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(!my instance_named_type);
     my instance_named_type = make_named_type(my full_span, lazy_type_class_instance(me), &my generic);
     my instance_named_type->is_class = true;
-    if (!name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type)) {
-        // name is cstr_str(&result.ref->first)
-        error_ctx_type_error(errs, "multiple values declared with same name");
-    }
+    name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type);
 
     ASSERT(!my instance_named_var);
     VecSpannedType generic_params = {0};
@@ -218,10 +215,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         }))),
         &my generic
     );
-    if (!name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var)) {
-        // name is cstr_str(&result.ref->first)
-        error_ctx_type_error(errs, "multiple values declared with same name");
-    }
+    name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
 
     ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
     my class_identifier_type = type_identifier(c_new(IdentifierType, {
@@ -248,7 +242,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
-    name_stack_push_generic_frame(names, &my generic, errs);
+    name_stack_push_generic_frame(names, &my generic);
 
     expr_resolve_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {

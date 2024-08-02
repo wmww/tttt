@@ -128,10 +128,7 @@ void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCt
         case BINDING_IDENTIFIER:
             ASSERT(!my identifier);
             my identifier = make_named_variable(my content_span, binding_get_lazy_type(me), nullptr);
-            if (!name_stack_add_variable(names, my identifier)) {
-                // name is cstr_str(&result.ref->first)
-                error_ctx_error(errs, my content_span, TS_CODE_NONE, "multiple values declared with same name");
-            }
+            name_stack_add_variable(names, my identifier);
             break;
 
         case BINDING_ARRAY: {

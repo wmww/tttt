@@ -42,7 +42,7 @@ void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {
 void block_resolve_names_toplevel(Block* me, ErrorCtx* errs) {
     ErrorPhase prev_phase = errs->phase;
     errs->phase = ERROR_PHASE_RESOLVE_NAMES;
-    NameStack* names = name_stack_new();
+    NameStack* names = name_stack_new(errs);
     block_resolve_names(me, names, errs);
     name_stack_destroy(names);
     errs->phase = prev_phase;
