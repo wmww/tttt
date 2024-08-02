@@ -15,6 +15,7 @@
 #include "type.h"
 #include "error.h"
 #include "math_helpers.h"
+#include "string_helpers.h"
 
 #define i_key uint8_t
 #define i_type vec_u8
@@ -168,6 +169,16 @@ static void reset_fail_cache(Parser* me) {
     my shared->fail_cache._len = 0;
 }
 
+static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) {
+    cstr message = cstr_null;
+    va_list args;
+    va_start(args, fmt);
+    cstr_vfmt(&message, 0, fmt, args);
+    va_end(args);
+    return error_ctx_error_s(&my errs, span, ts_code, message);
+}
+
 typedef struct Anchor {
     Parser* parser;
     const char* start;
@@ -264,7 +275,7 @@ static inline bool expect_identifier(Parser* parent, Span* ret) {
     if (parse_identifier(parent, ret)) {
         return true;
     } else {
-        error_ctx_error(&parent->errs, span_from_token(parent), 1003, "Identifier expected.");
+        parse_error(parent, span_from_token(parent), 1003, "Identifier expected.");
         *ret = span_null;
         return false;
     }
@@ -382,17 +393,17 @@ static inline bool expect_char(Parser* parent, char c) {
     if (hop_char(parent, c)) {
         return true;
     } else {
-        error_ctx_error(&parent->errs, span_from_token(parent), 1005, "'%c' expected.", c);
+        parse_error(parent, span_from_token(parent), 1005, "'%c' expected.", c);
         return false;
     }
 }
 
 static Error* expected_token_error(Parser* parent, const char* expected) {
-    return error_ctx_error(&parent->errs, span_from_token(parent), 1005, "'%s' expected.", expected);
+    return parse_error(parent, span_from_token(parent), 1005, "'%s' expected.", expected);
 }
 
 static Error* expected_expression_error(Parser* parent) {
-    return error_ctx_error(&parent->errs, span_from_token(parent), 1109, "Expression expected.");
+    return parse_error(parent, span_from_token(parent), 1109, "Expression expected.");
 }
 
 static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
@@ -519,7 +530,7 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
             vec_generic_item_push(&ret->items, item);
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+            parse_error(&p, span_from_token(&p), 1110, "Type expected.");
         } else {
             break;
         }
@@ -550,7 +561,7 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
             vec_spanned_type_push(ret, spanned_type(span_end(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1110, "Type expected.");
+            parse_error(&p, span_from_token(&p), 1110, "Type expected.");
         } else {
             break;
         }
@@ -566,7 +577,7 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
     }
 
     if (span_valid(&trailing_comma_span)) {
-        error_ctx_error(&p.errs, trailing_comma_span, 1009, "Trailing comma not allowed.");
+        parse_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
     expect_char(&p, '>');
@@ -815,8 +826,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     }
 
     if (span_valid(&readonly_span)) {
-        error_ctx_error(
-            &p.errs,
+        parse_error(
+            &p,
             readonly_span,
             1354,
             "'readonly' type modifier is only permitted on array and tuple literal types."
@@ -839,7 +850,7 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
     if (parse_type(parent, min_precedence, ret)) {
         return true;
     } else {
-        error_ctx_error(&parent->errs, span_from_token(parent), 1110, "Type expected.");
+        parse_error(parent, span_from_token(parent), 1110, "Type expected.");
         *ret = (Type){0};
         return false;
     }
@@ -897,12 +908,12 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     break;
 
                 default:
-                    error_ctx_error(&p.errs, span_from_pos(&p), TS_CODE_NONE, "Invalid class item for interface.");
+                    parse_error(&p, span_from_pos(&p), TS_CODE_NONE, "Invalid class item for interface.");
                     break;
             }
             class_item_drop(&item);
         } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1131, "Property or signature expected.");
+            parse_error(&p, hop_token_get_span(&p), 1131, "Property or signature expected.");
         }
         hop_whitespace(&p);
 
@@ -977,7 +988,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
 
     Span name;
     if (!parse_identifier(&p, &name)) {
-        error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "interface does not have a name");
+        parse_error(&p, span_from_token(&p), TS_CODE_NONE, "interface does not have a name");
         name = span_null;
     }
     hop_whitespace(&p);
@@ -1036,7 +1047,7 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         if (last_type.tag == TYPE_INTERFACE) {
             interface = last_type.interface;
             if (span_valid(&second_last_comma_span)) {
-                error_ctx_error(&p.errs, second_last_comma_span, 1009, "Trailing comma not allowed.");
+                parse_error(&p, second_last_comma_span, 1009, "Trailing comma not allowed.");
             }
         } else {
             vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
@@ -1108,7 +1119,7 @@ static bool parse_function_args(
 
         while (*p.pos && *p.pos != ')') {
             if (hop_char(&p, ',')) {
-                error_ctx_error(&p.errs, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
+                parse_error(&p, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
             } else {
                 Binding binding = {0};
                 Expr default_value;
@@ -1170,8 +1181,8 @@ static bool parse_function_args(
                     expr_drop(&default_value);
                     // TODO: this might should be added in the typecheck phase
                     if (default_value.tag != EXPR_IMPLICIT_ANY) {
-                        error_ctx_error(
-                            &p.errs,
+                        parse_error(
+                            &p,
                             span_end(arg_start),
                             2371,
                             "A parameter initializer is only allowed in a function or constructor implementation."
@@ -1383,7 +1394,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     } else if (*p.pos == ';' || p.whitespace == WHITESPACE_NEWLINE) {
         ret->body = (Block){0};
     } else {
-        error_ctx_error(&p.errs, span_from_token(&p), 1144, "'{' or ';' expected.");
+        parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
     }
 
     ret->full_span = span_end(a);
@@ -1406,7 +1417,7 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     hop_whitespace(&p);
 
     if (!parse_non_arrow_function(&p, ret)) {
-        error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "Expected function.");
+        parse_error(&p, span_from_token(&p), TS_CODE_NONE, "Expected function.");
         *ret = (FunctionImpl){0};
     }
 
@@ -1472,7 +1483,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
         if (parse_object_item(&p, &item)) {
             vec_object_expr_item_push(ret, item);
         } else if (*p.pos == ',' || *p.pos == ';') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1136, "Property assignment expected.");
+            parse_error(&p, span_from_token(&p), 1136, "Property assignment expected.");
         } else {
             break;
         }
@@ -1626,8 +1637,8 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
         ret->key.span = span_end(a);
         hop_whitespace(&p);
         if (hop_char(&p, '?')) {
-            error_ctx_error(
-                &p.errs,
+            parse_error(
+                &p,
                 span_from_previous_char(&p),
                 1019,
                 "An index signature parameter cannot have a question mark."
@@ -1842,7 +1853,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
         name_span = span_end(a);
         if (!parse_function_fn(&p, &ret->constructor.func)) {
-            error_ctx_error(&p.errs, span_from_token(&p), TS_CODE_NONE, "constructor expected");
+            parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
             ret->constructor.func = (FunctionImpl){0};
         }
         ret->constructor.name_span = name_span;
@@ -1954,16 +1965,16 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         case READONLY_ALREADY_SEEN:
             // Put error into parent errors because we know we will return success, and this will fix the ordering
-            error_ctx_error(&parent->errs, modifier_error_span, 1030, "'readonly' modifier already seen.");
+            parse_error(parent, modifier_error_span, 1030, "'readonly' modifier already seen.");
             break;
 
         case ACCCESS_ALREADY_SEEN:
-            error_ctx_error(&parent->errs, modifier_error_span, 1028, "Accessibility modifier already seen.");
+            parse_error(parent, modifier_error_span, 1028, "Accessibility modifier already seen.");
             break;
 
         case MUST_PRECEDE_READONLY:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'readonly' modifier.",
@@ -1972,8 +1983,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case MUST_PRECEDE_STATIC:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'static' modifier.",
@@ -1982,8 +1993,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case MUST_PRECEDE_ASYNC:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'async' modifier.",
@@ -1992,8 +2003,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case INVALID_READONLY:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1024,
                 "'readonly' modifier can only appear on a property declaration or index signature."
@@ -2001,8 +2012,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case UNEXPECTED_IDENT:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1434,
                 "Unexpected keyword or identifier."
@@ -2010,8 +2021,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case MODIFIERS_CANNOT_APPEAR:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1184,
                 "Modifiers cannot appear here."
@@ -2019,8 +2030,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case MODIFIER_ON_TYPE:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1070,
                 "'%.*s' modifier cannot appear on a type member.",
@@ -2029,8 +2040,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
 
         case EXPORT_INVALID:
-            error_ctx_error(
-                &parent->errs,
+            parse_error(
+                parent,
                 modifier_error_span,
                 1031,
                 "'export' modifier cannot appear on class elements of this kind."
@@ -2080,7 +2091,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
         if (hop_char(&p, ',')) {
             // TODO consume and give correct error when multiple classes are extended
-            error_ctx_error(&p.errs, span_from_previous_char(&p), 1009, "Trailing comma not allowed.");
+            parse_error(&p, span_from_previous_char(&p), 1009, "Trailing comma not allowed.");
             hop_whitespace(&p);
         }
     }
@@ -2113,8 +2124,8 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     ClassItem item;
     while (*p.pos && *p.pos != '}') {
         if (!parse_class_item(&p, false, &item)) {
-            error_ctx_error(
-                &p.errs,
+            parse_error(
+                &p,
                 span_from_token(&p),
                 1068,
                 "Unexpected token. A constructor, method, accessor, or property was expected."
@@ -2171,7 +2182,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
             p.pos++;
             hop_whitespace(&p);
             if (!first_comma) {
-                error_ctx_error(&p.errs, span_from_token(&p), 1135, "Argument expression expected.");
+                parse_error(&p, span_from_token(&p), 1135, "Argument expression expected.");
             }
             first_comma = false;
         }
@@ -2413,7 +2424,7 @@ static bool parse_number(Parser* parent, double* ret) {
         char* end;
         *ret = strtod(cstr_str(&number_str), &end);
         if (end != cstr_str(&number_str) + cstr_size(&number_str)) {
-            error_ctx_error(&p.errs, span_end(a), TS_CODE_NONE, "invalid number");
+            parse_error(&p, span_end(a), TS_CODE_NONE, "invalid number");
         }
         cstr_drop(&number_str);
         return parse_success(&p);
@@ -2441,7 +2452,7 @@ static bool parse_string(Parser* parent, cstr* ret) {
     if (*p.pos == quote) {
         p.pos++;
     } else {
-        error_ctx_error(&p.errs, span_from_pos(&p), 1002, "Unterminated string literal.");
+        parse_error(&p, span_from_pos(&p), 1002, "Unterminated string literal.");
     }
 
     return parse_success(&p);
@@ -2841,7 +2852,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
             import.path = cstr_move(&path_expr.literal.string);
             import.path_span = path_expr.inner_span;
         } else {
-            error_ctx_error(&p.errs, path_expr.inner_span, 1141, "String literal expected.");
+            parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
         }
         expr_drop(&path_expr);
     }
@@ -3002,7 +3013,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
     while (true) {
         if (!parse_binding_content(&p, &initializer.binding)) {
             if (span_valid(&comma_span)) {
-                error_ctx_error(&p.errs, comma_span, 1009, "Trailing comma not allowed.");
+                parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(&comma_span);
             } else if (vec_initialized_binding_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET) {
@@ -3012,10 +3023,10 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
                 } else {
                     Span s = span_end(end_of_keyword);
                     s.length = 0;
-                    error_ctx_error(&p.errs, s, 1123, "Variable declaration list cannot be empty.");
+                    parse_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
             } else {
-                error_ctx_error(&p.errs, span_from_token(&p), 1134, "Variable declaration expected.");
+                parse_error(&p, span_from_token(&p), 1134, "Variable declaration expected.");
             }
             break;
         }
@@ -3307,16 +3318,16 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
             } else if (hop_char(&p, ';')) {
             } else if (*p.pos) {
                 if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
-                    error_ctx_error(&p.errs, statement.expr.inner_span, 1434, "Unexpected keyword or identifier.");
+                    parse_error(&p, statement.expr.inner_span, 1434, "Unexpected keyword or identifier.");
                 } else {
                     expected_token_error(&p, ";");
                 }
             }
         } else if (*p.pos == '\\') {
-            error_ctx_error(&p.errs, span_from_pos(&p), 1127, "Invalid character.");
+            parse_error(&p, span_from_pos(&p), 1127, "Invalid character.");
             p.pos++;
         } else {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
+            parse_error(&p, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
             // TODO: woudln't this trap us in a loop?
         }
         hop_whitespace(&p); // TODO: is this needed?
@@ -3397,7 +3408,7 @@ static bool parse_switch_statement(Parser* parent, Statement* ret) {
     }
 
     if (!hop_char(&p, '}')) {
-        error_ctx_error(&p.errs, span_from_token(&p), 1130, "'case' or 'default' expected.");
+        parse_error(&p, span_from_token(&p), 1130, "'case' or 'default' expected.");
     }
 
     *ret = (Statement){
@@ -3429,7 +3440,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 hop_whitespace(&p);
 
                 if (!parse_binding_content(&p, &try_catch.catch_var)) {
-                    error_ctx_error(&p.errs, span_from_token(&p), 1003, "Identifier expected.");
+                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
                     try_catch.catch_var = (Binding){0};
                 }
                 hop_whitespace(&p);
@@ -3458,7 +3469,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
         }
 
         if (!has_catch && !has_finally) {
-            error_ctx_error(&p.errs, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
+            parse_error(&p, span_from_token(&p), 1472, "'catch' or 'finally' expected.");
         }
     } else {
         expected_token_error(&p, "{");
@@ -3522,15 +3533,16 @@ static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)
         Value val;
         Anchor a = span_start(&p);
         if (*p.pos == '{') {
-            error_ctx_error(&p.errs, span_from_token(&p), 1437, "Namespace must be given a name.");
+            parse_error(&p, span_from_token(&p), 1437, "Namespace must be given a name.");
         } else if (parse_literal(&p, &val)) {
             if (val.tag == VALUE_STRING) {
-                error_ctx_error(&p.errs, span_end(a), 1003, "Identifier expected.");
+                parse_error(&p, span_end(a), 1003, "Identifier expected.");
             } else {
                 cstr msg = cstr_lit("Namespace name cannot be '");
                 cstr_append_value_error_msg(&msg, &val);
                 cstr_append_sv(&msg, c_sv("'."));
-                error_ctx_error_s(&p.errs, span_end(a), 2819, msg);
+                parse_error(&p, span_end(a), 2819, "%s", cstr_str(&msg));
+                cstr_drop(&msg);
             }
             value_drop(&val);
             return parse_success(&p);
@@ -3570,7 +3582,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             if (toplevel) {
                 exported = DECL_EXPORTED_YES;
             } else if (!modifier_error) {
-                error_ctx_error(&p.errs, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                parse_error(&p, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
                 modifier_error = true;
             }
         } else if (hop_start_if_ends_on_word_break(&p, "default")) {
@@ -3583,14 +3595,14 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                     modifier_error = true;
                 }
             } else if (!modifier_error) {
-                error_ctx_error(&p.errs, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                parse_error(&p, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
                 modifier_error = true;
             }
         } else if (hop_start_if_ends_on_word_break(&p, "declare")) {
             if (toplevel) {
                 declared = true;
             } else if (!modifier_error) {
-                error_ctx_error(&p.errs, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                parse_error(&p, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
                 modifier_error = true;
             }
         } else {
@@ -3762,7 +3774,7 @@ Block parse_file(const char* source, ErrorCtx* errs) {
     while (true) {
         parse_append_statement_sequence(&p, true, &scope.statements);
         if (*p.pos) {
-            error_ctx_error(&p.errs, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
+            parse_error(&p, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
             hop_whitespace(&p);
         } else {
             break;
