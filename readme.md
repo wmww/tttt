@@ -1,7 +1,12 @@
 # The Tess TypeScript Typechecker
 
+Under developent
+
+```bash
+./run.sh path/to/source.ts      # Build and run in Valgrind
+./test.sh                       # Build and run against TypeScript tests in Valgrind
+./test.sh -f castingTuple -d    # Run against specific test and show diff
+./fasttest.sh                   # Build with optimizations and run without Valgrind
 ```
-meson setup build
-ninja -C build && valgrind --leak-check=full --show-leak-kinds=all --quiet ./build/tttt ./test/toy.ts
-ninja -C build && valgrind --leak-check=full --show-leak-kinds=all --exit-on-first-error=yes --error-exitcode=1 --quiet ./build/baseline_tests
-```
+
+The test scripts with automatically clone the TypeScript repo at the right commit when needed. If that repo gets fucky rm -rf it and re-run the scripts.

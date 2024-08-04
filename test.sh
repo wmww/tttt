@@ -13,10 +13,7 @@ if test ! -e build; then
 fi
 ninja -C build
 
-# Make sure we have TypeScript
-if test ! -e TypeScript; then
-    echo "TypeScript repo not found, cloning..."
-    git clone --depth 1 --branch v5.4.2 https://github.com/microsoft/TypeScript.git
-fi
+# We need a copy of the TypeScript repo to run tests
+test/clone_typescript_if_needed.sh
 
 valgrind --leak-check=full --show-leak-kinds=all --exit-on-first-error=yes --error-exitcode=1 --quiet ./build/baseline_tests "$@"

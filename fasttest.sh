@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-rm -f vgcore.*
-if test ! -e build-release; then
-    meson setup build-release --buildtype release
+# Make sure we're in the same directory as this script
+cd "$( dirname "${BASH_SOURCE[0]}" )"
+
+# Configure if needed
+if test ! -e release; then
+    meson setup release --buildtype release
 fi
-ninja -C build-release
-./build-release/baseline_tests "$@"
+ninja -C release
+
+# We need a copy of the TypeScript repo to run tests
+test/clone_typescript_if_needed.sh
+
+./release/baseline_tests "$@"
