@@ -1,4 +1,5 @@
-let runJsContent;
+let testRunnerJsContent; // The code that is going to be evaled
+let triggerTestRerun; // Set by code we inject into the evaled code
 
 {
     const fs = require('fs');
@@ -35,17 +36,27 @@ let runJsContent;
 
     console.log('Loading test runner script...');
     const runJsPath = `${tsDir}/built/local/run.js`;
-    runJsContent = fs.readFileSync(runJsPath) + '';
+    testRunnerJsContent = fs.readFileSync(runJsPath) + '';
 
-    runJsContent = assertOneReplacement(
+    // This allows us to trigger a re-run of the tests
+    testRunnerJsContent = assertOneReplacement(
         runJsPath,
-        runJsContent,
+        testRunnerJsContent,
+        'function startTestEnvironment() {',
+        // Don't put in newline, preserve line numbers on error messages
+        'triggerTestRerun = () => { runTests(runners); }; function startTestEnvironment() {'
+    );
+
+    // This makes it run the tests in our directory, instead of the normal TypeScript directory
+    testRunnerJsContent = assertOneReplacement(
+        runJsPath,
+        testRunnerJsContent,
         'userSpecifiedRoot = "";',
         `userSpecifiedRoot = "${tmpDir}/";`
     );
 
     // This is required for TS v5.5.4
-    // runJsContent = assertOneReplacement(runJsPath, runJsContent, 'importTests();', '');
+    // testRunnerJsContent = assertOneReplacement(runJsPath, testRunnerJsContent, 'importTests();', '');
 
     // This can be gotten rid of when we bump to TS v5.5.4
     __filename = "Harness.js";
@@ -71,5 +82,13 @@ const afterEach = after;
 const it = describe;
 
 console.log('Evaling test runner script...');
-eval(runJsContent);
+eval(testRunnerJsContent);
 console.log('Done');
+
+process.stdin.on('data', () => {
+    console.log('Re-running tests...');
+    triggerTestRerun();
+    console.log('Done re-running tests');
+}).on('end', () => {
+    console.log('stdin seems to have closed');
+})
