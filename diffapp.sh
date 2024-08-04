@@ -13,14 +13,14 @@ fi
 test/clone_typescript_if_needed.sh
 
 # Build the TypeScript compiler and test infra if needed
-if test ! -e TypeScript/built/local/run.js; then
+if test ! -e test/TypeScript/built/local/run.js; then
     (
         printf "\x1b[1;33mInstalling Hereby with npm...\x1b[0m\n"
-        cd TypeScript
+        cd test/TypeScript
         npm install hereby
         printf "\x1b[1;33mBuilding compiler and tests...\x1b[0m\n"
         node ./node_modules/.bin/hereby tests
     )
 fi
 
-NODE_PATH="$PWD/TypeScript/node_modules" node test/tsc_custom_baseline.js
+NODE_PATH="$PWD/test/TypeScript/node_modules" node test/tsc_custom_baseline.js
