@@ -1,4 +1,4 @@
-const tsCommit = "353ccb7688351ae33ccf6e0acb913aa30621eaf4"
+const tsCommit = "42bb138173e3b3869b6a6f68d277c7172387a4cf"
 const baselines = {
     '2dArrays': {
         errors: false,
@@ -129,6 +129,11 @@ const baselines = {
         errors: true,
         symbols: true,
         types: true,
+    },
+    'DateTimeFormatAndNumberFormatES2021': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'DeclarationErrorsNoEmitOnError': {
         errors: true,
@@ -2088,11 +2093,6 @@ const baselines = {
     'autoLift2': {
         errors: false,
         symbols: false,
-        types: false,
-    },
-    'autoTypeAssignedUsingDestructuringFromNeverNoCrash': {
-        errors: false,
-        symbols: true,
         types: false,
     },
     'autolift3': {
@@ -4951,7 +4951,7 @@ const baselines = {
         types: false,
     },
     'compilerOptionsOutAndNoEmit': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -11475,12 +11475,12 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'evalAfter0': {
+    'esnext.bigintIncludesNumberFormatPartTypes': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'evalOrArgumentsInDeclarationFunctions': {
+    'evalAfter0': {
         errors: false,
         symbols: false,
         types: false,
@@ -12776,6 +12776,11 @@ const baselines = {
         types: false,
     },
     'forStatementInnerComments': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'formatToPartsBigInt': {
         errors: false,
         symbols: false,
         types: false,
@@ -15406,7 +15411,7 @@ const baselines = {
         types: true,
     },
     'incrementalOut': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -18698,11 +18703,6 @@ const baselines = {
     'mappedTypeIndexedAccess': {
         errors: false,
         symbols: true,
-        types: false,
-    },
-    'mappedTypeIndexedAccessConstraint': {
-        errors: false,
-        symbols: false,
         types: false,
     },
     'mappedTypeInferenceAliasSubstitution': {
@@ -26085,11 +26085,6 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'spreadObjectNoCircular1': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
     'spreadObjectPermutations': {
         errors: false,
         symbols: false,
@@ -30216,11 +30211,6 @@ const baselines = {
         types: false,
     },
     'varianceRepeatedlyPropegatesWithUnreliableFlag': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
-    'verbatim-declarations-parameters': {
         errors: false,
         symbols: false,
         types: false,
@@ -35365,11 +35355,6 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'intlNumberFormatES2020': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
     'localesObjectArgument': {
         errors: false,
         symbols: false,
@@ -35415,12 +35400,17 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'es2021LocalesObjectArgument': {
+    'numberFormatCurrencySign': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'intlDateTimeFormatRangeES2021': {
+    'numberFormatCurrencySignResolved': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'es2021LocalesObjectArgument': {
         errors: false,
         symbols: false,
         types: false,
@@ -35486,16 +35476,6 @@ const baselines = {
         types: false,
     },
     'es2022SharedMemory': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
-    'intlNumberFormatES2023': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
-    'intlNumberFormatES5UseGrouping': {
         errors: false,
         symbols: false,
         types: false,
@@ -45811,7 +45791,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocReturnTag1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46811,7 +46791,7 @@ const baselines = {
         types: false,
     },
     'jsdocReturnTag1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -52741,7 +52721,7 @@ const baselines = {
         types: false,
     },
     'multipleDeclarations': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
