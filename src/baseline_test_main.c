@@ -2,7 +2,7 @@
 #include "filesystem.h"
 #include "string_helpers.h"
 
-const char* const default_tests_dir = "../TypeScript/tests";
+const char* const default_tests_dir = "TypeScript/tests";
 const char* tests_dir = default_tests_dir;
 const char* test_filter = nullptr;
 const char* const default_results_path = "test/baseline_results.ts";
