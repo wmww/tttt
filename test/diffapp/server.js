@@ -22,7 +22,12 @@ const tscProcess = child_process.spawn(
     env: {
       NODE_PATH: path.join(path.dirname(__dirname), 'TypeScript', 'node_modules')
     },
-    stdio: ['pipe', 'inherit', 'inherit']
+    stdio: [
+      'pipe',
+      // inherit good for debugging
+      'ignore', // 'inherit',
+      'ignore', // 'inherit',
+    ]
   });
 tscProcess.on('close', (code) => {
   surfaceError(`tsc baseline runner exited with code ${code}`);

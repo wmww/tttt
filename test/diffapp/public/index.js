@@ -34,7 +34,7 @@ mainText.oninput = () => {
       method: 'POST',
       body: mainText.value,
     });
-  }, 100);
+  }, 50);
 }
 
 let refreshTscTimeout;
@@ -49,7 +49,7 @@ function refreshTsc() {
       leftText.value = x;
     })
     .finally(() => {
-      refreshTscTimeout = setTimeout(refreshTsc, 100);
+      refreshTscTimeout = setTimeout(refreshTsc, 50);
     })
 }
 
