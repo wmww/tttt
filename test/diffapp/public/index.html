@@ -1,18 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang=en>
   <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="index.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1">
+    <meta charset=utf-8>
+    <link rel=stylesheet href='index.css'>
+    <meta name=viewport content='width=device-width, initial-scale=1, user-scalable=1'>
     <title>tttt diffapp</title>
   </head>
   <body>
-    <div id="root">
-      <p>TypeScript</p>
-      <button onclick=onRefresh()>Refresh</button>
-      <textarea id="main-text" spellcheck="false"></textarea>
+    <div id=root class=v-box>
+      <div class=h-box>
+        <div style='display: flex;'>
+          <button id='channel-button-err' class='channel-button'>Errors</button>
+          <button id='channel-button-sym' class='channel-button'>Symbols</button>
+          <button id='channel-button-typ' class='channel-button'>Types</button>
+        </div>
+      </div>
+      <textarea id='main-text' class='code-view code-container' spellcheck=false></textarea>
+      <div class='h-box code-container'>
+        <textarea id='left-text' class='code-view code-container' disabled=true spellcheck=false></textarea>
+        <textarea id='right-text' class='code-view code-container' disabled=true spellcheck=false></textarea>
+      </div>
     </div>
     <noscript>WARNING: JavaScript is required</noscript>
-    <script src="index.js"></script>
+    <script src='index.js'></script>
   </body>
 </html>

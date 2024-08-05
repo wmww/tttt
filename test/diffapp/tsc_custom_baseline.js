@@ -5,7 +5,7 @@ let triggerTestRerun; // Set by code we inject into the evaled code
   const fs = require('fs');
 
   const tmpDir = '/tmp/tsTests';
-  const tsDir = `${__dirname}/TypeScript`;
+  const tsDir = `${__dirname}/../TypeScript`;
 
   // TypeScript/src/harness/findUpDir.ts needs __dirname set to something in the TypeScript dir
   __dirname = tsDir;

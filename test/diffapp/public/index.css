@@ -2,7 +2,7 @@
   --background: #202020;
   --panel: #080808;
   --text: #D0D0D0;
-  --accent: #A0A0A0;
+  --accent: #A03010;
 }
 
 html, body, #root {
@@ -11,41 +11,37 @@ html, body, #root {
   margin: 0;
   padding: 0;
   border: 0;
+  width: 100vw;
+  min-height: 100vh;
   font-size: 12pt;
   font-family: Ubuntu, sans-serif;
   color: var(--text);
 }
 
 #root {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  position: absolute;
-  width: 100%;
-  min-height: 100%;
   background-color: var(--background);
 }
 
 .h-box {
   display: flex;
-  align-items: stretch;
   justify-content: center;
   gap: 12px;
+  height: 100%;
 }
 
 .v-box {
   display: flex;
   flex-direction: column;
+  gap: 12px;
   overflow: hidden;
 }
 
 input, textarea, button, .fake-button {
   all: unset;
-  height: 100%;
   box-sizing: border-box;
-  background: var(--panel);
+  background-color: var(--panel);
   border-style: none;
+  margin: 0;
   padding: 5px;
 }
 
@@ -65,10 +61,6 @@ p {
   margin: auto 0;
 }
 
-input:focus {
-  box-shadow: 0 0 0.3em 0 var(--accent);
-}
-
 button, .fake-button {
   cursor: pointer;
   user-select: none;
@@ -79,7 +71,17 @@ button, .fake-button {
   flex-shrink: 0;
 }
 
-#main-text {
+.active {
+  background-color: var(--accent);
+}
+
+.code-container {
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 200px;
+}
+
+.code-view {
   white-space: pre-wrap;
   font-family: Consolas, "Lucida Console", monospace;
 }

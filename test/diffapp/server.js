@@ -1,13 +1,32 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const child_process = require('child_process');
 
 const port = 3030;
 const publicDirectory = path.join(__dirname, 'public');
 const tscBaseDir = '/tmp/tsTests/'
-const inputPath = tscBaseDir + 'tests/cases/conformance/customTest.ts';
+const codePath = tscBaseDir + 'tests/cases/conformance/customTest.ts';
 const tscOutputDir = tscBaseDir + 'tests/baselines/local/';
 const tscTestName = 'customTest';
+
+function surfaceError(message) {
+  // TODO: send this to client
+  console.error(message);
+}
+
+const tscProcess = child_process.spawn(
+  'node',
+  [path.join(__dirname, 'tsc_custom_baseline.js')],
+  {
+    env: {
+      NODE_PATH: path.join(path.dirname(__dirname), 'TypeScript', 'node_modules')
+    },
+    stdio: ['pipe', 'inherit', 'inherit']
+  });
+tscProcess.on('close', (code) => {
+  surfaceError(`tsc baseline runner exited with code ${code}`);
+});
 
 const server = http.createServer((req, res) => {
   function serveStatic(url) {
@@ -65,6 +84,30 @@ const server = http.createServer((req, res) => {
     });
   }
 
+  function serveWriteTextFile(fullPath) {
+    if (req.method != 'POST') {
+      res.writeHead(405);
+      res.end(req.url + ' must be a POST request');
+    } else {
+      let body = [];
+      req.on('data', chunk => {
+        body.push(chunk);
+      }).on('end', () => {
+        body = Buffer.concat(body).toString();
+        fs.writeFile(fullPath, body, error => {
+          if (error) {
+            res.writeHead(500);
+            res.end(`Server Error: ${error.code}`);
+          } else {
+            res.writeHead(200);
+            res.end();
+            tscProcess.stdin.write('\n');
+          }
+        });
+      });
+    }
+  }
+
   function serveTtttResult(result) {
     res.writeHead(500);
     res.end('Not yet implemented');
@@ -75,8 +118,12 @@ const server = http.createServer((req, res) => {
       serveStatic('index.html');
       break;
 
-    case '/input':
-      serveTextFile(inputPath, false);
+    case '/getCode':
+      serveTextFile(codePath, false);
+      break;
+
+    case '/setCode':
+      serveWriteTextFile(codePath);
       break;
 
     case '/tsc/err': serveTextFile(tscOutputDir + tscTestName + '.errors.txt', true); break;
