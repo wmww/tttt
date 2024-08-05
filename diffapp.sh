@@ -23,4 +23,5 @@ if test ! -e test/TypeScript/built/local/run.js; then
     )
 fi
 
-NODE_PATH="$PWD/test/TypeScript/node_modules" node test/tsc_custom_baseline.js
+#NODE_PATH="$PWD/test/TypeScript/node_modules" node test/tsc_custom_baseline.js
+node test/diffapp/server.js
