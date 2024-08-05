@@ -11,7 +11,7 @@ html, body, #root {
   margin: 0;
   padding: 0;
   border: 0;
-  font-size: 16pt;
+  font-size: 12pt;
   font-family: Ubuntu, sans-serif;
   color: var(--text);
 }
@@ -20,6 +20,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 12px;
   position: absolute;
   width: 100%;
   min-height: 100%;
@@ -39,16 +40,17 @@ html, body, #root {
   overflow: hidden;
 }
 
-input, button, .fake-button {
+input, textarea, button, .fake-button {
   all: unset;
   height: 100%;
   box-sizing: border-box;
-  background: var(--input);
+  background: var(--panel);
   border-style: none;
   padding: 5px;
 }
 
-input {
+input, textarea {
+  width: 100%;
   flex-grow: 1;
   min-width: 2em;
   transition: box-shadow 0.05s;
@@ -75,4 +77,9 @@ button, .fake-button {
   flex-grow: 0;
   padding: 10px 20px;
   flex-shrink: 0;
+}
+
+#main-text {
+  white-space: pre-wrap;
+  font-family: Consolas, "Lucida Console", monospace;
 }
