@@ -24,15 +24,17 @@ core_files = files(
     'name_stack.c',
     'filesystem.c',
     'engine.c',
-    'subprocess.c',
     'string_helpers.c',
 )
 
 main_files = core_files + files('main.c')
 
 baseline_test_files = core_files + files(
-    'baseline_test_main.c',
-    'baseline_test_suite.c',
-    'baseline_test_case.c',
-    'baseline_test_traversal.c',
+    'test/baseline_test_main.c',
+    'test/baseline_test_suite.c',
+    'test/baseline_test_case.c',
+    'test/baseline_test_traversal.c',
+    'test/subprocess.c',
 )
+
+src_inc = [ include_directories('.') ]

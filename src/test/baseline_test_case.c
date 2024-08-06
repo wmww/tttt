@@ -8,7 +8,6 @@
 #include "block.h"
 #include "identifier_type.h"
 #include "parser.h"
-#include "name_stack.h"
 #include "value.h"
 #include "result.h"
 

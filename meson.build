@@ -29,7 +29,7 @@ subdir('src')
 executable(
     'tttt',
     main_files,
-    include_directories: thirdparty_inc,
+    include_directories: [thirdparty_inc, src_inc],
     link_with: thirdparty_libs,
     link_args: '-lm',
 )
@@ -37,7 +37,7 @@ executable(
 executable(
     'baseline_tests',
     baseline_test_files,
-    include_directories: thirdparty_inc,
+    include_directories: [thirdparty_inc, src_inc],
     link_with: thirdparty_libs,
     link_args: '-lm',
 )
