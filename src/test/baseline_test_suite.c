@@ -222,6 +222,12 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
     cstr_drop(&display);
 }
 
+static inline const char* result_element_to_str(bool did_run, bool passed) {
+    return did_run ?
+        (passed ? "true" : "false") :
+        "undefined";
+}
+
 void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results_path) {
     printf(CLR_STATUS "Saving results...\n" CLR0);
     FILE *f = fopen(results_path, "w");
@@ -235,9 +241,9 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
         csview name = test_name_from_path(cstr_str(&i.ref->source_path));
         ASSERT(!csview_contains(name, "\\") && !csview_contains(name, "'"));
         fprintf(f, "    '%.*s': {\n", c_SV(name));
-        fprintf(f, "        errors: %s,\n", i.ref->errors_passed ? "true" : "false");
-        fprintf(f, "        symbols: %s,\n", i.ref->symbols_passed ? "true" : "false");
-        fprintf(f, "        types: %s,\n", i.ref->types_passed ? "true" : "false");
+        fprintf(f, "        errors: %s,\n", result_element_to_str(i.ref->did_run, i.ref->errors_passed));
+        fprintf(f, "        symbols: %s,\n", result_element_to_str(i.ref->did_run, i.ref->symbols_passed));
+        fprintf(f, "        types: %s,\n", result_element_to_str(i.ref->did_run, i.ref->types_passed));
         fprintf(f, "    },\n");
     }
 
