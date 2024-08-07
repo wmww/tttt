@@ -303,7 +303,7 @@ void js_object_set(JsObject* me, cstr key, Value val) {
     my total_inserted++;
 }
 
-Result js_object_get(JsObject* me, csview key) {
+Result js_object_get(JsObject const* me, csview key) {
     hmap_str_object_item_value const* value = hmap_str_object_item_get(&my items, key);
     if (value) {
         return result_ok(value_clone(value->second.value));

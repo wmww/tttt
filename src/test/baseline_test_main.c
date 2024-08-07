@@ -21,7 +21,7 @@ static void show_help(FILE* target) {
                             (default = %s)\n\n\
   -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n\
   -s, --save                save test results to results path\n\n\
-  --results-path [PATH]     path to file where test results are loaded/saved\n\n\
+  --results-path [PATH]     path to file where test results are loaded/saved\n\
                             (default = %s)\n\n\
   -d, --diffs               if to show all diffs for failing tests\n\n\
   --err                     show errors diffs for failing tests\n\n\

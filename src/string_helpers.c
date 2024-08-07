@@ -1,5 +1,16 @@
 #include "string_helpers.h"
 
+char* cstr_into_owned_ptr(cstr me) {
+    if (cstr_is_long(&me)) {
+        return me.lon.data;
+    } else {
+        size_t size_inc_null = cstr_s_size(&me) + 1;
+        char* ret = malloc(size_inc_null);
+        memcpy(ret, &cstr_s_data(&me), size_inc_null);
+        return ret;
+    }
+}
+
 lines_sv_iter lines_sv_begin(csview* sv) {
     lines_sv_iter ret = {
         .ref = true,

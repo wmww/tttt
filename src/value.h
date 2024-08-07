@@ -117,7 +117,7 @@ VecObjectItemRef js_object_sorted_items(JsObject* me);
 void js_object_set(JsObject* me, cstr key, Value val);
 // On err .value is set to undefined, so you can ignore .is_err if you want the normal javascript behavior
 // Also means result doesn't need to be dropped as long as value is handled in the ok case
-Result js_object_get(JsObject* me, csview key);
+Result js_object_get(JsObject const* me, csview key);
 bool js_object_has(JsObject* me, csview key);
 
 #define i_key_ssv

@@ -90,7 +90,7 @@ void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }
 
-void error_ctx_display(ErrorCtx* me) {
+void error_ctx_display(ErrorCtx const* me) {
     cstr str = cstr_null;
     const int max_display = 10;
     c_foreach_n(i, vec_error, my errors, max_display) {
@@ -107,7 +107,7 @@ void error_ctx_display(ErrorCtx* me) {
     cstr_drop(&str);
 }
 
-bool error_ctx_empty(ErrorCtx* me) {
+bool error_ctx_empty(ErrorCtx const* me) {
     return vec_error_empty(&my errors);
 }
 

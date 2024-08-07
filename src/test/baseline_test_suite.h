@@ -1,11 +1,11 @@
 #pragma once
 
-#include "baseline_test_case.h"
+#include "baseline_test_result.h"
 #include "value.h"
 
 #include "stc/cregex.h"
 
-#define i_key_class_names BaselineTestCase, baseline_test_case
+#define i_key_class_names BaselineTestResult, baseline_test_result
 #define i_no_clone
 #define i_more
 #define i_cmp(a, b) cstr_cmp(&a->source_path, &b->source_path)
@@ -19,7 +19,7 @@ typedef struct BaselineTestSuite {
     cstr prev_typescript_commit;
     cstr typescript_commit;
     ArcJsObject prev_results;
-    VecBaselineTestCase cases;
+    VecBaselineTestResult results;
 } BaselineTestSuite;
 
 void baseline_test_suite_drop(BaselineTestSuite* me);

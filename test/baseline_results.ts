@@ -10037,13 +10037,13 @@ const baselines = {
     },
     'emptyFile-declaration': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'emptyFile-souremap': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'emptyFile': {
         errors: false,
@@ -25497,8 +25497,8 @@ const baselines = {
     },
     'sourceMap-EmptyFile1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'sourceMap-FileWithComments': {
         errors: false,
@@ -25517,8 +25517,8 @@ const baselines = {
     },
     'sourceMap-NewLine1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'sourceMap-SemiColon1': {
         errors: false,
@@ -39436,7 +39436,7 @@ const baselines = {
         types: false,
     },
     'templateStringMultiline3_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

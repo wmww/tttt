@@ -5,6 +5,8 @@
 // cstr_vfmt seems to be a private API, but including the declaration works. Linking may break on STC update.
 intptr_t cstr_vfmt(cstr* me, intptr_t start, const char* fmt, va_list args);
 
+char* cstr_into_owned_ptr(cstr me);
+
 typedef struct lines_sv_iter {
     bool ref;
     csview line;

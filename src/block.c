@@ -40,19 +40,17 @@ void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {
 }
 
 void block_resolve_names_toplevel(Block* me, ErrorCtx* errs) {
-    ErrorPhase prev_phase = errs->phase;
-    errs->phase = ERROR_PHASE_RESOLVE_NAMES;
+    ErrorPhase prev_phase = error_ctx_swap_phase(errs, ERROR_PHASE_RESOLVE_NAMES);
     NameStack* names = name_stack_new(errs);
     block_resolve_names(me, names, errs);
     name_stack_destroy(names);
-    errs->phase = prev_phase;
+    error_ctx_swap_phase(errs, prev_phase);
 }
 
 void block_typecheck_toplevel(Block* me, ErrorCtx* errs) {
-    ErrorPhase prev_phase = errs->phase;
-    errs->phase = ERROR_PHASE_TYPECHECK;
+    ErrorPhase prev_phase = error_ctx_swap_phase(errs, ERROR_PHASE_TYPECHECK);
     StatementCtx statement_ctx = statement_ctx_toplevel();
     block_typecheck(me, &statement_ctx, errs);
     statement_ctx_drop(&statement_ctx);
-    errs->phase = prev_phase;
+    error_ctx_swap_phase(errs, prev_phase);
 }
