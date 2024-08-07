@@ -75,9 +75,9 @@ STC_API char*       cstr_append_uninit(cstr *self, intptr_t len);
 STC_API bool        cstr_getdelim(cstr *self, int delim, FILE *fp);
 STC_API void        cstr_erase(cstr* self, intptr_t pos, intptr_t len);
 STC_API void        cstr_u8_erase(cstr* self, intptr_t bytepos, intptr_t u8len);
-STC_API cstr        cstr_from_fmt(const char* fmt, ...);
-STC_API intptr_t    cstr_append_fmt(cstr* self, const char* fmt, ...);
-STC_API intptr_t    cstr_printf(cstr* self, const char* fmt, ...);
+STC_API cstr        cstr_from_fmt(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+STC_API intptr_t    cstr_append_fmt(cstr* self, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+STC_API intptr_t    cstr_printf    (cstr* self, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 STC_API cstr        cstr_replace_sv(csview sv, csview search, csview repl, int32_t count);
 STC_API uint64_t    cstr_hash(const cstr *self);
 

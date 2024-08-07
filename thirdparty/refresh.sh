@@ -97,11 +97,19 @@ function write_meson_build {
   echo "]" >>"$MESON_BUILD"
 }
 
+function apply_patches {
+  for PATCH_FILE in $(ls *patch.txt); do
+    printf "${BLUE}Applying %s...$EOL" "$PATCH_FILE"
+    cat "$PATCH_FILE" | patch -p0
+  done
+}
+
 # Change directory to the directory of this script
 cd "$( dirname "${BASH_SOURCE[0]}")"
 printf "${BLUE}Downloading thirdparty libraries into %s...$EOL" "$PWD"
 download_all
 write_meson_build
+apply_patches
 if test $ERROR == 0; then
   printf "${GREEN}Done$EOL"
 else
