@@ -12,8 +12,6 @@ bool show_syms = false;
 bool show_typs = false;
 bool save_results = false;
 
-// TODO: expose as command line argument
-
 static void show_help(FILE* target) {
     fprintf(target, "tttt test runner\n\n\
   -h, --help                show this help message\n\n\

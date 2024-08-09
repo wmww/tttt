@@ -23,15 +23,110 @@ const tscProcess = child_process.spawn(
       NODE_PATH: path.join(path.dirname(__dirname), 'TypeScript', 'node_modules')
     },
     stdio: [
-      'pipe',
+      'pipe', // stdin
       // inherit good for debugging
-      'ignore', // 'inherit',
-      'ignore', // 'inherit',
+      'ignore', // 'inherit', // stdout
+      'ignore', // 'inherit', // stderr
     ]
   });
 tscProcess.on('close', (code) => {
   surfaceError(`tsc baseline runner exited with code ${code}`);
 });
+
+function subprocessThen(args, callback) {
+  //console.log('Running ' + args.join(' '));
+  const command = args.shift();
+  const child = child_process.spawn(
+    command, args,
+    {
+      timeout: 30000,
+      stdio: [
+        'ignore', // stdin
+        'pipe',   // stdout
+        'pipe',   // stderr
+      ]
+    });
+  const stdoutChunks = [];
+  const stderrChunks = [];
+  child.stdout.on('data', chunk => stdoutChunks.push(Buffer.from(chunk)));
+  child.stderr.on('data', chunk => stderrChunks.push(Buffer.from(chunk)));
+  child.on("close", () => {
+    callback(
+      child.exitCode,
+      Buffer.concat(stdoutChunks).toString("utf-8"),
+      Buffer.concat(stderrChunks).toString("utf-8"),
+    )
+  });
+}
+
+const ttttResults = {
+  err: '',
+  sym: '',
+  typ: '',
+  stderr: '',
+};
+
+function setTtttResults(results, callback) {
+  let changed = {};
+  for (let i in results) {
+    if (i != 'err' && i != 'sym' && i != 'typ' && i != 'stderr') {
+      throw Error('Invalid result channel ' + i);
+    }
+    changed[i] = results[i] != null && results[i] != ttttResults[i];
+    if (changed[i]) {
+      ttttResults[i] = results[i];
+    }
+  }
+  callback(changed);
+}
+
+function parseTtttResults(stdout, results) {
+  let start = 0;
+  while (start < stdout.length) {
+    const channel = stdout.slice(start, start + 3);
+    const length = parseInt(stdout.slice(start + 4, start + 16));
+    const data = stdout.slice(start + 17, start + 17 + length);
+    results[channel] = data;
+    start += length + 18;
+  }
+}
+
+function updateTtttResults(callback) {
+  let results = {
+    err: null,
+    sym: null,
+    typ: null,
+    stderr: null,
+  }
+  subprocessThen(
+    ['ninja', '-C', path.join(__dirname, '..', '..', 'build'), 'diffapp_runner'],
+    (code, stdout, stderr) => {
+      if (stderr) {
+        results.stderr = (results.stderr || '') + 'Compiler stderr:\n' + stderr;
+      }
+      if (code != 0) {
+        results.stderr = (results.stderr || '') + 'Compiler exited with code ' + code;
+        setTtttResults(results, callback);
+        return;
+      }
+      subprocessThen(
+        [path.join(__dirname, '..', '..', 'build', 'diffapp_runner'), codePath],
+        (code, stdout, stderr) => {
+          if (stderr) {
+            results.stderr = (results.stderr || '') + 'Runner stderr:\n' + stderr;
+          }
+          if (code != 0) {
+            results.stderr = (results.stderr || '') + 'Runner exited with code ' + code;
+            setTtttResults(results, callback);
+            return;
+          }
+          parseTtttResults(stdout, results);
+          setTtttResults(results, callback);
+        }
+      )
+    }
+  )
+}
 
 const server = http.createServer((req, res) => {
   function serveStatic(url) {
@@ -73,6 +168,11 @@ const server = http.createServer((req, res) => {
     });
   }
 
+  function serveString(content) {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end(content, 'utf-8');
+  }
+
   function serveTextFile(fullPath, ignoreMissing) {
     fs.readFile(fullPath, (error, content) => {
       if (ignoreMissing && error && error.code == 'ENOENT') {
@@ -83,16 +183,16 @@ const server = http.createServer((req, res) => {
         res.writeHead(500);
         res.end(`Server Error: ${error.code}`);
       } else {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end(content, 'utf-8');
+        serveString(content);
       }
     });
   }
 
-  function serveWriteTextFile(fullPath) {
+  function serveWriteTextFile(fullPath, callback) {
     if (req.method != 'POST') {
       res.writeHead(405);
       res.end(req.url + ' must be a POST request');
+      callback(false);
     } else {
       let body = [];
       req.on('data', chunk => {
@@ -103,10 +203,11 @@ const server = http.createServer((req, res) => {
           if (error) {
             res.writeHead(500);
             res.end(`Server Error: ${error.code}`);
+            callback(false);
           } else {
             res.writeHead(200);
             res.end();
-            tscProcess.stdin.write('\n');
+            callback(true);
           }
         });
       });
@@ -128,12 +229,26 @@ const server = http.createServer((req, res) => {
       break;
 
     case '/setCode':
-      serveWriteTextFile(codePath);
+      serveWriteTextFile(codePath, success => {
+        if (success) {
+          tscProcess.stdin.write('\n');
+          updateTtttResults(changed => {
+            if (changed.stderr && ttttResults.stderr) {
+              surfaceError(ttttResults.stderr);
+            }
+          })
+        }
+      });
       break;
 
     case '/tsc/err': serveTextFile(tscOutputDir + tscTestName + '.errors.txt', true); break;
     case '/tsc/sym': serveTextFile(tscOutputDir + tscTestName + '.symbols', false); break;
     case '/tsc/typ': serveTextFile(tscOutputDir + tscTestName + '.types', false); break;
+
+    case '/tttt/err': serveString(ttttResults.err); break;
+    case '/tttt/sym': serveString(ttttResults.sym); break;
+    case '/tttt/typ': serveString(ttttResults.typ); break;
+    case '/tttt/stderr': serveString(ttttResults.stderr); break;
 
     case '/tttt/err': serveTtttResult('err'); break;
     case '/tttt/sym': serveTtttResult('sym'); break;

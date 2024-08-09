@@ -29,13 +29,15 @@ core_files = files(
 
 main_files = core_files + files('main.c')
 
-baseline_test_files = core_files + files(
-    'test/baseline_test_main.c',
+test_files = core_files + files(
     'test/baseline_test_suite.c',
     'test/baseline_test_result.c',
     'test/baseline_test_case.c',
     'test/baseline_test_traversal.c',
     'test/subprocess.c',
 )
+
+baseline_test_files = test_files + files('test/baseline_test_main.c')
+diffapp_runner_files = test_files + files('test/diffapp_runner.c')
 
 src_inc = [ include_directories('.') ]

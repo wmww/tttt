@@ -26,7 +26,7 @@ typedef struct BaselineTestCase {
     VecLineNumberedStr types;
 } BaselineTestCase;
 
-// Constructor and destructor
+// Never prints to stdout, only prints to stderr if noisy is true, or if it panics
 BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy);
 void baseline_test_case_drop(BaselineTestCase* me);
 

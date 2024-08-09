@@ -29,7 +29,6 @@ let mainTextTimeout;
 mainText.oninput = () => {
   clearTimeout(mainTextTimeout);
   mainTextTimeout = setTimeout(() => {
-    console.log('Setting code');
     fetch('/setCode', {
       method: 'POST',
       body: mainText.value,
@@ -49,8 +48,18 @@ function refreshTsc() {
       leftText.value = x;
     })
     .finally(() => {
-      refreshTscTimeout = setTimeout(refreshTsc, 50);
-    })
+      fetch('/tttt/' + currentChannel)
+        .then(x => x.text())
+        .then(x => {
+          if (!x) {
+            x = '[no output]'
+          }
+          rightText.value = x;
+        })
+        .finally(() => {
+          refreshTscTimeout = setTimeout(refreshTsc, 1000);
+        });
+    });
 }
 
 onChannelSelected('typ');
