@@ -1,6 +1,10 @@
+const inputWaitMs = 50; // How long to wait after an input for more events to batch with it
+
 const mainText = document.getElementById('main-text');
 const leftText = document.getElementById('left-text');
 const rightText = document.getElementById('right-text');
+const errorList = document.getElementById('error-list');
+const errorTemplate = document.getElementById('error-template');
 const token = Array(6).fill().map(() => String.fromCharCode(Math.floor(Math.random() * 26) + 97)).join('');
 
 let currentChannel;
@@ -12,6 +16,14 @@ const latestResults = {
 function errorsUpdated(errors) {
   if (errors) {
     console.error('Errors from server: ' + errors.join('\n'));
+  }
+  while (errorList.lastElementChild) {
+    errorList.removeChild(errorList.lastElementChild);
+  }
+  for (let message of errors) {
+    const template = errorTemplate.content.cloneNode(true);
+    template.querySelector('#error-message').textContent = message;
+    errorList.append(template);
   }
 }
 
@@ -44,7 +56,7 @@ mainText.oninput = () => {
       method: 'POST',
       body: mainText.value,
     });
-  }, 50);
+  }, inputWaitMs);
 }
 
 function renderDiff() {
@@ -83,7 +95,7 @@ function handleEvents() {
       handleEvents();
     })
     .catch(err => {
-      errorsUpdated(['Disconnected from server, ' + err]);
+      errorsUpdated([err.toString(), 'Server connection closed, please refresh']);
     })
 }
 

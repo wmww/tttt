@@ -7,8 +7,15 @@
     <title>tttt diffapp</title>
   </head>
   <body>
-    <div id=root class=v-box>
-      <div class=h-box>
+    <div id='root' class='v-box'>
+      <div id='error-list'>
+        <template id='error-template'>
+          <div class='error-box'>
+            <p id='error-message'></p>
+          </div>
+        </template>
+      </div>
+      <div class='h-box'>
         <div style='display: flex;'>
           <button id='channel-button-err' class='channel-button'>Errors</button>
           <button id='channel-button-sym' class='channel-button'>Symbols</button>
