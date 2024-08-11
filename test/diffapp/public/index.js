@@ -61,7 +61,7 @@ mainText.oninput = () => {
 
 function renderDiff() {
   leftText.textContent = latestResults.tsc[currentChannel];
-  rightText.textContent = latestResults.tsc[currentChannel];
+  rightText.textContent = latestResults.tttt[currentChannel];
 }
 
 function handleEvents() {
