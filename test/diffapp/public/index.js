@@ -1,15 +1,34 @@
 const mainText = document.getElementById('main-text');
 const leftText = document.getElementById('left-text');
 const rightText = document.getElementById('right-text');
+const token = Array(6).fill().map(() => String.fromCharCode(Math.floor(Math.random() * 26) + 97)).join('');
 
 let currentChannel;
+const latestResults = {
+  tttt: {},
+  tsc: {},
+}
+
+function errorsUpdated(errors) {
+  if (errors) {
+    console.error('Errors from server: ' + errors.join('\n'));
+  }
+}
+
+function codeChangedByServer(code) {
+  mainText.value = code;
+}
+
 const channelButtons = Array.from(document.getElementsByClassName('channel-button'));
 function onChannelSelected(channel) {
+  if (channel == currentChannel) {
+    return;
+  }
   currentChannel = channel;
   channelButtons.forEach(button => {
     button.classList.toggle('active', button.id.endsWith(channel));
   });
-  refreshTsc();
+  renderDiff();
 }
 channelButtons.forEach(button => {
   button.onclick = () => {
@@ -17,50 +36,56 @@ channelButtons.forEach(button => {
   }
 });
 
-function refreshCode() {
-  fetch('/getCode')
-    .then(x => x.text())
-    .then(x => {
-      mainText.value = x;
-    });
-}
-
 let mainTextTimeout;
 mainText.oninput = () => {
   clearTimeout(mainTextTimeout);
   mainTextTimeout = setTimeout(() => {
-    fetch('/setCode', {
+    fetch('/setCode?token=' + token, {
       method: 'POST',
       body: mainText.value,
     });
   }, 50);
 }
 
-let refreshTscTimeout;
-function refreshTsc() {
-  clearTimeout(refreshTscTimeout);
-  fetch('/tsc/' + currentChannel)
-    .then(x => x.text())
-    .then(x => {
-      if (!x) {
-        x = '[no output]'
+function renderDiff() {
+  leftText.textContent = latestResults.tsc[currentChannel];
+  rightText.textContent = latestResults.tsc[currentChannel];
+}
+
+function handleEvents() {
+  fetch('/events?token=' + token)
+    .then(resp => resp.json())
+    .then(json => {
+      // console.log('Got message: ', json);
+      let render = false;
+      for (const key in json) {
+        const keys = key.split('.');
+        switch (keys[0]) {
+          case 'errors':
+            errorsUpdated(json[key]);
+            break;
+
+          case 'code':
+            codeChangedByServer(json[key]);
+            break;
+
+          case 'result':
+            latestResults[keys[1]][keys[2]] = json[key];
+            if (currentChannel == keys[2]) {
+              render = true;
+            }
+            break;
+        }
       }
-      leftText.value = x;
+      if (render) {
+        renderDiff();
+      }
+      handleEvents();
     })
-    .finally(() => {
-      fetch('/tttt/' + currentChannel)
-        .then(x => x.text())
-        .then(x => {
-          if (!x) {
-            x = '[no output]'
-          }
-          rightText.value = x;
-        })
-        .finally(() => {
-          refreshTscTimeout = setTimeout(refreshTsc, 1000);
-        });
-    });
+    .catch(err => {
+      errorsUpdated(['Disconnected from server, ' + err]);
+    })
 }
 
 onChannelSelected('typ');
-refreshCode();
+handleEvents();

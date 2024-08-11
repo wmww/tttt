@@ -9,10 +9,109 @@ const tscBaseDir = '/tmp/tsTests/'
 const codePath = tscBaseDir + 'tests/cases/conformance/customTest.ts';
 const tscOutputDir = tscBaseDir + 'tests/baselines/local/';
 const tscTestName = 'customTest';
+const tscPathForChannel = new Map([
+  ['err', tscOutputDir + tscTestName + '.errors.txt'],
+  ['sym', tscOutputDir + tscTestName + '.symbols'],
+  ['typ', tscOutputDir + tscTestName + '.types'],
+]);
+let sendEventsQueued = false;
+// A map of keys to values, which make up the state that is synced to clients. Some keys may have dots in their name,
+// which means they're logically in a namespace
+const properties = new Map();
+// A map of session tokens to sets of property names that are stale for the given session. All sessions we've ever seen
+// should be here
+const sessions = new Map();
+// A map of session tokens to response objects, only sessions with currently open events requests should be here
+const responses = new Map();
 
+function getOrThrow(map, key) {
+  const ret = map.get(key);
+  if (ret === undefined) {
+    throw Error(`Invalid key ${key}`);
+  }
+  return ret;
+}
+
+function queueSendEvents() {
+  if (!sendEventsQueued) {
+    sendEventsQueued = true;
+    setImmediate(() => {
+      sendEvents();
+    });
+  }
+}
+
+function sendEvents() {
+  sendEventsQueued = false;
+  for (const [token, response] of responses) {
+    const session = sessions.get(token);
+    if (!session) {
+      console.error('Invalid token ' + token);
+      response.writeHead(500);
+      response.end('Invalid token');
+      responses.delete(token);
+    } else if (session.size !== 0) {
+      message = {}
+      for (const key of session) {
+        message[key] = properties.get(key);
+      }
+      session.clear();
+      response.writeHead(200, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify(message), 'utf-8');
+      responses.delete(token);
+    }
+  }
+}
+
+function addPendingResponse(token, response) {
+  const prev = responses.get(token);
+  if (prev) {
+    response.writeHead(400);
+    response.end('Got newer events request');
+  }
+  responses.set(token, response);
+  if (!sessions.has(token)) {
+    sessions.set(token, new Set(properties.keys()));
+  }
+  sendEvents();
+}
+
+// If sourceToken is set, it will not be notified (it's the soure of the change, so it already knows about it)
+function setProperty(key, value, sourceToken) {
+  if (properties.get(key) != value) {
+    properties.set(key, value);
+    for (const [token, session] of sessions) {
+      if (token != sourceToken) {
+        session.add(key);
+        queueSendEvents();
+      }
+    }
+  }
+}
+
+const currentErrors = [];
 function surfaceError(message) {
-  // TODO: send this to client
   console.error(message);
+  currentErrors.push(message);
+  setProperty('errors', currentErrors.slice());
+  setTimeout(() => {
+    currentErrors.shift(); // *should* always be the error we added
+    setProperty('errors', currentErrors.slice());
+  }, 5000);
+}
+
+function setPropertyToContentsOf(key, filePath, ignoreMissing) {
+  fs.readFile(filePath, (error, buffer) => {
+    if (ignoreMissing && error && error.code == 'ENOENT') {
+      error = null;
+      buffer = '';
+    }
+    if (error) {
+      setProperty(key, '[error reading file: ' + error.code + ']');
+    } else {
+      setProperty(key, buffer.toString());
+    }
+  });
 }
 
 const tscProcess = child_process.spawn(
@@ -33,6 +132,18 @@ tscProcess.on('close', (code) => {
   surfaceError(`tsc baseline runner exited with code ${code}`);
 });
 
+function updateTscResults() {
+  function updateResult(channel) {
+    const filePath = getOrThrow(tscPathForChannel, channel);
+    const ignoreMissing = (channel == 'err');
+    setPropertyToContentsOf('result.tsc.' + channel, filePath, ignoreMissing);
+  }
+  updateResult('err');
+  updateResult('sym');
+  updateResult('typ');
+}
+setInterval(updateTscResults, 1000);
+
 function subprocessThen(args, callback) {
   //console.log('Running ' + args.join(' '));
   const command = args.shift();
@@ -51,37 +162,21 @@ function subprocessThen(args, callback) {
   child.stdout.on('data', chunk => stdoutChunks.push(Buffer.from(chunk)));
   child.stderr.on('data', chunk => stderrChunks.push(Buffer.from(chunk)));
   child.on("close", () => {
-    callback(
-      child.exitCode,
-      Buffer.concat(stdoutChunks).toString("utf-8"),
-      Buffer.concat(stderrChunks).toString("utf-8"),
-    )
+    try {
+      callback(
+        child.exitCode,
+        Buffer.concat(stdoutChunks).toString("utf-8"),
+        Buffer.concat(stderrChunks).toString("utf-8"),
+      );
+    } catch (e) {
+      surfaceError('Error handling ' + command + ' output: ' + e);
+    }
   });
 }
 
-const ttttResults = {
-  err: '',
-  sym: '',
-  typ: '',
-  stderr: '',
-};
-
-function setTtttResults(results, callback) {
-  let changed = {};
-  for (let i in results) {
-    if (i != 'err' && i != 'sym' && i != 'typ' && i != 'stderr') {
-      throw Error('Invalid result channel ' + i);
-    }
-    changed[i] = results[i] != null && results[i] != ttttResults[i];
-    if (changed[i]) {
-      ttttResults[i] = results[i];
-    }
-  }
-  callback(changed);
-}
-
-function parseTtttResults(stdout, results) {
+function parseTtttResults(stdout) {
   let start = 0;
+  const results = {};
   while (start < stdout.length) {
     const channel = stdout.slice(start, start + 3);
     const length = parseInt(stdout.slice(start + 4, start + 16));
@@ -89,46 +184,68 @@ function parseTtttResults(stdout, results) {
     results[channel] = data;
     start += length + 18;
   }
+  return results;
 }
 
-function updateTtttResults(callback) {
+let ttttStderr = '';
+function updateTtttResults() {
+  const resultStderr = [];
   let results = {
-    err: null,
-    sym: null,
-    typ: null,
-    stderr: null,
+    err: '[tttt failed]',
+    sym: '[tttt failed]',
+    typ: '[tttt failed]',
+  };
+
+  function sendResults() {
+    newStderr = resultStderr.join('\n\n');
+    if (newStderr != ttttStderr) {
+      ttttStderr = newStderr;
+      if (newStderr) {
+        surfaceError(newStderr);
+      }
+    }
+    setProperty('result.tttt.err', results.err);
+    setProperty('result.tttt.sym', results.sym);
+    setProperty('result.tttt.typ', results.typ);
   }
+
   subprocessThen(
     ['ninja', '-C', path.join(__dirname, '..', '..', 'build'), 'diffapp_runner'],
     (code, stdout, stderr) => {
       if (stderr) {
-        results.stderr = (results.stderr || '') + 'Compiler stderr:\n' + stderr;
+        resultStderr.push('C compiler:\n' + stderr);
       }
       if (code != 0) {
-        results.stderr = (results.stderr || '') + 'Compiler exited with code ' + code;
-        setTtttResults(results, callback);
+        resultStderr.push('Compiler exited with code ' + code);
+        sendResults();
         return;
       }
       subprocessThen(
         [path.join(__dirname, '..', '..', 'build', 'diffapp_runner'), codePath],
         (code, stdout, stderr) => {
           if (stderr) {
-            results.stderr = (results.stderr || '') + 'Runner stderr:\n' + stderr;
+            resultStderr.push('tttt:\n' + stderr);
           }
           if (code != 0) {
-            results.stderr = (results.stderr || '') + 'Runner exited with code ' + code;
-            setTtttResults(results, callback);
+            resultStderr.push('Runner exited with code ' + code);
+            sendResults();
             return;
           }
-          parseTtttResults(stdout, results);
-          setTtttResults(results, callback);
+          results = parseTtttResults(stdout, results);
+          sendResults();
         }
       )
     }
   )
 }
 
-const server = http.createServer((req, res) => {
+setTimeout(() => {
+  setPropertyToContentsOf('code', codePath);
+}, 1000);
+
+const server = http.createServer((request, response) => {
+  const url = new URL(`http://${process.env.HOST ?? 'localhost'}${request.url}`);
+
   function serveStatic(url) {
     let filePath = path.join(publicDirectory, url);
     let extname = path.extname(filePath);
@@ -155,108 +272,80 @@ const server = http.createServer((req, res) => {
     fs.readFile(filePath, (error, content) => {
       if (error) {
         if(error.code == 'ENOENT'){
-          res.writeHead(404);
-          res.end(`404 Not Found`);
+          response.writeHead(404);
+          response.end(`404 Not Found`);
         } else {
-          res.writeHead(500);
-          res.end(`Server Error: ${error.code}`);
+          response.writeHead(500);
+          response.end(`Server Error: ${error.code}`);
         }
       } else {
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(content, 'utf-8');
-      }
-    });
-  }
-
-  function serveString(content) {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end(content, 'utf-8');
-  }
-
-  function serveTextFile(fullPath, ignoreMissing) {
-    fs.readFile(fullPath, (error, content) => {
-      if (ignoreMissing && error && error.code == 'ENOENT') {
-        error = null;
-        content = '';
-      }
-      if (error) {
-        res.writeHead(500);
-        res.end(`Server Error: ${error.code}`);
-      } else {
-        serveString(content);
+        response.writeHead(200, { 'Content-Type': contentType });
+        response.end(content, 'utf-8');
       }
     });
   }
 
   function serveWriteTextFile(fullPath, callback) {
-    if (req.method != 'POST') {
-      res.writeHead(405);
-      res.end(req.url + ' must be a POST request');
-      callback(false);
+    if (request.method != 'POST') {
+      response.writeHead(405);
+      response.end(url.pathname + ' must be a POST request');
+      callback(null);
     } else {
       let body = [];
-      req.on('data', chunk => {
+      request.on('data', chunk => {
         body.push(chunk);
       }).on('end', () => {
         body = Buffer.concat(body).toString();
         fs.writeFile(fullPath, body, error => {
           if (error) {
-            res.writeHead(500);
-            res.end(`Server Error: ${error.code}`);
-            callback(false);
+            response.writeHead(500);
+            response.end(`Server Error: ${error.code}`);
+            callback(null);
           } else {
-            res.writeHead(200);
-            res.end();
-            callback(true);
+            response.writeHead(200);
+            response.end();
+            callback(body);
           }
         });
       });
     }
   }
 
-  function serveTtttResult(result) {
-    res.writeHead(500);
-    res.end('Not yet implemented');
+  function getToken() {
+    const token = url.searchParams.get('token');
+    if (!token) { throw Error('No token'); }
+    return token;
   }
 
-  switch (req.url) {
-    case '/':
-      serveStatic('index.html');
-      break;
+  try {
+    switch (url.pathname) {
+      case '/':
+        serveStatic('index.html');
+        break;
 
-    case '/getCode':
-      serveTextFile(codePath, false);
-      break;
+      case '/events':
+        addPendingResponse(getToken(), response);
+        break;
 
-    case '/setCode':
-      serveWriteTextFile(codePath, success => {
-        if (success) {
-          tscProcess.stdin.write('\n');
-          updateTtttResults(changed => {
-            if (changed.stderr && ttttResults.stderr) {
-              surfaceError(ttttResults.stderr);
-            }
-          })
-        }
-      });
-      break;
+      case '/setCode':
+        const token = getToken();
+        serveWriteTextFile(codePath, contents => {
+          if (contents !== null) {
+            setProperty('code', contents, token);
+            tscProcess.stdin.write('\n');
+            updateTtttResults();
+          }
+        });
+        break;
 
-    case '/tsc/err': serveTextFile(tscOutputDir + tscTestName + '.errors.txt', true); break;
-    case '/tsc/sym': serveTextFile(tscOutputDir + tscTestName + '.symbols', false); break;
-    case '/tsc/typ': serveTextFile(tscOutputDir + tscTestName + '.types', false); break;
-
-    case '/tttt/err': serveString(ttttResults.err); break;
-    case '/tttt/sym': serveString(ttttResults.sym); break;
-    case '/tttt/typ': serveString(ttttResults.typ); break;
-    case '/tttt/stderr': serveString(ttttResults.stderr); break;
-
-    case '/tttt/err': serveTtttResult('err'); break;
-    case '/tttt/sym': serveTtttResult('sym'); break;
-    case '/tttt/typ': serveTtttResult('typ'); break;
-
-    default:
-      serveStatic(req.url);
-      break;
+      default:
+        serveStatic(url.pathname);
+        break;
+    }
+  } catch (e) {
+    console.error(e);
+    response.writeHead(500);
+    response.end('Server Error: ' + e);
   }
 });
 
