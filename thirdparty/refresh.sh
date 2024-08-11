@@ -7,6 +7,9 @@ function download_all {
   INC_DIRS=(include)
   # Latest commit as of Jan 25 2024, should switch to the next release when the one after 4.2 comes out
   download_repo stc 09790f024ad29fca6fe60528461eeb589d4a917b "https://github.com/stclib/STC.git"
+
+  # Used by the diffapp frontend
+  download_javascript diff 5.2.0 dist/diff.js LICENSE
 }
 
 NORMAL="\x1b[0m"
@@ -77,6 +80,16 @@ function download_repo {
   unset MESON_LIB_ARGS
 }
 
+function download_javascript {
+  local PACKAGE="$1"
+  local VERSION="$2"
+  local CODE_PATH="$3"
+  local LICENSE_PATH="$4"
+  printf "${BLUE}Downloading ${PACKAGE} v${VERSION} from unpkg...$EOL"
+  wget "https://unpkg.com/${PACKAGE}@${VERSION}/${CODE_PATH}" -O "javascript/${PACKAGE}.js"
+  wget "https://unpkg.com/${PACKAGE}@${VERSION}/${LICENSE_PATH}" -O "javascript/LICENSE-${PACKAGE}"
+}
+
 function write_meson_build {
   printf "${BLUE}Writing meson.build for %s thirdparty libraries...$EOL" "${#SUBDIRS[@]}"
   local MESON_BUILD="./meson.build"
@@ -107,9 +120,13 @@ function apply_patches {
 # Change directory to the directory of this script
 cd "$( dirname "${BASH_SOURCE[0]}")"
 printf "${BLUE}Downloading thirdparty libraries into %s...$EOL" "$PWD"
+
+rm -rf javascript && mkdir -p javascript
+
 download_all
 write_meson_build
 apply_patches
+
 if test $ERROR == 0; then
   printf "${GREEN}Done$EOL"
 else
