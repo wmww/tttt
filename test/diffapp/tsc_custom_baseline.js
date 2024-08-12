@@ -10,7 +10,7 @@ let triggerTestRerun; // Set by code we inject into the evaled code
   // TypeScript/src/harness/findUpDir.ts needs __dirname set to something in the TypeScript dir
   __dirname = tsDir;
 
-  console.log(`Setting up ${tmpDir}...`);
+  console.log('[tttt runner] Setting up ' + tmpDir + '...');
   fs.rmSync(tmpDir, { recursive: true, force: true });
   fs.mkdirSync(tmpDir);
   fs.mkdirSync(`${tmpDir}/tests/cases/conformance`, { recursive: true });
@@ -34,7 +34,7 @@ let triggerTestRerun; // Set by code we inject into the evaled code
     return ret;
   }
 
-  console.log('Loading test runner script...');
+  console.log('[tttt runner] Loading test runner script...');
   const runJsPath = `${tsDir}/built/local/run.js`;
   testRunnerJsContent = fs.readFileSync(runJsPath) + '';
 
@@ -70,25 +70,26 @@ function before(f) {
 }
 function after(f) {}
 function describe(name, f) {
-  console.log(name);
+  console.log('[tttt runner] Mocha stub: ' + name);
   try {
     f();
   } catch (e) {
-    console.error(e);
+    const errorLines = e.message.split('\n');
+    console.log('[tttt runner] ' + errorLines[0] + ' (+' + (errorLines.length - 1) + ' additional lines)');
   }
 }
 const beforeEach = before;
 const afterEach = after;
 const it = describe;
 
-console.log('Evaling test runner script...');
+console.log('[tttt runner] Evaling test runner script...');
 eval(testRunnerJsContent);
-console.log('Done');
+console.log('[tttt runner] Done running tests');
 
 process.stdin.on('data', () => {
-  console.log('Re-running tests...');
+  console.log('[tttt runner] Re-running tests...');
   triggerTestRerun();
-  console.log('Done re-running tests');
+  console.log('[tttt runner] Done running tests');
 }).on('end', () => {
-  console.log('stdin seems to have closed');
+  console.log('[tttt runner] Stdin seems to have closed');
 })

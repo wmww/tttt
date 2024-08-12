@@ -105,17 +105,17 @@ function surfaceError(message) {
 }
 
 function setPropertyToContentsOf(key, filePath, ignoreMissing) {
-  fs.readFile(filePath, (error, buffer) => {
-    if (ignoreMissing && error && error.code == 'ENOENT') {
-      error = null;
+  let buffer;
+  try {
+    buffer = fs.readFileSync(filePath).toString();
+  } catch (error) {
+    if (ignoreMissing && error.code == 'ENOENT') {
       buffer = '';
-    }
-    if (error) {
-      setProperty(key, '[error reading file: ' + error.code + ']');
     } else {
-      setProperty(key, buffer.toString());
+      buffer = '[error reading file: ' + error.code + ']';
     }
-  });
+  }
+  setProperty(key, buffer);
 }
 
 const tscProcess = child_process.spawn(
@@ -127,26 +127,41 @@ const tscProcess = child_process.spawn(
     },
     stdio: [
       'pipe', // stdin
-      // inherit good for debugging
-      'ignore', // 'inherit', // stdout
-      'ignore', // 'inherit', // stderr
+      'pipe', // stdout
+      'inherit', // stderr
     ]
   });
+tscProcess.stdout.on('data', chunk => {
+  if (chunk.toString("utf-8").includes('[tttt runner] Done running tests\n')) {
+    tscUpdateRunning = false;
+    function updateResult(channel) {
+      const filePath = getOrThrow(tscPathForChannel, channel);
+      const ignoreMissing = (channel == 'err');
+      setPropertyToContentsOf('result.tsc.' + channel, filePath, ignoreMissing);
+    }
+    updateResult('err');
+    updateResult('sym');
+    updateResult('typ');
+    if (tscUpdateQueued) {
+      tscUpdateQueued = false;
+      updateTscResults();
+    }
+  }
+});
 tscProcess.on('close', (code) => {
   surfaceError(`tsc baseline runner exited with code ${code}`);
 });
 
+let tscUpdateRunning = true;
+let tscUpdateQueued = false;
 function updateTscResults() {
-  function updateResult(channel) {
-    const filePath = getOrThrow(tscPathForChannel, channel);
-    const ignoreMissing = (channel == 'err');
-    setPropertyToContentsOf('result.tsc.' + channel, filePath, ignoreMissing);
+  if (tscUpdateRunning) {
+    tscUpdateQueued = true;
+  } else {
+    tscProcess.stdin.write('\n');
+    tscUpdateRunning = true;
   }
-  updateResult('err');
-  updateResult('sym');
-  updateResult('typ');
 }
-setInterval(updateTscResults, 1000);
 
 function subprocessThen(args, callback) {
   //console.log('Running ' + args.join(' '));
@@ -346,7 +361,7 @@ const server = http.createServer((request, response) => {
         serveWriteTextFile(codePath, contents => {
           if (contents !== null) {
             setProperty('code', contents, token);
-            tscProcess.stdin.write('\n');
+            updateTscResults();
             updateTtttResults();
           }
         });
