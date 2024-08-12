@@ -22,13 +22,11 @@
           <button id='channel-button-typ' class='channel-button'>Types</button>
         </div>
       </div>
-      <textarea id='main-text' class='code-view code-container' spellcheck=false></textarea>
-      <div class='h-box code-container'>
-        <textarea id='left-text' class='code-view code-container' disabled=true spellcheck=false></textarea>
-        <textarea id='right-text' class='code-view code-container' disabled=true spellcheck=false></textarea>
-      </div>
+      <textarea id='code-input'></textarea>
+      <pre><code id='code-view'></code></pre>
     </div>
     <noscript>WARNING: JavaScript is required</noscript>
+    <script src='diff.js'></script>
     <script src='index.js'></script>
   </body>
 </html>

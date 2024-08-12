@@ -4,7 +4,11 @@ const path = require('path');
 const child_process = require('child_process');
 
 const port = 3030;
-const publicDirectory = path.join(__dirname, 'public');
+// Earlier in the list takes precedence
+const publicDirectories = [
+  path.join(__dirname, 'public'),
+  path.join(__dirname, '..', '..', 'thirdparty', 'javascript'),
+];
 const tscBaseDir = '/tmp/tsTests/'
 const codePath = tscBaseDir + 'tests/cases/conformance/customTest.ts';
 const tscOutputDir = tscBaseDir + 'tests/baselines/local/';
@@ -97,7 +101,7 @@ function surfaceError(message) {
   setTimeout(() => {
     currentErrors.shift(); // *should* always be the error we added
     setProperty('errors', currentErrors.slice());
-  }, 5000);
+  }, 10000);
 }
 
 function setPropertyToContentsOf(key, filePath, ignoreMissing) {
@@ -243,13 +247,28 @@ setTimeout(() => {
   setPropertyToContentsOf('code', codePath);
 }, 1000);
 
+function filePathFor(url) {
+  for (const dir of publicDirectories) {
+    let filePath = path.join(dir, url);
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+  return null;
+}
+
 const server = http.createServer((request, response) => {
   const url = new URL(`http://${process.env.HOST ?? 'localhost'}${request.url}`);
 
   function serveStatic(url) {
-    let filePath = path.join(publicDirectory, url);
-    let extname = path.extname(filePath);
+    let filePath = filePathFor(url);
+    if (!filePath) {
+      response.writeHead(404);
+      response.end(`404 Not Found`);
+      return;
+    }
 
+    let extname = path.extname(url);
     let contentType = 'text/html';
     switch (extname) {
       case '.js':
@@ -271,13 +290,8 @@ const server = http.createServer((request, response) => {
 
     fs.readFile(filePath, (error, content) => {
       if (error) {
-        if(error.code == 'ENOENT'){
-          response.writeHead(404);
-          response.end(`404 Not Found`);
-        } else {
-          response.writeHead(500);
-          response.end(`Server Error: ${error.code}`);
-        }
+        response.writeHead(500);
+        response.end(`Server Error: ${error.code}`);
       } else {
         response.writeHead(200, { 'Content-Type': contentType });
         response.end(content, 'utf-8');

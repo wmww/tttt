@@ -19,7 +19,7 @@ html, body, #root {
 }
 
 #root {
-  background-color: var(--background);
+  background-color: var(--panel);
 }
 
 .h-box {
@@ -47,7 +47,6 @@ input, textarea, button, .fake-button {
 
 input, textarea {
   width: 100%;
-  flex-grow: 1;
   min-width: 2em;
   transition: box-shadow 0.05s;
 }
@@ -93,13 +92,45 @@ button, .fake-button {
   padding: 15px;
 }
 
-.code-container {
-  flex-grow: 1;
-  flex-shrink: 1;
-  flex-basis: 200px;
+#code-input {
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: Consolas, "Lucida Console", monospace;
+  white-space: pre;
 }
 
 .code-view {
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 200px;
   white-space: pre-wrap;
   font-family: Consolas, "Lucida Console", monospace;
+}
+
+.token-selected {
+  background-color: var(--accent);
+}
+
+.token-cursor {
+  position: absolute;
+  display: inline-block;
+  background-color: var(--text);
+  line-height: normal;
+  width: 2px;
+  height: 1.3em;
+}
+
+.token-diff-both {
+  background-color: #303030;
+}
+
+.token-diff-tttt {
+  background-color: #530e02;
+}
+
+.token-diff-tsc {
+  background-color: #00530a;
 }
