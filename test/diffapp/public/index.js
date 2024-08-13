@@ -13,17 +13,27 @@ const latestResults = {
 }
 let latestSubmittedCode = '';
 
-function errorsUpdated(errors) {
-  if (errors) {
-    console.error('Errors from server: ' + errors.join('\n'));
-  }
+let clientErrors = [];
+let serverErrors = [];
+function updateErrors() {
   while (errorList.lastElementChild) {
     errorList.removeChild(errorList.lastElementChild);
   }
-  for (let message of errors) {
+  for (let message of clientErrors.concat(serverErrors)) {
     const template = errorTemplate.content.cloneNode(true);
     template.querySelector('#error-message').textContent = message;
     errorList.append(template);
+  }
+}
+
+function surfaceError(message, permanent) {
+  clientErrors.push(message);
+  updateErrors();
+  if (!permanent) {
+    setTimeout(() => {
+      clientErrors.splice(clientErrors.indexOf(message), 1);
+      updateErrors();
+    }, 10000);
   }
 }
 
@@ -274,41 +284,61 @@ function renderTextView() {
   renderTokensTo(codeView, unifiedTokens);
 }
 
-function handleEvents() {
+function handleEvents(json) {
+  let render = false;
+  for (const key in json) {
+    try {
+      const keys = key.split('.');
+      switch (keys[0]) {
+        case 'errors':
+          serverErrors = json[key];
+          updateErrors();
+          break;
+
+        case 'code':
+          codeChangedByServer(json[key]);
+          break;
+
+        case 'result':
+          latestResults[keys[1]][keys[2]] = json[key];
+          if (currentChannel == keys[2]) {
+            render = true;
+          }
+          break;
+      }
+    } catch (e) {
+      surfaceError('Handling ' + key + ': ' + e.toString());
+    }
+  }
+  if (render) {
+    try {
+      renderTextView();
+    } catch {
+      surfaceError('Rendering text view: ' + e.toString());
+    }
+  }
+}
+
+let isBeingUnloaded = false;
+addEventListener('beforeunload', () => {
+  isBeingUnloaded = true;
+});
+
+function fetchEvents() {
   fetch('/events?token=' + token)
     .then(resp => resp.json())
     .then(json => {
       // console.log('Got message: ', json);
-      let render = false;
-      for (const key in json) {
-        const keys = key.split('.');
-        switch (keys[0]) {
-          case 'errors':
-            errorsUpdated(json[key]);
-            break;
-
-          case 'code':
-            codeChangedByServer(json[key]);
-            break;
-
-          case 'result':
-            latestResults[keys[1]][keys[2]] = json[key];
-            if (currentChannel == keys[2]) {
-              render = true;
-            }
-            break;
-        }
-      }
-      if (render) {
-        renderTextView();
-      }
-      handleEvents();
-      // TODO: catch errors here
+      handleEvents(json);
+      fetchEvents();
     })
     .catch(err => {
-      errorsUpdated([err.toString(), 'Server connection closed, please refresh']);
-    })
+      if (!isBeingUnloaded) {
+        surfaceError(err.toString());
+        surfaceError('Server connection closed, please refresh', true);
+      }
+    });
 }
 
 onChannelSelected('typ');
-handleEvents();
+fetchEvents();
