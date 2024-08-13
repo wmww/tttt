@@ -178,6 +178,7 @@ function tokenOffsetFrom(node) {
 
 const Token = Object.freeze({
   TEXT: 'token-text',
+  LINE_NUMBER: 'token-line-number',
   CURSOR: 'token-cursor',
   NEWLINE: 'token-newline',
   ENDLINE: 'token-endline',
@@ -201,6 +202,9 @@ function tokenizeStringInto(text, offset, extraClass, tokens) {
         offset: offset === null ? null : offset + prevLastIndex,
         extraClass: extraClass,
       });
+      if (offset !== null) {
+        tokens.push({type: Token.LINE_NUMBER});
+      }
     }
     prevLastIndex = textTokenRegex.lastIndex;
   }
@@ -218,7 +222,7 @@ function tokenizeTextArea(elem) {
     type: Token.CURSOR,
     offset: selectionForward ? selectionEnd : selectionStart,
   };
-  const tokens = [];
+  const tokens = [{type: Token.LINE_NUMBER}];
   tokenizeStringInto(beforeSelection, 0, undefined, tokens);
   if (!selectionForward) { tokens.push(cursorToken); }
   tokenizeStringInto(selection, selectionStart, 'token-selected', tokens);
@@ -243,6 +247,8 @@ function applyTokenToElem(token, elem) {
 
 function renderTokensTo(parent, tokens) {
   let pendingLine = null;
+  let lineNumberTally = 0;
+  let addLineNumber = false;
 
   function ensureLine() {
     if (!pendingLine) {
@@ -257,8 +263,19 @@ function renderTokensTo(parent, tokens) {
       div.classList.add('token-line-cap');
       applyTokenToElem(token, div);
       pendingLine.appendChild(div);
+
+      if (addLineNumber) {
+        const lineNumberSpan = document.createElement('span');
+        lineNumberSpan.classList.add('token-line-number');
+        lineNumberTally++;
+        lineNumberSpan.textContent = lineNumberTally;
+        pendingLine.prepend(lineNumberSpan);
+      }
+
       parent.appendChild(pendingLine);
+
       pendingLine = null;
+      addLineNumber = false;
     }
   }
 
@@ -281,6 +298,10 @@ function renderTokensTo(parent, tokens) {
         applyTokenToElem(token, div);
         ensureLine();
         pendingLine.appendChild(div);
+      } break;
+
+      case Token.LINE_NUMBER: {
+        addLineNumber = true;
       } break;
 
       case Token.NEWLINE: {

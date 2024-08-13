@@ -2,7 +2,7 @@
   --background: #282828;
   --panel: #080808;
   --ui-text: #D0D0D0;
-  --code-text: #ffa070;
+  --code-text: white;
   --accent: #A03010;
 }
 
@@ -13,7 +13,7 @@ html, body, #root {
   padding: 0;
   border: 0;
   width: 100vw;
-  min-height: 100vh;
+  height: 100vh;
   font-size: 12pt;
   font-family: Ubuntu, sans-serif;
   color: var(--ui-text);
@@ -27,13 +27,12 @@ html, body, #root {
   display: flex;
   justify-content: center;
   gap: 12px;
-  height: 100%;
 }
 
 .tab-box {
   display: flex;
+  flex-grow: 0;
   justify-content: center;
-  height: 100%;
   border-radius: 10px 10px 0 0;
   overflow: hidden;
   margin-top: 10px;
@@ -124,8 +123,9 @@ button, .fake-button {
 
 #code-view {
   white-space: pre;
+  flex-grow: 1;
+  overflow: scroll;
   margin: 0 20px 20px 20px;
-  padding: 12px;
   border-radius: 10px;
   font-family: Consolas, "Lucida Console", monospace;
   color: var(--code-text);
@@ -137,7 +137,9 @@ button, .fake-button {
 .code-line {
   display: flex;
   flex-direction: row;
+  background-color: var(--panel);
   height: 1.5em;
+  margin-left: calc(12px + 2.5em);
 }
 
 .token-selected {
@@ -151,6 +153,14 @@ button, .fake-button {
   background-color: var(--code-text);
   width: 1px;
   height: 100%;
+}
+
+.token-line-number {
+  width: 3em;
+  text-align: right;
+  padding-right: 0.75em;
+  margin-left: -3.75em;
+  color: var(--accent);
 }
 
 .token-line-cap {
