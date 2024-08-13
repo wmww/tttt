@@ -1,7 +1,8 @@
 :root {
-  --background: #101010;
+  --background: #282828;
   --panel: #080808;
-  --text: #D0D0D0;
+  --ui-text: #D0D0D0;
+  --code-text: #ffa070;
   --accent: #A03010;
 }
 
@@ -15,7 +16,7 @@ html, body, #root {
   min-height: 100vh;
   font-size: 12pt;
   font-family: Ubuntu, sans-serif;
-  color: var(--text);
+  color: var(--ui-text);
 }
 
 #root {
@@ -27,6 +28,15 @@ html, body, #root {
   justify-content: center;
   gap: 12px;
   height: 100%;
+}
+
+.tab-box {
+  display: flex;
+  justify-content: center;
+  height: 100%;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+  margin-top: 10px;
 }
 
 .v-box {
@@ -108,14 +118,17 @@ button, .fake-button {
 #code-input {
   width: 50vw;
   height: 200px;
+  opacity: 90%;
 }
 */
 
 #code-view {
   white-space: pre;
-  flex-grow: 1;
-  margin: 20px;
+  margin: 0 20px 20px 20px;
+  padding: 12px;
+  border-radius: 10px;
   font-family: Consolas, "Lucida Console", monospace;
+  color: var(--code-text);
   background-color: var(--panel);
   cursor: text;
   user-select: none;
@@ -135,7 +148,7 @@ button, .fake-button {
   display: inline-block;
   margin-left: -0.5px;
   margin-right: -0.5px;
-  background-color: var(--text);
+  background-color: var(--code-text);
   width: 1px;
   height: 100%;
 }
@@ -145,13 +158,16 @@ button, .fake-button {
 }
 
 .token-diff-both {
-  background-color: #101030;
+  color: #a0a0a0;
+  background-color: #141414;
 }
 
 .token-diff-tttt {
-  background-color: #530e02;
+  color: #f06060;
+  background-color: #301010;
 }
 
 .token-diff-tsc {
-  background-color: #00530a;
+  color: #60f060;
+  background-color: #103010;
 }
