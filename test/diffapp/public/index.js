@@ -54,6 +54,7 @@ function surfaceError(message) {
 function codeChangedByServer(code) {
   codeInput.value = code;
   latestSubmittedCode = code;
+  latestSubmittedSerial = null;
   renderTextView();
 }
 
