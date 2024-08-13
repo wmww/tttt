@@ -180,20 +180,8 @@ const Token = Object.freeze({
   TEXT: 'token-text',
   CURSOR: 'token-cursor',
   NEWLINE: 'token-newline',
-  ANCHOR: 'token-anchor', // Not rendered to DOM
+  ENDLINE: 'token-endline',
 });
-
-function tokensEndWithNewline(tokens) {
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    if (!tokens[i] || tokens[i].type == Token.ANCHOR) {
-    } else if (tokens[i].type == Token.NEWLINE) {
-      return true;
-    } else {
-      break;
-    }
-  }
-  return false;
-}
 
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
 function tokenizeStringInto(text, offset, extraClass, tokens) {
@@ -237,7 +225,7 @@ function tokenizeTextArea(elem) {
   if (selectionForward) { tokens.push(cursorToken); }
   tokenizeStringInto(afterSelection, selectionEnd, undefined, tokens);
   tokens.push({
-    type: Token.ANCHOR,
+    type: Token.ENDLINE,
     offset: rawValue.length,
   });
   return tokens;
@@ -274,6 +262,8 @@ function renderTokensTo(parent, tokens) {
     }
   }
 
+  ensureLine();
+
   for (const token of tokens) {
     switch (token.type) {
 
@@ -294,19 +284,18 @@ function renderTokensTo(parent, tokens) {
       } break;
 
       case Token.NEWLINE: {
-        ensureLine();
         finishLine(token);
         ensureLine();
       } break;
 
-      case Token.ANCHOR: {
+      case Token.ENDLINE: {
         finishLine(token);
       } break;
     }
   }
 
   if (pendingLine) {
-    console.error('Token stream did not end with Token.ANCHOR');
+    console.error('Token stream did not end with Token.ENDLINE');
     finishLine({});
   }
 }
@@ -358,27 +347,29 @@ function getResultTokens(codeText, tscText, ttttText) {
         ttttIndex++;
       }
 
-      if (tscResult === ttttResult) {
-        tokenizeStringInto(tscResult, null, 'token-diff-both', retTokens);
-      } else {
-        for (const i of Diff.diffLines(ttttResult, tscResult)) {
-          if (i.added) {
-            tokenizeStringInto(i.value, null, 'token-diff-tsc', retTokens);
-          } else if (i.removed) {
-            tokenizeStringInto(i.value, null, 'token-diff-tttt', retTokens);
-          } else {
-            tokenizeStringInto(i.value, null, 'token-diff-both', retTokens);
-          }
+      for (const i of Diff.diffLines(ttttResult, tscResult)) {
+        if (i.added) {
+          tokenizeStringInto(i.value, null, 'token-diff-tsc', retTokens);
+        } else if (i.removed) {
+          tokenizeStringInto(i.value, null, 'token-diff-tttt', retTokens);
+        } else {
+          tokenizeStringInto(i.value, null, 'token-diff-both', retTokens);
+        }
+        if (retTokens && retTokens[retTokens.length - 1] && retTokens[retTokens.length - 1].type !== Token.NEWLINE) {
+          retTokens.push({
+            type: Token.NEWLINE,
+            extraClass: 'token-diff-both',
+            offset: null,
+          });
         }
       }
-
-      retTokens.push({
-        type: Token.ANCHOR,
-        extraClass: 'token-diff-both',
-        offset: null,
-      });
     }
   }
+  retTokens.push({
+    type: Token.ENDLINE,
+    extraClass: 'token-diff-both',
+    offset: null,
+  });
   return retTokens;
 }
 
