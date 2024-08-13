@@ -131,7 +131,6 @@ button, .fake-button {
   color: var(--code-text);
   background-color: var(--panel);
   cursor: text;
-  user-select: none;
 }
 
 .code-line {
