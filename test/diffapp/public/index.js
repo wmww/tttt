@@ -351,27 +351,27 @@ function getResultTokens(codeText, tscText, ttttText) {
         tscResult = tscProcessed[tscIndex];
         tscIndex++;
       }
+
       let ttttResult = '';
       if (ttttProcessed[ttttIndex] !== undefined) {
         ttttResult = ttttProcessed[ttttIndex];
         ttttIndex++;
       }
+
       if (tscResult === ttttResult) {
         tokenizeStringInto(tscResult, null, 'token-diff-both', retTokens);
       } else {
-        if (ttttResult) {
-          tokenizeStringInto(ttttResult, null, 'token-diff-tttt', retTokens);
-        }
-        if (ttttResult && tscResult && !tokensEndWithNewline(retTokens)) {
-          retTokens.push({
-            type: Token.NEWLINE,
-            offset: null,
-          });
-        }
-        if (tscResult) {
-          tokenizeStringInto(tscResult, null, 'token-diff-tsc', retTokens);
+        for (const i of Diff.diffLines(ttttResult, tscResult)) {
+          if (i.added) {
+            tokenizeStringInto(i.value, null, 'token-diff-tsc', retTokens);
+          } else if (i.removed) {
+            tokenizeStringInto(i.value, null, 'token-diff-tttt', retTokens);
+          } else {
+            tokenizeStringInto(i.value, null, 'token-diff-both', retTokens);
+          }
         }
       }
+
       retTokens.push({
         type: Token.ANCHOR,
         extraClass: 'token-diff-both',
