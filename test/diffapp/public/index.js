@@ -357,7 +357,7 @@ function handleEvents(json) {
 
         case 'result':
           latestResults[keys[1]][keys[2]] = json[key];
-          if (currentChannel == keys[2]) {
+          if (keys[2] == currentChannel || keys[2] == 'serial') {
             currentChannelUpdated = true;
           }
           break;
@@ -394,10 +394,23 @@ function fetchEvents() {
     })
     .catch(err => {
       if (!isBeingUnloaded) {
-        surfaceError(err.toString());
-        surfaceError('Server connection closed, please refresh', true);
+        console.error(err);
+        surfaceError('Server connection closed', true);
+        tryReconnect();
       }
     });
+}
+
+function tryReconnect() {
+  fetch('/').then(resp => {
+    if (resp.ok) {
+      location.reload();
+    } else {
+      throw Error();
+    }
+  }).catch(() => {
+    setTimeout(tryReconnect, 500);
+  })
 }
 
 onChannelSelected('typ');
