@@ -10046,9 +10046,9 @@ const baselines = {
         types: true,
     },
     'emptyFile': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emptyGenericParamList': {
         errors: false,
@@ -15496,9 +15496,9 @@ const baselines = {
         types: false,
     },
     'indexSignatureWithoutTypeAnnotation1.': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'indexSignatureWithoutTypeAnnotation1': {
         errors: false,
@@ -24321,9 +24321,9 @@ const baselines = {
         types: false,
     },
     'recursiveGenericSignatureInstantiation2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'recursiveGenericTypeHierarchy': {
         errors: true,
@@ -49336,9 +49336,9 @@ const baselines = {
         types: false,
     },
     'parserUnaryExpression6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserUnaryExpression7': {
         errors: false,
@@ -51511,9 +51511,9 @@ const baselines = {
         types: false,
     },
     'parserEmptyFile1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEmptyStatement1': {
         errors: true,
@@ -57206,9 +57206,9 @@ const baselines = {
         types: false,
     },
     'assignmentCompatWithWithGenericConstructSignatures': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'callSignatureAssignabilityInInheritance': {
         errors: false,
