@@ -23,5 +23,17 @@ if test ! -e test/TypeScript/built/local/run.js; then
     )
 fi
 
+if test $# -gt 0; then
+    if test -e "$1"; then
+        TEST_PATH="$1"
+    else
+        TEST_PATH="$(find test/TypeScript/tests/cases/ -name "$1.ts" | head -n 1)"
+        if test -z "$TEST_PATH"; then
+            echo "Could not find test $1"
+            exit 1
+        fi
+    fi
+fi
+
 #NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js
-node test/diffapp/server.js
+node test/diffapp/server.js ${TEST_PATH:-}

@@ -20,7 +20,14 @@ let triggerTestRerun; // Set by code we inject into the evaled code
     runners: ['conformance'],
   }));
 
-  fs.writeFileSync(`${tmpDir}/tests/cases/conformance/customTest.ts`, 'let foo = 22;\n');
+  const testPath = `${tmpDir}/tests/cases/conformance/customTest.ts`;
+  if (process.argv.length < 3) {
+    fs.writeFileSync(testPath, '// code\n');
+  } else if (fs.existsSync(process.argv[2])) {
+    fs.copyFileSync(process.argv[2], testPath);
+  } else {
+    throw Error(`Path '${process.argv[2]}' does not exist`);
+  }
 
   function assertOneReplacement(path, text, pattern, replacement) {
     let count = 0;

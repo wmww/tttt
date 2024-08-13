@@ -118,9 +118,15 @@ function setPropertyToContentsOf(key, filePath, ignoreMissing) {
   setProperty(key, buffer);
 }
 
+let initialTestPath;
+if (process.argv.length >= 3 && process.argv[2]) {
+  initialTestPath = process.argv[2];
+  console.log('Loading test from ' + initialTestPath);
+}
 const tscProcess = child_process.spawn(
   'node',
-  [path.join(__dirname, 'tsc_custom_baseline.js')],
+  [path.join(__dirname, 'tsc_custom_baseline.js')]
+    .concat(initialTestPath ? [initialTestPath] : []),
   {
     env: {
       NODE_PATH: path.join(path.dirname(__dirname), 'TypeScript', 'node_modules')
@@ -150,6 +156,7 @@ tscProcess.stdout.on('data', chunk => {
 });
 tscProcess.on('close', (code) => {
   surfaceError(`tsc baseline runner exited with code ${code}`);
+  process.exit(1);
 });
 
 let tscUpdateRunning = true;
