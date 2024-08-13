@@ -5,11 +5,13 @@ const child_process = require('child_process');
 
 const port = 3030;
 // Earlier in the list takes precedence
+const ttttRoot = path.dirname(path.dirname(__dirname));
+const tscRoot = path.join(ttttRoot, 'test', 'TypeScript');
 const publicDirectories = [
   path.join(__dirname, 'public'),
-  path.join(__dirname, '..', '..', 'thirdparty', 'javascript'),
+  path.join(ttttRoot, 'thirdparty', 'javascript'),
 ];
-const tmpBaseDir = '/tmp/tsTests/'
+const tmpBaseDir = '/tmp/diffapp/';
 const codePath = tmpBaseDir + 'tests/cases/conformance/customTest.ts';
 const tscOutputDir = tmpBaseDir + 'tests/baselines/local/';
 const tscTestName = 'customTest';
@@ -123,13 +125,16 @@ function setPropertyToContentsOf(key, filePath, ignoreMissing) {
   setProperty(key, buffer);
 }
 
+setPropertyToContentsOf('code', initialTestPath);
+
 let tscRunningTest = true;
+let tscIsSetUp = false; // set to true when the first run is complete
 const tscProcess = child_process.spawn(
   'node',
-  [path.join(__dirname, 'tsc_custom_baseline.js'), initialTestPath],
+  [path.join(__dirname, 'tsc_custom_baseline.js'), tmpBaseDir, initialTestPath],
   {
     env: {
-      NODE_PATH: path.join(path.dirname(__dirname), 'TypeScript', 'node_modules')
+      NODE_PATH: path.join(tscRoot, 'node_modules')
     },
     stdio: [
       'pipe', // stdin
@@ -141,6 +146,11 @@ tscProcess.stdout.on('data', chunk => {
   if (chunk.toString('utf-8').includes('[tttt runner] Done running tests\n')) {
     if (!tscRunningTest || !runningSerial) {
       surfaceError('tsc claims to be done with a test run when no run was known to be in-flight');
+    }
+    if (!tscIsSetUp) {
+      // This will get un an initial tttt result. We do it here to be sure the code file is written
+      startTtttRun();
+      tscIsSetUp = true;
     }
     function updateResult(channel) {
       const filePath = getOrThrow(tscPathForChannel, channel);
@@ -249,7 +259,7 @@ function startTtttRun() {
   }
 
   subprocessThen(
-    ['ninja', '-C', path.join(__dirname, '..', '..', 'build'), 'diffapp_runner'],
+    ['ninja', '-C', path.join(ttttRoot, 'build'), 'diffapp_runner'],
     (code, stdout, stderr) => {
       if (stderr) {
         resultStderr.push('C compiler:\n' + stderr);
@@ -260,7 +270,7 @@ function startTtttRun() {
         return;
       }
       subprocessThen(
-        [path.join(__dirname, '..', '..', 'build', 'diffapp_runner'), codePath],
+        [path.join(ttttRoot, 'build', 'diffapp_runner'), codePath],
         (code, stdout, stderr) => {
           if (stderr) {
             resultStderr.push('tttt:\n' + stderr);
@@ -308,10 +318,6 @@ function runTests(code, serial) {
     });
   }
 }
-
-setTimeout(() => {
-  setPropertyToContentsOf('code', codePath);
-}, 1000);
 
 function filePathFor(url) {
   for (const dir of publicDirectories) {

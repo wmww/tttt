@@ -62,6 +62,7 @@ function onChannelSelected(channel) {
   channelButtons.forEach(button => {
     button.classList.toggle('active', button.id.endsWith(channel));
   });
+  codeInput.focus();
   updateResultTokens();
   renderTextView();
 }
@@ -365,10 +366,10 @@ function handleEvents(json) {
       surfaceError('Handling ' + key + ': ' + e.toString());
     }
   }
-  if (currentChannelUpdated &&
+  const serialsMatch = latestSubmittedSerial === null || (
     latestResults.tsc.serial === latestResults.tttt.serial &&
-    parseInt(latestResults.tttt.serial) === latestSubmittedSerial
-  ) {
+    parseInt(latestResults.tttt.serial) === latestSubmittedSerial);
+  if (currentChannelUpdated && serialsMatch) {
     updateResultTokens();
     renderTextView();
   }

@@ -3,9 +3,19 @@ let triggerTestRerun; // Set by code we inject into the evaled code
 
 {
   const fs = require('fs');
+  const path = require('path');
 
-  const tmpDir = '/tmp/tsTests';
-  const tsDir = `${__dirname}/../TypeScript`;
+  if (process.argv.length < 4) {
+    throw Error('Not enough arguments');
+  }
+
+  const tmpDir = process.argv[2];
+  const tsDir = path.join(path.dirname(__dirname), 'TypeScript');
+  const initialTestSource = process.argv[3];
+
+  if (!tmpDir.startsWith('/tmp/')) {
+    throw Error('tmpDir does not start with /tmp/');
+  }
 
   // TypeScript/src/harness/findUpDir.ts needs __dirname set to something in the TypeScript dir
   __dirname = tsDir;
@@ -13,38 +23,30 @@ let triggerTestRerun; // Set by code we inject into the evaled code
   console.log('[tttt runner] Setting up ' + tmpDir + '...');
   fs.rmSync(tmpDir, { recursive: true, force: true });
   fs.mkdirSync(tmpDir);
-  fs.mkdirSync(`${tmpDir}/tests/cases/conformance`, { recursive: true });
+  fs.mkdirSync(path.join(tmpDir, 'tests', 'cases', 'conformance'), { recursive: true });
 
-  fs.writeFileSync(`${tmpDir}/mytest.config`, JSON.stringify({
+  fs.writeFileSync(path.join(tmpDir, 'mytest.config'), JSON.stringify({
     runUnitTests: false,
     runners: ['conformance'],
   }));
 
-  process.chdir(tmpDir);
+  const testPath = path.join('tests', 'cases', 'conformance', 'customTest.ts');
+  fs.copyFileSync(initialTestSource, path.join(tmpDir, testPath));
 
-  const testPath = 'tests/cases/conformance/customTest.ts';
-  if (process.argv.length < 3) {
-    fs.writeFileSync(testPath, '// code\n');
-  } else if (fs.existsSync(process.argv[2])) {
-    fs.copyFileSync(process.argv[2], testPath);
-  } else {
-    throw Error(`Path '${process.argv[2]}' does not exist`);
-  }
-
-  function assertOneReplacement(path, text, pattern, replacement) {
+  function assertOneReplacement(filePath, text, pattern, replacement) {
     let count = 0;
     const ret = text.replace(pattern, () => {
       count += 1;
       return replacement;
     });
     if (count != 1) {
-      throw Error(`'${pattern}' should have appeared in ${path} exactly once, but it appeared ${count} times`);
+      throw Error(`'${pattern}' should have appeared in ${filePath} exactly once, but it appeared ${count} times`);
     }
     return ret;
   }
 
   console.log('[tttt runner] Loading test runner script...');
-  const runJsPath = `${tsDir}/built/local/run.js`;
+  const runJsPath = path.join(tsDir, 'built', 'local', 'run.js');
   testRunnerJsContent = fs.readFileSync(runJsPath) + '';
 
   // This allows us to trigger a re-run of the tests

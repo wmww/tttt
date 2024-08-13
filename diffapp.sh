@@ -35,5 +35,5 @@ if test $# -gt 0; then
     fi
 fi
 
-#NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js
+#NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp test/diffapp/defaultCustomTest.ts
 node test/diffapp/server.js ${TEST_PATH:-}
