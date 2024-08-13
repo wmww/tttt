@@ -4,6 +4,12 @@
   --ui-text: #D0D0D0;
   --code-text: white;
   --accent: #A03010;
+  --red-text: #f06060;
+  --red-bg: #301010;
+  --green-text: #60f060;
+  --green-bg: #103010;
+  --gray-text: #a0a0a0;
+  --gray-bg: #141414;
 }
 
 html, body, #root {
@@ -78,10 +84,6 @@ button, .fake-button {
   flex-shrink: 0;
 }
 
-.active {
-  background-color: var(--accent);
-}
-
 #error-list {
   position: absolute;
   bottom: 0;
@@ -98,6 +100,21 @@ button, .fake-button {
 .error-box {
   background-color: #541005A0;
   padding: 15px;
+}
+
+.channel-button {
+  min-width: 120px;
+  padding-bottom: 6px;
+  border-bottom: 5px solid var(--panel);
+}
+
+.channel-button.active {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}
+
+.channel-button.fail {
+  border-color: var(--red-text);
 }
 
 #code-input {
@@ -131,8 +148,12 @@ button, .fake-button {
 
 #code-view {
   white-space: pre;
+  flex-grow: 1;
   display: inline-block;
   min-width: 100%;
+  min-height: 100%;
+  padding: 15px 0;
+  box-sizing: border-box;
   font-family: Consolas, "Lucida Console", monospace;
   color: var(--code-text);
   background-color: var(--panel);
@@ -173,16 +194,16 @@ button, .fake-button {
 }
 
 .token-diff-both {
-  color: #a0a0a0;
-  background-color: #141414;
+  color: var(--gray-text);
+  background-color: var(--gray-bg);
 }
 
 .token-diff-tttt {
-  color: #f06060;
-  background-color: #301010;
+  color: var(--red-text);
+  background-color: var(--red-bg);
 }
 
 .token-diff-tsc {
-  color: #60f060;
-  background-color: #103010;
+  color: var(--green-text);
+  background-color: var(--green-bg);
 }

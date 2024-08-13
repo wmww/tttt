@@ -64,9 +64,9 @@ function onChannelSelected(channel) {
     return;
   }
   currentChannel = channel;
-  channelButtons.forEach(button => {
+  for (const button of channelButtons) {
     button.classList.toggle('active', button.id.endsWith(channel));
-  });
+  }
   codeInput.focus({preventScroll: true});
   updateResultTokens();
   renderTextView();
@@ -465,8 +465,30 @@ function updateResultTokens() {
   }
 }
 
+function updateErrorCounts() {
+  function getErrorCount(result) {
+    if (!result) {
+      return 0;
+    }
+    const match = result.match(errorCountRegex);
+    if (match) {
+      return parseInt(match[1]);
+    } else {
+      return null;
+    }
+  }
+  const ttttErrorCount = getErrorCount(latestResults.tttt.err);
+  const tscErrorCount = getErrorCount(latestResults.tsc.err);
+  const count = tscErrorCount > ttttErrorCount ? tscErrorCount : ttttErrorCount;
+  const errorsButton = document.getElementById('channel-button-err');
+  errorsButton.textContent = 'Errors (' + count + ')';
+}
+
+const errorCountRegex = /customTest\.ts \((\d+) errors\) ===/;
 function handleEvents(json) {
   let currentChannelUpdated = false;
+  let anyChannelUpdated = false;
+  let errorsUpdated = false;
   for (const key in json) {
     try {
       const keys = key.split('.');
@@ -482,18 +504,32 @@ function handleEvents(json) {
 
         case 'result':
           latestResults[keys[1]][keys[2]] = json[key];
+          if (keys[2] == 'err') {
+            errorsUpdated = true;
+          }
           if (keys[2] == currentChannel || keys[2] == 'serial') {
             currentChannelUpdated = true;
           }
+          anyChannelUpdated = true;
           break;
       }
     } catch (e) {
       surfaceError('Handling ' + key + ': ' + e.toString());
     }
   }
+  if (errorsUpdated) {
+    updateErrorCounts();
+  }
   const serialsMatch = latestSubmittedSerial === null || (
     latestResults.tsc.serial === latestResults.tttt.serial &&
     parseInt(latestResults.tttt.serial) === latestSubmittedSerial);
+  if (anyChannelUpdated && serialsMatch) {
+    for (const channel of ['err', 'sym', 'typ']) {
+      const passed = latestResults.tsc[channel] == latestResults.tttt[channel];
+      const button = document.getElementById('channel-button-' + channel);
+      button.classList.toggle('fail', !passed);
+    }
+  }
   if (currentChannelUpdated && serialsMatch) {
     updateResultTokens();
     renderTextView();
@@ -524,7 +560,6 @@ function fetchEvents() {
     })
     .catch(err => {
       if (!isBeingUnloaded) {
-        console.error(err);
         if (connectedToServer) {
           connectedToServer = false;
           updateErrors();
