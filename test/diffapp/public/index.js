@@ -12,6 +12,11 @@ const latestResults = {
   tsc: {},
 }
 let latestSubmittedCode = '';
+let currentCodeSerial = Math.random() * (1000000 - 100) + 100;
+
+function incrementCodeSerial() {
+  currentCodeSerial = (currentCodeSerial + 1) % 1000000 + 100
+}
 
 let clientErrors = [];
 let serverErrors = [];
@@ -63,9 +68,10 @@ channelButtons.forEach(button => {
 let inputTimeout;
 codeInput.oninput = () => {
   clearTimeout(inputTimeout);
+  incrementCodeSerial();
   inputTimeout = setTimeout(() => {
     latestSubmittedCode = codeInput.value;
-    fetch('/setCode?token=' + token, {
+    fetch('/setCode?token=' + token + '&serial=' + currentCodeSerial, {
       method: 'POST',
       body: latestSubmittedCode,
     });

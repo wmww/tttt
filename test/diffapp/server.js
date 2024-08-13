@@ -9,10 +9,15 @@ const publicDirectories = [
   path.join(__dirname, 'public'),
   path.join(__dirname, '..', '..', 'thirdparty', 'javascript'),
 ];
-const tscBaseDir = '/tmp/tsTests/'
-const codePath = tscBaseDir + 'tests/cases/conformance/customTest.ts';
-const tscOutputDir = tscBaseDir + 'tests/baselines/local/';
+const tmpBaseDir = '/tmp/tsTests/'
+const codePath = tmpBaseDir + 'tests/cases/conformance/customTest.ts';
+const tscOutputDir = tmpBaseDir + 'tests/baselines/local/';
 const tscTestName = 'customTest';
+let initialTestPath = path.join(__dirname, 'defaultCustomTest.ts');
+if (process.argv.length >= 3 && process.argv[2]) {
+  initialTestPath = process.argv[2];
+  console.log('Loading test from ' + initialTestPath);
+}
 const tscPathForChannel = new Map([
   ['err', tscOutputDir + tscTestName + '.errors.txt'],
   ['sym', tscOutputDir + tscTestName + '.symbols'],
@@ -118,15 +123,10 @@ function setPropertyToContentsOf(key, filePath, ignoreMissing) {
   setProperty(key, buffer);
 }
 
-let initialTestPath;
-if (process.argv.length >= 3 && process.argv[2]) {
-  initialTestPath = process.argv[2];
-  console.log('Loading test from ' + initialTestPath);
-}
+let tscRunningTest = true;
 const tscProcess = child_process.spawn(
   'node',
-  [path.join(__dirname, 'tsc_custom_baseline.js')]
-    .concat(initialTestPath ? [initialTestPath] : []),
+  [path.join(__dirname, 'tsc_custom_baseline.js'), initialTestPath],
   {
     env: {
       NODE_PATH: path.join(path.dirname(__dirname), 'TypeScript', 'node_modules')
@@ -138,8 +138,10 @@ const tscProcess = child_process.spawn(
     ]
   });
 tscProcess.stdout.on('data', chunk => {
-  if (chunk.toString("utf-8").includes('[tttt runner] Done running tests\n')) {
-    tscUpdateRunning = false;
+  if (chunk.toString('utf-8').includes('[tttt runner] Done running tests\n')) {
+    if (!tscRunningTest || !runningSerial) {
+      surfaceError('tsc claims to be done with a test run when no run was known to be in-flight');
+    }
     function updateResult(channel) {
       const filePath = getOrThrow(tscPathForChannel, channel);
       const ignoreMissing = (channel == 'err');
@@ -148,10 +150,9 @@ tscProcess.stdout.on('data', chunk => {
     updateResult('err');
     updateResult('sym');
     updateResult('typ');
-    if (tscUpdateQueued) {
-      tscUpdateQueued = false;
-      updateTscResults();
-    }
+    setProperty('result.tsc.serial', runningSerial);
+    tscRunningTest = false;
+    testRunMaybeDone();
   }
 });
 tscProcess.on('close', (code) => {
@@ -159,15 +160,14 @@ tscProcess.on('close', (code) => {
   process.exit(1);
 });
 
-let tscUpdateRunning = true;
-let tscUpdateQueued = false;
-function updateTscResults() {
-  if (tscUpdateRunning) {
-    tscUpdateQueued = true;
-  } else {
-    tscProcess.stdin.write('\n');
-    tscUpdateRunning = true;
+function startTscRun() {
+  if (tscRunningTest) {
+    surfaceError('Tried to start a tsc run while it was already running');
+    return
   }
+  tscRunningTest = true;
+  // This should kick off a re-run of the tests
+  tscProcess.stdin.write('\n');
 }
 
 function subprocessThen(args, callback) {
@@ -191,8 +191,8 @@ function subprocessThen(args, callback) {
     try {
       callback(
         child.exitCode,
-        Buffer.concat(stdoutChunks).toString("utf-8"),
-        Buffer.concat(stderrChunks).toString("utf-8"),
+        Buffer.concat(stdoutChunks).toString('utf-8'),
+        Buffer.concat(stderrChunks).toString('utf-8'),
       );
     } catch (e) {
       surfaceError('Error handling ' + command + ' output: ' + e);
@@ -214,7 +214,14 @@ function parseTtttResults(stdout) {
 }
 
 let ttttStderr = '';
-function updateTtttResults() {
+let ttttRunningTest = false;
+function startTtttRun() {
+  if (ttttRunningTest) {
+    surfaceError('Tried to start a tttt run while it was already running');
+    return
+  }
+  ttttRunningTest = true;
+
   const resultStderr = [];
   let results = {
     err: '[tttt failed]',
@@ -233,6 +240,8 @@ function updateTtttResults() {
     setProperty('result.tttt.err', results.err);
     setProperty('result.tttt.sym', results.sym);
     setProperty('result.tttt.typ', results.typ);
+    ttttRunningTest = false;
+    testRunMaybeDone();
   }
 
   subprocessThen(
@@ -263,6 +272,37 @@ function updateTtttResults() {
       )
     }
   )
+}
+
+let runningSerial = 1;
+let queuedTestRun = null;
+
+function testRunMaybeDone() {
+  if (!tscRunningTest && !ttttRunningTest) {
+    runningSerial = null;
+    if (queuedTestRun) {
+      const [code, serial] = queuedTestRun;
+      queuedTestRun = null;
+      runTests(code, serial);
+    }
+  }
+}
+
+function runTests(code, serial) {
+  if (runningSerial) {
+    queuedTestRun = [code, serial];
+  } else {
+    runningSerial = serial;
+    fs.writeFile(codePath, code, error => {
+      if (error) {
+        surfaceError('Writing code: ' + error.code);
+        testRunMaybeDone();
+      } else {
+        startTscRun();
+        startTtttRun();
+      }
+    });
+  }
 }
 
 setTimeout(() => {
@@ -321,28 +361,17 @@ const server = http.createServer((request, response) => {
     });
   }
 
-  function serveWriteTextFile(fullPath, callback) {
+  function receivePostBody(callback) {
     if (request.method != 'POST') {
       response.writeHead(405);
       response.end(url.pathname + ' must be a POST request');
-      callback(null);
     } else {
       let body = [];
       request.on('data', chunk => {
         body.push(chunk);
       }).on('end', () => {
-        body = Buffer.concat(body).toString();
-        fs.writeFile(fullPath, body, error => {
-          if (error) {
-            response.writeHead(500);
-            response.end(`Server Error: ${error.code}`);
-            callback(null);
-          } else {
-            response.writeHead(200);
-            response.end();
-            callback(body);
-          }
-        });
+        body = Buffer.concat(body).toString('utf-8');
+        callback(body);
       });
     }
   }
@@ -351,6 +380,12 @@ const server = http.createServer((request, response) => {
     const token = url.searchParams.get('token');
     if (!token) { throw Error('No token'); }
     return token;
+  }
+
+  function getSerial() {
+    const serial = url.searchParams.get('serial');
+    if (!serial) { throw Error('No serial'); }
+    return serial;
   }
 
   try {
@@ -365,12 +400,12 @@ const server = http.createServer((request, response) => {
 
       case '/setCode':
         const token = getToken();
-        serveWriteTextFile(codePath, contents => {
-          if (contents !== null) {
-            setProperty('code', contents, token);
-            updateTscResults();
-            updateTtttResults();
-          }
+        const serial = getSerial();
+        receivePostBody(contents => {
+          setProperty('code', contents, token);
+          runTests(contents, serial);
+          response.writeHead(200);
+          response.end();
         });
         break;
 
@@ -380,6 +415,7 @@ const server = http.createServer((request, response) => {
     }
   } catch (e) {
     console.error(e);
+    surfaceError('Server failed to handle ' + url.pathname + ' request: ' + e.message);
     response.writeHead(500);
     response.end('Server Error: ' + e);
   }
