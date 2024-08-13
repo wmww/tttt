@@ -119,31 +119,31 @@ bool read_entire_file(const char* path, bool debug_on_fail, cstr* ret) {
                 read_file_len_limit / (1024.0 * 1024.0));
         }
         goto err;
-    }
-    if (fseek(f, 0, SEEK_SET) != 0) {
-        if (debug_on_fail) {
-            fprintf(stderr, "%s: seek failed\n", path);
+    } else if (len > 0) {
+        if (fseek(f, 0, SEEK_SET) != 0) {
+            if (debug_on_fail) {
+                fprintf(stderr, "%s: seek failed\n", path);
+            }
+            goto err;
+        };
+        char* buf = cstr_resize(&target, len, 0);
+        if (!buf) {
+            if (debug_on_fail) {
+                fprintf(stderr, "%s: failed to allocate %.3fMB to read into\n", path, len + 1.0);
+            }
+            goto err;
         }
-        goto err;
-    };
-    char* buf = cstr_resize(&target, len, 0);
-    if (!buf) {
-        if (debug_on_fail) {
-            fprintf(stderr, "%s: failed to allocate %.3fMB to read into\n", path, len + 1.0);
+        if (fread(buf, len, 1, f) != 1) {
+            if (debug_on_fail) {
+                fprintf(stderr, "%s: failed to read\n", path);
+            }
+            goto err;
         }
-        goto err;
-    }
-    if (fread(buf, len, 1, f) != 1) {
-        if (debug_on_fail) {
-            fprintf(stderr, "%s: failed to read\n", path);
-        }
-        goto err;
     }
     fclose(f);
     f = nullptr;
     *ret = cstr_null;
     cstr_take(ret, target);
-    target = cstr_null;
     return true;
 
 err:
