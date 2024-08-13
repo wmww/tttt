@@ -110,6 +110,7 @@ function surfaceError(message) {
     setProperty('errors', currentErrors.slice());
   }, 10000);
 }
+setProperty('errors', []);
 
 function setPropertyToContentsOf(key, filePath, ignoreMissing) {
   let buffer;
@@ -128,7 +129,6 @@ function setPropertyToContentsOf(key, filePath, ignoreMissing) {
 setPropertyToContentsOf('code', initialTestPath);
 
 let tscRunningTest = true;
-let tscIsSetUp = false; // set to true when the first run is complete
 const tscProcess = child_process.spawn(
   'node',
   [path.join(__dirname, 'tsc_custom_baseline.js'), tmpBaseDir, initialTestPath],
@@ -147,10 +147,9 @@ tscProcess.stdout.on('data', chunk => {
     if (!tscRunningTest || !runningSerial) {
       surfaceError('tsc claims to be done with a test run when no run was known to be in-flight');
     }
-    if (!tscIsSetUp) {
+    if (!firstRunCompleted) {
       // This will get un an initial tttt result. We do it here to be sure the code file is written
       startTtttRun();
-      tscIsSetUp = true;
     }
     function updateResult(channel) {
       const filePath = getOrThrow(tscPathForChannel, channel);
@@ -290,10 +289,15 @@ function startTtttRun() {
 
 let runningSerial = 1;
 let queuedTestRun = null;
+let firstRunCompleted = false;
 
 function testRunMaybeDone() {
   if (!tscRunningTest && !ttttRunningTest) {
     runningSerial = null;
+    if (!firstRunCompleted) {
+      startServer();
+      firstRunCompleted = true;
+    }
     if (queuedTestRun) {
       const [code, serial] = queuedTestRun;
       queuedTestRun = null;
@@ -329,7 +333,7 @@ function filePathFor(url) {
   return null;
 }
 
-const server = http.createServer((request, response) => {
+function handleRequest(request, response) {
   const url = new URL(`http://${process.env.HOST ?? 'localhost'}${request.url}`);
 
   function serveStatic(url) {
@@ -429,8 +433,12 @@ const server = http.createServer((request, response) => {
     response.writeHead(500);
     response.end('Server Error: ' + e);
   }
-});
+}
 
-server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}/`);
-});
+function startServer() {
+  const server = http.createServer(handleRequest);
+  server.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}/`);
+  });
+}
+

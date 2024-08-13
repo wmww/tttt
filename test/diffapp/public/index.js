@@ -1,6 +1,7 @@
 const inputWaitMs = 50; // How long to wait after an input for more events to batch with it
 
 const codeInput = document.getElementById('code-input');
+codeInput.value = '';
 const codeView = document.getElementById('code-view');
 const errorList = document.getElementById('error-list');
 const errorTemplate = document.getElementById('error-template');
@@ -24,27 +25,30 @@ function incrementCodeSerial() {
 
 let clientErrors = [];
 let serverErrors = [];
+let connectedToServer = true;
 function updateErrors() {
   while (errorList.lastElementChild) {
     errorList.removeChild(errorList.lastElementChild);
   }
-  for (let message of clientErrors.concat(serverErrors)) {
+  const fullErrors = clientErrors.concat(serverErrors);
+  if (!connectedToServer) {
+    fullErrors.push('Disconnected from server');
+  }
+  for (let message of fullErrors) {
     const template = errorTemplate.content.cloneNode(true);
     template.querySelector('#error-message').textContent = message;
     errorList.append(template);
   }
 }
 
-function surfaceError(message, permanent) {
+function surfaceError(message) {
   console.error(message);
   clientErrors.push(message);
   updateErrors();
-  if (!permanent) {
-    setTimeout(() => {
-      clientErrors.splice(clientErrors.indexOf(message), 1);
-      updateErrors();
-    }, 10000);
-  }
+  setTimeout(() => {
+    clientErrors.splice(clientErrors.indexOf(message), 1);
+    updateErrors();
+  }, 10000);
 }
 
 function codeChangedByServer(code) {
@@ -386,31 +390,27 @@ function fetchEvents() {
     .then(json => {
       // console.log('Got message: ', json);
       try {
+        if (!connectedToServer) {
+          connectedToServer = true;
+          updateErrors();
+        }
         handleEvents(json);
         fetchEvents();
       } catch (e) {
         surfaceError(e);
+        setTimeout(fetchEvents, 1000);
       }
     })
     .catch(err => {
       if (!isBeingUnloaded) {
         console.error(err);
-        surfaceError('Server connection closed', true);
-        tryReconnect();
+        if (connectedToServer) {
+          connectedToServer = false;
+          updateErrors();
+        }
+        setTimeout(fetchEvents, 500);
       }
     });
-}
-
-function tryReconnect() {
-  fetch('/').then(resp => {
-    if (resp.ok) {
-      location.reload();
-    } else {
-      throw Error();
-    }
-  }).catch(() => {
-    setTimeout(tryReconnect, 500);
-  })
 }
 
 onChannelSelected('typ');
