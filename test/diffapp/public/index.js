@@ -184,8 +184,21 @@ const Token = Object.freeze({
   ENDLINE: 'token-endline',
 });
 
+function addLineStartTokensTo(lineNumbers, indent, tokens) {
+  if (lineNumbers) {
+    tokens.push({type: Token.LINE_NUMBER});
+  }
+  if (indent) {
+    tokens.push({
+      type: Token.TEXT,
+      text: indent,
+      extraClass: 'token-indent',
+    });
+  }
+}
+
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
-function tokenizeStringInto(text, offset, extraClass, tokens) {
+function tokenizeStringInto(text, offset, extraClass, lineNumbers, indent, tokens) {
   let prevLastIndex = textTokenRegex.lastIndex = 0;
   let match;
   while (match = textTokenRegex.exec(text)) {
@@ -202,15 +215,13 @@ function tokenizeStringInto(text, offset, extraClass, tokens) {
         offset: offset === null ? null : offset + prevLastIndex,
         extraClass: extraClass,
       });
-      if (offset !== null) {
-        tokens.push({type: Token.LINE_NUMBER});
-      }
+      addLineStartTokensTo(lineNumbers, indent, tokens);
     }
     prevLastIndex = textTokenRegex.lastIndex;
   }
 }
 
-function tokenizeTextArea(elem) {
+function tokenizeTextArea(elem, indent) {
   const rawValue = elem.value;
   const selectionStart = elem.selectionStart;
   const selectionEnd = elem.selectionEnd;
@@ -222,12 +233,13 @@ function tokenizeTextArea(elem) {
     type: Token.CURSOR,
     offset: selectionForward ? selectionEnd : selectionStart,
   };
-  const tokens = [{type: Token.LINE_NUMBER}];
-  tokenizeStringInto(beforeSelection, 0, undefined, tokens);
+  const tokens = [];
+  addLineStartTokensTo(true, indent, tokens);
+  tokenizeStringInto(beforeSelection, 0, undefined, true, indent, tokens);
   if (!selectionForward) { tokens.push(cursorToken); }
-  tokenizeStringInto(selection, selectionStart, 'token-selected', tokens);
+  tokenizeStringInto(selection, selectionStart, 'token-selected', true, indent, tokens);
   if (selectionForward) { tokens.push(cursorToken); }
-  tokenizeStringInto(afterSelection, selectionEnd, undefined, tokens);
+  tokenizeStringInto(afterSelection, selectionEnd, undefined, true, indent, tokens);
   tokens.push({
     type: Token.ENDLINE,
     offset: rawValue.length,
@@ -322,8 +334,13 @@ function renderTokensTo(parent, tokens) {
 }
 
 const newlineRegex = /\r?\n/g;
-function getResultTokens(codeText, tscText, ttttText) {
-  const codeLines = codeText.split(newlineRegex);
+function getResultTokens(codeText, tscText, ttttText, indent) {
+  let codeLines = codeText.split(newlineRegex);
+  if (indent) {
+    for (let i = 0; i < codeLines.length; i++) {
+      codeLines[i] = indent + codeLines[i]
+    }
+  }
   const tscLines = tscText.split(newlineRegex);
   const ttttLines = ttttText.split(newlineRegex);
   const tscLineDiff = Diff.diffArrays(codeLines, tscLines);
@@ -370,11 +387,11 @@ function getResultTokens(codeText, tscText, ttttText) {
 
       for (const i of Diff.diffLines(ttttResult, tscResult)) {
         if (i.added) {
-          tokenizeStringInto(i.value, null, 'token-diff-tsc', retTokens);
+          tokenizeStringInto(i.value, null, 'token-diff-tsc', false, null, retTokens);
         } else if (i.removed) {
-          tokenizeStringInto(i.value, null, 'token-diff-tttt', retTokens);
+          tokenizeStringInto(i.value, null, 'token-diff-tttt', false, null, retTokens);
         } else {
-          tokenizeStringInto(i.value, null, 'token-diff-both', retTokens);
+          tokenizeStringInto(i.value, null, 'token-diff-both', false, null, retTokens);
         }
         if (retTokens && retTokens[retTokens.length - 1] && retTokens[retTokens.length - 1].type !== Token.NEWLINE) {
           retTokens.push({
@@ -424,7 +441,7 @@ function integrateResultTokens(inputTokens, resultTokens) {
 }
 
 function renderTextView() {
-  const inputTokens = tokenizeTextArea(codeInput);
+  const inputTokens = tokenizeTextArea(codeInput, currentChannel == 'err' ? '    ' : null);
   while (codeView.lastElementChild) {
     codeView.removeChild(codeView.lastElementChild);
   }
@@ -441,7 +458,8 @@ function updateResultTokens() {
     resultTokensWithNulls = getResultTokens(
       latestSubmittedCode,
       latestResults.tsc[currentChannel],
-      latestResults.tttt[currentChannel]
+      latestResults.tttt[currentChannel],
+      currentChannel == 'err' ? '    ' : null
     );
   }
 }
