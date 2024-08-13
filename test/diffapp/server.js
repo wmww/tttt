@@ -230,6 +230,9 @@ function startTtttRun() {
   };
 
   function sendResults() {
+    if (!ttttRunningTest || !runningSerial) {
+      surfaceError('tttt was not supposed to be running, but finished');
+    }
     newStderr = resultStderr.join('\n\n');
     if (newStderr != ttttStderr) {
       ttttStderr = newStderr;
@@ -240,6 +243,7 @@ function startTtttRun() {
     setProperty('result.tttt.err', results.err);
     setProperty('result.tttt.sym', results.sym);
     setProperty('result.tttt.typ', results.typ);
+    setProperty('result.tttt.serial', runningSerial);
     ttttRunningTest = false;
     testRunMaybeDone();
   }

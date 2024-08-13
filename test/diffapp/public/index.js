@@ -11,8 +11,12 @@ const latestResults = {
   tttt: {},
   tsc: {},
 }
+// An array of tokens representing the diff of the tttt and tsc results. It also contains nulls, each representing one
+// line (not token!) of input. May be generated from an older state then latestResults.
+let resultTokensWithNulls = [];
 let latestSubmittedCode = '';
-let currentCodeSerial = Math.random() * (1000000 - 100) + 100;
+let latestSubmittedSerial = null;
+let currentCodeSerial = Math.floor(Math.random() * (1000000 - 100) + 100);
 
 function incrementCodeSerial() {
   currentCodeSerial = (currentCodeSerial + 1) % 1000000 + 100
@@ -32,6 +36,7 @@ function updateErrors() {
 }
 
 function surfaceError(message, permanent) {
+  console.error(message);
   clientErrors.push(message);
   updateErrors();
   if (!permanent) {
@@ -57,6 +62,7 @@ function onChannelSelected(channel) {
   channelButtons.forEach(button => {
     button.classList.toggle('active', button.id.endsWith(channel));
   });
+  updateResultTokens();
   renderTextView();
 }
 channelButtons.forEach(button => {
@@ -71,7 +77,8 @@ codeInput.oninput = () => {
   incrementCodeSerial();
   inputTimeout = setTimeout(() => {
     latestSubmittedCode = codeInput.value;
-    fetch('/setCode?token=' + token + '&serial=' + currentCodeSerial, {
+    latestSubmittedSerial = currentCodeSerial;
+    fetch('/setCode?token=' + token + '&serial=' + latestSubmittedSerial, {
       method: 'POST',
       body: latestSubmittedCode,
     });
@@ -200,49 +207,38 @@ function renderTokensTo(parent, tokens) {
   }
 }
 
-function processLineDiff(lineDiff) {
-  // Returns added sets of lines joined and a single undefined for each non-added line
-  let ret = [];
-  for (const elem of lineDiff) {
-    if (elem.added) {
-      ret.push(elem.value.join('\n'));
-    } else {
-      for (let i = 0; i < elem.value.length; i++) {
-        ret.push(undefined);
-      }
-    }
-  }
-  return ret;
-}
-
 const newlineRegex = /\r?\n/g;
-function insertResultTokens(inputTokens) {
-  if (latestResults.tsc[currentChannel] === undefined || latestResults.tttt[currentChannel] === undefined) {
-    return inputTokens;
-  }
-
-  const codeLines = latestSubmittedCode.split(newlineRegex);
-  const tscLines = latestResults.tsc[currentChannel].split(newlineRegex);
-  const ttttLines = latestResults.tttt[currentChannel].split(newlineRegex);
+function getResultTokens(codeText, tscText, ttttText) {
+  const codeLines = codeText.split(newlineRegex);
+  const tscLines = tscText.split(newlineRegex);
+  const ttttLines = ttttText.split(newlineRegex);
   const tscLineDiff = Diff.diffArrays(codeLines, tscLines);
   const ttttLineDiff = Diff.diffArrays(codeLines, ttttLines);
+
+  // Returns added sets of lines joined and a single undefined for each non-added line
+  function processLineDiff(lineDiff) {
+    let ret = [];
+    for (const elem of lineDiff) {
+      if (elem.added) {
+        ret.push(elem.value.join('\n'));
+      } else {
+        for (let i = 0; i < elem.value.length; i++) {
+          ret.push(undefined);
+        }
+      }
+    }
+    return ret;
+  }
+
   const tscProcessed = processLineDiff(tscLineDiff);
   const ttttProcessed = processLineDiff(ttttLineDiff);
 
-  let inputTokenIndex = 0;
   let tscIndex = 0;
   let ttttIndex = 0;
   const retTokens = [];
   while (tscIndex < tscProcessed.length || ttttIndex < ttttProcessed.length) {
     if (tscProcessed[tscIndex] === undefined && ttttProcessed[ttttIndex] === undefined) {
-      while (inputTokenIndex < inputTokens.length) {
-        const token = inputTokens[inputTokenIndex];
-        retTokens.push(token);
-        inputTokenIndex++;
-        if (token.type === Token.NEWLINE) {
-          break;
-        }
-      }
+      retTokens.push(null);
       tscIndex++;
       ttttIndex++;
     } else {
@@ -281,17 +277,70 @@ function insertResultTokens(inputTokens) {
   return retTokens;
 }
 
+function integrateResultTokens(inputTokens, resultTokens) {
+  let inputIndex = 0;
+  const retTokens = [];
+
+  let inputEndedWithoutNewline = false;
+  for (const result of resultTokens) {
+    if (result === null) {
+      // Push a line of input (if available)
+      while (inputIndex < inputTokens.length) {
+        const token = inputTokens[inputIndex];
+        retTokens.push(token);
+        inputIndex++;
+        inputEndedWithoutNewline = true;
+        if (token.type === Token.NEWLINE) {
+          inputEndedWithoutNewline = false;
+          break;
+        }
+      }
+    } else {
+      if (inputEndedWithoutNewline) {
+        retTokens.push({
+          type: Token.NEWLINE,
+          offset: retTokens[retTokens.length - 1].offset,
+        })
+        inputEndedWithoutNewline = false;
+      }
+      retTokens.push(result);
+    }
+  }
+
+  // Push any left over input
+  while (inputIndex < inputTokens.length) {
+    retTokens.push(inputTokens[inputIndex]);
+    inputIndex++;
+  }
+
+  return retTokens;
+}
+
 function renderTextView() {
   const inputTokens = tokenizeTextArea(codeInput);
   while (codeView.lastElementChild) {
     codeView.removeChild(codeView.lastElementChild);
   }
-  const unifiedTokens = insertResultTokens(inputTokens)
+  const unifiedTokens = integrateResultTokens(inputTokens, resultTokensWithNulls);
   renderTokensTo(codeView, unifiedTokens);
 }
 
+function updateResultTokens() {
+  if (latestResults.tsc[currentChannel] === undefined ||
+      latestResults.tttt[currentChannel] === undefined
+  ) {
+    resultTokensWithNulls = [];
+  } else {
+    resultTokensWithNulls = getResultTokens(
+      latestSubmittedCode,
+      latestResults.tsc[currentChannel],
+      latestResults.tttt[currentChannel]
+    );
+  }
+}
+
 function handleEvents(json) {
-  let render = false;
+  let currentChannelUpdated = false;
   for (const key in json) {
     try {
       const keys = key.split('.');
@@ -308,7 +357,7 @@ function handleEvents(json) {
         case 'result':
           latestResults[keys[1]][keys[2]] = json[key];
           if (currentChannel == keys[2]) {
-            render = true;
+            currentChannelUpdated = true;
           }
           break;
       }
@@ -316,12 +365,12 @@ function handleEvents(json) {
       surfaceError('Handling ' + key + ': ' + e.toString());
     }
   }
-  if (render) {
-    try {
-      renderTextView();
-    } catch {
-      surfaceError('Rendering text view: ' + e.toString());
-    }
+  if (currentChannelUpdated &&
+    latestResults.tsc.serial === latestResults.tttt.serial &&
+    parseInt(latestResults.tttt.serial) === latestSubmittedSerial
+  ) {
+    updateResultTokens();
+    renderTextView();
   }
 }
 
@@ -335,8 +384,12 @@ function fetchEvents() {
     .then(resp => resp.json())
     .then(json => {
       // console.log('Got message: ', json);
-      handleEvents(json);
-      fetchEvents();
+      try {
+        handleEvents(json);
+        fetchEvents();
+      } catch (e) {
+        surfaceError(e);
+      }
     })
     .catch(err => {
       if (!isBeingUnloaded) {
