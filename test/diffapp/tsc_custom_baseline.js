@@ -20,7 +20,9 @@ let triggerTestRerun; // Set by code we inject into the evaled code
     runners: ['conformance'],
   }));
 
-  const testPath = `${tmpDir}/tests/cases/conformance/customTest.ts`;
+  process.chdir(tmpDir);
+
+  const testPath = 'tests/cases/conformance/customTest.ts';
   if (process.argv.length < 3) {
     fs.writeFileSync(testPath, '// code\n');
   } else if (fs.existsSync(process.argv[2])) {
@@ -52,14 +54,6 @@ let triggerTestRerun; // Set by code we inject into the evaled code
     'function startTestEnvironment() {',
     // Don't put in newline, preserve line numbers on error messages
     'triggerTestRerun = () => { runTests(runners); }; function startTestEnvironment() {'
-  );
-
-  // This makes it run the tests in our directory, instead of the normal TypeScript directory
-  testRunnerJsContent = assertOneReplacement(
-    runJsPath,
-    testRunnerJsContent,
-    'userSpecifiedRoot = "";',
-    `userSpecifiedRoot = "${tmpDir}/";`
   );
 
   // This is required for TS v5.5.4
