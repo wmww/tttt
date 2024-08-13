@@ -1,5 +1,5 @@
 :root {
-  --background: #202020;
+  --background: #101010;
   --panel: #080808;
   --text: #D0D0D0;
   --accent: #A03010;
@@ -19,7 +19,7 @@ html, body, #root {
 }
 
 #root {
-  background-color: var(--panel);
+  background-color: var(--background);
 }
 
 .h-box {
@@ -32,7 +32,6 @@ html, body, #root {
 .v-box {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   overflow: hidden;
 }
 
@@ -93,6 +92,9 @@ button, .fake-button {
 }
 
 #code-input {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 0;
   height: 0;
   margin: 0;
@@ -102,12 +104,27 @@ button, .fake-button {
   white-space: pre;
 }
 
-.code-view {
+/*
+#code-input {
+  width: 50vw;
+  height: 200px;
+}
+*/
+
+#code-view {
+  white-space: pre;
   flex-grow: 1;
-  flex-shrink: 1;
-  flex-basis: 200px;
-  white-space: pre-wrap;
+  margin: 20px;
   font-family: Consolas, "Lucida Console", monospace;
+  background-color: var(--panel);
+  cursor: text;
+  user-select: none;
+}
+
+.code-line {
+  display: flex;
+  flex-direction: row;
+  height: 1.5em;
 }
 
 .token-selected {
@@ -115,16 +132,20 @@ button, .fake-button {
 }
 
 .token-cursor {
-  position: absolute;
   display: inline-block;
+  margin-left: -0.5px;
+  margin-right: -0.5px;
   background-color: var(--text);
-  line-height: normal;
-  width: 2px;
-  height: 1.3em;
+  width: 1px;
+  height: 100%;
+}
+
+.token-line-cap {
+  flex-grow: 1;
 }
 
 .token-diff-both {
-  background-color: #303030;
+  background-color: #101030;
 }
 
 .token-diff-tttt {

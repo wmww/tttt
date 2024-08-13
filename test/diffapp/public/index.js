@@ -66,7 +66,7 @@ function onChannelSelected(channel) {
   channelButtons.forEach(button => {
     button.classList.toggle('active', button.id.endsWith(channel));
   });
-  codeInput.focus();
+  codeInput.focus({preventScroll: true});
   updateResultTokens();
   renderTextView();
 }
@@ -97,40 +97,103 @@ addEventListener('selectionchange', () => {
   }
 });
 
-codeView.onclick = () => {
-  const sel = document.getSelection();
-  let anchorOffset = sel?.anchorNode?.parentElement?.tokenOffset;
-  let focusOffset = sel?.focusNode?.parentElement?.tokenOffset;
-  const selectionForward = sel?.direction !== 'backward';
-  if (anchorOffset !== undefined || focusOffset !== undefined) {
-    if (anchorOffset !== undefined) {
-      anchorOffset += sel.anchorOffset;
+{
+  let selectionAnchor = null;
+  let selectionFocus = null;
+
+  function tokenOffsetAtPoint(x, y) {
+    let range;
+
+    if (document.caretRangeFromPoint) {
+      // Chromiums seem to like this one
+      range = document.caretRangeFromPoint(x, y);
+    } else if (document.caretPositionFromPoint) {
+      // Geckos seem to like this one
+      const position = document.caretPositionFromPoint(x, y);
+      range = document.createRange();
+      try {
+        range.setStart(position.offsetNode, position.offset);
+      } catch {
+        return null;
+      }
     }
-    if (focusOffset !== undefined) {
-      focusOffset += sel.focusOffset;
+    else {
+      // Unsupported browser
+      return null;
     }
-    const selectionStart = selectionForward ? anchorOffset : focusOffset;
-    const selectionEnd = selectionForward ? focusOffset : anchorOffset;
-    if (selectionStart === undefined) {
-      selectionStart = 0;
+
+    if (range.startContainer.tokenOffset !== undefined) {
+      return range.startContainer.tokenOffset + range.startOffset;
+    } else if (range.startContainer.parentElement.tokenOffset !== undefined) {
+      return range.startContainer.parentElement.tokenOffset + range.startOffset;
+    } else {
+      return null;
     }
-    if (selectionForward === undefined) {
-      selectionEnd = codeInput.value.length;
-    }
-    codeInput.focus();
-    codeInput.setSelectionRange(selectionStart, selectionEnd, selectionForward ? 'forward' : 'backward');
-  } else {
-    codeInput.focus();
-    codeInput.setSelectionRange(codeInput.value.length, codeInput.value.length);
   }
-  renderTextView();
+
+  function selectTo(ev) {
+    const offset = tokenOffsetAtPoint(ev.clientX, ev.clientY);
+    if (offset === null) {
+      return;
+    }
+    selectionFocus = offset;
+    if (selectionAnchor === null) {
+      selectionAnchor = offset;
+    }
+    let direction = 'forward';
+    let start = selectionAnchor;
+    let end = selectionFocus;
+    if (selectionFocus < selectionAnchor) {
+      direction = 'backward';
+      end = selectionAnchor;
+      start = selectionFocus;
+    }
+    codeInput.focus({preventScroll: true});
+    codeInput.setSelectionRange(start, end, direction);
+    renderTextView();
+  }
+
+  codeView.addEventListener('mousedown', ev => {
+    mouseDown = true;
+    selectTo(ev);
+    codeView.addEventListener('mousemove', selectTo);
+  });
+
+  codeView.addEventListener('mouseup', ev => {
+    codeView.removeEventListener('mousemove', selectTo);
+    selectTo(ev);
+    selectionAnchor = null;
+    selectionFocus = null;
+    mouseDown = false;
+  });
+}
+
+function tokenOffsetFrom(node) {
+  let offset = node?.anchorNode?.tokenOffset;
+  if (offset === undefined) {
+    offset = node?.anchorNode?.parentElement?.tokenOffset;
+  }
+  return offset;
 }
 
 const Token = Object.freeze({
   TEXT: 'token-text',
   CURSOR: 'token-cursor',
   NEWLINE: 'token-newline',
+  ANCHOR: 'token-anchor', // Not rendered to DOM
 });
+
+function tokensEndWithNewline(tokens) {
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    if (!tokens[i] || tokens[i].type == Token.ANCHOR) {
+    } else if (tokens[i].type == Token.NEWLINE) {
+      return true;
+    } else {
+      break;
+    }
+  }
+  return false;
+}
 
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
 function tokenizeStringInto(text, offset, extraClass, tokens) {
@@ -173,11 +236,16 @@ function tokenizeTextArea(elem) {
   tokenizeStringInto(selection, selectionStart, 'token-selected', tokens);
   if (selectionForward) { tokens.push(cursorToken); }
   tokenizeStringInto(afterSelection, selectionEnd, undefined, tokens);
+  tokens.push({
+    type: Token.ANCHOR,
+    offset: rawValue.length,
+  });
   return tokens;
 }
 
 function applyTokenToElem(token, elem) {
-  if (token.offset !== undefined) {
+  elem.debugToken = token;
+  if (token.offset !== undefined && token.offset !== null) {
     elem.tokenOffset = token.offset;
   }
   if (token.extraClass) {
@@ -186,6 +254,26 @@ function applyTokenToElem(token, elem) {
 }
 
 function renderTokensTo(parent, tokens) {
+  let pendingLine = null;
+
+  function ensureLine() {
+    if (!pendingLine) {
+      pendingLine = document.createElement('div')
+      pendingLine.classList.add('code-line');
+    }
+  }
+
+  function finishLine(token) {
+    if (pendingLine) {
+      const div = document.createElement('div');
+      div.classList.add('token-line-cap');
+      applyTokenToElem(token, div);
+      pendingLine.appendChild(div);
+      parent.appendChild(pendingLine);
+      pendingLine = null;
+    }
+  }
+
   for (const token of tokens) {
     switch (token.type) {
 
@@ -193,22 +281,33 @@ function renderTokensTo(parent, tokens) {
         const span = document.createElement('span');
         span.textContent = token.text;
         applyTokenToElem(token, span);
-        parent.appendChild(span);
+        ensureLine();
+        pendingLine.appendChild(span);
       } break;
 
       case Token.CURSOR: {
         const div = document.createElement('div');
-        div.classList.add('token-cursor')
+        div.classList.add('token-cursor');
         applyTokenToElem(token, div);
-        parent.appendChild(div);
+        ensureLine();
+        pendingLine.appendChild(div);
       } break;
 
       case Token.NEWLINE: {
-        const br = document.createElement('br');
-        applyTokenToElem(token, br);
-        parent.appendChild(br);
+        ensureLine();
+        finishLine(token);
+        ensureLine();
+      } break;
+
+      case Token.ANCHOR: {
+        finishLine(token);
       } break;
     }
+  }
+
+  if (pendingLine) {
+    console.error('Token stream did not end with Token.ANCHOR');
+    finishLine({});
   }
 }
 
@@ -263,7 +362,7 @@ function getResultTokens(codeText, tscText, ttttText) {
         if (ttttResult) {
           tokenizeStringInto(ttttResult, null, 'token-diff-tttt', retTokens);
         }
-        if (ttttResult && tscResult) {
+        if (ttttResult && tscResult && !tokensEndWithNewline(retTokens)) {
           retTokens.push({
             type: Token.NEWLINE,
             offset: null,
@@ -274,7 +373,8 @@ function getResultTokens(codeText, tscText, ttttText) {
         }
       }
       retTokens.push({
-        type: Token.NEWLINE,
+        type: Token.ANCHOR,
+        extraClass: 'token-diff-both',
         offset: null,
       });
     }
@@ -286,7 +386,6 @@ function integrateResultTokens(inputTokens, resultTokens) {
   let inputIndex = 0;
   const retTokens = [];
 
-  let inputEndedWithoutNewline = false;
   for (const result of resultTokens) {
     if (result === null) {
       // Push a line of input (if available)
@@ -294,20 +393,11 @@ function integrateResultTokens(inputTokens, resultTokens) {
         const token = inputTokens[inputIndex];
         retTokens.push(token);
         inputIndex++;
-        inputEndedWithoutNewline = true;
         if (token.type === Token.NEWLINE) {
-          inputEndedWithoutNewline = false;
           break;
         }
       }
     } else {
-      if (inputEndedWithoutNewline) {
-        retTokens.push({
-          type: Token.NEWLINE,
-          offset: retTokens[retTokens.length - 1].offset,
-        })
-        inputEndedWithoutNewline = false;
-      }
       retTokens.push(result);
     }
   }
