@@ -280,7 +280,7 @@ function startTtttRun() {
           if (stderr) {
             resultStderr.push(stderr);
           }
-          if (code === 69) {d
+          if (code === 69) {
             resultStderr.push('Valgrind error');
             sendResults();
             return;
@@ -433,8 +433,10 @@ function handleRequest(request, response) {
   }
 
   function getSerial() {
-    const serial = url.searchParams.get('serial');
+    let serial = url.searchParams.get('serial');
     if (!serial) { throw Error('No serial'); }
+    serial = parseInt(serial);
+    if (!serial) { throw Error('Invald serial'); }
     return serial;
   }
 

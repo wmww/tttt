@@ -1,4 +1,4 @@
-const inputWaitMs = 10; // How long to wait after an input for more events to batch with it
+const inputWaitMs = 50; // How long to wait after an input for more events to batch with it
 
 const codeInput = document.getElementById('code-input');
 codeInput.value = '';
@@ -448,6 +448,11 @@ function renderTextView() {
   }
   const unifiedTokens = integrateResultTokens(inputTokens, resultTokensWithNulls);
   renderTokensTo(codeView, unifiedTokens);
+  const outOfDate = (
+    currentCodeSerial !== latestResults.tttt.serial ||
+    currentCodeSerial !== latestResults.tsc.serial
+  ) && latestSubmittedSerial !== null;
+  codeView.classList.toggle('diff-out-of-date', outOfDate);
 }
 
 function updateResultTokens() {
@@ -521,8 +526,7 @@ function handleEvents(json) {
     updateErrorCounts();
   }
   const serialsMatch = latestResults.tsc.serial === latestResults.tttt.serial &&
-    (latestSubmittedSerial === null || parseInt(latestResults.tttt.serial) === latestSubmittedSerial);
-  console.log(latestResults.tsc.serial, latestResults.tttt.serial);
+    (latestSubmittedSerial === null || latestResults.tttt.serial === latestSubmittedSerial);
   if (anyChannelUpdated && serialsMatch) {
     for (const channel of ['err', 'sym', 'typ']) {
       const passed = latestResults.tsc[channel] == latestResults.tttt[channel];

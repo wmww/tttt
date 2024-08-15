@@ -208,3 +208,9 @@ button, .fake-button {
   color: var(--green-text);
   background-color: var(--green-bg);
 }
+
+.diff-out-of-date .token-diff-both,
+.diff-out-of-date .token-diff-tttt,
+.diff-out-of-date .token-diff-tsc {
+  opacity: 70%;
+}
