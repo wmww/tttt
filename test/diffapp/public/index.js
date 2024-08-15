@@ -1,4 +1,4 @@
-const inputWaitMs = 50; // How long to wait after an input for more events to batch with it
+const inputWaitMs = 10; // How long to wait after an input for more events to batch with it
 
 const codeInput = document.getElementById('code-input');
 codeInput.value = '';
