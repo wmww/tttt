@@ -100,6 +100,7 @@ button, .fake-button {
 .error-box {
   background-color: #541005A0;
   padding: 15px;
+  white-space: pre-wrap;
 }
 
 .channel-button {

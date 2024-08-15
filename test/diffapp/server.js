@@ -222,7 +222,6 @@ function parseTtttResults(stdout) {
   return results;
 }
 
-let ttttStderr = '';
 let ttttRunningTest = false;
 function startTtttRun() {
   if (ttttRunningTest) {
@@ -242,12 +241,9 @@ function startTtttRun() {
     if (!ttttRunningTest || !runningSerial) {
       surfaceError('tttt was not supposed to be running, but finished');
     }
-    newStderr = resultStderr.join('\n\n');
-    if (newStderr != ttttStderr) {
-      ttttStderr = newStderr;
-      if (newStderr) {
-        surfaceError(newStderr);
-      }
+    joinedStderr = resultStderr.join('\n');
+    if (joinedStderr) {
+      surfaceError(joinedStderr);
     }
     setProperty('result.tttt.err', results.err);
     setProperty('result.tttt.sym', results.sym);
@@ -260,10 +256,10 @@ function startTtttRun() {
   subprocessThen(
     ['ninja', '-C', path.join(ttttRoot, 'build'), 'diffapp_runner'],
     (code, stdout, stderr) => {
-      if (stderr) {
-        resultStderr.push('C compiler:\n' + stderr);
-      }
-      if (code != 0) {
+      if (code !== 0) {
+        if (stdout) {
+          resultStderr.push('C compiler:\n' + stdout);
+        }
         resultStderr.push('Compiler exited with code ' + code);
         sendResults();
         return;
@@ -272,7 +268,7 @@ function startTtttRun() {
         [path.join(ttttRoot, 'build', 'diffapp_runner'), codePath],
         (code, stdout, stderr) => {
           if (stderr) {
-            resultStderr.push('tttt:\n' + stderr);
+            resultStderr.push(stderr);
           }
           if (code != 0) {
             resultStderr.push('Runner exited with code ' + code);
