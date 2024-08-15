@@ -264,14 +264,28 @@ function startTtttRun() {
         sendResults();
         return;
       }
+      const runnerArgs = [
+        'valgrind',
+        '--leak-check=full',
+        '--show-leak-kinds=all',
+        '--exit-on-first-error=yes',
+        '--error-exitcode=69',
+        '--quiet',
+        path.join(ttttRoot, 'build', 'diffapp_runner'),
+        codePath
+      ];
       subprocessThen(
-        [path.join(ttttRoot, 'build', 'diffapp_runner'), codePath],
+        runnerArgs,
         (code, stdout, stderr) => {
           if (stderr) {
             resultStderr.push(stderr);
           }
-          if (code != 0) {
-            resultStderr.push('Runner exited with code ' + code);
+          if (code === 69) {d
+            resultStderr.push('Valgrind error');
+            sendResults();
+            return;
+          } else if (code !== 0) {
+            resultStderr.push('tttt runner exited with code ' + code);
             sendResults();
             return;
           }
