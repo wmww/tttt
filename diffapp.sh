@@ -36,4 +36,13 @@ if test $# -gt 0; then
 fi
 
 #NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp test/diffapp/defaultCustomTest.ts
-node test/diffapp/server.js ${TEST_PATH:-}
+
+if lsof -i :3030 >/dev/null; then
+    if test -z ${TEST_PATH:-}; then
+        echo "diffapp already running"
+    else
+        curl -X POST "http://localhost:3030/setCode?token=bash&serial=$RANDOM" --data-binary "@$TEST_PATH"
+    fi
+else
+    node test/diffapp/server.js ${TEST_PATH:-}
+fi

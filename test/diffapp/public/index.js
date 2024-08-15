@@ -520,9 +520,9 @@ function handleEvents(json) {
   if (errorsUpdated) {
     updateErrorCounts();
   }
-  const serialsMatch = latestSubmittedSerial === null || (
-    latestResults.tsc.serial === latestResults.tttt.serial &&
-    parseInt(latestResults.tttt.serial) === latestSubmittedSerial);
+  const serialsMatch = latestResults.tsc.serial === latestResults.tttt.serial &&
+    (latestSubmittedSerial === null || parseInt(latestResults.tttt.serial) === latestSubmittedSerial);
+  console.log(latestResults.tsc.serial, latestResults.tttt.serial);
   if (anyChannelUpdated && serialsMatch) {
     for (const channel of ['err', 'sym', 'typ']) {
       const passed = latestResults.tsc[channel] == latestResults.tttt[channel];
