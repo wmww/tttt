@@ -664,10 +664,12 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             break;
 
                         default: {
-                            cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
-                            cstr_append_type_error_msg(&msg, iterable_type);
-                            cstr_append_sv(&msg, c_sv("'."));
-                            error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
+                            if (errs) {
+                                cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
+                                cstr_append_type_error_msg(&msg, iterable_type);
+                                cstr_append_sv(&msg, c_sv("'."));
+                                error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
+                            }
                         }   break;
                     }
                     break;
