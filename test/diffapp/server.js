@@ -297,6 +297,23 @@ function startTtttRun() {
   )
 }
 
+let srcChangeTimeout = null;
+fs.watch(path.join(ttttRoot, 'src'), {
+  persistent: true,
+  recursive: true
+}, (type, filename) => {
+  switch (path.extname(filename)) {
+    case '.c':
+    case '.h':
+    case '.build': break;
+    default: return;
+  }
+  clearTimeout(srcChangeTimeout);
+  srcChangeTimeout = setTimeout(() => {
+    rerunTttt();
+  }, 50);
+});
+
 let runningSerial = 1;
 let queuedTestRun = null;
 let firstRunCompleted = false;
@@ -330,6 +347,15 @@ function runTests(code, serial) {
         startTtttRun();
       }
     });
+  }
+}
+
+function rerunTttt() {
+  if (runningSerial) {
+    surfaceError('TODO: allow queuing tttt runs');
+  } else {
+    runningSerial = properties.get('result.tttt.serial');
+    startTtttRun();
   }
 }
 
