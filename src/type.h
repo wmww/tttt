@@ -44,6 +44,8 @@ typedef struct Type {
     } tag;
     union {
         struct {
+            bool is_explicit;
+            bool implicit_return;
             bool self_referential_error;
         } any;
         Value value;
@@ -67,8 +69,9 @@ typedef struct Type {
 } Type;
 
 extern const Type type_any;
-extern const Type type_unknown;
+extern const Type type_explicit_any;
 extern const Type type_self_referential_error;
+extern const Type type_unknown;
 extern const Type type_never;
 extern const Type type_void;
 extern const Type type_object;

@@ -686,11 +686,13 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
                 type_abstract_tuple_to_array(&t);
                 type_abstract_literals(&t);
+                bool underline_in_tests = i.ref->value.tag != EXPR_AS_TYPE;
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
                         span_between(&i.ref->name_span, &i.ref->value.outer_span),
                         span_null,
+                        underline_in_tests,
                         false,
                         false,
                         cstr_clone(i.ref->name_string),

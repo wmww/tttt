@@ -46,5 +46,11 @@ void baseline_test_case_add_symbol_with_scope(
     bool name_is_value,
     Span decl_span
 );
-void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type);
-void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Type const* type);
+void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type, bool underline);
+void baseline_test_case_add_type_recursive(
+    BaselineTestCase* me,
+    Span outer_span,
+    Span inner_span,
+    Type const* type,
+    bool underline
+);

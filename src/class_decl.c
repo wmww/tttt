@@ -296,6 +296,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             span_null,
             my name,
             true,
+            true,
             false,
             cstr_lit("prototype"),
             span_null,
@@ -308,6 +309,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
             span_null,
+            true,
             true,
             false,
             cstr_lit("hasOwnProperty"),
@@ -347,6 +349,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i.ref->span,
                         my name,
+                        true,
                         false,
                         i.ref->member.is_optional,
                         cstr_clone(i.ref->member.name_string),
@@ -366,6 +369,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                     InterfaceMember field = interface_member_make(
                         i.ref->span,
                         my name,
+                        true,
                         i.ref->field.is_readonly,
                         i.ref->field.is_optional,
                         cstr_clone(i.ref->field.name_string),

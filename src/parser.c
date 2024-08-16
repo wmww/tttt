@@ -798,7 +798,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     }
 
     if (hop_start_if_ends_on_word_break(&p, "any")) {
-        *ret = type_any;
+        *ret = type_explicit_any;
     } else if (hop_start_if_ends_on_word_break(&p, "unknown")) {
         *ret = type_unknown;
     } else if (hop_start_if_ends_on_word_break(&p, "never")) {
@@ -906,6 +906,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         item.span,
                         span_null,
                         false,
+                        false,
                         item.member.is_optional,
                         cstr_move(&item.member.name_string),
                         item.member.name_span,
@@ -919,6 +920,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
                         span_null,
+                        false,
                         item.field.is_readonly,
                         item.field.is_optional,
                         cstr_move(&item.field.name_string),
@@ -1307,6 +1309,9 @@ static bool parse_function_args(
         } else {
             goto drop_and_fail;
         }
+    } else {
+        type_ret->ret = type_any;
+        type_ret->ret.any.implicit_return = true;
     }
 
     return parse_success(&p);

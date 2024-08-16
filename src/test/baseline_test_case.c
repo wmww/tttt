@@ -7,6 +7,7 @@
 #include "identifier_type.h"
 #include "parser.h"
 #include "value.h"
+#include "display.h"
 
 typedef struct LineNumberedStr {
     int line;
@@ -416,15 +417,16 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
     }
 }
 
-void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type) {
-    baseline_test_case_add_type_recursive(me, span, span, type);
+void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type, bool underline) {
+    baseline_test_case_add_type_recursive(me, span, span, type, underline);
 }
 
 void baseline_test_case_add_type_recursive(
     BaselineTestCase* me,
     Span outer_span,
     Span inner_span,
-    Type const* type
+    Type const* type,
+    bool underline
 ) {
     const char* outer_start = span_start_ptr(&outer_span);
     const char* outer_last = span_end_ptr(&outer_span) - 1;
@@ -443,23 +445,35 @@ void baseline_test_case_add_type_recursive(
     outer_span = span_make(inner_span.file_start, outer_start - inner_span.file_start, outer_last + 1 - outer_start );
 
     unsigned line = span_line_index(&outer_span);
-    cstr str = cstr_lit(">");
-    append_span_contents_without_newlines(&str, outer_span);
-    cstr_append(&str, " : ");
+    StringWithUnderline data = {
+        .main_str = cstr_lit(">"),
+        .underline_str = cstr_lit(">"),
+        .underline_any = !error_ctx_empty(&my error_ctx), // Hey don't look at me. I just work here.
+        .inhibit_underline_count = underline ? 0 : 1,
+    };
+    append_span_contents_without_newlines(&data.main_str, outer_span);
+    cstr_append(&data.main_str, " : ");
+    cstr_resize(&data.underline_str, cstr_size(&data.main_str), ' ');
+    cstr_data(&data.underline_str)[cstr_size(&data.main_str) - 2] = ':';
     if (type->tag == TYPE_IDENTIFIER && type->identifier->inferred) {
         // Do identifier types upport cstr_append_type_error_msg()? Yes, but inferred identifiers in ternaries include
         // the inferred keyword, which the tests don't like.
-        cstr_append_span(&str, &type->identifier->name);
+        cstr_append_span(&data.main_str, &type->identifier->name);
     } else {
-        cstr_append_type_error_msg(&str, type);
+        display_type(display_with_underline_types(&data), type);
     }
+    if (data.underlines_have_been_added && underline) {
+        cstr_append_lit(&data.main_str, "\r\n");
+        cstr_append_s(&data.main_str, data.underline_str);
+    }
+    cstr_drop(&data.underline_str);
     vec_line_numbered_str_push(&my types, (LineNumberedStr){
         .line = line,
-        .str = str,
+        .str = data.main_str,
     });
     if (!base_case) {
         outer_span.offset++;
         outer_span.length -= 2;
-        baseline_test_case_add_type_recursive(me, outer_span, inner_span, type);
+        baseline_test_case_add_type_recursive(me, outer_span, inner_span, type, underline);
     }
 }

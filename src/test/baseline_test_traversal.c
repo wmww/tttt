@@ -29,7 +29,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
 void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
-            baseline_test_case_add_type(ctx, my content_span, &type_undefined);
+            baseline_test_case_add_type(ctx, my content_span, &type_undefined, true);
             break;
 
         case BINDING_IDENTIFIER:
@@ -42,7 +42,7 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
                 span_valid(&full) ? full : my content_span
             );
             if (my identifier) {
-                baseline_test_case_add_type(ctx, my content_span, lazy_type_resolve(&my identifier->type));
+                baseline_test_case_add_type(ctx, my content_span, lazy_type_resolve(&my identifier->type), true);
             }
             break;
 
@@ -87,12 +87,12 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 my key.name_is_value,
                 my span
             );
-            baseline_test_case_add_type(ctx, my key.span, lazy_type_assert_get(&my type));
+            baseline_test_case_add_type(ctx, my key.span, lazy_type_assert_get(&my type), true);
             break;
 
         case INTERFACE_KEY_INDEX:
             baseline_test_case_add_symbol(ctx, span_sv(&my key.span), my key.span, my key.span);
-            baseline_test_case_add_type(ctx, my key.span, &my key.index);
+            baseline_test_case_add_type(ctx, my key.span, &my key.index, true);
             type_compile_test_info(&my key.index, ctx);
             break;
 
@@ -209,7 +209,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             my full_span
         );
         Type t = type_callable(c_new(CallableType, callable_type_clone(my callable)));
-        baseline_test_case_add_type(ctx, my name, &t);
+        baseline_test_case_add_type(ctx, my name, &t, true);
         type_drop(&t);
     }
     generic_compile_test_info(&my callable.generic, ctx);
@@ -250,11 +250,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 my span
             );
             Type t = type_clone(*callable_type_get_wrapper(&my member.func.callable));
-            baseline_test_case_add_type(
-                ctx,
-                my member.name_span,
-                &t
-            );
+            baseline_test_case_add_type(ctx, my member.name_span, &t, true);
             type_drop(&t);
             function_impl_compile_test_info(&my member.func, class_name, ctx);
             break;
@@ -274,7 +270,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             LazyType field_type = my field.has_explicit_type ?
                 lazy_type_ref(&my field.explicit_type) :
                 lazy_type_expr(&my field.value, true, true);
-            baseline_test_case_add_type(ctx, my field.name_span, lazy_type_resolve(&field_type));
+            baseline_test_case_add_type(ctx, my field.name_span, lazy_type_resolve(&field_type), false);
             lazy_type_drop(&field_type);
 
             if (my field.has_explicit_type) {
@@ -299,7 +295,7 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
     if (span_valid(&my name)) {
         baseline_test_case_add_symbol(ctx, span_sv(&my name), my name, my full_span);
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my class_identifier_type);
+            baseline_test_case_add_type(ctx, my name, &my class_identifier_type, true);
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
                 .name = my name,
@@ -310,7 +306,7 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
                     type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
                 ));
             }
-            baseline_test_case_add_type(ctx, my name, &t);
+            baseline_test_case_add_type(ctx, my name, &t, true);
             type_drop(&t);
         }
     }
@@ -323,7 +319,7 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
         if (t.tag == TYPE_IDENTIFIER && t.identifier->type && t.identifier->type->is_typeof_class) {
             // Extremely hacky but whatever. No idea why tsc does this.
             t.identifier->type->is_typeof_class = false;
-            baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &t);
+            baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &t, true);
             t.identifier->type->is_typeof_class = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
@@ -349,7 +345,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     if (!my is_interface) {
         Type to_drop = {0};
         Type const* t = &my type;
-        if (generic_empty(&my generic)) {
+        if (false /*generic_empty(&my generic)*/) {
             if (my type.tag != TYPE_IDENTIFIER ||
                 (my type.identifier->type && !my type.identifier->type->is_class)
             ) {
@@ -379,7 +375,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
             }
             t = &to_drop;
         }
-        baseline_test_case_add_type(ctx, my name, t);
+        baseline_test_case_add_type(ctx, my name, t, true);
         type_drop(&to_drop);
     }
     generic_compile_test_info(&my generic, ctx);
@@ -477,7 +473,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 expr_compile_test_info(&my property->prop, true, ctx);
             } else {
                 Type t = expr_get_type_and_typecheck(me, nullptr);
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, &t);
+                baseline_test_case_add_type(ctx, my property->prop.outer_span, &t, true);
                 type_drop(&t);
             }
         }   break;
@@ -520,11 +516,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 Type t = expr_get_type_and_typecheck(&i.ref->value, nullptr);
                 type_abstract_tuple_to_array(&t);
                 type_abstract_literals(&t);
-                baseline_test_case_add_type(
-                    ctx,
-                    i.ref->name_span,
-                    &t
-                );
+                baseline_test_case_add_type(ctx, i.ref->name_span, &t, true);
                 type_drop(&t);
 
                 expr_compile_test_info(&i.ref->value, true, ctx);
@@ -550,7 +542,8 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
             ctx,
             my outer_span,
             my inner_span,
-            lazy_type_assert_get(&my identifier.var->type)
+            lazy_type_assert_get(&my identifier.var->type),
+            true
         );
     } else if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
         Type t = expr_get_type_and_typecheck(me, nullptr);
@@ -560,7 +553,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
                 type_abstract_tuple_to_array(&t);
             }
         }
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t, false);
         type_drop(&t);
     }
 

@@ -4,8 +4,7 @@ set -euo pipefail
 # Make sure we're in the same directory as this script
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-DESIRED_TS=v5.4.2
-#DESIRED_TS=v5.5.4
+DESIRED_TS=v5.5.4
 
 if test ! -e TypeScript; then
     # If we don't have TypeScript, clone it (shallow clone at the tag we want)
