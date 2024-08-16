@@ -1,0 +1,22 @@
+var x: { foo: string }
+interface I { A }
+interface J<T, U, V> { foo<W extends V>(x: W): T }
+var expr: any; for (let a in (null as any)) {}
+let boop: any = 44;
+try {} catch(e) {}
+//for (let {a, b} of X) {}
+var a, b, c
+function f() {}
+interface K { C(); }
+let k: K = null as any;
+let hhh = {a: null as any, b: k.C()}
+var g = { if: "test" }
+function f0(): void {}
+function f1() {}
+let x0 = f0();
+let x1 = f1();
+var foo = <{ id: number;}> ({id:4});
+function ff() { return 22 as number; }
+var objArr: { id: number }[]
+class C { public static e; }
+var r6: string = C.e;
