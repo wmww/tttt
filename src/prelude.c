@@ -9,8 +9,10 @@ void panic_internal(const char* error_type, const char* file, int line, const ch
     vfprintf(stderr, fmt, va);
     va_end(va);
     fprintf(stderr, CLR0 "\n");
+#ifdef DEBUG_BUILD
     // gives us a stack trace in valgrind, there's probably a better way to do it
     fprintf(stderr, "%p\n", *(void**)nullptr);
+#endif
     exit(1);
 }
 
