@@ -901,7 +901,6 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         if (parse_class_item(&p, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_MEMBER:
-                    ASSERT(item.member.func.callable.ret_explicit);
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
                         span_null,
@@ -1394,11 +1393,6 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
 
     if (!parse_function_args(&p, false, ret, &ret->callable)) {
         return parse_fail(&p);
-    }
-
-    if (!ret->callable.ret_explicit) {
-        ret->callable.ret_explicit = true;
-        ret->callable.ret = type_any;
     }
 
     ret->full_span = span_end(a);
