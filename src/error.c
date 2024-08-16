@@ -11,30 +11,34 @@ Error error_clone(Error me) {
     return me;
 }
 
-void cstr_append_error_debug(cstr* target, Error const* me) {
+void display_error(Display d, Error const* me) {
     int line = span_line_index(&my span) + 1;
     cstr prefix = cstr_null;
+
     if (my phase == ERROR_PHASE_RELATED) {
-        prefix = cstr_lit(CLR_IMPLICIT " |  " CLR0);
+        Display prefix_d = d;
+        prefix_d.target = &prefix;
+        display_colored(prefix_d, color_implicit, " |  ");
     }
 
-    cstr_append_fmt(
-        target,
-        "%s" CLR_PATH "%s" CLR0 CLR_ERR_CODE ":%d" CLR0 CLR_IMPLICIT " [TS%d]" CLR0 CLR_ERR " %s" CLR0,
-        cstr_str(&prefix),
-        "filename.ts",
-        line,
-        my ts_code,
-        cstr_str(&my message)
-    );
+    display_s(d, prefix);
+    display_color(d, color_path);
+    display_lit(d, "filename.ts");
+    display_color(d, color_line_number);
+    display_fmt(d, ":%d", line);
+    display_color(d, color_implicit);
+    display_fmt(d, " [TS%d] ", my ts_code);
+    display_color(d, color_error);
+    display_s(d, my message);
+    display_color(d, color_normal);
 
     if (span_valid(&my span)) {
         const char* line_start = span_line_start(&my span);
         const char* line_end = span_line_end(&my span);
         int col = span_col_index(&my span);
 
-        cstr_append_fmt(
-            target,
+        display_fmt(
+            d,
             "\n%s\n%s%.*s%s\n%s",
             cstr_str(&prefix),
             cstr_str(&prefix),
@@ -45,20 +49,22 @@ void cstr_append_error_debug(cstr* target, Error const* me) {
         );
 
         for (int i = 0; i < col; i++) {
-            cstr_append_sv(target, c_sv(" "));
+            display_lit(d, " ");
         }
 
-        cstr_append_sv(target, c_sv(CLR_ERR));
+        display_color(d, color_error);
         for (int i = 0; i < (my span.length ? (int)my span.length : 1); i++) {
-            cstr_append_sv(target, c_sv("-"));
+            display_lit(d, "-");
         }
-        cstr_append_sv(target, c_sv(CLR0));
+        display_color(d, color_normal);
     }
 
     c_foreach(i, vec_error, my related_errors) {
-        cstr_append_sv(target, c_sv("\n"));
-        cstr_append_error_debug(target, i.ref);
+        display_lit(d, "\n");
+        display_error(d, i.ref);
     }
+
+    cstr_drop(&prefix);
 }
 
 void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
@@ -90,18 +96,20 @@ void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }
 
-void error_ctx_display(ErrorCtx const* me) {
+void print_error_ctx(ErrorCtx const* me) {
     cstr str = cstr_null;
     const int max_display = 10;
     c_foreach_n(i, vec_error, my errors, max_display) {
-        cstr_append_error_debug(&str, i.ref);
+        display_error(debug_display(&str), i.ref);
         printf("%s\n\n", cstr_str(&str));
         cstr_clear(&str);
     }
     if (vec_error_size(&my errors) > max_display) {
         printf(
-            CLR_ERR "  %ld additional errors not shown\n\n" CLR0,
-            vec_error_size(&my errors) - max_display
+            "%s  %ld additional errors not shown%s\n\n",
+            color_error,
+            vec_error_size(&my errors) - max_display,
+            color_normal
         );
     }
     cstr_drop(&str);

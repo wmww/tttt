@@ -15,53 +15,6 @@ void import_statement_drop(ImportStatement* me) {
     named_type_destroy(my module_named_type);
 }
 
-void cstr_append_import_statement_debug(cstr* target, ImportStatement* me, int indent) {
-    __ indent;
-
-    cstr_append_sv(target, c_sv("import "));
-    if (my type_only) {
-        cstr_append_sv(target, c_sv("type "));
-    }
-    bool force_brace_list = true;
-    if (span_valid(&my default_name)) {
-        cstr_append_sv(target, c_sv(CLR_NAME));
-        cstr_append_sv(target, span_sv(&my default_name));
-        cstr_append_sv(target, c_sv(CLR0));
-        force_brace_list = false;
-    }
-    if (span_valid(&my module_name)) {
-        cstr_append_sv(target, c_sv(CLR_VALUE "*" CLR0 " as " CLR_NAME));
-        cstr_append_sv(target, span_sv(&my module_name));
-        cstr_append_sv(target, c_sv(CLR0));
-        force_brace_list = false;
-    }
-    if (!force_brace_list) {
-        cstr_append_sv(target, c_sv(", "));
-    }
-    if (force_brace_list || !vec_import_item_empty(&my items)) {
-        cstr_append_sv(target, c_sv("{"));
-        c_foreach(i, vec_import_item, my items) {
-            if (i.ref->type_only) {
-                cstr_append_sv(target, c_sv("type "));
-            }
-            cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_sv(target, span_sv(&i.ref->source));
-            if (span_cmp(&i.ref->name, &i.ref->source) != 0) {
-                cstr_append_sv(target, c_sv(CLR0 " as " CLR_NAME));
-                cstr_append_sv(target, span_sv(&i.ref->name));
-            }
-            cstr_append_sv(target, c_sv(CLR0));
-            if (i.ref != i.end - 1) {
-                cstr_append_sv(target, c_sv(", "));
-            }
-        }
-        cstr_append_sv(target, c_sv("}"));
-    }
-    cstr_append_sv(target, c_sv(" from " CLR_STR));
-    cstr_append_s(target, my path);
-    cstr_append_sv(target, c_sv(CLR0 ";"));
-}
-
 void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx* errs) {
     __ errs;
 

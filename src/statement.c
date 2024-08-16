@@ -10,20 +10,6 @@ void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }
 
-void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent) {
-    switch (my keyword) {
-        case VAR_INIT_VAR: cstr_append_sv(target, c_sv("var ")); break;
-        case VAR_INIT_LET: cstr_append_sv(target, c_sv("let ")); break;
-        case VAR_INIT_CONST: cstr_append_sv(target, c_sv("const ")); break;
-    }
-    c_foreach(i, vec_initialized_binding, my initializers) {
-        cstr_append_initialized_binding_debug(target, i.ref, indent);
-        if (i.ref != i.end - 1) {
-            cstr_append_sv(target, c_sv(", "));
-        }
-    }
-}
-
 void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         if (my keyword == VAR_INIT_CONST &&
@@ -48,7 +34,7 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
     }
 }
 
-czview for_each_loop_statement_keyword_str(ForEachLoopStatement* me) {
+czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     switch (my keyword) {
         case FOR_EACH_LOOP_OF: return c_zv("of");
         case FOR_EACH_LOOP_IN: return c_zv("in");
@@ -207,163 +193,6 @@ void statement_drop(Statement* me) {
 
         case STATEMENT_DECL_NAMESPACE:
             block_drop(&my decl.namespace.contents);
-            break;
-    }
-}
-
-void cstr_append_statement_debug(cstr* target, Statement* me, int indent) {
-    switch (statement_get_exported(me)) {
-        case DECL_EXPORTED_NO: break;
-        case DECL_EXPORTED_YES: cstr_append_sv(target, c_sv("export ")); break;
-        case DECL_EXPORTED_YES_DEFAULT: cstr_append_sv(target, c_sv("export default ")); break;
-    }
-
-    if (statement_tag_is_decl(my tag) && my decl.declared) {
-        cstr_append_sv(target, c_sv("declare "));
-    }
-
-    switch (my tag) {
-        case STATEMENT_NOOP: cstr_append_sv(target, c_sv(";")); break;
-        case STATEMENT_BLOCK: cstr_append_block_debug(target, &my block, indent); break;
-
-        case STATEMENT_IF_ELSE: {
-            int statement_size = vec_statement_size(&my if_else.statements);
-            int cond_size = vec_expr_size(&my if_else.conditions);
-            for (int i = 0; i < statement_size; i++) {
-                if (i < cond_size) {
-                    cstr_append_sv(target, c_sv("if ("));
-                    cstr_append_expr_debug(target, vec_expr_at(&my if_else.conditions, i), indent);
-                    cstr_append_sv(target, c_sv(") "));
-                }
-                cstr_append_statement_debug(target, vec_statement_at_mut(&my if_else.statements, i), indent);
-                if (i < statement_size - 1) {
-                    cstr_append_sv(target, c_sv(" else "));
-                }
-            }
-        }   break;
-
-        case STATEMENT_FOR_LOOP:
-            cstr_append_sv(target, c_sv("for ("));
-            cstr_append_statement_debug(target, &my for_loop->initialization, indent);
-            if (cstr_str(target)[cstr_size(target) - 1] != ';') {
-                cstr_append_sv(target, c_sv(";"));
-            }
-            cstr_append_sv(target, c_sv(" "));
-            cstr_append_expr_debug(target, &my for_loop->condition, indent);
-            cstr_append_sv(target, c_sv("; "));
-            cstr_append_expr_debug(target, &my for_loop->afterthought, indent);
-            cstr_append_sv(target, c_sv(") "));
-            cstr_append_statement_debug(target, &my for_loop->body, indent);
-            break;
-
-        case STATEMENT_FOR_EACH_LOOP:
-            cstr_append_sv(target, c_sv("for ("));
-            switch (my for_each_loop->variable.tag) {
-                case FOR_EACH_LOOP_STATEMENT:
-                    cstr_append_variable_statement_debug(target, &my for_each_loop->variable.statement, indent);
-                    break;
-
-                case FOR_EACH_LOOP_EXPR:
-                    cstr_append_expr_debug(target, &my for_each_loop->variable.expr, indent);
-                    break;
-            }
-            cstr_append_sv(target, c_sv(" "));
-            cstr_append_sv(target, czview_sv(for_each_loop_statement_keyword_str(my for_each_loop)));
-            cstr_append_sv(target, c_sv(" "));
-            cstr_append_expr_debug(target, &my for_each_loop->iterable, indent);
-            cstr_append_sv(target, c_sv(") "));
-            cstr_append_statement_debug(target, &my for_each_loop->body, indent);
-            break;
-
-        case STATEMENT_SWITCH:
-            cstr_append_sv(target, c_sv("switch ("));
-            cstr_append_expr_debug(target, &my switch_->needle, indent);
-            cstr_append_sv(target, c_sv(") {\n"));
-            c_foreach(i, vec_switch_case, my switch_->cases) {
-                APPEND_INDENT(target, indent + 1);
-                if (i.ref->is_pattern) {
-                    cstr_append_sv(target, c_sv("case "));
-                    cstr_append_expr_debug(target, &i.ref->pattern, indent + 1);
-                    cstr_append_sv(target, c_sv(":\n"));
-                } else {
-                    cstr_append_sv(target, c_sv("default:\n"));
-                }
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    APPEND_INDENT(target, indent + 2);
-                    cstr_append_statement_debug(target, j.ref, indent + 2);
-                    cstr_append_sv(target, c_sv("\n"));
-                }
-                cstr_append_sv(target, c_sv("\n"));
-            }
-            APPEND_INDENT(target, indent);
-            cstr_append_sv(target, c_sv("}"));
-            break;
-
-        case STATEMENT_TRY_CATCH:
-            cstr_append_sv(target, c_sv("try "));
-            cstr_append_block_debug(target, &my try_catch->try_block, indent);
-            if (my try_catch->catch_var.tag != BINDING_NOOP ||
-                !vec_statement_empty(&my try_catch->catch_block.statements)
-            ) {
-                cstr_append_sv(target, c_sv(" catch "));
-                if (my try_catch->catch_var.tag != BINDING_NOOP) {
-                    cstr_append_sv(target, c_sv("("));
-                    cstr_append_binding_debug(target, &my try_catch->catch_var, false, indent);
-                    cstr_append_sv(target, c_sv(") "));
-                }
-                cstr_append_block_debug(target, &my try_catch->catch_block, indent);
-            }
-            if (!vec_statement_empty(&my try_catch->finally_block.statements)) {
-                cstr_append_sv(target, c_sv(" finally "));
-                cstr_append_block_debug(target, &my try_catch->finally_block, indent);
-            }
-            break;
-
-        case STATEMENT_BREAK: cstr_append_sv(target, c_sv("break;")); break;
-
-        case STATEMENT_EXPR:
-        case STATEMENT_EXPORT_DEFAULT_EXPR:
-            cstr_append_expr_debug(target, &my expr, indent);
-            cstr_append_sv(target, c_sv(";"));
-            break;
-
-        case STATEMENT_RETURN_EXPR:
-            cstr_append_sv(target, c_sv("return "));
-            cstr_append_expr_debug(target, &my expr, indent);
-            cstr_append_sv(target, c_sv(";"));
-            break;
-
-        case STATEMENT_THROW_EXPR:
-            cstr_append_sv(target, c_sv("throw "));
-            cstr_append_expr_debug(target, &my expr, indent);
-            cstr_append_sv(target, c_sv(";"));
-            break;
-
-        case STATEMENT_IMPORT:
-            cstr_append_import_statement_debug(target, my import, indent);
-            break;
-
-        case STATEMENT_DECL_VARIABLE:
-            cstr_append_variable_statement_debug(target, &my decl.variable, indent);
-            cstr_append_sv(target, c_sv(";"));
-            break;
-
-        case STATEMENT_DECL_FUNCTION:
-            cstr_append_sv(target, c_sv("function " CLR_NAME));
-            cstr_append_span(target, &my decl.function.name);
-            cstr_append_sv(target, c_sv(CLR0));
-            cstr_append_function_impl_debug(target, &my decl.function, false, indent);
-            break;
-
-        case STATEMENT_DECL_CLASS: cstr_append_class_decl_debug(target, my decl.class, indent); break;
-
-        case STATEMENT_DECL_TYPE: cstr_append_type_decl_debug(target, &my decl.type, indent); break;
-
-        case STATEMENT_DECL_NAMESPACE:
-            cstr_append_sv(target, c_sv("function " CLR_NAME));
-            cstr_append_span(target, &my decl.namespace.name);
-            cstr_append_sv(target, c_sv(CLR0 " "));
-            cstr_append_block_debug(target, &my decl.namespace.contents, indent);
             break;
     }
 }

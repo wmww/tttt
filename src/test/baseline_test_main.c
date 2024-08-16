@@ -38,7 +38,7 @@ static bool parse_args(int argc, const char** argv) {
             if (i < argc && *argv[i] != '-') {
                 tests_dir = argv[i];
             } else {
-                fprintf(stderr, CLR_ERR "Expected argument after %s\n\n" CLR0, argv[i-1]);
+                fprintf(stderr, "%sExpected argument after %s%s\n\n", color_error, argv[i-1], color_normal);
                 show_help(stderr);
                 return false;
             }
@@ -47,7 +47,7 @@ static bool parse_args(int argc, const char** argv) {
             if (i < argc && *argv[i] != '-') {
                 test_filter = argv[i];
             } else {
-                fprintf(stderr, CLR_ERR "Expected argument after %s\n\n" CLR0, argv[i-1]);
+                fprintf(stderr, "%sExpected argument after %s%s\n\n", color_error, argv[i-1], color_normal);
                 show_help(stderr);
                 return false;
             }
@@ -66,25 +66,25 @@ static bool parse_args(int argc, const char** argv) {
             if (i < argc && *argv[i] != '-') {
                 results_path = argv[i];
             } else {
-                fprintf(stderr, CLR_ERR "Expected argument after %s\n\n" CLR0, argv[i-1]);
+                fprintf(stderr, "%sExpected argument after %s%s\n\n", color_error, argv[i-1], color_normal);
                 show_help(stderr);
                 return false;
             }
         } else if (streq(argv[i], "-s") || streq(argv[i], "--save")) {
             save_results = true;
         } else {
-            fprintf(stderr, CLR_ERR "Unexpected argument %s\n\n" CLR0, argv[i]);
+            fprintf(stderr, "%sUnexpected argument %s%s\n\n", color_error, argv[i], color_normal);
             show_help(stderr);
             return false;
         }
     }
 
     if (!path_is_directory(tests_dir)) {
-        fprintf(stderr, CLR_ERR "%s is not a directory\n" CLR0, tests_dir);
+        fprintf(stderr, "%s%s is not a directory%s\n", color_error, tests_dir, color_normal);
         return false;
     }
     if (!path_is_reg_file(results_path)) {
-        fprintf(stderr, CLR_ERR "%s is not a file\n" CLR0, results_path);
+        fprintf(stderr, "%s%s is not a file%s\n", color_error, results_path, color_normal);
         return false;
     }
 

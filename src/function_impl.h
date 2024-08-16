@@ -24,7 +24,6 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
-void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent);
 void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 Type const* function_impl_resolve_type(FunctionImpl* me);

@@ -29073,7 +29073,7 @@ const baselines = {
     'unionRelationshipCheckPasses': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionSignaturesWithThisParameter': {
         errors: false,
@@ -45233,7 +45233,7 @@ const baselines = {
     'interfaceWithMultipleBaseTypes2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceWithOverloadedCallAndConstructSignatures': {
         errors: false,
@@ -57148,12 +57148,12 @@ const baselines = {
     'assignmentCompatWithObjectMembers2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithObjectMembers3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithObjectMembers4': {
         errors: false,
@@ -57173,7 +57173,7 @@ const baselines = {
     'assignmentCompatWithObjectMembersNumericNames': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithObjectMembersOptionality': {
         errors: false,
@@ -57738,17 +57738,17 @@ const baselines = {
     'subtypingWithObjectMembersOptionality2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithObjectMembersOptionality3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithObjectMembersOptionality4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithOptionalProperties': {
         errors: true,

@@ -9,6 +9,7 @@
 #include "generic.h"
 #include "value.h"
 #include "name_stack.h"
+#include "display.h"
 #include "error.h"
 
 const Type type_any = { .tag = TYPE_ANY };
@@ -193,136 +194,8 @@ Type type_clone(Type me) {
     UNREACHABLE;
 }
 
-void cstr_append_type_debug(cstr* target, Type const* me, int indent) {
-    switch (my tag) {
-        case TYPE_ANY: cstr_append_sv(target, c_sv(CLR_TYPE "any" CLR0)); break;
-        case TYPE_NEVER: cstr_append_sv(target, c_sv(CLR_TYPE "never" CLR0)); break;
-        case TYPE_VOID: cstr_append_sv(target, c_sv(CLR_TYPE "void" CLR0)); break;
-        case TYPE_BOOLEAN: cstr_append_sv(target, c_sv(CLR_TYPE "boolean" CLR0)); break;
-        case TYPE_NUMBER: cstr_append_sv(target, c_sv(CLR_TYPE "number" CLR0)); break;
-        case TYPE_STRING: cstr_append_sv(target, c_sv(CLR_TYPE "string" CLR0)); break;
-        case TYPE_VALUE: cstr_append_value_debug(target, &my value, indent); break;
-        case TYPE_IDENTIFIER: cstr_append_identifier_type_debug(target, my identifier, indent); break;
-        case TYPE_CALLABLE: cstr_append_callable_type_debug(target, my callable, indent); break;
-        case TYPE_INTERFACE: cstr_append_interface_debug(target, &my interface, indent); break;
-
-        case TYPE_UNKNOWN:
-            cstr_append_sv(target, c_sv(CLR_TYPE "unknown" CLR0));
-            break;
-
-        case TYPE_ARRAY:
-            if (my array.readonly) {
-                cstr_append_sv(target, c_sv("readonly "));
-            }
-            cstr_append_type_debug(target, my array.element, indent);
-            cstr_append_sv(target, c_sv(CLR_TYPE "[]" CLR0));
-            break;
-
-        case TYPE_TUPLE:
-            if (my tuple.readonly) {
-                cstr_append_sv(target, c_sv("readonly "));
-            }
-            cstr_append_sv(target, c_sv("["));
-            c_foreach(i, vec_type, my tuple.elements) {
-                cstr_append_type_debug(target, i.ref, indent);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, c_sv(", "));
-                }
-            }
-            cstr_append_sv(target, c_sv("]"));
-            break;
-
-        case TYPE_INDEXED: cstr_append_indexed_type_debug(target, my indexed, indent); break;
-        case TYPE_KEYOF: cstr_append_keyof_type_debug(target, my keyof, indent); break;
-        case TYPE_TERNARY: cstr_append_ternary_type_debug(target, my ternary, indent); break;
-
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT "(" CLR0));
-            c_foreach(i, vec_type, my composite) {
-                cstr_append_type_debug(target, i.ref, indent);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
-                }
-            }
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
-            break;
-
-        case TYPE_REF:
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT "-> (" CLR0));
-            cstr_append_type_debug(target, my ref, indent);
-            cstr_append_sv(target, c_sv(CLR_IMPLICIT ")" CLR0));
-            break;
-    }
-
-    if (type_is_self_referential(me)) {
-        cstr_append_sv(target, c_sv(CLR_ERR " /* self-referential */" CLR0));
-    }
-}
-
 void cstr_append_type_error_msg(cstr* target, Type const* me) {
-    switch (my tag) {
-        case TYPE_ANY: cstr_append_sv(target, c_sv("any")); break;
-        case TYPE_UNKNOWN: cstr_append_sv(target, c_sv("unknown")); break;
-        case TYPE_NEVER: cstr_append_sv(target, c_sv("never")); break;
-        case TYPE_VOID: cstr_append_sv(target, c_sv("void")); break;
-        case TYPE_BOOLEAN: cstr_append_sv(target, c_sv("boolean")); break;
-        case TYPE_NUMBER: cstr_append_sv(target, c_sv("number")); break;
-        case TYPE_STRING: cstr_append_sv(target, c_sv("string")); break;
-        case TYPE_VALUE: cstr_append_value_error_msg(target, &my value); break;
-        case TYPE_IDENTIFIER: cstr_append_identifier_type_error_msg(target, my identifier); break;
-        case TYPE_CALLABLE: cstr_append_callable_type_error_msg(target, my callable); break;
-        case TYPE_INTERFACE: cstr_append_interface_error_msg(target, &my interface); break;
-
-        case TYPE_ARRAY: {
-            bool needs_peren = my array.element->tag == TYPE_UNION || my array.element->tag == TYPE_INTERSECTION;
-            if (needs_peren) {
-                cstr_append_sv(target, c_sv("("));
-            }
-            if (my array.readonly) {
-                cstr_append_sv(target, c_sv("readonly "));
-            }
-            cstr_append_type_error_msg(target, my array.element);
-            if (needs_peren) {
-                cstr_append_sv(target, c_sv(")"));
-            }
-            cstr_append_sv(target, c_sv("[]"));
-        }   break;
-
-        case TYPE_TUPLE:
-            if (my tuple.readonly) {
-                cstr_append_sv(target, c_sv("readonly "));
-            }
-            cstr_append_sv(target, c_sv("["));
-            c_foreach(i, vec_type, my tuple.elements) {
-                cstr_append_type_error_msg(target, i.ref);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, c_sv(", "));
-                }
-            }
-            cstr_append_sv(target, c_sv("]"));
-            break;
-
-        case TYPE_INDEXED: cstr_append_indexed_type_error_msg(target, my indexed); break;
-        case TYPE_KEYOF: cstr_append_keyof_type_error_msg(target, my keyof); break;
-        case TYPE_TERNARY: cstr_append_ternary_type_error_msg(target, my ternary); break;
-
-        case TYPE_UNION:
-        case TYPE_INTERSECTION: {
-            bool first = true;
-            c_foreach(i, vec_type, my composite) {
-                if (i.ref->tag != (my tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY)) {
-                    if (!first) {
-                        cstr_append_sv(target, my tag == TYPE_UNION ? c_sv(" | ") : c_sv(" & "));
-                    }
-                    first = false;
-                    cstr_append_type_error_msg(target, i.ref);
-                }
-            }
-        }   break;
-
-        case TYPE_REF: cstr_append_type_error_msg(target, my ref); break;
-    }
+    display_type(error_display(target), me);
 }
 
 static void type_add_inferred_names(Type const* me, NameStack* names) {
@@ -1527,13 +1400,15 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         default: break;
     }
 
-    if (call->is_extends) {
-        cstr msg = cstr_lit("Type '");
-        cstr_append_type_error_msg(&msg, me);
-        cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
-        error_ctx_error_s(errs, call->callable.outer_span, 2507, msg);
-    } else {
-        error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
+    if (errs) {
+        if (call->is_extends) {
+            cstr msg = cstr_lit("Type '");
+            cstr_append_type_error_msg(&msg, me);
+            cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
+            error_ctx_error_s(errs, call->callable.outer_span, 2507, msg);
+        } else {
+            error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
+        }
     }
     return type_any;
 }

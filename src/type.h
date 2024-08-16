@@ -166,7 +166,6 @@ void composite_type_simplify(Type* me);
 
 void type_drop(Type* me);
 Type type_clone(Type me);
-void cstr_append_type_debug(cstr* target, Type const* me, int indent);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
 static inline Type type_move(Type* me) {
     Type ret = *me;

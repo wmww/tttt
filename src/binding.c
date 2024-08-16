@@ -1,5 +1,6 @@
 #include "binding.h"
 #include "name_stack.h"
+#include "display.h"
 #include "error.h"
 
 void binding_drop(Binding* me) {
@@ -23,99 +24,6 @@ Binding binding_clone(Binding me) {
     me.explicit_type = type_clone(me.explicit_type);
     me.assigned_type = lazy_type_clone(me.assigned_type);
     return me;
-}
-
-void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, int indent) {
-    switch (my tag) {
-        case BINDING_NOOP: break;
-
-        case BINDING_IDENTIFIER:
-            cstr_append_sv(target, c_sv(CLR_NAME));
-            cstr_append_span(target, &my content_span);
-            cstr_append_sv(target, c_sv(CLR0));
-            if (!my identifier) {
-                cstr_append_sv(target, c_sv(CLR_ERR " /* unresolved */" CLR0));
-            } else if (!my has_explicit_type && lazy_type_try_get(&my identifier->type)) {
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT " /* " CLR0));
-                cstr_append_type_debug(target, lazy_type_try_get(&my identifier->type), indent);
-                cstr_append_sv(target, c_sv(CLR_IMPLICIT " */" CLR0));
-            }
-            break;
-
-        case BINDING_ARRAY:
-            cstr_append_sv(target, c_sv("["));
-            c_foreach(i, vec_binding, my array) {
-                cstr_append_binding_debug(target, i.ref, false, indent);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, c_sv(", "));
-                }
-            }
-            cstr_append_sv(target, c_sv("]"));
-            break;
-
-        case BINDING_OBJECT:
-            cstr_append_sv(target, c_sv("{"));
-            c_foreach(i, vec_object_binding_item, my object) {
-                cstr_append_value_debug(target, &i.ref->source, indent);
-                cstr_append_sv(target, c_sv(": "));
-                cstr_append_binding_debug(target, &i.ref->target, false, indent);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, c_sv(", "));
-                }
-            }
-            cstr_append_sv(target, c_sv("}"));
-            break;
-    }
-
-    if (optional) {
-        cstr_append_sv(target, c_sv("?"));
-    }
-
-    if (my has_explicit_type) {
-        cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &my explicit_type, indent);
-    }
-}
-
-void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optional) {
-    switch (my tag) {
-        case BINDING_NOOP: break;
-
-        case BINDING_IDENTIFIER:
-            cstr_append_span(target, &my content_span);
-            break;
-
-        case BINDING_ARRAY:
-            cstr_append_sv(target, c_sv("["));
-            c_foreach(i, vec_binding, my array) {
-                cstr_append_binding_error_msg(target, i.ref, false);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, c_sv(", "));
-                }
-            }
-            cstr_append_sv(target, c_sv("]"));
-            break;
-
-        case BINDING_OBJECT:
-            cstr_append_sv(target, c_sv("{ "));
-            c_foreach(i, vec_object_binding_item, my object) {
-                cstr_append_value_error_msg(target, &i.ref->source);
-                cstr_append_sv(target, c_sv(": "));
-                cstr_append_binding_error_msg(target, &i.ref->target, false);
-                if (i.ref != i.end - 1) {
-                    cstr_append_sv(target, c_sv(", "));
-                }
-            }
-            cstr_append_sv(target, c_sv(" }"));
-            break;
-    }
-
-    if (optional) {
-        cstr_append_sv(target, c_sv("?"));
-    }
-
-    cstr_append_sv(target, c_sv(": "));
-    cstr_append_type_error_msg(target, binding_get_type((Binding*)me));
 }
 
 void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCtx* errs) {
@@ -250,10 +158,10 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
                 Type const* type = type_resolve(lazy_type_resolve(&my identifier->type));
                 if (type_is_self_referential(type)) {
                     cstr msg = cstr_lit("'");
-                    cstr_append_sv(&msg, span_sv(&my content_span));
-                    cstr_append_sv(&msg, c_sv("' implicitly has type '"));
+                    cstr_append_span(&msg, &my content_span);
+                    cstr_append_lit(&msg, "' implicitly has type '");
                     cstr_append_type_error_msg(&msg, type);
-                    cstr_append_sv(&msg, c_sv("' because it does not have a type annotation and is referenced directly or indirectly in its own initializer."));
+                    cstr_append_lit(&msg, "' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.");
                     error_ctx_error_s(errs, my content_span, 7022, msg);
                 }
             }
@@ -293,14 +201,6 @@ ObjectBindingItem object_binding_item_clone(ObjectBindingItem me) {
 void initialized_binding_drop(InitializedBinding* me) {
     binding_drop(&my binding);
     expr_drop(&my value);
-}
-
-void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent) {
-    cstr_append_binding_debug(target, &my binding, false, indent);
-    if (my value.tag != EXPR_IMPLICIT_ANY) {
-        cstr_append_sv(target, c_sv(" = "));
-        cstr_append_expr_debug(target, &my value, indent);
-    }
 }
 
 void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs) {

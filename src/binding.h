@@ -36,8 +36,6 @@ typedef struct ObjectBindingItem {
 
 void binding_drop(Binding* me);
 Binding binding_clone(Binding me);
-void cstr_append_binding_debug(cstr* target, Binding const* me, bool optional, int indent);
-void cstr_append_binding_error_msg(cstr* target, Binding const* me, bool optional);
 void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* errs);
 LazyType binding_get_lazy_type(Binding const* me); // Only valid after binding_add_names() is called
 Type const* binding_get_type(Binding* me); // Only valid after binding_add_names() is called
@@ -62,7 +60,6 @@ typedef struct InitializedBinding {
 } InitializedBinding;
 
 void initialized_binding_drop(InitializedBinding* me);
-void cstr_append_initialized_binding_debug(cstr* target, InitializedBinding const* me, int indent);
 void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs);
 void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);

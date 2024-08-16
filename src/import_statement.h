@@ -30,5 +30,4 @@ typedef struct ImportStatement {
 } ImportStatement;
 
 void import_statement_drop(ImportStatement* me);
-void cstr_append_import_statement_debug(cstr* target, ImportStatement* me, int indent);
 void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx* errs);

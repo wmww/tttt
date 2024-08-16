@@ -12,37 +12,6 @@ void function_impl_drop(FunctionImpl* me) {
     block_drop(&my body);
 }
 
-void cstr_append_function_impl_debug(cstr* target, FunctionImpl* me, bool include_arrow, int indent) {
-    cstr_append_generic_debug(target, &my callable.generic, indent);
-    cstr_append_sv(target, c_sv("("));
-    c_foreach(i, vec_callable_arg, my callable.args) {
-        if (i.ref->rest) {
-            cstr_append_sv(target, c_sv("..."));
-        }
-        cstr_append_binding_debug(target, &i.ref->binding, i.ref->explicit_optional, indent);
-        intptr_t index = i.ref - my callable.args.data;
-        Expr const* default_arg = function_impl_arg_default_at(me, index);
-        if (default_arg->tag != EXPR_IMPLICIT_ANY) {
-            cstr_append_sv(target, c_sv(" = "));
-            cstr_append_expr_debug(target, default_arg, indent);
-        }
-        if (i.ref != i.end - 1) {
-            cstr_append_sv(target, c_sv(", "));
-        }
-    }
-    cstr_append_sv(target, c_sv(")"));
-    if (my callable.ret_explicit) {
-        cstr_append_sv(target, c_sv(": "));
-        cstr_append_type_debug(target, &my callable.ret, indent);
-    }
-    if (my has_block) {
-        cstr_append_sv(target, include_arrow ? c_sv(" => ") : c_sv(" "));
-        cstr_append_block_debug(target, &my body, indent);
-    } else {
-        cstr_append_sv(target, c_sv(";"));
-    }
-}
-
 void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_var);

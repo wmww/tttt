@@ -27,7 +27,6 @@ typedef struct VariableStatement {
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
-void cstr_append_variable_statement_debug(cstr* target, VariableStatement* me, int indent);
 void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs);
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
@@ -109,7 +108,7 @@ static inline bool statement_tag_is_decl(typeof((Statement){}.tag) tag) {
     }
 }
 
-static inline DeclExported statement_get_exported(Statement* me) {
+static inline DeclExported statement_get_exported(Statement const* me) {
     if (statement_tag_is_decl(my tag)) {
         return my decl.exported;
     } else if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
@@ -120,7 +119,6 @@ static inline DeclExported statement_get_exported(Statement* me) {
 }
 
 void statement_drop(Statement* me);
-void cstr_append_statement_debug(cstr* target, Statement* me, int indent);
 void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs);
 void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs);
 void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs);
@@ -161,6 +159,7 @@ typedef struct ForEachLoopStatement {
     Statement body;
 } ForEachLoopStatement;
 
+czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me);
 Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me);
 
 // Switch statement

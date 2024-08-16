@@ -17,7 +17,6 @@ typedef struct TypeDecl {
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
-void cstr_append_type_decl_debug(cstr* target, TypeDecl* me, int indent);
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs);
 Type const* type_decl_resolve_interface_type(TypeDecl* me);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);

@@ -88,14 +88,28 @@ void baseline_test_result_run(
 
     if (!path_is_reg_file(cstr_str(&symbols_path))) {
         if (noisy) {
-            fprintf(stderr, CLR_ERR "%.*s:" CLR0 " %s does not exist\n", c_SV(name), cstr_str(&symbols_path));
+            fprintf(
+                stderr,
+                "%s%.*s:%s %s does not exist\n",
+                color_error,
+                c_SV(name),
+                color_normal,
+                cstr_str(&symbols_path)
+            );
         }
         goto cleanup;
     }
 
     if (!path_is_reg_file(cstr_str(&types_path))) {
         if (noisy) {
-            fprintf(stderr, CLR_ERR "%.*s:" CLR0 " %s does not exist\n", c_SV(name), cstr_str(&types_path));
+            fprintf(
+                stderr,
+                "%s%.*s:%s %s does not exist\n",
+                color_error,
+                c_SV(name),
+                color_normal,
+                cstr_str(&types_path)
+            );
         }
         goto cleanup;
     }

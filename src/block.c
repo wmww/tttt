@@ -7,17 +7,6 @@ void block_drop(Block* me) {
     vec_statement_drop(&my statements);
 }
 
-void cstr_append_block_debug(cstr* target, Block* me, int indent) {
-    cstr_append_sv(target, c_sv("{\n"));
-    c_foreach(i, vec_statement, my statements) {
-        APPEND_INDENT(target, indent + 1);
-        cstr_append_statement_debug(target, i.ref, indent + 1);
-        cstr_append_sv(target, c_sv("\n"));
-    }
-    APPEND_INDENT(target, indent);
-    cstr_append_sv(target, c_sv("}"));
-}
-
 void block_resolve_names_without_stack_frame(Block const* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_statement, my statements) {
         statement_add_names(i.ref, names, errs);

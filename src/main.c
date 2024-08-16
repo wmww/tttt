@@ -4,6 +4,7 @@
 #include "filesystem.h"
 #include "error.h"
 #include "engine.h"
+#include "display.h"
 
 int main(int argc, const char** argv) {
     cstr contents = cstr_null;
@@ -12,10 +13,10 @@ int main(int argc, const char** argv) {
     int ret = 0;
 
     if (argc > 2) {
-        printf(CLR_ERR "too many arguments\n" CLR0);
+        printf("%sToo many arguments%s\n", color_error, color_normal);
         return 1;
     } else if (argc < 2) {
-        printf(CLR_ERR "too few arguments\n" CLR0);
+        printf("%sToo few arguments%s\n", color_error, color_normal);
         return 1;
     }
 
@@ -26,7 +27,7 @@ int main(int argc, const char** argv) {
 
     ast = parse_file(cstr_str(&contents), &errs);
     if (!error_ctx_empty(&errs)) {
-        error_ctx_display(&errs);
+        print_error_ctx(&errs);
         error_ctx_drop(&errs);
         errs = error_ctx_init();
         ret = 1;
@@ -34,7 +35,7 @@ int main(int argc, const char** argv) {
 
     block_resolve_names_toplevel(&ast, &errs);
     if (!error_ctx_empty(&errs)) {
-        error_ctx_display(&errs);
+        print_error_ctx(&errs);
         error_ctx_drop(&errs);
         errs = error_ctx_init();
         ret = 1;
@@ -43,28 +44,27 @@ int main(int argc, const char** argv) {
     block_typecheck_toplevel(&ast, &errs);
 
     if (error_ctx_empty(&errs)) {
-        printf(CLR_GOOD "Typecheck passed" CLR0 "\n");
+        printf("%sTypecheck passed%s\n", color_good, color_normal);
     } else {
-        printf(CLR_ERR "Typecheck failed" CLR0 "\n");
+        printf("%sTypecheck failed%s\n", color_error, color_normal);
     }
 
     cstr parsed_str = cstr_null;
-    cstr_append_block_debug(&parsed_str, &ast, 0);
-    printf(CLR_GOOD "Parsed:" CLR0 "\n%s\n\n", cstr_str(&parsed_str));
+    display_block(debug_display(&parsed_str), &ast);
+    printf("%sParsed:%s\n", color_good, color_normal);
+    printf("%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
 
     if (!error_ctx_empty(&errs)) {
-        error_ctx_display(&errs);
+        print_error_ctx(&errs);
         error_ctx_drop(&errs);
         errs = error_ctx_init();
         ret = 1;
     }
 
-    printf(CLR_GOOD "Running..." CLR0 "\n");
-
+    printf("%sRunning...%s\n", color_good, color_normal);
     eval_program(&ast, arc_js_object_init());
-
-    printf(CLR_GOOD "Run succeeded" CLR0 "\n");
+    printf("%sRun succeeded%s\n", color_good, color_normal);
 
 cleanup:
     error_ctx_drop(&errs);

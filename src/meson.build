@@ -19,6 +19,7 @@ core_files = files(
     'import_statement.c',
     'binding.c',
     'function_impl.c',
+    'display.c',
     'parser.c',
     'error.c',
     'name_stack.c',

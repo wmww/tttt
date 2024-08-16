@@ -72,24 +72,6 @@ LazyType lazy_type_clone(LazyType me) {
     return me;
 }
 
-void cstr_append_lazy_type_debug(cstr* target, LazyType const* me, int indent) {
-    Type const* t = lazy_type_try_get(me);
-    if (t) {
-        cstr_append_type_debug(target, t, indent);
-    } else {
-        cstr_append_sv(target, c_sv(CLR_TYPE "/* unevaluated */" CLR0));
-    }
-}
-
-void cstr_append_lazy_type_error_msg(cstr* target, LazyType const* me) {
-    Type const* t = lazy_type_try_get(me);
-    if (t) {
-        cstr_append_type_error_msg(target, t);
-    } else {
-        cstr_append_sv(target, c_sv(CLR_TYPE "/* unevaluated */" CLR0));
-    }
-}
-
 Type const* lazy_type_resolve(LazyType* me) {
     switch (my tag) {
         case LAZY_TYPE_VALUE:

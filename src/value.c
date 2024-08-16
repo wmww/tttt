@@ -1,7 +1,9 @@
 #include "value.h"
 #include "math.h"
 #include "type.h"
+#include "function_impl.h"
 #include "result.h"
+#include "display.h"
 
 void value_drop_internal(Value* me) {
     switch (my tag) {
@@ -97,8 +99,6 @@ void cstr_append_value_js(cstr* target, Value const* me) {
         case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
         case VALUE_STRING: cstr_append_s(target, my string); break;
         case VALUE_OBJECT: cstr_append_sv(target, c_sv("[object Object]")); break;
-        case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
-        case VALUE_NATIVE_FUNC: cstr_append_sv(target, c_sv("[native function]")); break;
 
         case VALUE_BOOLEAN:
             if (my boolean) {
@@ -126,101 +126,19 @@ void cstr_append_value_js(cstr* target, Value const* me) {
                 }
             }
             break;
+
+        case VALUE_JS_FUNC:
+            cstr_append_sv(target, span_sv(&my js_func.get->impl->full_span));
+            break;
+
+        case VALUE_NATIVE_FUNC:
+            cstr_append_sv(target, c_sv("function() {\n    [native code]\n}"));
+            break;
     }
 }
 
 void cstr_append_value_error_msg(cstr* target, Value const* me) {
-    switch (my tag) {
-        case VALUE_STRING:
-            cstr_append_sv(target, c_sv("\""));
-            cstr_append_s(target, my string);
-            cstr_append_sv(target, c_sv("\""));
-            break;
-
-        default:
-            cstr_append_value_js(target, me);
-            break;
-    }
-}
-
-void cstr_append_value_debug(cstr* target, Value const* me, int indent) {
-    __ indent;
-
-    switch (my tag) {
-        case VALUE_UNDEFINED: cstr_append_sv(target, c_sv(CLR_VALUE "undefined" CLR0)); break;
-        case VALUE_NULL: cstr_append_sv(target, c_sv(CLR_VALUE "null" CLR0)); break;
-
-        case VALUE_BOOLEAN:
-            if (my boolean) {
-                cstr_append_sv(target, c_sv(CLR_VALUE "true" CLR0));
-            } else {
-                cstr_append_sv(target, c_sv(CLR_VALUE "false" CLR0));
-            }
-            break;
-
-        case VALUE_NUMBER:
-            if (round(my number) == my number) {
-                cstr_append_fmt(target, CLR_NUM "%ld" CLR0, (long)my number);
-            } else {
-                cstr_append_fmt(target, CLR_NUM "%f" CLR0, my number);
-            }
-            break;
-
-        case VALUE_STRING:
-            // TODO: escape string contents
-            cstr_append_sv(target, c_sv(CLR_STR "'"));
-            cstr_append_s(target, my string);
-            cstr_append_sv(target, c_sv("'" CLR0));
-            break;
-
-        case VALUE_OBJECT: {
-            cstr_append_sv(target, c_sv("{"));
-            VecObjectItemRef items = js_object_sorted_items(my object.get);
-            int size = vec_object_item_ref_size(&items);
-            if (size > 1) {
-                cstr_append_sv(target, c_sv("\n"));
-                c_foreach(i, vec_object_item_ref, items) {
-                    APPEND_INDENT(target, indent + 1);
-                    cstr_append_s(target, *i.ref->name);
-                    cstr_append_sv(target, c_sv(": "));
-                    cstr_append_value_debug(target, &i.ref->item->value, indent);
-                    cstr_append_sv(target, c_sv(",\n"));
-                }
-                APPEND_INDENT(target, indent);
-            } else if (size == 1) {
-                cstr_append_sv(target, c_sv(" "));
-                cstr_append_s(target, *vec_object_item_ref_at(&items, 0)->name);
-                cstr_append_sv(target, c_sv(": "));
-                cstr_append_value_debug(target, &vec_object_item_ref_at(&items, 0)->item->value, indent);
-                cstr_append_sv(target, c_sv(" "));
-            }
-            cstr_append_sv(target, c_sv("}"));
-            vec_object_item_ref_drop(&items);
-        }   break;
-
-        case VALUE_ARRAY: {
-            cstr_append_sv(target, c_sv("["));
-            JsArray* value = my array.get;
-            int size = vec_value_size(&value->vec);
-            if (size > 1) {
-                cstr_append_sv(target, c_sv("\n"));
-                c_foreach(i, vec_value, value->vec) {
-                    APPEND_INDENT(target, indent + 1);
-                    cstr_append_value_debug(target, i.ref, indent);
-                    cstr_append_sv(target, c_sv(",\n"));
-                }
-                APPEND_INDENT(target, indent);
-            } else if (size == 1) {
-                cstr_append_sv(target, c_sv(" "));
-                cstr_append_value_debug(target, vec_value_at(&value->vec, 0), indent);
-                cstr_append_sv(target, c_sv(" "));
-            }
-            cstr_append_sv(target, c_sv("]"));
-        }   break;
-
-        case VALUE_JS_FUNC: cstr_append_sv(target, c_sv("[javascript function]")); break;
-        case VALUE_NATIVE_FUNC: cstr_append_sv(target, c_sv("[native function]")); break;
-    }
+    display_value(error_display(target), me);
 }
 
 bool value_loose_eq(Value const* a, Value const* b) {

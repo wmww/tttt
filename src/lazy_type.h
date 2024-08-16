@@ -107,8 +107,6 @@ void lazy_type_drop(LazyType* me);
 // re-structured so this isn't required. if this isn't possible, a variant of LazyType that holds an arc to another
 // LazyType could be implemented, and any LazyType that is cloned could be converted to that.
 LazyType lazy_type_clone(LazyType me);
-void cstr_append_lazy_type_debug(cstr* target, LazyType const* me, int indent);
-void cstr_append_lazy_type_error_msg(cstr* target, LazyType const* me);
 Type const* lazy_type_resolve(LazyType* me);
 void lazy_type_typecheck(LazyType* me, ErrorCtx* errs);
 

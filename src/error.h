@@ -1,6 +1,7 @@
 #pragma once
 
 #include "span.h"
+#include "display.h"
 
 typedef struct Error Error;
 
@@ -25,7 +26,7 @@ typedef struct Error {
 
 void error_drop(Error* me);
 Error error_clone(Error me);
-void cstr_append_error_debug(cstr* target, Error const* me);
+void display_error(Display d, Error const* me);
 /// noop if me is null
 void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message);
 /// noop if me is null
@@ -53,7 +54,7 @@ static inline ErrorPhase error_ctx_swap_phase(ErrorCtx* me, ErrorPhase phase) {
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 void error_ctx_drop(ErrorCtx* me);
 void error_ctx_sort(ErrorCtx* me);
-void error_ctx_display(ErrorCtx const* me);
+void print_error_ctx(ErrorCtx const* me);
 bool error_ctx_empty(ErrorCtx const* me);
 Error* error_ctx_append_error(ErrorCtx* me, Error error);
 /// Returned Error can be used to add related errors, but is owned by the ErrorCtx. Additional calls into this ErrorCtx

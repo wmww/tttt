@@ -42,52 +42,6 @@ Generic generic_clone(Generic me) {
     };
 }
 
-void cstr_append_generic_debug(cstr* target, Generic const* me, int indent) {
-    if (generic_empty(me)) {
-        return;
-    }
-    cstr_append_sv(target, c_sv("<"));
-    c_foreach(i, vec_generic_item, my items) {
-        cstr_append_sv(target, c_sv(CLR_TYPE));
-        cstr_append_span(target, &i.ref->name);
-        cstr_append_sv(target, c_sv(CLR0));
-        if (i.ref->extends.tag != TYPE_ANY) {
-            cstr_append_sv(target, c_sv(" extends "));
-            cstr_append_type_debug(target, &i.ref->extends, indent);
-        }
-        if (i.ref->fallback_explicit) {
-            cstr_append_sv(target, c_sv(" = "));
-            cstr_append_type_debug(target, &i.ref->fallback, indent);
-        }
-        if (i.ref < i.end - 1) {
-            cstr_append_sv(target, c_sv(", "));
-        }
-    }
-    cstr_append_sv(target, c_sv(">"));
-}
-
-void cstr_append_generic_error_msg(cstr* target, Generic const* me) {
-    if (generic_empty(me)) {
-        return;
-    }
-    cstr_append_sv(target, c_sv("<"));
-    c_foreach(i, vec_generic_item, my items) {
-        cstr_append_span(target, &i.ref->name);
-        if (i.ref->extends.tag != TYPE_ANY) {
-            cstr_append_sv(target, c_sv(" extends "));
-            cstr_append_type_error_msg(target, &i.ref->extends);
-        }
-        if (i.ref->fallback_explicit) {
-            cstr_append_sv(target, c_sv(" = "));
-            cstr_append_type_error_msg(target, &i.ref->fallback);
-        }
-        if (i.ref < i.end - 1) {
-            cstr_append_sv(target, c_sv(", "));
-        }
-    }
-    cstr_append_sv(target, c_sv(">"));
-}
-
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
         if (!i.ref->type) {

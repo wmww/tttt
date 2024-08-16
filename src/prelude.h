@@ -22,24 +22,10 @@ void nonfatal_internal(const char* error_type, const char* file, int line, const
 void inhibit_nonfatals();
 void uninhibit_nonfatals();
 
-#define INDENT "  "
-#define APPEND_INDENT(str, level) for (int indent_i = 0; indent_i < level; indent_i++) cstr_append(str, INDENT);
+#define cstr_append_lit(str, lit) cstr_append_sv(str, c_sv(lit))
+#define c_sv_const_init(str) {str, c_litstrlen(str)}
 
 #define MUST_USE __attribute__((warn_unused_result))
-
-#define CLR0 "\x1b[0m"
-#define CLR_ERR "\x1b[1;31m"
-#define CLR_ERR_CODE "\x1b[95m"
-#define CLR_GOOD "\x1b[1;32m"
-#define CLR_PATH "\x1b[94m"
-#define CLR_STATUS "\x1b[0;94m"
-
-#define CLR_VALUE "\x1b[0;36m"
-#define CLR_STR "\x1b[0;33m"
-#define CLR_NUM "\x1b[0;34m"
-#define CLR_TYPE "\x1b[0;32m"
-#define CLR_NAME "\x1b[0;35m"
-#define CLR_IMPLICIT "\x1b[0;37m"
 
 typedef enum ResolveState {
     RESOLVE_STATE_UNINITIALIZED = 0,
