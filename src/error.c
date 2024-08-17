@@ -93,6 +93,19 @@ void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt
 }
 
 void error_config_enable_strict(ErrorConfig* me) {
+    my allow_unreachable_code = true;
+    my allow_unused_labels = true;
+    my always_strict = true;
+    my exact_optional_property_types = true;
+    my no_fallthrough_cases_in_switch = true;
+    //my no_implicit_any = true;
+    my no_implicit_override = true;
+    my no_implicit_returns = true;
+    my no_implicit_this = true;
+    my no_property_access_from_index_signature = true;
+    my no_unchecked_indexed_access = true;
+    my no_unused_locals = true;
+    my no_unused_parameters = true;
     my strict_bind_call_apply = true;
     my strict_function_types = true;
     my strict_null_checks = true;

@@ -37,6 +37,19 @@ void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt
 #include "wrap_stc/vec.h"
 
 typedef struct ErrorConfig {
+    bool allow_unreachable_code : 1;
+    bool allow_unused_labels : 1;
+    bool always_strict : 1;
+    bool exact_optional_property_types : 1;
+    bool no_fallthrough_cases_in_switch : 1;
+    bool no_implicit_any : 1;
+    bool no_implicit_override : 1;
+    bool no_implicit_returns : 1;
+    bool no_implicit_this : 1;
+    bool no_property_access_from_index_signature : 1;
+    bool no_unchecked_indexed_access : 1;
+    bool no_unused_locals : 1;
+    bool no_unused_parameters : 1;
     bool strict_bind_call_apply : 1;
     bool strict_function_types : 1;
     bool strict_null_checks : 1;

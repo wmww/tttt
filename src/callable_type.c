@@ -54,8 +54,9 @@ void callable_type_resolve_names(CallableType* me, FunctionImpl const* optional_
             lazy_type_expr(default_arg, true, true);
         binding_add_names(&i.ref->binding, assigned, names, errs);
         if (!i.ref->binding.has_explicit_type && (!default_arg || default_arg->tag == EXPR_IMPLICIT_ANY)) {
-            // TODO: only run this check in strict mode
-            binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
+            if (errs && errs->conf.no_implicit_any) {
+                binding_add_implicit_any_type_errors(&i.ref->binding, true, errs);
+            }
         }
     }
 

@@ -63,11 +63,11 @@ static bool tag_equals(csview tag, const char* str) {
 }
 
 // Returns true on success, on fail ret is set to cstr_null
-static bool load_test_source(const char* path, bool noisy, cstr* ret) {
+static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
     cstr unparsed_contents = cstr_null;
     *ret = cstr_null;
 
-    if (!read_entire_file(path, noisy, &unparsed_contents)) {
+    if (!read_entire_file(test->source_path, noisy, &unparsed_contents)) {
         return false;
     }
 
@@ -91,6 +91,10 @@ static bool load_test_source(const char* path, bool noisy, cstr* ret) {
                 } else {
                     has_filename = true;
                 }
+            } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
+                error_config_enable_strict(&test->error_ctx.conf);
+            } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
+                test->error_ctx.conf.no_implicit_any = true;
             }
         } else {
             cstr_append_sv(ret, i.line);
@@ -117,7 +121,7 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
     };
 
     cstr source_cstr;
-    if (!load_test_source(source_path, noisy, &source_cstr)) {
+    if (!load_test_source(&ret, noisy, &source_cstr)) {
         return ret;
     }
     intptr_t source_size = cstr_size(&source_cstr);
