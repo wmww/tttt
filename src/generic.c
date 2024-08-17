@@ -45,7 +45,7 @@ Generic generic_clone(Generic me) {
 void generic_resolve_names(Generic* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
         if (!i.ref->type) {
-            i.ref->type = make_named_type(i.ref->name, lazy_type_ref(&i.ref->extends), nullptr);
+            i.ref->type = make_named_type(i.ref->name, i.ref->name, lazy_type_ref(&i.ref->extends), nullptr);
         }
         name_stack_add_type(names, i.ref->type);
     }

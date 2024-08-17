@@ -45,7 +45,12 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
             type_resolve_names(&my key.mapped.as_type, names, errs);
             name_stack_push_block_frame(names);
             if (!my key.mapped.named_type) {
-                my key.mapped.named_type = make_named_type(my key.mapped.type_name, lazy_type_value(type_any), nullptr);
+                my key.mapped.named_type = make_named_type(
+                    my key.mapped.type_name,
+                    my key.mapped.type_name,
+                    lazy_type_value(type_any),
+                    nullptr
+                );
             }
             name_stack_add_type(names, my key.mapped.named_type);
             break;

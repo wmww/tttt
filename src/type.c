@@ -220,6 +220,7 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
                 } else {
                     my identifier->inferred_type = arc_named_type_from_ptr(make_named_type(
                         my identifier->name,
+                        my identifier->name,
                         lazy_type_ref(&my identifier->degenericized),
                         nullptr
                     ));

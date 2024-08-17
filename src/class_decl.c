@@ -86,7 +86,7 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(!my instance_named_type);
-    my instance_named_type = make_named_type(my full_span, lazy_type_class_instance(me), &my generic);
+    my instance_named_type = make_named_type(my name, my full_span, lazy_type_class_instance(me), &my generic);
     my instance_named_type->is_class = true;
     name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type);
 
@@ -97,6 +97,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
     }
     my instance_named_var = make_named_variable(
+        my name,
         my full_span,
         lazy_type_value(type_identifier(c_new(IdentifierType, {
             .name = my name,
@@ -119,11 +120,12 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }));
 
     ASSERT(!my class_named_type);
-    my class_named_type = make_named_type(my name, lazy_type_class_class(me), nullptr);
+    my class_named_type = make_named_type(my name, my full_span, lazy_type_class_class(me), nullptr);
     my class_named_type->is_typeof_class = true;
 
     ASSERT(!my class_named_var);
     my class_named_var = make_named_variable(
+        my name,
         my full_span,
         lazy_type_value(type_identifier(c_new(IdentifierType, {
             .name = my name,

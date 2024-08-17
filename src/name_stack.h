@@ -9,22 +9,24 @@ typedef struct NameStack NameStack;
 
 typedef struct NamedVariable {
     Span name;
+    Span full;
     LazyType type;
     Generic const* generic;
 } NamedVariable;
 
-NamedVariable* make_named_variable(Span name, LazyType type, Generic const* generic);
+NamedVariable* make_named_variable(Span name, Span full, LazyType type, Generic const* generic);
 void named_variable_destroy(NamedVariable* me);
 
 typedef struct NamedType {
     Span name;
+    Span full;
     LazyType type;
     Generic const* generic;
     bool is_class;
     bool is_typeof_class;
 } NamedType;
 
-NamedType* make_named_type(Span name, LazyType type, Generic const* generic);
+NamedType* make_named_type(Span name, Span full, LazyType type, Generic const* generic);
 void named_type_drop(NamedType* me);
 void named_type_destroy(NamedType* me);
 

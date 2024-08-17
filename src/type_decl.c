@@ -20,7 +20,7 @@ void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
     LazyType lazy_type = (my is_interface && ! vec_spanned_type_empty(&my interface_extends)) ?
         lazy_type_interface(me) :
         lazy_type_ref(&my type);
-    my named_type = make_named_type(my full_span, lazy_type, &my generic);
+    my named_type = make_named_type(my name, my full_span, lazy_type, &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
 }
 

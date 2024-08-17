@@ -35,7 +35,7 @@ void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCt
 
         case BINDING_IDENTIFIER:
             ASSERT(!my identifier);
-            my identifier = make_named_variable(my content_span, binding_get_lazy_type(me), nullptr);
+            my identifier = make_named_variable(my content_span, my content_span, binding_get_lazy_type(me), nullptr);
             name_stack_add_variable(names, my identifier);
             break;
 

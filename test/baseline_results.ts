@@ -2021,7 +2021,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypesClass4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56756,7 +56756,7 @@ const baselines = {
         types: false,
     },
     'typeAliasesForObjectTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

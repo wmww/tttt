@@ -142,7 +142,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 ctx,
                 span_sv(&my identifier->name),
                 my identifier->name,
-                my identifier->type ? my identifier->type->name : span_null
+                my identifier->type ? my identifier->type->full : span_null
             );
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 type_compile_test_info(&i.ref->type, ctx);
@@ -413,7 +413,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     ctx,
                     span_sv(&my identifier.name),
                     my identifier.name,
-                    my identifier.var->name
+                    my identifier.var->full
                 );
             }
             c_foreach(i, vec_spanned_type, my identifier.generic_params) {

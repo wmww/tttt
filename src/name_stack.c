@@ -14,12 +14,13 @@ typedef NamedVariable* NamedVariablePtr;
 #define i_val_names NamedVariablePtr, named_variable_ptr
 #include "wrap_stc/hmap.h"
 
-NamedVariable* make_named_variable(Span name, LazyType type, Generic const* generic) {
+NamedVariable* make_named_variable(Span name, Span full, LazyType type, Generic const* generic) {
     if (generic_empty(generic)) {
         generic = nullptr;
     }
     return c_new(NamedVariable, {
         .name = name,
+        .full = full,
         .type = type,
         .generic = generic,
     });
@@ -31,12 +32,13 @@ void named_variable_destroy(NamedVariable* me) {
     free(me);
 }
 
-NamedType* make_named_type(Span name, LazyType type, Generic const* generic) {
+NamedType* make_named_type(Span name, Span full, LazyType type, Generic const* generic) {
     if (generic_empty(generic)) {
         generic = nullptr;
     }
     return c_new(NamedType, {
         .name = name,
+        .full = full,
         .type = type,
         .generic = generic,
     });
