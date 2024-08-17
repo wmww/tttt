@@ -419,8 +419,17 @@ void display_type(Display d, Type const* me) {
                 display_lit(d, "readonly ");
             }
             display_lit(d, "[");
-            c_foreach(i, vec_type, my tuple.elements) {
-                display_type(d, i.ref);
+            c_foreach(i, vec_tuple_element, my tuple.elements) {
+                if (i.ref->rest) {
+                    display_lit(d, "...");
+                }
+
+                if (i.ref->readonly) {
+                    display_lit(d, "readonly ");
+                }
+
+                display_type(d, &i.ref->type);
+
                 if (i.ref != i.end - 1) {
                     display_lit(d, ", ");
                 }

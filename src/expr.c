@@ -510,10 +510,10 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         }   break;
 
         case EXPR_ARRAY: {
-            ret = type_tuple(vec_type_init(), false);
+            ret = type_tuple(vec_tuple_element_init(), false);
             c_foreach(i, vec_expr, my array) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
-                vec_type_push(&ret.tuple.elements, t);
+                vec_tuple_element_push(&ret.tuple.elements, (TupleElement){.type = t});
             }
         }   break;
 

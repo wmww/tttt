@@ -161,8 +161,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_type, my tuple.elements) {
-                type_compile_test_info(i.ref, ctx);
+            c_foreach(i, vec_tuple_element, my tuple.elements) {
+                type_compile_test_info(&i.ref->type, ctx);
             }
             break;
 

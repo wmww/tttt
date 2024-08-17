@@ -5901,7 +5901,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeSelfReferencing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8031,9 +8031,9 @@ const baselines = {
         types: undefined,
     },
     'declarationEmitTupleRestSignatureLeadingVariadic': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declarationEmitTypeAliasTypeParameterExtendingUnknownSymbol': {
         errors: false,
@@ -15756,7 +15756,7 @@ const baselines = {
         types: false,
     },
     'inferTInParentheses': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26591,8 +26591,8 @@ const baselines = {
         types: false,
     },
     'substitutionTypeForIndexedAccessType1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'substitutionTypeForIndexedAccessType2': {
@@ -51368,7 +51368,7 @@ const baselines = {
     'TupleType6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserTypeQuery1': {
         errors: false,

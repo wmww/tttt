@@ -642,10 +642,9 @@ static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
     return parse_success(&p);
 }
 
-static bool parse_tuple(Parser* parent, VecType* ret) {
+static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
     Parser p = parser(parent);
-    Type t;
-    *ret = vec_type_init();
+    *ret = vec_tuple_element_init();
 
     if (!hop_char(&p, '[')) {
         return parse_fail(&p);
@@ -653,10 +652,22 @@ static bool parse_tuple(Parser* parent, VecType* ret) {
     hop_whitespace(&p);
 
     while (*p.pos && *p.pos != ']') {
-        if (expect_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-            vec_type_push(ret, t);
+        TupleElement elem = {0};
+
+        if (hop_start(&p, "...")) {
+            elem.rest = true;
         }
         hop_whitespace(&p);
+
+        if (hop_start_if_ends_on_word_break(&p, "readonly")) {
+            elem.readonly = true;
+        }
+        hop_whitespace(&p);
+
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
+        hop_whitespace(&p);
+
+        vec_tuple_element_push(ret, elem);
 
         if (*p.pos != ']' && !expect_char(&p, ',')) {
             return parse_success(&p);
@@ -785,7 +796,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         IdentifierType identifier;
         CallableType callable;
         Type type;
-        VecType types;
+        VecTupleElement tuple_elements;
     } parsed;
 
     Span readonly_span = span_null;
@@ -824,8 +835,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_callable(c_new(CallableType, parsed.callable));
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
-    } else if (parse_tuple(&p, &parsed.types)){
-        *ret = type_tuple(parsed.types, span_valid(&readonly_span));
+    } else if (parse_tuple(&p, &parsed.tuple_elements)){
+        *ret = type_tuple(parsed.tuple_elements, span_valid(&readonly_span));
         readonly_span = span_null;
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);

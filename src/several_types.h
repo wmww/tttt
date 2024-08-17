@@ -22,6 +22,21 @@ IdentifierType identifier_type_clone(IdentifierType me);
 void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
+// Tuple
+
+typedef struct TupleElement {
+    Type type;
+    bool rest;
+    bool readonly;
+} TupleElement;
+
+static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }
+static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type_clone(me.type); return me; }
+
+#define i_key_class_names TupleElement, tuple_element
+#define i_is_forward
+#include "wrap_stc/vec.h"
+
 // Index
 
 typedef struct IndexedType {

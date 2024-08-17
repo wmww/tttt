@@ -227,8 +227,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_type, my tuple.elements) {
-                replace_named_types_with(i.ref, refinements);
+            c_foreach(i, vec_tuple_element, my tuple.elements) {
+                replace_named_types_with(&i.ref->type, refinements);
             }
             return;
 

@@ -50,7 +50,7 @@ Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me) {
             Type owned_iterable_type = expr_get_type_and_typecheck(&my iterable, nullptr);
             Type const* iterable_type = type_resolve(&owned_iterable_type);
             if (iterable_type->tag == TYPE_TUPLE) {
-                if (vec_type_empty(&iterable_type->tuple.elements)) {
+                if (vec_tuple_element_empty(&iterable_type->tuple.elements)) {
                     iterable_type = &type_any;
                 } else {
                     Type temp = type_clone(*iterable_type);

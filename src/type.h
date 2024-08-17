@@ -9,6 +9,7 @@ typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
 typedef struct KeyofType KeyofType;
 typedef struct CallableType CallableType;
+typedef struct TupleElement TupleElement;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct NamedType NamedType;
@@ -19,6 +20,7 @@ typedef struct Expr Expr;
 wrap_forward_arc(Expr, expr);
 wrap_forward_vec(Type, type);
 wrap_forward_arc(NamedType, named_type);
+wrap_forward_vec(TupleElement, tuple_element);
 
 typedef struct Type {
     enum {
@@ -55,7 +57,7 @@ typedef struct Type {
             bool readonly;
         } array;
         struct {
-            VecType elements;
+            VecTupleElement elements;
             bool readonly;
         } tuple;
         IndexedType* indexed;
@@ -117,7 +119,7 @@ static inline Type type_array(Type* element, bool readonly) {
     };
 }
 
-static inline Type type_tuple(VecType elements, bool readonly) {
+static inline Type type_tuple(VecTupleElement elements, bool readonly) {
     return (Type){
         .tag = TYPE_TUPLE,
         .tuple = {
