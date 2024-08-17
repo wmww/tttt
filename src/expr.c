@@ -3,13 +3,11 @@
 #include "type.h"
 #include "error.h"
 #include "name_stack.h"
-#include "callable_type.h"
 #include "function_impl.h"
-#include "as_type_expr.h"
+#include "several_types.h"
 #include "generic.h"
 #include "class_decl.h"
 #include "interface_member.h"
-#include "identifier_type.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;

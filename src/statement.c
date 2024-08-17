@@ -4,7 +4,7 @@
 #include "name_stack.h"
 #include "class_decl.h"
 #include "function_impl.h"
-#include "identifier_type.h"
+#include "several_types.h"
 
 void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);

@@ -1,6 +1,6 @@
 #include "type_decl.h"
 #include "error.h"
-#include "identifier_type.h"
+#include "several_types.h"
 #include "interface_member.h"
 #include "interface.h"
 #include "type.h"

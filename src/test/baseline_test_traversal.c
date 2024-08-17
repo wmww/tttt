@@ -4,16 +4,13 @@
 #include "interface_member.h"
 #include "generic.h"
 #include "expr.h"
-#include "as_type_expr.h"
+#include "several_types.h"
 #include "function_impl.h"
 #include "statement.h"
 #include "block.h"
 #include "class_decl.h"
 #include "function_impl.h"
-#include "identifier_type.h"
 #include "callable_type.h"
-#include "indexed_type.h"
-#include "ternary_type.h"
 #include "name_stack.h"
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {

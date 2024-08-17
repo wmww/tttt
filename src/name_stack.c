@@ -1,6 +1,6 @@
 #include "name_stack.h"
 #include "generic.h"
-#include "identifier_type.h"
+#include "several_types.h"
 #include "error.h"
 
 typedef NamedType* NamedTypePtr;

@@ -237,6 +237,14 @@ typedef struct PropertyExpr {
     } form;
 } PropertyExpr;
 
+// As type
+
+typedef struct AsTypeExpr {
+    Expr expr;
+    Type type;
+    bool angle_bracket_syntax; // If the <type>value syntax was used
+} AsTypeExpr;
+
 // Ternary
 
 typedef struct TernaryExpr {

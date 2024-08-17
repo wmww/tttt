@@ -3,7 +3,7 @@
 #include "statement.h"
 #include "interface_member.h"
 #include "callable_type.h"
-#include "identifier_type.h"
+#include "several_types.h"
 #include "error.h"
 
 void class_item_drop(ClassItem* me) {
