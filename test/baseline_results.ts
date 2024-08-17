@@ -898,7 +898,7 @@ const baselines = {
     'anyAsReturnTypeForNewOnCall': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'anyDeclare': {
         errors: false,
@@ -2113,7 +2113,7 @@ const baselines = {
     'avoid': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'avoidCycleWithVoidExpressionReturnedFromArrow': {
         errors: false,
@@ -12358,7 +12358,7 @@ const baselines = {
     'extendNonClassSymbol2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'extendPrivateConstructorClass': {
         errors: false,
@@ -14836,9 +14836,9 @@ const baselines = {
         types: false,
     },
     'implicitAnyNewExprLackConstructorSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyWidenToAny': {
         errors: false,
@@ -20886,9 +20886,9 @@ const baselines = {
         types: false,
     },
     'newFunctionImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newLexicalEnvironmentForConvertedLoop': {
         errors: false,
@@ -31783,7 +31783,7 @@ const baselines = {
     'classExtendsValidConstructorFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classIsSubtypeOfBaseType': {
         errors: false,
@@ -42598,7 +42598,7 @@ const baselines = {
     'newOperatorErrorCases_noImplicitAny': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator1': {
         errors: false,
@@ -52341,7 +52341,7 @@ const baselines = {
         types: undefined,
     },
     'constructorFunctionMethodTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56823,7 +56823,7 @@ const baselines = {
     'instantiateNonGenericTypeWithTypeArguments': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'instantiationExpressionErrors': {
         errors: false,
