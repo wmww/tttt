@@ -55,7 +55,7 @@ void display_value(Display d, Value const* me) {
             display_lit(d, "\"");
             break;
 
-        case VALUE_OBJECT: if (d.flags & DISPLAY_FLAGS_DEBUG) {
+        case VALUE_OBJECT: if (d.debug) {
             display_lit(d, "{");
             VecObjectItemRef items = js_object_sorted_items(my object.get);
             int size = vec_object_item_ref_size(&items);
@@ -85,7 +85,7 @@ void display_value(Display d, Value const* me) {
             break;
         }   // Else fallthrough
 
-        case VALUE_ARRAY: if (d.flags & DISPLAY_FLAGS_DEBUG) {
+        case VALUE_ARRAY: if (d.debug) {
             display_lit(d, "[");
             JsArray* value = my array.get;
             int size = vec_value_size(&value->vec);
@@ -123,7 +123,7 @@ static void display_binding(Display d, Binding const* me, bool optional) {
 
         case BINDING_IDENTIFIER:
             display_colored_span(d, color_name, my content_span);
-            if (d.flags & DISPLAY_FLAGS_DEBUG) {
+            if (d.debug) {
                 if (!my identifier) {
                     display_colored(d, color_error, " /* unresolved */");
                 } else if (!my has_explicit_type && lazy_type_try_get(&my identifier->type)) {
@@ -213,7 +213,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     if (my type && my type->is_typeof_class) {
         display_lit(d, "typeof ");
     }
-    if (d.flags & DISPLAY_FLAGS_DEBUG) {
+    if (d.debug) {
         c_foreach(i, vec_span, my namespaces) {
             display_colored_span(d, color_type, *i.ref);
             display_lit(d, ".");
@@ -232,7 +232,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
         display_lit(d, ">");
     }
 
-    if (d.flags & DISPLAY_FLAGS_DEBUG) {
+    if (d.debug) {
         if (!my type) {
             display_colored(d, color_error, " /* unresolved */");
         } else if (!lazy_type_try_get(&my type->type)) {
@@ -331,7 +331,7 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
 }
 
 static void display_interface(Display d, Interface const* me) {
-    if (!(d.flags & DISPLAY_FLAGS_DEBUG) &&
+    if (!d.debug &&
         vec_interface_member_size(&my members) == 1 &&
         my members.data->key.tag == INTERFACE_KEY_CALLABLE
     ) {
@@ -392,7 +392,9 @@ void display_type(Display d, Type const* me) {
 
         case TYPE_VALUE:
             display_color(d, color_type);
-            display_value(display_remove_flags(d, DISPLAY_FLAGS_COLOR), &my value);
+            Display value_d = d;
+            value_d.color = false;
+            display_value(value_d, &my value);
             display_normal(d);
             break;
 
@@ -435,14 +437,13 @@ void display_type(Display d, Type const* me) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            if (d.flags & DISPLAY_FLAGS_DEBUG) {
+            if (d.debug) {
                 display_colored(d, color_implicit, "(");
             }
             bool is_first = true;
             c_foreach(i, vec_type, my composite) {
-                if (!(d.flags & DISPLAY_FLAGS_DEBUG) &&
-                    i.ref->tag == (my tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY)
-                ) { continue; }
+                if (!d.debug && i.ref->tag == (my tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY)) continue;
+
                 if (is_first) {
                     is_first = false;
                 } else if (my tag == TYPE_UNION) {
@@ -450,15 +451,16 @@ void display_type(Display d, Type const* me) {
                 } else {
                     display_lit(d, " & ");
                 }
+
                 display_type(d, i.ref);
             }
-            if (d.flags & DISPLAY_FLAGS_DEBUG) {
+            if (d.debug) {
                 display_colored(d, color_implicit, ")");
             }
             break;
 
         case TYPE_REF:
-            if (d.flags & DISPLAY_FLAGS_DEBUG) {
+            if (d.debug) {
                 display_colored(d, color_implicit, "(-> ");
                 display_type(d, my ref);
                 display_colored(d, color_implicit, ")");
@@ -468,7 +470,7 @@ void display_type(Display d, Type const* me) {
             break;
     }
 
-    if (d.flags & DISPLAY_FLAGS_DEBUG && type_is_self_referential(me)) {
+    if (d.debug && type_is_self_referential(me)) {
         display_colored(d, color_error, " /* self-referential */");
     }
 }

@@ -28,13 +28,6 @@ extern const char* color_type;
 
 extern const csview indent_string;
 
-// TODO: can these be converted to bitfield bools?
-typedef enum DisplayFlags {
-    DISPLAY_FLAGS_NONE,
-    DISPLAY_FLAGS_COLOR = 1 << 0,
-    DISPLAY_FLAGS_DEBUG = 1 << 1,
-} DisplayFlags;
-
 typedef struct Display {
     union {
         // The first element of all other union members is a cstr, so it is safe and well-defined to access target in
@@ -42,32 +35,25 @@ typedef struct Display {
         cstr* target;
         // It's unclear if we will in fact need other union members, if not the union can be removed
     };
-    DisplayFlags flags;
     unsigned char indent;
+    bool color : 1;
+    bool debug : 1;
 } Display;
 
 static inline Display error_display(cstr* target) {
     return (Display) {
         .target = target,
-        .flags = DISPLAY_FLAGS_NONE,
+        .color = false,
+        .debug = false,
     };
 }
 
 static inline Display debug_display(cstr* target) {
     return (Display) {
         .target = target,
-        .flags = DISPLAY_FLAGS_DEBUG | DISPLAY_FLAGS_COLOR,
+        .color = true,
+        .debug = true,
     };
-}
-
-static inline Display display_add_flags(Display d, DisplayFlags to_add) {
-    d.flags |= to_add;
-    return d;
-}
-
-static inline Display display_remove_flags(Display d, DisplayFlags flags) {
-    d.flags &= ~flags;
-    return d;
 }
 
 #define display_lit(d, s) display_sv(d, c_sv(s))
@@ -79,7 +65,7 @@ static inline void display_sv   (Display d, csview      s)  { cstr_append_sv(d.t
 static inline void display_span (Display d, Span        s)  { cstr_append_sv(d.target, span_sv(&s)); }
 
 static inline void display_newline(Display d) {
-    if (d.flags & DISPLAY_FLAGS_DEBUG) {
+    if (d.debug) {
         display_lit(d, "\n");
         for (int i = 0; i < d.indent; i++) {
             cstr_append_sv(d.target, indent_string);
@@ -90,7 +76,7 @@ static inline void display_newline(Display d) {
 }
 
 static inline void display_color(Display d, const char* code) {
-    if (d.flags & DISPLAY_FLAGS_COLOR) display_str(d, code);
+    if (d.color) display_str(d, code);
 }
 
 static inline void display_normal(Display d) {
