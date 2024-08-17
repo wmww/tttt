@@ -92,6 +92,14 @@ void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt
     error_related_error_s(me, span, ts_code, message);
 }
 
+void error_config_enable_strict(ErrorConfig* me) {
+    my strict_bind_call_apply = true;
+    my strict_function_types = true;
+    my strict_null_checks = true;
+    my strict_property_initialization = true;
+    my use_unknown_in_catch_variables = true;
+}
+
 void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }

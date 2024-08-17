@@ -36,9 +36,20 @@ void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt
 #define i_is_forward
 #include "wrap_stc/vec.h"
 
+typedef struct ErrorConfig {
+    bool strict_bind_call_apply : 1;
+    bool strict_function_types : 1;
+    bool strict_null_checks : 1;
+    bool strict_property_initialization : 1;
+    bool use_unknown_in_catch_variables : 1;
+} ErrorConfig;
+
+void error_config_enable_strict(ErrorConfig* me);
+
 typedef struct ErrorCtx {
     ErrorPhase phase;
     VecError errors;
+    ErrorConfig conf;
 } ErrorCtx;
 
 static inline ErrorPhase error_ctx_get_phase(ErrorCtx* me) { return me ? my phase : ERROR_PHASE_UNKOWN; }

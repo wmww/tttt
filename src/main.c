@@ -9,6 +9,7 @@
 int main(int argc, const char** argv) {
     cstr contents = cstr_null;
     ErrorCtx errs = error_ctx_init();
+    error_config_enable_strict(&errs.conf);
     Block ast = {0};
     int ret = 0;
 
