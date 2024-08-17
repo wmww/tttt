@@ -211,7 +211,7 @@ static Type binary_op_get_type_and_typecheck(
                 ret = type_string;
             } else if (type_extends(&left, &type_number) && type_extends(&right, &type_number)) {
                 ret = type_number;
-            } else {
+            } else if (errs) {
                 // TODO: it seems special handling of possibly null or undefined types is needed
                 cstr message = cstr_lit("Operator '+' cannot be applied to types '");
                 cstr_append_type_error_msg(&message, &left);

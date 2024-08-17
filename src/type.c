@@ -1154,7 +1154,16 @@ static bool check_assignable_or_error_internal(
     Span span,
     ErrorCtx* errs
 ) {
+    Type local_type = {0};
+
+    if (errs && !errs->conf.strict_null_checks) {
+        local_type = type_clone(*source);
+        type_remove_null_and_undefined(&local_type);
+        source = &local_type;
+    }
+
     if (type_extends(source, target)) {
+        type_drop(&local_type);
         return true;
     }
 
@@ -1169,6 +1178,7 @@ static bool check_assignable_or_error_internal(
     cstr_append_type_error_msg(&source_str, source);
     cstr_append_type_error_msg(&target_str, target);
     type_drop(&source_abstracted);
+    type_drop(&local_type);
     error_ctx_error(
         errs,
         span,

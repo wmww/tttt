@@ -346,7 +346,7 @@ const baselines = {
         types: false,
     },
     'accessorsEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2236,7 +2236,7 @@ const baselines = {
         types: false,
     },
     'baseIndexSignatureResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2271,7 +2271,7 @@ const baselines = {
         types: false,
     },
     'bestCommonTypeReturnStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -3831,7 +3831,7 @@ const baselines = {
         types: true,
     },
     'classStaticPropertyTypeGuard': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6466,7 +6466,7 @@ const baselines = {
         types: false,
     },
     'controlFlowCommaExpressionAssertionWithinTernary': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8951,7 +8951,7 @@ const baselines = {
         types: false,
     },
     'destructuringTypeGuardFlow': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13316,7 +13316,7 @@ const baselines = {
         types: false,
     },
     'functionReturn': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13831,7 +13831,7 @@ const baselines = {
         types: true,
     },
     'genericConstraintDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14191,12 +14191,12 @@ const baselines = {
         types: false,
     },
     'genericReversingTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'genericReversingTypeParameters2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15646,7 +15646,7 @@ const baselines = {
         types: false,
     },
     'indexerReturningTypeParameter1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -16011,7 +16011,7 @@ const baselines = {
         types: true,
     },
     'infinitelyExpandingTypes2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16166,7 +16166,7 @@ const baselines = {
         types: false,
     },
     'inheritanceStaticFuncOverridingAccessorOfFuncType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -16201,7 +16201,7 @@ const baselines = {
         types: true,
     },
     'inheritanceStaticPropertyOverridingAccessor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16236,7 +16236,7 @@ const baselines = {
         types: true,
     },
     'inheritedGenericCallSignature': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16471,7 +16471,7 @@ const baselines = {
         types: true,
     },
     'instantiatedReturnTypeContravariance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18856,7 +18856,7 @@ const baselines = {
         types: false,
     },
     'memberVariableDeclarations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21006,7 +21006,7 @@ const baselines = {
         types: false,
     },
     'noConstraintInReturnType1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22456,7 +22456,7 @@ const baselines = {
         types: false,
     },
     'overloadEquivalenceWithStatics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22481,7 +22481,7 @@ const baselines = {
         types: false,
     },
     'overloadOnConstConstraintChecks1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22631,7 +22631,7 @@ const baselines = {
         types: false,
     },
     'overloadedStaticMethodSpecialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25981,7 +25981,7 @@ const baselines = {
         types: false,
     },
     'specializeVarArgs1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -27706,7 +27706,7 @@ const baselines = {
         types: false,
     },
     'transitiveTypeArgumentInference1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28231,7 +28231,7 @@ const baselines = {
         types: true,
     },
     'typeParameterAndArgumentOfSameName1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28331,7 +28331,7 @@ const baselines = {
         types: true,
     },
     'typeParameterEquality': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28406,7 +28406,7 @@ const baselines = {
         types: true,
     },
     'typeParameterOrderReversal': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42011,7 +42011,7 @@ const baselines = {
         types: false,
     },
     'comparisonOperatorWithIdenticalObjects': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55846,7 +55846,7 @@ const baselines = {
         types: true,
     },
     'validVoidValues': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56286,7 +56286,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypesInUnionTypes04': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
