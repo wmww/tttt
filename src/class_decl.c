@@ -169,6 +169,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
     name_stack_push_block_frame(names);
     name_stack_add_variable_s(names, cstr_lit("this"), my class_named_var);
+    name_stack_add_type_s(names, cstr_lit("this"), my class_named_type);
     c_foreach(i, vec_class_item, my items) {
         if (class_item_is_static(i.ref)) {
             class_item_resolve_names(i.ref, names, errs);
@@ -178,6 +179,7 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
     name_stack_push_block_frame(names);
     name_stack_add_variable_s(names, cstr_lit("this"), my instance_named_var);
+    name_stack_add_type_s(names, cstr_lit("this"), my instance_named_type);
     c_foreach(i, vec_class_item, my items) {
         if (!class_item_is_static(i.ref)) {
             class_item_resolve_names(i.ref, names, errs);

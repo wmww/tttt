@@ -14696,7 +14696,7 @@ const baselines = {
         types: false,
     },
     'implementArrayInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27581,7 +27581,7 @@ const baselines = {
         types: false,
     },
     'thisTypeAsConstraint': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -29696,9 +29696,9 @@ const baselines = {
         types: true,
     },
     'unusedParametersThis': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unusedParametersWithUnderscore': {
         errors: false,
@@ -56446,7 +56446,7 @@ const baselines = {
         types: true,
     },
     'thisTypeInClasses': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
