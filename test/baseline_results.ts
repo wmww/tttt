@@ -15581,7 +15581,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessToThisTypeOnIntersection01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27551,7 +27551,7 @@ const baselines = {
         types: false,
     },
     'thisInTupleTypeParameterConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -56441,7 +56441,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInBasePropertyAndDerivedContainerOfBase01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -56476,7 +56476,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInInterfaces': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56496,7 +56496,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInTuples': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

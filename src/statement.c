@@ -394,7 +394,12 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             c_foreach(i, vec_spanned_type, my decl.type.interface_extends) {
                 type_resolve_names(&i.ref->type, names, errs);
             }
+            name_stack_push_block_frame(names);
+            if (my decl.type.is_interface) {
+                name_stack_add_type_s(names, cstr_lit("this"), my decl.type.named_type);
+            }
             type_resolve_names(&my decl.type.type, names, errs);
+            name_stack_pop_frame(names);
             name_stack_pop_frame(names);
             break;
 
