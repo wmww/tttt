@@ -156,6 +156,9 @@ NameStack* name_stack_new(ErrorCtx* errs) {
     name_stack_add_type_s(ret, cstr_lit("Number"), &builtin_type_number);
     name_stack_add_type_s(ret, cstr_lit("Boolean"), &builtin_type_boolean);
     name_stack_add_type_s(ret, cstr_lit("Date"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("bigint"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("symbol"), &builtin_type_any);
+    name_stack_add_type_s(ret, cstr_lit("intrinsic"), &builtin_type_any);
     name_stack_add_type_s(ret, cstr_lit("Error"), &builtin_type_any);
     name_stack_add_type_s(ret, cstr_lit("Set"), &builtin_type_any);
     name_stack_add_type_s(ret, cstr_lit("Array"), &builtin_type_any);

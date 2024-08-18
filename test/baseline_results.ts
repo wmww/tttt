@@ -22796,7 +22796,7 @@ const baselines = {
         types: false,
     },
     'parenthesisDoesNotBlockAliasSymbolCreation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -30461,7 +30461,7 @@ const baselines = {
         types: false,
     },
     'ES5SymbolType1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35331,17 +35331,17 @@ const baselines = {
         types: undefined,
     },
     'bigintMissingES2019': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'bigintMissingES2020': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'bigintMissingESNext': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -35896,17 +35896,17 @@ const baselines = {
         types: true,
     },
     'symbolType16': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolType17': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolType18': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51281,17 +51281,17 @@ const baselines = {
         types: false,
     },
     'parserES5SymbolIndexer1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserES5SymbolIndexer2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserES5SymbolIndexer3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -52111,22 +52111,22 @@ const baselines = {
         types: false,
     },
     'parserSymbolIndexer1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserSymbolIndexer2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserSymbolIndexer3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'parserSymbolIndexer4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -55026,7 +55026,7 @@ const baselines = {
         types: false,
     },
     'mappedTypes1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
