@@ -486,7 +486,10 @@ function updateErrorCounts() {
   const tscErrorCount = getErrorCount(latestResults.tsc.err);
   const count = tscErrorCount > ttttErrorCount ? tscErrorCount : ttttErrorCount;
   const errorsButton = document.getElementById('channel-button-err');
-  errorsButton.textContent = 'Errors (' + count + ')';
+  errorsButton.textContent = 'Errors';
+  if (count > 0) {
+    errorsButton.textContent += ' [' + count + ']';
+  }
 }
 
 const errorCountRegex = /customTest\.ts \((\d+) errors\) ===/;
