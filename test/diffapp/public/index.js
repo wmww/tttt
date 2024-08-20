@@ -12,6 +12,7 @@ const latestResults = {
   tttt: {},
   tsc: {},
 }
+let serverIsRunningTests = false;
 // An array of tokens representing the diff of the tttt and tsc results. It also contains nulls, each representing one
 // line (not token!) of input. May be generated from an older state then latestResults.
 let resultTokensWithNulls = [];
@@ -441,6 +442,14 @@ function integrateResultTokens(inputTokens, resultTokens) {
   return retTokens;
 }
 
+function updateTestInFlightState() {
+  const outOfDate = (
+    currentCodeSerial !== latestResults.tttt.serial ||
+    currentCodeSerial !== latestResults.tsc.serial
+  ) && latestSubmittedSerial !== null;
+  codeView.classList.toggle('diff-out-of-date', outOfDate || serverIsRunningTests);
+}
+
 function renderTextView() {
   const inputTokens = tokenizeTextArea(codeInput, currentChannel == 'err' ? '    ' : null);
   while (codeView.lastElementChild) {
@@ -448,11 +457,7 @@ function renderTextView() {
   }
   const unifiedTokens = integrateResultTokens(inputTokens, resultTokensWithNulls);
   renderTokensTo(codeView, unifiedTokens);
-  const outOfDate = (
-    currentCodeSerial !== latestResults.tttt.serial ||
-    currentCodeSerial !== latestResults.tsc.serial
-  ) && latestSubmittedSerial !== null;
-  codeView.classList.toggle('diff-out-of-date', outOfDate);
+  updateTestInFlightState();
 }
 
 function updateResultTokens() {
@@ -508,6 +513,11 @@ function handleEvents(json) {
 
         case 'code':
           codeChangedByServer(json[key]);
+          break;
+
+        case 'running':
+          serverIsRunningTests = json[key];
+          updateTestInFlightState();
           break;
 
         case 'result':

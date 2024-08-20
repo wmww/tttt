@@ -321,6 +321,7 @@ let firstRunCompleted = false;
 function testRunMaybeDone() {
   if (!tscRunningTest && !ttttRunningTest) {
     runningSerial = null;
+    setProperty('running', false);
     if (!firstRunCompleted) {
       startServer();
       firstRunCompleted = true;
@@ -338,6 +339,7 @@ function runTests(code, serial) {
     queuedTestRun = [code, serial];
   } else {
     runningSerial = serial;
+    setProperty('running', true);
     fs.writeFile(codePath, code, error => {
       if (error) {
         surfaceError('Writing code: ' + error.code);
@@ -355,6 +357,7 @@ function rerunTttt() {
     surfaceError('TODO: allow queuing tttt runs');
   } else {
     runningSerial = properties.get('result.tttt.serial');
+    setProperty('running', true);
     startTtttRun();
   }
 }
