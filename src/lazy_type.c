@@ -3,10 +3,9 @@
 #include "statement.h"
 #include "function_impl.h"
 #include "class_decl.h"
-#include "type_decl.h"
+#include "interface_decl.h"
 
-LazyType lazy_type_interface(TypeDecl* interface) {
-    ASSERT(interface->is_interface);
+LazyType lazy_type_interface(InterfaceDecl* interface) {
     return (LazyType){
         .tag = LAZY_TYPE_INTERFACE,
         .interface = interface,
@@ -137,7 +136,7 @@ Type const* lazy_type_resolve(LazyType* me) {
 
         case LAZY_TYPE_INTERFACE: {
             my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* resolved = type_decl_resolve_interface_type(my interface);
+            Type const* resolved = interface_decl_resolve_type(my interface);
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
                 *me = lazy_type_ref(resolved);
             }

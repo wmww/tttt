@@ -8,6 +8,7 @@
 #include "several_types.h"
 #include "generic.h"
 #include "class_decl.h"
+#include "interface_decl.h"
 #include "callable_type.h"
 #include "type.h"
 #include "error.h"
@@ -1001,16 +1002,15 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     }
 
     *ret = (TypeDecl) {
-        .full_span = span_end(a),
-        .is_interface = false,
         .name = name,
+        .full_span = span_end(a),
         .generic = generic,
         .type = type,
     };
     return parse_success(&p);
 }
 
-static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
+static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
 
@@ -1098,12 +1098,11 @@ static bool parse_interface_decl(Parser* parent, TypeDecl* ret) {
         }
     }
 
-    *ret = (TypeDecl) {
-        .full_span = span_end(a),
-        .is_interface = true,
+    *ret = (InterfaceDecl) {
         .name = name,
+        .full_span = span_end(a),
         .generic = generic,
-        .interface_extends = extends,
+        .extends = extends,
         .type = type_interface(interface),
     };
     return parse_success(&p);
@@ -3596,6 +3595,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         FunctionImpl function;
         ClassDecl class;
         TypeDecl type_decl;
+        InterfaceDecl interface_decl;
         Expr expr;
     } parsed;
 
@@ -3671,9 +3671,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .class = c_new(ClassDecl, parsed.class),
             },
         };
-    } else if (parse_interface_decl(&p, &parsed.type_decl) ||
-               parse_type_decl(&p, &parsed.type_decl)
-    ) {
+    } else if (parse_type_decl(&p, &parsed.type_decl)) {
         parsed.type_decl.full_span = span_end(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
@@ -3681,6 +3679,16 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .exported = exported,
                 .declared = declared,
                 .type = parsed.type_decl,
+            },
+        };
+    } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
+        parsed.interface_decl.full_span = span_end(a);
+        *ret = (Statement){
+            .tag = STATEMENT_DECL_INTERFACE,
+            .decl = {
+                .exported = exported,
+                .declared = declared,
+                .interface = c_new(InterfaceDecl, parsed.interface_decl),
             },
         };
     } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {

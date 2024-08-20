@@ -850,29 +850,30 @@ static void display_variable_statement(Display d, VariableStatement const* me) {
 }
 
 static void display_type_decl(Display d, TypeDecl const* me) {
-    if (my is_interface) {
-        display_lit(d, "interface ");
-        display_colored_span(d, color_name, my name);
-        display_generic(d, &my generic);
-        if (!vec_spanned_type_empty(&my interface_extends)) {
-            display_lit(d, " extends ");
-            c_foreach(i, vec_spanned_type, my interface_extends) {
-                display_type(d, &i.ref->type);
-                if (i.ref != i.end - 1) {
-                    display_lit(d, ", ");
-                }
+    display_lit(d, "type ");
+    display_colored_span(d, color_name, my name);
+    display_generic(d, &my generic);
+    display_colored(d, color_implicit, " /* ");
+    display_type(d, type_resolve(&my type));
+    display_colored(d, color_implicit, " */");
+    display_lit(d, " = ");
+    display_type(d, &my type);
+}
+
+static void display_interface_decl(Display d, InterfaceDecl const* me) {
+    display_lit(d, "interface ");
+    display_colored_span(d, color_name, my name);
+    display_generic(d, &my generic);
+    if (!vec_spanned_type_empty(&my extends)) {
+        display_lit(d, " extends ");
+        c_foreach(i, vec_spanned_type, my extends) {
+            display_type(d, &i.ref->type);
+            if (i.ref != i.end - 1) {
+                display_lit(d, ", ");
             }
         }
-        display_lit(d, " ");
-    } else {
-        display_lit(d, "type ");
-        display_colored_span(d, color_name, my name);
-        display_generic(d, &my generic);
-        display_colored(d, color_implicit, " /* ");
-        display_type(d, type_resolve(&my type));
-        display_colored(d, color_implicit, " */");
-        display_lit(d, " = ");
     }
+    display_lit(d, " ");
     display_type(d, &my type);
 }
 
@@ -1022,8 +1023,8 @@ void display_statement(Display d, Statement const* me) {
             break;
 
         case STATEMENT_DECL_CLASS: display_class_decl(d, my decl.class); break;
-
         case STATEMENT_DECL_TYPE: display_type_decl(d, &my decl.type); break;
+        case STATEMENT_DECL_INTERFACE: display_interface_decl(d, my decl.interface); break;
 
         case STATEMENT_DECL_NAMESPACE:
             display_lit(d, "namespace ");

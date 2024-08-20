@@ -343,51 +343,56 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         my name,
         my full_span
     );
-    if (!my is_interface) {
-        Type to_drop = {0};
-        Type const* t = &my type;
-        if (generic_empty(&my generic)) {
-            if (my type.tag != TYPE_IDENTIFIER ||
-                (my type.identifier->type && !my type.identifier->type->is_class)
-            ) {
-                t = type_resolve(&my type);
-                switch (t->tag) {
-                    case TYPE_ANY:
-                    case TYPE_UNKNOWN:
-                    case TYPE_NEVER:
-                    case TYPE_VOID:
-                    case TYPE_BOOLEAN:
-                    case TYPE_NUMBER:
-                    case TYPE_STRING:
-                    case TYPE_VALUE:
-                    case TYPE_IDENTIFIER: break;
-                    default: t = &my type;
-                }
+    Type to_drop = {0};
+    Type const* t = &my type;
+    if (generic_empty(&my generic)) {
+        if (my type.tag != TYPE_IDENTIFIER ||
+            (my type.identifier->type && !my type.identifier->type->is_class)
+        ) {
+            t = type_resolve(&my type);
+            switch (t->tag) {
+                case TYPE_ANY:
+                case TYPE_UNKNOWN:
+                case TYPE_NEVER:
+                case TYPE_VOID:
+                case TYPE_BOOLEAN:
+                case TYPE_NUMBER:
+                case TYPE_STRING:
+                case TYPE_VALUE:
+                case TYPE_IDENTIFIER: break;
+                default: t = &my type;
             }
-        } else {
-            to_drop = type_identifier(c_new(IdentifierType, {
-                .name = my name,
-            }));
-            c_foreach(i, vec_generic_item, my generic.items) {
-                vec_spanned_type_push(&to_drop.identifier->generic_params, spanned_type(
-                    i.ref->name,
-                    type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
-                ));
-            }
-            t = &to_drop;
         }
-        baseline_test_case_add_type(ctx, my name, t);
-        type_drop(&to_drop);
-    }
-    generic_compile_test_info(&my generic, ctx);
-    if (my is_interface && my type.tag == TYPE_INTERFACE) {
-        c_foreach(i, vec_spanned_type, my interface_extends) {
-            type_compile_test_info(&i.ref->type, ctx);
-        }
-        interface_compile_test_info(&my type.interface, my name, ctx);
     } else {
-        type_compile_test_info(&my type, ctx);
+        to_drop = type_identifier(c_new(IdentifierType, {
+            .name = my name,
+        }));
+        c_foreach(i, vec_generic_item, my generic.items) {
+            vec_spanned_type_push(&to_drop.identifier->generic_params, spanned_type(
+                i.ref->name,
+                type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
+            ));
+        }
+        t = &to_drop;
     }
+    baseline_test_case_add_type(ctx, my name, t);
+    type_drop(&to_drop);
+    generic_compile_test_info(&my generic, ctx);
+    type_compile_test_info(&my type, ctx);
+}
+
+void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
+    baseline_test_case_add_symbol(
+        ctx,
+        span_sv(&my name),
+        my name,
+        my full_span
+    );
+    generic_compile_test_info(&my generic, ctx);
+    c_foreach(i, vec_spanned_type, my extends) {
+        type_compile_test_info(&i.ref->type, ctx);
+    }
+    interface_compile_test_info(&my type.interface, my name, ctx);
 }
 
 void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
@@ -655,6 +660,10 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
 
         case STATEMENT_DECL_TYPE:
             type_decl_compile_test_info(&my decl.type, ctx);
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            interface_decl_compile_test_info(my decl.interface, ctx);
             break;
 
         case STATEMENT_DECL_NAMESPACE:

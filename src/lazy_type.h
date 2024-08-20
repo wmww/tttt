@@ -6,7 +6,7 @@ typedef struct Expr Expr;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ClassDecl ClassDecl;
-typedef struct TypeDecl TypeDecl;
+typedef struct InterfaceDecl InterfaceDecl;
 typedef struct LazyType LazyType;
 
 wrap_forward_arc(LazyType, lazy_type);
@@ -36,7 +36,7 @@ typedef struct LazyType {
         ForEachLoopStatement* for_each_loop_var;
         FunctionImpl* function;
         ClassDecl* class;
-        TypeDecl* interface;
+        InterfaceDecl* interface;
         struct {
             ArcLazyType source;
             Type* index; // Owned
@@ -99,7 +99,7 @@ static inline LazyType lazy_type_class_class(ClassDecl* class) {
     };
 }
 
-LazyType lazy_type_interface(TypeDecl* interface);
+LazyType lazy_type_interface(InterfaceDecl* interface);
 LazyType lazy_type_indexed(ArcLazyType source, Value index, bool require_array);
 
 void lazy_type_drop(LazyType* me);

@@ -4,7 +4,7 @@
 #include "expr.h"
 #include "type.h"
 #include "function_impl.h"
-#include "type_decl.h"
+#include "interface_decl.h"
 #include "binding.h"
 
 typedef struct ErrorCtx ErrorCtx;
@@ -30,6 +30,20 @@ void variable_statement_drop(VariableStatement* me);
 void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs);
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
+
+// Type declaration
+
+typedef struct TypeDecl {
+    Span name;
+    Span full_span;
+    Generic generic;
+    Type type;
+    NamedType* named_type;
+} TypeDecl;
+
+void type_decl_drop(TypeDecl* me);
+void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs);
+void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 
 // If statements
 
@@ -66,6 +80,7 @@ typedef struct Statement {
         STATEMENT_DECL_FUNCTION,
         STATEMENT_DECL_CLASS,
         STATEMENT_DECL_TYPE,
+        STATEMENT_DECL_INTERFACE,
         STATEMENT_DECL_NAMESPACE,
     } tag;
     union {
@@ -87,6 +102,7 @@ typedef struct Statement {
                 FunctionImpl function;
                 ClassDecl* class;
                 TypeDecl type;
+                InterfaceDecl* interface;
                 struct {
                     Span name;
                     Block contents;

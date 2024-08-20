@@ -6,6 +6,8 @@
 #include "function_impl.h"
 #include "several_types.h"
 
+// Variable initialization
+
 void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }
@@ -33,6 +35,28 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
         initialized_binding_typecheck(i.ref, errs);
     }
 }
+
+// Type declaration
+
+void type_decl_drop(TypeDecl* me) {
+    generic_drop(&my generic);
+    type_drop(&my type);
+    named_type_destroy(my named_type);
+}
+
+void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
+    __( errs );
+    ASSERT(!my named_type);
+    my named_type = make_named_type(my name, my full_span, lazy_type_ref(&my type), &my generic);
+    name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
+}
+
+void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
+    generic_typecheck(&my generic, errs);
+    type_typecheck(&my type, errs);
+}
+
+// If statements
 
 czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     switch (my keyword) {
@@ -113,6 +137,8 @@ Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me) {
     return &my var_type;
 }
 
+// Statements
+
 void statement_drop(Statement* me) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
@@ -191,6 +217,11 @@ void statement_drop(Statement* me) {
             type_decl_drop(&my decl.type);
             break;
 
+        case STATEMENT_DECL_INTERFACE:
+            interface_decl_drop(my decl.interface);
+            free(my decl.interface);
+            break;
+
         case STATEMENT_DECL_NAMESPACE:
             block_drop(&my decl.namespace.contents);
             break;
@@ -217,6 +248,10 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE:
             type_decl_add_names(&my decl.type, names, errs);
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            interface_decl_add_names(my decl.interface, names, errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:
@@ -391,16 +426,12 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE:
             name_stack_push_generic_frame(names, &my decl.type.generic);
-            c_foreach(i, vec_spanned_type, my decl.type.interface_extends) {
-                type_resolve_names(&i.ref->type, names, errs);
-            }
-            name_stack_push_block_frame(names);
-            if (my decl.type.is_interface) {
-                name_stack_add_type_s(names, cstr_lit("this"), my decl.type.named_type);
-            }
             type_resolve_names(&my decl.type.type, names, errs);
             name_stack_pop_frame(names);
-            name_stack_pop_frame(names);
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            interface_decl_resolve_names(my decl.interface, names, errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:
@@ -636,6 +667,10 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE:
             type_decl_typecheck(&my decl.type, errs);
+            break;
+
+        case STATEMENT_DECL_INTERFACE:
+            interface_decl_typecheck(my decl.interface, errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:

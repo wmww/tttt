@@ -1,4 +1,4 @@
-#include "type_decl.h"
+#include "interface_decl.h"
 #include "error.h"
 #include "several_types.h"
 #include "interface_member.h"
@@ -6,34 +6,42 @@
 #include "type.h"
 #include "name_stack.h"
 
-void type_decl_drop(TypeDecl* me) {
+void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);
-    vec_spanned_type_drop(&my interface_extends);
+    vec_spanned_type_drop(&my extends);
     type_drop(&my type);
     type_drop(&my resolved_type);
     named_type_destroy(my named_type);
 }
 
-void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
+void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_type);
-    LazyType lazy_type = (my is_interface && ! vec_spanned_type_empty(&my interface_extends)) ?
-        lazy_type_interface(me) :
-        lazy_type_ref(&my type);
-    my named_type = make_named_type(my name, my full_span, lazy_type, &my generic);
+    my named_type = make_named_type(my name, my full_span, lazy_type_interface(me), &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
 }
 
-Type const* type_decl_resolve_interface_type(TypeDecl* me) {
-    ASSERT(my is_interface);
+void interface_decl_resolve_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
+    name_stack_push_generic_frame(names, &my generic);
+    c_foreach(i, vec_spanned_type, my extends) {
+        type_resolve_names(&i.ref->type, names, errs);
+    }
+    name_stack_push_block_frame(names);
+    name_stack_add_type_s(names, cstr_lit("this"), my named_type);
+    type_resolve_names(&my type, names, errs);
+    name_stack_pop_frame(names);
+    name_stack_pop_frame(names);
+}
+
+Type const* interface_decl_resolve_type(InterfaceDecl* me) {
     ASSERT(my type.tag == TYPE_INTERFACE);
 
     switch (my type_resolve_state) {
-        case RESOLVE_STATE_UNINITIALIZED:
+        case RESOLVE_STATE_UNINITIALIZED: {
             my type_resolve_state = RESOLVE_STATE_IN_FLIGHT;
             VecInterfaceMember members = {0};
 
-            c_foreach(extends, vec_spanned_type, my interface_extends) {
+            c_foreach(extends, vec_spanned_type, my extends) {
                 Type const* extends_resolved = type_resolve(&extends.ref->type);
                 if (extends_resolved->tag == TYPE_INTERFACE) {
                     c_foreach(extends_member, vec_interface_member, extends_resolved->interface.members) {
@@ -73,12 +81,12 @@ Type const* type_decl_resolve_interface_type(TypeDecl* me) {
                 }
                 my type_resolve_state = RESOLVE_STATE_DONE;
             }
-            break;
+        }   break;
 
-        case RESOLVE_STATE_IN_FLIGHT:
+        case RESOLVE_STATE_IN_FLIGHT: {
             my resolved_type = type_self_referential_error;
             my type_resolve_state = RESOLVE_STATE_DONE;
-            break;
+        }   break;
 
         case RESOLVE_STATE_DONE: break;
     }
@@ -86,47 +94,43 @@ Type const* type_decl_resolve_interface_type(TypeDecl* me) {
     return &my resolved_type;
 }
 
-void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
+void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
 
-    if (my is_interface) {
-        ASSERT(my type.tag == TYPE_INTERFACE);
-        c_foreach(extends, vec_spanned_type, my interface_extends) {
-            type_typecheck(&extends.ref->type, errs);
-            Type const* resolved = type_resolve(&extends.ref->type);
-            if (extends.ref->type.tag != TYPE_IDENTIFIER) {
+    ASSERT(my type.tag == TYPE_INTERFACE);
+    c_foreach(extends, vec_spanned_type, my extends) {
+        type_typecheck(&extends.ref->type, errs);
+        Type const* resolved = type_resolve(&extends.ref->type);
+        if (extends.ref->type.tag != TYPE_IDENTIFIER) {
+            error_ctx_error(
+                errs,
+                extends.ref->span,
+                2499,
+                "An interface can only extend an identifier/qualified-name with optional type arguments."
+            );
+        } else if (resolved->tag != TYPE_INTERFACE) {
+            /*
+            error_ctx_error(
+                errs,
+                extends.ref->span,
+                2312,
+                "An interface can only extend an object type or intersection of object types with statically known members."
+            );
+            */
+        } else {
+            /*
+            if (!type_extends(&i.ref->type, &my type)) {
                 error_ctx_error(
                     errs,
-                    extends.ref->span,
-                    2499,
-                    "An interface can only extend an identifier/qualified-name with optional type arguments."
+                    my name,
+                    2430,
+                    "Interface '%.*s' incorrectly extends interface '%.*s'.",
+                    c_SV(span_sv(&my name)),
+                    c_SV(span_sv(&i.ref->type.identifier->name))
                 );
-            } else if (resolved->tag != TYPE_INTERFACE) {
-                /*
-                error_ctx_error(
-                    errs,
-                    extends.ref->span,
-                    2312,
-                    "An interface can only extend an object type or intersection of object types with statically known members."
-                );
-                */
-            } else {
-                /*
-                if (!type_extends(&i.ref->type, &my type)) {
-                    error_ctx_error(
-                        errs,
-                        my name,
-                        2430,
-                        "Interface '%.*s' incorrectly extends interface '%.*s'.",
-                        c_SV(span_sv(&my name)),
-                        c_SV(span_sv(&i.ref->type.identifier->name))
-                    );
-                }
-                */
             }
-            //my effective_type = type_composite(my effective_type, type_clone(extends.ref->type), TYPE_INTERSECTION);
+            */
         }
-    } else {
-        type_typecheck(&my type, errs);
+        //my effective_type = type_composite(my effective_type, type_clone(extends.ref->type), TYPE_INTERSECTION);
     }
 }
