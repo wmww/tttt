@@ -42,6 +42,8 @@ static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type
 typedef struct IndexedType {
     Type interface;
     Type index;
+    bool has_cache;
+    Type cached; // Should be {0} if has_cache is false
 } IndexedType;
 
 void indexed_type_drop(IndexedType* me);

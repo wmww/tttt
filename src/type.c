@@ -491,8 +491,17 @@ static Type const* type_resolve_internal(Type const* me, int level) {
                 break;
 
             case TYPE_INDEXED:
-                NONFATAL("Resolving index types not yet supported");
-                me = &type_any;
+                if (!my indexed->has_cache) {
+                    my indexed->cached = index_type_of(
+                        &my indexed->interface,
+                        &my indexed->index,
+                        span_null,
+                        false,
+                        nullptr
+                    );
+                    my indexed->has_cache = true;
+                }
+                me = &my indexed->cached;
                 break;
 
             case TYPE_KEYOF:

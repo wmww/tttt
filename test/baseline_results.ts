@@ -24241,7 +24241,7 @@ const baselines = {
         types: false,
     },
     'recursiveConditionalEvaluationNonInfinite': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
