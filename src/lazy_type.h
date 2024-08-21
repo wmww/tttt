@@ -110,6 +110,16 @@ LazyType lazy_type_clone(LazyType me);
 Type const* lazy_type_resolve(LazyType* me);
 void lazy_type_typecheck(LazyType* me, ErrorCtx* errs);
 
+static inline Type lazy_type_into_type(LazyType me) {
+    lazy_type_resolve(&me);
+    switch (me.tag) {
+        case LAZY_TYPE_VALUE: return me.value;
+        case LAZY_TYPE_REF: return type_clone(*me.ref);
+        default:
+            PANIC("Resolving lazy type left it with tag %d", me.tag);
+    }
+}
+
 static inline void lazy_type_resolve_names(LazyType* me, NameStack* names, ErrorCtx* errs) {
     if (my tag == LAZY_TYPE_VALUE) {
         type_resolve_names(&my value, names, errs);
