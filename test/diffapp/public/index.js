@@ -489,11 +489,12 @@ function updateErrorCounts() {
   }
   const ttttErrorCount = getErrorCount(latestResults.tttt.err);
   const tscErrorCount = getErrorCount(latestResults.tsc.err);
-  const count = tscErrorCount > ttttErrorCount ? tscErrorCount : ttttErrorCount;
   const errorsButton = document.getElementById('channel-button-err');
   errorsButton.textContent = 'Errors';
-  if (count > 0) {
-    errorsButton.textContent += ' [' + count + ']';
+  if (ttttErrorCount != tscErrorCount) {
+    errorsButton.textContent += ' [' + ttttErrorCount + '/' + tscErrorCount + ']';
+  } else if (ttttErrorCount) {
+    errorsButton.textContent += ' [' + ttttErrorCount + ']';
   }
 }
 
@@ -501,7 +502,6 @@ const errorCountRegex = /customTest\.ts \((\d+) errors\) ===/;
 function handleEvents(json) {
   let currentChannelUpdated = false;
   let anyChannelUpdated = false;
-  let errorsUpdated = false;
   for (const key in json) {
     try {
       const keys = key.split('.');
@@ -522,9 +522,6 @@ function handleEvents(json) {
 
         case 'result':
           latestResults[keys[1]][keys[2]] = json[key];
-          if (keys[2] == 'err') {
-            errorsUpdated = true;
-          }
           if (keys[2] == currentChannel || keys[2] == 'serial') {
             currentChannelUpdated = true;
           }
@@ -535,9 +532,6 @@ function handleEvents(json) {
       surfaceError('Handling ' + key + ': ' + e.toString());
     }
   }
-  if (errorsUpdated) {
-    updateErrorCounts();
-  }
   const serialsMatch = latestResults.tsc.serial === latestResults.tttt.serial &&
     (latestSubmittedSerial === null || latestResults.tttt.serial === latestSubmittedSerial);
   if (anyChannelUpdated && serialsMatch) {
@@ -546,6 +540,7 @@ function handleEvents(json) {
       const button = document.getElementById('channel-button-' + channel);
       button.classList.toggle('fail', !passed);
     }
+    updateErrorCounts();
   }
   if (currentChannelUpdated && serialsMatch) {
     updateResultTokens();
