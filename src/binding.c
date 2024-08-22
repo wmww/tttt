@@ -168,7 +168,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             break;
 
         case BINDING_ARRAY:
-            if (!type_extends_array(binding_get_type(me))) {
+            if (errs && !type_extends_array(binding_get_type(me))) {
                 cstr msg = cstr_lit("Type '");
                 cstr_append_type_error_msg(&msg, binding_get_type(me));
                 cstr_append_sv(&msg, c_sv("' is not an array type."));

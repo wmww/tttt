@@ -110,7 +110,7 @@ Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me) {
 
                 case FOR_EACH_LOOP_OF:
                     if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
-                        var_type = index_type_of(iterable_type, &type_number, span_null, false, nullptr);
+                        index_type_of(iterable_type, &type_number, span_null, false, nullptr, &var_type);
                     }
                     break;
             }
@@ -540,7 +540,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    if (!type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
+                    if (errs && !type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
                         cstr msg = cstr_lit("Type '");
                         cstr_append_type_error_msg(&msg, iterable_type);
                         cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));

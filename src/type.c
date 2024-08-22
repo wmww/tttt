@@ -493,13 +493,16 @@ static Type const* type_resolve_internal(Type const* me, int level) {
 
             case TYPE_INDEXED:
                 if (!my indexed->has_cache) {
-                    my indexed->cached = index_type_of(
+                    if (!index_type_of(
                         &my indexed->interface,
                         &my indexed->index,
                         span_null,
                         false,
-                        nullptr
-                    );
+                        nullptr,
+                        &my indexed->cached
+                    )) {
+                        my indexed->cached = type_any;
+                    }
                     my indexed->has_cache = true;
                 }
                 me = &my indexed->cached;
@@ -703,7 +706,8 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                 c_foreach(i, vec_tuple_element, sub->tuple.elements) {
                     if (i.ref->rest) {
                         // Make sure every item in the rest tuple/array extends the array type
-                        Type elem = index_type_of(&i.ref->type, &type_number, span_null, false, nullptr);
+                        Type elem = type_any;
+                        index_type_of(&i.ref->type, &type_number, span_null, false, nullptr, &elem);
                         bool extends = type_extends_internal(&elem, super->array.element, refinements, level + 1);
                         type_drop(&elem);
                         if (!extends) return false;
@@ -805,7 +809,8 @@ void type_abstract_tuple_to_array(Type* me) {
         Type ret = vec_tuple_element_empty(&my tuple.elements) ? type_undefined : type_never;
         c_foreach(i, vec_tuple_element, my tuple.elements) {
             if (i.ref->rest) {
-                Type elem = index_type_of(&i.ref->type, &type_number, span_null, false, nullptr);
+                Type elem = type_any;
+                index_type_of(&i.ref->type, &type_number, span_null, false, nullptr, &elem);
                 ret = type_composite(TYPE_UNION, ret, elem);
             } else if (i.ref->type.tag != TYPE_VALUE || i.ref->type.value.tag != VALUE_UNDEFINED) {
                 ret = type_composite(TYPE_UNION, ret, i.ref->type);
@@ -938,17 +943,18 @@ void type_remove_null_and_undefined(Type* me) {
     }
 }
 
-static Type index_type_of_internal(
+static bool index_type_of_internal(
     Type const* me,
     Type const* index,
     Span index_span,
-    bool allow_not_found,
+    bool error_if_not_found,
     ErrorCtx* errs,
+    Type* ret,
     int level
 ) {
     if (level > 100) {
         NONFATAL("Max type recursion depth exceeded");
-        return type_any;
+        return false;
     }
 
     index = type_resolve_internal(index, level);
@@ -972,15 +978,25 @@ static Type index_type_of_internal(
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
-            Type ret = type_composite_base(index->tag);
+            Type comp = type_composite_base(index->tag);
+            bool found_in_all = true;
+            bool found_in_any = false;
             c_foreach(i, vec_type, index->composite) {
-                ret = type_composite(
-                    index->tag,
-                    ret,
-                    index_type_of_internal(me, i.ref, index_span, allow_not_found, errs, level + 1)
-                );
+                Type temp;
+                if (index_type_of_internal(me, i.ref, index_span, error_if_not_found, errs, &temp, level + 1)) {
+                    comp = type_composite(index->tag, comp, temp);
+                    found_in_any = true;
+                } else {
+                    found_in_all = false;
+                }
             }
-            return ret;
+            if (index->tag == TYPE_UNION ? found_in_all : found_in_any) {
+                *ret = comp;
+                return true;
+            } else {
+                type_drop(&comp);
+                return false;
+            }
         }
 
         default: index_invalid = true; break;
@@ -993,26 +1009,27 @@ static Type index_type_of_internal(
             cstr_append_sv(&msg, c_sv("' cannot be used as an index type."));
             error_ctx_error_s(errs, index_span, 2538, msg);
         }
-        return type_any;
+        return false;
     }
 
     Type const* me_original = me;
     me = type_resolve_internal(me, level);
     if (type_is_self_referential(me)) {
-        return type_clone(*me);
+        return false;
     }
 
     switch (my tag) {
         case TYPE_NEVER:
-        case TYPE_VOID:
-            return type_never;
+            *ret = type_never;
+            return true;
 
+        case TYPE_VOID:
         case TYPE_UNKNOWN:
         case TYPE_ANY:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_CALLABLE:
-            return type_any;
+            return false;
 
         case TYPE_VALUE:
             switch (my value.tag) {
@@ -1024,7 +1041,7 @@ static Type index_type_of_internal(
                 case VALUE_ARRAY:
                 case VALUE_JS_FUNC:
                 case VALUE_NATIVE_FUNC:
-                    return type_any;
+                    return false;
 
                 case VALUE_STRING:
                     break;
@@ -1034,13 +1051,14 @@ static Type index_type_of_internal(
 
         case TYPE_STRING:
             if (type_extends(index, &type_number)) {
-                return type_string;
+                *ret = type_string;
+                return true;
             } else {
-                return type_any;
+                return false;
             }
 
         case TYPE_INTERFACE: {
-            Type ret = type_composite_base(TYPE_UNION);
+            Type comp = type_composite_base(TYPE_UNION);
             bool found = false;
             c_foreach(i, vec_interface_member, my interface.members) {
                 switch (i.ref->key.tag) {
@@ -1048,13 +1066,13 @@ static Type index_type_of_internal(
                         // Don't clone the string, and don't drop it the type. Hacky but safe.
                         Type key = type_value(value_string(i.ref->key.name_string));
                         if (type_extends(&key, index)) {
-                            ret = type_composite(
+                            comp = type_composite(
                                 TYPE_UNION,
-                                ret,
+                                comp,
                                 type_clone(*lazy_type_resolve(&i.ref->type))
                             );
                             if (i.ref->optional) {
-                                ret = type_composite(TYPE_UNION, ret, type_undefined);
+                                comp = type_composite(TYPE_UNION, comp, type_undefined);
                             }
                             found = true;
                         }
@@ -1062,13 +1080,13 @@ static Type index_type_of_internal(
 
                     case INTERFACE_KEY_INDEX:
                         if (type_overlaps(&i.ref->key.index, index)) {
-                            ret = type_composite(
+                            comp = type_composite(
                                 TYPE_UNION,
-                                ret,
+                                comp,
                                 type_clone(*lazy_type_resolve(&i.ref->type))
                             );
                             if (i.ref->optional) {
-                                ret = type_composite(TYPE_UNION, ret, type_undefined);
+                                comp = type_composite(TYPE_UNION, comp, type_undefined);
                             }
                             found = true;
                         }
@@ -1083,10 +1101,12 @@ static Type index_type_of_internal(
                         break;
                 }
             }
-            if (!found) {
-                type_drop(&ret);
-                ret = type_any;
-                if (errs && !allow_not_found) {
+            if (found) {
+                *ret = comp;
+                return true;
+            } else {
+                type_drop(&comp);
+                if (errs && errs->conf.no_unchecked_indexed_access && error_if_not_found) {
                     cstr msg = cstr_lit("Property '");
                     if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
                         cstr_append_s(&msg, index->value.string);
@@ -1098,15 +1118,16 @@ static Type index_type_of_internal(
                     cstr_append_sv(&msg, c_sv("'."));
                     error_ctx_error_s(errs, index_span, 2551, msg);
                 }
+                return false;
             }
-            return ret;
         }
 
         case TYPE_ARRAY:
             if (type_extends(index, &type_number)) {
-                return type_clone(*my array.element);
+                *ret = type_clone(*my array.element);
+                return true;
             } else {
-                return type_any;
+                return false;
             }
 
         case TYPE_TUPLE: {
@@ -1129,29 +1150,41 @@ static Type index_type_of_internal(
             }
 
             if (!type_extends(index, &type_number)) {
-                return type_any;
+                return false;
             }
 
-            Type ret = type_composite_base(TYPE_UNION);
+            Type comp = type_composite_base(TYPE_UNION);
             c_foreach(i, vec_tuple_element, my tuple.elements) {
                 intptr_t j = i.ref - my tuple.elements.data;
                 Type key = type_value(value_number(j));
                 if (type_extends(&key, index)) {
-                    ret = type_composite(TYPE_UNION, ret, type_clone(i.ref->type));
+                    comp = type_composite(TYPE_UNION, comp, type_clone(i.ref->type));
                 }
             }
-            return ret;
+            *ret = comp;
+            return true;
         }
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
-            Type ret = type_composite_base(my tag);
+            Type comp = type_composite_base(my tag);
+            bool found_in_all = true;
+            bool found_in_any = false;
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite(
-                    my tag,
-                    ret,
-                    index_type_of_internal(i.ref, index, index_span, allow_not_found, errs, level + 1)
-                );
+                Type temp;
+                if (index_type_of_internal(i.ref, index, index_span, error_if_not_found, errs, &temp, level + 1)) {
+                    comp = type_composite(my tag, comp, temp);
+                    found_in_any = true;
+                } else {
+                    found_in_all = false;
+                }
+            }
+            if (my tag == TYPE_UNION ? found_in_all : found_in_any) {
+                *ret = comp;
+                return true;
+            } else {
+                type_drop(&comp);
+                return false;
             }
             return ret;
         }
@@ -1166,8 +1199,15 @@ static Type index_type_of_internal(
     UNREACHABLE;
 }
 
-Type index_type_of(Type const* me, Type const* index, Span index_span, bool allow_not_found, ErrorCtx* errs) {
-    return index_type_of_internal(me, index, index_span, allow_not_found, errs, 0);
+bool index_type_of(
+    Type const* me,
+    Type const* index,
+    Span index_span,
+    bool error_if_not_found,
+    ErrorCtx* errs,
+    Type* ret
+) {
+    return index_type_of_internal(me, index, index_span, error_if_not_found, errs, ret, 0);
 }
 
 static bool check_assignable_or_error_internal(

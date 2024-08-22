@@ -141,11 +141,11 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
 
         cstr_clear(&display);
         cstr_append_fmt(&display, "%ld%%", index * 100 / test_count);
-        printf("        %s%5s %s  %.*s", color_run_percent, cstr_str(&display), color_normal, c_SV(name));
+        printf("        %s%5s %s  %.*s ", color_run_percent, cstr_str(&display), color_normal, c_SV(name));
         fflush(stdout);
 
         if (show_errs || show_syms || show_typs) {
-            printf(" - Testing %s\n", cstr_str(&i.ref->source_path));
+            printf("- Testing %s\n", cstr_str(&i.ref->source_path));
         }
         Result prev_result = js_object_get(my prev_results.get, name);
         JsObject* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;

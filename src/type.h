@@ -185,7 +185,15 @@ void type_abstract_tuple_to_array(Type* me); // [number | string] -> (number | s
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 
-Type index_type_of(Type const* me, Type const* index, Span index_span, bool allow_not_found, ErrorCtx* errs);
+// Returns true if found, false if not. ret is unmodified if false is returned. both ret and errors may be null.
+bool index_type_of(
+    Type const* me,
+    Type const* index,
+    Span index_span,
+    bool error_if_not_found,
+    ErrorCtx* errs,
+    Type* ret
+);
 void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
 Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs, int level);
 

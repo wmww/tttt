@@ -150,7 +150,8 @@ Type const* lazy_type_resolve(LazyType* me) {
                 source_resolved = &type_any;
             }
             if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                Type result = index_type_of(source_resolved, my indexed.index, span_null, false, nullptr);
+                Type result = type_any;
+                index_type_of(source_resolved, my indexed.index, span_null, true, nullptr, &result);
                 if (my tag == LAZY_TYPE_IN_FLIGHT) {
                     *me = lazy_type_value(result);
                 } else {
