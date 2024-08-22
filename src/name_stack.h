@@ -40,7 +40,7 @@ NameStack* name_stack_new(ErrorCtx* errs);
 void name_stack_destroy(NameStack* me);
 void name_stack_push_block_frame(NameStack* me);
 void name_stack_push_function_frame(NameStack* me);
-void name_stack_push_generic_frame(NameStack* me, Generic* generic);
+void name_stack_push_generic_frame(NameStack* me, Generic const* generic);
 void name_stack_pop_frame(NameStack* me);
 void name_stack_add_variable(NameStack* me, NamedVariable* var);
 void name_stack_add_type(NameStack* me, NamedType* type);

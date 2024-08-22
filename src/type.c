@@ -4,6 +4,7 @@
 #include "interface_member.h"
 #include "several_types.h"
 #include "callable_type.h"
+#include "function_impl.h"
 #include "generic.h"
 #include "value.h"
 #include "name_stack.h"
@@ -230,7 +231,7 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_arg, my callable->args) {
-                type_add_inferred_names(&i.ref->binding.explicit_type, names);
+                type_add_inferred_names(lazy_type_resolve(&i.ref->type), names);
             }
             type_add_inferred_names(&my callable->ret, names);
             break;
@@ -294,7 +295,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_IDENTIFIER: identifier_type_resolve_names(my identifier, names, errs); break;
-        case TYPE_CALLABLE: callable_type_resolve_names(my callable, nullptr, names, errs); break;
+        case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
@@ -355,7 +356,7 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             break;
 
         case TYPE_CALLABLE:
-            callable_type_typecheck(my callable, nullptr, errs);
+            callable_type_typecheck(my callable, errs);
             break;
 
         case TYPE_INTERFACE:
@@ -642,8 +643,8 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                 for (intptr_t i = 0; i < arg_count; i++) {
                     // Order is flipped for arguments
                     if (!type_extends_internal(
-                        binding_get_type(&vec_callable_arg_at_mut(&sub->callable->args, i)->binding),
-                        binding_get_type(&vec_callable_arg_at_mut(&super->callable->args, i)->binding),
+                        lazy_type_resolve(&vec_callable_arg_at_mut(&sub->callable->args, i)->type),
+                        lazy_type_resolve(&vec_callable_arg_at_mut(&super->callable->args, i)->type),
                         refinements,
                         level + 1
                     )) {
@@ -1224,11 +1225,11 @@ void check_assignable_or_error(Type const* source, Type const* target, Span span
 static intptr_t min_args_of_callable(CallableType* me) {
     intptr_t args_size = vec_callable_arg_size(&my args);
     intptr_t ret = args_size;
-    if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
-        Type const* rest_type = binding_get_type(&vec_callable_arg_at_mut(&my args, args_size - 1)->binding);
-        if (rest_type->tag == TYPE_TUPLE && vec_tuple_element_size(&rest_type->tuple.elements) > 0) {
+    if (args_size && vec_callable_arg_at(&my args, args_size - 1)->source->rest) {
+        Type const* arg_type = lazy_type_resolve(&vec_callable_arg_at_mut(&my args, args_size - 1)->type);
+        if (arg_type->tag == TYPE_TUPLE && vec_tuple_element_size(&arg_type->tuple.elements) > 0) {
             // TODO: account for rest arguments within tuple
-            return args_size - 1 + vec_tuple_element_size(&rest_type->tuple.elements);
+            return args_size - 1 + vec_tuple_element_size(&arg_type->tuple.elements);
         } else {
             ret--;
         }
@@ -1241,11 +1242,12 @@ static intptr_t min_args_of_callable(CallableType* me) {
 
 static intptr_t max_args_of_callable(CallableType* me) {
     intptr_t args_size = vec_callable_arg_size(&my args);
-    if (args_size && vec_callable_arg_at(&my args, args_size - 1)->rest) {
-        Type const* rest_type = binding_get_type(&vec_callable_arg_at_mut(&my args, args_size - 1)->binding);
-        if (rest_type->tag == TYPE_TUPLE) {
+    CallableArg* last_arg = args_size ? vec_callable_arg_at_mut(&my args, args_size - 1) : nullptr;
+    if (last_arg && last_arg->source->rest) {
+        Type const* last_arg_type = lazy_type_resolve(&last_arg->type);
+        if (last_arg_type->tag == TYPE_TUPLE) {
             // TODO: account for rest arguments within tuple
-            return args_size - 1 + vec_tuple_element_size(&rest_type->tuple.elements);
+            return args_size - 1 + vec_tuple_element_size(&last_arg_type->tuple.elements);
         } else {
             return INTPTR_MAX;
         }
@@ -1362,7 +1364,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             bool last_arg_rest =
                 check_types_against_callable &&
                 callable_arg_count &&
-                vec_callable_arg_at(&callable->args, callable_arg_count - 1)->rest;
+                vec_callable_arg_at(&callable->args, callable_arg_count - 1)->source->rest;
             Span rest_span = span_null;
             VecTupleElement rest_tuple = {0};
 
@@ -1371,11 +1373,12 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 // Don't report errors, errors inside argument expressions are reported elsewhere
                 Type arg_type = expr_get_type_and_typecheck(i.ref, nullptr);
                 if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
+                    CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);
                     if (!check_assignable_or_error_internal(
                         "Argument of type",
                         &arg_type,
                         "parameter of type",
-                        binding_get_type(&vec_callable_arg_at_mut(&callable->args, index)->binding),
+                        lazy_type_resolve(&arg->type),
                         2345,
                         i.ref->outer_span,
                         errs
@@ -1394,11 +1397,12 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             if (last_arg_rest) {
                 Type rest_type = type_tuple(rest_tuple, false);
                 if (check_types_against_callable) {
+                    CallableArg* arg = vec_callable_arg_at_mut(&callable->args, callable_arg_count - 1);
                     check_assignable_or_error_internal(
                         "Argument of type",
                         &rest_type,
                         "parameter of type",
-                        binding_get_type(&vec_callable_arg_at_mut(&callable->args, callable_arg_count - 1)->binding),
+                        lazy_type_resolve(&arg->type),
                         2345,
                         span_valid(&rest_span) ? rest_span : span,
                         errs

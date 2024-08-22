@@ -1,16 +1,15 @@
 #pragma once
 
-#include "type.h"
+#include "lazy_type.h"
 #include "generic.h"
-#include "binding.h"
+
+typedef struct FunctionArg FunctionArg;
+typedef struct FunctionImpl FunctionImpl;
 
 typedef struct CallableArg {
-    Span span;
-    Span rest_span;
-    Binding binding;
     bool optional;
-    bool explicit_optional;
-    bool rest;
+    LazyType type;
+    FunctionArg const* source;
 } CallableArg;
 
 void callable_arg_drop(CallableArg* me);
@@ -22,19 +21,16 @@ CallableArg callable_arg_clone(CallableArg me);
 typedef struct CallableType {
     Generic generic;
     VecCallableArg args;
-    Span ret_span;
-    bool ret_explicit;
     Type ret;
     bool is_constructor;
     bool is_abstract_constructor;
-    Type wrapper_type_do_not_drop; // used by callable_type_get_wrapper
+    // If this CallableType was parsed directly from code into the AST (not cloned from another or created from a
+    // FunctionImpl) than it must own it's own FunctionImpl. arg sources point into it. Clones will not own a
+    // FunctionImpl and will point into this one (since this CallableType is owned by the AST it should outlive them)
+    FunctionImpl* owned_function_impl;
 } CallableType;
 
 void callable_type_drop(CallableType* me);
 CallableType callable_type_clone(CallableType me);
-void callable_type_resolve_names(CallableType* me, FunctionImpl const* optional_func, NameStack* names, ErrorCtx* errs);
-void callable_type_typecheck(CallableType const* me, FunctionImpl const* optional_func, ErrorCtx* errs);
-
-// HACK: returns a pointer to the generic version of this callable type. Returned type should never be dropped, and
-// is invalidated by moving or dropping the given callable type.
-Type const* callable_type_get_wrapper(CallableType* me);
+void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs);
+void callable_type_typecheck(CallableType const* me, ErrorCtx* errs);

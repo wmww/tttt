@@ -87,7 +87,12 @@ static inline bool expect_statement(Parser* parent, bool toplevel, Statement* re
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
 static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, Type* ret);
 static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
-static bool parse_function_args(Parser* parent, bool is_type, FunctionImpl /*nullable*/* func_ret, CallableType* type_ret);
+static bool parse_function_args(
+    Parser* parent,
+    bool parse_abstract_and_new,
+    bool parse_type_return_syntax,
+    FunctionImpl* ret
+);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -795,7 +800,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
 
     union {
         IdentifierType identifier;
-        CallableType callable;
+        FunctionImpl func;
         Type type;
         VecTupleElement tuple_elements;
     } parsed;
@@ -832,8 +837,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
-    } else if (parse_function_args(&p, true, nullptr, &parsed.callable)) {
-        *ret = type_callable(c_new(CallableType, parsed.callable));
+    } else if (parse_function_args(&p, true, true, &parsed.func)) {
+        *ret = function_impl_into_type(parsed.func);
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){
@@ -918,9 +923,9 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         cstr_move(&item.member.name_string),
                         item.member.name_span,
                         item.member.name_is_value,
-                        lazy_type_value(type_callable(c_new(CallableType, item.member.func.callable)))
+                        lazy_type_value(function_impl_into_type(item.member.func))
                     ));
-                    item.member.func.callable = (CallableType){0};
+                    item.member.func = (FunctionImpl){0};
                     break;
 
                 case CLASS_ITEM_FIELD:
@@ -1110,38 +1115,34 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
 
 static bool parse_function_args(
     Parser* parent,
-    bool is_type,
-    FunctionImpl /*nullable*/* func_ret,
-    CallableType* type_ret
+    bool parse_abstract_and_new,
+    bool parse_type_return_syntax,
+    FunctionImpl* ret
 ) {
     Parser p = parser(parent);
     bool is_definitely_function = false;
 
-    *type_ret = (CallableType){0};
+    *ret = (FunctionImpl){0};
 
-    if (is_type || !func_ret) {
+    if (parse_abstract_and_new) {
         if (hop_start_if_ends_on_word_break(&p, "abstract")) {
-            type_ret->is_abstract_constructor = true;
+            ret->is_abstract_constructor = true;
             hop_whitespace(&p);
         }
 
         if (hop_start_if_ends_on_word_break(&p, "new")) {
             hop_whitespace(&p);
-            type_ret->is_constructor = true;
-        } else if (type_ret->is_abstract_constructor) {
+            ret->is_constructor = true;
+        } else if (ret->is_abstract_constructor) {
             return parse_fail(&p);
         }
     }
 
-    if (parse_generic_decl(&p, &type_ret->generic)) {
+    if (parse_generic_decl(&p, &ret->generic)) {
         hop_whitespace(&p);
         is_definitely_function = true;
     } else {
-        type_ret->generic = (Generic){0};
-    }
-
-    if (func_ret) {
-        func_ret->arg_defaults = vec_expr_init();
+        ret->generic = (Generic){0};
     }
 
     Anchor args_start = span_start(&p);
@@ -1153,10 +1154,8 @@ static bool parse_function_args(
             if (hop_char(&p, ',')) {
                 parse_error(&p, span_from_previous_char(&p), 1138, "Parameter declaration expected.");
             } else {
-                Binding binding = {0};
-                Expr default_value;
+                InitializedBinding initializer = {0};
                 const char* before_param = p.pos;
-                bool optional = false;
                 bool explicit_optional = false;
                 bool rest = false;
                 Span rest_span = span_null;
@@ -1168,59 +1167,40 @@ static bool parse_function_args(
                     rest_span = span_end(arg_start);
                 }
 
-                if (!parse_binding_content(&p, &binding)) {
+                if (!parse_binding_content(&p, &initializer.binding)) {
                     goto drop_and_fail;
                 }
                 hop_whitespace(&p);
 
                 if (hop_char(&p, '?')) {
-                    optional = true;
                     explicit_optional = true;
                     hop_whitespace(&p);
                 }
 
-                if (parse_binding_type_or_set_to_default(&p, &binding)) {
-                    if (explicit_optional) {
-                        binding.explicit_type = type_composite(TYPE_UNION, binding.explicit_type, type_undefined);
-                    }
-                    hop_whitespace(&p);
+                parse_binding_type_or_set_to_default(&p, &initializer.binding);
+                if (explicit_optional) {
+                    initializer.binding.explicit_type = type_composite(
+                        TYPE_UNION,
+                        initializer.binding.explicit_type,
+                        type_undefined
+                    );
                 }
+                hop_whitespace(&p);
 
-                if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &default_value)) {
-                    optional = true;
-                    hop_whitespace(&p);
-                }
+                parse_initialization_or_set_to_default(&p, expr_ctx_null, &initializer.value);
+                hop_whitespace(&p);
 
-                if (vec_callable_arg_empty(&type_ret->args) && binding.has_explicit_type) {
+                if (vec_function_arg_empty(&ret->args) && initializer.binding.has_explicit_type) {
                     is_definitely_function = true;
                 }
 
-                vec_callable_arg_push(&type_ret->args, (CallableArg){
+                vec_function_arg_push(&ret->args, (FunctionArg){
                     .span = span_end(arg_start),
                     .rest_span = rest_span,
-                    .binding = binding,
-                    .optional = optional,
+                    .initializer = initializer,
                     .explicit_optional = explicit_optional,
                     .rest = rest,
                 });
-
-                if (func_ret) {
-                    while (vec_expr_size(&func_ret->arg_defaults) < vec_callable_arg_size(&type_ret->args) - 1) {
-                        vec_expr_push(&func_ret->arg_defaults, expr_implicit_any(span_from_pos(&p)));
-                    }
-                    vec_expr_push(&func_ret->arg_defaults, default_value);
-                } else {
-                    expr_drop(&default_value);
-                    // TODO: this might should be added in the typecheck phase
-                    if (default_value.tag != EXPR_IMPLICIT_ANY) {
-                        parse_error(
-                            &p,
-                            span_end(arg_start),
-                            2371,
-                            "A parameter initializer is only allowed in a function or constructor implementation."
-                        );
-                    }
-                }
 
                 if (p.pos == before_param) {
                     if (is_definitely_function) {
@@ -1239,12 +1219,8 @@ static bool parse_function_args(
         }
 
         if (!expect_char(&p, ')')) {
-            if (func_ret) {
-                vec_expr_drop(&func_ret->arg_defaults);
-                func_ret->arg_defaults = vec_expr_init();
-            }
-            callable_type_drop(type_ret);
-            *type_ret = (CallableType){0};
+            function_impl_drop(ret);
+            *ret = (FunctionImpl){0};
             return parse_success(&p);
         }
     } else if (is_definitely_function) {
@@ -1253,12 +1229,10 @@ static bool parse_function_args(
         goto drop_and_fail;
     }
 
-    if (func_ret) {
-        func_ret->args_span = span_end(args_start);
-    }
+    ret->args_span = span_end(args_start);
 
     bool parse_ret_type = true;
-    if (is_type) {
+    if (parse_type_return_syntax) {
         hop_whitespace(&p);
 
         if (!hop_start(&p, "=>")){
@@ -1283,19 +1257,19 @@ static bool parse_function_args(
 
     if (parse_ret_type) {
         Anchor ret_a = span_start(&p);
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type_ret->ret)) {
-            type_ret->ret_span = span_end(ret_a);
-            type_ret->ret_explicit = true;
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
+            ret->ret_span = span_end(ret_a);
+            ret->ret_explicit = true;
             hop_whitespace(&p);
-            if (p.whitespace != WHITESPACE_NEWLINE && type_ret->ret.tag == TYPE_IDENTIFIER) {
+            if (p.whitespace != WHITESPACE_NEWLINE && ret->ret.tag == TYPE_IDENTIFIER) {
                 if (hop_start_if_ends_on_word_break(&p, "is")) {
                     hop_whitespace(&p);
                     Type t;
                     expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
                     type_drop(&t);
-                    type_drop(&type_ret->ret);
-                    type_ret->ret = type_boolean;
-                } else if (csview_equals_sv(span_sv(&type_ret->ret.identifier->name), c_sv("asserts"))) {
+                    type_drop(&ret->ret);
+                    ret->ret = type_boolean;
+                } else if (csview_equals_sv(span_sv(&ret->ret.identifier->name), c_sv("asserts"))) {
                     Span param;
                     if (parse_identifier(&p, &param)) {
                         hop_whitespace(&p);
@@ -1305,8 +1279,8 @@ static bool parse_function_args(
                             expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
                             type_drop(&t);
                         }
-                        type_drop(&type_ret->ret);
-                        type_ret->ret = type_void;
+                        type_drop(&ret->ret);
+                        ret->ret = type_void;
                     }
                 }
             }
@@ -1318,10 +1292,7 @@ static bool parse_function_args(
     return parse_success(&p);
 
 drop_and_fail:
-    callable_type_drop(type_ret);
-    if (func_ret) {
-        vec_expr_drop(&func_ret->arg_defaults);
-    }
+    function_impl_drop(ret);
     return parse_fail(&p);
 }
 
@@ -1333,11 +1304,11 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     Span lone_arg_name;
     *ret = (FunctionImpl){0};
 
-    if (parse_function_args(&p, false, ret, &ret->callable)) {
+    if (parse_function_args(&p, false, false, ret)) {
 
         is_definitely_function =
-            !vec_callable_arg_empty(&ret->callable.args) &&
-            vec_callable_arg_at(&ret->callable.args, 0)->binding.has_explicit_type;
+            !vec_function_arg_empty(&ret->args) &&
+            vec_function_arg_at(&ret->args, 0)->initializer.binding.has_explicit_type;
 
     } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
@@ -1347,7 +1318,10 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
             .tag = BINDING_IDENTIFIER,
             .content_span = lone_arg_name,
         };
-        vec_callable_arg_push(&ret->callable.args, (CallableArg){ .binding = binding });
+        vec_function_arg_push(&ret->args, (FunctionArg){
+            .span = lone_arg_name,
+            .initializer.binding = binding
+        });
 
     } else {
         return parse_fail(&p);
@@ -1398,7 +1372,7 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     Anchor a = span_start(&p);
     *ret = (FunctionImpl){0};
 
-    if (!parse_function_args(&p, false, ret, &ret->callable)) {
+    if (!parse_function_args(&p, false, false, ret)) {
         return parse_fail(&p);
     }
 
@@ -1411,7 +1385,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Anchor a = span_start(&p);
     *ret = (FunctionImpl){0};
 
-    if (!parse_function_args(&p, false, ret, &ret->callable)) {
+    if (!parse_function_args(&p, false, false, ret)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -1885,7 +1859,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         }
         ret->constructor.name_span = name_span;
         ret->constructor.func.full_span = span_end(a);
-        ret->constructor.func.callable.is_constructor = true;
+        ret->constructor.func.is_constructor = true;
         if (span_valid(&readonly_span)) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
@@ -1964,7 +1938,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             }
         }
     } else {
-        CallableType callable;
+        FunctionImpl func;
         if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
             parse_index_or_expr_interface_member(&p, true, &ret->interface_memeber) ||
             parse_index_or_expr_interface_member(&p, false, &ret->interface_memeber)
@@ -1972,13 +1946,13 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.span = span_end(a);
             ret->interface_memeber.readonly = span_valid(&readonly_span);
-        } else if (parse_function_args(&p, false, nullptr, &callable)) {
+        } else if (parse_function_args(&p, true, false, &func)) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
                 .span = span_end(a),
                 .readonly = span_valid(&readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
-                .type = lazy_type_value(type_callable(c_new(CallableType, callable))),
+                .type = lazy_type_value(function_impl_into_type(func)),
             };
         } else {
             cstr_drop(&name_string);
@@ -2160,7 +2134,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             return parse_success(&p);
         }
         if (is_abstract && item.tag == CLASS_ITEM_CONSTRUCTOR) {
-            item.constructor.func.callable.is_abstract_constructor = true;
+            item.constructor.func.is_abstract_constructor = true;
         }
         vec_class_item_push(&ret->items, item);
         hop_whitespace(&p);
@@ -3064,11 +3038,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
             hop_whitespace(&p);
         }
 
-        if (parse_initialization(&p, ctx, &initializer.value)) {
+        if (parse_initialization_or_set_to_default(&p, ctx, &initializer.value)) {
             end_of_initialization = p.pos;
             hop_whitespace(&p);
-        } else {
-            initializer.value = expr_implicit_any(span_from_pos(&p));
         }
 
         vec_initialized_binding_push(&ret->initializers, initializer);

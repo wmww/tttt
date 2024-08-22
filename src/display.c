@@ -92,7 +92,7 @@ void display_value(Display d, Value const* me) {
                     display_newline(d);
                     display_value(d, i.ref);
                     display_color(d, color_value);
-                    display_lit(d, ",\n");
+                    display_lit(d, ",");
                 }
                 d.indent--;
                 display_newline(d);
@@ -114,7 +114,7 @@ void display_value(Display d, Value const* me) {
     display_normal(d);
 }
 
-static void display_binding(Display d, Binding const* me, bool optional) {
+static void display_binding_content(Display d, Binding const* me) {
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -134,7 +134,7 @@ static void display_binding(Display d, Binding const* me, bool optional) {
         case BINDING_ARRAY:
             display_lit(d, "[");
             c_foreach(i, vec_binding, my array) {
-                display_binding(d, i.ref, false);
+                display_binding_content(d, i.ref);
                 if (i.ref != i.end - 1) {
                     display_lit(d, ", ");
                 }
@@ -147,7 +147,7 @@ static void display_binding(Display d, Binding const* me, bool optional) {
             c_foreach(i, vec_object_binding_item, my object) {
                 display_value(d, &i.ref->source);
                 display_lit(d, ": ");
-                display_binding(d, &i.ref->target, false);
+                display_binding_content(d, &i.ref->target);
                 if (i.ref != i.end - 1) {
                     display_lit(d, ", ");
                 }
@@ -155,17 +155,23 @@ static void display_binding(Display d, Binding const* me, bool optional) {
             display_lit(d, " }");
             break;
     }
+}
 
-    if (optional) {
-        display_lit(d, "?");
+static void display_binding(Display d, Binding const* me) {
+    display_binding_content(d, me);
+    if (my has_explicit_type) {
+        display_lit(d, ": ");
+    } else {
+        display_colored(d, color_implicit, " /* ");
     }
-
-    display_lit(d, ": ");
     display_type(d, binding_get_type((Binding*)me));
+    if (!my has_explicit_type) {
+        display_colored(d, color_implicit, " */");
+    }
 }
 
 static void display_initialized_binding(Display d, InitializedBinding const* me) {
-    display_binding(d, &my binding, false);
+    display_binding(d, &my binding);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
         display_lit(d, " = ");
         display_expr(d, &my value);
@@ -248,10 +254,20 @@ static void display_callable(Display d, CallableType* me) {
     display_generic(d, &my generic);
     display_lit(d, "(");
     c_foreach(i, vec_callable_arg, my args) {
-        if (i.ref->rest) {
+        if (i.ref->source->rest) {
             display_lit(d, "...");
         }
-        display_binding(d, &i.ref->binding, i.ref->optional);
+        display_binding_content(d, &i.ref->source->initializer.binding);
+        if (i.ref->optional) {
+            display_lit(d, "?");
+        }
+        display_lit(d, ": ");
+        Type const* type = lazy_type_resolve(&i.ref->type);
+        if (type) {
+            display_type(d, type);
+        } else {
+            display_colored(d, color_error, "/* unresolved */");
+        }
         if (i.ref != i.end - 1) {
             display_lit(d, ", ");
         }
@@ -482,27 +498,21 @@ void display_type(Display d, Type const* me) {
 }
 
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {
-    display_generic(d, &my callable.generic);
+    display_generic(d, &my generic);
     display_lit(d, "(");
-    c_foreach(i, vec_callable_arg, my callable.args) {
+    c_foreach(i, vec_function_arg, my args) {
         if (i.ref->rest) {
             display_lit(d, "...");
         }
-        display_binding(d, &i.ref->binding, i.ref->explicit_optional);
-        intptr_t index = i.ref - my callable.args.data;
-        Expr const* default_arg = function_impl_arg_default_at(me, index);
-        if (default_arg->tag != EXPR_IMPLICIT_ANY) {
-            display_lit(d, " = ");
-            display_expr(d, default_arg);
-        }
+        display_initialized_binding(d, &i.ref->initializer);
         if (i.ref != i.end - 1) {
             display_lit(d, ", ");
         }
     }
     display_lit(d, ")");
-    if (my callable.ret_explicit) {
+    if (my ret_explicit) {
         display_lit(d, ": ");
-        display_type(d, &my callable.ret);
+        display_type(d, &my ret);
     }
     if (my has_block) {
         if (include_arrow) display_lit(d, " => "); else display_lit(d, " ");
@@ -589,7 +599,6 @@ static void display_class_decl(Display d, ClassDecl const* me) {
                 display_block(d, &i.ref->static_block);
                 break;
         }
-        display_lit(d, "\n");
     }
     d.indent--;
     display_newline(d);
@@ -976,7 +985,7 @@ void display_statement(Display d, Statement const* me) {
                 display_lit(d, " catch ");
                 if (my try_catch->catch_var.tag != BINDING_NOOP) {
                     display_lit(d, "(");
-                    display_binding(d, &my try_catch->catch_var, false);
+                    display_binding(d, &my try_catch->catch_var);
                     display_lit(d, ") ");
                 }
                 display_block(d, &my try_catch->catch_block);

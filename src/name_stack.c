@@ -186,7 +186,7 @@ void name_stack_destroy(NameStack* me) {
     free(me);
 }
 
-void name_stack_push_generic_frame(NameStack* me, Generic* generic) {
+void name_stack_push_generic_frame(NameStack* me, Generic const* generic) {
     if (generic_empty(generic)) {
         // Frame is only needed so a frame can be unconditionally popped later
         name_stack_push_frame_private(me, STACK_FRAME_BLOCK);

@@ -143,18 +143,18 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
-            if (i.ref->constructor.func.callable.ret_explicit) {
+            if (i.ref->constructor.func.ret_explicit) {
                 error_ctx_error(
                     errs,
-                    i.ref->constructor.func.callable.ret_span,
+                    i.ref->constructor.func.ret_span,
                     1093,
                     "Type annotation cannot appear on a constructor declaration."
                 );
-                type_drop(&i.ref->constructor.func.callable.ret);
+                type_drop(&i.ref->constructor.func.ret);
             }
-            ASSERT(i.ref->constructor.func.callable.ret.tag == TYPE_ANY);
-            i.ref->constructor.func.ret_resolve_state = RESOLVE_STATE_DONE;
-            i.ref->constructor.func.callable.ret = type_clone(my instance_identifier_type);
+            ASSERT(i.ref->constructor.func.ret.tag == TYPE_ANY);
+            i.ref->constructor.func.ret_explicit = true;
+            i.ref->constructor.func.ret = type_clone(my instance_identifier_type);
         }
     }
 }
@@ -225,6 +225,16 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
 
         // TODO: Use the declaration in Object of lib.es5.d.ts instead
         // Or at least use a global instance of the type
+        VecFunctionArg has_own_property_args = vec_function_arg_init();
+        vec_function_arg_push(&has_own_property_args, (FunctionArg){
+            .initializer.binding.has_explicit_type = true,
+            .initializer.binding.explicit_type = type_string,
+        });
+        Type has_own_property_type = function_impl_into_type((FunctionImpl) {
+            .args = has_own_property_args,
+            .ret_explicit = true,
+            .ret = type_boolean,
+        });
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
             span_null,
@@ -233,15 +243,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("hasOwnProperty"),
             span_null,
             false,
-            lazy_type_value(type_callable(c_new(CallableType, {
-                .args = c_init(vec_callable_arg, {{.binding = {
-                    .tag = BINDING_IDENTIFIER,
-                    .has_explicit_type = true,
-                    .explicit_type = type_string,
-                }}}),
-                .ret_explicit = true,
-                .ret = type_boolean,
-            })))
+            lazy_type_value(has_own_property_type)
         ));
     }
 
@@ -308,7 +310,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
     }
 
     if (!resolve_instance && !has_constructor) {
-        CallableType constructor = {
+        FunctionImpl constructor = {
             .ret = type_clone(my instance_identifier_type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
@@ -316,7 +318,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
         InterfaceMember member = {
             .origin_interface_name = my name,
             .key.tag = INTERFACE_KEY_CALLABLE,
-            .type = lazy_type_value(type_callable(c_new(CallableType, constructor))),
+            .type = lazy_type_value(function_impl_into_type(constructor)),
         };
         vec_interface_member_push(&interface.members, member);
     }

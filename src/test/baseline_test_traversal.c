@@ -23,7 +23,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     }
 }
 
-void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
+void binding_content_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
             baseline_test_case_add_type(ctx, my content_span, &type_undefined);
@@ -45,16 +45,20 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_compile_test_info(i.ref, false, scope, i.ref->content_span, ctx);
+                binding_content_compile_test_info(i.ref, false, scope, i.ref->content_span, ctx);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_compile_test_info(&i.ref->target, false, scope, i.ref->target.content_span, ctx);
+                binding_content_compile_test_info(&i.ref->target, false, scope, i.ref->target.content_span, ctx);
             }
             break;
     }
+}
+
+void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
+    binding_content_compile_test_info(me, name_is_value, scope, full, ctx);
     if (my has_explicit_type) {
         type_compile_test_info(&my explicit_type, ctx);
     }
@@ -149,7 +153,16 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_CALLABLE:
             generic_compile_test_info(&my callable->generic, ctx);
             c_foreach(i, vec_callable_arg, my callable->args) {
-                binding_compile_test_info(&i.ref->binding, false, span_null, i.ref->span, ctx);
+                binding_content_compile_test_info(
+                    &i.ref->source->initializer.binding,
+                    false,
+                    span_null,
+                    i.ref->source->span,
+                    ctx
+                );
+                if (i.ref->source->initializer.binding.has_explicit_type) {
+                    type_compile_test_info(lazy_type_resolve(&i.ref->type), ctx);
+                }
             }
             type_compile_test_info(&my callable->ret, ctx);
             break;
@@ -205,22 +218,14 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             false,
             my full_span
         );
-        Type t = type_callable(c_new(CallableType, callable_type_clone(my callable)));
-        baseline_test_case_add_type(ctx, my name, &t);
-        type_drop(&t);
+        baseline_test_case_add_type(ctx, my name, &my resolved_type);
     }
-    generic_compile_test_info(&my callable.generic, ctx);
-    intptr_t arg_size = vec_callable_arg_size(&my callable.args);
-    for (intptr_t i = 0; i < arg_size; i++) {
-        CallableArg const* arg = vec_callable_arg_at(&my callable.args, i);
-        Expr const* default_arg = function_impl_arg_default_at(me, i);
-        binding_compile_test_info(&arg->binding, false, span_null, arg->span, ctx);
-        if (default_arg->tag != EXPR_IMPLICIT_ANY) {
-            expr_compile_test_info(default_arg, arg->binding.tag != BINDING_ARRAY, ctx);
-        }
+    generic_compile_test_info(&my generic, ctx);
+    c_foreach(i, vec_function_arg, my args) {
+        initialized_binding_compile_test_info(&i.ref->initializer, false, span_null, i.ref->span, ctx);
     }
-    if (my callable.ret_explicit && !my callable.is_constructor) {
-        type_compile_test_info(&my callable.ret, ctx);
+    if (my ret_explicit && !my is_constructor) {
+        type_compile_test_info(&my ret, ctx);
     }
     block_compile_test_info(&my body, ctx);
 }
@@ -246,13 +251,11 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 my member.name_is_value,
                 my span
             );
-            Type t = type_clone(*callable_type_get_wrapper(&my member.func.callable));
             baseline_test_case_add_type(
                 ctx,
                 my member.name_span,
-                &t
+                &my member.func.resolved_type
             );
-            type_drop(&t);
             function_impl_compile_test_info(&my member.func, class_name, ctx);
             break;
 

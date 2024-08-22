@@ -5681,7 +5681,7 @@ const baselines = {
         types: false,
     },
     'constructorReturningAPrimitive': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -13951,7 +13951,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsNotContextSensitive': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56618,7 +56618,7 @@ const baselines = {
     'tupleElementTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tupleElementTypes3': {
         errors: true,
@@ -56866,7 +56866,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -57101,7 +57101,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatWithGenericCallSignatures': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },

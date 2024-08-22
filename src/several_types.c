@@ -57,6 +57,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 void indexed_type_drop(IndexedType* me) {
     type_drop(&my interface);
     type_drop(&my index);
+    type_drop(&my cached);
 }
 
 IndexedType indexed_type_clone(IndexedType me) {

@@ -264,15 +264,15 @@ static Result MUST_USE engine_eval_native_func(Engine* me, NativeFuncValue const
 
 static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, VecValue const* args) {
     vec_stack_frame_push(&my stack, stack_frame_new());
-    int defined_arg_num = vec_callable_arg_size(&func->impl->callable.args);
+    int defined_arg_num = vec_function_arg_size(&func->impl->args);
     int given_arg_num = vec_value_size(args);
     JsObject* locals = engine_get_locals(me);
     for (int i = 0; i < defined_arg_num; i++) {
-        CallableArg const* arg = vec_callable_arg_at(&func->impl->callable.args, i);
+        FunctionArg const* arg = vec_function_arg_at(&func->impl->args, i);
         if (arg->rest) {
             NONFATAL("Rest arguments not supported in engine");
         }
-        if (arg->binding.tag == BINDING_IDENTIFIER) {
+        if (arg->initializer.binding.tag == BINDING_IDENTIFIER) {
             Value value = value_undefined;
             if (i < given_arg_num) {
                 // TODO: don't clone all args
@@ -281,7 +281,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
             if (value.tag == VALUE_UNDEFINED) {
                 TRY_CATCH(
                     default_value,
-                    engine_eval_expr(me, function_impl_arg_default_at(func->impl, i)),
+                    engine_eval_expr(me, &arg->initializer.value),
                     res_err,
                 {
                     vec_stack_frame_pop(&my stack);
@@ -289,7 +289,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
                 });
                 value = default_value;
             }
-            js_object_set(locals, cstr_from_span(&arg->binding.content_span), value);
+            js_object_set(locals, cstr_from_span(&arg->initializer.binding.content_span), value);
         } else {
             NONFATAL("Structured binding function arguments not yet supported in engine");
         }
