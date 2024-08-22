@@ -235,6 +235,11 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
         case TYPE_INDEXED:
             replace_named_types_with(&my indexed->interface, refinements);
             replace_named_types_with(&my indexed->index, refinements);
+            if (my indexed->has_cache) {
+                type_drop(&my indexed->cached);
+                my keyof->cached = (Type){0};
+                my keyof->has_cache = false;
+            }
             return;
 
         case TYPE_KEYOF:
