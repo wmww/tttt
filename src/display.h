@@ -38,13 +38,19 @@ typedef struct Display {
     unsigned char indent;
     bool color : 1;
     bool debug : 1;
+    bool hash_key : 1;
 } Display;
 
 static inline Display error_display(cstr* target) {
     return (Display) {
         .target = target,
-        .color = false,
-        .debug = false,
+    };
+}
+
+static inline Display hash_key_display(cstr* target) {
+    return (Display) {
+        .target = target,
+        .hash_key = true,
     };
 }
 

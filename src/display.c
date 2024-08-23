@@ -224,6 +224,10 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
     display_colored_span(d, color_type, my name);
 
+    if (d.hash_key) {
+        display_fmt(d, "@%p", (void*)my type);
+    }
+
     if (!vec_spanned_type_empty(&my generic_params)) {
         display_lit(d, "<");
         c_foreach(i, vec_spanned_type, my generic_params) {
@@ -409,6 +413,11 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
+    if (d.hash_key) {
+        // PERF: use an entirely different type serialization system for hashes that's faster and more compact
+        display_fmt(d, "%d{", me->tag);
+    }
+
     switch (my tag) {
         case TYPE_ANY: display_colored(d, color_type, "any"); break;
         case TYPE_UNKNOWN: display_colored(d, color_type, "unknown"); break;
@@ -509,6 +518,10 @@ void display_type(Display d, Type const* me) {
 
     if (d.debug && type_is_self_referential(me)) {
         display_colored(d, color_error, " /* self-referential */");
+    }
+
+    if (d.hash_key) {
+        display_fmt(d, "}");
     }
 }
 

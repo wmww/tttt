@@ -23,9 +23,18 @@ const Type type_string = { .tag = TYPE_STRING };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
+#define i_key_ssv
+#define i_val bool
+#define i_type hmap_str_bool
+#include "wrap_stc/hmap.h"
+typedef hmap_str_bool HmapStrBool;
+typedef hmap_str_bool_result HmapStrBoolResult;
+typedef hmap_str_bool_value HmapStrBoolValue;
+
 typedef struct TypeCtx {
     Type const* currently_resolving;
     int recursion_level;
+    HmapStrBool extends_results;
 } TypeCtx;
 
 static bool type_extends_internal(
@@ -46,7 +55,7 @@ static bool index_type_of_internal(
 );
 
 static void type_ctx_drop(TypeCtx* me) {
-    __(me);
+    hmap_str_bool_drop(&my extends_results);
 }
 
 Type type_composite_base(typeof((Type){}.tag) tag) {
@@ -622,7 +631,7 @@ static bool cheap_but_wrong_index_type_of_internal(
     return false;
 }
 
-static bool type_extends_internal_inner(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
+static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
     if (sub == super) {
         return true;
     }
@@ -852,13 +861,34 @@ static bool type_extends_internal_inner(TypeCtx* ctx, Type const* sub, Type cons
 }
 
 static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
-    if (ctx->recursion_level > 12) {
+    if (ctx->recursion_level > 50) {
         NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }
+
+    static const bool default_result = true;
+
+    cstr key = cstr_null;
+    display_type(hash_key_display(&key), sub);
+    cstr_append_lit(&key, " # ");
+    display_type(hash_key_display(&key), super);
+    csview key_sv = cstr_sv(&key); // Hacky but should work as long as we don't use it after key is dropped
+    // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
+    HmapStrBoolResult result = hmap_str_bool_insert(&ctx->extends_results, key, default_result);
+    if (!result.inserted) {
+        return result.ref->second;
+    }
+
     ctx->recursion_level++;
-    bool ret = type_extends_internal_inner(ctx, sub, super, refinements);
+    bool ret = type_extends_more_internal(ctx, sub, super, refinements);
     ctx->recursion_level--;
+
+    if (ret != default_result) {
+        HmapStrBoolValue* result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
+        ASSERT(result);
+        result->second = ret;
+    }
+
     return ret;
 }
 

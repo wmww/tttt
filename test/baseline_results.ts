@@ -22136,7 +22136,7 @@ const baselines = {
         types: false,
     },
     'observableInferenceCanBeMade': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
