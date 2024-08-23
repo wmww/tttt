@@ -161,13 +161,9 @@ static void display_binding(Display d, Binding const* me) {
     display_binding_content(d, me);
     if (my has_explicit_type) {
         display_lit(d, ": ");
-    } else {
-        display_colored(d, color_implicit, " /* ");
+        display_type(d, binding_get_type((Binding*)me));
     }
-    display_type(d, binding_get_type((Binding*)me));
-    if (!my has_explicit_type) {
-        display_colored(d, color_implicit, " */");
-    }
+    // If it has an implicit type that will get displayed with the binding content
 }
 
 static void display_initialized_binding(Display d, InitializedBinding const* me) {

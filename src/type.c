@@ -722,7 +722,6 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                         // Don't clone the string, and don't drop it the type. Hacky but safe.
                         Type key = type_value(value_string(i.ref->key.name_string));
                         Type prop;
-                        // TODO: switch to normal index_type_of_internal() once we get that to not bog everything down
                         if (index_type_of_internal(ctx, sub, &key, span_null, false, nullptr, &prop)) {
                             // TODO: pass in refinements, but first make refinements own it's types
                             // (will fix nondistributiveConditionalTypeInfer)
@@ -905,7 +904,7 @@ bool type_extends_array(Type const* sub) {
 void type_abstract_tuple_to_array(Type* me) {
     if (my tag == TYPE_TUPLE) {
         type_abstract_literals(me);
-        Type ret = vec_tuple_element_empty(&my tuple.elements) ? type_undefined : type_never;
+        Type ret = type_never;
         c_foreach(i, vec_tuple_element, my tuple.elements) {
             if (i.ref->rest) {
                 Type elem = type_any;
