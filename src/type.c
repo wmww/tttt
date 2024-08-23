@@ -57,7 +57,7 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
     }
 }
 
-Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
+static Type type_composite_internal(typeof((Type){}.tag) tag, Type a, Type b, int level) {
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
     if (a.tag == TYPE_REF) {
         return type_composite(tag, type_clone(*a.ref), b);
@@ -75,7 +75,7 @@ Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
         } else {
             return a;
         }
-    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends(&a, &b)) {
+    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends_internal(&a, &b, nullptr, level)) {
         if (tag == TYPE_UNION) {
             type_drop(&a);
             return b;
@@ -83,7 +83,7 @@ Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
             type_drop(&b);
             return a;
         }
-    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends(&b, &a)) {
+    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends_internal(&b, &a, nullptr, level)) {
         if (tag == TYPE_UNION) {
             type_drop(&b);
             return a;
@@ -94,6 +94,10 @@ Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
     } else {
         return type_composite_without_simplify(tag, a, b);
     }
+}
+
+Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
+    return type_composite_internal(tag, a, b, 0);
 }
 
 void composite_type_simplify(Type* me) {
