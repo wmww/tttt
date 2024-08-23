@@ -1,5 +1,4 @@
 #include "type.h"
-#include "binding.h"
 #include "interface.h"
 #include "interface_member.h"
 #include "several_types.h"
@@ -30,6 +29,15 @@ static bool type_extends_internal(
     int level
 );
 static Type const* type_resolve_internal(Type const* me, int level);
+static bool index_type_of_internal(
+    Type const* me,
+    Type const* index,
+    Span index_span,
+    bool error_if_not_found,
+    ErrorCtx* errs,
+    Type* ret,
+    int level
+);
 
 Type type_composite_base(typeof((Type){}.tag) tag) {
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
@@ -563,7 +571,7 @@ Type const* type_resolve(Type const* me) {
 
 static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level) {
     if (level > 12) {
-        NONFATAL("Max type recursion depth exceeded");
+        NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }
     if (sub == super) {
@@ -967,7 +975,7 @@ static bool index_type_of_internal(
     int level
 ) {
     if (level > 100) {
-        NONFATAL("Max type recursion depth exceeded");
+        NONFATAL("Max type recursion depth exceeded (index_type_of_internal)");
         return false;
     }
 
@@ -1314,7 +1322,7 @@ static intptr_t max_args_of_callable(CallableType* me) {
 
 Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs, int level) {
     if (level > 100) {
-        NONFATAL("Max type recursion depth exceeeded");
+        NONFATAL("Max type recursion depth exceeeded (type_typecheck_call)");
         return type_never;
     }
 
