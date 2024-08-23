@@ -584,7 +584,7 @@ static bool cheap_but_wrong_index_type_of_internal(
     }
     c_foreach(i, vec_interface_member, my interface.members) {
         if (i.ref->key.tag == INTERFACE_KEY_NAME && cstr_equals_s(&i.ref->key.name_string, index->value.string)) {
-            *ret = type_clone(*lazy_type_resolve(&i.ref->type));
+            *ret = type_ref(lazy_type_resolve(&i.ref->type));
             return true;
         }
     }
