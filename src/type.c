@@ -586,8 +586,14 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
-        case TYPE_REF:
-            return type_extends_internal(type_resolve_internal(sub, level + 1), super, refinements, level + 1);
+        case TYPE_REF: {
+            Type const* sub_resolved = type_resolve_one_layer(sub, level + 1);
+            if (sub_resolved) {
+                return type_extends_internal(sub_resolved, super, refinements, level + 1);
+            } else {
+                return false;
+            }
+        }
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
@@ -749,7 +755,7 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             }
             return true;
 
-        case TYPE_IDENTIFIER:
+        case TYPE_IDENTIFIER: {
             if (refinements && super->identifier->inferred) {
                 if (type_extends_internal(sub, &super->identifier->degenericized, nullptr, level + 1)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
@@ -761,13 +767,17 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                     return false;
                 }
             }
-            // fallthrough
+            Type const* super_resolved = type_resolve_one_layer(super, level + 1);
+            return type_extends_internal(sub, super_resolved, nullptr, level + 1);
+        }
 
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
-        case TYPE_REF:
-            return type_extends_internal(sub, type_resolve_internal(super, level + 1), refinements, level + 1);
+        case TYPE_REF: {
+            Type const* super_resolved = type_resolve_one_layer(super, level + 1);
+            return type_extends_internal(sub, super_resolved, refinements, level + 1);
+        }
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
