@@ -13,6 +13,7 @@
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
 const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true, };
+const Type type_excessively_deep_error = { .tag = TYPE_ANY, .any.excessively_deep_error = true, };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
 const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
@@ -547,7 +548,7 @@ static Type const* type_resolve_one_layer(Type const* me, int level) {
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                Type const* resolved = type_resolve_internal(i.ref, level + 1);
+                Type const* resolved = type_resolve_internal(i.ref, level);
                 if (resolved->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
                     return resolved;
                 }
@@ -562,9 +563,8 @@ static Type const* type_resolve_one_layer(Type const* me, int level) {
 }
 
 static Type const* type_resolve_internal(Type const* me, int level) {
-    if (level > 40) {
-        NONFATAL("Max type recursion depth exceeded (type_resolve_one_layer)");
-        return &type_unknown;
+    if (level > 50) {
+        return &type_excessively_deep_error;
     }
 
     Type const* tmp = type_resolve_one_layer(me, level);

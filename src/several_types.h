@@ -9,6 +9,7 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
+    Span full_span;
     NamedType* type;
     VecSpannedType generic_params;
     ResolveState degenericized_state;

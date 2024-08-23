@@ -743,6 +743,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     bool inferred = false;
     Type type = {0};
     VecSpannedType generic_params = {0};
+    Anchor a = span_start(&p);
 
     Span name;
     VecSpan namespaces = vec_span_init();
@@ -787,6 +788,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     *ret = (IdentifierType){
         .namespaces = namespaces,
         .name = name,
+        .full_span = span_end(a),
         .generic_params = generic_params,
         .degenericized = type,
         .inferred = inferred,
