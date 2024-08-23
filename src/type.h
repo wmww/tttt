@@ -211,3 +211,7 @@ static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedTy
 
 #define i_key_class_names SpannedType, spanned_type
 #include "wrap_stc/vec.h"
+
+static inline Type const* generic_param_at(VecSpannedType const* params, intptr_t i) {
+    return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_unknown;
+}

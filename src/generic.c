@@ -273,9 +273,7 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
         if (i.ref->named_type) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
                 .target = i.ref->named_type,
-                .refined = index < vec_spanned_type_size(generic_params) ?
-                    &vec_spanned_type_at(generic_params, index)->type :
-                    &type_unknown
+                .refined = generic_param_at(generic_params, index),
             });
         } else {
             NONFATAL("Generic %.*s type is null", c_SV(span_sv(&i.ref->name)));
