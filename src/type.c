@@ -455,106 +455,105 @@ static Type type_all_keys(Type const* me, int level) {
     }
 }
 
-static Type const* type_resolve_internal(Type const* me, int level) {
-    while (true) {
-        if (level > 100) {
-            NONFATAL("Max type recursion depth exceeded");
-            return &type_unknown;
-        }
-        switch (my tag) {
-            case TYPE_IDENTIFIER:
-                if (my identifier->type) {
-                    if (my identifier->type->generic) {
-                        switch (my identifier->degenericized_state) {
-                            case RESOLVE_STATE_UNINITIALIZED:
-                                my identifier->degenericized_state = RESOLVE_STATE_IN_FLIGHT;
-                                Type degenericized = generic_degenericize_type(
-                                    my identifier->type->generic,
-                                    type_clone(*lazy_type_resolve(&my identifier->type->type)),
-                                    &my identifier->generic_params
-                                );
-                                if (my identifier->degenericized_state == RESOLVE_STATE_IN_FLIGHT) {
-                                    my identifier->degenericized = degenericized;
-                                    my identifier->degenericized_state = RESOLVE_STATE_DONE;
-                                } else {
-                                    type_drop(&degenericized);
-                                }
-                                break;
-
-                            case RESOLVE_STATE_IN_FLIGHT:
-                                my identifier->degenericized = type_self_referential_error;
+static Type const* type_resolve_one_layer(Type const* me, int level) {
+    switch (my tag) {
+        case TYPE_IDENTIFIER:
+            if (my identifier->type) {
+                if (my identifier->type->generic) {
+                    switch (my identifier->degenericized_state) {
+                        case RESOLVE_STATE_UNINITIALIZED:
+                            my identifier->degenericized_state = RESOLVE_STATE_IN_FLIGHT;
+                            Type degenericized = generic_degenericize_type(
+                                my identifier->type->generic,
+                                type_clone(*lazy_type_resolve(&my identifier->type->type)),
+                                &my identifier->generic_params
+                            );
+                            if (my identifier->degenericized_state == RESOLVE_STATE_IN_FLIGHT) {
+                                my identifier->degenericized = degenericized;
                                 my identifier->degenericized_state = RESOLVE_STATE_DONE;
+                            } else {
+                                type_drop(&degenericized);
+                            }
+                            break;
 
-                            case RESOLVE_STATE_DONE: break;
-                        }
-                        me = &my identifier->degenericized;
-                    } else {
-                        me = lazy_type_resolve(&my identifier->type->type);
+                        case RESOLVE_STATE_IN_FLIGHT:
+                            my identifier->degenericized = type_self_referential_error;
+                            my identifier->degenericized_state = RESOLVE_STATE_DONE;
+
+                        case RESOLVE_STATE_DONE: break;
                     }
+                    return &my identifier->degenericized;
                 } else {
-                    me = &type_unknown;
+                    return lazy_type_resolve(&my identifier->type->type);
                 }
-                break;
-
-            case TYPE_INDEXED:
-                if (!my indexed->has_cache) {
-                    if (!index_type_of(
-                        &my indexed->interface,
-                        &my indexed->index,
-                        span_null,
-                        false,
-                        nullptr,
-                        &my indexed->cached
-                    )) {
-                        my indexed->cached = type_any;
-                    }
-                    my indexed->has_cache = true;
-                }
-                me = &my indexed->cached;
-                break;
-
-            case TYPE_KEYOF:
-                if (!my keyof->has_cache) {
-                    my keyof->cached = type_all_keys(&my keyof->interface, level);
-                    my keyof->has_cache = true;
-                }
-                me = &my keyof->cached;
-                break;
-
-            case TYPE_TERNARY: {
-                VecTypeRefinement refinements = {0};
-                if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, &refinements, level)) {
-                    replace_named_types_with(&my ternary->if_true, &refinements);
-                    me = &my ternary->if_true;
-                } else {
-                    me = &my ternary->if_false;
-                }
-                vec_type_refinement_drop(&refinements);
-            }   break;
-
-            case TYPE_UNION:
-            case TYPE_INTERSECTION: {
-                bool found = false;
-                c_foreach(i, vec_type, my composite) {
-                    Type const* resolved = type_resolve_internal(i.ref, level + 1);
-                    if (resolved->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
-                        me = resolved;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    return me;
-                }
-                break;
+            } else {
+                return &type_unknown;
             }
+            UNREACHABLE;
 
-            case TYPE_REF: me = my ref; break;
+        case TYPE_INDEXED:
+            if (!my indexed->has_cache) {
+                if (!index_type_of(
+                    &my indexed->interface,
+                    &my indexed->index,
+                    span_null,
+                    false,
+                    nullptr,
+                    &my indexed->cached
+                )) {
+                    my indexed->cached = type_any;
+                }
+                my indexed->has_cache = true;
+            }
+            return &my indexed->cached;
 
-            default:
-                return me;
-        }
-        level++;
+        case TYPE_KEYOF:
+            if (!my keyof->has_cache) {
+                my keyof->cached = type_all_keys(&my keyof->interface, level);
+                my keyof->has_cache = true;
+            }
+            return &my keyof->cached;
+
+        case TYPE_TERNARY: {
+            VecTypeRefinement refinements = {0};
+            if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, &refinements, level)) {
+                // TODO: resolving probably shouldn't mutate the type, aside from caches
+                replace_named_types_with(&my ternary->if_true, &refinements);
+                me = &my ternary->if_true;
+            } else {
+                me = &my ternary->if_false;
+            }
+            vec_type_refinement_drop(&refinements);
+            return me;
+        }   break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, my composite) {
+                Type const* resolved = type_resolve_internal(i.ref, level + 1);
+                if (resolved->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
+                    return resolved;
+                }
+            }
+            return nullptr;
+
+        case TYPE_REF: return my ref;
+
+        default: return nullptr;
+    }
+    UNREACHABLE;
+}
+
+static Type const* type_resolve_internal(Type const* me, int level) {
+    if (level > 40) {
+        NONFATAL("Max type recursion depth exceeded (type_resolve_one_layer)");
+        return &type_unknown;
+    }
+    Type const* tmp = type_resolve_one_layer(me, level);
+    if (tmp) {
+        return type_resolve_internal(tmp, level + 1);
+    } else {
+        return me;
     }
 }
 
