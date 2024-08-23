@@ -55251,12 +55251,12 @@ const baselines = {
         types: false,
     },
     'classWithOnlyPublicMembersEquivalentToInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'classWithOnlyPublicMembersEquivalentToInterface2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

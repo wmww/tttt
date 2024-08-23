@@ -610,28 +610,6 @@ Type const* type_resolve(Type const* me) {
     return ret;
 }
 
-static bool cheap_but_wrong_index_type_of_internal(
-    TypeCtx* ctx,
-    Type const* me,
-    Type const* index,
-    Span index_span,
-    bool error_if_not_found,
-    ErrorCtx* errs,
-    Type* ret
-) {
-    __(ctx); __(index_span); __(error_if_not_found); __(errs);
-    if (my tag != TYPE_INTERFACE || index->tag != TYPE_VALUE || index->value.tag != VALUE_STRING) {
-        return false;
-    }
-    c_foreach(i, vec_interface_member, my interface.members) {
-        if (i.ref->key.tag == INTERFACE_KEY_NAME && cstr_equals_s(&i.ref->key.name_string, index->value.string)) {
-            *ret = type_ref(lazy_type_resolve(&i.ref->type));
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
     if (sub == super) {
         return true;
@@ -745,7 +723,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                         Type key = type_value(value_string(i.ref->key.name_string));
                         Type prop;
                         // TODO: switch to normal index_type_of_internal() once we get that to not bog everything down
-                        if (cheap_but_wrong_index_type_of_internal(ctx, sub, &key, span_null, false, nullptr, &prop)) {
+                        if (index_type_of_internal(ctx, sub, &key, span_null, false, nullptr, &prop)) {
                             // TODO: pass in refinements, but first make refinements own it's types
                             // (will fix nondistributiveConditionalTypeInfer)
                             if (!type_extends_internal(ctx, &prop, lazy_type_resolve(&i.ref->type), nullptr)) {
@@ -862,7 +840,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 }
 
 static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
-    if (ctx->recursion_level > 50) {
+    if (ctx->recursion_level > 40) {
         NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }
