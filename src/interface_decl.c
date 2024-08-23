@@ -95,6 +95,8 @@ Type const* interface_decl_resolve_type(InterfaceDecl* me) {
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
+    lazy_type_resolve(&my named_type->type);
+
     generic_typecheck(&my generic, errs);
 
     ASSERT(my type.tag == TYPE_INTERFACE);
@@ -133,4 +135,5 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         }
         //my effective_type = type_composite(my effective_type, type_clone(extends.ref->type), TYPE_INTERSECTION);
     }
+    type_typecheck(&my type, errs);
 }
