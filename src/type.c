@@ -569,6 +569,28 @@ Type const* type_resolve(Type const* me) {
     return type_resolve_internal(me, 0);
 }
 
+static bool cheap_but_wrong_index_type_of_internal(
+    Type const* me,
+    Type const* index,
+    Span index_span,
+    bool error_if_not_found,
+    ErrorCtx* errs,
+    Type* ret,
+    int level
+) {
+    __(index_span); __(error_if_not_found); __(errs); __(level);
+    if (my tag != TYPE_INTERFACE || index->tag != TYPE_VALUE || index->value.tag != VALUE_STRING) {
+        return false;
+    }
+    c_foreach(i, vec_interface_member, my interface.members) {
+        if (i.ref->key.tag == INTERFACE_KEY_NAME && cstr_equals_s(&i.ref->key.name_string, index->value.string)) {
+            *ret = type_clone(*lazy_type_resolve(&i.ref->type));
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRefinement* refinements, int level) {
     if (level > 12) {
         NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
@@ -679,35 +701,30 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
             }
 
         case TYPE_INTERFACE:
-            if (sub->tag != TYPE_INTERFACE) {
-                return false;
-            }
             c_foreach(i, vec_interface_member, super->interface.members) {
-                if (i.ref->key.tag != INTERFACE_KEY_NAME) {
-                    continue; // TODO
-                }
-                bool found = false;
-                c_foreach(j, vec_interface_member, sub->interface.members) {
-                    if (j.ref->key.tag != INTERFACE_KEY_NAME) {
-                        continue; // TODO
-                    }
-                    if (cstr_eq(&i.ref->key.name_string, &j.ref->key.name_string)) {
-                        // TODO: pass in refinements, but first make refinements own it's types (will fix nondistributiveConditionalTypeInfer)
-                        if (type_extends_internal(
-                            lazy_type_resolve(&j.ref->type),
-                            lazy_type_resolve(&i.ref->type),
-                            nullptr,
-                            level + 1)
-                        ) {
-                            found = true;
-                            break;
+                switch (i.ref->key.tag) {
+                    case INTERFACE_KEY_NAME: {
+                        // Don't clone the string, and don't drop it the type. Hacky but safe.
+                        Type key = type_value(value_string(i.ref->key.name_string));
+                        Type prop;
+                        // TODO: switch to normal index_type_of_internal() once we get that to not bog everything down
+                        if (cheap_but_wrong_index_type_of_internal(sub, &key, span_null, false, nullptr, &prop, level + 1)) {
+                            // TODO: pass in refinements, but first make refinements own it's types
+                            // (will fix nondistributiveConditionalTypeInfer)
+                            if (!type_extends_internal(&prop, lazy_type_resolve(&i.ref->type), nullptr, level + 1)) {
+                                type_drop(&prop);
+                                return false;
+                            }
+                            type_drop(&prop);
                         } else {
                             return false;
                         }
-                    }
-                }
-                if (!found) {
-                    return false;
+                    }   break;
+                    case INTERFACE_KEY_INDEX:
+                    case INTERFACE_KEY_EXPR:
+                    case INTERFACE_KEY_MAPPED:
+                    case INTERFACE_KEY_CALLABLE:
+                        continue; // TODO
                 }
             }
             return true;

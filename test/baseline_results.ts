@@ -1271,7 +1271,7 @@ const baselines = {
         types: false,
     },
     'arrayLiteralContextualType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5681,7 +5681,7 @@ const baselines = {
         types: false,
     },
     'constructorReturningAPrimitive': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5946,7 +5946,7 @@ const baselines = {
         types: false,
     },
     'contextualTyping15': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6041,7 +6041,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping32': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6176,7 +6176,7 @@ const baselines = {
         types: false,
     },
     'contextualTypingOfLambdaWithMultipleSignatures2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6211,12 +6211,12 @@ const baselines = {
         types: false,
     },
     'contextualTypingWithGenericAndNonGenericSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'contextualTypingWithGenericSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14051,7 +14051,7 @@ const baselines = {
         types: false,
     },
     'genericInterfaceTypeCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15816,7 +15816,7 @@ const baselines = {
         types: false,
     },
     'inferenceFromParameterlessLambda': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20211,7 +20211,7 @@ const baselines = {
         types: false,
     },
     'multiCallOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28171,7 +28171,7 @@ const baselines = {
         types: false,
     },
     'typeLiteralCallback': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -51076,7 +51076,7 @@ const baselines = {
         types: true,
     },
     'parserForStatement5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55981,7 +55981,7 @@ const baselines = {
         types: false,
     },
     'functionLiteralForOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
