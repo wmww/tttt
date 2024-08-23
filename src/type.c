@@ -1383,11 +1383,6 @@ static intptr_t max_args_of_callable(CallableType* me) {
 }
 
 Type type_typecheck_call_internal(TypeCtx* ctx, Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
-    if (ctx->recursion_level > 50) {
-        NONFATAL("Max type recursion depth exceeeded (type_typecheck_call)");
-        return type_never;
-    }
-
     me = type_resolve_internal(ctx, me);
 
     switch (my tag) {
