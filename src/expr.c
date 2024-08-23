@@ -473,7 +473,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
                 type_drop(&t);
             }
-            ret = type_typecheck_call(&callable, my call, my outer_span, errs, 0);
+            ret = type_typecheck_call(&callable, my call, my outer_span, errs);
             type_drop(&callable);
         }   break;
 
