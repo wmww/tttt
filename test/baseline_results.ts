@@ -20658,7 +20658,7 @@ const baselines = {
     'negativeZero': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings1': {
         errors: true,
@@ -53323,7 +53323,7 @@ const baselines = {
     'scannerNumericLiteral8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerNumericLiteral9': {
         errors: false,

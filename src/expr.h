@@ -113,6 +113,10 @@ static inline Expr expr_implicit_any(Span span) {
     return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_IMPLICIT_ANY };
 }
 
+static inline bool expr_is_perenthisized(Expr* me) {
+    return my inner_span.offset != my outer_span.offset;
+}
+
 extern const Expr expr_implicit_any_no_span;
 extern const int as_type_precedence;
 extern const int ternary_precedence;

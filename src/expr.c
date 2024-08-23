@@ -426,8 +426,23 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_LEFT_BANG: ret = type_boolean; break;
                 case UNARY_OP_TYPEOF: ret = type_string; break;
                 case UNARY_OP_TILDE: ret = type_number; break;
-                case UNARY_OP_PLUS: ret = type_number; break;
-                case UNARY_OP_MINUS: ret = type_number; break;
+
+                case UNARY_OP_PLUS:
+                case UNARY_OP_MINUS:
+                    if (!expr_is_perenthisized(&una->expr) &&
+                        una->expr.tag == EXPR_LITERAL &&
+                        una->expr.literal.tag == VALUE_NUMBER
+                    ) {
+                        ret = type_value(value_number(
+                            una->op == UNARY_OP_PLUS ?
+                                una->expr.literal.number :
+                                -una->expr.literal.number
+                        ));
+                    } else {
+                        ret = type_number;
+                    }
+                    break;
+
                 case UNARY_OP_LEFT_PLUS_PLUS: ret = type_number; break;
                 case UNARY_OP_LEFT_MINUS_MINUS: ret = type_number; break;
                 case UNARY_OP_RIGHT_PLUS_PLUS: ret = type_number; break;
