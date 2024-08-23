@@ -1382,8 +1382,8 @@ static intptr_t max_args_of_callable(CallableType* me) {
     }
 }
 
-Type type_typecheck_call_internal(TypeCtx* ctx, Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
-    me = type_resolve_internal(ctx, me);
+Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
+    me = type_resolve(me);
 
     switch (my tag) {
         case TYPE_ANY:
@@ -1546,11 +1546,10 @@ Type type_typecheck_call_internal(TypeCtx* ctx, Type const* me, CallExpr const* 
         case TYPE_INTERSECTION: {
             Type ret = type_composite_base(my tag);
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite_internal(
-                    ctx,
+                ret = type_composite(
                     my tag,
                     ret,
-                    type_typecheck_call_internal(ctx, i.ref, call, span, errs)
+                    type_typecheck_call(i.ref, call, span, errs)
                 );
             }
             return ret;
@@ -1560,7 +1559,7 @@ Type type_typecheck_call_internal(TypeCtx* ctx, Type const* me, CallExpr const* 
             c_foreach(i, vec_interface_member, my interface.members) {
                 // TODO: add to overload list instead of selecting first option
                 if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    return type_typecheck_call_internal(ctx, lazy_type_resolve(&i.ref->type), call, span, errs);
+                    return type_typecheck_call(lazy_type_resolve(&i.ref->type), call, span, errs);
                 }
             }
             break;
@@ -1579,11 +1578,4 @@ Type type_typecheck_call_internal(TypeCtx* ctx, Type const* me, CallExpr const* 
         }
     }
     return type_any;
-}
-
-Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
-    TypeCtx ctx = {0};
-    Type ret = type_typecheck_call_internal(&ctx, me, call, span, errs);
-    type_ctx_drop(&ctx);
-    return ret;
 }
