@@ -249,6 +249,11 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             replace_named_types_with(&my ternary->maybe_super, refinements);
             replace_named_types_with(&my ternary->if_true, refinements);
             replace_named_types_with(&my ternary->if_false, refinements);
+            if (my ternary->has_cache) {
+                type_drop(&my ternary->cached);
+                my ternary->cached = (Type){0};
+                my ternary->has_cache = false;
+            }
             return;
 
         case TYPE_UNION:

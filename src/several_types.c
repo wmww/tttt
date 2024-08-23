@@ -64,6 +64,7 @@ IndexedType indexed_type_clone(IndexedType me) {
     return (IndexedType){
         .interface = type_clone(me.interface),
         .index = type_clone(me.index),
+        .cached = {0},
     };
 }
 
@@ -107,6 +108,7 @@ void ternary_type_drop(TernaryType* me) {
     type_drop(&my maybe_super);
     type_drop(&my if_true);
     type_drop(&my if_false);
+    type_drop(&my cached);
 }
 
 TernaryType ternary_type_clone(TernaryType me) {
@@ -115,5 +117,6 @@ TernaryType ternary_type_clone(TernaryType me) {
         .maybe_super = type_clone(me.maybe_super),
         .if_true = type_clone(me.if_true),
         .if_false = type_clone(me.if_false),
+        .cached = {0},
     };
 }

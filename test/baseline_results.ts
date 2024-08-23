@@ -15757,7 +15757,7 @@ const baselines = {
     },
     'inferTInParentheses': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferTupleFromBindingPattern': {

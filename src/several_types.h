@@ -71,6 +71,8 @@ typedef struct TernaryType {
     Type maybe_super;
     Type if_true;
     Type if_false;
+    bool has_cache;
+    Type cached; // Should be {0} if has_cache is false
 } TernaryType;
 
 void ternary_type_drop(TernaryType* me);

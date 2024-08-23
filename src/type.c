@@ -522,18 +522,27 @@ static Type const* type_resolve_one_layer(Type const* me, int level) {
             }
             return &my keyof->cached;
 
-        case TYPE_TERNARY: {
-            VecTypeRefinement refinements = {0};
-            if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, &refinements, level)) {
-                // TODO: resolving probably shouldn't mutate the type, aside from caches
-                replace_named_types_with(&my ternary->if_true, &refinements);
-                me = &my ternary->if_true;
+        case TYPE_TERNARY:
+            if (my ternary->has_cache) {
+                return &my ternary->cached;
             } else {
-                me = &my ternary->if_false;
+                VecTypeRefinement refinements = {0};
+                Type const* ret;
+                if (type_extends_internal(&my ternary->maybe_sub, &my ternary->maybe_super, &refinements, level)) {
+                    if (!vec_type_refinement_empty(&refinements)) {
+                        my ternary->cached = type_clone(my ternary->if_true);
+                        my ternary->has_cache = true;
+                        replace_named_types_with(&my ternary->cached, &refinements);
+                        ret = &my ternary->cached;
+                    } else {
+                        ret = &my ternary->if_true;
+                    }
+                } else {
+                    ret = &my ternary->if_false;
+                }
+                vec_type_refinement_drop(&refinements);
+                return ret;
             }
-            vec_type_refinement_drop(&refinements);
-            return me;
-        }   break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -557,6 +566,7 @@ static Type const* type_resolve_internal(Type const* me, int level) {
         NONFATAL("Max type recursion depth exceeded (type_resolve_one_layer)");
         return &type_unknown;
     }
+
     Type const* tmp = type_resolve_one_layer(me, level);
     if (tmp) {
         return type_resolve_internal(tmp, level + 1);

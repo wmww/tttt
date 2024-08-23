@@ -583,7 +583,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 if (i.ref->is_pattern) {
                     Type pattern_type = expr_get_type_and_typecheck(&i.ref->pattern, errs);
-                    if (!type_overlaps(&needle_type, &pattern_type)) {
+                    if (errs && !type_overlaps(&needle_type, &pattern_type)) {
                         cstr message = cstr_lit("Type '");
                         cstr_append_type_error_msg(&message, &pattern_type);
                         cstr_append_sv(&message, c_sv("' is not comparable to type '"));
