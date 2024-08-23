@@ -692,10 +692,11 @@ static bool type_extends_internal(Type const* sub, Type const* super, VecTypeRef
                         continue; // TODO
                     }
                     if (cstr_eq(&i.ref->key.name_string, &j.ref->key.name_string)) {
+                        // TODO: pass in refinements, but first make refinements own it's types (will fix nondistributiveConditionalTypeInfer)
                         if (type_extends_internal(
                             lazy_type_resolve(&j.ref->type),
                             lazy_type_resolve(&i.ref->type),
-                            refinements,
+                            nullptr,
                             level + 1)
                         ) {
                             found = true;

@@ -21698,7 +21698,7 @@ const baselines = {
     'nondistributiveConditionalTypeInfer': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'nonexistentPropertyOnUnion': {
         errors: false,
