@@ -3743,7 +3743,7 @@ const baselines = {
     'classMemberInitializerWithLamdaScoping5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classMemberWithMissingIdentifier': {
         errors: false,
@@ -4258,7 +4258,7 @@ const baselines = {
     'collisionSuperAndNameResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionSuperAndParameter': {
         errors: false,
@@ -4318,7 +4318,7 @@ const baselines = {
     'collisionThisExpressionAndLocalVarInFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionThisExpressionAndLocalVarInLambda': {
         errors: true,
@@ -4348,7 +4348,7 @@ const baselines = {
     'collisionThisExpressionAndNameResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionThisExpressionAndParameter': {
         errors: false,
@@ -16693,7 +16693,7 @@ const baselines = {
     'interfaceWithCommaSeparators': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceWithImplements1': {
         errors: false,
@@ -20978,7 +20978,7 @@ const baselines = {
     'noCollisionThisExpressionAndLocalVarInFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCollisionThisExpressionAndLocalVarInLambda': {
         errors: true,
@@ -21003,7 +21003,7 @@ const baselines = {
     'noCollisionThisExpressionInFunctionAndVarInGlobal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noConstraintInReturnType1': {
         errors: true,
@@ -24518,7 +24518,7 @@ const baselines = {
     'redeclarationOfVarWithGenericType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'redeclareParameterInCatchBlock': {
         errors: false,
@@ -42108,7 +42108,7 @@ const baselines = {
     'comparisonOperatorWithSubtypeObjectOnCallSignature': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithSubtypeObjectOnConstructorSignature': {
         errors: false,
@@ -55133,7 +55133,7 @@ const baselines = {
     'objectTypeHidingMembersOfObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeHidingMembersOfObjectAssignmentCompat': {
         errors: false,
@@ -57063,7 +57063,7 @@ const baselines = {
     'assignmentCompatWithConstructSignatures2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithConstructSignatures3': {
         errors: false,

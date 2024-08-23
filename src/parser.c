@@ -914,8 +914,8 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         ClassItem item;
         if (parse_class_item(&p, true, &item)) {
             switch (item.tag) {
-                case CLASS_ITEM_MEMBER:
-                    vec_interface_member_push(&members, interface_member_make(
+                case CLASS_ITEM_MEMBER: {
+                    InterfaceMember member = interface_member_make(
                         item.span,
                         span_null,
                         false,
@@ -924,9 +924,12 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         item.member.name_span,
                         item.member.name_is_value,
                         lazy_type_value(function_impl_into_type(item.member.func))
-                    ));
+                    );
+                    ASSERT(member.key.tag == INTERFACE_KEY_NAME);
+                    member.key.name_is_member_function = true;
+                    vec_interface_member_push(&members, member);
                     item.member.func = (FunctionImpl){0};
-                    break;
+                }   break;
 
                 case CLASS_ITEM_FIELD:
                     vec_interface_member_push(&members, interface_member_make(

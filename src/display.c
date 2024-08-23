@@ -244,7 +244,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 }
 
-static void display_callable(Display d, CallableType* me) {
+static void display_callable(Display d, CallableType* me, bool is_interface_member_function) {
     if (my is_abstract_constructor) {
         display_lit(d, "abstract ");
     }
@@ -273,7 +273,12 @@ static void display_callable(Display d, CallableType* me) {
         }
     }
     display_lit(d, ")");
-    display_lit(d, " => ");
+
+    if (is_interface_member_function) {
+        display_lit(d, ": ");
+    } else {
+        display_lit(d, " => ");
+    }
 
     display_type(d, &my ret);
 }
@@ -333,14 +338,24 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
             break;
     }
 
-    if (my key.tag != INTERFACE_KEY_CALLABLE) {
-        if (my optional) {
-            display_lit(d, "?");
-        }
-        display_lit(d, ": ");
-    }
+    Type const* type = lazy_type_try_get(&my type);
 
-    display_lazy_type(d, &my type);
+    if (
+        my key.tag == INTERFACE_KEY_NAME &&
+        my key.name_is_member_function &&
+        type &&
+        type->tag == TYPE_CALLABLE
+    ) {
+        display_callable(d, type->callable, true);
+    } else {
+        if (my key.tag != INTERFACE_KEY_CALLABLE) {
+            if (my optional) {
+                display_lit(d, "?");
+            }
+            display_lit(d, ": ");
+        }
+        display_lazy_type(d, &my type);
+    }
 }
 
 static void display_interface(Display d, Interface const* me) {
@@ -412,7 +427,7 @@ void display_type(Display d, Type const* me) {
             break;
 
         case TYPE_IDENTIFIER: display_identifier_type(d, my identifier); break;
-        case TYPE_CALLABLE: display_callable(d, my callable); break;
+        case TYPE_CALLABLE: display_callable(d, my callable, false); break;
         case TYPE_INTERFACE: display_interface(d, &my interface); break;
 
         case TYPE_ARRAY: {

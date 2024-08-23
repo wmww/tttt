@@ -21,6 +21,7 @@ typedef struct InterfaceMember {
             struct {
                 cstr name_string;
                 bool name_is_value;
+                bool name_is_member_function;
             };
             Type index;
             ArcExpr expr;
