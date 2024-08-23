@@ -421,10 +421,11 @@ static Type type_all_keys(Type const* me, int level) {
             c_foreach(i, vec_interface_member, my interface.members) {
                 switch (i.ref->key.tag) {
                     case INTERFACE_KEY_NAME:
-                        ret = type_composite(
+                        ret = type_composite_internal(
                             TYPE_UNION,
                             ret,
-                            type_value(value_string(cstr_clone(i.ref->key.name_string)))
+                            type_value(value_string(cstr_clone(i.ref->key.name_string))),
+                            level
                         );
 
                     default: break;
@@ -443,7 +444,7 @@ static Type type_all_keys(Type const* me, int level) {
             typeof(my tag) flipped_tag = my tag == TYPE_UNION ? TYPE_INTERSECTION : TYPE_UNION;
             Type ret = type_composite_base(flipped_tag);
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite(flipped_tag, ret, type_all_keys(i.ref, level));
+                ret = type_composite_internal(flipped_tag, ret, type_all_keys(i.ref, level), level);
             }
             return ret;
         }
@@ -988,7 +989,7 @@ static bool index_type_of_internal(
             c_foreach(i, vec_type, index->composite) {
                 Type temp;
                 if (index_type_of_internal(me, i.ref, index_span, error_if_not_found, errs, &temp, level + 1)) {
-                    comp = type_composite(index->tag, comp, temp);
+                    comp = type_composite_internal(index->tag, comp, temp, level);
                     found_in_any = true;
                 } else {
                     found_in_all = false;
@@ -1070,13 +1071,14 @@ static bool index_type_of_internal(
                         // Don't clone the string, and don't drop it the type. Hacky but safe.
                         Type key = type_value(value_string(i.ref->key.name_string));
                         if (type_extends(&key, index)) {
-                            comp = type_composite(
+                            comp = type_composite_internal(
                                 TYPE_UNION,
                                 comp,
-                                type_clone(*lazy_type_resolve(&i.ref->type))
+                                type_clone(*lazy_type_resolve(&i.ref->type)),
+                                level
                             );
                             if (i.ref->optional) {
-                                comp = type_composite(TYPE_UNION, comp, type_undefined);
+                                comp = type_composite_internal(TYPE_UNION, comp, type_undefined, level);
                             }
                             found = true;
                         }
@@ -1084,13 +1086,14 @@ static bool index_type_of_internal(
 
                     case INTERFACE_KEY_INDEX:
                         if (type_overlaps(&i.ref->key.index, index)) {
-                            comp = type_composite(
+                            comp = type_composite_internal(
                                 TYPE_UNION,
                                 comp,
-                                type_clone(*lazy_type_resolve(&i.ref->type))
+                                type_clone(*lazy_type_resolve(&i.ref->type)),
+                                level
                             );
                             if (i.ref->optional) {
-                                comp = type_composite(TYPE_UNION, comp, type_undefined);
+                                comp = type_composite_internal(TYPE_UNION, comp, type_undefined, level);
                             }
                             found = true;
                         }
@@ -1162,7 +1165,7 @@ static bool index_type_of_internal(
                 intptr_t j = i.ref - my tuple.elements.data;
                 Type key = type_value(value_number(j));
                 if (type_extends(&key, index)) {
-                    comp = type_composite(TYPE_UNION, comp, type_clone(i.ref->type));
+                    comp = type_composite_internal(TYPE_UNION, comp, type_clone(i.ref->type), level);
                 }
             }
             *ret = comp;
@@ -1177,7 +1180,7 @@ static bool index_type_of_internal(
             c_foreach(i, vec_type, my composite) {
                 Type temp;
                 if (index_type_of_internal(i.ref, index, index_span, error_if_not_found, errs, &temp, level + 1)) {
-                    comp = type_composite(my tag, comp, temp);
+                    comp = type_composite_internal(my tag, comp, temp, level);
                     found_in_any = true;
                 } else {
                     found_in_all = false;
@@ -1469,7 +1472,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         case TYPE_INTERSECTION: {
             Type ret = type_composite_base(my tag);
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite(my tag, ret, type_typecheck_call(i.ref, call, span, errs, level));
+                ret = type_composite_internal(my tag, ret, type_typecheck_call(i.ref, call, span, errs, level), level);
             }
             return ret;
         }
