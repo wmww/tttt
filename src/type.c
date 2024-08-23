@@ -414,8 +414,8 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
     }
 }
 
-static Type type_all_keys(Type const* me, int level) {
-    me = type_resolve_internal(me, level);
+static Type type_all_keys(Type const* me) {
+    me = type_resolve_internal(me, 0);
 
     switch (my tag) {
         case TYPE_ANY:
@@ -433,7 +433,7 @@ static Type type_all_keys(Type const* me, int level) {
                             TYPE_UNION,
                             ret,
                             type_value(value_string(cstr_clone(i.ref->key.name_string))),
-                            level
+                            0
                         );
 
                     default: break;
@@ -452,12 +452,12 @@ static Type type_all_keys(Type const* me, int level) {
             typeof(my tag) flipped_tag = my tag == TYPE_UNION ? TYPE_INTERSECTION : TYPE_UNION;
             Type ret = type_composite_base(flipped_tag);
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite_internal(flipped_tag, ret, type_all_keys(i.ref, level), level);
+                ret = type_composite_internal(flipped_tag, ret, type_all_keys(i.ref), 0);
             }
             return ret;
         }
 
-        case TYPE_REF: return type_all_keys(my ref, level);
+        case TYPE_REF: return type_all_keys(my ref);
 
         default: return type_never;
     }
@@ -517,7 +517,7 @@ static Type const* type_resolve_one_layer(Type const* me, int level) {
 
         case TYPE_KEYOF:
             if (!my keyof->has_cache) {
-                my keyof->cached = type_all_keys(&my keyof->interface, level);
+                my keyof->cached = type_all_keys(&my keyof->interface);
                 my keyof->has_cache = true;
             }
             return &my keyof->cached;
