@@ -34,6 +34,7 @@ typedef hmap_str_bool_value HmapStrBoolValue;
 typedef struct TypeCtx {
     Type const* currently_resolving;
     int recursion_level;
+    int extends_attempts;
     HmapStrBool extends_results;
 } TypeCtx;
 
@@ -867,26 +868,35 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     }
 
     static const bool default_result = true;
+    csview key_sv;
+    bool add_to_extends_results = ctx->extends_attempts > 10 &&
+        (sub->tag == TYPE_IDENTIFIER || super->tag == TYPE_IDENTIFIER);
 
-    cstr key = cstr_null;
-    display_type(hash_key_display(&key), sub);
-    cstr_append_lit(&key, " # ");
-    display_type(hash_key_display(&key), super);
-    csview key_sv = cstr_sv(&key); // Hacky but should work as long as we don't use it after key is dropped
-    // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
-    HmapStrBoolResult result = hmap_str_bool_insert(&ctx->extends_results, key, default_result);
-    if (!result.inserted) {
-        return result.ref->second;
+    if (add_to_extends_results) {
+        cstr key = cstr_null;
+        display_type(hash_key_display(&key), sub);
+        cstr_append_lit(&key, " # ");
+        display_type(hash_key_display(&key), super);
+        key_sv = cstr_sv(&key); // Hacky but should work as long as we don't use it after key is dropped
+        // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
+        HmapStrBoolResult result = hmap_str_bool_insert(&ctx->extends_results, key, default_result);
+        if (!result.inserted) {
+            return result.ref->second;
+        }
+    } else {
+        ctx->extends_attempts++;
     }
 
     ctx->recursion_level++;
     bool ret = type_extends_more_internal(ctx, sub, super, refinements);
     ctx->recursion_level--;
 
-    if (ret != default_result) {
-        HmapStrBoolValue* result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
-        ASSERT(result);
-        result->second = ret;
+    if (add_to_extends_results) {
+        if (ret != default_result) {
+            HmapStrBoolValue* result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
+            ASSERT(result);
+            result->second = ret;
+        }
     }
 
     return ret;
