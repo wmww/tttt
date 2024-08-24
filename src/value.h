@@ -51,8 +51,8 @@ typedef struct Value {
 void value_drop_internal(Value* me);
 static inline void value_drop(Value* me) {
     switch (my tag) {
-        case VALUE_NULL:
         case VALUE_UNDEFINED:
+        case VALUE_NULL:
         case VALUE_BOOLEAN:
         case VALUE_NUMBER:
             break;

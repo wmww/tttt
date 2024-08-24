@@ -1,9 +1,9 @@
 #include "value.h"
 #include "math.h"
-#include "type.h"
 #include "function_impl.h"
 #include "result.h"
 #include "display.h"
+#include "string_helpers.h"
 
 void value_drop_internal(Value* me) {
     switch (my tag) {
@@ -34,14 +34,12 @@ Value value_clone(Value me) {
     return me;
 }
 
-static double string_to_num(const char* start) {
-    if (!*start) {
-        return 0;
-    }
-    char* end = (char*)start;
-    double num = strtod(start, &end);
-    if (!*end) {
-        return num;
+static double string_to_num(csview sv) {
+    sv = csview_trim_whitespace(sv);
+    double ret;
+    const char* end = csview_end_ptr(sv);
+    if (string_to_double(sv.buf, end, true, false, &ret) == end) {
+        return ret;
     } else {
         return NAN;
     }
@@ -73,7 +71,7 @@ double value_to_number(Value const* me) {
         case VALUE_NULL: return 0;
         case VALUE_BOOLEAN: return my boolean ? 1 : 0;
         case VALUE_NUMBER: return my number;
-        case VALUE_STRING: return string_to_num(cstr_str(&my string));
+        case VALUE_STRING: return string_to_num(cstr_sv(&my string));
 
         case VALUE_ARRAY: {
             int len = vec_value_size(&my array.get->vec);
@@ -82,7 +80,7 @@ double value_to_number(Value const* me) {
             } else if (len == 1) {
                 cstr str = cstr_null;
                 cstr_append_value_js(&str, vec_value_at(&my array.get->vec, 0));
-                double ret = string_to_num(cstr_str(&str));
+                double ret = string_to_num(cstr_sv(&str));
                 cstr_drop(&str);
                 return ret;
             } else {
@@ -95,16 +93,16 @@ double value_to_number(Value const* me) {
 
 void cstr_append_value_js(cstr* target, Value const* me) {
     switch (my tag) {
-        case VALUE_UNDEFINED: cstr_append_sv(target, c_sv("undefined")); break;
-        case VALUE_NULL: cstr_append_sv(target, c_sv("null")); break;
+        case VALUE_UNDEFINED: cstr_append_lit(target, "undefined"); break;
+        case VALUE_NULL: cstr_append_lit(target, "null"); break;
         case VALUE_STRING: cstr_append_s(target, my string); break;
-        case VALUE_OBJECT: cstr_append_sv(target, c_sv("[object Object]")); break;
+        case VALUE_OBJECT: cstr_append_lit(target, "[object Object]"); break;
 
         case VALUE_BOOLEAN:
             if (my boolean) {
-                cstr_append_sv(target, c_sv("true"));
+                cstr_append_lit(target, "true");
             } else {
-                cstr_append_sv(target, c_sv("false"));
+                cstr_append_lit(target, "false");
             }
             break;
 
@@ -112,7 +110,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             if (my number == 0) {
                 cstr_append_lit(target, "0");
             } else if (isnan(my number)) {
-                cstr_append_sv(target, c_sv("NaN"));
+                cstr_append_lit(target, "NaN");
             } else {
                 cstr_append_fmt(target, "%.21g", my number);
             }
@@ -122,7 +120,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             c_foreach(i, vec_value, my array.get->vec) {
                 cstr_append_value_js(target, i.ref);
                 if (i.ref < i.end - 1) {
-                    cstr_append_sv(target, c_sv(","));
+                    cstr_append_lit(target, ",");
                 }
             }
             break;
@@ -132,7 +130,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_NATIVE_FUNC:
-            cstr_append_sv(target, c_sv("function() {\n    [native code]\n}"));
+            cstr_append_lit(target, "function() {\n    [native code]\n}");
             break;
     }
 }
