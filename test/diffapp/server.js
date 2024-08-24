@@ -428,7 +428,7 @@ class RunnerManager {
         kick: new Set(),
       }
     }
-    if (command.code) {
+    if (typeof command.code === 'string') {
       this.queuedCommand.code = command.code;
       this.currentSerial++;
     }

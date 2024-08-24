@@ -4,9 +4,6 @@ class Editor {
 
     this.inputElem = inputElem;
     this.viewElem = viewElem;
-    this.annotationA = null;
-    this.annotationB = null;
-    this.referenceValue = '';
     this.selectionAnchor = null;
     this.selectionFocus = null;
 
@@ -21,7 +18,7 @@ class Editor {
     const selectTo = ev => {
       let offset = this.tokenOffsetAtPoint(ev.clientX, ev.clientY);
       if (offset === null) {
-        offset = 0;
+        return;
       }
       this.selectionFocus = offset;
       if (this.selectionAnchor === null) {
@@ -50,8 +47,6 @@ class Editor {
       this.selectionAnchor = null;
       this.selectionFocus = null;
     });
-
-    this.render();
   }
 
   tokenOffsetAtPoint(x, y) {

@@ -200,18 +200,18 @@ button, .fake-button {
   background-color: var(--gray-bg);
 }
 
-.token-diff-tttt {
+.token-diff-a {
   color: var(--red-text);
   background-color: var(--red-bg);
 }
 
-.token-diff-tsc {
+.token-diff-b {
   color: var(--green-text);
   background-color: var(--green-bg);
 }
 
 .diff-out-of-date .token-diff-both,
-.diff-out-of-date .token-diff-tttt,
-.diff-out-of-date .token-diff-tsc {
+.diff-out-of-date .token-diff-a,
+.diff-out-of-date .token-diff-b {
   opacity: 70%;
 }
