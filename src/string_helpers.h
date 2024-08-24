@@ -31,4 +31,10 @@ static inline const char* csview_end_ptr(csview sv) { return sv.buf + sv.size; }
 // null-terminated. Either sets ret and returns a pointer to the end of the section parsed (one past last character
 // used), or does not change ret and returns null. Fails if the string starts with whitespace or anything else not a
 // number. Handles exponents, optionally handles hex/binary.
-const char* string_to_double(const char* start, const char* end, bool allow_alternate_bases, double* ret);
+const char* string_to_double(
+    const char* start,
+    const char* end,
+    bool allow_alternate_bases,
+    bool leading_zero_octal,
+    double* ret
+);

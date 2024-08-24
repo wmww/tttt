@@ -2409,7 +2409,7 @@ static bool parse_number(Parser* parent, double* ret) {
     if (!is_number_start_char(*parent->pos)) {
         return false;
     }
-    const char* end = string_to_double(parent->pos, nullptr, true, ret);
+    const char* end = string_to_double(parent->pos, nullptr, true, true, ret);
     if (end) {
         parent->pos = end;
         if (*parent->pos == 'e' || *parent->pos == 'E') {

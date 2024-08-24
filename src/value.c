@@ -109,12 +109,12 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_NUMBER:
-            if (round(my number) == my number) {
-                cstr_append_fmt(target, "%ld", (long)my number);
+            if (my number == 0) {
+                cstr_append_lit(target, "0");
             } else if (isnan(my number)) {
                 cstr_append_sv(target, c_sv("NaN"));
             } else {
-                cstr_append_fmt(target, "%f", my number);
+                cstr_append_fmt(target, "%.21g", my number);
             }
             break;
 

@@ -63,14 +63,14 @@ csview csview_trim_whitespace(csview sv) {
 
 // Parses an unsigned number in the string between start and end, returns one char after last char parsed, or
 // null if it failed to parse anything
-static const char* unsigned_string_to_int(const char* start, const char* end, char base, intptr_t* ret) {
-    intptr_t tmp = 0;
+static const char* unsigned_string_to_double(const char* start, const char* end, char base, double* ret) {
+    double tmp = 0;
     const char* p = start;
     for (; P_VALID(p, end); p++) {
         char digit = 100;
         if (*p >= '0' && *p <= '9') {
             digit = *p - '0';
-        } else if (LETTER_UPPER(*p) >= 'A' && LETTER_UPPER(*p) <= 'F') {
+        } else if (LETTER_UPPER(*p) >= 'A' && LETTER_UPPER(*p) <= 'Z') {
             digit = LETTER_UPPER(*p) - 'A' + 10;
         }
         if (digit < base) {
@@ -87,9 +87,32 @@ static const char* unsigned_string_to_int(const char* start, const char* end, ch
     }
 }
 
-const char* string_to_double(const char* start, const char* end, bool allow_alternate_bases, double* ret) {
+const char* base_indicator_of(const char* p, const char* end, bool leading_zero_octal, unsigned char* base) {
+    if (P_VALID(p, end) && *p == '0' && P_VALID(p + 1, end)) {
+        p++;
+        switch (LETTER_UPPER(*p)) {
+            case 'X': *base = 16; return p + 1;
+            case 'O': *base = 8; return p + 1;
+            case 'B': *base = 2; return p + 1;
+            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+                if (leading_zero_octal) {
+                    *base = 8;
+                    return p;
+                }
+                break;
+        }
+    }
+    return nullptr;
+}
+
+const char* string_to_double(
+    const char* p,
+    const char* end,
+    bool allow_alternate_bases,
+    bool leading_zero_octal,
+    double* ret
+) {
     bool value_neg = false;
-    const char* p = start;
     if (!P_VALID(p, end)) {
         return nullptr;
     } else if (*p == '+') {
@@ -98,20 +121,14 @@ const char* string_to_double(const char* start, const char* end, bool allow_alte
         value_neg = true;
         p++;
     }
-    if (allow_alternate_bases && P_VALID(p, end) && *p == '0' && P_VALID(p + 1, end)) {
-        p++;
+
+    if (allow_alternate_bases) {
         unsigned char base;
-        switch (LETTER_UPPER(*p)) {
-            case 'X': base = 16; p++; break;
-            case 'B': base = 2; p++; break;
-            case 'O': base = 8; p++; break;
-            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
-                base = 8; break; // Implicit octal because fuck you
-            default: base = 0; p--; break;
-        }
-        if (base) {
-            intptr_t value = 0;
-            const char* num_end = unsigned_string_to_int(p, end, base, &value);
+        const char* base_indicator_end = base_indicator_of(p, end, leading_zero_octal, &base);
+        if (base_indicator_end) {
+            p = base_indicator_end;
+            double value = 0;
+            const char* num_end = unsigned_string_to_double(p, end, base, &value);
             *ret = value_neg ? -value : value;
             if (num_end) {
                 return num_end;
@@ -121,17 +138,17 @@ const char* string_to_double(const char* start, const char* end, bool allow_alte
         }
     }
 
-    intptr_t exponent_value = 0;
-    intptr_t decimal_part_value = 0;
+    double exponent_value = 0;
+    double decimal_part_value = 0;
     intptr_t decimal_part_len = 0;
-    intptr_t whole_part_value = 0;
-    const char* whole_part_end = unsigned_string_to_int(p, end, 10, &whole_part_value);
+    double whole_part_value = 0;
+    const char* whole_part_end = unsigned_string_to_double(p, end, 10, &whole_part_value);
     if (whole_part_end) {
         p = whole_part_end;
     }
     if (P_VALID(p, end) && *p == '.') {
         p++;
-        const char* decimal_part_end = unsigned_string_to_int(p, end, 10, &decimal_part_value);
+        const char* decimal_part_end = unsigned_string_to_double(p, end, 10, &decimal_part_value);
         if (decimal_part_end) {
             decimal_part_len = decimal_part_end - p;
             p = decimal_part_end;
@@ -150,7 +167,7 @@ const char* string_to_double(const char* start, const char* end, bool allow_alte
             exp_neg = true;
             exp_p++;
         }
-        const char* exponent_end = unsigned_string_to_int(exp_p, end, 10, &exponent_value);
+        const char* exponent_end = unsigned_string_to_double(exp_p, end, 10, &exponent_value);
         if (exponent_end) {
             p = exponent_end;
             if (exp_neg) exponent_value *= -1;
