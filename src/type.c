@@ -524,7 +524,8 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
 
         case TYPE_INDEXED:
             if (!my indexed->has_cache) {
-                if (!index_type_of(
+                if (!index_type_of_internal(
+                    ctx,
                     &my indexed->interface,
                     &my indexed->index,
                     span_null,

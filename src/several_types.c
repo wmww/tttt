@@ -50,6 +50,15 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_typecheck(&i.ref->type, errs);
     }
+    if (my type) {
+        lazy_type_resolve(&my type->type);
+        /*
+        Type const* t = type_resolve(lazy_type_resolve(&my type->type));
+        if (t->tag == TYPE_ANY && t->any.excessively_deep_error) {
+            error_ctx_error(errs, my full_span, 2589, "Type instantiation is excessively deep and possibly infinite.");
+        }
+        */
+    }
 }
 
 // Indexed
