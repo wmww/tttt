@@ -163,6 +163,11 @@ void type_drop(Type* me) {
             free(my identifier);
             break;
 
+        case TYPE_INFERRED:
+            inferred_type_drop(my inferred);
+            free(my inferred);
+            break;
+
         case TYPE_CALLABLE:
             callable_type_drop(my callable);
             free(my callable);
@@ -216,6 +221,7 @@ Type type_clone(Type me) {
         case TYPE_REF: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
+        case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array.element)), me.array.readonly);
@@ -248,19 +254,20 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 type_add_inferred_names(&i.ref->type, names);
             }
-            if (my identifier->inferred) {
-                if (my identifier->inferred_type.get) {
-                    NONFATAL("Inferred identifier added multiple times");
-                } else {
-                    my identifier->inferred_type = arc_named_type_from_ptr(make_named_type(
-                        my identifier->name,
-                        my identifier->name,
-                        lazy_type_ref(&my identifier->degenericized),
-                        nullptr
-                    ));
-                    my identifier->type = my identifier->inferred_type.get;
-                    name_stack_add_type(names, my identifier->type);
-                }
+            break;
+
+        case TYPE_INFERRED:
+            if (my inferred->inferred_type.get) {
+                NONFATAL("Inferred type added multiple times");
+            } else {
+                my inferred->inferred_type = arc_named_type_from_ptr(make_named_type(
+                    my inferred->name,
+                    my inferred->name,
+                    lazy_type_value(type_clone(my inferred->extends)),
+                    nullptr
+                ));
+                my inferred->type = my inferred->inferred_type.get;
+                name_stack_add_type(names, my inferred->type);
             }
             break;
 
@@ -327,6 +334,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_VALUE:
+        case TYPE_INFERRED:
             break;
 
         case TYPE_IDENTIFIER: identifier_type_resolve_names(my identifier, names, errs); break;
@@ -384,6 +392,7 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_VALUE:
+        case TYPE_INFERRED:
             break;
 
         case TYPE_IDENTIFIER:
@@ -522,6 +531,8 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
             }
             UNREACHABLE;
 
+        case TYPE_INFERRED: return &my inferred->extends;
+
         case TYPE_INDEXED:
             if (!my indexed->has_cache) {
                 if (!index_type_of_internal(
@@ -629,6 +640,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
             return true;
 
         case TYPE_IDENTIFIER:
+        case TYPE_INFERRED:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
@@ -796,11 +808,11 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
             }
             return true;
 
-        case TYPE_IDENTIFIER: {
-            if (refinements && super->identifier->inferred) {
-                if (type_extends_internal(ctx, sub, &super->identifier->degenericized, nullptr)) {
+        case TYPE_INFERRED:
+            if (refinements) {
+                if (type_extends_internal(ctx, sub, &super->inferred->extends, nullptr)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
-                        .target = super->identifier->type,
+                        .target = super->inferred->type,
                         .refined = sub,
                     });
                     return true;
@@ -808,16 +820,20 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                     return false;
                 }
             }
-            Type const* super_resolved = type_resolve_one_layer(ctx, super);
-            return type_extends_internal(ctx, sub, super_resolved, nullptr);
-        }
+            return true;
 
+        case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_REF: {
             Type const* super_resolved = type_resolve_one_layer(ctx, super);
-            return type_extends_internal(ctx, sub, super_resolved, refinements);
+            return type_extends_internal(
+                ctx,
+                sub,
+                super_resolved,
+                super->tag == TYPE_IDENTIFIER ? nullptr : refinements
+            );
         }
 
         case TYPE_UNION:
@@ -935,6 +951,7 @@ void type_abstract_literals(Type* me) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_IDENTIFIER:
+        case TYPE_INFERRED:
         case TYPE_CALLABLE:
         case TYPE_INTERFACE:
         case TYPE_ARRAY:
@@ -1291,6 +1308,7 @@ static bool index_type_of_internal(
         }
 
         case TYPE_IDENTIFIER:
+        case TYPE_INFERRED:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:

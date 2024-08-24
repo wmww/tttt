@@ -450,10 +450,9 @@ void baseline_test_case_add_type_recursive(
     cstr str = cstr_lit(">");
     append_span_contents_without_newlines(&str, outer_span);
     cstr_append(&str, " : ");
-    if (type->tag == TYPE_IDENTIFIER && type->identifier->inferred) {
-        // Do identifier types upport cstr_append_type_error_msg()? Yes, but inferred identifiers in ternaries include
-        // the inferred keyword, which the tests don't like.
-        cstr_append_span(&str, &type->identifier->name);
+    if (type->tag == TYPE_INFERRED) {
+        // Inferred identifiers in ternaries include the infer keyword, which the tests don't like
+        cstr_append_span(&str, &type->inferred->name);
     } else {
         cstr_append_type_error_msg(&str, type);
     }

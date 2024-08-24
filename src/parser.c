@@ -728,8 +728,6 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
 static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Parser p = parser(parent);
-    bool inferred = false;
-    Type type = {0};
     VecSpannedType generic_params = {0};
     Anchor a = span_start(&p);
 
@@ -749,22 +747,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         hop_whitespace(&p);
     }
 
-    if (vec_span_empty(&namespaces) && span_eq_str(&name, "infer")) {
-        inferred = true;
-        if (expect_identifier(&p, &name)) {
-            end = p.pos;
-        }
-        hop_whitespace(&p);
-        if (hop_start_if_ends_on_word_break(&p, "extends")) {
-            end = p.pos;
-            hop_whitespace(&p);
-            if (expect_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
-                end = p.pos;
-            }
-        }
-    }
-
-    if (!inferred && p.whitespace != WHITESPACE_NEWLINE) {
+    if (p.whitespace != WHITESPACE_NEWLINE) {
         if (parse_generic_params(&p, &generic_params)) {
             end = p.pos;
         } else {
@@ -778,8 +761,36 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
         .name = name,
         .full_span = span_end(a),
         .generic_params = generic_params,
-        .degenericized = type,
-        .inferred = inferred,
+    };
+    return parse_success(&p);
+}
+
+static bool parse_inferred_type(Parser* parent, InferredType* ret) {
+    Parser p = parser(parent);
+    Anchor a = span_start(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "infer")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    Span name;
+    expect_identifier(&p, &name);
+    hop_whitespace(&p);
+
+    Type extends;
+    if (hop_start_if_ends_on_word_break(&p, "extends")) {
+        hop_whitespace(&p);
+        if (expect_type(&p, TYPE_PRECEDENCE_NULL, &extends)) {
+        }
+    } else {
+        extends = type_any;
+    }
+
+    *ret = (InferredType){
+        .name = name,
+        .full_span = span_end(a),
+        .extends = extends,
     };
     return parse_success(&p);
 }
@@ -790,6 +801,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
 
     union {
         IdentifierType identifier;
+        InferredType inferred;
         FunctionImpl func;
         Type type;
         VecTupleElement tuple_elements;
@@ -829,6 +841,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         ret->tag = TYPE_VALUE;
     } else if (parse_function_args(&p, true, true, &parsed.func)) {
         *ret = function_impl_into_type(parsed.func);
+    } else if (parse_inferred_type(&p, &parsed.inferred)) {
+        *ret = type_inferred(c_new(InferredType, parsed.inferred));
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){

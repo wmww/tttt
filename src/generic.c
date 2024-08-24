@@ -68,6 +68,7 @@ static void collect_generic_candidates(
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_VALUE:
+        case TYPE_INFERRED:
             return;
 
         case TYPE_IDENTIFIER:
@@ -193,6 +194,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                     *me = type_clone(*refinement);
                 }
             }
+            return;
+
+        case TYPE_INFERRED:
+            replace_named_types_with(&my inferred->extends, refinements);
             return;
 
         case TYPE_CALLABLE:

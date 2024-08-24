@@ -135,7 +135,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_VALUE:
             break;
 
-        case TYPE_IDENTIFIER: {
+        case TYPE_IDENTIFIER:
             if (span_eq_str(&my identifier->name, "object")) {
                 break;
             }
@@ -148,7 +148,16 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 type_compile_test_info(&i.ref->type, ctx);
             }
-        }   break;
+            break;
+
+        case TYPE_INFERRED:
+            baseline_test_case_add_symbol(
+                ctx,
+                span_sv(&my inferred->name),
+                my inferred->name,
+                my inferred->type ? my inferred->type->full : span_null
+            );
+            break;
 
         case TYPE_CALLABLE:
             generic_compile_test_info(&my callable->generic, ctx);

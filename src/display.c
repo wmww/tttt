@@ -206,9 +206,6 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    if (my inferred) {
-        display_lit(d, "infer ");
-    }
     if (my type && my type->is_typeof_class) {
         display_lit(d, "typeof ");
     }
@@ -233,6 +230,23 @@ static void display_identifier_type(Display d, IdentifierType* me) {
             }
         }
         display_lit(d, ">");
+    }
+
+    if (d.debug) {
+        if (!my type) {
+            display_colored(d, color_error, " /* unresolved */");
+        } else if (!lazy_type_try_get(&my type->type)) {
+            display_colored(d, color_error, " /* untypechecked */");
+        }
+    }
+}
+
+static void display_inferred_type(Display d, InferredType* me) {
+    display_lit(d, "infer ");
+    display_colored_span(d, color_type, my name);
+
+    if (d.hash_key) {
+        display_fmt(d, "@%p", (void*)my type);
     }
 
     if (d.debug) {
@@ -432,6 +446,7 @@ void display_type(Display d, Type const* me) {
             break;
 
         case TYPE_IDENTIFIER: display_identifier_type(d, my identifier); break;
+        case TYPE_INFERRED: display_inferred_type(d, my inferred); break;
         case TYPE_CALLABLE: display_callable(d, my callable, false); break;
         case TYPE_INTERFACE: display_interface(d, &my interface); break;
 

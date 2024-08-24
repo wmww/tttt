@@ -5,6 +5,7 @@
 #include "span.h"
 
 typedef struct IdentifierType IdentifierType;
+typedef struct InferredType InferredType;
 typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
 typedef struct KeyofType KeyofType;
@@ -33,6 +34,7 @@ typedef struct Type {
         TYPE_STRING,
         TYPE_VALUE,
         TYPE_IDENTIFIER,
+        TYPE_INFERRED,
         TYPE_CALLABLE,
         TYPE_INTERFACE,
         TYPE_ARRAY,
@@ -51,6 +53,7 @@ typedef struct Type {
         } any;
         Value value;
         IdentifierType* identifier;
+        InferredType* inferred;
         CallableType* callable;
         Interface interface;
         struct {
@@ -90,10 +93,17 @@ static inline Type type_value(Value value) {
     };
 }
 
-static inline Type type_identifier(IdentifierType* identifir) {
+static inline Type type_identifier(IdentifierType* identifier) {
     return (Type){
         .tag = TYPE_IDENTIFIER,
-        .identifier = identifir,
+        .identifier = identifier,
+    };
+}
+
+static inline Type type_inferred(InferredType* inferred) {
+    return (Type){
+        .tag = TYPE_INFERRED,
+        .inferred = inferred,
     };
 }
 

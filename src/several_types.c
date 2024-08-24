@@ -8,7 +8,6 @@ void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
     vec_spanned_type_drop(&my generic_params);
     type_drop(&my degenericized);
-    arc_named_type_drop(&my inferred_type);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
@@ -18,15 +17,10 @@ IdentifierType identifier_type_clone(IdentifierType me) {
         .type = me.type,
         .generic_params = vec_spanned_type_clone(me.generic_params),
         .degenericized = type_any,
-        .inferred = me.inferred,
-        .inferred_type = me.inferred_type.get ? arc_named_type_clone(me.inferred_type) : (ArcNamedType){0},
     };
 }
 
 void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
-    if (my inferred) {
-        return;
-    }
     if (!my type) {
         my type = name_stack_get_type(names, span_sv(&my name));
         if (!my type) {
@@ -59,6 +53,22 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
         }
         */
     }
+}
+
+// Inferred identifier
+
+void inferred_type_drop(InferredType* me) {
+    type_drop(&my extends);
+    arc_named_type_drop(&my inferred_type);
+}
+
+InferredType inferred_type_clone(InferredType me) {
+    return (InferredType){
+        .name = me.name,
+        .extends = type_clone(me.extends),
+        .type = me.type,
+        .inferred_type = me.inferred_type.get ? arc_named_type_clone(me.inferred_type) : (ArcNamedType){0},
+    };
 }
 
 // Indexed
