@@ -709,12 +709,3 @@ void object_expr_item_drop(ObjectExprItem* me) {
     cstr_drop(&my name_string);
     expr_drop(&my value);
 }
-
-ObjectExprItem* object_expr_get(ObjectExpr* me, const char* name) {
-    c_foreach(i, vec_object_expr_item, *me) {
-        if (strcmp(cstr_str(&i.ref->name_string), name) == 0) {
-            return i.ref;
-        }
-    }
-    return nullptr;
-}

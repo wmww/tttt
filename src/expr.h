@@ -276,7 +276,6 @@ typedef struct ObjectExprItem {
 } ObjectExprItem;
 
 void object_expr_item_drop(ObjectExprItem* me);
-ObjectExprItem* object_expr_get(ObjectExpr* me, const char* name);
 
 #define i_key_class_names ObjectExprItem, object_expr_item
 #define i_no_clone
