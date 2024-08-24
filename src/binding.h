@@ -35,7 +35,6 @@ typedef struct ObjectBindingItem {
 } ObjectBindingItem;
 
 void binding_drop(Binding* me);
-Binding binding_clone(Binding me);
 void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* errs);
 LazyType binding_get_lazy_type(Binding const* me); // Only valid after binding_add_names() is called
 Type const* binding_get_type(Binding* me); // Only valid after binding_add_names() is called
@@ -44,14 +43,15 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 void binding_typecheck(Binding* me, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
-ObjectBindingItem object_binding_item_clone(ObjectBindingItem me);
 
 #define i_key_class_names Binding, binding
 #define i_is_forward
+#define i_no_clone
 #include "wrap_stc/vec.h"
 
 #define i_key_class_names ObjectBindingItem, object_binding_item
 #define i_is_forward
+#define i_no_clone
 #include "wrap_stc/vec.h"
 
 typedef struct InitializedBinding {

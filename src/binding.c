@@ -14,18 +14,6 @@ void binding_drop(Binding* me) {
     lazy_type_drop(&my assigned_type);
 }
 
-Binding binding_clone(Binding me) {
-    switch (me.tag) {
-        case BINDING_NOOP: break;
-        case BINDING_IDENTIFIER: me.identifier = nullptr; break;
-        case BINDING_ARRAY: me.array = vec_binding_clone(me.array); break;
-        case BINDING_OBJECT: me.object = vec_object_binding_item_clone(me.object); break;
-    }
-    me.explicit_type = type_clone(me.explicit_type);
-    me.assigned_type = lazy_type_clone(me.assigned_type);
-    return me;
-}
-
 void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCtx* errs) {
     ASSERT(my assigned_type.tag == 0 && my assigned_type.value.tag == 0);
     my assigned_type = assigned;
@@ -190,12 +178,6 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 void object_binding_item_drop(ObjectBindingItem* me) {
     value_drop(&my source);
     binding_drop(&my target);
-}
-
-ObjectBindingItem object_binding_item_clone(ObjectBindingItem me) {
-    me.source = value_clone(me.source);
-    me.target = binding_clone(me.target);
-    return me;
 }
 
 void initialized_binding_drop(InitializedBinding* me) {
