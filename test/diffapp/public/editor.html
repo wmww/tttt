@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang=en>
+  <head>
+    <meta charset=utf-8>
+    <link rel=stylesheet href='index.css'>
+    <meta name=viewport content='width=device-width, initial-scale=1, user-scalable=1'>
+    <title>Editor demo</title>
+  </head>
+  <body>
+    <div id='root' class='v-box'>
+      <h1 style='text-align: center;'>Editor demo</h1>
+      <textarea id='code-input'></textarea>
+      <div class='code-container'>
+        <div id='code-view'></div>
+      </div>
+    </div>
+    <noscript>WARNING: JavaScript is required</noscript>
+    <script src='tokens.js'></script>
+    <script src='editor.js'></script>
+    <script>
+      const editor = new Editor(
+        document.getElementById('code-input'),
+        document.getElementById('code-view'),
+      );
+    </script>
+  </body>
+</html>
