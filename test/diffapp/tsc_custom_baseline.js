@@ -5,33 +5,20 @@ let triggerTestRerun; // Set by code we inject into the evaled code
   const fs = require('fs');
   const path = require('path');
 
-  if (process.argv.length < 4) {
+  if (process.argv.length < 3) {
     throw Error('Not enough arguments');
   }
 
   const tmpDir = process.argv[2];
   const tsDir = path.join(path.dirname(__dirname), 'TypeScript');
-  const initialTestSource = process.argv[3];
-
-  if (!tmpDir.startsWith('/tmp/')) {
-    throw Error('tmpDir does not start with /tmp/');
-  }
-
-  // TypeScript/src/harness/findUpDir.ts needs __dirname set to something in the TypeScript dir
-  __dirname = tsDir;
-
-  console.log('[tttt runner] Setting up ' + tmpDir + '...');
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-  fs.mkdirSync(tmpDir);
-  fs.mkdirSync(path.join(tmpDir, 'tests', 'cases', 'conformance'), { recursive: true });
 
   fs.writeFileSync(path.join(tmpDir, 'mytest.config'), JSON.stringify({
     runUnitTests: false,
     runners: ['conformance'],
   }));
 
-  const testPath = path.join('tests', 'cases', 'conformance', 'customTest.ts');
-  fs.copyFileSync(initialTestSource, path.join(tmpDir, testPath));
+  // TypeScript/src/harness/findUpDir.ts needs __dirname set to something in the TypeScript dir
+  __dirname = tsDir;
 
   function assertOneReplacement(filePath, text, pattern, replacement) {
     let count = 0;

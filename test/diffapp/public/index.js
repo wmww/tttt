@@ -16,13 +16,9 @@ let serverIsRunningTests = false;
 // An array of tokens representing the diff of the tttt and tsc results. It also contains nulls, each representing one
 // line (not token!) of input. May be generated from an older state then latestResults.
 let resultTokensWithNulls = [];
-let latestSubmittedCode = '';
-let latestSubmittedSerial = null;
-let currentCodeSerial = Math.floor(Math.random() * (1000000 - 100) + 100);
-
-function incrementCodeSerial() {
-  currentCodeSerial = (currentCodeSerial + 1) % 1000000 + 100
-}
+let serverCode = '';
+let serverSerial = null;
+let codeDiffersFromServer = false;
 
 let clientErrors = [];
 let serverErrors = [];
@@ -52,10 +48,11 @@ function surfaceError(message) {
   }, 10000);
 }
 
-function codeChangedByServer(code) {
+function codeChangedByServer(code, serial) {
   codeInput.value = code;
-  latestSubmittedCode = code;
-  latestSubmittedSerial = null;
+  serverCode = code;
+  serverSerial = serial;
+  codeDiffersFromServer = false;
   renderTextView();
 }
 
@@ -81,14 +78,20 @@ channelButtons.forEach(button => {
 let inputTimeout;
 codeInput.oninput = () => {
   clearTimeout(inputTimeout);
-  incrementCodeSerial();
+  codeDiffersFromServer = true;
   inputTimeout = setTimeout(() => {
-    latestSubmittedCode = codeInput.value;
-    latestSubmittedSerial = currentCodeSerial;
-    fetch('/setCode?token=' + token + '&serial=' + latestSubmittedSerial, {
+    const code = codeInput.value
+    fetch('/setCode?token=' + token, {
       method: 'POST',
-      body: latestSubmittedCode,
-    });
+      body: code,
+    })
+      .then(r => r.text())
+      .then(t => {
+        serverSerial = parseInt(t);
+        serverCode = code;
+        codeDiffersFromServer = serverCode !== codeInput.value;
+        updateOutOfDateState();
+      });
   }, inputWaitMs);
   renderTextView();
 }
@@ -442,11 +445,13 @@ function integrateResultTokens(inputTokens, resultTokens) {
   return retTokens;
 }
 
-function updateTestInFlightState() {
+function updateOutOfDateState() {
   const outOfDate = (
-    currentCodeSerial !== latestResults.tttt.serial ||
-    currentCodeSerial !== latestResults.tsc.serial
-  ) && latestSubmittedSerial !== null;
+    serverIsRunningTests ||
+    serverSerial !== latestResults.tttt.serial ||
+    serverSerial !== latestResults.tsc.serial ||
+    codeDiffersFromServer
+  );
   codeView.classList.toggle('diff-out-of-date', outOfDate || serverIsRunningTests);
 }
 
@@ -457,7 +462,7 @@ function renderTextView() {
   }
   const unifiedTokens = integrateResultTokens(inputTokens, resultTokensWithNulls);
   renderTokensTo(codeView, unifiedTokens);
-  updateTestInFlightState();
+  updateOutOfDateState();
 }
 
 function updateResultTokens() {
@@ -467,7 +472,7 @@ function updateResultTokens() {
     resultTokensWithNulls = [];
   } else {
     resultTokensWithNulls = getResultTokens(
-      latestSubmittedCode,
+      serverCode,
       latestResults.tsc[currentChannel],
       latestResults.tttt[currentChannel],
       currentChannel == 'err' ? '    ' : null
@@ -512,12 +517,14 @@ function handleEvents(json) {
           break;
 
         case 'code':
-          codeChangedByServer(json[key]);
+          if (key == 'code.text') {
+            codeChangedByServer(json['code.text'], json['code.serial']);
+          }
           break;
 
         case 'running':
           serverIsRunningTests = json[key];
-          updateTestInFlightState();
+          updateOutOfDateState();
           break;
 
         case 'result':
@@ -532,8 +539,10 @@ function handleEvents(json) {
       surfaceError('Handling ' + key + ': ' + e.toString());
     }
   }
-  const serialsMatch = latestResults.tsc.serial === latestResults.tttt.serial &&
-    (latestSubmittedSerial === null || latestResults.tttt.serial === latestSubmittedSerial);
+  const serialsMatch = (
+    latestResults.tsc.serial === latestResults.tttt.serial &&
+    latestResults.tttt.serial === serverSerial
+  );
   if (anyChannelUpdated && serialsMatch) {
     for (const channel of ['err', 'sym', 'typ']) {
       const passed = latestResults.tsc[channel] == latestResults.tttt[channel];

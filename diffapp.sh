@@ -35,7 +35,9 @@ if test $# -gt 0; then
     fi
 fi
 
-#NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp test/diffapp/defaultCustomTest.ts
+# mkdir -p /tmp/diffapp/tests/cases/conformance
+# touch /tmp/diffapp/tests/cases/conformance/customTest.ts
+# NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp
 
 if lsof -i :3030 >/dev/null; then
     if test -z ${TEST_PATH:-}; then
