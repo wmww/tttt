@@ -310,18 +310,6 @@ static inline bool expect_identifier(Parser* parent, Span* ret) {
     }
 }
 
-static bool parse_number_str(Parser* parent, cstr* ret) {
-    const char* start = parent->pos;
-    if (is_number_start_char(*parent->pos)) {
-        parent->pos++;
-        while (is_number_char(*parent->pos)) parent->pos++;
-        *ret = cstr_from_n(start, parent->pos - start);
-        return true;
-    } else {
-        return false;
-    }
-}
-
 static inline bool hop_comment(Parser* parent) {
     if (*parent->pos != '/') {
         return false;
@@ -2418,21 +2406,19 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 }
 
 static bool parse_number(Parser* parent, double* ret) {
-    Parser p = parser(parent);
-    Anchor a = span_start(&p);
-
-    cstr number_str;
-    if (!parse_number_str(&p, &number_str)) {
-        return parse_fail(&p);
-    } else {
-        // TODO: javascript-compliant number parsing
-        char* end;
-        *ret = strtod(cstr_str(&number_str), &end);
-        if (end != cstr_str(&number_str) + cstr_size(&number_str)) {
-            parse_error(&p, span_end(a), TS_CODE_NONE, "invalid number");
+    if (!is_number_start_char(*parent->pos)) {
+        return false;
+    }
+    const char* end = string_to_double(parent->pos, nullptr, true, ret);
+    if (end) {
+        parent->pos = end;
+        if (*parent->pos == 'e' || *parent->pos == 'E') {
+            parent->pos++;
+            parse_error(parent, span_from_pos(parent), 1124, "Digit expected.");
         }
-        cstr_drop(&number_str);
-        return parse_success(&p);
+        return true;
+    } else {
+        return false;
     }
 }
 

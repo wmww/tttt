@@ -26,3 +26,9 @@ static inline bool streq(const char* a, const char* b) {
 
 csview csview_trim_whitespace(csview sv);
 static inline const char* csview_end_ptr(csview sv) { return sv.buf + sv.size; }
+
+// Parses a double from the string start. Does not access string beyond end. If end is null assumes start is
+// null-terminated. Either sets ret and returns a pointer to the end of the section parsed (one past last character
+// used), or does not change ret and returns null. Fails if the string starts with whitespace or anything else not a
+// number. Handles exponents, optionally handles hex/binary.
+const char* string_to_double(const char* start, const char* end, bool allow_alternate_bases, double* ret);

@@ -1,4 +1,5 @@
 #include "string_helpers.h"
+#include "math.h"
 
 char* cstr_into_owned_ptr(cstr me) {
     if (cstr_is_long(&me)) {
@@ -55,4 +56,109 @@ csview csview_trim_whitespace(csview sv) {
     while (start < end && is_whitespace(*start)) { start++; }
     while (start < end && is_whitespace(*(end - 1))) { end--; }
     return csview_from_n(start, end - start);
+}
+
+#define LETTER_UPPER(p) ((p) & ~0x20)
+#define P_VALID(p, end) (end ? p < end : *p)
+
+// Parses an unsigned number in the string between start and end, returns one char after last char parsed, or
+// null if it failed to parse anything
+static const char* unsigned_string_to_int(const char* start, const char* end, char base, intptr_t* ret) {
+    intptr_t tmp = 0;
+    const char* p = start;
+    for (; P_VALID(p, end); p++) {
+        char digit = 100;
+        if (*p >= '0' && *p <= '9') {
+            digit = *p - '0';
+        } else if (LETTER_UPPER(*p) >= 'A' && LETTER_UPPER(*p) <= 'F') {
+            digit = LETTER_UPPER(*p) - 'A' + 10;
+        }
+        if (digit < base) {
+            tmp = digit + tmp * base;
+        } else {
+            break;
+        }
+    }
+    if (p == start) {
+        return nullptr;
+    } else {
+        *ret = tmp;
+        return p;
+    }
+}
+
+const char* string_to_double(const char* start, const char* end, bool allow_alternate_bases, double* ret) {
+    bool value_neg = false;
+    const char* p = start;
+    if (!P_VALID(p, end)) {
+        return nullptr;
+    } else if (*p == '+') {
+        p++;
+    } else if (*p == '-') {
+        value_neg = true;
+        p++;
+    }
+    if (allow_alternate_bases && P_VALID(p, end) && *p == '0' && P_VALID(p + 1, end)) {
+        p++;
+        unsigned char base;
+        switch (LETTER_UPPER(*p)) {
+            case 'X': base = 16; p++; break;
+            case 'B': base = 2; p++; break;
+            case 'O': base = 8; p++; break;
+            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+                base = 8; break; // Implicit octal because fuck you
+            default: base = 0; p--; break;
+        }
+        if (base) {
+            intptr_t value = 0;
+            const char* num_end = unsigned_string_to_int(p, end, base, &value);
+            *ret = value_neg ? -value : value;
+            if (num_end) {
+                return num_end;
+            } else {
+                return p;
+            }
+        }
+    }
+
+    intptr_t exponent_value = 0;
+    intptr_t decimal_part_value = 0;
+    intptr_t decimal_part_len = 0;
+    intptr_t whole_part_value = 0;
+    const char* whole_part_end = unsigned_string_to_int(p, end, 10, &whole_part_value);
+    if (whole_part_end) {
+        p = whole_part_end;
+    }
+    if (P_VALID(p, end) && *p == '.') {
+        p++;
+        const char* decimal_part_end = unsigned_string_to_int(p, end, 10, &decimal_part_value);
+        if (decimal_part_end) {
+            decimal_part_len = decimal_part_end - p;
+            p = decimal_part_end;
+        }
+    }
+    if (!whole_part_end && !decimal_part_len) {
+        return nullptr;
+    }
+    if (P_VALID(p, end) && LETTER_UPPER(*p) == 'E') {
+        const char* exp_p = p + 1;
+        bool exp_neg = false;
+        if (!P_VALID(p, end)) {
+        } else if (*exp_p == '+') {
+            exp_p++;
+        } else if (*exp_p == '-') {
+            exp_neg = true;
+            exp_p++;
+        }
+        const char* exponent_end = unsigned_string_to_int(exp_p, end, 10, &exponent_value);
+        if (exponent_end) {
+            p = exponent_end;
+            if (exp_neg) exponent_value *= -1;
+        }
+    }
+    *ret = (value_neg ? -1 : 1) * (
+        whole_part_value * pow(10, exponent_value) +
+        decimal_part_value * pow(10, exponent_value - decimal_part_len)
+    );
+    return p;
 }

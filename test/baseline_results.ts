@@ -8872,7 +8872,7 @@ const baselines = {
     },
     'destructuringAssignmentWithStrictNullChecks': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringAssignment_private': {
@@ -8887,7 +8887,7 @@ const baselines = {
     },
     'destructuringFromUnionSpread': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringInVariableDeclarations1': {
@@ -15468,12 +15468,12 @@ const baselines = {
     'indexSignatureTypeCheck': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'indexSignatureTypeCheck2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'indexSignatureWithAccessibilityModifier': {
         errors: false,
@@ -20812,7 +20812,7 @@ const baselines = {
     },
     'nestedObjectRest': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nestedRecursiveArraysOrObjectsError01': {
@@ -24427,7 +24427,7 @@ const baselines = {
     },
     'recursiveReverseMappedType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveSpecializationOfExtendedTypeWithError': {
@@ -25063,7 +25063,7 @@ const baselines = {
     'restUnion2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'restUnion3': {
         errors: false,
@@ -25267,7 +25267,7 @@ const baselines = {
     },
     'selfReferencingSpreadInLoop': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'selfReferencingTypeReferenceInference': {
@@ -25602,7 +25602,7 @@ const baselines = {
     },
     'sourceMapValidationDestructuringForArrayBindingPattern2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringForArrayBindingPatternDefaultValues': {
@@ -25642,7 +25642,7 @@ const baselines = {
     },
     'sourceMapValidationDestructuringForOfArrayBindingPattern2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues': {
@@ -25652,7 +25652,7 @@ const baselines = {
     },
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringForOfObjectBindingPattern': {
@@ -25737,7 +25737,7 @@ const baselines = {
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern4': {
@@ -25772,7 +25772,7 @@ const baselines = {
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationDestructuringVariableStatementDefaultValues': {
@@ -26047,7 +26047,7 @@ const baselines = {
     },
     'spliceTuples': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadBooleanRespectsFreshness': {
@@ -27611,7 +27611,7 @@ const baselines = {
         types: false,
     },
     'toStringOnPrimitives': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36213,7 +36213,7 @@ const baselines = {
     'invalidBinaryIntegerLiteralAndOctalIntegerLiteral': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'octalIntegerLiteral': {
         errors: false,
@@ -36226,7 +36226,7 @@ const baselines = {
         types: false,
     },
     'octalIntegerLiteralError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36266,7 +36266,7 @@ const baselines = {
         types: false,
     },
     'emitClassDeclarationWithLiteralPropertyNameInES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37802,17 +37802,17 @@ const baselines = {
     },
     'nonIterableRestElement1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonIterableRestElement2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonIterableRestElement3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectBindingPatternKeywordIdentifiers01': {
@@ -37917,7 +37917,7 @@ const baselines = {
     },
     'restElementWithInitializer2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restElementWithNullInitializer': {
@@ -38676,7 +38676,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessNumericLiterals.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42327,7 +42327,7 @@ const baselines = {
     },
     'arrayLiteralExpressionContextualTyping': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionExpressionContextualTyping1': {
@@ -51748,7 +51748,7 @@ const baselines = {
     'parservoidInQualifiedName1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parservoidInQualifiedName2': {
         errors: false,
@@ -53236,7 +53236,7 @@ const baselines = {
         types: false,
     },
     'scannerES3NumericLiteral4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53251,9 +53251,9 @@ const baselines = {
         types: false,
     },
     'scannerES3NumericLiteral7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scanner10.1.1-8gs': {
         errors: false,
@@ -53301,7 +53301,7 @@ const baselines = {
         types: false,
     },
     'scannerNumericLiteral4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53316,9 +53316,9 @@ const baselines = {
         types: false,
     },
     'scannerNumericLiteral7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerNumericLiteral8': {
         errors: false,
@@ -56142,22 +56142,22 @@ const baselines = {
     },
     'spreadContextualTypedBindingPattern': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadDuplicate': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadDuplicateExact': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadExcessProperty': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadMethods': {
@@ -56177,7 +56177,7 @@ const baselines = {
     },
     'spreadOverwritesProperty': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadOverwritesPropertyStrict': {
@@ -56187,7 +56187,7 @@ const baselines = {
     },
     'spreadTypeVariable': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadUnion': {
@@ -56207,7 +56207,7 @@ const baselines = {
     },
     'spreadUnion4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringLiteralCheckedInIf01': {
