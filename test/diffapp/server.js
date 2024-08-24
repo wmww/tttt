@@ -276,13 +276,11 @@ class TtttRunner {
 
   sendResults(results, stderrArray) {
     const stderr = stderrArray.join('\n');
-    if (stderr) {
-      surfaceError(stderr);
-    }
     setProperty('result.' + this.name + '.err', results.err);
     setProperty('result.' + this.name + '.sym', results.sym);
     setProperty('result.' + this.name + '.typ', results.typ);
     setProperty('result.' + this.name + '.serial', this.inProgressSerial);
+    setProperty('result.' + this.name + '.stderr', stderr);
     this.inProgressSerial = null;
     clearAndInvokeAll(this.onDone);
   }

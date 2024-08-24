@@ -82,6 +82,9 @@ function handleEvents(json) {
           if (keys[2] == currentChannel || keys[2] == 'serial') {
             currentChannelUpdated = true;
           }
+          if (key == 'result.tttt.stderr') {
+            setStderrText(json[key]);
+          }
           anyChannelUpdated = true;
           break;
       }

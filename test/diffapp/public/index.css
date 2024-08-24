@@ -140,15 +140,14 @@ button, .fake-button {
 }
 */
 
-.code-container {
-  flex-grow: 1;
+.token-view-container {
   margin: 0 20px 20px 20px;
   overflow-x: auto;
   overflow-y: auto;
   border-radius: 10px;
 }
 
-#code-view {
+.token-view {
   white-space: pre;
   flex-grow: 1;
   display: inline-block;
@@ -162,12 +161,27 @@ button, .fake-button {
   cursor: text;
 }
 
+#code-view-container {
+  flex-grow: 1;
+}
+
+#code-view {
+  padding-left: calc(12px + 2.5em);
+}
+
+#stderr-view-container {
+  max-height: 45%;
+}
+
+#stderr-view {
+  padding: 15px;
+}
+
 .code-line {
   display: flex;
   flex-direction: row;
   background-color: var(--panel);
   height: 1.5em;
-  margin-left: calc(12px + 2.5em);
 }
 
 .token-selected {

@@ -1,5 +1,6 @@
 const codeInput = document.getElementById('code-input');
 const codeView = document.getElementById('code-view');
+const stderrView = document.getElementById('stderr-view');
 const errorList = document.getElementById('error-list');
 const errorTemplate = document.getElementById('error-template');
 const token = Array(6).fill().map(() => String.fromCharCode(Math.floor(Math.random() * 26) + 97)).join('');
@@ -77,5 +78,17 @@ function updateErrorCounts(errsA, errsB) {
   }
 }
 
+function setStderrText(stderr) {
+  const tokens = [];
+  tokenizeStringInto(stderr, null, undefined, false, null, tokens);
+  if (stderr) {
+    stderrView.parentElement.style.display = '';
+    renderTokensTo(stderrView, tokens);
+  } else {
+    stderrView.parentElement.style.display = 'none';
+  }
+}
+
 onChannelSelected('typ');
+setStderrText('');
 fetchEvents();
