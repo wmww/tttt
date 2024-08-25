@@ -92,7 +92,7 @@ Type const* function_impl_resolve_type(FunctionImpl* me) {
         case RESOLVE_STATE_UNINITIALIZED:
             my resolve_state = RESOLVE_STATE_IN_FLIGHT;
 
-            if (my ret_explicit) {
+            if (my ret_explicit || !my has_body) {
                 my resolved_type = function_impl_make_callable_sans_inferred_ret(me);
                 my resolve_state = RESOLVE_STATE_DONE;
             } else {

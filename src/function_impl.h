@@ -38,8 +38,8 @@ typedef struct FunctionImpl {
     Span arrow_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;
-    bool has_block;
-    Block body; // Initialized to empty block if has_block is false
+    bool has_body;
+    Block body; // Initialized to empty block if has_body is false
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);

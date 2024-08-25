@@ -553,7 +553,7 @@ static void display_function_impl(Display d, FunctionImpl const* me, bool includ
         display_lit(d, ": ");
         display_type(d, &my ret);
     }
-    if (my has_block) {
+    if (my has_body) {
         if (include_arrow) display_lit(d, " => "); else display_lit(d, " ");
         display_block(d, &my body);
     } else {

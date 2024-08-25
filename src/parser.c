@@ -822,7 +822,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (hop_start_if_ends_on_word_break(&p, "never")) {
         *ret = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {
-        *ret = type_void;;
+        *ret = type_void;
     } else if (hop_start_if_ends_on_word_break(&p, "boolean")) {
         *ret = type_boolean;
     } else if (hop_start_if_ends_on_word_break(&p, "number")) {
@@ -1364,7 +1364,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
         });
     }
 
-    ret->has_block = true;
+    ret->has_body = true;
     ret->full_span = span_end(a);
     return parse_success(&p);
 }
@@ -1393,7 +1393,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     hop_whitespace(&p);
 
     if (parse_block(&p, false, &ret->body)) {
-        ret->has_block = true;
+        ret->has_body = true;
     } else if (*p.pos == ';' || p.whitespace == WHITESPACE_NEWLINE) {
         ret->body = (Block){0};
     } else {

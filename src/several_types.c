@@ -45,6 +45,10 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     if (my type) {
         lazy_type_resolve(&my type->type);
         /*
+        //This can be enabled once we're parsing the standard library
+        if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my type->generic)) {
+            error_ctx_error(errs, my full_span, 2315, "Type '%.*s' is not generic.", c_SV(span_sv(&my name)));
+        }
         Type const* t = type_resolve(lazy_type_resolve(&my type->type));
         if (t->tag == TYPE_ANY && t->any.excessively_deep_error) {
             error_ctx_error(errs, my full_span, 2589, "Type instantiation is excessively deep and possibly infinite.");

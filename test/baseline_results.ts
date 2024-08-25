@@ -63,7 +63,7 @@ const baselines = {
     'ClassDeclaration10': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration11': {
         errors: false,
@@ -73,27 +73,27 @@ const baselines = {
     'ClassDeclaration13': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration14': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration15': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration21': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration22': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclaration24': {
         errors: false,
@@ -118,7 +118,7 @@ const baselines = {
     'ClassDeclaration9': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ClassDeclarationWithInvalidConstOnPropertyDeclaration': {
         errors: false,
@@ -153,17 +153,17 @@ const baselines = {
     'FunctionDeclaration3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration7': {
         errors: false,
@@ -1403,7 +1403,7 @@ const baselines = {
     'asiAmbientFunctionDeclaration': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asiArith': {
         errors: true,
@@ -5183,7 +5183,7 @@ const baselines = {
     'conditionalTypeClassMembers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeContextualTypeSimplificationsSuceeds': {
         errors: false,
@@ -9393,7 +9393,7 @@ const baselines = {
     'downlevelLetConst19': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'downlevelLetConst2': {
         errors: true,
@@ -11828,7 +11828,7 @@ const baselines = {
     'exportDeclareClass1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultAbstractClass': {
         errors: undefined,
@@ -12523,12 +12523,12 @@ const baselines = {
     'fallFromLastCase1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fallFromLastCase2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fallbackToBindingPatternForTypeInference': {
         errors: false,
@@ -14828,7 +14828,7 @@ const baselines = {
     'implicitAnyInAmbientDeclaration2.d': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implicitAnyInCatch': {
         errors: false,
@@ -18308,7 +18308,7 @@ const baselines = {
     'letConstMatchingParameterNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'letDeclarations-access': {
         errors: true,
@@ -21148,7 +21148,7 @@ const baselines = {
     'noImplicitAnyForMethodParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitAnyForwardReferencedInterface': {
         errors: false,
@@ -31558,12 +31558,12 @@ const baselines = {
     'classAbstractDeclarations.d': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractExtends': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractFactoryFunction': {
         errors: false,
@@ -31588,7 +31588,7 @@ const baselines = {
     'classAbstractInheritance': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractInstantiations1': {
         errors: false,
@@ -31613,7 +31613,7 @@ const baselines = {
     'classAbstractMethodInNonAbstractClass': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractMethodWithImplementation': {
         errors: false,
@@ -31623,7 +31623,7 @@ const baselines = {
     'classAbstractMixedWithModifiers': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractOverloads': {
         errors: false,
@@ -31633,7 +31633,7 @@ const baselines = {
     'classAbstractOverrideWithAbstract': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractProperties': {
         errors: false,
@@ -31658,7 +31658,7 @@ const baselines = {
     'classAbstractUsingAbstractMethods2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractWithInterface': {
         errors: false,
@@ -33593,7 +33593,7 @@ const baselines = {
     'memberFunctionOverloadMixingStaticAndInstance': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'memberFunctionsWithPrivateOverloads': {
         errors: false,
@@ -48433,7 +48433,7 @@ const baselines = {
     'parserClassDeclaration10': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration11': {
         errors: false,
@@ -48448,17 +48448,17 @@ const baselines = {
     'parserClassDeclaration13': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration14': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration15': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration16': {
         errors: true,
@@ -48468,7 +48468,7 @@ const baselines = {
     'parserClassDeclaration17': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration18': {
         errors: false,
@@ -48493,12 +48493,12 @@ const baselines = {
     'parserClassDeclaration21': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration22': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration23': {
         errors: false,
@@ -48558,7 +48558,7 @@ const baselines = {
     'parserClassDeclaration9': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclarationIndexSignature1': {
         errors: true,
@@ -49143,12 +49143,12 @@ const baselines = {
     'parserErrantEqualsGreaterThanAfterFunction1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrantEqualsGreaterThanAfterFunction2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrantSemicolonInClass1': {
         errors: false,
@@ -49348,7 +49348,7 @@ const baselines = {
     'parserFunctionDeclaration1.d': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserFunctionDeclaration1': {
         errors: false,
@@ -49368,12 +49368,12 @@ const baselines = {
     'parserFunctionDeclaration3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserFunctionDeclaration4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserFunctionDeclaration5': {
         errors: false,
@@ -49383,7 +49383,7 @@ const baselines = {
     'parserFunctionDeclaration6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserFunctionDeclaration7': {
         errors: false,

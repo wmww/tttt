@@ -117,7 +117,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
         (baseline_test_result_is_pass(test) ? color_good : "");
     cstr_append_fmt(
         target,
-        "%s %.*s %s",
+        "%s %.*s%s",
         name_color,
         c_SV(test_name_from_path(cstr_str(&test->source_path))),
         color_normal
