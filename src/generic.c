@@ -336,8 +336,18 @@ CallableType generic_infer_callable_types(
 }
 
 void generic_typecheck(Generic const* me, ErrorCtx* errs) {
+    bool found_optional = false;
     c_foreach(i, vec_generic_item, my items) {
         type_typecheck(&i.ref->extends, errs);
         type_typecheck(&i.ref->fallback, errs);
+        if (found_optional && !i.ref->fallback_explicit) {
+            error_ctx_error(
+                errs, i.ref->full_span, 2706,
+                "Required type parameters may not follow optional type parameters."
+            );
+        }
+        if (i.ref->fallback_explicit) {
+            found_optional = true;
+        }
     }
 }

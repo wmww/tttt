@@ -498,8 +498,9 @@ static Span hop_token_get_span(Parser* parent) {
 
 static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
-    Span name = span_from_pos(&p);
+    Anchor a = span_start(&p);
 
+    Span name;
     if (!parse_identifier(&p, &name)) {
         return parse_fail(&p);
     }
@@ -525,6 +526,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
 
     *ret = (GenericItem){
         .name = name,
+        .full_span = span_end(a),
         .extends = extends,
         .fallback_explicit = fallback_explicit,
         .fallback = fallback,
@@ -1185,13 +1187,6 @@ static bool parse_function_args(
                 }
 
                 parse_binding_type_or_set_to_default(&p, &initializer.binding);
-                if (explicit_optional) {
-                    initializer.binding.explicit_type = type_composite(
-                        TYPE_UNION,
-                        initializer.binding.explicit_type,
-                        type_undefined
-                    );
-                }
                 hop_whitespace(&p);
 
                 parse_initialization_or_set_to_default(&p, expr_ctx_null, &initializer.value);

@@ -527,7 +527,7 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
                     return lazy_type_resolve(&my identifier->type->type);
                 }
             } else {
-                return &type_unknown;
+                return &type_any;
             }
             UNREACHABLE;
 

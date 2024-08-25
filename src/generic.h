@@ -14,6 +14,7 @@ typedef struct vec_expr VecExpr;
 
 typedef struct GenericItem {
     Span name;
+    Span full_span;
     Type extends;
     bool fallback_explicit;
     Type fallback;

@@ -31,8 +31,6 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
                 "Cannot find name '%.*s'.",
                 c_SV(span_sv(&my name))
             );
-            my type = name_stack_get_type(names, c_sv("any"));
-            ASSERT(my type);
         }
     }
     c_foreach(i, vec_spanned_type, my generic_params) {

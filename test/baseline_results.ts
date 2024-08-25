@@ -2273,7 +2273,7 @@ const baselines = {
     'bestCommonTypeReturnStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bestCommonTypeWithContextualTyping': {
         errors: true,
@@ -4213,7 +4213,7 @@ const baselines = {
     'collisionRestParameterUnderscoreIUsage': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'collisionSuperAndLocalFunctionInAccessors': {
         errors: true,
@@ -6873,7 +6873,7 @@ const baselines = {
     'declFileForInterfaceWithOptionalFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileForInterfaceWithRestParams': {
         errors: false,
@@ -12248,7 +12248,7 @@ const baselines = {
     'exportedInterfaceInaccessibleInCallbackInModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportedVariable1': {
         errors: true,
@@ -12888,12 +12888,12 @@ const baselines = {
     'functionCall11': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall12': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall13': {
         errors: false,
@@ -12901,24 +12901,24 @@ const baselines = {
         types: true,
     },
     'functionCall14': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall16': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall17': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall18': {
         errors: false,
@@ -12956,14 +12956,14 @@ const baselines = {
         types: false,
     },
     'functionCall8': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCall9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionCallOnConstrainedTypeVariable': {
         errors: false,
@@ -13333,7 +13333,7 @@ const baselines = {
     'functionSignatureAssignmentCompat1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionSubtypingOfVarArgs': {
         errors: false,
@@ -22183,7 +22183,7 @@ const baselines = {
     'optionalArgsWithDefaultValues': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalChainWithInstantiationExpression1': {
         errors: undefined,
@@ -22213,7 +22213,7 @@ const baselines = {
     'optionalParamAssignmentCompat': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalParamInOverride': {
         errors: true,
@@ -22238,7 +22238,7 @@ const baselines = {
     'optionalParamTypeComparison': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalParameterInDestructuringWithInitializer': {
         errors: false,
@@ -25043,12 +25043,12 @@ const baselines = {
     'restParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParamsWithNonRestParams': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restTypeRetainsMappyness': {
         errors: false,
@@ -32188,7 +32188,7 @@ const baselines = {
     'constructorOverloadsWithOptionalParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructorParameterProperties': {
         errors: false,
@@ -32523,12 +32523,12 @@ const baselines = {
     'derivedClassTransitivity': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassTransitivity2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassTransitivity3': {
         errors: false,
@@ -32538,7 +32538,7 @@ const baselines = {
     'derivedClassTransitivity4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassWithAny': {
         errors: false,
@@ -42048,7 +42048,7 @@ const baselines = {
     'comparisonOperatorWithNoRelationshipObjectsOnInstantiatedCallSignature': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnInstantiatedConstructorSignature': {
         errors: false,
@@ -42123,7 +42123,7 @@ const baselines = {
     'comparisonOperatorWithSubtypeObjectOnInstantiatedCallSignature': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithSubtypeObjectOnInstantiatedConstructorSignature': {
         errors: false,
@@ -55738,7 +55738,7 @@ const baselines = {
     'assignFromNumberInterface2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'extendNumberInterface': {
         errors: true,
@@ -57048,12 +57048,12 @@ const baselines = {
     'assignmentCompatWithCallSignaturesWithOptionalParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithCallSignaturesWithRestParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithConstructSignatures': {
         errors: false,
@@ -57088,7 +57088,7 @@ const baselines = {
     'assignmentCompatWithConstructSignaturesWithOptionalParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithDiscriminatedUnion': {
         errors: false,
@@ -57101,7 +57101,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatWithGenericCallSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57608,12 +57608,12 @@ const baselines = {
     'subtypingWithCallSignaturesWithOptionalParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithCallSignaturesWithRestParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithCallSignaturesWithSpecializedSignatures': {
         errors: false,
@@ -57653,7 +57653,7 @@ const baselines = {
     'subtypingWithConstructSignaturesWithOptionalParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithConstructSignaturesWithSpecializedSignatures': {
         errors: false,
@@ -58353,12 +58353,12 @@ const baselines = {
     'unionTypeCallSignatures4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeCallSignatures5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeCallSignatures6': {
         errors: false,
