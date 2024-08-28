@@ -918,29 +918,6 @@ bool type_extends_array(Type const* sub) {
     return type_extends(sub, &array_any);
 }
 
-void type_abstract_tuple_to_array(Type* me) {
-    if (my tag == TYPE_TUPLE) {
-        type_abstract_literals(me);
-        Type ret = type_never;
-        c_foreach(i, vec_tuple_element, my tuple.elements) {
-            if (i.ref->rest) {
-                Type elem = type_any;
-                index_type_of(&i.ref->type, &type_number, span_null, false, nullptr, &elem);
-                ret = type_composite(TYPE_UNION, ret, elem);
-            } else if (i.ref->type.tag != TYPE_VALUE || i.ref->type.value.tag != VALUE_UNDEFINED) {
-                ret = type_composite(TYPE_UNION, ret, i.ref->type);
-                i.ref->type = type_any;
-            }
-        }
-        bool readonly = my tuple.readonly;
-        type_drop(me);
-        if (ret.tag == TYPE_NEVER) {
-            ret = type_undefined;
-        }
-        *me = type_array(c_new(Type, ret), readonly);
-    }
-}
-
 void type_abstract_literals(Type* me) {
     switch (my tag) {
         case TYPE_ANY:

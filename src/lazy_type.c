@@ -94,13 +94,6 @@ Type const* lazy_type_resolve(LazyType* me) {
                 }
                 if (abstract_tuple_to_array) {
                     type_abstract_tuple_to_array(&resolved);
-                    if (resolved.tag == TYPE_ARRAY &&
-                        resolved.array.element->tag == TYPE_VALUE &&
-                        resolved.array.element->value.tag == VALUE_UNDEFINED
-                    ) {
-                        type_drop(resolved.array.element);
-                        *resolved.array.element = type_any;
-                    }
                 }
                 *me = lazy_type_value(resolved);
             } else {

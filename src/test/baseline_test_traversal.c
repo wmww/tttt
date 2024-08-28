@@ -557,6 +557,15 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
     }
 }
 
+static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
+    c_foreach(i, vec_expr, *me) {
+        if (i.ref->tag != EXPR_LITERAL || i.ref->literal.tag != VALUE_UNDEFINED) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
     if (my tag == EXPR_IDENTIFIER && my identifier.var) {
         // Do NOT degenericize
@@ -566,7 +575,12 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
             my inner_span,
             lazy_type_assert_get(&my identifier.var->type)
         );
-    } else if (my tag != EXPR_LITERAL || my literal.tag != VALUE_NULL) {
+    } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
+        Type t = type_array((Type*)&type_undefined, false);
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
+        // Don't drop, since we didn't allocate
+    } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
+    } else {
         Type t = expr_get_type_and_typecheck(me, nullptr);
         if (my tag == EXPR_ARRAY) {
             type_abstract_literals(&t);

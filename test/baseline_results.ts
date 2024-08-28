@@ -1788,12 +1788,12 @@ const baselines = {
     'assignmentCompatability_checking-apply-member-off-of-function-interface': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatability_checking-call-member-off-of-function-interface': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatibilityForConstrainedTypeParameters': {
         errors: true,
@@ -5081,7 +5081,7 @@ const baselines = {
         types: false,
     },
     'concatTuples': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -5978,7 +5978,7 @@ const baselines = {
     'contextualTyping20': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping21': {
         errors: false,
@@ -7396,7 +7396,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitDestructuringArrayPattern5': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -7608,7 +7608,7 @@ const baselines = {
     'declarationEmitInferredDefaultExportType': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'declarationEmitInferredDefaultExportType2': {
         errors: false,
@@ -8538,7 +8538,7 @@ const baselines = {
     'deeplyNestedCheck': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'deeplyNestedConditionalTypes': {
         errors: true,
@@ -19073,7 +19073,7 @@ const baselines = {
     'missingCloseBracketInArray': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingCloseParenStatements': {
         errors: false,
@@ -20818,7 +20818,7 @@ const baselines = {
     'nestedRecursiveArraysOrObjectsError01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nestedRecursiveLambda': {
         errors: false,
@@ -27026,7 +27026,7 @@ const baselines = {
         types: false,
     },
     'systemModule13': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28141,7 +28141,7 @@ const baselines = {
         types: false,
     },
     'typeInferenceLiteralUnion': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -29101,7 +29101,7 @@ const baselines = {
         types: false,
     },
     'unionTypeWithIndexAndTuple': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -33921,7 +33921,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccess': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -34001,7 +34001,7 @@ const baselines = {
         types: false,
     },
     'controlFlowNoIntermediateErrors': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -37533,7 +37533,7 @@ const baselines = {
     'emptyArrayBindingPatternParameter04': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAssignmentPatterns01_ES5': {
         errors: false,
@@ -38081,7 +38081,7 @@ const baselines = {
         types: false,
     },
     'for-of36': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -44991,7 +44991,7 @@ const baselines = {
         types: undefined,
     },
     'inferFromBindingPattern': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -53936,7 +53936,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsDestructuring': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -53946,7 +53946,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsDestructuring3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54196,7 +54196,7 @@ const baselines = {
         types: true,
     },
     'ES5For-ofTypeCheck3': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -54233,7 +54233,7 @@ const baselines = {
     'ES5for-of32': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forStatements': {
         errors: false,
@@ -56496,7 +56496,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInTuples': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -56546,12 +56546,12 @@ const baselines = {
         types: false,
     },
     'emptyTuplesTypeAssertion01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'emptyTuplesTypeAssertion02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56613,7 +56613,7 @@ const baselines = {
     'tupleElementTypes1': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'tupleElementTypes2': {
         errors: true,

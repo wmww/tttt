@@ -193,7 +193,7 @@ Type const* type_resolve(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 bool type_overlaps(Type const* a, Type const* b);
 bool type_extends_array(Type const* sub);
-void type_abstract_tuple_to_array(Type* me); // [number | string] -> (number | string)[]
+static inline void type_abstract_tuple_to_array(Type* me) { __(me); } // TODO: drop
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 

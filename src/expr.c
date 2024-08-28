@@ -521,11 +521,19 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
         }   break;
 
         case EXPR_ARRAY: {
-            ret = type_tuple(vec_tuple_element_init(), false);
+            Type index_t = type_never;
             c_foreach(i, vec_expr, my array) {
                 Type t = expr_get_type_and_typecheck(i.ref, errs);
-                vec_tuple_element_push(&ret.tuple.elements, (TupleElement){.type = t});
+                type_abstract_literals(&t);
+                if (t.tag != TYPE_VALUE || t.value.tag != VALUE_UNDEFINED) {
+                    index_t = type_composite(TYPE_UNION, index_t, t);
+                }
             }
+            if (index_t.tag == TYPE_NEVER) {
+                // TODO: this should only happen if strict_null_checks is false
+                index_t = type_any;
+            }
+            ret = type_array(c_new(Type, index_t), false);
         }   break;
 
         case EXPR_CLASS_DECL:
