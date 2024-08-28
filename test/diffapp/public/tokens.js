@@ -2,6 +2,7 @@ const Token = Object.freeze({
   TEXT: 'token-text',
   LINE_NUMBER: 'token-line-number',
   CURSOR: 'token-cursor',
+  BUTTON: 'token-button',
   NEWLINE: 'token-newline',
   ENDLINE: 'token-endline',
 });
@@ -43,13 +44,55 @@ function tokenizeStringInto(text, offset, extraClass, lineNumbers, indent, token
   }
 }
 
+const stderrTokenRegex = /(?<beforeLink>[^\r\n]* )(?<valgrindLink>\w+ \((?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+)\))|(?<gccLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+):(?<charNum>\d+):)|(?<normalLine>[^\r\n]+)|(?<newline>\r\n|\r|\n)/y;
+function tokenizeStderrInto(text, tokens) {
+  let match;
+  while (match = stderrTokenRegex.exec(text)) {
+    if (match.groups.normalLine) {
+      tokens.push({
+        type: Token.TEXT,
+        text: match.groups.normalLine,
+      });
+    } else if (match.groups.valgrindLink) {
+      if (match.groups.beforeLink) {
+        tokens.push({
+          type: Token.TEXT,
+          text: match.groups.beforeLink,
+        });
+      }
+      const filename = match.groups.filename;
+      const lineNum = match.groups.lineNum;
+      tokens.push({
+        type: Token.BUTTON,
+        text: match.groups.valgrindLink,
+        onclick: () => nativeEditorJumpTo(filename, lineNum, null),
+      });
+    } else if (match.groups.gccLink) {
+      const filename = match.groups.filename;
+      const lineNum = match.groups.lineNum;
+      const charNum = match.groups.charNum;
+      tokens.push({
+        type: Token.BUTTON,
+        text: match.groups.gccLink,
+        onclick: () => nativeEditorJumpTo(filename, lineNum, charNum),
+      });
+    } else if (match.groups.newline) {
+      tokens.push({
+        type: Token.NEWLINE,
+      });
+    }
+  }
+}
+
 function applyTokenToElem(token, elem) {
-  elem.debugToken = token;
   if (token.offset !== undefined && token.offset !== null) {
     elem.tokenOffset = token.offset;
   }
   if (token.extraClass) {
     elem.classList.add(token.extraClass);
+  }
+  if (token.onclick) {
+    elem.onclick = token.onclick;
   }
 }
 
@@ -106,7 +149,7 @@ function renderTokensTo(parent, tokens) {
 
       case Token.CURSOR: {
         const div = document.createElement('div');
-        div.classList.add('token-cursor');
+        div.classList.add(token.type);
         applyTokenToElem(token, div);
         ensureLine();
         pendingLine.appendChild(div);
@@ -114,6 +157,14 @@ function renderTokensTo(parent, tokens) {
 
       case Token.LINE_NUMBER: {
         addLineNumber = true;
+      } break;
+
+      case Token.BUTTON: {
+        const button = document.createElement('button');
+        button.classList.add(token.type);
+        button.textContent = token.text;
+        applyTokenToElem(token, button);
+        pendingLine.appendChild(button);
       } break;
 
       case Token.NEWLINE: {
@@ -128,7 +179,6 @@ function renderTokensTo(parent, tokens) {
   }
 
   if (pendingLine) {
-    console.error('Token stream did not end with Token.ENDLINE');
     finishLine({});
   }
 }

@@ -170,7 +170,7 @@ button, .fake-button {
 }
 
 #stderr-view-container {
-  max-height: 45%;
+  max-height: 50%;
 }
 
 #stderr-view {
@@ -180,8 +180,9 @@ button, .fake-button {
 .code-line {
   display: flex;
   flex-direction: row;
+  align-items: center;
   background-color: var(--panel);
-  height: 1.5em;
+  min-height: 1.5em;
 }
 
 .token-selected {
@@ -194,7 +195,7 @@ button, .fake-button {
   margin-right: -0.5px;
   background-color: var(--code-text);
   width: 1px;
-  height: 100%;
+  height: 1.2em;
 }
 
 .token-line-number {
@@ -226,6 +227,18 @@ button, .fake-button {
 
 .diff-out-of-date .token-diff-both,
 .diff-out-of-date .token-diff-a,
-.diff-out-of-date .token-diff-b {
+.diff-out-of-date .token-diff-b,
+.diff-out-of-date#stderr-view {
   opacity: 70%;
+}
+
+.token-button {
+  padding: 2px 6px;
+  border-radius: 10px;
+  background-color: var(--background);
+}
+
+.token-button:hover {
+  font-weight: bold;
+  background-color: var(--accent);
 }

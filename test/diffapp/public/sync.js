@@ -43,6 +43,7 @@ function updateOutOfDateState() {
     codeDiffersFromServer
   );
   codeView.classList.toggle('diff-out-of-date', outOfDate);
+  stderrView.classList.toggle('diff-out-of-date', outOfDate);
 }
 
 function updateEditor() {
@@ -141,4 +142,16 @@ function fetchEvents() {
         setTimeout(fetchEvents, 500);
       }
     });
+}
+
+function nativeEditorJumpTo(file, line, char) {
+  console.log(line, char);
+  let url = '/jumpTo?file=' + encodeURIComponent(file);
+  if (line !== null) {
+    url += '&line=' + encodeURIComponent(line);
+  }
+  if (char !== null) {
+    url += '&char=' + encodeURIComponent(char);
+  }
+  fetch(url);
 }

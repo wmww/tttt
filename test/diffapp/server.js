@@ -510,6 +510,46 @@ function receivePostBody(request, response, callback) {
   }
 }
 
+function findFileIn(dir, name) {
+  let full = path.join(dir, name);
+  if (fs.existsSync(full)) {
+    return full;
+  }
+  for (const item of fs.readdirSync(dir)) {
+    const subdir = path.join(dir, item);
+    if (fs.lstatSync(subdir).isDirectory()) {
+      const found = findFileIn(subdir, name);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
+function editorJumpTo(file, line, char) {
+  const editor = 'kate';
+  let tmp;
+  if (fs.existsSync(file)) {
+  } else if (fs.existsSync(tmp = path.join(ttttRoot, file))) {
+    file = tmp;
+  } else if (fs.existsSync(tmp = path.join(ttttRoot, 'src', file))) {
+    file = tmp;
+  } else if (tmp = findFileIn(ttttRoot, file)) {
+    file = tmp
+  } else {
+    throw Error('Could not find file ' + file);
+  }
+  if (line ?? null !== null) {
+    file += ':' + line;
+    if (char ?? null !== null) {
+      file += ':' + char;
+    }
+  }
+  //console.log('Jumping ' + editor + ' to ' + file);
+  child_process.spawn(editor, [file]);
+}
+
 function getTokenFrom(url) {
   const token = url.searchParams.get('token');
   if (!token) { throw Error('No token'); }
@@ -543,13 +583,27 @@ function handleRequest(request, response) {
         });
         break;
 
+      case '/jumpTo':
+        const file = url.searchParams.get('file');
+        const line = url.searchParams.get('line');
+        const char = url.searchParams.get('char');
+        if (!file) {
+          response.writeHead(400);
+          response.end('No filename');
+        } else {
+          editorJumpTo(file, line, char);
+          response.writeHead(200);
+          response.end();
+        }
+        break;
+
       default:
         serveStatic(response, url.pathname);
         break;
     }
   } catch (e) {
     console.error(e);
-    surfaceError('Server failed to handle ' + url.pathname + ' request: ' + e.message);
+    surfaceError('Server failed to handle ' + request.url + ' request: ' + e.message);
     response.writeHead(500);
     response.end('Server Error: ' + e);
   }

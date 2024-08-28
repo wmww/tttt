@@ -80,7 +80,7 @@ function updateErrorCounts(errsA, errsB) {
 
 function setStderrText(stderr) {
   const tokens = [];
-  tokenizeStringInto(stderr, null, undefined, false, null, tokens);
+  tokenizeStderrInto(stderr, tokens);
   if (stderr) {
     stderrView.parentElement.style.display = '';
     renderTokensTo(stderrView, tokens);
