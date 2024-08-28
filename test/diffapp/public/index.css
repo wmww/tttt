@@ -162,6 +162,7 @@ button, .fake-button {
 }
 
 #code-view-container {
+  flex-basis: 0;
   flex-grow: 1;
 }
 
@@ -170,6 +171,8 @@ button, .fake-button {
 }
 
 #stderr-view-container {
+  flex-basis: 0;
+  flex-grow: 1;
   max-height: 50%;
 }
 

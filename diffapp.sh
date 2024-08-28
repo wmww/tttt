@@ -44,7 +44,7 @@ if lsof -i :3030 >/dev/null; then
         echo "diffapp already running"
     else
         echo "Sending $TEST_PATH to existing diffapp instance"
-        curl -X POST "http://localhost:3030/setCode?token=bash&serial=$RANDOM" --data-binary "@$TEST_PATH"
+        curl -s -X POST "http://localhost:3030/setCode?token=bash&serial=$RANDOM" --data-binary "@$TEST_PATH" >/dev/null
     fi
 else
     node test/diffapp/server.js ${TEST_PATH:-}

@@ -145,7 +145,6 @@ function fetchEvents() {
 }
 
 function nativeEditorJumpTo(file, line, char) {
-  console.log(line, char);
   let url = '/jumpTo?file=' + encodeURIComponent(file);
   if (line !== null) {
     url += '&line=' + encodeURIComponent(line);

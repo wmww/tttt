@@ -44,20 +44,23 @@ function tokenizeStringInto(text, offset, extraClass, lineNumbers, indent, token
   }
 }
 
-const stderrTokenRegex = /(?<beforeLink>[^\r\n]* )(?<valgrindLink>\w+ \((?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+)\))|(?<gccLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+):(?<charNum>\d+):)|(?<normalLine>[^\r\n]+)|(?<newline>\r\n|\r|\n)/y;
+const stderrTokenRegex = /(?<beforeLink>[^\r\n\u001b]* )(?<valgrindLink>\w+ \((?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+)\))|(?<gccLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+):(?<charNum>\d+):)|(?<normalLine>[^\r\n\u001b]+)|(\u001b(\[(?<escapeCode>[\d;]+)m))|(?<newline>\r\n|\r|\n)/y;
 function tokenizeStderrInto(text, tokens) {
   let match;
+  let color = null;
   while (match = stderrTokenRegex.exec(text)) {
     if (match.groups.normalLine) {
       tokens.push({
         type: Token.TEXT,
         text: match.groups.normalLine,
+        color: color,
       });
     } else if (match.groups.valgrindLink) {
       if (match.groups.beforeLink) {
         tokens.push({
           type: Token.TEXT,
           text: match.groups.beforeLink,
+          color: color,
         });
       }
       const filename = match.groups.filename;
@@ -66,6 +69,7 @@ function tokenizeStderrInto(text, tokens) {
         type: Token.BUTTON,
         text: match.groups.valgrindLink,
         onclick: () => nativeEditorJumpTo(filename, lineNum, null),
+        color: color,
       });
     } else if (match.groups.gccLink) {
       const filename = match.groups.filename;
@@ -75,11 +79,22 @@ function tokenizeStderrInto(text, tokens) {
         type: Token.BUTTON,
         text: match.groups.gccLink,
         onclick: () => nativeEditorJumpTo(filename, lineNum, charNum),
+        color: color,
       });
     } else if (match.groups.newline) {
       tokens.push({
         type: Token.NEWLINE,
       });
+    } else if (match.groups.escapeCode) {
+      for (const code of match.groups.escapeCode.split(';')) {
+        switch (code) {
+          case '0': color = null; break;
+          case '31': color = '#ff3020'; break;
+          case '94': color = '#4060ff'; break;
+          case '1': break;
+          default: console.log('Unkown BASH color code ' + code);
+        }
+      }
     }
   }
 }
@@ -93,6 +108,9 @@ function applyTokenToElem(token, elem) {
   }
   if (token.onclick) {
     elem.onclick = token.onclick;
+  }
+  if (token.color) {
+    elem.style.color = token.color;
   }
 }
 
