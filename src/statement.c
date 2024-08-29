@@ -61,14 +61,26 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
 void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
     lazy_type_drop(&my value_type);
-    named_variable_destroy(my value_named_type);
+    named_type_destroy(my value_named_type);
+    named_variable_destroy(my value_named_var);
 }
 
 void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
     __(errs);
     ASSERT(!my value_named_type);
-    my value_named_type = make_named_variable(my name, my name, type_lazy(&my value_type), nullptr);
-    name_stack_add_variable_s(names, cstr_from_span(&my name), my value_named_type);
+    ASSERT(!my value_named_var);
+    my value_named_type = make_named_type(my name, my full_span, type_lazy(&my value_type), nullptr);
+    my value_named_type->is_typeof_class = true;
+    my value_named_var = make_named_variable(
+        my name,
+        my full_span,
+        type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .named_type = my value_named_type,
+        })),
+        nullptr
+    );
+    name_stack_add_variable_s(names, cstr_from_span(&my name), my value_named_var);
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {

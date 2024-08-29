@@ -758,7 +758,7 @@ const baselines = {
     'ambientNameRestrictions': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientPropertyDeclarationInJs': {
         errors: false,
@@ -7517,7 +7517,7 @@ const baselines = {
     },
     'declarationEmitExpressionInExtends5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpressionInExtends6': {
@@ -7733,7 +7733,7 @@ const baselines = {
     'declarationEmitLocalClassHasRequiredDeclare': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'declarationEmitMappedPrivateTypeTypeParameter': {
         errors: undefined,
@@ -7798,7 +7798,7 @@ const baselines = {
     'declarationEmitNamespaceMergedWithInterfaceNestedFunction': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitNestedAnonymousMappedType': {
         errors: false,
@@ -11857,8 +11857,8 @@ const baselines = {
     },
     'exportDefaultClassInNamespace': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exportDefaultDuplicateCrash': {
         errors: undefined,
@@ -11872,7 +11872,7 @@ const baselines = {
     },
     'exportDefaultFunctionInNamespace': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportDefaultImportedType': {
@@ -12102,7 +12102,7 @@ const baselines = {
     },
     'exportNamespaceDeclarationRetainsVisibility': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportObjectRest': {
@@ -12242,8 +12242,8 @@ const baselines = {
     },
     'exportedBlockScopedDeclarations': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exportedInterfaceInaccessibleInCallbackInModule': {
         errors: true,
@@ -14547,8 +14547,8 @@ const baselines = {
     },
     'globalIsContextualKeyword': {
         errors: true,
-        symbols: false,
-        types: true,
+        symbols: true,
+        types: false,
     },
     'globalThis': {
         errors: false,
@@ -21427,8 +21427,8 @@ const baselines = {
     },
     'noUnusedLocals_selfReference_skipsBlockLocations': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'noUnusedLocals_typeParameterMergedWithParameter': {
         errors: false,
@@ -29297,28 +29297,28 @@ const baselines = {
     },
     'unusedClassesinNamespace1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedClassesinNamespace2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedClassesinNamespace3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedClassesinNamespace4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedClassesinNamespace5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedDestructuring': {
         errors: false,
@@ -29332,33 +29332,33 @@ const baselines = {
     },
     'unusedFunctionsinNamespaces1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedFunctionsinNamespaces2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedFunctionsinNamespaces3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedFunctionsinNamespaces4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedFunctionsinNamespaces5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedFunctionsinNamespaces6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedGetterInClass': {
         errors: false,
@@ -29467,28 +29467,28 @@ const baselines = {
     },
     'unusedInterfaceinNamespace1': {
         errors: false,
-        symbols: false,
-        types: true,
+        symbols: true,
+        types: false,
     },
     'unusedInterfaceinNamespace2': {
         errors: false,
-        symbols: false,
-        types: true,
+        symbols: true,
+        types: false,
     },
     'unusedInterfaceinNamespace3': {
         errors: false,
-        symbols: false,
-        types: true,
+        symbols: true,
+        types: false,
     },
     'unusedInterfaceinNamespace4': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedInterfaceinNamespace5': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unusedInvalidTypeArguments': {
         errors: undefined,
@@ -29663,7 +29663,7 @@ const baselines = {
     'unusedNamespaceInNamespace': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'unusedParameterInCatchClause': {
         errors: true,
@@ -30012,7 +30012,7 @@ const baselines = {
     },
     'unusedVariablesinNamespaces1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unusedVariablesinNamespaces2': {
@@ -38483,7 +38483,7 @@ const baselines = {
     'defaultExportsCannotMerge04': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportAndImport-es3-amd': {
         errors: undefined,
@@ -41318,7 +41318,7 @@ const baselines = {
     'esDecorators-classDeclaration-commonjs-classNamespaceMerge': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'esDecorators-classDeclaration-commonjs': {
         errors: false,
@@ -45662,8 +45662,8 @@ const baselines = {
     },
     'asiPreventsParsingAsNamespace03': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asiPreventsParsingAsNamespace04': {
         errors: true,
@@ -47067,8 +47067,8 @@ const baselines = {
     },
     'seeTag1': {
         errors: true,
-        symbols: false,
-        types: true,
+        symbols: true,
+        types: false,
     },
     'seeTag2': {
         errors: true,
@@ -48068,7 +48068,7 @@ const baselines = {
     'overrideWithoutNoImplicitOverride1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'override_js1': {
         errors: true,
@@ -56697,8 +56697,8 @@ const baselines = {
     },
     'asiPreventsParsingAsTypeAlias02': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'circularTypeAliasForUnionWithClass': {
         errors: true,

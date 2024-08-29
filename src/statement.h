@@ -49,9 +49,11 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 
 typedef struct NamespaceDecl {
     Span name;
+    Span full_span;
     Block contents;
     LazyType value_type;
-    NamedVariable* value_named_type;
+    NamedType* value_named_type;
+    NamedVariable* value_named_var;
 } NamespaceDecl;
 
 void namespace_decl_drop(NamespaceDecl* me);

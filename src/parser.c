@@ -213,21 +213,21 @@ typedef struct Anchor {
     const char* start;
 } Anchor;
 
-Anchor span_start(Parser* parser) {
+static inline Anchor span_start(Parser* parser) {
     return (Anchor) {
         .parser = parser,
         .start = parser->pos,
     };
 }
 
-Anchor span_starting_at(Parser* parser, Span start) {
+static inline Anchor span_starting_at(Parser* parser, Span start) {
     return (Anchor) {
         .parser = parser,
         .start = parser->shared->file_start + start.offset,
     };
 }
 
-Span span_end(Anchor spanner) {
+static inline Span span_end(Anchor spanner) {
     const char* file_start = spanner.parser->shared->file_start;
     return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
 }
@@ -3514,8 +3514,9 @@ static bool parse_throw(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)* ret) {
+static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     Parser p = parser(parent);
+    Anchor a = span_start(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "namespace")) {
         return parse_fail(&p);
@@ -3526,7 +3527,7 @@ static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)
         return parse_fail(&p);
     }
 
-    *ret = (typeof((Statement){}.decl.namespace)){0};
+    *ret = (NamespaceDecl){0};
 
     if (!parse_identifier(&p, &ret->name)) {
         Value val;
@@ -3556,6 +3557,7 @@ static bool parse_namespace(Parser* parent, typeof((Statement){}.decl.namespace)
         expected_token_error(&p, "{");
     }
 
+    ret->full_span = span_end(a);
     return parse_success(&p);
 }
 

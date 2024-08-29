@@ -425,6 +425,17 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
     interface_compile_test_info(&my type.interface, my name, ctx);
 }
 
+void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
+    baseline_test_case_add_symbol(
+        ctx,
+        span_sv(&my name),
+        my name,
+        my full_span
+    );
+    baseline_test_case_add_type(ctx, my name, &my value_named_var->type);
+    block_compile_test_info(&my contents, ctx);
+}
+
 void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
@@ -704,7 +715,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            block_compile_test_info(&my decl.namespace.contents, ctx);
+            namespace_decl_compile_test_info(&my decl.namespace, ctx);
             break;
     }
 }
