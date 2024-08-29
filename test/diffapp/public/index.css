@@ -183,7 +183,7 @@ button, .fake-button {
 .code-line {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   background-color: var(--panel);
   min-height: 1.5em;
 }
@@ -194,11 +194,10 @@ button, .fake-button {
 
 .token-cursor {
   display: inline-block;
-  margin-left: -0.5px;
-  margin-right: -0.5px;
   background-color: var(--code-text);
+  margin: 0 -0.5px;
   width: 1px;
-  height: 1.2em;
+  z-index: 10;
 }
 
 .token-line-number {
@@ -231,12 +230,13 @@ button, .fake-button {
 .diff-out-of-date .token-diff-both,
 .diff-out-of-date .token-diff-a,
 .diff-out-of-date .token-diff-b,
-.diff-out-of-date#stderr-view {
+.diff-out-of-date#stderr-view .code-line {
   opacity: 70%;
 }
 
 .token-button {
   padding: 2px 6px;
+  border: 2px solid var(--panel);
   border-radius: 10px;
   background-color: var(--background);
 }

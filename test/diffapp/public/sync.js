@@ -137,9 +137,11 @@ function fetchEvents() {
       if (!isBeingUnloaded) {
         if (connectedToServer) {
           connectedToServer = false;
+          fetchEvents();
+        } else {
           updateErrors();
+          setTimeout(fetchEvents, 500);
         }
-        setTimeout(fetchEvents, 500);
       }
     });
 }

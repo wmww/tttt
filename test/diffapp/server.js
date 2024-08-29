@@ -49,7 +49,11 @@ function queueSendEvents() {
   if (!sendEventsQueued) {
     sendEventsQueued = true;
     setImmediate(() => {
-      sendEvents();
+      try {
+        sendEvents();
+      } catch (e) {
+        console.error('Sending events: ' + e);
+      }
     });
   }
 }
@@ -59,18 +63,26 @@ function sendEvents() {
   for (const [token, response] of responses) {
     const session = sessions.get(token);
     if (!session) {
-      console.error('Invalid token ' + token);
-      response.writeHead(500);
-      response.end('Invalid token');
+      try {
+        console.error('Invalid token ' + token);
+        response.writeHead(500);
+        response.end('Invalid token');
+      } catch (e) {
+        console.error('Sending invalid token response: ' + e);
+      }
       responses.delete(token);
     } else if (session.size !== 0) {
-      message = {}
-      for (const key of session) {
-        message[key] = properties.get(key);
+      try {
+        let message = {};
+        for (const key of session) {
+          message[key] = properties.get(key);
+        }
+        session.clear();
+        response.writeHead(200, { 'Content-Type': 'application/json' });
+        response.end(JSON.stringify(message), 'utf-8');
+      } catch (e) {
+        console.error('Sending events response: ' + e);
       }
-      session.clear();
-      response.writeHead(200, { 'Content-Type': 'application/json' });
-      response.end(JSON.stringify(message), 'utf-8');
       responses.delete(token);
     }
   }
@@ -310,6 +322,7 @@ class TtttRunner {
           '--show-leak-kinds=all',
           '--exit-on-first-error=yes',
           '--error-exitcode=69',
+          '--num-callers=30',
           '--quiet',
           path.join(ttttRoot, 'build', 'diffapp_runner'),
           codePath
