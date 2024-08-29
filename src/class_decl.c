@@ -122,7 +122,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
     my instance_identifier_type = lazy_type_preeval(type_identifier(c_new(IdentifierType, {
         .name = my name,
-        .type = my instance_named_type,
+        .named_type = my instance_named_type,
         .generic_params = generic_params,
     })));
 
@@ -145,7 +145,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(my class_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
     my class_identifier_type = lazy_type_preeval(type_identifier(c_new(IdentifierType, {
         .name = my name,
-        .type = my class_named_type,
+        .named_type = my class_named_type,
     })));
 
     ASSERT(!my class_named_var);

@@ -1,4 +1,5 @@
 #include "lazy_type.h"
+#include "several_types.h"
 #include "expr.h"
 #include "statement.h"
 #include "function_impl.h"
@@ -46,10 +47,14 @@ void lazy_type_evaluate(LazyType* me) {
             result = interface_decl_evaluate_type(c_container_of(me, InterfaceDecl, lazy_type));
             break;
 
-        default: UNREACHABLE;
+        case LAZY_TYPE_IDENTIFIER_TYPE:
+            result = identifier_type_evaluate_type(c_container_of(me, IdentifierType, type));
+            break;
     }
 
-    type_resolve(&result); // Ignore result, just do this so we'll pick up on self-referential types
+    if (initial_tag != LAZY_TYPE_IDENTIFIER_TYPE) {
+        type_resolve(&result); // Ignore return value, do this so we'll pick up on self-referential types
+    }
 
     switch (my tag) {
         case LAZY_TYPE_IN_FLIGHT:

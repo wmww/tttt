@@ -143,7 +143,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 ctx,
                 span_sv(&my identifier->name),
                 my identifier->name,
-                my identifier->type ? my identifier->type->full : span_null
+                my identifier->named_type ? my identifier->named_type->full : span_null
             );
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 type_compile_test_info(&i.ref->type, ctx);
@@ -329,11 +329,14 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type type = expr_get_type_and_typecheck(&my extends, nullptr);
         Type const* resolved = type_resolve_until_identifier(&type);
-        if (resolved->tag == TYPE_IDENTIFIER && resolved->identifier->type && resolved->identifier->type->is_typeof_class) {
+        if (resolved->tag == TYPE_IDENTIFIER &&
+            resolved->identifier->named_type &&
+            resolved->identifier->named_type->is_typeof_class
+        ) {
             // Extremely hacky but whatever. No idea why tsc does this.
-            resolved->identifier->type->is_typeof_class = false;
+            resolved->identifier->named_type->is_typeof_class = false;
             baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, resolved);
-            resolved->identifier->type->is_typeof_class = true;
+            resolved->identifier->named_type->is_typeof_class = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
             expr_compile_test_info(&my extends, ctx);
@@ -360,8 +363,8 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     Type const* resolved = my_type;
     if (generic_empty(&my generic)) { // If the type is not generic
         if (my_type->tag == TYPE_IDENTIFIER &&
-            my_type->identifier->type &&
-            my_type->identifier->type->is_class
+            my_type->identifier->named_type &&
+            my_type->identifier->named_type->is_class
         ) {
         } else {
             resolved = type_resolve(my_type);

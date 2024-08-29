@@ -72,9 +72,9 @@ static void collect_generic_candidates(
             return;
 
         case TYPE_IDENTIFIER:
-            if (my identifier->type) {
+            if (my identifier->named_type) {
                 c_foreach(i, vec_type_refinement, *results) {
-                    if (i.ref->target == my identifier->type) {
+                    if (i.ref->target == my identifier->named_type) {
                         i.ref->refined = arg;
                         break;
                     }
@@ -157,10 +157,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 replace_named_types_with(&i.ref->type, refinements);
             }
-            if (my identifier->type) {
+            if (my identifier->named_type) {
                 Type const* refinement = nullptr;
                 c_foreach(i, vec_type_refinement, *refinements) {
-                    if (i.ref->target == my identifier->type) {
+                    if (i.ref->target == my identifier->named_type) {
                         refinement = i.ref->refined;
                         break;
                     }

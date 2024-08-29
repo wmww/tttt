@@ -7,23 +7,25 @@
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
     vec_spanned_type_drop(&my generic_params);
-    type_drop(&my degenericized);
+    lazy_type_drop(&my type);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     return (IdentifierType){
         .namespaces = vec_span_clone(me.namespaces),
         .name = me.name,
-        .type = me.type,
+        .full_span = me.full_span,
+        .named_type = me.named_type,
         .generic_params = vec_spanned_type_clone(me.generic_params),
-        .degenericized = type_any,
+        // PERF: perhaps this should clone the type if already evaluated?
+        .type = (LazyType){ .tag = LAZY_TYPE_IDENTIFIER_TYPE },
     };
 }
 
 void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
-    if (!my type) {
-        my type = name_stack_get_type(names, span_sv(&my name));
-        if (!my type) {
+    if (!my named_type) {
+        my named_type = name_stack_get_type(names, span_sv(&my name));
+        if (!my named_type) {
             error_ctx_error(
                 errs,
                 my name,
@@ -38,17 +40,33 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
     }
 }
 
+Type identifier_type_evaluate_type(IdentifierType* me) {
+    if (my named_type) {
+        if (my named_type->generic) {
+            return generic_degenericize_type(
+                my named_type->generic,
+                type_clone(my named_type->type),
+                &my generic_params
+            );
+        } else {
+            return type_ref(&my named_type->type);
+        }
+    } else {
+        return type_any;
+    }
+}
+
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_typecheck(&i.ref->type, errs);
     }
-    if (my type) {
+    if (my named_type) {
         /*
         //This can be enabled once we're parsing the standard library
-        if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my type->generic)) {
+        if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my named_type->generic)) {
             error_ctx_error(errs, my full_span, 2315, "Type '%.*s' is not generic.", c_SV(span_sv(&my name)));
         }
-        Type const* t = type_resolve(lazy_type_resolve(&my type->type));
+        Type const* t = type_resolve(lazy_type_resolve(&my named_type->type));
         if (t->tag == TYPE_ANY && t->any.excessively_deep_error) {
             error_ctx_error(errs, my full_span, 2589, "Type instantiation is excessively deep and possibly infinite.");
         }

@@ -1,4 +1,5 @@
 #include "type.h"
+#include "lazy_type.h"
 #include "interface.h"
 #include "interface_member.h"
 #include "several_types.h"
@@ -516,43 +517,6 @@ static Type type_all_keys(TypeCtx* ctx, Type const* me) {
     }
 }
 
-static inline Type const* type_resolve_identifier_type(IdentifierType* me) {
-    if (my type) {
-        if (my type->generic) {
-            switch (my degenericized_state) {
-                // TODO: use an actual lazy type instead of duplicating it's logic here
-                case LAZY_TYPE_UNINITIALIZED:
-                    my degenericized_state = LAZY_TYPE_IN_FLIGHT;
-                    Type degenericized = generic_degenericize_type(
-                        my type->generic,
-                        type_clone(my type->type),
-                        &my generic_params
-                    );
-                    if (my degenericized_state == LAZY_TYPE_IN_FLIGHT) {
-                        my degenericized = degenericized;
-                        my degenericized_state = LAZY_TYPE_EVALUATED;
-                    } else {
-                        type_drop(&degenericized);
-                    }
-                    break;
-
-                case LAZY_TYPE_IN_FLIGHT:
-                    my degenericized = type_self_referential_error;
-                    my degenericized_state = LAZY_TYPE_EVALUATED;
-
-                case LAZY_TYPE_EVALUATED: break;
-
-                default: UNREACHABLE;
-            }
-            return &my degenericized;
-        } else {
-            return &my type->type;
-        }
-    } else {
-        return &type_any;
-    }
-}
-
 static inline Type const* type_resolve_indexed_type(TypeCtx* ctx, IndexedType* me) {
     if (!my has_cache) {
         if (my array_only && !type_extends_array(&my interface)) {
@@ -612,7 +576,7 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
         case TYPE_TUPLE:
             return nullptr;
 
-        case TYPE_IDENTIFIER: return type_resolve_identifier_type(my identifier);
+        case TYPE_IDENTIFIER: return lazy_type_get(&my identifier->type);
         case TYPE_INFERRED: return &my inferred.get->extends;
         case TYPE_INDEXED: return type_resolve_indexed_type(ctx, my indexed);
 

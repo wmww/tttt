@@ -203,7 +203,7 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    if (my type && my type->is_typeof_class) {
+    if (my named_type && my named_type->is_typeof_class) {
         display_lit(d, "typeof ");
     }
     if (d.debug) {
@@ -215,7 +215,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my type);
+        display_fmt(d, "@%p", (void*)my named_type);
     }
 
     if (!vec_spanned_type_empty(&my generic_params)) {
@@ -230,7 +230,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (d.debug) {
-        if (!my type) {
+        if (!my named_type) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }

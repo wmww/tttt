@@ -11,16 +11,26 @@ typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
     Span full_span;
-    NamedType* type;
+    NamedType* named_type;
     VecSpannedType generic_params;
-    typeof((LazyType){}.tag) degenericized_state;
-    Type degenericized; // A copy of the type with the generic parameters swapped in
+    LazyType type; // May contain a copy of the type with the generic parameters swapped in or a reference
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);
 IdentifierType identifier_type_clone(IdentifierType me);
 void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs);
+Type identifier_type_evaluate_type(IdentifierType* me);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
+
+static inline Type type_identifier(IdentifierType* identifier) {
+    if (identifier->type.tag != LAZY_TYPE_EVALUATED) {
+        identifier->type.tag = LAZY_TYPE_IDENTIFIER_TYPE;
+    }
+    return (Type){
+        .tag = TYPE_IDENTIFIER,
+        .identifier = identifier,
+    };
+}
 
 // Inferred identifier
 

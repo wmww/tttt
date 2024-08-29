@@ -100,12 +100,7 @@ static inline Type type_value(Value value) {
     };
 }
 
-static inline Type type_identifier(IdentifierType* identifier) {
-    return (Type){
-        .tag = TYPE_IDENTIFIER,
-        .identifier = identifier,
-    };
-}
+// type_identifier declared in several_types.h
 
 static inline Type type_inferred(ArcInferredType inferred) {
     return (Type){
