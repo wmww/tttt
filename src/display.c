@@ -512,9 +512,9 @@ void display_type(Display d, Type const* me) {
             }
             break;
 
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
             if (d.debug) display_colored(d, color_implicit, "{-> ");
-            display_type(d, lazy_type_get(my lazy_ptr));
+            display_type(d, lazy_type_get(my lazy));
             if (d.debug) display_colored(d, color_implicit, "}");
             break;
 

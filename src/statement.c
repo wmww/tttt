@@ -316,7 +316,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                         // up in test AST traversial (as required), but will not be typechecked (as required). This
                         // is dumb but it works.
                         i.ref->binding.has_explicit_type = false;
-                        binding_add_names(&i.ref->binding, type_lazy_ptr(&my for_each_loop->var_type), names, errs);
+                        binding_add_names(&i.ref->binding, type_lazy(&my for_each_loop->var_type), names, errs);
                         binding_resolve_names(&i.ref->binding, names, errs);
                     }
                     break;

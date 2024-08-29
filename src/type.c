@@ -151,7 +151,7 @@ void type_drop(Type* me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
         case TYPE_REF:
             break;
 
@@ -223,7 +223,7 @@ Type type_clone(Type me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
         case TYPE_REF: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
@@ -327,7 +327,7 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
             }
             break;
 
-        case TYPE_LAZY_PTR: break;
+        case TYPE_LAZY: break;
 
         case TYPE_REF:
             type_add_inferred_names(my ref, names);
@@ -393,7 +393,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
 
-        case TYPE_LAZY_PTR: // Resolving names is the responsibility of the LazyType owner
+        case TYPE_LAZY: // Resolving names is the responsibility of the LazyType owner
         case TYPE_REF: break;
     }
 }
@@ -461,7 +461,7 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             }
             break;
 
-        case TYPE_LAZY_PTR: // Typechecking is the responsibility of the LazyType owner
+        case TYPE_LAZY: // Typechecking is the responsibility of the LazyType owner
         case TYPE_REF:
             break;
     }
@@ -629,7 +629,7 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
             }
             return nullptr;
 
-        case TYPE_LAZY_PTR: return lazy_type_get(my lazy_ptr);
+        case TYPE_LAZY: return lazy_type_get(my lazy);
 
         case TYPE_REF: return my ref;
     }
@@ -696,7 +696,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
         case TYPE_REF: {
             Type const* sub_resolved = type_resolve_one_layer(ctx, sub);
             if (sub_resolved) {
@@ -880,7 +880,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
         case TYPE_REF: {
             Type const* super_resolved = type_resolve_one_layer(ctx, super);
             return type_extends_internal(
@@ -1060,8 +1060,8 @@ void type_abstract_literals(Type* me) {
             type_abstract_literals(&my abstracted->inner);
             break;
 
-        case TYPE_LAZY_PTR:
-            *me = type_clone(*lazy_type_get(my lazy_ptr));
+        case TYPE_LAZY:
+            *me = type_clone(*lazy_type_get(my lazy));
             type_abstract_literals(me);
             break;
 
@@ -1357,7 +1357,7 @@ static bool index_type_of_internal(
         case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
         case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);
     }

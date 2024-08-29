@@ -118,7 +118,7 @@ static void collect_generic_candidates(
         case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
-        case TYPE_LAZY_PTR:
+        case TYPE_LAZY:
         case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);
     }
@@ -252,8 +252,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             }
             return;
 
-        case TYPE_LAZY_PTR:
-            *me = type_clone(*lazy_type_get(my lazy_ptr));
+        case TYPE_LAZY:
+            *me = type_clone(*lazy_type_get(my lazy));
             replace_named_types_with(me, refinements);
             return;
 

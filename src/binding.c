@@ -184,7 +184,7 @@ void initialized_binding_add_names(InitializedBinding* me, bool abstract_literal
     binding_add_names(
         &my binding,
         make_type_abstracted(
-            type_lazy_ptr(&my value.lazy_type),
+            type_lazy(&my value.lazy_type),
             !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && abstract_literals
         ),
         names,

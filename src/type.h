@@ -48,7 +48,7 @@ typedef struct Type {
         TYPE_ABSTRACTED,
         TYPE_UNION,
         TYPE_INTERSECTION,
-        TYPE_LAZY_PTR,
+        TYPE_LAZY,
         TYPE_REF,
     } tag;
     union {
@@ -74,7 +74,7 @@ typedef struct Type {
         TernaryType* ternary;
         AbstractedType* abstracted;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
-        LazyType* lazy_ptr;
+        LazyType* lazy;
         Type const* ref;
     };
 } Type;
@@ -179,10 +179,10 @@ static inline Type type_abstracted(AbstractedType* abstracted) {
 
 // type_composite() and type_composite_without_simplify() declared below
 
-static inline Type type_lazy_ptr(LazyType* lazy) {
+static inline Type type_lazy(LazyType* lazy) {
     return (Type){
-        .tag = TYPE_LAZY_PTR,
-        .lazy_ptr = lazy,
+        .tag = TYPE_LAZY,
+        .lazy = lazy,
     };
 }
 

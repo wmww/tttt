@@ -215,8 +215,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             }
             break;
 
-        case TYPE_LAZY_PTR:
-            type_compile_test_info(lazy_type_get(my lazy_ptr), ctx);
+        case TYPE_LAZY:
+            type_compile_test_info(lazy_type_get(my lazy), ctx);
             break;
 
         case TYPE_REF:

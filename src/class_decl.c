@@ -46,13 +46,13 @@ bool class_item_is_static(ClassItem* me) {
 
 Type class_item_get_type(ClassItem* me) {
     switch (my tag) {
-        case CLASS_ITEM_CONSTRUCTOR: return type_lazy_ptr(&my constructor.func.lazy_type);
-        case CLASS_ITEM_MEMBER: return type_lazy_ptr(&my member.func.lazy_type);
+        case CLASS_ITEM_CONSTRUCTOR: return type_lazy(&my constructor.func.lazy_type);
+        case CLASS_ITEM_MEMBER: return type_lazy(&my member.func.lazy_type);
         case CLASS_ITEM_FIELD:
             return make_type_abstracted(
                 my field.has_explicit_type ?
                     type_ref(&my field.explicit_type) :
-                    type_lazy_ptr(&my field.value.lazy_type),
+                    type_lazy(&my field.value.lazy_type),
                 true /* maybe should be !my field.is_readonly ? */
             );
         case CLASS_ITEM_INTERFACE_MEMBER: return type_ref(&my interface_memeber.type);
@@ -103,7 +103,12 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(!my instance_named_type);
-    my instance_named_type = make_named_type(my name, my full_span, type_lazy_ptr(&my instance_type), &my generic);
+    my instance_named_type = make_named_type(
+        my name,
+        my full_span,
+        type_lazy(&my instance_type),
+        &my generic
+    );
     my instance_named_type->is_class = true;
     name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type);
 
@@ -131,15 +136,10 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     */
 
     ASSERT(!my instance_named_var);
-    my instance_named_var = make_named_variable(
-        my name,
-        my full_span,
-        type_lazy_ptr(&my instance_identifier_type),
-        nullptr
-    );
+    my instance_named_var = make_named_variable(my name, my full_span, type_lazy(&my instance_identifier_type), nullptr);
 
     ASSERT(!my class_named_type);
-    my class_named_type = make_named_type(my name, my full_span, type_lazy_ptr(&my class_type), nullptr);
+    my class_named_type = make_named_type(my name, my full_span, type_lazy(&my class_type), nullptr);
     my class_named_type->is_typeof_class = true;
 
     ASSERT(my class_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
@@ -149,12 +149,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     })));
 
     ASSERT(!my class_named_var);
-    my class_named_var = make_named_variable(
-        my name,
-        my full_span,
-        type_lazy_ptr(&my class_identifier_type),
-        &my generic
-    );
+    my class_named_var = make_named_variable(my name, my full_span, type_lazy(&my class_identifier_type), &my generic);
     name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
 
     c_foreach(i, vec_class_item, my items) {
@@ -221,7 +216,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("prototype"),
             span_null,
             false,
-            type_lazy_ptr(&my instance_identifier_type)
+            type_lazy(&my instance_identifier_type)
         ));
 
         // TODO: Use the declaration in Object of lib.es5.d.ts instead

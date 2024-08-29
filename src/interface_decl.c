@@ -17,7 +17,7 @@ void interface_decl_drop(InterfaceDecl* me) {
 void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_type);
-    my named_type = make_named_type(my name, my full_span, type_lazy_ptr(&my lazy_type), &my generic);
+    my named_type = make_named_type(my name, my full_span, type_lazy(&my lazy_type), &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
 }
 
