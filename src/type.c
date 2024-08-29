@@ -516,7 +516,85 @@ static Type type_all_keys(TypeCtx* ctx, Type const* me) {
     }
 }
 
-static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
+static inline Type const* type_resolve_identifier_type(IdentifierType* me) {
+    if (my type) {
+        if (my type->generic) {
+            switch (my degenericized_state) {
+                // TODO: use an actual lazy type instead of duplicating it's logic here
+                case LAZY_TYPE_UNINITIALIZED:
+                    my degenericized_state = LAZY_TYPE_IN_FLIGHT;
+                    Type degenericized = generic_degenericize_type(
+                        my type->generic,
+                        type_clone(my type->type),
+                        &my generic_params
+                    );
+                    if (my degenericized_state == LAZY_TYPE_IN_FLIGHT) {
+                        my degenericized = degenericized;
+                        my degenericized_state = LAZY_TYPE_EVALUATED;
+                    } else {
+                        type_drop(&degenericized);
+                    }
+                    break;
+
+                case LAZY_TYPE_IN_FLIGHT:
+                    my degenericized = type_self_referential_error;
+                    my degenericized_state = LAZY_TYPE_EVALUATED;
+
+                case LAZY_TYPE_EVALUATED: break;
+
+                default: UNREACHABLE;
+            }
+            return &my degenericized;
+        } else {
+            return &my type->type;
+        }
+    } else {
+        return &type_any;
+    }
+}
+
+static inline Type const* type_resolve_indexed_type(TypeCtx* ctx, IndexedType* me) {
+    if (!my has_cache) {
+        if (!index_type_of_internal(
+            ctx,
+            &my interface,
+            &my index,
+            span_null,
+            false,
+            nullptr,
+            &my cached
+        )) {
+            my cached = type_any;
+        }
+        my has_cache = true;
+    }
+    return &my cached;
+}
+
+static inline Type const* type_resolve_ternary_type(TypeCtx* ctx, TernaryType* me) {
+    if (my has_cache) {
+        return &my cached;
+    } else {
+        VecTypeRefinement refinements = {0};
+        Type const* ret;
+        if (type_extends_internal(ctx, &my maybe_sub, &my maybe_super, &refinements)) {
+            if (!vec_type_refinement_empty(&refinements)) {
+                my cached = type_clone(my if_true);
+                my has_cache = true;
+                replace_named_types_with(&my cached, &refinements);
+                ret = &my cached;
+            } else {
+                ret = &my if_true;
+            }
+        } else {
+            ret = &my if_false;
+        }
+        vec_type_refinement_drop(&refinements);
+        return ret;
+    }
+}
+
+static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -532,61 +610,9 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
         case TYPE_TUPLE:
             return nullptr;
 
-        case TYPE_IDENTIFIER:
-            if (my identifier->type) {
-                if (my identifier->type->generic) {
-                    switch (my identifier->degenericized_state) {
-                        // TODO: use an actual lazy type instead of duplicating it's logic here
-                        case LAZY_TYPE_UNINITIALIZED:
-                            my identifier->degenericized_state = LAZY_TYPE_IN_FLIGHT;
-                            Type degenericized = generic_degenericize_type(
-                                my identifier->type->generic,
-                                type_clone(my identifier->type->type),
-                                &my identifier->generic_params
-                            );
-                            if (my identifier->degenericized_state == LAZY_TYPE_IN_FLIGHT) {
-                                my identifier->degenericized = degenericized;
-                                my identifier->degenericized_state = LAZY_TYPE_EVALUATED;
-                            } else {
-                                type_drop(&degenericized);
-                            }
-                            break;
-
-                        case LAZY_TYPE_IN_FLIGHT:
-                            my identifier->degenericized = type_self_referential_error;
-                            my identifier->degenericized_state = LAZY_TYPE_EVALUATED;
-
-                        case LAZY_TYPE_EVALUATED: break;
-
-                        default: UNREACHABLE;
-                    }
-                    return &my identifier->degenericized;
-                } else {
-                    return &my identifier->type->type;
-                }
-            } else {
-                return &type_any;
-            }
-            UNREACHABLE;
-
+        case TYPE_IDENTIFIER: return type_resolve_identifier_type(my identifier);
         case TYPE_INFERRED: return &my inferred.get->extends;
-
-        case TYPE_INDEXED:
-            if (!my indexed->has_cache) {
-                if (!index_type_of_internal(
-                    ctx,
-                    &my indexed->interface,
-                    &my indexed->index,
-                    span_null,
-                    false,
-                    nullptr,
-                    &my indexed->cached
-                )) {
-                    my indexed->cached = type_any;
-                }
-                my indexed->has_cache = true;
-            }
-            return &my indexed->cached;
+        case TYPE_INDEXED: return type_resolve_indexed_type(ctx, my indexed);
 
         case TYPE_KEYOF:
             if (!my keyof->has_cache) {
@@ -595,27 +621,7 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
             }
             return &my keyof->cached;
 
-        case TYPE_TERNARY:
-            if (my ternary->has_cache) {
-                return &my ternary->cached;
-            } else {
-                VecTypeRefinement refinements = {0};
-                Type const* ret;
-                if (type_extends_internal(ctx, &my ternary->maybe_sub, &my ternary->maybe_super, &refinements)) {
-                    if (!vec_type_refinement_empty(&refinements)) {
-                        my ternary->cached = type_clone(my ternary->if_true);
-                        my ternary->has_cache = true;
-                        replace_named_types_with(&my ternary->cached, &refinements);
-                        ret = &my ternary->cached;
-                    } else {
-                        ret = &my ternary->if_true;
-                    }
-                } else {
-                    ret = &my ternary->if_false;
-                }
-                vec_type_refinement_drop(&refinements);
-                return ret;
-            }
+        case TYPE_TERNARY: return type_resolve_ternary_type(ctx, my ternary);
 
         case TYPE_ABSTRACTED: return abstracted_type_resolve(my abstracted);
 
@@ -636,6 +642,13 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
     UNREACHABLE;
 }
 
+Type const* type_resolve_one_layer(Type const* me) {
+    TypeCtx ctx = {0};
+    Type const* ret = type_resolve_one_layer_internal(&ctx, me);
+    type_ctx_drop(&ctx);
+    return ret;
+}
+
 static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool through_identifier) {
     if (!through_identifier && my tag == TYPE_IDENTIFIER) {
         return me;
@@ -648,7 +661,7 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
     bool currently_resolving_null = ctx->currently_resolving == nullptr;
     if (currently_resolving_null) ctx->currently_resolving = me;
 
-    Type const* tmp = type_resolve_one_layer(ctx, me);
+    Type const* tmp = type_resolve_one_layer_internal(ctx, me);
     if (tmp) {
         ctx->recursion_level++;
         me = type_resolve_internal(ctx, tmp, through_identifier);
@@ -698,7 +711,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF: {
-            Type const* sub_resolved = type_resolve_one_layer(ctx, sub);
+            Type const* sub_resolved = type_resolve_one_layer_internal(ctx, sub);
             if (sub_resolved) {
                 return type_extends_internal(ctx, sub_resolved, super, refinements);
             } else {
@@ -882,7 +895,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF: {
-            Type const* super_resolved = type_resolve_one_layer(ctx, super);
+            Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
             return type_extends_internal(
                 ctx,
                 sub,

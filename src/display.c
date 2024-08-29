@@ -384,10 +384,9 @@ static void display_interface(Display d, Interface const* me) {
 
 static void display_indexed_type(Display d, IndexedType* me) {
     if (my is_from_binding) {
-        Type t = type_any;
-        index_type_of(&my interface, &my index, span_null, false, nullptr, &t);
-        display_type(d, &t);
-        type_drop(&t);
+        Type t = type_indexed(me);
+        display_type(d, type_resolve_one_layer(&t));
+        // Didn't allocate, don't drop
     } else {
         display_type(d, &my interface);
         display_lit(d, "[");
