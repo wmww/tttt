@@ -41,6 +41,7 @@ void binding_add_names(Binding* me, Type assigned, NameStack* names, ErrorCtx* e
                         .interface = type_ref(binding_get_effective_type(me)),
                         .index = type_value(value_number(index)),
                         .is_from_binding = true,
+                        .array_only = true,
                     })),
                     names,
                     errs

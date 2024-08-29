@@ -555,7 +555,9 @@ static inline Type const* type_resolve_identifier_type(IdentifierType* me) {
 
 static inline Type const* type_resolve_indexed_type(TypeCtx* ctx, IndexedType* me) {
     if (!my has_cache) {
-        if (!index_type_of_internal(
+        if (my array_only && !type_extends_array(&my interface)) {
+            my cached = type_any;
+        } else if (!index_type_of_internal(
             ctx,
             &my interface,
             &my index,

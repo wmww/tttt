@@ -59,6 +59,7 @@ typedef struct IndexedType {
     Type interface;
     Type index;
     bool is_from_binding;
+    bool array_only;
     bool has_cache;
     Type cached; // Should be {0} if has_cache is false
 } IndexedType;

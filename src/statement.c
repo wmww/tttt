@@ -87,7 +87,7 @@ Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
 
                 case TYPE_ARRAY:
                 case TYPE_TUPLE:
-                    var_type = type_any;
+                    var_type = type_string;
                     break;
 
                 default:

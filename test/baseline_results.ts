@@ -15328,7 +15328,7 @@ const baselines = {
     'inOperator': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inOperatorWithFunction': {
         errors: true,
@@ -18413,12 +18413,12 @@ const baselines = {
     'letInLetConstDeclOfForOfAndForIn_ES5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'letInLetConstDeclOfForOfAndForIn_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'letInLetDeclarations_ES5': {
         errors: false,
@@ -18438,12 +18438,12 @@ const baselines = {
     'letInVarDeclOfForIn_ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'letInVarDeclOfForIn_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'letInVarDeclOfForOf_ES5': {
         errors: true,
@@ -29993,7 +29993,7 @@ const baselines = {
     'unusedVariablesinForLoop2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedVariablesinForLoop3': {
         errors: false,
@@ -53936,7 +53936,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53946,7 +53946,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsDestructuring3': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
