@@ -56,6 +56,37 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     type_typecheck(&my type, errs);
 }
 
+// Namespace declaration
+
+void namespace_decl_drop(NamespaceDecl* me) {
+    block_drop(&my contents);
+    lazy_type_drop(&my value_type);
+    named_variable_destroy(my value_named_type);
+}
+
+void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
+    __(errs);
+    ASSERT(!my value_named_type);
+    my value_named_type = make_named_variable(my name, my name, type_lazy(&my value_type), nullptr);
+    name_stack_add_variable_s(names, cstr_from_span(&my name), my value_named_type);
+}
+
+void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
+    my value_type.tag = LAZY_TYPE_NAMESPACE_DECL;
+    block_resolve_names(&my contents, names, errs);
+}
+
+Type namespace_decl_evaluate_type(NamespaceDecl* me) {
+    __(me);
+    return type_any;
+}
+
+void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
+    StatementCtx statement_ctx = statement_ctx_toplevel();
+    block_typecheck(&my contents, &statement_ctx, errs);
+    statement_ctx_drop(&statement_ctx);
+}
+
 // If statements
 
 czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
@@ -194,7 +225,7 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            block_drop(&my decl.namespace.contents);
+            namespace_decl_drop(&my decl.namespace);
             break;
     }
 }
@@ -226,7 +257,7 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            NONFATAL("namespace add names not implemented");
+            namespace_decl_add_names(&my decl.namespace, names, errs);
             break;
 
         case STATEMENT_NOOP:
@@ -411,7 +442,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            block_resolve_names(&my decl.namespace.contents, names, errs);
+            namespace_decl_resolve_names(&my decl.namespace, names, errs);
             break;
 
         case STATEMENT_NOOP:
@@ -649,7 +680,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            block_typecheck(&my decl.namespace.contents, ctx, errs);
+            namespace_decl_typecheck(&my decl.namespace, errs);
             break;
     }
 }

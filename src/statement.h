@@ -45,6 +45,21 @@ void type_decl_drop(TypeDecl* me);
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 
+// Namespace declaration
+
+typedef struct NamespaceDecl {
+    Span name;
+    Block contents;
+    LazyType value_type;
+    NamedVariable* value_named_type;
+} NamespaceDecl;
+
+void namespace_decl_drop(NamespaceDecl* me);
+void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
+void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
+Type namespace_decl_evaluate_type(NamespaceDecl* me);
+void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs);
+
 // If statements
 
 typedef struct IfStatement {
@@ -103,10 +118,7 @@ typedef struct Statement {
                 ClassDecl* class;
                 TypeDecl type;
                 InterfaceDecl* interface;
-                struct {
-                    Span name;
-                    Block contents;
-                } namespace;
+                NamespaceDecl namespace;
             };
         } decl;
     };

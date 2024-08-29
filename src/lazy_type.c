@@ -50,6 +50,10 @@ void lazy_type_evaluate(LazyType* me) {
         case LAZY_TYPE_IDENTIFIER_TYPE:
             result = identifier_type_evaluate_type(c_container_of(me, IdentifierType, type));
             break;
+
+        case LAZY_TYPE_NAMESPACE_DECL:
+            result = namespace_decl_evaluate_type(c_container_of(me, NamespaceDecl, value_type));
+            break;
     }
 
     if (initial_tag != LAZY_TYPE_IDENTIFIER_TYPE) {

@@ -7731,7 +7731,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLocalClassHasRequiredDeclare': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: true,
     },
@@ -7836,7 +7836,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitOfFuncspace': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
