@@ -123,9 +123,9 @@ static void display_binding_content(Display d, Binding const* me) {
             if (d.debug) {
                 if (!my identifier) {
                     display_colored(d, color_error, " /* unresolved */");
-                } else if (!my has_explicit_type && lazy_type_get(my identifier->type)) {
+                } else if (!my has_explicit_type) {
                     display_colored(d, color_implicit, " /* ");
-                    display_type(d, lazy_type_get(my identifier->type));
+                    display_type(d, &my identifier->type);
                     display_colored(d, color_implicit, " */");
                 }
             }
@@ -161,7 +161,7 @@ static void display_binding(Display d, Binding const* me) {
     display_binding_content(d, me);
     if (my has_explicit_type) {
         display_lit(d, ": ");
-        display_type(d, binding_get_type((Binding*)me));
+        display_type(d, binding_get_effective_type(me));
     }
     // If it has an implicit type that will get displayed with the binding content
 }
@@ -182,11 +182,13 @@ static void display_generic(Display d, Generic const* me) {
     c_foreach(i, vec_generic_item, my items) {
         display_colored_span(d, color_type, i.ref->name);
 
-        if (i.ref->extends_if_not_clone.tag == LAZY_TYPE_EVALUATED &&
-            i.ref->extends_if_not_clone.evaluated.tag != TYPE_ANY
-        ) {
-            display_lit(d, " extends ");
-            display_type(d, &i.ref->extends_if_not_clone.evaluated);
+        if (i.ref->extends_explicit) {
+            if (i.ref->extends.tag == TYPE_ANY) {
+                display_lit(d, " extends unknown");
+            } else {
+                display_lit(d, " extends ");
+                display_type(d, &i.ref->extends);
+            }
         }
 
         if (i.ref->fallback_explicit) {
@@ -500,7 +502,10 @@ void display_type(Display d, Type const* me) {
                     display_lit(d, " & ");
                 }
 
+                bool display_peren = i.ref->tag == TYPE_CALLABLE;
+                if (display_peren) display_lit(d, "(");
                 display_type(d, i.ref);
+                if (display_peren) display_lit(d, ")");
             }
             if (d.debug) {
                 display_colored(d, color_implicit, ")");
@@ -893,8 +898,7 @@ static void display_type_decl(Display d, TypeDecl const* me) {
     display_colored_span(d, color_name, my name);
     display_generic(d, &my generic);
     display_lit(d, " = ");
-    ASSERT(my lazy_type.tag == LAZY_TYPE_EVALUATED);
-    display_type(d, &my lazy_type.evaluated);
+    display_type(d, &my type);
 }
 
 static void display_interface_decl(Display d, InterfaceDecl const* me) {

@@ -59,7 +59,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 // Inferred identifier
 
 void inferred_type_drop(InferredType* me) {
-    lazy_type_drop(&my extends);
+    type_drop(&my extends);
     named_type_destroy(my named_type);
 }
 

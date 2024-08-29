@@ -12983,7 +12983,7 @@ const baselines = {
     'functionDeclarationWithResolutionOfTypeOfSameName01': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'functionExpressionAndLambdaMatchesFunction': {
         errors: false,
@@ -28303,7 +28303,7 @@ const baselines = {
     'typeParameterConstraints1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeParameterDiamond1': {
         errors: true,

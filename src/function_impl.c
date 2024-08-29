@@ -21,7 +21,7 @@ void function_impl_drop(FunctionImpl* me) {
 void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_var);
-    my named_var = make_named_variable(my name, my full_span, &my lazy_type, &my generic);
+    my named_var = make_named_variable(my name, my full_span, type_lazy_ptr(&my lazy_type), &my generic);
     name_stack_add_variable_s(names, cstr_from_span(&my name), my named_var);
 }
 
@@ -68,7 +68,7 @@ static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me
     c_foreach(i, vec_function_arg, my args) {
         vec_callable_arg_push(&args, (CallableArg){
             .optional = i.ref->explicit_optional || i.ref->initializer.value.tag != EXPR_IMPLICIT_ANY,
-            .type = type_ref(binding_get_type(&i.ref->initializer.binding)),
+            .type = type_ref(binding_get_effective_type(&i.ref->initializer.binding)),
             .source = i.ref, // Safe because FunctionImpls are always owned by the AST, and more args will not be added
         });
     }

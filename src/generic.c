@@ -13,7 +13,7 @@ typedef NamedType const* NamedTypeCPtr;
 #include "wrap_stc/hmap.h"
 
 void generic_item_drop(GenericItem* me) {
-    lazy_type_drop(&my extends_if_not_clone);
+    type_drop(&my extends);
     type_drop(&my fallback);
     if (my owns_named_type) {
         named_type_destroy(my named_type);
@@ -21,9 +21,7 @@ void generic_item_drop(GenericItem* me) {
 }
 
 GenericItem generic_item_clone(GenericItem me) {
-    // TODO: this feels wrong
-    ASSERT(me.extends_if_not_clone.tag = LAZY_TYPE_EVALUATED);
-    me.extends_if_not_clone = lazy_type_preeval(type_clone(me.extends_if_not_clone.evaluated));
+    me.extends = type_clone(me.extends);
     me.fallback = type_clone(me.fallback);
     me.owns_named_type = false;
     return me;
@@ -41,15 +39,14 @@ Generic generic_clone(Generic me) {
 
 void generic_resolve_names(Generic const* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
-        ASSERT(i.ref->extends_if_not_clone.tag); // *_resolve_names() should not be called on clones
         if (!i.ref->named_type) {
             i.ref->owns_named_type = true;
-            i.ref->named_type = make_named_type(i.ref->name, i.ref->name, &i.ref->extends_if_not_clone, nullptr);
+            i.ref->named_type = make_named_type(i.ref->name, i.ref->name, type_ref(&i.ref->extends), nullptr);
         }
         name_stack_add_type(names, i.ref->named_type);
     }
     c_foreach(i, vec_generic_item, my items) {
-        type_resolve_names(&i.ref->extends_if_not_clone.evaluated, names, errs);
+        type_resolve_names(&i.ref->extends, names, errs);
         type_resolve_names(&i.ref->fallback, names, errs);
     }
 }
@@ -330,8 +327,7 @@ CallableType generic_infer_callable_types(
 void generic_typecheck(Generic const* me, ErrorCtx* errs) {
     bool found_optional = false;
     c_foreach(i, vec_generic_item, my items) {
-        ASSERT(i.ref->extends_if_not_clone.tag == LAZY_TYPE_EVALUATED);
-        type_typecheck(&i.ref->extends_if_not_clone.evaluated, errs);
+        type_typecheck(&i.ref->extends, errs);
         type_typecheck(&i.ref->fallback, errs);
         if (found_optional && !i.ref->fallback_explicit) {
             error_ctx_error(

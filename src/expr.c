@@ -260,7 +260,7 @@ static Type binary_op_get_type_and_typecheck(
                     if (expr->binary_op->left.identifier.var) {
                         check_assignable_or_error(
                             &right,
-                            lazy_type_get(expr->binary_op->left.identifier.var->type),
+                            &expr->binary_op->left.identifier.var->type,
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -374,7 +374,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER:
             if (my identifier.var) {
-                ret = type_ref(lazy_type_get(my identifier.var->type));
+                ret = type_ref(&my identifier.var->type);
                 if (vec_spanned_type_size(&my identifier.generic_params)) {
                     c_foreach(i, vec_spanned_type, my identifier.generic_params) {
                         type_typecheck(&i.ref->type, errs);

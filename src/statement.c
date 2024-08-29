@@ -40,20 +40,20 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
 
 void type_decl_drop(TypeDecl* me) {
     generic_drop(&my generic);
-    lazy_type_drop(&my lazy_type);
+    type_drop(&my type);
     named_type_destroy(my named_type);
 }
 
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_type);
-    my named_type = make_named_type(my name, my full_span, &my lazy_type, &my generic);
+    my named_type = make_named_type(my name, my full_span, type_ref(&my type), &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
-    type_typecheck(lazy_type_get(&my lazy_type), errs);
+    type_typecheck(&my type, errs);
 }
 
 // If statements
@@ -246,8 +246,6 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
-    static LazyType lazy_type_any = { .tag = LAZY_TYPE_EVALUATED, .evaluated.tag = TYPE_ANY };
-
     switch (my tag) {
         case STATEMENT_BLOCK:
             block_resolve_names(&my block, names, errs);
@@ -390,7 +388,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             name_stack_push_block_frame(names);
 
             static NamedVariable this_var;
-            this_var = (NamedVariable){ .type = &lazy_type_any };
+            this_var = (NamedVariable){ .type = type_any };
             name_stack_add_variable_s(names, cstr_lit("this"), &this_var);
 
             function_impl_resolve_names(&my decl.function, names, errs);
@@ -404,8 +402,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE:
             name_stack_push_generic_frame(names, &my decl.type.generic);
-            ASSERT(my decl.type.lazy_type.tag == LAZY_TYPE_EVALUATED);
-            type_resolve_names(&my decl.type.lazy_type.evaluated, names, errs);
+            type_resolve_names(&my decl.type.type, names, errs);
             name_stack_pop_frame(names);
             break;
 

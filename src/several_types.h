@@ -27,7 +27,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 typedef struct InferredType {
     Span name;
     Span full_span;
-    LazyType extends;
+    Type extends;
     NamedType* named_type;
 } InferredType;
 

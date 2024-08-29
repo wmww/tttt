@@ -37,7 +37,7 @@ typedef struct TypeDecl {
     Span name;
     Span full_span;
     Generic generic;
-    LazyType lazy_type;
+    Type type;
     NamedType* named_type;
 } TypeDecl;
 

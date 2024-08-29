@@ -177,7 +177,7 @@ static inline Type type_abstracted(AbstractedType* abstracted) {
     };
 }
 
-// type_composite() and type_composite_without_simplify() defined below
+// type_composite() and type_composite_without_simplify() declared below
 
 static inline Type type_lazy_ptr(LazyType* lazy) {
     return (Type){

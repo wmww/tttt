@@ -507,7 +507,9 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     hop_whitespace(&p);
 
     Type extends = type_any;
+    bool extends_explicit = false;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
+        extends_explicit = true;
         hop_whitespace(&p);
         parse_type_or_set_to_default(&p, TYPE_PRECEDENCE_NULL, &extends);
         hop_whitespace(&p);
@@ -527,7 +529,8 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     *ret = (GenericItem){
         .name = name,
         .full_span = span_end(a),
-        .extends_if_not_clone = lazy_type_preeval(extends),
+        .extends_explicit = extends_explicit,
+        .extends = extends,
         .fallback_explicit = fallback_explicit,
         .fallback = fallback,
     };
@@ -792,7 +795,7 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     *ret = (InferredType){
         .name = name,
         .full_span = span_end(a),
-        .extends = lazy_type_preeval(extends),
+        .extends = extends,
     };
     return parse_success(&p);
 }
@@ -1019,7 +1022,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
         .name = name,
         .full_span = span_end(a),
         .generic = generic,
-        .lazy_type = lazy_type_preeval(type),
+        .type = type,
     };
     return parse_success(&p);
 }
@@ -1318,7 +1321,6 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
         Binding binding = {
             .tag = BINDING_IDENTIFIER,
             .content_span = lone_arg_name,
-            .explicit_type = lazy_type_preeval(type_any),
         };
         vec_function_arg_push(&ret->args, (FunctionArg){
             .span = lone_arg_name,
@@ -1923,8 +1925,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
             Binding binding;
             if (parse_binding_type_or_set_to_default(&p, &binding)) {
-                ASSERT(binding.explicit_type.tag == LAZY_TYPE_EVALUATED);
-                ret->field.explicit_type = binding.explicit_type.evaluated;
+                ret->field.explicit_type = binding.explicit_type;
                 ret->field.explicit_type_span = binding.explicit_type_span;
                 ret->field.has_explicit_type = binding.has_explicit_type;
                 hop_whitespace(&p);
@@ -2952,8 +2953,8 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     Type type;
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
-    ret->explicit_type = lazy_type_preeval(type);
-    ret->assigned_type = (LazyType){0};
+    ret->explicit_type = type;
+    ret->assigned_type = (Type){0};
     ret->explicit_type_span = span_end(a);
 
     return true;
@@ -2965,8 +2966,8 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
     } else {
         ret->explicit_type_span = span_null;
         ret->has_explicit_type = false;
-        ret->explicit_type = (LazyType){0};
-        ret->assigned_type = (LazyType){0};
+        ret->explicit_type = (Type){0};
+        ret->assigned_type = (Type){0};
         return false;
     }
 }

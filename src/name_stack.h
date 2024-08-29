@@ -1,7 +1,6 @@
 #pragma once
 
 #include "type.h"
-#include "lazy_type.h"
 #include "expr.h"
 #include "generic.h"
 
@@ -10,24 +9,23 @@ typedef struct NameStack NameStack;
 typedef struct NamedVariable {
     Span name;
     Span full;
-    LazyType* type;
+    Type type;
     Generic const* generic;
 } NamedVariable;
 
-NamedVariable* make_named_variable(Span name, Span full, LazyType* type, Generic const* generic);
+NamedVariable* make_named_variable(Span name, Span full, Type type, Generic const* generic);
 void named_variable_destroy(NamedVariable* me);
 
 typedef struct NamedType {
     Span name;
     Span full;
-    LazyType* type;
+    Type type;
     Generic const* generic;
     bool is_class;
     bool is_typeof_class;
 } NamedType;
 
-NamedType* make_named_type(Span name, Span full, LazyType* type, Generic const* generic);
-void named_type_drop(NamedType* me);
+NamedType* make_named_type(Span name, Span full, Type type, Generic const* generic);
 void named_type_destroy(NamedType* me);
 
 NameStack* name_stack_new(ErrorCtx* errs);

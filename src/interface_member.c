@@ -35,8 +35,6 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
 }
 
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
-    static LazyType lazy_type_any = { .tag = LAZY_TYPE_EVALUATED, .evaluated.tag = TYPE_ANY };
-
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
         case INTERFACE_KEY_INDEX: type_resolve_names(&my key.index, names, errs); break;
@@ -50,7 +48,7 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
                 my key.mapped.named_type = make_named_type(
                     my key.mapped.type_name,
                     my key.mapped.type_name,
-                    &lazy_type_any,
+                    type_any,
                     nullptr
                 );
             }

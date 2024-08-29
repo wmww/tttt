@@ -15,7 +15,8 @@ typedef struct vec_expr VecExpr;
 typedef struct GenericItem {
     Span name;
     Span full_span;
-    LazyType extends_if_not_clone; // Only valid for initial generic parsed by the parser and owned by the AST, not clones
+    bool extends_explicit;
+    Type extends;
     bool fallback_explicit;
     Type fallback;
     bool owns_named_type;

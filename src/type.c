@@ -270,7 +270,7 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
                 my inferred.get->named_type = make_named_type(
                     my inferred.get->name,
                     my inferred.get->name,
-                    &my inferred.get->extends,
+                    type_ref(&my inferred.get->extends),
                     nullptr
                 );
                 name_stack_add_type(names, my inferred.get->named_type);
@@ -537,12 +537,11 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
                 if (my identifier->type->generic) {
                     switch (my identifier->degenericized_state) {
                         // TODO: use an actual lazy type instead of duplicating it's logic here
-                        // B
                         case LAZY_TYPE_UNINITIALIZED:
                             my identifier->degenericized_state = LAZY_TYPE_IN_FLIGHT;
                             Type degenericized = generic_degenericize_type(
                                 my identifier->type->generic,
-                                type_clone(*lazy_type_get(my identifier->type->type)),
+                                type_clone(my identifier->type->type),
                                 &my identifier->generic_params
                             );
                             if (my identifier->degenericized_state == LAZY_TYPE_IN_FLIGHT) {
@@ -563,14 +562,14 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
                     }
                     return &my identifier->degenericized;
                 } else {
-                    return lazy_type_get(my identifier->type->type);
+                    return &my identifier->type->type;
                 }
             } else {
                 return &type_any;
             }
             UNREACHABLE;
 
-        case TYPE_INFERRED: return lazy_type_get(&my inferred.get->extends);
+        case TYPE_INFERRED: return &my inferred.get->extends;
 
         case TYPE_INDEXED:
             if (!my indexed->has_cache) {
@@ -864,7 +863,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 
         case TYPE_INFERRED:
             if (refinements) {
-                if (type_extends_internal(ctx, sub, lazy_type_get(&super->inferred.get->extends), nullptr)) {
+                if (type_extends_internal(ctx, sub, &super->inferred.get->extends, nullptr)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
                         .target = super->inferred.get->named_type,
                         .refined = sub,

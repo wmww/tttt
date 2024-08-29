@@ -103,7 +103,7 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(!my instance_named_type);
-    my instance_named_type = make_named_type(my name, my full_span, &my instance_type, &my generic);
+    my instance_named_type = make_named_type(my name, my full_span, type_lazy_ptr(&my instance_type), &my generic);
     my instance_named_type->is_class = true;
     name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type);
 
@@ -131,10 +131,15 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     */
 
     ASSERT(!my instance_named_var);
-    my instance_named_var = make_named_variable(my name, my full_span, &my instance_identifier_type, nullptr);
+    my instance_named_var = make_named_variable(
+        my name,
+        my full_span,
+        type_lazy_ptr(&my instance_identifier_type),
+        nullptr
+    );
 
     ASSERT(!my class_named_type);
-    my class_named_type = make_named_type(my name, my full_span, &my class_type, nullptr);
+    my class_named_type = make_named_type(my name, my full_span, type_lazy_ptr(&my class_type), nullptr);
     my class_named_type->is_typeof_class = true;
 
     ASSERT(my class_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
@@ -144,7 +149,12 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     })));
 
     ASSERT(!my class_named_var);
-    my class_named_var = make_named_variable(my name, my full_span, &my class_identifier_type, &my generic);
+    my class_named_var = make_named_variable(
+        my name,
+        my full_span,
+        type_lazy_ptr(&my class_identifier_type),
+        &my generic
+    );
     name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
 
     c_foreach(i, vec_class_item, my items) {
@@ -219,7 +229,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
         VecFunctionArg has_own_property_args = vec_function_arg_init();
         vec_function_arg_push(&has_own_property_args, (FunctionArg){
             .initializer.binding.has_explicit_type = true,
-            .initializer.binding.explicit_type = lazy_type_preeval(type_string),
+            .initializer.binding.explicit_type = type_string,
         });
         Type has_own_property_type = function_impl_into_type((FunctionImpl) {
             .args = has_own_property_args,

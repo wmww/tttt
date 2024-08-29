@@ -16,9 +16,7 @@
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
         baseline_test_case_add_symbol(ctx, span_sv(&i.ref->name), i.ref->name, i.ref->name);
-        if (i.ref->extends_if_not_clone.tag != LAZY_TYPE_UNINITIALIZED) {
-            type_compile_test_info(lazy_type_get(&i.ref->extends_if_not_clone), ctx);
-        }
+        type_compile_test_info(&i.ref->extends, ctx);
         if (i.ref->fallback_explicit) {
             type_compile_test_info(&i.ref->fallback, ctx);
         }
@@ -41,7 +39,7 @@ void binding_content_compile_test_info(Binding const* me, bool name_is_value, Sp
                 span_valid(&full) ? full : my content_span
             );
             if (my identifier) {
-                baseline_test_case_add_type(ctx, my content_span, binding_get_type(me));
+                baseline_test_case_add_type(ctx, my content_span, binding_get_effective_type(me));
             }
             break;
 
@@ -62,8 +60,7 @@ void binding_content_compile_test_info(Binding const* me, bool name_is_value, Sp
 void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
     binding_content_compile_test_info(me, name_is_value, scope, full, ctx);
     if (my has_explicit_type) {
-        ASSERT(my explicit_type.tag == LAZY_TYPE_EVALUATED);
-        type_compile_test_info(&my explicit_type.evaluated, ctx);
+        type_compile_test_info(&my explicit_type, ctx);
     }
 }
 
@@ -309,12 +306,11 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
     }
 }
 
-void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTestCase* ctx) {
+void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     if (span_valid(&my name)) {
         baseline_test_case_add_symbol(ctx, span_sv(&my name), my name, my full_span);
         if (is_expr) {
-            ASSERT(my class_identifier_type.tag == LAZY_TYPE_EVALUATED);
-            baseline_test_case_add_type(ctx, my name, &my class_identifier_type.evaluated);
+            baseline_test_case_add_type(ctx, my name, lazy_type_get(&my class_identifier_type));
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
                 .name = my name,
@@ -360,8 +356,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         my full_span
     );
     Type to_drop = {0};
-    ASSERT(my lazy_type.tag == LAZY_TYPE_EVALUATED);
-    Type const* my_type = &my lazy_type.evaluated;
+    Type const* my_type = &my type;
     Type const* resolved = my_type;
     if (generic_empty(&my generic)) { // If the type is not generic
         if (my_type->tag == TYPE_IDENTIFIER &&
@@ -592,7 +587,7 @@ void expr_compile_test_info(Expr const* me, BaselineTestCase* ctx) {
             ctx,
             my outer_span,
             my inner_span,
-            lazy_type_get(my identifier.var->type)
+            &my identifier.var->type
         );
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
         Type t = type_array((Type*)&type_undefined, false);
