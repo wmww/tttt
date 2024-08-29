@@ -1,6 +1,7 @@
 #pragma once
 
 #include "type.h"
+#include "lazy_type.h"
 
 typedef struct ErrorCtx ErrorCtx;
 
@@ -12,7 +13,7 @@ typedef struct IdentifierType {
     Span full_span;
     NamedType* type;
     VecSpannedType generic_params;
-    ResolveState degenericized_state;
+    typeof((LazyType){}.tag) degenericized_state;
     Type degenericized; // A copy of the type with the generic parameters swapped in
 } IdentifierType;
 
@@ -26,13 +27,16 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 typedef struct InferredType {
     Span name;
     Span full_span;
-    Type extends;
-    NamedType* type;
-    ArcNamedType inferred_type;
+    LazyType extends;
+    NamedType* named_type;
 } InferredType;
 
 void inferred_type_drop(InferredType* me);
-InferredType inferred_type_clone(InferredType me);
+
+#define i_key_class_names InferredType, inferred_type
+#define i_opt c_no_atomic
+#define i_is_forward
+#include "wrap_stc/arc.h"
 
 // Tuple
 
@@ -54,6 +58,7 @@ static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type
 typedef struct IndexedType {
     Type interface;
     Type index;
+    bool is_from_binding;
     bool has_cache;
     Type cached; // Should be {0} if has_cache is false
 } IndexedType;
@@ -89,3 +94,27 @@ typedef struct TernaryType {
 
 void ternary_type_drop(TernaryType* me);
 TernaryType ternary_type_clone(TernaryType me);
+
+// Abstracted
+
+typedef struct AbstractedType {
+    Type inner;
+    bool abstract_literals;
+    bool has_cache;
+    Type cached;
+} AbstractedType;
+
+void abstracted_type_drop(AbstractedType* me);
+AbstractedType abstracted_type_clone(AbstractedType me);
+Type const* abstracted_type_resolve(AbstractedType* me);
+
+static inline Type make_type_abstracted(Type inner, bool abstract_literals) {
+    if (abstract_literals) {
+        return type_abstracted(c_new(AbstractedType, {
+            .inner = inner,
+            .abstract_literals = abstract_literals,
+        }));
+    } else {
+        return inner;
+    }
+}

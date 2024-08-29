@@ -44,19 +44,36 @@ bool class_item_is_static(ClassItem* me) {
     UNREACHABLE;
 }
 
+Type class_item_get_type(ClassItem* me) {
+    switch (my tag) {
+        case CLASS_ITEM_CONSTRUCTOR: return type_lazy_ptr(&my constructor.func.lazy_type);
+        case CLASS_ITEM_MEMBER: return type_lazy_ptr(&my member.func.lazy_type);
+        case CLASS_ITEM_FIELD:
+            return make_type_abstracted(
+                my field.has_explicit_type ?
+                    type_ref(&my field.explicit_type) :
+                    type_lazy_ptr(&my field.value.lazy_type),
+                true /* maybe should be !my field.is_readonly ? */
+            );
+        case CLASS_ITEM_INTERFACE_MEMBER: return type_ref(&my interface_memeber.type);
+        case CLASS_ITEM_STATIC_BLOCK: return type_never;
+    }
+    UNREACHABLE;
+}
+
 void class_decl_drop(ClassDecl* me) {
     generic_drop(&my generic);
     expr_drop(&my extends);
     vec_type_drop(&my implements);
     vec_class_item_drop(&my items);
-    type_drop(&my instance_type);
-    type_drop(&my class_type);
+    lazy_type_drop(&my instance_type);
+    lazy_type_drop(&my class_type);
     named_type_destroy(my instance_named_type);
     named_type_destroy(my class_named_type);
     named_variable_destroy(my instance_named_var);
     named_variable_destroy(my class_named_var);
-    type_drop(&my instance_identifier_type);
-    type_drop(&my class_identifier_type);
+    lazy_type_drop(&my instance_identifier_type);
+    lazy_type_drop(&my class_identifier_type);
 }
 
 void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
@@ -86,60 +103,49 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(!my instance_named_type);
-    my instance_named_type = make_named_type(my name, my full_span, lazy_type_class_instance(me), &my generic);
+    my instance_named_type = make_named_type(my name, my full_span, &my instance_type, &my generic);
     my instance_named_type->is_class = true;
     name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type);
 
-    ASSERT(!my instance_named_var);
-    VecSpannedType generic_params = {0};
-    c_foreach(i, vec_generic_item, my generic.items) {
-        // Is it the fallback type, always any or something else? unclear.
-        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
-    }
-    my instance_named_var = make_named_variable(
-        my name,
-        my full_span,
-        lazy_type_value(type_identifier(c_new(IdentifierType, {
-            .name = my name,
-            .type = my instance_named_type,
-            .generic_params = generic_params,
-        }))),
-        nullptr
-    );
+    VecSpannedType generic_params; // Used multiple times
 
-    ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
+    ASSERT(my instance_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
     generic_params = (VecSpannedType){0};
     c_foreach(i, vec_generic_item, my generic.items) {
         // Is it the fallback type, always any or something else? unclear.
         vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
     }
-    my instance_identifier_type = type_identifier(c_new(IdentifierType, {
+    my instance_identifier_type = lazy_type_preeval(type_identifier(c_new(IdentifierType, {
         .name = my name,
         .type = my instance_named_type,
         .generic_params = generic_params,
-    }));
+    })));
+
+    /*
+     * TODO: this supposed to be used somewhere?
+    generic_params = (VecSpannedType){0};
+    c_foreach(i, vec_generic_item, my generic.items) {
+        // Is it the fallback type, always any or something else? unclear.
+        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
+    }
+    */
+
+    ASSERT(!my instance_named_var);
+    my instance_named_var = make_named_variable(my name, my full_span, &my instance_identifier_type, nullptr);
 
     ASSERT(!my class_named_type);
-    my class_named_type = make_named_type(my name, my full_span, lazy_type_class_class(me), nullptr);
+    my class_named_type = make_named_type(my name, my full_span, &my class_type, nullptr);
     my class_named_type->is_typeof_class = true;
 
-    ASSERT(!my class_named_var);
-    my class_named_var = make_named_variable(
-        my name,
-        my full_span,
-        lazy_type_value(type_identifier(c_new(IdentifierType, {
-            .name = my name,
-            .type = my class_named_type,
-        }))),
-        &my generic
-    );
-    name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
-
-    ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
-    my class_identifier_type = type_identifier(c_new(IdentifierType, {
+    ASSERT(my class_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
+    my class_identifier_type = lazy_type_preeval(type_identifier(c_new(IdentifierType, {
         .name = my name,
         .type = my class_named_type,
-    }));
+    })));
+
+    ASSERT(!my class_named_var);
+    my class_named_var = make_named_variable(my name, my full_span, &my class_identifier_type, &my generic);
+    name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
 
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -154,12 +160,15 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             }
             ASSERT(i.ref->constructor.func.ret.tag == TYPE_ANY);
             i.ref->constructor.func.ret_explicit = true;
-            i.ref->constructor.func.ret = type_clone(my instance_identifier_type);
+            i.ref->constructor.func.ret = type_ref(lazy_type_get(&my instance_identifier_type));
         }
     }
 }
 
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+    my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
+    my class_type.tag = LAZY_TYPE_CLASS_CLASS;
+
     name_stack_push_generic_frame(names, &my generic);
 
     expr_resolve_names(&my extends, names, errs);
@@ -190,26 +199,8 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     name_stack_pop_frame(names); // generics
 }
 
-Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
+Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
-
-    ResolveState* const resolve_state = resolve_instance ? &my instance_resolve_state : &my class_resolve_state;
-    Type* const type = resolve_instance ? &my instance_type : &my class_type;
-
-    switch (*resolve_state) {
-        case RESOLVE_STATE_UNINITIALIZED:
-            break;
-
-        case RESOLVE_STATE_IN_FLIGHT:
-            *type = type_self_referential_error;
-            *resolve_state = RESOLVE_STATE_DONE;
-            break;
-
-        case RESOLVE_STATE_DONE:
-            return type;
-    }
-
-    *resolve_state = RESOLVE_STATE_IN_FLIGHT;
 
     if (!resolve_instance) {
         vec_interface_member_push(&interface.members, interface_member_make(
@@ -220,7 +211,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("prototype"),
             span_null,
             false,
-            lazy_type_ref(&my instance_identifier_type)
+            type_lazy_ptr(&my instance_identifier_type)
         ));
 
         // TODO: Use the declaration in Object of lib.es5.d.ts instead
@@ -228,7 +219,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
         VecFunctionArg has_own_property_args = vec_function_arg_init();
         vec_function_arg_push(&has_own_property_args, (FunctionArg){
             .initializer.binding.has_explicit_type = true,
-            .initializer.binding.explicit_type = type_string,
+            .initializer.binding.explicit_type = lazy_type_preeval(type_string),
         });
         Type has_own_property_type = function_impl_into_type((FunctionImpl) {
             .args = has_own_property_args,
@@ -243,7 +234,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("hasOwnProperty"),
             span_null,
             false,
-            lazy_type_value(has_own_property_type)
+            has_own_property_type
         ));
     }
 
@@ -258,7 +249,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                         .origin_interface_name = my name,
                         .key.span = i.ref->constructor.name_span,
                         .key.tag = INTERFACE_KEY_CALLABLE,
-                        .type = lazy_type_function(&i.ref->constructor.func),
+                        .type = class_item_get_type(i.ref),
                     };
                     vec_interface_member_push(&interface.members, member);
                 }
@@ -274,7 +265,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                         cstr_clone(i.ref->member.name_string),
                         i.ref->member.name_span,
                         i.ref->member.name_is_value,
-                        lazy_type_function(&i.ref->member.func)
+                        class_item_get_type(i.ref)
                     );
                     vec_interface_member_push(&interface.members, member);
                 }
@@ -282,9 +273,6 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
 
             case CLASS_ITEM_FIELD:
                 if (i.ref->field.is_static != resolve_instance) {
-                    LazyType type = i.ref->field.has_explicit_type ?
-                        lazy_type_ref(&i.ref->field.explicit_type) :
-                        lazy_type_expr(&i.ref->field.value, true, true);
                     InterfaceMember field = interface_member_make(
                         i.ref->span,
                         my name,
@@ -293,7 +281,7 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
                         cstr_clone(i.ref->field.name_string),
                         i.ref->field.name_span,
                         i.ref->field.name_is_value,
-                        type
+                        class_item_get_type(i.ref)
                     );
                     vec_interface_member_push(&interface.members, field);
                 }
@@ -311,25 +299,19 @@ Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance) {
 
     if (!resolve_instance && !has_constructor) {
         FunctionImpl constructor = {
-            .ret = type_clone(my instance_identifier_type),
+            .ret = type_ref(lazy_type_get(&my instance_identifier_type)),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
         };
         InterfaceMember member = {
             .origin_interface_name = my name,
             .key.tag = INTERFACE_KEY_CALLABLE,
-            .type = lazy_type_value(function_impl_into_type(constructor)),
+            .type = function_impl_into_type(constructor),
         };
         vec_interface_member_push(&interface.members, member);
     }
 
-    if (*resolve_state == RESOLVE_STATE_IN_FLIGHT) {
-        *resolve_state = RESOLVE_STATE_DONE;
-        *type = type_interface(interface);
-    } else {
-        interface_drop(&interface);
-    }
-    return type;
+    return type_interface(interface);
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
@@ -339,8 +321,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     my has_typechecked = true;
 
     generic_typecheck(&my generic, errs);
-    type_typecheck(class_decl_resolve_type(me, true), errs);
-    type_typecheck(class_decl_resolve_type(me, false), errs);
+    type_typecheck(lazy_type_get(&my instance_type), errs);
+    type_typecheck(lazy_type_get(&my class_type), errs);
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         Type extends_type = expr_get_type_and_typecheck(&my extends, errs);

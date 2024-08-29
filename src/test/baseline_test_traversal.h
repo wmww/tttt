@@ -10,6 +10,6 @@ typedef struct BaselineTestCase BaselineTestCase;
 
 void type_compile_test_info(Type const* me, BaselineTestCase* ctx);
 void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx);
-void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx);
-void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx);
+void expr_compile_test_info(Expr const* me, BaselineTestCase* ctx);
+void statement_compile_test_info(Statement* me, BaselineTestCase* ctx);
 void block_compile_test_info(Block const* me, BaselineTestCase* ctx);

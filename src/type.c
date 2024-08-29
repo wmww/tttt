@@ -44,7 +44,7 @@ static bool type_extends_internal(
     Type const* super,
     VecTypeRefinement* refinements
 );
-static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me);
+static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool through_identifier);
 static bool index_type_of_internal(
     TypeCtx* ctx,
     Type const* me,
@@ -151,6 +151,7 @@ void type_drop(Type* me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_LAZY_PTR:
         case TYPE_REF:
             break;
 
@@ -164,8 +165,7 @@ void type_drop(Type* me) {
             break;
 
         case TYPE_INFERRED:
-            inferred_type_drop(my inferred);
-            free(my inferred);
+            arc_inferred_type_drop(&my inferred);
             break;
 
         case TYPE_CALLABLE:
@@ -201,6 +201,11 @@ void type_drop(Type* me) {
             free(my ternary);
             break;
 
+        case TYPE_ABSTRACTED:
+            abstracted_type_drop(my abstracted);
+            free(my abstracted);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             vec_type_drop(&my composite);
@@ -218,10 +223,11 @@ Type type_clone(Type me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_LAZY_PTR:
         case TYPE_REF: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
-        case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
+        case TYPE_INFERRED: return type_inferred(arc_inferred_type_clone(me.inferred));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array.element)), me.array.readonly);
@@ -229,6 +235,7 @@ Type type_clone(Type me) {
         case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
         case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
+        case TYPE_ABSTRACTED: return type_abstracted(c_new(AbstractedType, abstracted_type_clone(*me.abstracted)));
         case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
     }
     UNREACHABLE;
@@ -257,33 +264,29 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
             break;
 
         case TYPE_INFERRED:
-            if (my inferred->inferred_type.get) {
+            if (my inferred.get->named_type) {
                 NONFATAL("Inferred type added multiple times");
             } else {
-                my inferred->inferred_type = arc_named_type_from_ptr(make_named_type(
-                    my inferred->name,
-                    my inferred->name,
-                    lazy_type_value(type_clone(my inferred->extends)),
+                my inferred.get->named_type = make_named_type(
+                    my inferred.get->name,
+                    my inferred.get->name,
+                    &my inferred.get->extends,
                     nullptr
-                ));
-                my inferred->type = my inferred->inferred_type.get;
-                name_stack_add_type(names, my inferred->type);
+                );
+                name_stack_add_type(names, my inferred.get->named_type);
             }
             break;
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_arg, my callable->args) {
-                type_add_inferred_names(lazy_type_resolve(&i.ref->type), names);
+                type_add_inferred_names(&i.ref->type, names);
             }
             type_add_inferred_names(&my callable->ret, names);
             break;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                Type const* member = lazy_type_try_get(&i.ref->type);
-                if (member) {
-                    type_add_inferred_names(member, names);
-                }
+                type_add_inferred_names(&i.ref->type, names);
             }
             break;
 
@@ -313,6 +316,10 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
             type_add_inferred_names(&my ternary->if_false, names);
             break;
 
+        case TYPE_ABSTRACTED:
+            type_add_inferred_names(&my abstracted->inner, names);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -320,7 +327,11 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
             }
             break;
 
-        case TYPE_REF: break;
+        case TYPE_LAZY_PTR: break;
+
+        case TYPE_REF:
+            type_add_inferred_names(my ref, names);
+            break;
     }
 }
 
@@ -371,6 +382,10 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             type_resolve_names(&my ternary->if_false, names, errs);
             break;
 
+        case TYPE_ABSTRACTED:
+            type_resolve_names(&my abstracted->inner, names, errs);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -378,6 +393,7 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
 
+        case TYPE_LAZY_PTR: // Resolving names is the responsibility of the LazyType owner
         case TYPE_REF: break;
     }
 }
@@ -434,6 +450,10 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             type_typecheck(&my ternary->if_false, errs);
             break;
 
+        case TYPE_ABSTRACTED:
+            type_typecheck(&my abstracted->inner, errs);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -441,13 +461,14 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             }
             break;
 
+        case TYPE_LAZY_PTR: // Typechecking is the responsibility of the LazyType owner
         case TYPE_REF:
             break;
     }
 }
 
 static Type type_all_keys(TypeCtx* ctx, Type const* me) {
-    me = type_resolve_internal(ctx, me);
+    me = type_resolve_internal(ctx, me, true);
 
     switch (my tag) {
         case TYPE_ANY:
@@ -497,41 +518,59 @@ static Type type_all_keys(TypeCtx* ctx, Type const* me) {
 
 static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
     switch (my tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_VALUE:
+        case TYPE_CALLABLE:
+        case TYPE_INTERFACE:
+        case TYPE_ARRAY:
+        case TYPE_TUPLE:
+            return nullptr;
+
         case TYPE_IDENTIFIER:
             if (my identifier->type) {
                 if (my identifier->type->generic) {
                     switch (my identifier->degenericized_state) {
-                        case RESOLVE_STATE_UNINITIALIZED:
-                            my identifier->degenericized_state = RESOLVE_STATE_IN_FLIGHT;
+                        // TODO: use an actual lazy type instead of duplicating it's logic here
+                        // B
+                        case LAZY_TYPE_UNINITIALIZED:
+                            my identifier->degenericized_state = LAZY_TYPE_IN_FLIGHT;
                             Type degenericized = generic_degenericize_type(
                                 my identifier->type->generic,
-                                type_clone(*lazy_type_resolve(&my identifier->type->type)),
+                                type_clone(*lazy_type_get(my identifier->type->type)),
                                 &my identifier->generic_params
                             );
-                            if (my identifier->degenericized_state == RESOLVE_STATE_IN_FLIGHT) {
+                            if (my identifier->degenericized_state == LAZY_TYPE_IN_FLIGHT) {
                                 my identifier->degenericized = degenericized;
-                                my identifier->degenericized_state = RESOLVE_STATE_DONE;
+                                my identifier->degenericized_state = LAZY_TYPE_EVALUATED;
                             } else {
                                 type_drop(&degenericized);
                             }
                             break;
 
-                        case RESOLVE_STATE_IN_FLIGHT:
+                        case LAZY_TYPE_IN_FLIGHT:
                             my identifier->degenericized = type_self_referential_error;
-                            my identifier->degenericized_state = RESOLVE_STATE_DONE;
+                            my identifier->degenericized_state = LAZY_TYPE_EVALUATED;
 
-                        case RESOLVE_STATE_DONE: break;
+                        case LAZY_TYPE_EVALUATED: break;
+
+                        default: UNREACHABLE;
                     }
                     return &my identifier->degenericized;
                 } else {
-                    return lazy_type_resolve(&my identifier->type->type);
+                    return lazy_type_get(my identifier->type->type);
                 }
             } else {
                 return &type_any;
             }
             UNREACHABLE;
 
-        case TYPE_INFERRED: return &my inferred->extends;
+        case TYPE_INFERRED: return lazy_type_get(&my inferred.get->extends);
 
         case TYPE_INDEXED:
             if (!my indexed->has_cache) {
@@ -579,24 +618,30 @@ static Type const* type_resolve_one_layer(TypeCtx* ctx, Type const* me) {
                 return ret;
             }
 
+        case TYPE_ABSTRACTED: return abstracted_type_resolve(my abstracted);
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                Type const* resolved = type_resolve_internal(ctx, i.ref);
+                Type const* resolved = type_resolve_internal(ctx, i.ref, true);
                 if (resolved->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
                     return resolved;
                 }
             }
             return nullptr;
 
-        case TYPE_REF: return my ref;
+        case TYPE_LAZY_PTR: return lazy_type_get(my lazy_ptr);
 
-        default: return nullptr;
+        case TYPE_REF: return my ref;
     }
     UNREACHABLE;
 }
 
-static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me) {
+static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool through_identifier) {
+    if (!through_identifier && my tag == TYPE_IDENTIFIER) {
+        return me;
+    }
+
     if (ctx->recursion_level > 50 || ctx->currently_resolving == me) {
         return &type_excessively_deep_error;
     }
@@ -607,7 +652,7 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me) {
     Type const* tmp = type_resolve_one_layer(ctx, me);
     if (tmp) {
         ctx->recursion_level++;
-        me = type_resolve_internal(ctx, tmp);
+        me = type_resolve_internal(ctx, tmp, through_identifier);
         ctx->recursion_level--;
     }
 
@@ -617,7 +662,14 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me) {
 
 Type const* type_resolve(Type const* me) {
     TypeCtx ctx = {0};
-    Type const* ret = type_resolve_internal(&ctx, me);
+    Type const* ret = type_resolve_internal(&ctx, me, true);
+    type_ctx_drop(&ctx);
+    return ret;
+}
+
+Type const* type_resolve_until_identifier(Type const* me) {
+    TypeCtx ctx = {0};
+    Type const* ret = type_resolve_internal(&ctx, me, false);
     type_ctx_drop(&ctx);
     return ret;
 }
@@ -644,6 +696,8 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
+        case TYPE_ABSTRACTED:
+        case TYPE_LAZY_PTR:
         case TYPE_REF: {
             Type const* sub_resolved = type_resolve_one_layer(ctx, sub);
             if (sub_resolved) {
@@ -697,7 +751,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                     if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
                         if (type_extends_internal(
                             ctx,
-                            lazy_type_resolve(&i.ref->type),
+                            &i.ref->type,
                             super,
                             refinements
                         )) {
@@ -715,8 +769,8 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                     // Order is flipped for arguments
                     if (!type_extends_internal(
                         ctx,
-                        lazy_type_resolve(&vec_callable_arg_at_mut(&sub->callable->args, i)->type),
-                        lazy_type_resolve(&vec_callable_arg_at_mut(&super->callable->args, i)->type),
+                        &vec_callable_arg_at_mut(&sub->callable->args, i)->type,
+                        &vec_callable_arg_at_mut(&super->callable->args, i)->type,
                         refinements
                     )) {
                         return false;
@@ -738,7 +792,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                         if (index_type_of_internal(ctx, sub, &key, span_null, false, nullptr, &prop)) {
                             // TODO: pass in refinements, but first make refinements own it's types
                             // (will fix nondistributiveConditionalTypeInfer)
-                            if (!type_extends_internal(ctx, &prop, lazy_type_resolve(&i.ref->type), nullptr)) {
+                            if (!type_extends_internal(ctx, &prop, &i.ref->type, nullptr)) {
                                 type_drop(&prop);
                                 return false;
                             }
@@ -810,9 +864,9 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 
         case TYPE_INFERRED:
             if (refinements) {
-                if (type_extends_internal(ctx, sub, &super->inferred->extends, nullptr)) {
+                if (type_extends_internal(ctx, sub, lazy_type_get(&super->inferred.get->extends), nullptr)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
-                        .target = super->inferred->type,
+                        .target = super->inferred.get->named_type,
                         .refined = sub,
                     });
                     return true;
@@ -826,6 +880,8 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
+        case TYPE_ABSTRACTED:
+        case TYPE_LAZY_PTR:
         case TYPE_REF: {
             Type const* super_resolved = type_resolve_one_layer(ctx, super);
             return type_extends_internal(
@@ -998,6 +1054,18 @@ void type_abstract_literals(Type* me) {
             }
         }   break;
 
+        case TYPE_ABSTRACTED:
+            type_drop(&my abstracted->cached);
+            my abstracted->cached = (Type){0};
+            my abstracted->has_cache = false;
+            type_abstract_literals(&my abstracted->inner);
+            break;
+
+        case TYPE_LAZY_PTR:
+            *me = type_clone(*lazy_type_get(my lazy_ptr));
+            type_abstract_literals(me);
+            break;
+
         case TYPE_REF:
             *me = type_clone(*my ref);
             type_abstract_literals(me);
@@ -1050,7 +1118,7 @@ static bool index_type_of_internal(
         return false;
     }
 
-    index = type_resolve_internal(ctx, index);
+    index = type_resolve_internal(ctx, index, true);
     bool index_invalid = false;
 
     switch (index->tag) {
@@ -1106,7 +1174,7 @@ static bool index_type_of_internal(
     }
 
     Type const* me_original = me;
-    me = type_resolve_internal(ctx, me);
+    me = type_resolve_internal(ctx, me, true);
     if (type_is_self_referential(me)) {
         return false;
     }
@@ -1163,7 +1231,7 @@ static bool index_type_of_internal(
                                 ctx,
                                 TYPE_UNION,
                                 comp,
-                                type_clone(*lazy_type_resolve(&i.ref->type))
+                                type_clone(i.ref->type)
                             );
                             if (i.ref->optional) {
                                 comp = type_composite_internal(ctx, TYPE_UNION, comp, type_undefined);
@@ -1178,7 +1246,7 @@ static bool index_type_of_internal(
                                 ctx,
                                 TYPE_UNION,
                                 comp,
-                                type_clone(*lazy_type_resolve(&i.ref->type))
+                                type_clone(i.ref->type)
                             );
                             if (i.ref->optional) {
                                 comp = type_composite_internal(ctx, TYPE_UNION, comp, type_undefined);
@@ -1289,6 +1357,8 @@ static bool index_type_of_internal(
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
+        case TYPE_ABSTRACTED:
+        case TYPE_LAZY_PTR:
         case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);
     }
@@ -1365,7 +1435,7 @@ static intptr_t min_args_of_callable(CallableType* me) {
     intptr_t args_size = vec_callable_arg_size(&my args);
     intptr_t ret = args_size;
     if (args_size && vec_callable_arg_at(&my args, args_size - 1)->source->rest) {
-        Type const* arg_type = lazy_type_resolve(&vec_callable_arg_at_mut(&my args, args_size - 1)->type);
+        Type const* arg_type = type_resolve(&vec_callable_arg_at_mut(&my args, args_size - 1)->type);
         if (arg_type->tag == TYPE_TUPLE && vec_tuple_element_size(&arg_type->tuple.elements) > 0) {
             // TODO: account for rest arguments within tuple
             return args_size - 1 + vec_tuple_element_size(&arg_type->tuple.elements);
@@ -1383,10 +1453,9 @@ static intptr_t max_args_of_callable(CallableType* me) {
     intptr_t args_size = vec_callable_arg_size(&my args);
     CallableArg* last_arg = args_size ? vec_callable_arg_at_mut(&my args, args_size - 1) : nullptr;
     if (last_arg && last_arg->source->rest) {
-        Type const* last_arg_type = lazy_type_resolve(&last_arg->type);
-        if (last_arg_type->tag == TYPE_TUPLE) {
+        if (last_arg->type.tag == TYPE_TUPLE) {
             // TODO: account for rest arguments within tuple
-            return args_size - 1 + vec_tuple_element_size(&last_arg_type->tuple.elements);
+            return args_size - 1 + vec_tuple_element_size(&last_arg->type.tuple.elements);
         } else {
             return INTPTR_MAX;
         }
@@ -1512,7 +1581,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                         "Argument of type",
                         &arg_type,
                         "parameter of type",
-                        lazy_type_resolve(&arg->type),
+                        &arg->type,
                         2345,
                         i.ref->outer_span,
                         errs
@@ -1536,7 +1605,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                         "Argument of type",
                         &rest_type,
                         "parameter of type",
-                        lazy_type_resolve(&arg->type),
+                        &arg->type,
                         2345,
                         span_valid(&rest_span) ? rest_span : span,
                         errs
@@ -1549,11 +1618,6 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             callable_type_drop(&inferred);
             return ret;
         }
-
-        case TYPE_IDENTIFIER:
-        case TYPE_INDEXED:
-        case TYPE_TERNARY:
-            UNREACHABLE; // Should be handled by resolve
 
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
@@ -1572,7 +1636,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             c_foreach(i, vec_interface_member, my interface.members) {
                 // TODO: add to overload list instead of selecting first option
                 if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    return type_typecheck_call(lazy_type_resolve(&i.ref->type), call, span, errs);
+                    return type_typecheck_call(&i.ref->type, call, span, errs);
                 }
             }
             break;

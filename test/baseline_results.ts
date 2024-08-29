@@ -8973,7 +8973,7 @@ const baselines = {
     'destructuringWithNewExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringWithNumberLiteral': {
         errors: true,
@@ -13848,7 +13848,7 @@ const baselines = {
     'genericConstraintSatisfaction1': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'genericConstructInvocationWithNoTypeArg': {
         errors: true,
@@ -14041,7 +14041,7 @@ const baselines = {
         types: false,
     },
     'genericInterfaceFunctionTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15541,7 +15541,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessCanBeHighOrder': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20501,7 +20501,7 @@ const baselines = {
         types: false,
     },
     'narrowRefinedConstLikeParameterBIndingElementNameInInnerScope': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -24356,7 +24356,7 @@ const baselines = {
         types: false,
     },
     'recursiveInference1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25793,12 +25793,12 @@ const baselines = {
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern3': {
         errors: false,
@@ -26403,7 +26403,7 @@ const baselines = {
     'strictModeUseContextualKeyword': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictModeWordInExportDeclaration': {
         errors: false,
@@ -28471,7 +28471,7 @@ const baselines = {
         types: false,
     },
     'typePredicateStructuralMatch': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29091,7 +29091,7 @@ const baselines = {
         types: true,
     },
     'unionTypeParameterInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30291,7 +30291,7 @@ const baselines = {
         types: true,
     },
     'voidUndefinedReduction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31881,7 +31881,7 @@ const baselines = {
         types: false,
     },
     'classExpression4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33932,7 +33932,7 @@ const baselines = {
     },
     'controlFlowElementAccessNoCrash1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowForInStatement': {
@@ -37838,7 +37838,7 @@ const baselines = {
     'objectBindingPatternKeywordIdentifiers05': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectBindingPatternKeywordIdentifiers06': {
         errors: true,
@@ -42341,7 +42341,7 @@ const baselines = {
         types: false,
     },
     'functionExpressionContextualTyping3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -16,7 +16,9 @@
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
         baseline_test_case_add_symbol(ctx, span_sv(&i.ref->name), i.ref->name, i.ref->name);
-        type_compile_test_info(&i.ref->extends, ctx);
+        if (i.ref->extends_if_not_clone.tag != LAZY_TYPE_UNINITIALIZED) {
+            type_compile_test_info(lazy_type_get(&i.ref->extends_if_not_clone), ctx);
+        }
         if (i.ref->fallback_explicit) {
             type_compile_test_info(&i.ref->fallback, ctx);
         }
@@ -39,7 +41,7 @@ void binding_content_compile_test_info(Binding const* me, bool name_is_value, Sp
                 span_valid(&full) ? full : my content_span
             );
             if (my identifier) {
-                baseline_test_case_add_type(ctx, my content_span, lazy_type_resolve(&my identifier->type));
+                baseline_test_case_add_type(ctx, my content_span, binding_get_type(me));
             }
             break;
 
@@ -60,7 +62,8 @@ void binding_content_compile_test_info(Binding const* me, bool name_is_value, Sp
 void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
     binding_content_compile_test_info(me, name_is_value, scope, full, ctx);
     if (my has_explicit_type) {
-        type_compile_test_info(&my explicit_type, ctx);
+        ASSERT(my explicit_type.tag == LAZY_TYPE_EVALUATED);
+        type_compile_test_info(&my explicit_type.evaluated, ctx);
     }
 }
 
@@ -73,7 +76,7 @@ void initialized_binding_compile_test_info(
 ) {
     binding_compile_test_info(&my binding, name_is_value, scope, full, ctx);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
-        expr_compile_test_info(&my value, my binding.tag != BINDING_ARRAY, ctx);
+        expr_compile_test_info(&my value, ctx);
     }
 }
 
@@ -88,7 +91,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 my key.name_is_value,
                 my span
             );
-            baseline_test_case_add_type(ctx, my key.span, lazy_type_assert_get(&my type));
+            baseline_test_case_add_type(ctx, my key.span, &my type);
             break;
 
         case INTERFACE_KEY_INDEX:
@@ -98,7 +101,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_EXPR:
-            expr_compile_test_info(my key.expr.get, true, ctx);
+            expr_compile_test_info(my key.expr.get, ctx);
             break;
 
         case INTERFACE_KEY_MAPPED:
@@ -114,7 +117,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
 
         case INTERFACE_KEY_CALLABLE: break;
     }
-    type_compile_test_info(lazy_type_assert_get(&my type), ctx);
+    type_compile_test_info(&my type, ctx);
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {
@@ -153,9 +156,9 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_INFERRED:
             baseline_test_case_add_symbol(
                 ctx,
-                span_sv(&my inferred->name),
-                my inferred->name,
-                my inferred->type ? my inferred->type->full : span_null
+                span_sv(&my inferred.get->name),
+                my inferred.get->name,
+                my inferred.get->named_type ? my inferred.get->named_type->full : span_null
             );
             break;
 
@@ -170,7 +173,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                     ctx
                 );
                 if (i.ref->source->initializer.binding.has_explicit_type) {
-                    type_compile_test_info(lazy_type_resolve(&i.ref->type), ctx);
+                    type_compile_test_info(&i.ref->type, ctx);
                 }
             }
             type_compile_test_info(&my callable->ret, ctx);
@@ -204,11 +207,19 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             type_compile_test_info(&my ternary->if_false, ctx);
             break;
 
+        case TYPE_ABSTRACTED:
+            type_compile_test_info(&my abstracted->inner, ctx);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
                 type_compile_test_info(i.ref, ctx);
             }
+            break;
+
+        case TYPE_LAZY_PTR:
+            type_compile_test_info(lazy_type_get(my lazy_ptr), ctx);
             break;
 
         case TYPE_REF:
@@ -217,7 +228,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
     }
 }
 
-void function_impl_compile_test_info(FunctionImpl const* me, Span scope, BaselineTestCase* ctx) {
+void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestCase* ctx) {
     if (span_valid(&my name)) {
         baseline_test_case_add_symbol_with_scope(
             ctx,
@@ -227,7 +238,7 @@ void function_impl_compile_test_info(FunctionImpl const* me, Span scope, Baselin
             false,
             my full_span
         );
-        baseline_test_case_add_type(ctx, my name, &my resolved_type);
+        baseline_test_case_add_type(ctx, my name, lazy_type_get(&my lazy_type));
     }
     generic_compile_test_info(&my generic, ctx);
     c_foreach(i, vec_function_arg, my args) {
@@ -260,11 +271,9 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 my member.name_is_value,
                 my span
             );
-            baseline_test_case_add_type(
-                ctx,
-                my member.name_span,
-                &my member.func.resolved_type
-            );
+            Type t = class_item_get_type(me);
+            baseline_test_case_add_type(ctx, my member.name_span, &t);
+            type_drop(&t);
             function_impl_compile_test_info(&my member.func, class_name, ctx);
             break;
 
@@ -278,19 +287,15 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
                 span_valid(&my span) ? my span : my field.name_span
             );
 
-            // TODO: there will probably be a better way to do this once field types can be inferred from assignments
-            // in constructors
-            LazyType field_type = my field.has_explicit_type ?
-                lazy_type_ref(&my field.explicit_type) :
-                lazy_type_expr(&my field.value, true, true);
-            baseline_test_case_add_type(ctx, my field.name_span, lazy_type_resolve(&field_type));
-            lazy_type_drop(&field_type);
+            Type t = class_item_get_type(me);
+            baseline_test_case_add_type(ctx, my field.name_span, &t);
+            type_drop(&t);
 
             if (my field.has_explicit_type) {
                 type_compile_test_info(&my field.explicit_type, ctx);
             }
             if (my field.value.tag != EXPR_IMPLICIT_ANY) {
-                expr_compile_test_info(&my field.value, true, ctx);
+                expr_compile_test_info(&my field.value, ctx);
             }
         }   break;
 
@@ -308,7 +313,8 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
     if (span_valid(&my name)) {
         baseline_test_case_add_symbol(ctx, span_sv(&my name), my name, my full_span);
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my class_identifier_type);
+            ASSERT(my class_identifier_type.tag == LAZY_TYPE_EVALUATED);
+            baseline_test_case_add_type(ctx, my name, &my class_identifier_type.evaluated);
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
                 .name = my name,
@@ -325,20 +331,18 @@ void class_decl_compile_test_info(ClassDecl const* me, bool is_expr, BaselineTes
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        Type t = expr_get_type_and_typecheck(&my extends, nullptr);
-        while (t.tag == TYPE_REF) {
-            t = type_clone(*t.ref);
-        }
-        if (t.tag == TYPE_IDENTIFIER && t.identifier->type && t.identifier->type->is_typeof_class) {
+        Type type = expr_get_type_and_typecheck(&my extends, nullptr);
+        Type const* resolved = type_resolve_until_identifier(&type);
+        if (resolved->tag == TYPE_IDENTIFIER && resolved->identifier->type && resolved->identifier->type->is_typeof_class) {
             // Extremely hacky but whatever. No idea why tsc does this.
-            t.identifier->type->is_typeof_class = false;
-            baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &t);
-            t.identifier->type->is_typeof_class = true;
+            resolved->identifier->type->is_typeof_class = false;
+            baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, resolved);
+            resolved->identifier->type->is_typeof_class = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
-            expr_compile_test_info(&my extends, true, ctx);
+            expr_compile_test_info(&my extends, ctx);
         }
-        type_drop(&t);
+        type_drop(&type);
     }
     c_foreach(i, vec_type, my implements) {
         type_compile_test_info(i.ref, ctx);
@@ -356,13 +360,17 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         my full_span
     );
     Type to_drop = {0};
-    Type const* t = &my type;
-    if (generic_empty(&my generic)) {
-        if (my type.tag != TYPE_IDENTIFIER ||
-            (my type.identifier->type && !my type.identifier->type->is_class)
+    ASSERT(my lazy_type.tag == LAZY_TYPE_EVALUATED);
+    Type const* my_type = &my lazy_type.evaluated;
+    Type const* resolved = my_type;
+    if (generic_empty(&my generic)) { // If the type is not generic
+        if (my_type->tag == TYPE_IDENTIFIER &&
+            my_type->identifier->type &&
+            my_type->identifier->type->is_class
         ) {
-            t = type_resolve(&my type);
-            switch (t->tag) {
+        } else {
+            resolved = type_resolve(my_type);
+            switch (resolved->tag) {
                 case TYPE_ANY:
                 case TYPE_UNKNOWN:
                 case TYPE_NEVER:
@@ -372,10 +380,22 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
                 case TYPE_STRING:
                 case TYPE_VALUE:
                 case TYPE_IDENTIFIER: break;
-                default: t = &my type;
+                default: resolved = my_type;
             }
         }
-    } else {
+    } else { // If the type is generic
+
+        /* This logic is still fucky, use this to test:
+type Foo<T> = T | { x: Foo<T>}
+type Bar<T> = 1 extends T ? [T] : T
+type Baz<T> = 1 extends number ? [T] : T
+type Biz<T> = {notbiz: T} extends {biz: T} ? [T] : T
+type Buz<T> = {buz: 7} extends {buz: T} ? [T] : T
+type Buzz<T extends number> = {buzz: T} extends {buzz: number} ? [T] : T
+type Boop<T> = 7
+type Beep<T> = {beep: 7}
+        */
+
         to_drop = type_identifier(c_new(IdentifierType, {
             .name = my name,
         }));
@@ -385,12 +405,12 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
                 type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
             ));
         }
-        t = &to_drop;
+        resolved = &to_drop;
     }
-    baseline_test_case_add_type(ctx, my name, t);
+    baseline_test_case_add_type(ctx, my name, resolved);
     type_drop(&to_drop);
     generic_compile_test_info(&my generic, ctx);
-    type_compile_test_info(&my type, ctx);
+    type_compile_test_info(my_type, ctx);
 }
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
@@ -436,12 +456,12 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
         }   break;
 
         case EXPR_BINARY_OP:
-            expr_compile_test_info(&my binary_op->left, true, ctx);
-            expr_compile_test_info(&my binary_op->right, true, ctx);
+            expr_compile_test_info(&my binary_op->left, ctx);
+            expr_compile_test_info(&my binary_op->right, ctx);
             break;
 
         case EXPR_UNARY_OP:
-            expr_compile_test_info(&my unary_op->expr, true, ctx);
+            expr_compile_test_info(&my unary_op->expr, ctx);
             break;
 
         case EXPR_PROPERTY: {
@@ -465,7 +485,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                                 i.ref->span
                             );
                         }
-                        expr_compile_test_info(&my property->expr, true, ctx);
+                        expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
                         baseline_test_case_add_symbol_with_scope(
                             ctx,
@@ -484,11 +504,11 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
             type_drop(&expr_t);
 
             if (!has_compiled_expr_info) {
-                expr_compile_test_info(&my property->expr, true, ctx);
+                expr_compile_test_info(&my property->expr, ctx);
             }
 
             if (my property->form == PROPERTY_EXPR_BRACKET) {
-                expr_compile_test_info(&my property->prop, true, ctx);
+                expr_compile_test_info(&my property->prop, ctx);
             } else {
                 Type t = expr_get_type_and_typecheck(me, nullptr);
                 baseline_test_case_add_type(ctx, my property->prop.outer_span, &t);
@@ -500,22 +520,22 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
             if (my as_type->angle_bracket_syntax) {
                 type_compile_test_info(&my as_type->type, ctx);
             }
-            expr_compile_test_info(&my as_type->expr, true, ctx);
+            expr_compile_test_info(&my as_type->expr, ctx);
             if (!my as_type->angle_bracket_syntax) {
                 type_compile_test_info(&my as_type->type, ctx);
             }
             break;
 
         case EXPR_TERNARY:
-            expr_compile_test_info(&my ternary->condition, true, ctx);
-            expr_compile_test_info(&my ternary->yes, true, ctx);
-            expr_compile_test_info(&my ternary->no, true, ctx);
+            expr_compile_test_info(&my ternary->condition, ctx);
+            expr_compile_test_info(&my ternary->yes, ctx);
+            expr_compile_test_info(&my ternary->no, ctx);
             break;
 
         case EXPR_CALL:
-            expr_compile_test_info(&my call->callable, true, ctx);
+            expr_compile_test_info(&my call->callable, ctx);
             c_foreach(i, vec_expr, my call->args) {
-                expr_compile_test_info(i.ref, true, ctx);
+                expr_compile_test_info(i.ref, ctx);
             }
             break;
 
@@ -532,7 +552,6 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     i.ref->name_span
                 );
                 Type t = expr_get_type_and_typecheck(&i.ref->value, nullptr);
-                type_abstract_tuple_to_array(&t);
                 type_abstract_literals(&t);
                 baseline_test_case_add_type(
                     ctx,
@@ -541,13 +560,13 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 );
                 type_drop(&t);
 
-                expr_compile_test_info(&i.ref->value, true, ctx);
+                expr_compile_test_info(&i.ref->value, ctx);
             }
             break;
 
         case EXPR_ARRAY:
             c_foreach(i, vec_expr, my array) {
-                expr_compile_test_info(i.ref, true, ctx);
+                expr_compile_test_info(i.ref, ctx);
             }
             break;
 
@@ -566,14 +585,14 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
     return false;
 }
 
-void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCase* ctx) {
+void expr_compile_test_info(Expr const* me, BaselineTestCase* ctx) {
     if (my tag == EXPR_IDENTIFIER && my identifier.var) {
         // Do NOT degenericize
         baseline_test_case_add_type_recursive(
             ctx,
             my outer_span,
             my inner_span,
-            lazy_type_assert_get(&my identifier.var->type)
+            lazy_type_get(my identifier.var->type)
         );
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
         Type t = type_array((Type*)&type_undefined, false);
@@ -582,12 +601,6 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
     } else {
         Type t = expr_get_type_and_typecheck(me, nullptr);
-        if (my tag == EXPR_ARRAY) {
-            type_abstract_literals(&t);
-            if (abstract_arrays) {
-                type_abstract_tuple_to_array(&t);
-            }
-        }
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
         type_drop(&t);
     }
@@ -595,7 +608,7 @@ void expr_compile_test_info(Expr const* me, bool abstract_arrays, BaselineTestCa
     expr_compile_test_info_inner(me, ctx);
 }
 
-void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
+void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
@@ -608,7 +621,7 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED) {
-                expr_compile_test_info(&my expr, true, ctx);
+                expr_compile_test_info(&my expr, ctx);
             }
             break;
 
@@ -617,19 +630,19 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
             int cond_size = vec_expr_size(&my if_else.conditions);
             for (int i = 0; i < statement_size; i++) {
                 if (i < cond_size) {
-                    expr_compile_test_info(vec_expr_at(&my if_else.conditions, i), true, ctx);
+                    expr_compile_test_info(vec_expr_at(&my if_else.conditions, i), ctx);
                 }
-                statement_compile_test_info(vec_statement_at(&my if_else.statements, i), ctx);
+                statement_compile_test_info(vec_statement_at_mut(&my if_else.statements, i), ctx);
             }
         }   break;
 
         case STATEMENT_FOR_LOOP:
             statement_compile_test_info(&my for_loop->initialization, ctx);
-            expr_compile_test_info(&my for_loop->condition, true, ctx);
+            expr_compile_test_info(&my for_loop->condition, ctx);
             if (my for_loop->afterthought.tag != EXPR_LITERAL ||
                 my for_loop->afterthought.literal.tag != VALUE_UNDEFINED
             ) {
-                expr_compile_test_info(&my for_loop->afterthought, true, ctx);
+                expr_compile_test_info(&my for_loop->afterthought, ctx);
             }
             statement_compile_test_info(&my for_loop->body, ctx);
             break;
@@ -641,18 +654,18 @@ void statement_compile_test_info(Statement const* me, BaselineTestCase* ctx) {
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
-                    expr_compile_test_info(&my for_each_loop->variable.expr, true, ctx);
+                    expr_compile_test_info(&my for_each_loop->variable.expr, ctx);
                     break;
             }
-            expr_compile_test_info(&my for_each_loop->iterable, true, ctx);
+            expr_compile_test_info(&my for_each_loop->iterable, ctx);
             statement_compile_test_info(&my for_each_loop->body, ctx);
             break;
 
         case STATEMENT_SWITCH:
-            expr_compile_test_info(&my switch_->needle, true, ctx);
+            expr_compile_test_info(&my switch_->needle, ctx);
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 if (i.ref->is_pattern) {
-                    expr_compile_test_info(&i.ref->pattern, true, ctx);
+                    expr_compile_test_info(&i.ref->pattern, ctx);
                 }
                 c_foreach(j, vec_statement, i.ref->statements) {
                     statement_compile_test_info(j.ref, ctx);

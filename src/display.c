@@ -123,9 +123,9 @@ static void display_binding_content(Display d, Binding const* me) {
             if (d.debug) {
                 if (!my identifier) {
                     display_colored(d, color_error, " /* unresolved */");
-                } else if (!my has_explicit_type && lazy_type_try_get(&my identifier->type)) {
+                } else if (!my has_explicit_type && lazy_type_get(my identifier->type)) {
                     display_colored(d, color_implicit, " /* ");
-                    display_type(d, lazy_type_try_get(&my identifier->type));
+                    display_type(d, lazy_type_get(my identifier->type));
                     display_colored(d, color_implicit, " */");
                 }
             }
@@ -174,15 +174,6 @@ static void display_initialized_binding(Display d, InitializedBinding const* me)
     }
 }
 
-static void display_lazy_type(Display d, LazyType const* me) {
-    Type const* t = lazy_type_try_get(me);
-    if (t) {
-        display_type(d, t);
-    } else {
-        display_colored(d, color_type, "/* unevaluated */");
-    }
-}
-
 static void display_generic(Display d, Generic const* me) {
     if (generic_empty(me)) {
         return;
@@ -190,10 +181,14 @@ static void display_generic(Display d, Generic const* me) {
     display_lit(d, "<");
     c_foreach(i, vec_generic_item, my items) {
         display_colored_span(d, color_type, i.ref->name);
-        if (i.ref->extends.tag != TYPE_ANY) {
+
+        if (i.ref->extends_if_not_clone.tag == LAZY_TYPE_EVALUATED &&
+            i.ref->extends_if_not_clone.evaluated.tag != TYPE_ANY
+        ) {
             display_lit(d, " extends ");
-            display_type(d, &i.ref->extends);
+            display_type(d, &i.ref->extends_if_not_clone.evaluated);
         }
+
         if (i.ref->fallback_explicit) {
             display_lit(d, " = ");
             display_type(d, &i.ref->fallback);
@@ -235,8 +230,6 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     if (d.debug) {
         if (!my type) {
             display_colored(d, color_error, " /* unresolved */");
-        } else if (!lazy_type_try_get(&my type->type)) {
-            display_colored(d, color_error, " /* untypechecked */");
         }
     }
 }
@@ -246,14 +239,12 @@ static void display_inferred_type(Display d, InferredType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my type);
+        display_fmt(d, "@%p", (void*)my named_type);
     }
 
     if (d.debug) {
-        if (!my type) {
+        if (!my named_type) {
             display_colored(d, color_error, " /* unresolved */");
-        } else if (!lazy_type_try_get(&my type->type)) {
-            display_colored(d, color_error, " /* untypechecked */");
         }
     }
 }
@@ -276,12 +267,7 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
             display_lit(d, "?");
         }
         display_lit(d, ": ");
-        Type const* type = lazy_type_resolve(&i.ref->type);
-        if (type) {
-            display_type(d, type);
-        } else {
-            display_colored(d, color_error, "/* unresolved */");
-        }
+        display_type(d, &i.ref->type);
         if (i.ref != i.end - 1) {
             display_lit(d, ", ");
         }
@@ -352,15 +338,12 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
             break;
     }
 
-    Type const* type = lazy_type_try_get(&my type);
-
     if (
         my key.tag == INTERFACE_KEY_NAME &&
         my key.name_is_member_function &&
-        type &&
-        type->tag == TYPE_CALLABLE
+        my type.tag == TYPE_CALLABLE
     ) {
-        display_callable(d, type->callable, true);
+        display_callable(d, my type.callable, true);
     } else {
         if (my key.tag != INTERFACE_KEY_CALLABLE) {
             if (my optional) {
@@ -368,7 +351,7 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
             }
             display_lit(d, ": ");
         }
-        display_lazy_type(d, &my type);
+        display_type(d, &my type);
     }
 }
 
@@ -378,7 +361,7 @@ static void display_interface(Display d, Interface const* me) {
         my members.data->key.tag == INTERFACE_KEY_CALLABLE
     ) {
         // This interface has a single callable member, so display it as if it were just a callable
-        display_lazy_type(d, &my members.data->type);
+        display_type(d, &my members.data->type);
         return;
     }
 
@@ -398,10 +381,17 @@ static void display_interface(Display d, Interface const* me) {
 }
 
 static void display_indexed_type(Display d, IndexedType* me) {
-    display_type(d, &my interface);
-    display_lit(d, "[");
-    display_type(d, &my index);
-    display_lit(d, "]");
+    if (my is_from_binding) {
+        Type t = type_any;
+        index_type_of(&my interface, &my index, span_null, false, nullptr, &t);
+        display_type(d, &t);
+        type_drop(&t);
+    } else {
+        display_type(d, &my interface);
+        display_lit(d, "[");
+        display_type(d, &my index);
+        display_lit(d, "]");
+    }
 }
 
 static void display_keyof_type(Display d, KeyofType* me) {
@@ -446,7 +436,7 @@ void display_type(Display d, Type const* me) {
             break;
 
         case TYPE_IDENTIFIER: display_identifier_type(d, my identifier); break;
-        case TYPE_INFERRED: display_inferred_type(d, my inferred); break;
+        case TYPE_INFERRED: display_inferred_type(d, my inferred.get); break;
         case TYPE_CALLABLE: display_callable(d, my callable, false); break;
         case TYPE_INTERFACE: display_interface(d, &my interface); break;
 
@@ -491,6 +481,7 @@ void display_type(Display d, Type const* me) {
         case TYPE_INDEXED: display_indexed_type(d, my indexed); break;
         case TYPE_KEYOF: display_keyof_type(d, my keyof); break;
         case TYPE_TERNARY: display_ternary_type(d, my ternary); break;
+        case TYPE_ABSTRACTED: display_type(d, abstracted_type_resolve(my abstracted)); break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -516,14 +507,16 @@ void display_type(Display d, Type const* me) {
             }
             break;
 
+        case TYPE_LAZY_PTR:
+            if (d.debug) display_colored(d, color_implicit, "{-> ");
+            display_type(d, lazy_type_get(my lazy_ptr));
+            if (d.debug) display_colored(d, color_implicit, "}");
+            break;
+
         case TYPE_REF:
-            if (d.debug) {
-                display_colored(d, color_implicit, "(-> ");
-                display_type(d, my ref);
-                display_colored(d, color_implicit, ")");
-            } else {
-                display_type(d, my ref);
-            }
+            if (d.debug) display_colored(d, color_implicit, "(-> ");
+            display_type(d, my ref);
+            if (d.debug) display_colored(d, color_implicit, ")");
             break;
     }
 
@@ -691,8 +684,6 @@ void display_expr(Display d, Expr const* me) {
             }
             if (!my identifier.var) {
                 display_colored(d, color_error, " /* unresolved */");
-            } else if (!lazy_type_try_get(&my identifier.var->type)) {
-                display_colored(d, color_error, " /* untypechecked */");
             }
             break;
 
@@ -901,11 +892,9 @@ static void display_type_decl(Display d, TypeDecl const* me) {
     display_lit(d, "type ");
     display_colored_span(d, color_name, my name);
     display_generic(d, &my generic);
-    display_colored(d, color_implicit, " /* ");
-    display_type(d, type_resolve(&my type));
-    display_colored(d, color_implicit, " */");
     display_lit(d, " = ");
-    display_type(d, &my type);
+    ASSERT(my lazy_type.tag == LAZY_TYPE_EVALUATED);
+    display_type(d, &my lazy_type.evaluated);
 }
 
 static void display_interface_decl(Display d, InterfaceDecl const* me) {

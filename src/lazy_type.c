@@ -5,163 +5,64 @@
 #include "class_decl.h"
 #include "interface_decl.h"
 
-LazyType lazy_type_interface(InterfaceDecl* interface) {
-    return (LazyType){
-        .tag = LAZY_TYPE_INTERFACE,
-        .interface = interface,
-    };
-}
+void lazy_type_evaluate(LazyType* me) {
+    typeof(my tag) initial_tag = my tag;
+    my tag = LAZY_TYPE_IN_FLIGHT;
 
-LazyType lazy_type_indexed(ArcLazyType source, Value index, bool require_array) {
-    return (LazyType){
-        .tag = LAZY_TYPE_INDEXED,
-        .indexed = {
-            .source = source,
-            .index = c_new(Type, type_value(index)),
-            .require_array = require_array,
-        }
-    };
-}
-
-void lazy_type_drop(LazyType* me) {
-    switch (my tag) {
-        case LAZY_TYPE_VALUE:
-            type_drop(&my value);
+    Type result;
+    switch (initial_tag) {
+        case LAZY_TYPE_UNINITIALIZED:
+            PANIC("LazyType is uninitialized");
+            result = type_any;
             break;
 
-        case LAZY_TYPE_INDEXED:
-            arc_lazy_type_drop(&my indexed.source);
-            type_drop(my indexed.index);
-            free(my indexed.index);
-            break;
+        case LAZY_TYPE_EVALUATED: PANIC("lazy_type_evaluate() called when already evaluated");
 
-        case LAZY_TYPE_REF:
         case LAZY_TYPE_IN_FLIGHT:
+            result = type_self_referential_error;
+            break;
+
         case LAZY_TYPE_EXPR:
+            result = expr_get_type_and_typecheck(c_container_of(me, Expr, lazy_type), nullptr);
+            break;
+
         case LAZY_TYPE_FOR_EACH_LOOP_VAR:
+            result = for_each_loop_statement_evaluate_var_type(c_container_of(me, ForEachLoopStatement, var_type));
+            break;
+
         case LAZY_TYPE_FUNCTION:
+            result = function_impl_evaluate_type(c_container_of(me, FunctionImpl, lazy_type));
+            break;
+
         case LAZY_TYPE_CLASS_INSTANCE:
+            result = class_decl_evaluate_type(c_container_of(me, ClassDecl, instance_type), true);
+            break;
+
         case LAZY_TYPE_CLASS_CLASS:
-        case LAZY_TYPE_INTERFACE:
+            result = class_decl_evaluate_type(c_container_of(me, ClassDecl, class_type), false);
             break;
+
+        case LAZY_TYPE_INTERFACE_DECL:
+            result = interface_decl_evaluate_type(c_container_of(me, InterfaceDecl, lazy_type));
+            break;
+
+        default: UNREACHABLE;
     }
-}
 
-LazyType lazy_type_clone(LazyType me) {
-    switch (me.tag) {
-        case LAZY_TYPE_VALUE:
-            me.value = type_clone(me.value);
-            break;
+    type_resolve(&result); // Ignore result, just do this so we'll pick up on self-referential types
 
-        case LAZY_TYPE_INDEXED:
-            me.indexed.source = arc_lazy_type_clone(me.indexed.source);
-            me.indexed.index = c_new(Type, type_clone(*me.indexed.index));
-            break;
-
-        case LAZY_TYPE_REF:
-        case LAZY_TYPE_IN_FLIGHT:
-        case LAZY_TYPE_EXPR:
-        case LAZY_TYPE_FOR_EACH_LOOP_VAR:
-        case LAZY_TYPE_FUNCTION:
-        case LAZY_TYPE_CLASS_INSTANCE:
-        case LAZY_TYPE_CLASS_CLASS:
-        case LAZY_TYPE_INTERFACE:
-            break;
-    }
-    return me;
-}
-
-Type const* lazy_type_resolve(LazyType* me) {
     switch (my tag) {
-        case LAZY_TYPE_VALUE:
-        case LAZY_TYPE_REF:
-            break;
-
         case LAZY_TYPE_IN_FLIGHT:
-            *me = lazy_type_value(type_self_referential_error);
+            // Our tag wasn't touched by the call this function made, result is valid
+            my evaluated = result;
+            my tag = LAZY_TYPE_EVALUATED;
             break;
 
-        case LAZY_TYPE_EXPR: {
-            my tag = LAZY_TYPE_IN_FLIGHT;
+        case LAZY_TYPE_EVALUATED:
+            // A subcall set our evaluated type, don't mess with it
+            type_drop(&result);
+            break;
 
-            bool abstract_literals = my expr.abstract_literals;
-            bool abstract_tuple_to_array = my expr.abstract_tuple_to_array;
-            Type resolved = expr_get_type_and_typecheck(my expr.ptr, nullptr);
-
-            if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                if (abstract_literals) {
-                    type_abstract_literals(&resolved);
-                }
-                if (abstract_tuple_to_array) {
-                    type_abstract_tuple_to_array(&resolved);
-                }
-                *me = lazy_type_value(resolved);
-            } else {
-                type_drop(&resolved);
-            }
-        }   break;
-
-        case LAZY_TYPE_FOR_EACH_LOOP_VAR: {
-            my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* resolved = for_each_loop_statement_resolve_var_type(my for_each_loop_var);
-            if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                *me = lazy_type_ref(resolved);
-            }
-        }   break;
-
-        case LAZY_TYPE_FUNCTION: {
-            my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* resolved = function_impl_resolve_type(my function);
-            if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                *me = lazy_type_ref(resolved);
-            }
-        }   break;
-
-        case LAZY_TYPE_CLASS_INSTANCE:
-        case LAZY_TYPE_CLASS_CLASS: {
-            bool resolve_instance = (my tag == LAZY_TYPE_CLASS_INSTANCE);
-            my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* resolved = class_decl_resolve_type(my class, resolve_instance);
-            if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                *me = lazy_type_ref(resolved);
-            }
-        }   break;
-
-        case LAZY_TYPE_INTERFACE: {
-            my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* resolved = interface_decl_resolve_type(my interface);
-            if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                *me = lazy_type_ref(resolved);
-            }
-        }   break;
-
-        case LAZY_TYPE_INDEXED: {
-            LazyType local_me = *me;
-            my tag = LAZY_TYPE_IN_FLIGHT;
-            Type const* source_resolved = lazy_type_resolve(my indexed.source.get);
-            if (my indexed.require_array && !type_extends_array(source_resolved)) {
-                source_resolved = &type_any;
-            }
-            if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                Type result = type_any;
-                index_type_of(source_resolved, my indexed.index, span_null, true, nullptr, &result);
-                if (my tag == LAZY_TYPE_IN_FLIGHT) {
-                    *me = lazy_type_value(result);
-                } else {
-                    type_drop(&result);
-                }
-            }
-            lazy_type_drop(&local_me);
-        }   break;
-    }
-    return lazy_type_assert_get(me);
-}
-
-void lazy_type_typecheck(LazyType* me, ErrorCtx* errs) {
-    lazy_type_resolve(me);
-    switch (my tag) {
-        case LAZY_TYPE_VALUE: type_typecheck(&my value, errs); break;
-        case LAZY_TYPE_REF: break;
-        default: PANIC("LazyType failed to resolve with tag %d", my tag);
+        default: PANIC("LazyType tag changed to something other than LAZY_TYPE_EVALUATED during evaluation");\
     }
 }

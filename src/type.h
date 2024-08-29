@@ -9,6 +9,7 @@ typedef struct InferredType InferredType;
 typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
 typedef struct KeyofType KeyofType;
+typedef struct AbstractedType AbstractedType;
 typedef struct CallableType CallableType;
 typedef struct TupleElement TupleElement;
 typedef struct ErrorCtx ErrorCtx;
@@ -17,11 +18,13 @@ typedef struct NamedType NamedType;
 typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
+typedef struct LazyType LazyType;
 
 wrap_forward_arc(Expr, expr);
 wrap_forward_vec(Type, type);
 wrap_forward_arc(NamedType, named_type);
 wrap_forward_vec(TupleElement, tuple_element);
+wrap_forward_arc(InferredType, inferred_type);
 
 typedef struct Type {
     enum {
@@ -42,8 +45,10 @@ typedef struct Type {
         TYPE_INDEXED,
         TYPE_KEYOF,
         TYPE_TERNARY,
+        TYPE_ABSTRACTED,
         TYPE_UNION,
         TYPE_INTERSECTION,
+        TYPE_LAZY_PTR,
         TYPE_REF,
     } tag;
     union {
@@ -53,7 +58,7 @@ typedef struct Type {
         } any;
         Value value;
         IdentifierType* identifier;
-        InferredType* inferred;
+        ArcInferredType inferred;
         CallableType* callable;
         Interface interface;
         struct {
@@ -67,7 +72,9 @@ typedef struct Type {
         IndexedType* indexed;
         KeyofType* keyof;
         TernaryType* ternary;
+        AbstractedType* abstracted;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
+        LazyType* lazy_ptr;
         Type const* ref;
     };
 } Type;
@@ -100,7 +107,7 @@ static inline Type type_identifier(IdentifierType* identifier) {
     };
 }
 
-static inline Type type_inferred(InferredType* inferred) {
+static inline Type type_inferred(ArcInferredType inferred) {
     return (Type){
         .tag = TYPE_INFERRED,
         .inferred = inferred,
@@ -162,6 +169,23 @@ static inline Type type_ternary(TernaryType* ternary) {
     };
 }
 
+// Often make_type_abstracted() should be used instead
+static inline Type type_abstracted(AbstractedType* abstracted) {
+    return (Type) {
+        .tag = TYPE_ABSTRACTED,
+        .abstracted = abstracted,
+    };
+}
+
+// type_composite() and type_composite_without_simplify() defined below
+
+static inline Type type_lazy_ptr(LazyType* lazy) {
+    return (Type){
+        .tag = TYPE_LAZY_PTR,
+        .lazy_ptr = lazy,
+    };
+}
+
 static inline Type type_ref(Type const* ref) {
     return (Type){
         .tag = TYPE_REF,
@@ -190,10 +214,10 @@ static inline Type type_move(Type* me) {
 void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs);
 void type_typecheck(Type const* me, ErrorCtx* errs);
 Type const* type_resolve(Type const* me);
+Type const* type_resolve_until_identifier(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 bool type_overlaps(Type const* a, Type const* b);
 bool type_extends_array(Type const* sub);
-static inline void type_abstract_tuple_to_array(Type* me) { __(me); } // TODO: drop
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 

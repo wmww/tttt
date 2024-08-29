@@ -2,7 +2,7 @@
 
 #include "value.h"
 #include "span.h"
-#include "type.h" // For ArcExpr forward declare
+#include "lazy_type.h"
 
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
@@ -59,50 +59,56 @@ typedef struct Expr {
         VecExpr array;
         ClassDecl* class_decl;
     };
+    LazyType lazy_type;
 } Expr;
 
+#define EXPR_DEFAULT(span) \
+    .inner_span = span, \
+    .outer_span = span, \
+    .lazy_type.tag = LAZY_TYPE_EXPR
+
 static inline Expr expr_literal(Span span, Value value) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_LITERAL, .literal = value };
+    return (Expr){ .tag = EXPR_LITERAL, .literal = value, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_identifier(Span name) {
-    return (Expr){ .inner_span = name, .outer_span = name, .tag = EXPR_IDENTIFIER, .identifier.name = name };
+    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier.name = name, EXPR_DEFAULT(name) };
 }
 
 static inline Expr expr_binary_op(Span span, BinaryOpExpr* op) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_BINARY_OP, .binary_op = op };
+    return (Expr){ .tag = EXPR_BINARY_OP, .binary_op = op, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_unary_op(Span span, UnaryOpExpr* op) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_UNARY_OP, .unary_op = op };
+    return (Expr){ .tag = EXPR_UNARY_OP, .unary_op = op, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_property(Span span, PropertyExpr* property) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_PROPERTY, .property = property };
+    return (Expr){ .tag = EXPR_PROPERTY, .property = property, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_as_type(Span span, AsTypeExpr* as_type) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_AS_TYPE, .as_type = as_type };
+    return (Expr){ .tag = EXPR_AS_TYPE, .as_type = as_type, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_ternary(Span span, TernaryExpr* ternary) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_TERNARY, .ternary = ternary };
+    return (Expr){ .tag = EXPR_TERNARY, .ternary = ternary, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_call(Span span, CallExpr* call) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_CALL, .call = call };
+    return (Expr){ .tag = EXPR_CALL, .call = call, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_function(Span span, FunctionImpl* function) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_FUNCTION, .function = function };
+    return (Expr){ .tag = EXPR_FUNCTION, .function = function, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_object(Span span, ObjectExpr object) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_OBJECT, .object = object };
+    return (Expr){ .tag = EXPR_OBJECT, .object = object, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_class_decl(Span span, ClassDecl* class_decl) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_CLASS_DECL, .class_decl = class_decl };
+    return (Expr){ .tag = EXPR_CLASS_DECL, .class_decl = class_decl, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_undefined(Span span) {
@@ -110,8 +116,15 @@ static inline Expr expr_undefined(Span span) {
 }
 
 static inline Expr expr_implicit_any(Span span) {
-    return (Expr){ .inner_span = span, .outer_span = span, .tag = EXPR_IMPLICIT_ANY };
+    return (Expr){
+        .tag = EXPR_IMPLICIT_ANY,
+        .inner_span = span,
+        .outer_span = span,
+        .lazy_type.tag = LAZY_TYPE_EVALUATED
+    };
 }
+
+#undef EXPR_DEFAULT
 
 static inline bool expr_is_perenthisized(Expr* me) {
     return my inner_span.offset != my outer_span.offset;

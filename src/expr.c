@@ -82,9 +82,12 @@ void expr_drop(Expr* me) {
             free(my class_decl);
             break;
     }
+    lazy_type_drop(&my lazy_type);
 }
 
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
+    my lazy_type.tag = LAZY_TYPE_EXPR;
+
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL:
@@ -257,7 +260,7 @@ static Type binary_op_get_type_and_typecheck(
                     if (expr->binary_op->left.identifier.var) {
                         check_assignable_or_error(
                             &right,
-                            lazy_type_resolve(&expr->binary_op->left.identifier.var->type),
+                            lazy_type_get(expr->binary_op->left.identifier.var->type),
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -360,13 +363,6 @@ static Type binary_op_get_type_and_typecheck(
 
 Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
     Type ret;
-    if (my currently_getting_type) {
-        if (*my currently_getting_type) {
-            return type_self_referential_error;
-        }
-        *my currently_getting_type = true;
-    }
-
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
             ret = type_any;
@@ -378,8 +374,8 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER:
             if (my identifier.var) {
-                ret = type_ref(lazy_type_resolve(&my identifier.var->type));
-                if (!vec_spanned_type_empty(&my identifier.generic_params)) {
+                ret = type_ref(lazy_type_get(my identifier.var->type));
+                if (vec_spanned_type_size(&my identifier.generic_params)) {
                     c_foreach(i, vec_spanned_type, my identifier.generic_params) {
                         type_typecheck(&i.ref->type, errs);
                     }
@@ -494,14 +490,13 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_FUNCTION:
             function_impl_typecheck(my function, errs);
-            ret = type_clone(*function_impl_resolve_type(my function));
+            ret = type_clone(*lazy_type_get(&my function->lazy_type));
             break;
 
         case EXPR_OBJECT: {
             Interface interface = {0};
             c_foreach(i, vec_object_expr_item, my object) {
                 Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
-                type_abstract_tuple_to_array(&t);
                 type_abstract_literals(&t);
                 vec_interface_member_push(
                     &interface.members,
@@ -513,7 +508,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         cstr_clone(i.ref->name_string),
                         i.ref->name_span,
                         false,
-                        lazy_type_value(t)
+                        t
                     )
                 );
             }
@@ -538,18 +533,9 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            ret = type_clone(my class_decl->class_identifier_type);
+            ret = type_clone(*lazy_type_get(&my class_decl->class_identifier_type));
             break;
     }
-
-    if (my currently_getting_type) {
-        if (!*my currently_getting_type) {
-            type_drop(&ret);
-            return type_self_referential_error;
-        }
-        *my currently_getting_type = false;
-    }
-
     return ret;
 }
 

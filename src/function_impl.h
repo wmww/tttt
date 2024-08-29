@@ -32,8 +32,7 @@ typedef struct FunctionImpl {
     Type ret;
     bool is_constructor;
     bool is_abstract_constructor;
-    ResolveState resolve_state;
-    Type resolved_type;
+    LazyType lazy_type;
     NamedVariable* named_var;
     Span arrow_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
@@ -46,5 +45,5 @@ void function_impl_drop(FunctionImpl* me);
 void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 Type function_impl_into_type(FunctionImpl me);
-Type const* function_impl_resolve_type(FunctionImpl* me);
+Type function_impl_evaluate_type(FunctionImpl* me);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

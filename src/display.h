@@ -63,7 +63,7 @@ static inline Display debug_display(cstr* target) {
 }
 
 #define display_lit(d, s) display_sv(d, c_sv(s))
-#define display_colored(d, c, s) display_color(d, c); display_lit(d, s); display_normal(d)
+#define display_colored(d, c, s) do { display_color(d, c); display_lit(d, s); display_normal(d); } while(false)
 
 static inline void display_str  (Display d, const char* s)  { cstr_append   (d.target, s); }
 static inline void display_s    (Display d, cstr        s)  { cstr_append_s (d.target, s); }

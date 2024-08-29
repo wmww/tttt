@@ -527,7 +527,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     *ret = (GenericItem){
         .name = name,
         .full_span = span_end(a),
-        .extends = extends,
+        .extends_if_not_clone = lazy_type_preeval(extends),
         .fallback_explicit = fallback_explicit,
         .fallback = fallback,
     };
@@ -792,7 +792,7 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     *ret = (InferredType){
         .name = name,
         .full_span = span_end(a),
-        .extends = extends,
+        .extends = lazy_type_preeval(extends),
     };
     return parse_success(&p);
 }
@@ -844,7 +844,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (parse_function_args(&p, true, true, &parsed.func)) {
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
-        *ret = type_inferred(c_new(InferredType, parsed.inferred));
+        *ret = type_inferred(arc_inferred_type_make(parsed.inferred));
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){
@@ -929,7 +929,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         cstr_move(&item.member.name_string),
                         item.member.name_span,
                         item.member.name_is_value,
-                        lazy_type_value(function_impl_into_type(item.member.func))
+                        function_impl_into_type(item.member.func)
                     );
                     ASSERT(member.key.tag == INTERFACE_KEY_NAME);
                     member.key.name_is_member_function = true;
@@ -946,7 +946,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         cstr_move(&item.field.name_string),
                         item.field.name_span,
                         item.field.name_is_value,
-                        lazy_type_value(type_move(&item.field.explicit_type))
+                        type_move(&item.field.explicit_type)
                     ));
                     break;
 
@@ -1019,7 +1019,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
         .name = name,
         .full_span = span_end(a),
         .generic = generic,
-        .type = type,
+        .lazy_type = lazy_type_preeval(type),
     };
     return parse_success(&p);
 }
@@ -1304,7 +1304,6 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     Anchor a = span_start(&p);
     bool is_definitely_function = false;
     Span lone_arg_name;
-    *ret = (FunctionImpl){0};
 
     if (parse_function_args(&p, false, false, ret)) {
 
@@ -1319,6 +1318,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
         Binding binding = {
             .tag = BINDING_IDENTIFIER,
             .content_span = lone_arg_name,
+            .explicit_type = lazy_type_preeval(type_any),
         };
         vec_function_arg_push(&ret->args, (FunctionArg){
             .span = lone_arg_name,
@@ -1372,7 +1372,6 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
 static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
-    *ret = (FunctionImpl){0};
 
     if (!parse_function_args(&p, false, false, ret)) {
         return parse_fail(&p);
@@ -1385,7 +1384,6 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
 static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = span_start(&p);
-    *ret = (FunctionImpl){0};
 
     if (!parse_function_args(&p, false, false, ret)) {
         return parse_fail(&p);
@@ -1611,9 +1609,7 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     expect_char(&p, ':');
     hop_whitespace(&p);
 
-    Type type;
-    expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
-    ret->type = lazy_type_value(type);
+    expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
 
     return parse_success(&p);
 }
@@ -1675,9 +1671,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     (show_errors ? expect_char : hop_char)(&p, ':');
     hop_whitespace(&p);
 
-    Type type;
-    (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &type);
-    ret->type = lazy_type_value(type);
+    (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->type);
 
     return parse_success(&p);
 }
@@ -1929,7 +1923,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
             Binding binding;
             if (parse_binding_type_or_set_to_default(&p, &binding)) {
-                ret->field.explicit_type = binding.explicit_type;
+                ASSERT(binding.explicit_type.tag == LAZY_TYPE_EVALUATED);
+                ret->field.explicit_type = binding.explicit_type.evaluated;
                 ret->field.explicit_type_span = binding.explicit_type_span;
                 ret->field.has_explicit_type = binding.has_explicit_type;
                 hop_whitespace(&p);
@@ -1954,7 +1949,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .span = span_end(a),
                 .readonly = span_valid(&readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
-                .type = lazy_type_value(function_impl_into_type(func)),
+                .type = function_impl_into_type(func),
             };
         } else {
             cstr_drop(&name_string);
@@ -2743,6 +2738,8 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->currently_getting_type = c_new(bool, false);
     }
 
+    ret->lazy_type = (LazyType){0};
+
     while (parse_expr_right_side(&p, ctx, ret)) {}
 
     return parse_success(&p);
@@ -2951,8 +2948,11 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     hop_whitespace(parent);
 
     Anchor a = span_start(parent);
-    expect_type(parent, TYPE_PRECEDENCE_NULL, &ret->explicit_type);
+
+    Type type;
+    expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
+    ret->explicit_type = lazy_type_preeval(type);
     ret->assigned_type = (LazyType){0};
     ret->explicit_type_span = span_end(a);
 
@@ -2964,8 +2964,8 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
         return true;
     } else {
         ret->explicit_type_span = span_null;
-        ret->explicit_type = type_any;
         ret->has_explicit_type = false;
+        ret->explicit_type = (LazyType){0};
         ret->assigned_type = (LazyType){0};
         return false;
     }

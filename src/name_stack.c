@@ -14,7 +14,7 @@ typedef NamedVariable* NamedVariablePtr;
 #define i_val_names NamedVariablePtr, named_variable_ptr
 #include "wrap_stc/hmap.h"
 
-NamedVariable* make_named_variable(Span name, Span full, LazyType type, Generic const* generic) {
+NamedVariable* make_named_variable(Span name, Span full, LazyType* type, Generic const* generic) {
     if (generic_empty(generic)) {
         generic = nullptr;
     }
@@ -28,11 +28,10 @@ NamedVariable* make_named_variable(Span name, Span full, LazyType type, Generic 
 
 void named_variable_destroy(NamedVariable* me) {
     if (!me) return;
-    lazy_type_drop(&my type);
     free(me);
 }
 
-NamedType* make_named_type(Span name, Span full, LazyType type, Generic const* generic) {
+NamedType* make_named_type(Span name, Span full, LazyType* type, Generic const* generic) {
     if (generic_empty(generic)) {
         generic = nullptr;
     }
@@ -45,12 +44,11 @@ NamedType* make_named_type(Span name, Span full, LazyType type, Generic const* g
 }
 
 void named_type_drop(NamedType* me) {
-    lazy_type_drop(&my type);
+    __(me);
 }
 
 void named_type_destroy(NamedType* me) {
     if (!me) return;
-    named_type_drop(me);
     free(me);
 }
 
@@ -110,12 +108,16 @@ NameStack* name_stack_new(ErrorCtx* errs) {
     name_stack_push_frame_private(ret, STACK_FRAME_BLOCK);
 
 #define BUILTIN_VAR(name, t) \
-    static NamedVariable name = {0}; \
-    name.type = lazy_type_value(t)
+    static LazyType name##_lazy_type = {0}; \
+    static NamedVariable name = { .type = &name##_lazy_type }; \
+    lazy_type_drop(&name##_lazy_type); \
+    name##_lazy_type = lazy_type_preeval(t);
 
 #define BUILTIN_TYPE(name, t) \
-    static NamedType name = {0}; \
-    name.type = lazy_type_value(t)
+    static LazyType name##_lazy_type = {0}; \
+    static NamedType name = { .type = &name##_lazy_type }; \
+    lazy_type_drop(&name##_lazy_type); \
+    name##_lazy_type = lazy_type_preeval(t);
 
     BUILTIN_VAR(builtin_var_any, type_any);
     BUILTIN_VAR(builtin_var_undefined, type_undefined);

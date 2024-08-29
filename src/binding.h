@@ -1,7 +1,6 @@
 #pragma once
 
 #include "type.h"
-#include "lazy_type.h"
 #include "expr.h"
 #include "value.h"
 
@@ -22,10 +21,11 @@ typedef struct Binding {
         VecObjectBindingItem object;
     };
     Span content_span; // Just the name/array/object, not the type/value
-    bool has_explicit_type;
-    Span explicit_type_span;
-    Type explicit_type;
-    LazyType assigned_type;
+    bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
+    Span explicit_type_span; // Only valid if has_explicit_type
+    // TODO: I don't think these need to be lazy
+    LazyType explicit_type; // The type explicitly specified
+    LazyType assigned_type; // Not necessarily valid until binding_add_names() is called
 } Binding;
 
 typedef struct ObjectBindingItem {
@@ -35,9 +35,8 @@ typedef struct ObjectBindingItem {
 } ObjectBindingItem;
 
 void binding_drop(Binding* me);
-void binding_add_names(Binding* me, LazyType input, NameStack* names, ErrorCtx* errs);
-LazyType binding_get_lazy_type(Binding const* me); // Only valid after binding_add_names() is called
-Type const* binding_get_type(Binding* me); // Only valid after binding_add_names() is called
+void binding_add_names(Binding* me, Type input, NameStack* names, ErrorCtx* errs);
+Type const* binding_get_type(Binding const* me); // Only valid after binding_add_names() is called
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 void binding_typecheck(Binding* me, ErrorCtx* errs);

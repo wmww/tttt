@@ -15,7 +15,7 @@ void interface_member_drop(InterfaceMember* me) {
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
-    lazy_type_drop(&my type);
+    type_drop(&my type);
 }
 
 InterfaceMember interface_member_clone(InterfaceMember me) {
@@ -30,11 +30,13 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
-    me.type = lazy_type_clone(me.type);
+    me.type = type_clone(me.type);
     return me;
 }
 
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
+    static LazyType lazy_type_any = { .tag = LAZY_TYPE_EVALUATED, .evaluated.tag = TYPE_ANY };
+
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
         case INTERFACE_KEY_INDEX: type_resolve_names(&my key.index, names, errs); break;
@@ -48,7 +50,7 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
                 my key.mapped.named_type = make_named_type(
                     my key.mapped.type_name,
                     my key.mapped.type_name,
-                    lazy_type_value(type_any),
+                    &lazy_type_any,
                     nullptr
                 );
             }
@@ -58,9 +60,7 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
         case INTERFACE_KEY_CALLABLE: break;
     }
 
-    if (my type.tag == LAZY_TYPE_VALUE) {
-        type_resolve_names(&my type.value, names, errs);
-    }
+    type_resolve_names(&my type, names, errs);
 
     if (my key.tag == INTERFACE_KEY_MAPPED) {
         name_stack_pop_frame(names);
@@ -83,14 +83,11 @@ void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs) {
         case INTERFACE_KEY_MAPPED:
             type_typecheck(&my key.mapped.in_type, errs);
             type_typecheck(&my key.mapped.as_type, errs);
-            if (my key.mapped.named_type) {
-                lazy_type_typecheck(&my key.mapped.named_type->type, errs);
-            }
             break;
 
         case INTERFACE_KEY_CALLABLE: break;
     }
-    lazy_type_typecheck(&my type, errs);
+    type_typecheck(&my type, errs);
 }
 
 bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super) {

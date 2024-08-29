@@ -27,8 +27,17 @@ void uninhibit_nonfatals();
 
 #define MUST_USE __attribute__((warn_unused_result))
 
-typedef enum ResolveState {
-    RESOLVE_STATE_UNINITIALIZED = 0,
-    RESOLVE_STATE_IN_FLIGHT,
-    RESOLVE_STATE_DONE,
-} ResolveState;
+// These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
+#define PANIC_AFTER_DBG(count, ...) do { \
+        static int panic_count = 0; \
+        panic_count++; \
+        if (panic_count > count) PANIC(__VA_ARGS__); \
+        else NONFATAL(__VA_ARGS__); \
+    } while (false)
+#define NONFATAL_DBG NONFATAL
+#define NONFATAL_TYPE_DBG(msg, type) do { \
+        cstr tmp = cstr_lit(msg); \
+        display_type(debug_display(&tmp), type); \
+        NONFATAL("%s", cstr_str(&tmp)); \
+        cstr_drop(&tmp); \
+    } while (false)

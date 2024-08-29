@@ -37,7 +37,7 @@ typedef struct TypeDecl {
     Span name;
     Span full_span;
     Generic generic;
-    Type type;
+    LazyType lazy_type;
     NamedType* named_type;
 } TypeDecl;
 
@@ -168,15 +168,13 @@ typedef struct ForEachLoopStatement {
             Expr expr;
         };
     } variable;
-    ResolveState types_resolve_state;
-    Type iterable_type;
-    Type var_type;
+    LazyType var_type;
     Expr iterable;
     Statement body;
 } ForEachLoopStatement;
 
 czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me);
-Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me);
+Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me);
 
 // Switch statement
 

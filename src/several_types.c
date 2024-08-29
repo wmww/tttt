@@ -43,7 +43,6 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
         type_typecheck(&i.ref->type, errs);
     }
     if (my type) {
-        lazy_type_resolve(&my type->type);
         /*
         //This can be enabled once we're parsing the standard library
         if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my type->generic)) {
@@ -60,17 +59,8 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 // Inferred identifier
 
 void inferred_type_drop(InferredType* me) {
-    type_drop(&my extends);
-    arc_named_type_drop(&my inferred_type);
-}
-
-InferredType inferred_type_clone(InferredType me) {
-    return (InferredType){
-        .name = me.name,
-        .extends = type_clone(me.extends),
-        .type = me.type,
-        .inferred_type = me.inferred_type.get ? arc_named_type_clone(me.inferred_type) : (ArcNamedType){0},
-    };
+    lazy_type_drop(&my extends);
+    named_type_destroy(my named_type);
 }
 
 // Indexed
@@ -140,4 +130,30 @@ TernaryType ternary_type_clone(TernaryType me) {
         .if_false = type_clone(me.if_false),
         .cached = {0},
     };
+}
+
+// Abstracted
+
+void abstracted_type_drop(AbstractedType* me) {
+    type_drop(&my inner);
+    type_drop(&my cached);
+}
+
+AbstractedType abstracted_type_clone(AbstractedType me) {
+    me.inner = type_clone(me.inner);
+    me.has_cache = false;
+    me.cached = (Type){0};
+    return me;
+}
+
+Type const* abstracted_type_resolve(AbstractedType* me) {
+    if (!my has_cache) {
+        // PERF: figure out how to avoid cloning if no abstracting is needed
+        my cached = type_clone(my inner);
+        my has_cache = true;
+        if (my abstract_literals) {
+            type_abstract_literals(&my cached);
+        }
+    }
+    return &my cached;
 }

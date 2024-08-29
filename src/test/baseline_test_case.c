@@ -452,7 +452,7 @@ void baseline_test_case_add_type_recursive(
     cstr_append(&str, " : ");
     if (type->tag == TYPE_INFERRED) {
         // Inferred identifiers in ternaries include the infer keyword, which the tests don't like
-        cstr_append_span(&str, &type->inferred->name);
+        cstr_append_span(&str, &type->inferred.get->name);
     } else {
         cstr_append_type_error_msg(&str, type);
     }

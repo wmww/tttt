@@ -5,11 +5,11 @@
 #include "error.h"
 
 void callable_arg_drop(CallableArg* me) {
-    lazy_type_drop(&my type);
+    type_drop(&my type);
 }
 
 CallableArg callable_arg_clone(CallableArg me) {
-    me.type = lazy_type_clone(me.type);
+    me.type = type_clone(me.type);
     return me;
 }
 
@@ -38,9 +38,9 @@ void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* e
         generic_drop(&my generic);
         my generic = generic_clone(my owned_function_impl->generic);
         c_foreach(i, vec_callable_arg, my args) {
-            lazy_type_drop(&i.ref->type);
-            i.ref->type = binding_get_lazy_type(&i.ref->source->initializer.binding);
-            lazy_type_resolve_names(&i.ref->type, names, errs);
+            type_drop(&i.ref->type);
+            i.ref->type = type_ref(binding_get_type(&i.ref->source->initializer.binding));
+            type_resolve_names(&i.ref->type, names, errs);
         }
         // If me owns a FunctionImpl, that means the type was parsed as a type (not generated from an implementaiton)
         // That means it doesn't have a function body
@@ -93,10 +93,10 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
             );
         }
 
-        lazy_type_typecheck(&i.ref->type, errs);
+        type_typecheck(&i.ref->type, errs);
 
         if (i.ref->source->rest) {
-            if (!type_extends_array(lazy_type_resolve(&i.ref->type))) {
+            if (!type_extends_array(&i.ref->type)) {
                 error_ctx_error(
                     errs,
                     i.ref->source->span,

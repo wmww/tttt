@@ -10,31 +10,25 @@ typedef struct NameStack NameStack;
 typedef struct NamedVariable {
     Span name;
     Span full;
-    LazyType type;
+    LazyType* type;
     Generic const* generic;
 } NamedVariable;
 
-NamedVariable* make_named_variable(Span name, Span full, LazyType type, Generic const* generic);
+NamedVariable* make_named_variable(Span name, Span full, LazyType* type, Generic const* generic);
 void named_variable_destroy(NamedVariable* me);
 
 typedef struct NamedType {
     Span name;
     Span full;
-    LazyType type;
+    LazyType* type;
     Generic const* generic;
     bool is_class;
     bool is_typeof_class;
 } NamedType;
 
-NamedType* make_named_type(Span name, Span full, LazyType type, Generic const* generic);
+NamedType* make_named_type(Span name, Span full, LazyType* type, Generic const* generic);
 void named_type_drop(NamedType* me);
 void named_type_destroy(NamedType* me);
-
-#define i_key_class_names NamedType, named_type
-#define i_opt c_no_atomic
-#define i_is_forward
-#define i_no_hash
-#include "wrap_stc/arc.h"
 
 NameStack* name_stack_new(ErrorCtx* errs);
 void name_stack_destroy(NameStack* me);

@@ -8,7 +8,7 @@ typedef struct FunctionImpl FunctionImpl;
 
 typedef struct CallableArg {
     bool optional;
-    LazyType type;
+    Type type;
     FunctionArg const* source;
 } CallableArg;
 

@@ -10,18 +10,19 @@ void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);
     vec_spanned_type_drop(&my extends);
     type_drop(&my type);
-    type_drop(&my resolved_type);
+    lazy_type_drop(&my lazy_type);
     named_type_destroy(my named_type);
 }
 
 void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_type);
-    my named_type = make_named_type(my name, my full_span, lazy_type_interface(me), &my generic);
+    my named_type = make_named_type(my name, my full_span, &my lazy_type, &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
 }
 
 void interface_decl_resolve_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
+    my lazy_type.tag = LAZY_TYPE_INTERFACE_DECL;
     name_stack_push_generic_frame(names, &my generic);
     c_foreach(i, vec_spanned_type, my extends) {
         type_resolve_names(&i.ref->type, names, errs);
@@ -33,70 +34,51 @@ void interface_decl_resolve_names(InterfaceDecl* me, NameStack* names, ErrorCtx*
     name_stack_pop_frame(names);
 }
 
-Type const* interface_decl_resolve_type(InterfaceDecl* me) {
+Type interface_decl_evaluate_type(InterfaceDecl* me) {
     ASSERT(my type.tag == TYPE_INTERFACE);
 
-    switch (my type_resolve_state) {
-        case RESOLVE_STATE_UNINITIALIZED: {
-            my type_resolve_state = RESOLVE_STATE_IN_FLIGHT;
-            VecInterfaceMember members = {0};
+    VecInterfaceMember members = {0};
 
-            c_foreach(extends, vec_spanned_type, my extends) {
-                Type const* extends_resolved = type_resolve(&extends.ref->type);
-                if (extends_resolved->tag == TYPE_INTERFACE) {
-                    c_foreach(extends_member, vec_interface_member, extends_resolved->interface.members) {
-                        bool found_match = false;
-                        c_foreach(previous_member, vec_interface_member, members) {
-                            if (interface_key_extends(extends_member.ref, previous_member.ref)) {
-                                found_match = true;
-                                break;
-                            }
-                        }
-                        if (!found_match) {
-                            c_foreach(type_member, vec_interface_member, my type.interface.members) {
-                                if (interface_key_extends(extends_member.ref, type_member.ref)) {
-                                    found_match = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!found_match) {
-                            vec_interface_member_push(&members, interface_member_clone(*extends_member.ref));
+    c_foreach(extends, vec_spanned_type, my extends) {
+        Type const* extends_resolved = type_resolve(&extends.ref->type);
+        if (extends_resolved->tag == TYPE_INTERFACE) {
+            c_foreach(extends_member, vec_interface_member, extends_resolved->interface.members) {
+                bool found_match = false;
+                c_foreach(previous_member, vec_interface_member, members) {
+                    if (interface_key_extends(extends_member.ref, previous_member.ref)) {
+                        found_match = true;
+                        break;
+                    }
+                }
+                if (!found_match) {
+                    c_foreach(type_member, vec_interface_member, my type.interface.members) {
+                        if (interface_key_extends(extends_member.ref, type_member.ref)) {
+                            found_match = true;
+                            break;
                         }
                     }
                 }
-            }
-
-            if (!vec_interface_member_empty(&members)) {
-                c_foreach(i, vec_interface_member, my type.interface.members) {
-                    vec_interface_member_push(&members, interface_member_clone(*i.ref));
+                if (!found_match) {
+                    vec_interface_member_push(&members, interface_member_clone(*extends_member.ref));
                 }
             }
-
-            if (my type_resolve_state == RESOLVE_STATE_IN_FLIGHT) {
-                if (vec_interface_member_empty(&members)) {
-                    my resolved_type = type_ref(&my type);
-                } else {
-                    my resolved_type = type_interface((Interface){ .members = members });
-                }
-                my type_resolve_state = RESOLVE_STATE_DONE;
-            }
-        }   break;
-
-        case RESOLVE_STATE_IN_FLIGHT: {
-            my resolved_type = type_self_referential_error;
-            my type_resolve_state = RESOLVE_STATE_DONE;
-        }   break;
-
-        case RESOLVE_STATE_DONE: break;
+        }
     }
 
-    return &my resolved_type;
+    if (!vec_interface_member_empty(&members)) {
+        c_foreach(i, vec_interface_member, my type.interface.members) {
+            vec_interface_member_push(&members, interface_member_clone(*i.ref));
+        }
+    }
+
+    if (vec_interface_member_empty(&members)) {
+        return type_ref(&my type);
+    } else {
+        return type_interface((Interface){ .members = members });
+    }
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
-    lazy_type_resolve(&my named_type->type);
-
     generic_typecheck(&my generic, errs);
 
     ASSERT(my type.tag == TYPE_INTERFACE);

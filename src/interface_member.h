@@ -1,7 +1,6 @@
 #pragma once
 
 #include "type.h"
-#include "lazy_type.h"
 
 typedef struct InterfaceMember {
     Span span;
@@ -36,7 +35,7 @@ typedef struct InterfaceMember {
             } mapped;
         };
     } key;
-    LazyType type;
+    Type type;
 } InterfaceMember;
 
 static inline InterfaceMember interface_member_make(
@@ -47,7 +46,7 @@ static inline InterfaceMember interface_member_make(
     cstr name_string,
     Span name_span,
     bool name_is_value,
-    LazyType type
+    Type type
 ) {
     return (InterfaceMember) {
         .span = span,

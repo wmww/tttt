@@ -1,6 +1,6 @@
 #pragma once
 
-#include "type.h"
+#include "lazy_type.h"
 
 typedef struct TypeRefinement {
     NamedType const* target;
@@ -15,7 +15,7 @@ typedef struct vec_expr VecExpr;
 typedef struct GenericItem {
     Span name;
     Span full_span;
-    Type extends;
+    LazyType extends_if_not_clone; // Only valid for initial generic parsed by the parser and owned by the AST, not clones
     bool fallback_explicit;
     Type fallback;
     bool owns_named_type;

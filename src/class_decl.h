@@ -1,6 +1,5 @@
 #pragma once
 
-#include "prelude.h"
 #include "function_impl.h"
 #include "interface_member.h"
 
@@ -52,6 +51,7 @@ typedef struct ClassItem {
 
 void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
+Type class_item_get_type(ClassItem* me);
 
 #define i_key_class_names ClassItem, class_item
 #define i_no_clone
@@ -66,21 +66,19 @@ typedef struct ClassDecl {
     Expr extends;
     VecType implements;
     VecClassItem items;
-    ResolveState instance_resolve_state;
-    Type instance_type;
-    ResolveState class_resolve_state;
-    Type class_type;
+    LazyType instance_type;
+    LazyType class_type;
     // Perf: do these all need to be separate allocations?
     NamedType* instance_named_type;
     NamedType* class_named_type;
     NamedVariable* instance_named_var;
     NamedVariable* class_named_var;
-    Type instance_identifier_type;
-    Type class_identifier_type;
+    LazyType instance_identifier_type;
+    LazyType class_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
-Type const* class_decl_resolve_type(ClassDecl* me, bool resolve_instance);
+Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

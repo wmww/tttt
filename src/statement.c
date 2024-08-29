@@ -40,20 +40,20 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
 
 void type_decl_drop(TypeDecl* me) {
     generic_drop(&my generic);
-    type_drop(&my type);
+    lazy_type_drop(&my lazy_type);
     named_type_destroy(my named_type);
 }
 
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
     __( errs );
     ASSERT(!my named_type);
-    my named_type = make_named_type(my name, my full_span, lazy_type_ref(&my type), &my generic);
+    my named_type = make_named_type(my name, my full_span, &my lazy_type, &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
-    type_typecheck(&my type, errs);
+    type_typecheck(lazy_type_get(&my lazy_type), errs);
 }
 
 // If statements
@@ -66,75 +66,47 @@ czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     UNREACHABLE;
 }
 
-Type const* for_each_loop_statement_resolve_var_type(ForEachLoopStatement* me) {
-    switch (my types_resolve_state) {
-        case RESOLVE_STATE_UNINITIALIZED: {
-            my types_resolve_state = RESOLVE_STATE_IN_FLIGHT;
+Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
+    Type iterable_owned = {0};
+    Type const* iterable_type = type_resolve(lazy_type_get(&my iterable.lazy_type));
 
-            Type owned_iterable_type = expr_get_type_and_typecheck(&my iterable, nullptr);
-            Type const* iterable_type = type_resolve(&owned_iterable_type);
-            if (iterable_type->tag == TYPE_TUPLE) {
-                if (vec_tuple_element_empty(&iterable_type->tuple.elements)) {
-                    iterable_type = &type_any;
-                } else {
-                    Type temp = type_clone(*iterable_type);
-                    type_drop(&owned_iterable_type);
-                    owned_iterable_type = temp;
-                    type_abstract_tuple_to_array(&owned_iterable_type);
-                    iterable_type = type_resolve(&owned_iterable_type);
-                }
-            }
-
-            Type var_type = type_any;
-            switch (my keyword) {
-                case FOR_EACH_LOOP_IN:
-                    switch (iterable_type->tag) {
-                        case TYPE_ANY:
-                        case TYPE_INTERFACE:
-                        case TYPE_CALLABLE:
-                            // TODO: there def needs to be more nuance in this check
-                            // TODO: maybe do keyof and then index of the returned union?
-                            var_type = type_string;
-                            break;
-
-                        case TYPE_ARRAY:
-                        case TYPE_TUPLE:
-                            var_type = type_any;
-                            break;
-
-                        default:
-                            var_type = type_string;
-                            break;
-                    }
+    Type var_type = type_any;
+    switch (my keyword) {
+        case FOR_EACH_LOOP_IN:
+            switch (iterable_type->tag) {
+                case TYPE_ANY:
+                    var_type = iterable_type->any.self_referential_error ? type_self_referential_error : type_string;
                     break;
 
-                case FOR_EACH_LOOP_OF:
-                    if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
-                        index_type_of(iterable_type, &type_number, span_null, false, nullptr, &var_type);
-                    }
+                case TYPE_INTERFACE:
+                case TYPE_CALLABLE:
+                    // TODO: there def needs to be more nuance in this check
+                    // TODO: maybe do keyof and then index of the returned union?
+                    var_type = type_string;
+                    break;
+
+                case TYPE_ARRAY:
+                case TYPE_TUPLE:
+                    var_type = type_any;
+                    break;
+
+                default:
+                    var_type = type_string;
                     break;
             }
-
-            if (my types_resolve_state == RESOLVE_STATE_IN_FLIGHT) {
-                my iterable_type = owned_iterable_type;
-                my var_type = var_type;
-                my types_resolve_state = RESOLVE_STATE_DONE;
-            } else {
-                type_drop(&owned_iterable_type);
-                type_drop(&var_type);
-            }
-        }   break;
-
-        case RESOLVE_STATE_IN_FLIGHT:
-            my iterable_type = type_self_referential_error;
-            my var_type = type_self_referential_error;
-            my types_resolve_state = RESOLVE_STATE_DONE;
             break;
 
-        case RESOLVE_STATE_DONE: break;
+        case FOR_EACH_LOOP_OF:
+            if (type_is_self_referential(iterable_type)) {
+                var_type = type_self_referential_error;
+            } else if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
+                index_type_of(iterable_type, &type_number, span_null, false, nullptr, &var_type);
+            }
+            break;
     }
 
-    return &my var_type;
+    type_drop(&iterable_owned);
+    return var_type;
 }
 
 // Statements
@@ -165,8 +137,7 @@ void statement_drop(Statement* me) {
                 case FOR_EACH_LOOP_STATEMENT: variable_statement_drop(&my for_each_loop->variable.statement); break;
                 case FOR_EACH_LOOP_EXPR: expr_drop(&my for_each_loop->variable.expr); break;
             }
-            type_drop(&my for_each_loop->iterable_type);
-            type_drop(&my for_each_loop->var_type);
+            lazy_type_drop(&my for_each_loop->var_type);
             expr_drop(&my for_each_loop->iterable);
             statement_drop(&my for_each_loop->body);
             free(my for_each_loop);
@@ -275,6 +246,8 @@ void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
+    static LazyType lazy_type_any = { .tag = LAZY_TYPE_EVALUATED, .evaluated.tag = TYPE_ANY };
+
     switch (my tag) {
         case STATEMENT_BLOCK:
             block_resolve_names(&my block, names, errs);
@@ -285,7 +258,10 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 expr_resolve_names(i.ref, names, errs);
             }
             c_foreach(i, vec_statement, my if_else.statements) {
+                name_stack_push_block_frame(names);
+                statement_add_names(i.ref, names, errs);
                 statement_resolve_names(i.ref, names, errs);
+                name_stack_pop_frame(names);
             }
             break;
 
@@ -295,11 +271,13 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             statement_resolve_names(&my for_loop->initialization, names, errs);
             expr_resolve_names(&my for_loop->condition, names, errs);
             expr_resolve_names(&my for_loop->afterthought, names, errs);
+            statement_add_names(&my for_loop->body, names, errs);
             statement_resolve_names(&my for_loop->body, names, errs);
             name_stack_pop_frame(names);
             break;
 
         case STATEMENT_FOR_EACH_LOOP:
+            my for_each_loop->var_type.tag = LAZY_TYPE_FOR_EACH_LOOP_VAR;
             name_stack_push_block_frame(names);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
@@ -340,7 +318,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                         // up in test AST traversial (as required), but will not be typechecked (as required). This
                         // is dumb but it works.
                         i.ref->binding.has_explicit_type = false;
-                        binding_add_names(&i.ref->binding, lazy_type_for_each_loop_var(my for_each_loop), names, errs);
+                        binding_add_names(&i.ref->binding, type_lazy_ptr(&my for_each_loop->var_type), names, errs);
                         binding_resolve_names(&i.ref->binding, names, errs);
                     }
                     break;
@@ -376,7 +354,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
             name_stack_push_block_frame(names);
-            binding_add_names(&my try_catch->catch_var, lazy_type_ref(&type_any), names, errs);
+            binding_add_names(&my try_catch->catch_var, type_any, names, errs);
             binding_resolve_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);
             name_stack_pop_frame(names);
@@ -412,7 +390,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             name_stack_push_block_frame(names);
 
             static NamedVariable this_var;
-            this_var = (NamedVariable){ .type = lazy_type_value(type_any) };
+            this_var = (NamedVariable){ .type = &lazy_type_any };
             name_stack_add_variable_s(names, cstr_lit("this"), &this_var);
 
             function_impl_resolve_names(&my decl.function, names, errs);
@@ -426,7 +404,8 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_TYPE:
             name_stack_push_generic_frame(names, &my decl.type.generic);
-            type_resolve_names(&my decl.type.type, names, errs);
+            ASSERT(my decl.type.lazy_type.tag == LAZY_TYPE_EVALUATED);
+            type_resolve_names(&my decl.type.lazy_type.evaluated, names, errs);
             name_stack_pop_frame(names);
             break;
 
@@ -483,8 +462,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
         }
 
         case STATEMENT_FOR_EACH_LOOP: {
-            for_each_loop_statement_resolve_var_type(my for_each_loop);
-            Type const* iterable_type = type_resolve(&my for_each_loop->iterable_type);
+            Type const* iterable_type = type_resolve(lazy_type_get(&my for_each_loop->iterable.lazy_type));
 
             switch (my for_each_loop->keyword) {
                 case FOR_EACH_LOOP_IN:
@@ -559,7 +537,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                 case FOR_EACH_LOOP_EXPR: {
                     Type existing_var_type = expr_get_type_and_typecheck(&my for_each_loop->variable.expr, errs);
                     check_assignable_or_error(
-                        &my for_each_loop->var_type,
+                        lazy_type_get(&my for_each_loop->var_type),
                         &existing_var_type,
                         my for_each_loop->variable.expr.outer_span,
                         errs

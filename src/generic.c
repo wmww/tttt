@@ -13,7 +13,7 @@ typedef NamedType const* NamedTypeCPtr;
 #include "wrap_stc/hmap.h"
 
 void generic_item_drop(GenericItem* me) {
-    type_drop(&my extends);
+    lazy_type_drop(&my extends_if_not_clone);
     type_drop(&my fallback);
     if (my owns_named_type) {
         named_type_destroy(my named_type);
@@ -21,7 +21,9 @@ void generic_item_drop(GenericItem* me) {
 }
 
 GenericItem generic_item_clone(GenericItem me) {
-    me.extends = type_clone(me.extends);
+    // TODO: this feels wrong
+    ASSERT(me.extends_if_not_clone.tag = LAZY_TYPE_EVALUATED);
+    me.extends_if_not_clone = lazy_type_preeval(type_clone(me.extends_if_not_clone.evaluated));
     me.fallback = type_clone(me.fallback);
     me.owns_named_type = false;
     return me;
@@ -39,14 +41,15 @@ Generic generic_clone(Generic me) {
 
 void generic_resolve_names(Generic const* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
+        ASSERT(i.ref->extends_if_not_clone.tag); // *_resolve_names() should not be called on clones
         if (!i.ref->named_type) {
             i.ref->owns_named_type = true;
-            i.ref->named_type = make_named_type(i.ref->name, i.ref->name, lazy_type_ref(&i.ref->extends), nullptr);
+            i.ref->named_type = make_named_type(i.ref->name, i.ref->name, &i.ref->extends_if_not_clone, nullptr);
         }
         name_stack_add_type(names, i.ref->named_type);
     }
     c_foreach(i, vec_generic_item, my items) {
-        type_resolve_names(&i.ref->extends, names, errs);
+        type_resolve_names(&i.ref->extends_if_not_clone.evaluated, names, errs);
         type_resolve_names(&i.ref->fallback, names, errs);
     }
 }
@@ -58,6 +61,7 @@ static void collect_generic_candidates(
     ErrorCtx* errs
 ) {
     arg = type_resolve(arg);
+    me  = type_resolve_until_identifier(me);
 
     switch (my tag) {
         case TYPE_ANY:
@@ -68,7 +72,6 @@ static void collect_generic_candidates(
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_VALUE:
-        case TYPE_INFERRED:
             return;
 
         case TYPE_IDENTIFIER:
@@ -106,53 +109,29 @@ static void collect_generic_candidates(
             );
             return;
 
-        case TYPE_INDEXED:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with index type not yet implemented"
-            );
-            return;
-
-        case TYPE_KEYOF:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with keyof type not yet implemented"
-            );
-            return;
-
-        case TYPE_TERNARY:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with ternary not yet implemented"
-            );
-            return;
-
-        case TYPE_REF:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with reference not yet implemented"
-            );
-            return;
-
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             error_ctx_error(errs, span_null, TS_CODE_NONE,
                 "inferring types of generic with union/intersection not yet implemented"
             );
             return;
+
+        case TYPE_INFERRED:
+        case TYPE_INDEXED:
+        case TYPE_KEYOF:
+        case TYPE_TERNARY:
+        case TYPE_ABSTRACTED:
+        case TYPE_LAZY_PTR:
+        case TYPE_REF:
+            PANIC("Type with tag %d should have been resolved away", my tag);
     }
     UNREACHABLE;
 }
 
-static inline void lazy_type_replace_named_types_with(LazyType* me, VecTypeRefinement const* refinements) {
-    Type const* resolved = lazy_type_resolve(me);
-    if (my tag != LAZY_TYPE_VALUE) {
-        LazyType temp = lazy_type_value(type_clone(*resolved));
-        lazy_type_drop(me);
-        *me = temp;
-    }
-    replace_named_types_with(&my value, refinements);
-}
-
 static inline void generic_replace_named_types_with(Generic* me, VecTypeRefinement const* refinements) {
     c_foreach(i, vec_generic_item, my items) {
-        replace_named_types_with(&i.ref->extends, refinements);
+        // Is this needed?
+        // replace_named_types_with(&i.ref->extends, refinements);
         replace_named_types_with(&i.ref->fallback, refinements);
     }
 }
@@ -160,7 +139,7 @@ static inline void generic_replace_named_types_with(Generic* me, VecTypeRefineme
 static inline void callable_replace_named_types_with(CallableType* me, VecTypeRefinement const* refinements) {
     generic_replace_named_types_with(&my generic, refinements);
     c_foreach(i, vec_callable_arg, my args) {
-        lazy_type_replace_named_types_with(&i.ref->type, refinements);
+        replace_named_types_with(&i.ref->type, refinements);
     }
     replace_named_types_with(&my ret, refinements);
 }
@@ -197,7 +176,6 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_INFERRED:
-            replace_named_types_with(&my inferred->extends, refinements);
             return;
 
         case TYPE_CALLABLE:
@@ -216,7 +194,7 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                         break;
                     case INTERFACE_KEY_CALLABLE: break;
                 }
-                lazy_type_replace_named_types_with(&i.ref->type, refinements);
+                replace_named_types_with(&i.ref->type, refinements);
             }
             return;
 
@@ -261,11 +239,25 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             }
             return;
 
+        case TYPE_ABSTRACTED:
+            replace_named_types_with(&my abstracted->inner, refinements);
+            if (my abstracted->has_cache) {
+                type_drop(&my abstracted->cached);
+                my abstracted->cached = (Type){0};
+                my abstracted->has_cache = false;
+            }
+            return;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
                 replace_named_types_with(i.ref, refinements);
             }
+            return;
+
+        case TYPE_LAZY_PTR:
+            *me = type_clone(*lazy_type_get(my lazy_ptr));
+            replace_named_types_with(me, refinements);
             return;
 
         case TYPE_REF:
@@ -319,7 +311,7 @@ CallableType generic_infer_callable_types(
     }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         collect_generic_candidates(
-            lazy_type_resolve(&vec_callable_arg_at_mut(&callable->args, i)->type),
+            &vec_callable_arg_at_mut(&callable->args, i)->type,
             vec_type_at(&arg_types, i),
             &refinements,
             errs
@@ -338,7 +330,8 @@ CallableType generic_infer_callable_types(
 void generic_typecheck(Generic const* me, ErrorCtx* errs) {
     bool found_optional = false;
     c_foreach(i, vec_generic_item, my items) {
-        type_typecheck(&i.ref->extends, errs);
+        ASSERT(i.ref->extends_if_not_clone.tag == LAZY_TYPE_EVALUATED);
+        type_typecheck(&i.ref->extends_if_not_clone.evaluated, errs);
         type_typecheck(&i.ref->fallback, errs);
         if (found_optional && !i.ref->fallback_explicit) {
             error_ctx_error(

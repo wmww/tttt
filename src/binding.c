@@ -1,5 +1,6 @@
 #include "binding.h"
 #include "name_stack.h"
+#include "several_types.h"
 #include "display.h"
 #include "error.h"
 
@@ -10,77 +11,62 @@ void binding_drop(Binding* me) {
         case BINDING_ARRAY: vec_binding_drop(&my array); break;
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
-    type_drop(&my explicit_type);
+    lazy_type_drop(&my explicit_type);
     lazy_type_drop(&my assigned_type);
 }
 
-void binding_add_names(Binding* me, LazyType assigned, NameStack* names, ErrorCtx* errs) {
-    ASSERT(my assigned_type.tag == 0 && my assigned_type.value.tag == 0);
-    my assigned_type = assigned;
+void binding_add_names(Binding* me, Type assigned, NameStack* names, ErrorCtx* errs) {
+    ASSERT(my assigned_type.tag == 0);
+    my assigned_type = lazy_type_preeval(assigned);
+    if (my has_explicit_type) ASSERT(my explicit_type.tag == LAZY_TYPE_EVALUATED);
+    LazyType* effective_type = my has_explicit_type ? &my explicit_type : &my assigned_type;
 
     switch (my tag) {
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
             ASSERT(!my identifier);
-            my identifier = make_named_variable(my content_span, my content_span, binding_get_lazy_type(me), nullptr);
+            my identifier = make_named_variable(my content_span, my content_span, effective_type, nullptr);
             name_stack_add_variable(names, my identifier);
             break;
 
         case BINDING_ARRAY: {
-            ArcLazyType source = arc_lazy_type_make(binding_get_lazy_type(me));
             c_foreach(i, vec_binding, my array) {
                 intptr_t index = i.ref - my array.data;
                 binding_add_names(
                     i.ref,
-                    lazy_type_indexed(arc_lazy_type_clone(source), value_number(index), true),
+                    type_indexed(c_new(IndexedType, {
+                        .interface = type_ref(&effective_type->evaluated),
+                        .index = type_value(value_number(index)),
+                        .is_from_binding = true,
+                    })),
                     names,
                     errs
                 );
             }
-            arc_lazy_type_drop(&source);
         }   break;
 
         case BINDING_OBJECT: {
-            ArcLazyType source = arc_lazy_type_make(binding_get_lazy_type(me));
             c_foreach(i, vec_object_binding_item, my object) {
                 binding_add_names(
                     &i.ref->target,
-                    lazy_type_indexed(arc_lazy_type_clone(source), value_clone(i.ref->source), true),
+                    type_indexed(c_new(IndexedType, {
+                        .interface = type_ref(&effective_type->evaluated),
+                        .index = type_value(value_clone(i.ref->source)),
+                        .is_from_binding = true,
+                    })),
                     names,
                     errs
                 );
             }
-            arc_lazy_type_drop(&source);
         }   break;
-    }
-}
-
-LazyType binding_get_lazy_type(Binding const* me) {
-    if (my has_explicit_type) {
-        return lazy_type_value(type_clone(my explicit_type));
-    } else {
-        return lazy_type_clone(my assigned_type);
-    }
-}
-
-Type const* binding_get_type(Binding* me) {
-    if (my has_explicit_type) {
-        return &my explicit_type;
-    } else {
-        return lazy_type_resolve(&my assigned_type);
     }
 }
 
 void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
-        case BINDING_NOOP: break;
-
-        case BINDING_IDENTIFIER:
-            if (my identifier) {
-                lazy_type_resolve_names(&my identifier->type, names, errs);
-            }
-            break;
+        case BINDING_NOOP:
+        case BINDING_IDENTIFIER: break;
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
@@ -94,8 +80,21 @@ void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
     }
-    type_resolve_names(&my explicit_type, names, errs);
-    lazy_type_resolve_names(&my assigned_type, names, errs);
+
+    if (my has_explicit_type) {
+        ASSERT(my explicit_type.tag == LAZY_TYPE_EVALUATED);
+        type_resolve_names(&my explicit_type.evaluated, names, errs);
+    }
+    ASSERT(my assigned_type.tag == LAZY_TYPE_EVALUATED);
+    type_resolve_names(&my assigned_type.evaluated, names, errs);
+}
+
+Type const* binding_get_type(Binding const* me) {
+    if (my has_explicit_type) ASSERT(my explicit_type.tag == LAZY_TYPE_EVALUATED);
+    // Assigned type may be assigned later
+    // TODO: make this less fucky
+    // ASSERT(my assigned_type.tag == LAZY_TYPE_EVALUATED);
+    return my has_explicit_type ? &my explicit_type.evaluated : &my assigned_type.evaluated;
 }
 
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
@@ -129,10 +128,11 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 
 void binding_typecheck(Binding* me, ErrorCtx* errs) {
     if (my has_explicit_type) {
-        type_typecheck(&my explicit_type, errs);
+        ASSERT(my explicit_type.tag == LAZY_TYPE_EVALUATED);
+        type_typecheck(&my explicit_type.evaluated, errs);
         check_assignable_or_error(
-            lazy_type_resolve(&my assigned_type),
-            &my explicit_type,
+            lazy_type_get(&my assigned_type),
+            lazy_type_get(&my explicit_type),
             my content_span,
             errs
         );
@@ -143,7 +143,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 
         case BINDING_IDENTIFIER:
             if (my identifier) {
-                Type const* type = type_resolve(lazy_type_resolve(&my identifier->type));
+                Type const* type = type_resolve(binding_get_type(me));
                 if (type_is_self_referential(type)) {
                     cstr msg = cstr_lit("'");
                     cstr_append_span(&msg, &my content_span);
@@ -186,14 +186,12 @@ void initialized_binding_drop(InitializedBinding* me) {
 }
 
 void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs) {
-    bool type_abstract_tuple_to_array = true;
-    if (my binding.has_explicit_type || my binding.tag != BINDING_IDENTIFIER) {
-        abstract_literals = false;
-        type_abstract_tuple_to_array = false;
-    }
     binding_add_names(
         &my binding,
-        lazy_type_expr(&my value, abstract_literals, type_abstract_tuple_to_array),
+        make_type_abstracted(
+            type_lazy_ptr(&my value.lazy_type),
+            !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && abstract_literals
+        ),
         names,
         errs
     );
