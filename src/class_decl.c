@@ -72,8 +72,8 @@ void class_decl_drop(ClassDecl* me) {
     named_type_destroy(my class_named_type);
     named_variable_destroy(my instance_named_var);
     named_variable_destroy(my class_named_var);
-    lazy_type_drop(&my instance_identifier_type);
-    lazy_type_drop(&my class_identifier_type);
+    type_drop(&my instance_identifier_type);
+    type_drop(&my class_identifier_type);
 }
 
 void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
@@ -114,17 +114,17 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
     VecSpannedType generic_params; // Used multiple times
 
-    ASSERT(my instance_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
+    ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
     generic_params = (VecSpannedType){0};
     c_foreach(i, vec_generic_item, my generic.items) {
         // Is it the fallback type, always any or something else? unclear.
         vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
     }
-    my instance_identifier_type = lazy_type_preeval(type_identifier(c_new(IdentifierType, {
+    my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
         .named_type = my instance_named_type,
         .generic_params = generic_params,
-    })));
+    }));
 
     /*
      * TODO: this supposed to be used somewhere?
@@ -136,20 +136,20 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     */
 
     ASSERT(!my instance_named_var);
-    my instance_named_var = make_named_variable(my name, my full_span, type_lazy(&my instance_identifier_type), nullptr);
+    my instance_named_var = make_named_variable(my name, my full_span, type_ref(&my instance_identifier_type), nullptr);
 
     ASSERT(!my class_named_type);
     my class_named_type = make_named_type(my name, my full_span, type_lazy(&my class_type), nullptr);
     my class_named_type->is_typeof_class = true;
 
-    ASSERT(my class_identifier_type.tag == LAZY_TYPE_UNINITIALIZED); // Should only be set here, and only once
-    my class_identifier_type = lazy_type_preeval(type_identifier(c_new(IdentifierType, {
+    ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
+    my class_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
         .named_type = my class_named_type,
-    })));
+    }));
 
     ASSERT(!my class_named_var);
-    my class_named_var = make_named_variable(my name, my full_span, type_lazy(&my class_identifier_type), &my generic);
+    my class_named_var = make_named_variable(my name, my full_span, type_ref(&my class_identifier_type), &my generic);
     name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
 
     c_foreach(i, vec_class_item, my items) {
@@ -165,7 +165,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             }
             ASSERT(i.ref->constructor.func.ret.tag == TYPE_ANY);
             i.ref->constructor.func.ret_explicit = true;
-            i.ref->constructor.func.ret = type_ref(lazy_type_get(&my instance_identifier_type));
+            i.ref->constructor.func.ret = type_ref(&my instance_identifier_type);
         }
     }
 }
@@ -216,7 +216,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("prototype"),
             span_null,
             false,
-            type_lazy(&my instance_identifier_type)
+            type_ref(&my instance_identifier_type)
         ));
 
         // TODO: Use the declaration in Object of lib.es5.d.ts instead
@@ -304,7 +304,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
 
     if (!resolve_instance && !has_constructor) {
         FunctionImpl constructor = {
-            .ret = type_ref(lazy_type_get(&my instance_identifier_type)),
+            .ret = type_ref(&my instance_identifier_type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
         };

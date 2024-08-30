@@ -310,7 +310,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     if (span_valid(&my name)) {
         baseline_test_case_add_symbol(ctx, span_sv(&my name), my name, my full_span);
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, lazy_type_get(&my class_identifier_type));
+            baseline_test_case_add_type(ctx, my name, &my class_identifier_type);
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
                 .name = my name,

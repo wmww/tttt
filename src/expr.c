@@ -533,7 +533,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            ret = type_clone(*lazy_type_get(&my class_decl->class_identifier_type));
+            ret = type_clone(my class_decl->class_identifier_type);
             break;
     }
     return ret;

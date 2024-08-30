@@ -73,8 +73,8 @@ typedef struct ClassDecl {
     NamedType* class_named_type;
     NamedVariable* instance_named_var;
     NamedVariable* class_named_var;
-    LazyType instance_identifier_type;
-    LazyType class_identifier_type;
+    Type instance_identifier_type;
+    Type class_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
