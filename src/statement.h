@@ -51,7 +51,8 @@ typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     Block contents;
-    LazyType value_type;
+    NameStack* name_stack;
+    Type value_type;
     NamedType* value_named_type;
     NamedVariable* value_named_var;
 } NamespaceDecl;
@@ -59,7 +60,6 @@ typedef struct NamespaceDecl {
 void namespace_decl_drop(NamespaceDecl* me);
 void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
-Type namespace_decl_evaluate_type(NamespaceDecl* me);
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs);
 
 // If statements

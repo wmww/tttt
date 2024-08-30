@@ -2,17 +2,10 @@
 #include "generic.h"
 #include "several_types.h"
 #include "error.h"
+#include "interface_member.h"
 
 typedef NamedType* NamedTypePtr;
 typedef NamedVariable* NamedVariablePtr;
-
-#define i_key_ssv
-#define i_val_names NamedTypePtr, named_type_ptr
-#include "wrap_stc/hmap.h"
-
-#define i_key_ssv
-#define i_val_names NamedVariablePtr, named_variable_ptr
-#include "wrap_stc/hmap.h"
 
 NamedVariable* make_named_variable(Span name, Span full, Type type, Generic const* generic) {
     if (generic_empty(generic)) {
@@ -50,6 +43,17 @@ void named_type_destroy(NamedType* me) {
     free(me);
 }
 
+wrap_forward_box(NameStack, name_stack);
+wrap_forward_hmap_str(BoxNameStack, box_name_stack);
+
+#define i_key_ssv
+#define i_val_names NamedTypePtr, named_type_ptr
+#include "wrap_stc/hmap.h"
+
+#define i_key_ssv
+#define i_val_names NamedVariablePtr, named_variable_ptr
+#include "wrap_stc/hmap.h"
+
 typedef enum StackFrameTag {
     STACK_FRAME_BLOCK,
     STACK_FRAME_FUNCTION,
@@ -60,6 +64,7 @@ typedef struct StackFrame {
     StackFrameTag tag;
     HmapStrNamedTypePtr types;
     HmapStrNamedVariablePtr variables;
+    HmapStrBoxNameStack namespaces;
 } StackFrame;
 
 StackFrame stack_frame_init(StackFrameTag tag);
@@ -74,24 +79,35 @@ typedef struct NameStack {
     ErrorCtx* errs;
 } NameStack;
 
+static void name_stack_drop(NameStack* me);
+static NameStack name_stack_clone(NameStack me);
+
+#define i_key_class_names NameStack, name_stack
+#define i_is_forward
+#include "wrap_stc/box.h"
+
+#define i_key_ssv
+#define i_val_class_names BoxNameStack, box_name_stack
+#define i_is_forward
+#include "wrap_stc/hmap.h"
+
 StackFrame stack_frame_init(StackFrameTag tag) {
     return (StackFrame){
         .tag = tag,
-        .types = hmap_str_named_type_ptr_init(),
-        .variables = hmap_str_named_variable_ptr_init(),
     };
 }
 
 void stack_frame_drop(StackFrame* me) {
     hmap_str_named_type_ptr_drop(&my types);
     hmap_str_named_variable_ptr_drop(&my variables);
+    hmap_str_box_name_stack_drop(&my namespaces);
 }
 
 StackFrame stack_frame_clone(StackFrame me) {
-    return (StackFrame){
-        .types = hmap_str_named_type_ptr_clone(me.types),
-        .variables = hmap_str_named_variable_ptr_clone(me.variables),
-    };
+    me.types = hmap_str_named_type_ptr_clone(me.types);
+    me.variables = hmap_str_named_variable_ptr_clone(me.variables);
+    me.namespaces = hmap_str_box_name_stack_clone(me.namespaces);
+    return me;
 }
 
 static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag) {
@@ -174,11 +190,20 @@ void name_stack_push_function_frame(NameStack* me) {
     name_stack_push_frame_private(me, STACK_FRAME_FUNCTION);
 }
 
-void name_stack_destroy(NameStack* me) {
+static void name_stack_drop(NameStack* me) {
     if (vec_stack_frame_size(&my stack) != 1) {
-        PANIC("stack size %ld on destroy, 1 expected", vec_stack_frame_size(&my stack));
+        PANIC("stack size %ld on drop, 1 expected", vec_stack_frame_size(&my stack));
     }
     vec_stack_frame_drop(&my stack);
+}
+
+static NameStack name_stack_clone(NameStack me) {
+    me.stack = vec_stack_frame_clone(me.stack);
+    return me;
+}
+
+void name_stack_destroy(NameStack* me) {
+    name_stack_drop(me);
     free(me);
 }
 
@@ -192,11 +217,49 @@ void name_stack_push_generic_frame(NameStack* me, Generic const* generic) {
     }
 }
 
+void name_stack_push_name_stack_frame(NameStack* me, NameStack const* ref) {
+    ASSERT(vec_stack_frame_size(&ref->stack) == 1);
+    vec_stack_frame_push(&my stack, stack_frame_clone(*ref->stack.data));
+}
+
 void name_stack_pop_frame(NameStack* me) {
-    if (vec_stack_frame_empty(&my stack)) {
-        PANIC("more stack frames popped than pushed");
+    if (vec_stack_frame_size(&my stack) < 2) {
+        PANIC("More stack frames popped than pushed");
     }
     vec_stack_frame_pop(&my stack);
+}
+
+NameStack* name_stack_pull_frame_into_new_stack(NameStack* me) {
+    if (vec_stack_frame_size(&my stack) < 2) {
+        PANIC("More stack frames popped than pushed");
+    }
+    StackFrame frame = vec_stack_frame_pull(&my stack);
+    NameStack* ret = c_new(NameStack, {
+        .stack = vec_stack_frame_init(),
+        .errs = my errs,
+    });
+    vec_stack_frame_push(&ret->stack, frame);
+    return ret;
+}
+
+Type name_stack_make_interface_from(NameStack const* me) {
+    ASSERT(vec_stack_frame_size(&my stack) == 1);
+    VecInterfaceMember members = vec_interface_member_init();
+    c_foreach(i, hmap_str_named_variable_ptr, my stack.data->variables) {
+        vec_interface_member_push(&members, interface_member_make(
+            i.ref->second->full,
+            span_null, // Interface name
+            false, // readonly
+            false, // optional
+            cstr_from_span(&i.ref->second->name),
+            i.ref->second->name,
+            false, // name is value
+            type_clone(i.ref->second->type)
+        ));
+    }
+    return type_interface((Interface){
+        members
+    });
 }
 
 void name_stack_add_variable(NameStack* me, NamedVariable* var) {
@@ -288,6 +351,30 @@ void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
     }
 }
 
+void name_stack_add_namespace(NameStack* me, Span name, NameStack* ref) {
+    ASSERT(vec_stack_frame_size(&ref->stack) == 1);
+
+    // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
+    // NameStacks may not need to be clonable if that's the case
+    cstr name_string = cstr_from_sv(span_sv(&name));
+    BoxNameStack box = box_name_stack_make(name_stack_clone(*ref));
+    hmap_str_box_name_stack_result result = hmap_str_box_name_stack_insert(
+        &vec_stack_frame_back(&my stack)->namespaces,
+        name_string,
+        box
+    );
+    if (!result.inserted) {
+        // TODO: declaration merging
+        error_ctx_error(
+            my errs,
+            name,
+            TS_CODE_NONE,
+            "Duplicate namespace '%.*s'.",
+            c_SV(span_sv(&name))
+        );
+    }
+}
+
 bool name_stack_has_function(NameStack* me) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         if (i.ref->tag == STACK_FRAME_FUNCTION) {
@@ -297,7 +384,7 @@ bool name_stack_has_function(NameStack* me) {
     return false;
 }
 
-NamedVariable* name_stack_get_variable(NameStack* me, csview name) {
+NamedVariable* name_stack_get_variable(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         hmap_str_named_variable_ptr_value const* result = hmap_str_named_variable_ptr_get(&i.ref->variables, name);
         if (result) {
@@ -307,11 +394,21 @@ NamedVariable* name_stack_get_variable(NameStack* me, csview name) {
     return nullptr;
 }
 
-NamedType* name_stack_get_type(NameStack* me, csview name) {
+NamedType* name_stack_get_type(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         hmap_str_named_type_ptr_value const* result = hmap_str_named_type_ptr_get(&i.ref->types, name);
         if (result) {
             return result->second;
+        }
+    }
+    return nullptr;
+}
+
+NameStack const* name_stack_get_namespace(NameStack const* me, csview name) {
+    c_foreach_rev(i, vec_stack_frame, my stack) {
+        hmap_str_box_name_stack_value const* result = hmap_str_box_name_stack_get(&i.ref->namespaces, name);
+        if (result) {
+            return result->second.get;
         }
     }
     return nullptr;

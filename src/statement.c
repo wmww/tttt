@@ -45,7 +45,7 @@ void type_decl_drop(TypeDecl* me) {
 }
 
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
-    __( errs );
+    __(errs);
     ASSERT(!my named_type);
     my named_type = make_named_type(my name, my full_span, type_ref(&my type), &my generic);
     name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
@@ -60,16 +60,28 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
 
 void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
-    lazy_type_drop(&my value_type);
+    name_stack_destroy(my name_stack);
+    type_drop(&my value_type);
     named_type_destroy(my value_named_type);
     named_variable_destroy(my value_named_var);
 }
 
 void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    __(errs);
+    name_stack_push_block_frame(names);
+    c_foreach(i, vec_statement, my contents.statements) {
+        statement_add_names(i.ref, names, errs);
+    }
+    ASSERT(!my name_stack);
+    my name_stack = name_stack_pull_frame_into_new_stack(names);
+
+    name_stack_add_namespace(names, my name, my name_stack);
+
+    ASSERT(my value_type.tag == 0);
+    my value_type = name_stack_make_interface_from(my name_stack);
+
     ASSERT(!my value_named_type);
     ASSERT(!my value_named_var);
-    my value_named_type = make_named_type(my name, my full_span, type_lazy(&my value_type), nullptr);
+    my value_named_type = make_named_type(my name, my full_span, type_ref(&my value_type), nullptr);
     my value_named_type->is_typeof_class = true;
     my value_named_var = make_named_variable(
         my name,
@@ -84,8 +96,11 @@ void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* err
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    my value_type.tag = LAZY_TYPE_NAMESPACE_DECL;
-    block_resolve_names(&my contents, names, errs);
+    name_stack_push_name_stack_frame(names, my name_stack);
+    c_foreach(i, vec_statement, my contents.statements) {
+        statement_resolve_names(i.ref, names, errs);
+    }
+    name_stack_pop_frame(names);
 }
 
 Type namespace_decl_evaluate_type(NamespaceDecl* me) {

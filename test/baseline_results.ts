@@ -3451,7 +3451,7 @@ const baselines = {
         types: false,
     },
     'classExpressionWithResolutionOfNamespaceOfSameName01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4971,7 +4971,7 @@ const baselines = {
         types: false,
     },
     'complexNarrowingWithAny': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51436,7 +51436,7 @@ const baselines = {
         types: true,
     },
     'parserVariableDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51751,7 +51751,7 @@ const baselines = {
         types: true,
     },
     'parservoidInQualifiedName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

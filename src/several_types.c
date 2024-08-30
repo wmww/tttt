@@ -24,15 +24,36 @@ IdentifierType identifier_type_clone(IdentifierType me) {
 
 void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
     if (!my named_type) {
-        my named_type = name_stack_get_type(names, span_sv(&my name));
-        if (!my named_type) {
-            error_ctx_error(
-                errs,
-                my name,
-                2304,
-                "Cannot find name '%.*s'.",
-                c_SV(span_sv(&my name))
-            );
+        NameStack const* namespace = names;
+        c_foreach(i, vec_span, my namespaces) {
+            namespace = name_stack_get_namespace(namespace, span_sv(i.ref));
+            if (!namespace) {
+                error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SV(span_sv(i.ref)));
+                break;
+            }
+        }
+        if (namespace) {
+            my named_type = name_stack_get_type(namespace, span_sv(&my name));
+            if (!my named_type) {
+                if (vec_span_size(&my namespaces)) {
+                    error_ctx_error(
+                        errs,
+                        my name,
+                        2694,
+                        "Namespace '%.*s' has no exported member '%.*s'.",
+                        c_SV(span_sv(vec_span_back(&my namespaces))),
+                        c_SV(span_sv(&my name))
+                    );
+                } else {
+                    error_ctx_error(
+                        errs,
+                        my name,
+                        2304,
+                        "Cannot find name '%.*s'.",
+                        c_SV(span_sv(&my name))
+                    );
+                }
+            }
         }
     }
     c_foreach(i, vec_spanned_type, my generic_params) {
