@@ -141,7 +141,7 @@ button, .fake-button {
 */
 
 .token-view-container {
-  margin: 0 20px 20px 20px;
+  margin: 0 10px 10px 10px;
   overflow-x: auto;
   overflow-y: auto;
   border-radius: 10px;
