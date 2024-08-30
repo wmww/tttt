@@ -206,13 +206,16 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     if (my named_type && my named_type->is_typeof_class) {
         display_lit(d, "typeof ");
     }
-    if (d.debug) {
-        c_foreach(i, vec_span, my namespaces) {
-            display_colored_span(d, color_type, *i.ref);
-            display_lit(d, ".");
+
+    if (!d.hash_key || d.debug) {
+        if (d.debug) {
+            c_foreach(i, vec_span, my namespaces) {
+                display_colored_span(d, color_type, *i.ref);
+                display_lit(d, ".");
+            }
         }
+        display_colored_span(d, color_type, my name);
     }
-    display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {
         display_fmt(d, "@%p", (void*)my named_type);
@@ -529,7 +532,7 @@ void display_type(Display d, Type const* me) {
     }
 
     if (d.hash_key) {
-        display_fmt(d, "}");
+        display_lit(d, "}");
     }
 }
 
