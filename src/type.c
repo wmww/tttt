@@ -629,8 +629,9 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
     if (my tag == TYPE_IDENTIFIER) {
         if (through_identifier) {
             if (my identifier->named_type) {
-                to_remove = my identifier->named_type;
-                if (!hset_named_type_cptr_insert(&ctx->currently_resolving, to_remove).inserted) {
+                if (hset_named_type_cptr_insert(&ctx->currently_resolving, to_remove).inserted) {
+                    to_remove = my identifier->named_type;
+                } else {
                     return &type_excessively_deep_error;
                 }
             }

@@ -5886,7 +5886,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeOfIndexedAccessParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -10508,7 +10508,7 @@ const baselines = {
     'errorsOnUnionsOfOverlappingObjects01': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'errorsWithInvokablesInUnions01': {
         errors: false,
@@ -13706,7 +13706,7 @@ const baselines = {
         types: false,
     },
     'genericCapturingFunctionNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15306,7 +15306,7 @@ const baselines = {
         types: false,
     },
     'inKeywordAndIntersection': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15561,7 +15561,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessNormalization': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20491,7 +20491,7 @@ const baselines = {
         types: false,
     },
     'narrowByParenthesizedSwitchExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20818,7 +20818,7 @@ const baselines = {
     'nestedRecursiveArraysOrObjectsError01': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'nestedRecursiveLambda': {
         errors: false,
@@ -21396,7 +21396,7 @@ const baselines = {
         types: false,
     },
     'noSubtypeReduction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22136,7 +22136,7 @@ const baselines = {
         types: false,
     },
     'observableInferenceCanBeMade': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28341,7 +28341,7 @@ const baselines = {
         types: false,
     },
     'typeParameterExtendingUnion1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29016,7 +29016,7 @@ const baselines = {
         types: false,
     },
     'unionCallMixedTypeParameterPresence': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33931,7 +33931,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccessNoCrash1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -42311,7 +42311,7 @@ const baselines = {
         types: false,
     },
     'conditionalOperatorWithIdenticalBCT': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47136,7 +47136,7 @@ const baselines = {
         types: false,
     },
     'typeParameterExtendsUnionConstraintDistributed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54631,7 +54631,7 @@ const baselines = {
         types: false,
     },
     'intersectionThisTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54698,7 +54698,7 @@ const baselines = {
     'recursiveIntersectionTypes': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'circularIndexedAccessErrors': {
         errors: false,
@@ -57351,7 +57351,7 @@ const baselines = {
         types: false,
     },
     'bestCommonTypeOfConditionalExpressions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58341,7 +58341,7 @@ const baselines = {
         types: false,
     },
     'unionTypeCallSignatures2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58353,12 +58353,12 @@ const baselines = {
     'unionTypeCallSignatures4': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'unionTypeCallSignatures5': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'unionTypeCallSignatures6': {
         errors: false,
