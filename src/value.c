@@ -126,7 +126,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_JS_FUNC:
-            cstr_append_sv(target, span_sv(&my js_func.get->impl->full_span));
+            cstr_append_span(target, my js_func.get->impl->full_span);
             break;
 
         case VALUE_NATIVE_FUNC:

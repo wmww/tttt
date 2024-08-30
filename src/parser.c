@@ -223,21 +223,24 @@ static inline Anchor span_start(Parser* parser) {
 static inline Anchor span_starting_at(Parser* parser, Span start) {
     return (Anchor) {
         .parser = parser,
-        .start = parser->shared->file_start + start.offset,
+        .start = span_start_ptr(start),
     };
 }
 
 static inline Span span_end(Anchor spanner) {
-    const char* file_start = spanner.parser->shared->file_start;
-    return span_make(file_start, spanner.start - file_start, spanner.parser->pos - spanner.start);
+    return span_make(
+        spanner.parser->shared->file_start,
+        spanner.start,
+        spanner.parser->pos
+    );
 }
 
 static inline Span span_from_pos(Parser* me) {
-    return span_make(my shared->file_start, my pos - my shared->file_start, 0);
+    return span_make(my shared->file_start, my pos, my pos);
 }
 
 static inline Span span_from_previous_char(Parser* me) {
-    return span_make(my shared->file_start, my pos - my shared->file_start - 1, 1);
+    return span_make(my shared->file_start, my pos - 1, my pos);
 }
 
 static Span span_from_token(Parser* me) {
@@ -283,13 +286,13 @@ static bool parse_identifier(Parser* parent, Span* ret) {
         return false;
     }
     Span s = span_end(a);
-    if (span_eq_str(&s, "return") ||
-        span_eq_str(&s, "throw") ||
-        span_eq_str(&s, "case") ||
-        span_eq_str(&s, "in") ||
-        span_eq_str(&s, "typeof") ||
-        span_eq_str(&s, "case") ||
-        span_eq_str(&s, "default")
+    if (span_equals(s, "return") ||
+        span_equals(s, "throw") ||
+        span_equals(s, "case") ||
+        span_equals(s, "in") ||
+        span_equals(s, "typeof") ||
+        span_equals(s, "case") ||
+        span_equals(s, "default")
     ) {
         parent->pos = a.start;
         return false; // PERF: check for keywords efficiently
@@ -598,7 +601,7 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
         hop_whitespace(&p);
     }
 
-    if (span_valid(&trailing_comma_span)) {
+    if (span_valid(trailing_comma_span)) {
         parse_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
@@ -851,7 +854,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){
-        *ret = type_tuple(parsed.tuple_elements, span_valid(&readonly_span));
+        *ret = type_tuple(parsed.tuple_elements, span_valid(readonly_span));
         readonly_span = span_null;
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
@@ -867,14 +870,14 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     }
 
     if (parse_type_right_side(&p, min_precedence, ret)) {
-        if (ret->tag == TYPE_ARRAY && span_valid(&readonly_span)) {
+        if (ret->tag == TYPE_ARRAY && span_valid(readonly_span)) {
             ret->array.readonly = true;
             readonly_span = span_null;
         }
         while (parse_type_right_side(&p, min_precedence, ret)) {}
     }
 
-    if (span_valid(&readonly_span)) {
+    if (span_valid(readonly_span)) {
         parse_error(
             &p,
             readonly_span,
@@ -1063,18 +1066,18 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
             Type t;
             Anchor type_start = span_start(&p);
             if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-                if (span_valid(&last_type_span)) {
+                if (span_valid(last_type_span)) {
                     vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
                 }
                 last_type_span = span_end(type_start);
                 last_type = t;
-                if (!span_valid(&last_comma_span) && last_type.tag == TYPE_INTERFACE) {
+                if (!span_valid(last_comma_span) && last_type.tag == TYPE_INTERFACE) {
                     second_last_comma_span = span_null;
                     break;
                 }
                 hop_whitespace(&p);
             } else {
-                if (!span_valid(&last_type_span) || span_valid(&last_comma_span)) {
+                if (!span_valid(last_type_span) || span_valid(last_comma_span)) {
                     hop_whitespace(&p);
                     expected_expression_error(&p);
                 } else {
@@ -1096,7 +1099,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
 
         if (last_type.tag == TYPE_INTERFACE) {
             interface = last_type.interface;
-            if (span_valid(&second_last_comma_span)) {
+            if (span_valid(second_last_comma_span)) {
                 parse_error(&p, second_last_comma_span, 1009, "Trailing comma not allowed.");
             }
         } else {
@@ -1274,7 +1277,7 @@ static bool parse_function_args(
                     type_drop(&t);
                     type_drop(&ret->ret);
                     ret->ret = type_boolean;
-                } else if (csview_equals_sv(span_sv(&ret->ret.identifier->name), c_sv("asserts"))) {
+                } else if (span_equals(ret->ret.identifier->name, "asserts")) {
                     Span param;
                     if (parse_identifier(&p, &param)) {
                         hop_whitespace(&p);
@@ -1357,7 +1360,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     if (!parse_block(&p, false, &ret->body)) {
         Expr expr;
         if (!expect_expr(&p, ctx, &expr)) {
-            p.pos = span_end_ptr(&ret->arrow_span);
+            p.pos = span_end_ptr(ret->arrow_span);
         }
         ret->body = (Block){0};
         vec_statement_push(&ret->body.statements, (Statement){
@@ -1438,7 +1441,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     {
         Value name_value;
         if (parse_identifier(&p, &name_span)) {
-            name_string = cstr_from_span(&name_span);
+            name_string = cstr_from_span(name_span);
         } else if (parse_literal(&p, &name_value)) {
             if (name_value.tag == VALUE_STRING) {
                 name_string = name_value.string;
@@ -1728,8 +1731,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
         }
 
-        if (span_eq_str(&name_span, "readonly")) {
-            if (span_valid(&readonly_span)) {
+        if (span_equals(name_span, "readonly")) {
+            if (span_valid(readonly_span)) {
                 if (!modifier_error) {
                     modifier_error = READONLY_ALREADY_SEEN;
                     modifier_error_span = name_span;
@@ -1737,8 +1740,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             } else {
                 readonly_span = name_span;
             }
-        } else if (span_eq_str(&name_span, "static")) {
-            if (span_valid(&static_span)) {
+        } else if (span_equals(name_span, "static")) {
+            if (span_valid(static_span)) {
                 if (!modifier_error) {
                     modifier_error = UNEXPECTED_IDENT;
                     modifier_error_span = name_span;
@@ -1751,18 +1754,18 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 if (is_type) {
                     modifier_error = MODIFIER_ON_TYPE;
                     modifier_error_span = name_span;
-                } else if (span_valid(&async_span)) {
+                } else if (span_valid(async_span)) {
                     modifier_error = MUST_PRECEDE_ASYNC;
                     modifier_error_span = name_span;
                 }
             }
-        } else if (span_eq_str(&name_span, "export")) {
+        } else if (span_equals(name_span, "export")) {
             if (!modifier_error) {
                 modifier_error = EXPORT_INVALID;
                 modifier_error_span = name_span;
             }
-        } else if (span_eq_str(&name_span, "async")) {
-            if (span_valid(&async_span)) {
+        } else if (span_equals(name_span, "async")) {
+            if (span_valid(async_span)) {
                 if (!modifier_error) {
                     modifier_error = UNEXPECTED_IDENT;
                     modifier_error_span = name_span;
@@ -1777,47 +1780,47 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                     modifier_error_span = name_span;
                 }
             }
-        } else if (span_eq_str(&name_span, "declare")) {
-        } else if (span_eq_str(&name_span, "get")) {
+        } else if (span_equals(name_span, "declare")) {
+        } else if (span_equals(name_span, "get")) {
             getter_setter = IS_GETTER;
-        } else if (span_eq_str(&name_span, "set")) {
+        } else if (span_equals(name_span, "set")) {
             getter_setter = IS_SETTER;
         } else if (
-            span_eq_str(&name_span, "public") ||
-            span_eq_str(&name_span, "protected") ||
-            span_eq_str(&name_span, "private")
+            span_equals(name_span, "public") ||
+            span_equals(name_span, "protected") ||
+            span_equals(name_span, "private")
         ) {
-            if (span_eq_str(&name_span, "public")) {
-            } else if (span_eq_str(&name_span, "protected")) {
-                if (!span_valid(&access_span)) ret->access = ACCESS_MODIFIER_PROTECTED;
-            } else if (span_eq_str(&name_span, "private")) {
-                if (!span_valid(&access_span)) ret->access = ACCESS_MODIFIER_PRIVATE;
+            if (span_equals(name_span, "public")) {
+            } else if (span_equals(name_span, "protected")) {
+                if (!span_valid(access_span)) ret->access = ACCESS_MODIFIER_PROTECTED;
+            } else if (span_equals(name_span, "private")) {
+                if (!span_valid(access_span)) ret->access = ACCESS_MODIFIER_PRIVATE;
             }
 
             if (!modifier_error) {
                 if (is_type) {
                     modifier_error = MODIFIER_ON_TYPE;
                     modifier_error_span = name_span;
-                } else if (span_valid(&access_span)) {
+                } else if (span_valid(access_span)) {
                     modifier_error = ACCCESS_ALREADY_SEEN;
                     modifier_error_span = name_span;
-                } else if (span_valid(&readonly_span)) {
+                } else if (span_valid(readonly_span)) {
                     modifier_error = MUST_PRECEDE_READONLY;
                     modifier_error_span = name_span;
-                } else if (span_valid(&static_span)) {
+                } else if (span_valid(static_span)) {
                     modifier_error = MUST_PRECEDE_STATIC;
                     modifier_error_span = name_span;
-                } else if (span_valid(&async_span)) {
+                } else if (span_valid(async_span)) {
                     modifier_error = MUST_PRECEDE_ASYNC;
                     modifier_error_span = name_span;
                 }
             }
 
-            if (!span_valid(&access_span)) {
+            if (!span_valid(access_span)) {
                 access_span = name_span;
             }
-        } else if (span_valid(&name_span) && !modifier_error) {
-            if (span_eq_str(&name_span, "var")) {
+        } else if (span_valid(name_span) && !modifier_error) {
+            if (span_equals(name_span, "var")) {
                 return parse_fail(&p);
             }
             // If previous name is not empty
@@ -1828,7 +1831,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
         name_span = next_name_span;
 
-        if (!span_valid(&name_span)) {
+        if (!span_valid(name_span)) {
             break;
         }
 
@@ -1848,7 +1851,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
-    if (!is_type && !name_is_value && span_eq_str(&name_span, "constructor")) {
+    if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
         name_span = span_end(a);
         if (!parse_function_fn(&p, &ret->constructor.func)) {
@@ -1858,30 +1861,30 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         ret->constructor.name_span = name_span;
         ret->constructor.func.full_span = span_end(a);
         ret->constructor.func.is_constructor = true;
-        if (span_valid(&readonly_span)) {
+        if (span_valid(readonly_span)) {
             modifier_error = INVALID_READONLY;
             modifier_error_span = readonly_span;
         }
     } else if (
         !is_type &&
         !name_is_value &&
-        span_eq_str(&name_span, "static") &&
+        span_equals(name_span, "static") &&
         parse_block(&p, false, &ret->static_block)
     ) {
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
-        if (span_valid(&async_span)) {
+        if (span_valid(async_span)) {
             modifier_error = MODIFIERS_CANNOT_APPEAR;
             modifier_error_span = async_span;
-        } else if (span_valid(&readonly_span)) {
+        } else if (span_valid(readonly_span)) {
             modifier_error = MODIFIERS_CANNOT_APPEAR;
             modifier_error_span = readonly_span;
-        } else if (span_valid(&access_span)) {
+        } else if (span_valid(access_span)) {
             modifier_error = MODIFIERS_CANNOT_APPEAR;
             modifier_error_span = access_span;
         }
-    } else if (span_valid(&name_span)) {
-        if (span_valid(&name_span) && cstr_empty(&name_string)) {
-            name_string = cstr_from_span(&name_span);
+    } else if (span_valid(name_span)) {
+        if (span_valid(name_span) && cstr_empty(&name_string)) {
+            name_string = cstr_from_span(name_span);
         }
 
         bool optional = false;
@@ -1896,7 +1899,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .tag = CLASS_ITEM_MEMBER,
                 .access = ret->access,
                 .member = {
-                    .is_static = span_valid(&static_span),
+                    .is_static = span_valid(static_span),
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
                     .is_optional = optional,
@@ -1905,7 +1908,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 }
             };
 
-            if (span_valid(&readonly_span)) {
+            if (span_valid(readonly_span)) {
                 modifier_error = INVALID_READONLY;
                 modifier_error_span = readonly_span;
             }
@@ -1914,8 +1917,8 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 .tag = CLASS_ITEM_FIELD,
                 .access = ret->access,
                 .field = {
-                    .is_readonly = span_valid(&readonly_span),
-                    .is_static = span_valid(&static_span),
+                    .is_readonly = span_valid(readonly_span),
+                    .is_static = span_valid(static_span),
                     .is_optional = optional,
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
@@ -1943,12 +1946,12 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         ) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.span = span_end(a);
-            ret->interface_memeber.readonly = span_valid(&readonly_span);
+            ret->interface_memeber.readonly = span_valid(readonly_span);
         } else if (parse_function_args(&p, true, false, &func)) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
                 .span = span_end(a),
-                .readonly = span_valid(&readonly_span),
+                .readonly = span_valid(readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
                 .type = function_impl_into_type(func),
             };
@@ -1976,7 +1979,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'readonly' modifier.",
-                c_SV(span_sv(&modifier_error_span))
+                c_SPAN(modifier_error_span)
             );
             break;
 
@@ -1986,7 +1989,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'static' modifier.",
-                c_SV(span_sv(&modifier_error_span))
+                c_SPAN(modifier_error_span)
             );
             break;
 
@@ -1996,7 +1999,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 modifier_error_span,
                 1029,
                 "'%.*s' modifier must precede 'async' modifier.",
-                c_SV(span_sv(&modifier_error_span))
+                c_SPAN(modifier_error_span)
             );
             break;
 
@@ -2033,7 +2036,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 modifier_error_span,
                 1070,
                 "'%.*s' modifier cannot appear on a type member.",
-                c_SV(span_sv(&modifier_error_span))
+                c_SPAN(modifier_error_span)
             );
             break;
 
@@ -2223,7 +2226,7 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
         return parse_fail(&p);
     }
 
-    *ret = expr_literal(prop, value_string(cstr_from_span(&prop)));
+    *ret = expr_literal(prop, value_string(cstr_from_span(prop)));
     return parse_success(&p);
 }
 
@@ -2356,7 +2359,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     ctx.min_precedence = precedence;
     expect_expr(&p, ctx, &right);
 
-    *left_and_ret = expr_binary_op(span_between(&left_and_ret->outer_span, &right.outer_span), c_new(BinaryOpExpr, {
+    *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
         .left = *left_and_ret,
         .op = op,
         .right = right,
@@ -2564,7 +2567,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>') {
         Parser sub_p = parser(&p);
-        sub_p.pos = span_start_ptr(&left_and_ret->outer_span);
+        sub_p.pos = span_start_ptr(left_and_ret->outer_span);
 
         if (parse_arrow_function(&sub_p, ctx, &parsed.function)) {
             parse_success(&sub_p);
@@ -2911,13 +2914,13 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                     }
 
                     vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                        .source = value_string(cstr_from_span(&name)),
+                        .source = value_string(cstr_from_span(name)),
                         .source_span = name,
                         .target = binding,
                     });
                 } else {
                     vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                        .source = value_string(cstr_from_span(&name)),
+                        .source = value_string(cstr_from_span(name)),
                         .source_span = name,
                         .target = (Binding){
                             .tag = BINDING_IDENTIFIER,
@@ -3013,9 +3016,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
 
     while (true) {
         if (!parse_binding_content(&p, &initializer.binding)) {
-            if (span_valid(&comma_span)) {
+            if (span_valid(comma_span)) {
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
-                p.pos = span_end_ptr(&comma_span);
+                p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET) {
                     // let can also be a variable name, fail so we then attempt to parse it as such
@@ -3023,7 +3026,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
                     return parse_fail(&p);
                 } else {
                     Span s = span_end(end_of_keyword);
-                    s.length = 0;
+                    s.sv.size = 0;
                     parse_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
             } else {
@@ -3715,7 +3718,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         parse_comma_ops_right_side(&p, &ret->expr);
         if (ret->tag == STATEMENT_EXPR &&
             ret->expr.tag == EXPR_IDENTIFIER &&
-            span_eq_str(&ret->expr.identifier.name, "static")
+            span_equals(ret->expr.identifier.name, "static")
         ) {
             hop_whitespace(&p);
             if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != '}') {

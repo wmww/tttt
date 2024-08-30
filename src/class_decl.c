@@ -110,7 +110,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         &my generic
     );
     my instance_named_type->is_class = true;
-    name_stack_add_type_s(names, cstr_from_span(&my name), my instance_named_type);
+    name_stack_add_type(names, my instance_named_type);
 
     VecSpannedType generic_params; // Used multiple times
 
@@ -150,7 +150,7 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
     ASSERT(!my class_named_var);
     my class_named_var = make_named_variable(my name, my full_span, type_ref(&my class_identifier_type), &my generic);
-    name_stack_add_variable_s(names, cstr_from_span(&my name), my class_named_var);
+    name_stack_add_variable(names, my class_named_var);
 
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -378,11 +378,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (constructor_count > 1) {
         c_foreach(i, vec_class_item, my items) {
             if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
-                ASSERT(span_valid(&i.ref->constructor.name_span));
-                ASSERT(span_valid(&i.ref->constructor.func.full_span));
+                ASSERT(span_valid(i.ref->constructor.name_span));
+                ASSERT(span_valid(i.ref->constructor.func.full_span));
                 error_ctx_error(
                     errs,
-                    span_between(&i.ref->constructor.name_span, &i.ref->constructor.func.full_span),
+                    span_between(i.ref->constructor.name_span, i.ref->constructor.func.full_span),
                     2392,
                     "Multiple constructor implementations are not allowed."
                 );

@@ -251,7 +251,7 @@ Type name_stack_make_interface_from(NameStack const* me) {
             span_null, // Interface name
             false, // readonly
             false, // optional
-            cstr_from_span(&i.ref->second->name),
+            cstr_from_span(i.ref->second->name),
             i.ref->second->name,
             false, // name is value
             type_clone(i.ref->second->type)
@@ -263,12 +263,11 @@ Type name_stack_make_interface_from(NameStack const* me) {
 }
 
 void name_stack_add_variable(NameStack* me, NamedVariable* var) {
-    name_stack_add_variable_s(me, cstr_from_span(&var->name), var);
-
+    name_stack_add_variable_s(me, cstr_from_span(var->name), var);
 }
 
 void name_stack_add_type(NameStack* me, NamedType* type) {
-    name_stack_add_type_s(me, cstr_from_span(&type->name), type);
+    name_stack_add_type_s(me, cstr_from_span(type->name), type);
 }
 
 void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
@@ -286,14 +285,14 @@ void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* v
                     name_span,
                     2451,
                     "Cannot redeclare block-scoped variable '%.*s'.",
-                    c_SV(span_sv(&name_span))
+                    c_SPAN(name_span)
                 );
                 error_ctx_error(
                     my errs,
                     result.ref->second->name,
                     2451,
                     "Cannot redeclare block-scoped variable '%.*s'.",
-                    c_SV(span_sv(&result.ref->second->name))
+                    c_SPAN(result.ref->second->name)
                 );
                 break;
 
@@ -304,14 +303,14 @@ void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* v
                     name_span,
                     2300,
                     "Duplicate identifier '%.*s'.",
-                    c_SV(span_sv(&name_span))
+                    c_SPAN(name_span)
                 );
                 error_ctx_error(
                     my errs,
                     result.ref->second->name,
                     2300,
                     "Duplicate identifier '%.*s'.",
-                    c_SV(span_sv(&result.ref->second->name))
+                    c_SPAN(result.ref->second->name)
                 );
                 break;
         }
@@ -334,7 +333,7 @@ void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
                     result.ref->second->name,
                     2300,
                     "Duplicate identifier '%.*s'.",
-                    c_SV(span_sv(&result.ref->second->name))
+                    c_SPAN(result.ref->second->name)
                 );
                 // Fallthrough
 
@@ -344,7 +343,7 @@ void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
                     name_span,
                     2300,
                     "Duplicate identifier '%.*s'.",
-                    c_SV(span_sv(&name_span))
+                    c_SPAN(name_span)
                 );
                 break;
         }
@@ -356,7 +355,7 @@ void name_stack_add_namespace(NameStack* me, Span name, NameStack* ref) {
 
     // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
     // NameStacks may not need to be clonable if that's the case
-    cstr name_string = cstr_from_sv(span_sv(&name));
+    cstr name_string = cstr_from_span(name);
     BoxNameStack box = box_name_stack_make(name_stack_clone(*ref));
     hmap_str_box_name_stack_result result = hmap_str_box_name_stack_insert(
         &vec_stack_frame_back(&my stack)->namespaces,
@@ -370,7 +369,7 @@ void name_stack_add_namespace(NameStack* me, Span name, NameStack* ref) {
             name,
             TS_CODE_NONE,
             "Duplicate namespace '%.*s'.",
-            c_SV(span_sv(&name))
+            c_SPAN(name)
         );
     }
 }

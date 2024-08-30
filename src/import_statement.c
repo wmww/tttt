@@ -23,7 +23,7 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
     ASSERT(!my module_named_var);
     ASSERT(!my module_named_type);
 
-    if (span_valid(&my default_name)) {
+    if (span_valid(my default_name)) {
         my default_named_type = make_named_type(my default_name, my default_name, type_any, nullptr);
         name_stack_add_type(names, my default_named_type);
         if (!my type_only) {
@@ -31,7 +31,7 @@ void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx*
             name_stack_add_variable(names, my default_named_var);
         }
     }
-    if (span_valid(&my module_name)) {
+    if (span_valid(my module_name)) {
         my module_named_type = make_named_type(my module_name, my module_name, type_any, nullptr);
         name_stack_add_type(names, my module_named_type);
         if (!my type_only) {

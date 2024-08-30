@@ -563,11 +563,11 @@ static void display_class_decl(Display d, ClassDecl const* me) {
         display_lit(d, "abstract ");
     }
     display_lit(d, "class ");
-    if (span_valid(&my name)) {
+    if (span_valid(my name)) {
         display_colored_span(d, color_name, my name);
     }
     display_generic(d, &my generic);
-    if (span_valid(&my name) || !generic_empty(&my generic)) {
+    if (span_valid(my name) || !generic_empty(&my generic)) {
         display_lit(d, " ");
     }
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
@@ -661,7 +661,7 @@ void display_expr(Display d, Expr const* me) {
     }
 
     intptr_t paren_depth = 0;
-    for (const char* c = span_start_ptr(&my outer_span); c < span_start_ptr(&my inner_span); c++) {
+    for (const char* c = span_start_ptr(my outer_span); c < span_start_ptr(my inner_span); c++) {
         if (*c == '(') paren_depth++;
     }
 
@@ -841,11 +841,11 @@ static void display_import_statement(Display d, ImportStatement const* me) {
         display_lit(d, "type ");
     }
     bool force_brace_list = true;
-    if (span_valid(&my default_name)) {
+    if (span_valid(my default_name)) {
         display_colored_span(d, color_name, my default_name);
         force_brace_list = false;
     }
-    if (span_valid(&my module_name)) {
+    if (span_valid(my module_name)) {
         display_colored(d, color_value, "*");
         display_lit(d, " as ");
         display_colored_span(d, color_name, my module_name);
@@ -861,7 +861,7 @@ static void display_import_statement(Display d, ImportStatement const* me) {
                 display_lit(d, "type ");
             }
             display_colored_span(d, color_name, i.ref->source);
-            if (span_cmp(&i.ref->name, &i.ref->source) != 0) {
+            if (span_cmp(i.ref->name, i.ref->source) != 0) {
                 display_lit(d, " as ");
                 display_colored_span(d, color_name, i.ref->name);
             }

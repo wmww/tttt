@@ -1506,8 +1506,8 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 Span span = call->callable.inner_span;
                 if (call_arg_count > max_args) {
                     span = span_between(
-                        &vec_expr_at(&call->args, max_args)->outer_span,
-                        &vec_expr_at(&call->args, call_arg_count - 1)->outer_span
+                        vec_expr_at(&call->args, max_args)->outer_span,
+                        vec_expr_at(&call->args, call_arg_count - 1)->outer_span
                     );
                 }
 
@@ -1568,7 +1568,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                     }
                     type_drop(&arg_type);
                 } else if (last_arg_rest) {
-                    rest_span = span_between(&rest_span, &i.ref->outer_span);
+                    rest_span = span_between(rest_span, i.ref->outer_span);
                     vec_tuple_element_push(&rest_tuple, (TupleElement){.type = arg_type});
                 } else {
                     type_drop(&arg_type);
@@ -1585,7 +1585,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                         "parameter of type",
                         &arg->type,
                         2345,
-                        span_valid(&rest_span) ? rest_span : span,
+                        span_valid(rest_span) ? rest_span : span,
                         errs
                     );
                 }

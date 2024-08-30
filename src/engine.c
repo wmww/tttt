@@ -75,7 +75,7 @@ static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, V
 // Returns result_ok_undefined on success, not the value. Consumes value.
 static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value) {
     switch (target->tag) {
-        case EXPR_IDENTIFIER: return engine_assign_identifier(me, span_sv(&target->identifier.name), value);
+        case EXPR_IDENTIFIER: return engine_assign_identifier(me, target->identifier.name.sv, value);
 
         case EXPR_PROPERTY: {
             TRY_CATCH(target_value, engine_eval_expr(me, &target->property->expr), res_err, {
@@ -106,7 +106,7 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
                     return result_ok(value);
 
                 case VALUE_OBJECT:
-                    js_object_set(target_value.object.get, cstr_from_span(&target->identifier.name), value);
+                    js_object_set(target_value.object.get, cstr_from_span(target->identifier.name), value);
                     return result_ok_undefined;
             }
             UNREACHABLE;
@@ -289,7 +289,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
                 });
                 value = default_value;
             }
-            js_object_set(locals, cstr_from_span(&arg->initializer.binding.content_span), value);
+            js_object_set(locals, cstr_from_span(arg->initializer.binding.content_span), value);
         } else {
             NONFATAL("Structured binding function arguments not yet supported in engine");
         }
@@ -368,7 +368,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return result_ok(value_undefined);
         case EXPR_LITERAL: return result_ok(value_clone(expr->literal));
-        case EXPR_IDENTIFIER: return engine_eval_identifier(me, span_sv(&expr->identifier.name));
+        case EXPR_IDENTIFIER: return engine_eval_identifier(me, expr->identifier.name.sv);
         case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);
         case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
         case EXPR_PROPERTY: return engine_eval_property(me, expr->property);
@@ -430,7 +430,7 @@ static Result MUST_USE engine_run_binding(Engine* me, Binding const* binding, Va
             break;
 
         case BINDING_IDENTIFIER: {
-            cstr name = cstr_from_span(&binding->content_span);
+            cstr name = cstr_from_span(binding->content_span);
             JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);
         }   break;
@@ -509,10 +509,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_DECL_FUNCTION: {
-            if (!span_valid(&statement->decl.function.name)) {
+            if (!span_valid(statement->decl.function.name)) {
                 return result_ok_undefined;
             }
-            cstr name = cstr_from_span(&statement->decl.function.name);
+            cstr name = cstr_from_span(statement->decl.function.name);
             Value value = value_js_func(&statement->decl.function);
             JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);

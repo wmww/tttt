@@ -94,13 +94,13 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_IDENTIFIER: {
-            my identifier.var = name_stack_get_variable(names, span_sv(&my identifier.name));
+            my identifier.var = name_stack_get_variable(names, my identifier.name.sv);
             if (my identifier.var) {
-            } else if (name_stack_get_type(names, span_sv(&my identifier.name))) {
+            } else if (name_stack_get_type(names, my identifier.name.sv)) {
                 error_ctx_error(
                     errs, my identifier.name, 2693,
                     "'%.*s' only refers to a type, but is being used as a value here.",
-                    c_SV(span_sv(&my identifier.name))
+                    c_SPAN(my identifier.name)
                 );
             } else {
                 error_ctx_error(
@@ -108,7 +108,7 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
                     my identifier.name,
                     2304,
                     "Cannot find name '%.*s'.",
-                    c_SV(span_sv(&my identifier.name))
+                    c_SPAN(my identifier.name)
                 );
             }
             c_foreach(i, vec_spanned_type, my identifier.generic_params) {
@@ -383,8 +383,8 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                         error_ctx_error(
                             errs,
                             span_between(
-                                &vec_spanned_type_at(&my identifier.generic_params, 0)->span,
-                                &(vec_spanned_type_end(&my identifier.generic_params).end - 1)->span
+                                vec_spanned_type_at(&my identifier.generic_params, 0)->span,
+                                (vec_spanned_type_end(&my identifier.generic_params).end - 1)->span
                             ),
                             2558,
                             "Expected 0 type arguments, but got %zd.",
@@ -501,7 +501,7 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                 vec_interface_member_push(
                     &interface.members,
                     interface_member_make(
-                        span_between(&i.ref->name_span, &i.ref->value.outer_span),
+                        span_between(i.ref->name_span, i.ref->value.outer_span),
                         span_null,
                         false,
                         false,

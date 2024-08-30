@@ -127,7 +127,7 @@ static inline Expr expr_implicit_any(Span span) {
 #undef EXPR_DEFAULT
 
 static inline bool expr_is_perenthisized(Expr* me) {
-    return my inner_span.offset != my outer_span.offset;
+    return span_start_ptr(my inner_span) != span_start_ptr(my outer_span);
 }
 
 extern const Expr expr_implicit_any_no_span;

@@ -26,14 +26,14 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
     if (!my named_type) {
         NameStack const* namespace = names;
         c_foreach(i, vec_span, my namespaces) {
-            namespace = name_stack_get_namespace(namespace, span_sv(i.ref));
+            namespace = name_stack_get_namespace(namespace, i.ref->sv);
             if (!namespace) {
-                error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SV(span_sv(i.ref)));
+                error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
                 break;
             }
         }
         if (namespace) {
-            my named_type = name_stack_get_type(namespace, span_sv(&my name));
+            my named_type = name_stack_get_type(namespace, my name.sv);
             if (!my named_type) {
                 if (vec_span_size(&my namespaces)) {
                     error_ctx_error(
@@ -41,8 +41,8 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
                         my name,
                         2694,
                         "Namespace '%.*s' has no exported member '%.*s'.",
-                        c_SV(span_sv(vec_span_back(&my namespaces))),
-                        c_SV(span_sv(&my name))
+                        c_SPAN(*vec_span_back(&my namespaces)),
+                        c_SPAN(my name)
                     );
                 } else {
                     error_ctx_error(
@@ -50,7 +50,7 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
                         my name,
                         2304,
                         "Cannot find name '%.*s'.",
-                        c_SV(span_sv(&my name))
+                        c_SPAN(my name)
                     );
                 }
             }
@@ -85,7 +85,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
         /*
         //This can be enabled once we're parsing the standard library
         if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my named_type->generic)) {
-            error_ctx_error(errs, my full_span, 2315, "Type '%.*s' is not generic.", c_SV(span_sv(&my name)));
+            error_ctx_error(errs, my full_span, 2315, "Type '%.*s' is not generic.", c_SPAN(my name));
         }
         Type const* t = type_resolve(lazy_type_resolve(&my named_type->type));
         if (t->tag == TYPE_ANY && t->any.excessively_deep_error) {

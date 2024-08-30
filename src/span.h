@@ -4,49 +4,40 @@
 
 typedef struct Span {
     const char* file_start;
-    unsigned offset;
-    unsigned length;
+    csview sv;
 } Span;
 
 #define span_null ((Span){0})
+#define span_equals(span, lit) csview_equals_sv((span).sv, c_sv(lit))
+#define c_SPAN(span) c_SV((span).sv)
 
-static inline Span span_make(const char* file_start, unsigned offset, unsigned length) {
+static inline Span span_make(const char* file_start, const char* start, const char* end) {
     return (Span){
         .file_start = file_start,
-        .offset = offset,
-        .length = length,
+        .sv = csview_from_n(start, end - start),
     };
 }
 
-static inline bool span_valid(Span const* me) { return me->file_start; }
+static inline bool span_valid(Span me) { return me.file_start; }
 
-static inline const char* span_start_ptr(Span const* me) {
-    return my file_start ? my file_start + my offset : nullptr;
+static inline const char* span_start_ptr(Span me) {
+    return me.sv.buf;
 }
 
-static inline const char* span_end_ptr(Span const* me) {
-    return my file_start ? my file_start + my offset + my length : nullptr;
+static inline const char* span_end_ptr(Span me) {
+    return me.file_start ? me.sv.buf + me.sv.size : nullptr;
 }
 
-int span_line_index(Span const* me);
-int span_col_index(Span const* me);
-const char* span_line_start(Span const* me);
-const char* span_line_end(Span const* me);
-Span span_between(Span const* a, Span const* b);
-int span_cmp(Span const* a, Span const* b);
-bool span_eq_str(Span const* me, const char* str);
-void cstr_append_span(cstr* target, Span const* me);
+intptr_t span_line_index(Span me);
+intptr_t span_col_index(Span me);
+const char* span_line_start(Span me);
+const char* span_line_end(Span me);
+Span span_between(Span a, Span b);
+int span_cmp(Span a, Span b);
+void cstr_append_span(cstr* target, Span me);
 
-static inline csview span_sv(Span const* me) {
-    if (!my file_start) {
-        return c_sv("");
-    } else {
-        return csview_from_n(my file_start + my offset, my length);
-    }
-}
-
-static inline cstr cstr_from_span(Span const* me) {
-    return cstr_from_sv(span_sv(me));
+static inline cstr cstr_from_span(Span me) {
+    return cstr_from_sv(me.sv);
 }
 
 #define i_key_names Span, span

@@ -275,7 +275,7 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
                 .refined = generic_param_at(generic_params, index),
             });
         } else {
-            NONFATAL("Generic %.*s type is null", c_SV(span_sv(&i.ref->name)));
+            NONFATAL("Generic %.*s type is null", c_SPAN(i.ref->name));
         }
     }
     replace_named_types_with(&t, &refinements);
@@ -299,7 +299,7 @@ CallableType generic_infer_callable_types(
                 .refined = nullptr,
             });
         } else {
-            NONFATAL("Generic %.*s type is null", c_SV(span_sv(&i.ref->name)));
+            NONFATAL("Generic %.*s type is null", c_SPAN(i.ref->name));
         }
     }
     VecType arg_types = {0};

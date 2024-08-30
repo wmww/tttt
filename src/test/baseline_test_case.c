@@ -9,7 +9,7 @@
 #include "value.h"
 
 typedef struct LineNumberedStr {
-    int line;
+    intptr_t line;
     cstr str;
 } LineNumberedStr;
 
@@ -184,9 +184,9 @@ static void render_lines_woven_with_file(
     VecLineNumberedStr const* lines
 ) {
     const char* line_indent = is_errors ? "    " : "";
-    int line = 0;
-    int index = 0;
-    int vec_size = vec_line_numbered_str_size(lines);
+    intptr_t line = 0;
+    intptr_t index = 0;
+    intptr_t vec_size = vec_line_numbered_str_size(lines);
     const char* relative_path = relative_test_path(source_path);
     bool newline_if_next_line_non_empty = false;
 
@@ -251,12 +251,12 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     VecLineNumberedStr error_lines = vec_line_numbered_str_init();
 
     c_foreach(error, vec_error, my error_ctx.errors) {
-        int line = span_line_index(&error.ref->span);
-        int col = span_col_index(&error.ref->span);
+        intptr_t line = span_line_index(error.ref->span);
+        intptr_t col = span_col_index(error.ref->span);
 
         cstr_append_fmt(
             target,
-            "%s(%d,%d): error TS%d: %s\r\n",
+            "%s(%zd,%zd): error TS%d: %s\r\n",
             source_basename, line + 1, col + 1,
             error.ref->ts_code,
             cstr_str(&error.ref->message)
@@ -267,11 +267,11 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
             .str = cstr_null,
         };
 
-        if (span_valid(&error.ref->span)) {
-            for (int j = 0; j < col + 4; j++) {
+        if (span_valid(error.ref->span)) {
+            for (intptr_t j = 0; j < col + 4; j++) {
                 cstr_append_sv(&item.str, c_sv(" "));
             }
-            for (unsigned j = 0; j < error.ref->span.length; j++) {
+            for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
                 cstr_append_sv(&item.str, c_sv("~"));
             }
             cstr_append(&item.str, "\r\n");
@@ -287,11 +287,11 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         );
 
         c_foreach(related, vec_error, error.ref->related_errors) {
-            int related_line = span_line_index(&related.ref->span);
-            int related_col = span_col_index(&related.ref->span);
+            intptr_t related_line = span_line_index(related.ref->span);
+            intptr_t related_col = span_col_index(related.ref->span);
             cstr_append_fmt(
                 &item.str,
-                "\r\n!!! related TS%d %s:%d:%d: %s",
+                "\r\n!!! related TS%d %s:%zd:%zd: %s",
                 related.ref->ts_code,
                 source_basename,
                 related_line + 1,
@@ -331,6 +331,64 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, csview name, Span span,
     baseline_test_case_add_symbol_with_scope(me, c_sv(""), name, span, false, decl_span);
 }
 
+static void append_decl(cstr* target, const char* source_path, Span span) {
+    if (!span_valid(span)) {
+        return;
+    }
+    const char* file_start = span.file_start;
+    const char* start = span_start_ptr(span);
+    bool keep_going = true;
+    // The space before the symbol is included in the span. Why? I have no idea.
+    // Here we parse code backwards, which is an extremely silly thing to do
+    while (keep_going && start > file_start) {
+        switch (start[-1]) {
+            case ' ':
+            case '\t':
+            case '\n':
+            case '\r':
+                start--;
+                break;
+
+            case '/':
+                if (start > file_start + 1 && start[-2] == '*') {
+                    keep_going = false;
+                    // Skip block comments
+                    const char* c = start - 1;
+                    while (c > file_start) {
+                        if (*(c - 1) == '/' && *c == '*') {
+                            keep_going = true;
+                            start = c - 1;
+                            break;
+                        }
+                        c--;
+                    }
+                    if (keep_going) {
+                        break;
+                    }
+                }
+                // fallthrough
+
+            default: {
+                keep_going = false;
+                // Skip line comments, going backwards
+                const char* c = start - 1;
+                while (c > file_start && *c != '\n') {
+                    if (*(c - 1) == '/' && *c == '/') {
+                        keep_going = true;
+                        start = c - 1;
+                        break;
+                    }
+                    c--;
+                }
+            }   break;
+        }
+    }
+    span.sv = csview_from_n(start, 0);
+    intptr_t format_line = span_line_index(span);
+    intptr_t format_col = span_col_index(span);
+    cstr_append_fmt(target, ", Decl(%s, %zd, %zd)", basename_of(source_path), format_line, format_col);
+}
+
 void baseline_test_case_add_symbol_with_scope(
     BaselineTestCase* me,
     csview scope,
@@ -339,14 +397,14 @@ void baseline_test_case_add_symbol_with_scope(
     bool name_is_value,
     Span decl_span
 ) {
-    unsigned line_for_placement = span_line_index(&span);
-    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SV(span_sv(&span)));
+    unsigned line_for_placement = span_line_index(span);
+    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SPAN(span));
     if (csview_empty(scope)) {
         cstr_append_sv(&text, name);
     } else if (name_is_value) {
         cstr_append_sv(&text, scope);
         cstr_append_sv(&text, c_sv("["));
-        cstr_append_sv(&text, span_sv(&span));
+        cstr_append_span(&text, span);
         cstr_append_sv(&text, c_sv("]"));
     } else {
         cstr_append_sv(&text, scope);
@@ -354,56 +412,8 @@ void baseline_test_case_add_symbol_with_scope(
         cstr_append_sv(&text, name);
     }
 
-    if (span_valid(&decl_span)) {
-        bool keep_going = true;
-        // The space before the symbol is included in the span. Why? I have no idea.
-        while (keep_going && decl_span.offset > 0) {
-            switch (decl_span.file_start[decl_span.offset - 1]) {
-                case ' ':
-                case '\t':
-                case '\n':
-                case '\r':
-                    decl_span.offset--;
-                    break;
+    append_decl(&text, my source_path, decl_span);
 
-                case '/':
-                    if (decl_span.offset > 1 && decl_span.file_start[decl_span.offset - 2] == '*') {
-                        keep_going = false;
-                        // Skip block comments, going backwards
-                        const char* c = decl_span.file_start + decl_span.offset - 1;
-                        while (c > decl_span.file_start) {
-                            if (*(c - 1) == '/' && *c == '*') {
-                                keep_going = true;
-                                decl_span.offset = c - 1 - decl_span.file_start;
-                                break;
-                            }
-                            c--;
-                        }
-                        if (keep_going) {
-                            break;
-                        }
-                    }
-                    // fallthrough
-
-                default: {
-                    keep_going = false;
-                    // Skip line comments, going backwards
-                    const char* c = decl_span.file_start + decl_span.offset - 1;
-                    while (c > decl_span.file_start && *c != '\n') {
-                        if (*(c - 1) == '/' && *c == '/') {
-                            keep_going = true;
-                            decl_span.offset = c - 1 - decl_span.file_start;
-                            break;
-                        }
-                        c--;
-                    }
-                }   break;
-            }
-        }
-        int format_line = span_line_index(&decl_span);
-        int format_col = span_col_index(&decl_span);
-        cstr_append_fmt(&text, ", Decl(%s, %d, %d)", basename_of(my source_path), format_line, format_col);
-    }
     cstr_append(&text, ")");
     vec_line_numbered_str_push(&my symbols, (LineNumberedStr){
         .line = line_for_placement,
@@ -412,10 +422,9 @@ void baseline_test_case_add_symbol_with_scope(
 }
 
 static void append_span_contents_without_newlines(cstr* target, Span span) {
-    csview sv = span_sv(&span);
-    for (intptr_t i = 0; i < sv.size; i++) {
-        if (sv.buf[i] != '\r' && sv.buf[i] != '\n') {
-            cstr_push(target, &sv.buf[i]);
+    for (intptr_t i = 0; i < span.sv.size; i++) {
+        if (span.sv.buf[i] != '\r' && span.sv.buf[i] != '\n') {
+            cstr_push(target, &span.sv.buf[i]);
         }
     }
 }
@@ -430,10 +439,10 @@ void baseline_test_case_add_type_recursive(
     Span inner_span,
     Type const* type
 ) {
-    const char* outer_start = span_start_ptr(&outer_span);
-    const char* outer_last = span_end_ptr(&outer_span) - 1;
-    const char* inner_start = span_start_ptr(&inner_span);
-    const char* inner_last = span_end_ptr(&inner_span) - 1;
+    const char* outer_start = span_start_ptr(outer_span);
+    const char* outer_last = span_end_ptr(outer_span) - 1;
+    const char* inner_start = span_start_ptr(inner_span);
+    const char* inner_last = span_end_ptr(inner_span) - 1;
 
     while (outer_start < inner_start && *outer_start != '(') outer_start++;
     while (outer_last > inner_last && *outer_last != ')') outer_last--;
@@ -444,15 +453,15 @@ void baseline_test_case_add_type_recursive(
         outer_last = inner_last;
         base_case = true;
     }
-    outer_span = span_make(inner_span.file_start, outer_start - inner_span.file_start, outer_last + 1 - outer_start );
+    outer_span = span_make(inner_span.file_start, outer_start, outer_last + 1);
 
-    unsigned line = span_line_index(&outer_span);
+    intptr_t line = span_line_index(outer_span);
     cstr str = cstr_lit(">");
     append_span_contents_without_newlines(&str, outer_span);
     cstr_append(&str, " : ");
     if (type->tag == TYPE_INFERRED) {
         // Inferred identifiers in ternaries include the infer keyword, which the tests don't like
-        cstr_append_span(&str, &type->inferred.get->name);
+        cstr_append_span(&str, type->inferred.get->name);
     } else {
         cstr_append_type_error_msg(&str, type);
     }
@@ -461,8 +470,8 @@ void baseline_test_case_add_type_recursive(
         .str = str,
     });
     if (!base_case) {
-        outer_span.offset++;
-        outer_span.length -= 2;
+        outer_span.sv.buf++;
+        outer_span.sv.size -= 2;
         baseline_test_case_add_type_recursive(me, outer_span, inner_span, type);
     }
 }

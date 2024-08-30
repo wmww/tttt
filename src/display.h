@@ -68,7 +68,7 @@ static inline Display debug_display(cstr* target) {
 static inline void display_str  (Display d, const char* s)  { cstr_append   (d.target, s); }
 static inline void display_s    (Display d, cstr        s)  { cstr_append_s (d.target, s); }
 static inline void display_sv   (Display d, csview      s)  { cstr_append_sv(d.target, s); }
-static inline void display_span (Display d, Span        s)  { cstr_append_sv(d.target, span_sv(&s)); }
+static inline void display_span (Display d, Span        s)  { cstr_append_span(d.target, s); }
 
 static inline void display_newline(Display d) {
     if (d.debug) {

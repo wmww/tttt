@@ -48,7 +48,7 @@ void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
     __(errs);
     ASSERT(!my named_type);
     my named_type = make_named_type(my name, my full_span, type_ref(&my type), &my generic);
-    name_stack_add_type_s(names, cstr_from_span(&my name), my named_type);
+    name_stack_add_type(names, my named_type);
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
@@ -92,7 +92,7 @@ void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* err
         })),
         nullptr
     );
-    name_stack_add_variable_s(names, cstr_from_span(&my name), my value_named_var);
+    name_stack_add_variable(names, my value_named_var);
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {

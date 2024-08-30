@@ -105,7 +105,7 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
                 toplevel ? 7006 : 7031,
                 "%s '%.*s' implicitly has an 'any' type.",
                 toplevel ? "Parameter" : "Binding element",
-                c_SV(span_sv(&my content_span))
+                c_SPAN(my content_span)
             );
             break;
 
@@ -142,7 +142,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
                 Type const* type = type_resolve(binding_get_effective_type(me));
                 if (type_is_self_referential(type)) {
                     cstr msg = cstr_lit("'");
-                    cstr_append_span(&msg, &my content_span);
+                    cstr_append_span(&msg, my content_span);
                     cstr_append_lit(&msg, "' implicitly has type '");
                     cstr_append_type_error_msg(&msg, type);
                     cstr_append_lit(&msg, "' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.");
