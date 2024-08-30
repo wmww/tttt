@@ -28,12 +28,21 @@ extern const char* color_type;
 
 extern const csview indent_string;
 
+typedef struct NamedType NamedType;
+typedef NamedType const* NamedTypeCPtr;
+wrap_forward_hset(NamedTypeCPtr, named_type_cptr);
+
+typedef struct HashKeyTarget {
+    cstr target;
+    HsetNamedTypeCPtr named_types;
+} HashKeyTarget;
+
 typedef struct Display {
     union {
         // The first element of all other union members is a cstr, so it is safe and well-defined to access target in
         // all cases.
         cstr* target;
-        // It's unclear if we will in fact need other union members, if not the union can be removed
+        HashKeyTarget* hash_key_target;
     };
     unsigned char indent;
     bool color : 1;
@@ -47,9 +56,9 @@ static inline Display error_display(cstr* target) {
     };
 }
 
-static inline Display hash_key_display(cstr* target) {
+static inline Display hash_key_display(HashKeyTarget* target) {
     return (Display) {
-        .target = target,
+        .hash_key_target = target,
         .hash_key = true,
     };
 }

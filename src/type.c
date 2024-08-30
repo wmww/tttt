@@ -32,10 +32,6 @@ typedef hmap_str_bool HmapStrBool;
 typedef hmap_str_bool_result HmapStrBoolResult;
 typedef hmap_str_bool_value HmapStrBoolValue;
 
-typedef NamedType const* NamedTypeCPtr;
-#define i_key_names NamedTypeCPtr, named_type_cptr
-#include "wrap_stc/hset.h"
-
 typedef struct TypeCtx {
     unsigned recursion_level;
     HsetNamedTypeCPtr currently_resolving;
@@ -914,18 +910,19 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     }
 
     static const bool default_result = true;
+    HashKeyTarget key = {0};
     csview key_sv;
     bool add_to_extends_results = ctx->extends_attempts > 10 &&
         (sub->tag == TYPE_IDENTIFIER || super->tag == TYPE_IDENTIFIER);
 
     if (add_to_extends_results) {
-        cstr key = cstr_null;
         display_type(hash_key_display(&key), sub);
-        cstr_append_lit(&key, " # ");
+        cstr_append_lit(&key.target, " # ");
         display_type(hash_key_display(&key), super);
-        key_sv = cstr_sv(&key); // Hacky but should work as long as we don't use it after key is dropped
+        hset_named_type_cptr_drop(&key.named_types);
+        key_sv = cstr_sv(&key.target); // Hacky but should work as long as we don't use it after key is dropped
         // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
-        HmapStrBoolResult result = hmap_str_bool_insert(&ctx->extends_results, key, default_result);
+        HmapStrBoolResult result = hmap_str_bool_insert(&ctx->extends_results, key.target, default_result);
         if (!result.inserted) {
             return result.ref->second;
         }

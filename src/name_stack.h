@@ -3,6 +3,7 @@
 #include "type.h"
 #include "expr.h"
 #include "generic.h"
+#include "display.h" // HsetNamedTypeCPtr is forward-declared in display.h for reasons
 
 typedef struct NameStack NameStack;
 
@@ -24,6 +25,10 @@ typedef struct NamedType {
     bool is_class;
     bool is_typeof_class;
 } NamedType;
+
+#define i_key_names NamedTypeCPtr, named_type_cptr
+#define i_is_forward
+#include "wrap_stc/hset.h"
 
 NamedType* make_named_type(Span name, Span full, Type type, Generic const* generic);
 void named_type_destroy(NamedType* me);

@@ -203,6 +203,14 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
+    if (d.hash_key && my named_type && vec_spanned_type_empty(&my generic_params)) {
+        if (hset_named_type_cptr_insert(&d.hash_key_target->named_types, my named_type).inserted) {
+            display_type(d, &my named_type->type);
+            hset_named_type_cptr_erase(&d.hash_key_target->named_types, my named_type);
+            return;
+        }
+    }
+
     if (my named_type && my named_type->is_typeof_class) {
         display_lit(d, "typeof ");
     }
