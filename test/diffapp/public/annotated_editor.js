@@ -71,13 +71,15 @@ class AnnotatedEditor extends Editor {
           indexB++;
         }
 
-        for (const i of Diff.diffLines(resultA, resultB)) {
+        const sectionLinesA = resultA.split(this.newlineRegex);
+        const sectionLinesB = resultB.split(this.newlineRegex);
+        for (const i of Diff.diffArrays(sectionLinesA, sectionLinesB)) {
           if (i.added) {
-            tokenizeStringInto(i.value, null, 'token-diff-b', false, null, this.annotationWithNulls);
+            tokenizeStringInto(i.value.join('\n'), null, 'token-diff-b', false, null, this.annotationWithNulls);
           } else if (i.removed) {
-            tokenizeStringInto(i.value, null, 'token-diff-a', false, null, this.annotationWithNulls);
+            tokenizeStringInto(i.value.join('\n'), null, 'token-diff-a', false, null, this.annotationWithNulls);
           } else {
-            tokenizeStringInto(i.value, null, 'token-diff-both', false, null, this.annotationWithNulls);
+            tokenizeStringInto(i.value.join('\n'), null, 'token-diff-both', false, null, this.annotationWithNulls);
           }
           if (this.annotationWithNulls &&
             this.annotationWithNulls[this.annotationWithNulls.length - 1] &&
