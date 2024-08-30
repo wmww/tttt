@@ -9,7 +9,7 @@
 #include "value.h"
 
 typedef struct LineNumberedStr {
-    intptr_t line;
+    unsigned line;
     cstr str;
 } LineNumberedStr;
 
@@ -184,8 +184,8 @@ static void render_lines_woven_with_file(
     VecLineNumberedStr const* lines
 ) {
     const char* line_indent = is_errors ? "    " : "";
-    intptr_t line = 0;
-    intptr_t index = 0;
+    unsigned line = 0;
+    unsigned index = 0;
     intptr_t vec_size = vec_line_numbered_str_size(lines);
     const char* relative_path = relative_test_path(source_path);
     bool newline_if_next_line_non_empty = false;
@@ -251,12 +251,12 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     VecLineNumberedStr error_lines = vec_line_numbered_str_init();
 
     c_foreach(error, vec_error, my error_ctx.errors) {
-        intptr_t line = span_line_index(error.ref->span);
-        intptr_t col = span_col_index(error.ref->span);
+        unsigned line = span_line_index(error.ref->span);
+        unsigned col = span_col_index(error.ref->span);
 
         cstr_append_fmt(
             target,
-            "%s(%zd,%zd): error TS%d: %s\r\n",
+            "%s(%u,%u): error TS%d: %s\r\n",
             source_basename, line + 1, col + 1,
             error.ref->ts_code,
             cstr_str(&error.ref->message)
@@ -268,7 +268,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         };
 
         if (span_valid(error.ref->span)) {
-            for (intptr_t j = 0; j < col + 4; j++) {
+            for (unsigned j = 0; j < col + 4; j++) {
                 cstr_append_sv(&item.str, c_sv(" "));
             }
             for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
@@ -287,11 +287,11 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         );
 
         c_foreach(related, vec_error, error.ref->related_errors) {
-            intptr_t related_line = span_line_index(related.ref->span);
-            intptr_t related_col = span_col_index(related.ref->span);
+            unsigned related_line = span_line_index(related.ref->span);
+            unsigned related_col = span_col_index(related.ref->span);
             cstr_append_fmt(
                 &item.str,
-                "\r\n!!! related TS%d %s:%zd:%zd: %s",
+                "\r\n!!! related TS%d %s:%u:%u: %s",
                 related.ref->ts_code,
                 source_basename,
                 related_line + 1,
@@ -384,9 +384,9 @@ static void append_decl(cstr* target, const char* source_path, Span span) {
         }
     }
     span.sv = csview_from_n(start, 0);
-    intptr_t format_line = span_line_index(span);
-    intptr_t format_col = span_col_index(span);
-    cstr_append_fmt(target, ", Decl(%s, %zd, %zd)", basename_of(source_path), format_line, format_col);
+    unsigned format_line = span_line_index(span);
+    unsigned format_col = span_col_index(span);
+    cstr_append_fmt(target, ", Decl(%s, %u, %u)", basename_of(source_path), format_line, format_col);
 }
 
 void baseline_test_case_add_symbol_with_scope(
@@ -422,9 +422,12 @@ void baseline_test_case_add_symbol_with_scope(
 }
 
 static void append_span_contents_without_newlines(cstr* target, Span span) {
-    for (intptr_t i = 0; i < span.sv.size; i++) {
-        if (span.sv.buf[i] != '\r' && span.sv.buf[i] != '\n') {
-            cstr_push(target, &span.sv.buf[i]);
+    const char* start = span_start_ptr(span);
+    const char* end = span_end_ptr(span);
+    for (const char* c = start; c < end; c++) {
+        switch (*c) {
+            case '\r': case '\n': break;
+            default: cstr_push(target, c);
         }
     }
 }

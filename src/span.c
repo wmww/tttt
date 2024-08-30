@@ -1,13 +1,13 @@
 #include "span.h"
 #include "math_helpers.h"
 
-intptr_t span_line_index(Span me) {
+unsigned span_line_index(Span me) {
     if (!me.file_start) {
         return 1;
     }
     const char* end = span_start_ptr(me);
     const char* pos = me.file_start;
-    intptr_t line = 0;
+    unsigned line = 0;
     while (pos < end) {
         if (*pos == '\n') {
             line++;
@@ -17,7 +17,7 @@ intptr_t span_line_index(Span me) {
     return line;
 }
 
-intptr_t span_col_index(Span me) {
+unsigned span_col_index(Span me) {
     return span_start_ptr(me) - span_line_start(me);
 }
 

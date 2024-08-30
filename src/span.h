@@ -28,8 +28,8 @@ static inline const char* span_end_ptr(Span me) {
     return me.file_start ? me.sv.buf + me.sv.size : nullptr;
 }
 
-intptr_t span_line_index(Span me);
-intptr_t span_col_index(Span me);
+unsigned span_line_index(Span me);
+unsigned span_col_index(Span me);
 const char* span_line_start(Span me);
 const char* span_line_end(Span me);
 Span span_between(Span a, Span b);

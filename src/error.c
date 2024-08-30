@@ -12,7 +12,7 @@ Error error_clone(Error me) {
 }
 
 void display_error(Display d, Error const* me) {
-    intptr_t line = span_line_index(my span) + 1;
+    unsigned line = span_line_index(my span) + 1;
     cstr prefix = cstr_null;
 
     if (my phase == ERROR_PHASE_RELATED) {
@@ -25,7 +25,7 @@ void display_error(Display d, Error const* me) {
     display_color(d, color_path);
     display_lit(d, "filename.ts");
     display_color(d, color_line_number);
-    display_fmt(d, ":%zd", line);
+    display_fmt(d, ":%u", line);
     display_color(d, color_implicit);
     display_fmt(d, " [TS%d] ", my ts_code);
     display_color(d, color_error);
@@ -35,7 +35,7 @@ void display_error(Display d, Error const* me) {
     if (span_valid(my span)) {
         const char* line_start = span_line_start(my span);
         const char* line_end = span_line_end(my span);
-        intptr_t col = span_col_index(my span);
+        unsigned col = span_col_index(my span);
 
         display_fmt(
             d,
@@ -48,13 +48,13 @@ void display_error(Display d, Error const* me) {
             cstr_str(&prefix)
         );
 
-        for (intptr_t i = 0; i < col; i++) {
+        for (unsigned i = 0; i < col; i++) {
             display_lit(d, " ");
         }
 
         display_color(d, color_error);
-        intptr_t span_len = my span.sv.size ? my span.sv.size : 1;
-        for (intptr_t i = 0; i < span_len; i++) {
+        unsigned span_len = my span.sv.size ? my span.sv.size : 1;
+        for (unsigned i = 0; i < span_len; i++) {
             display_lit(d, "-");
         }
         display_color(d, color_normal);
