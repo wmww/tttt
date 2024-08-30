@@ -32,10 +32,14 @@ typedef hmap_str_bool HmapStrBool;
 typedef hmap_str_bool_result HmapStrBoolResult;
 typedef hmap_str_bool_value HmapStrBoolValue;
 
+typedef NamedType const* NamedTypeCPtr;
+#define i_key_names NamedTypeCPtr, named_type_cptr
+#include "wrap_stc/hset.h"
+
 typedef struct TypeCtx {
-    Type const* currently_resolving;
-    int recursion_level;
-    int extends_attempts;
+    unsigned recursion_level;
+    HsetNamedTypeCPtr currently_resolving;
+    unsigned extends_attempts;
     HmapStrBool extends_results;
 } TypeCtx;
 
@@ -57,6 +61,7 @@ static bool index_type_of_internal(
 );
 
 static void type_ctx_drop(TypeCtx* me) {
+    hset_named_type_cptr_drop(&my currently_resolving);
     hmap_str_bool_drop(&my extends_results);
 }
 
@@ -620,12 +625,23 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
         return me;
     }
 
-    if (ctx->recursion_level > 50 || ctx->currently_resolving == me) {
+    if (ctx->recursion_level > 50) {
         return &type_excessively_deep_error;
     }
 
-    bool currently_resolving_null = ctx->currently_resolving == nullptr;
-    if (currently_resolving_null) ctx->currently_resolving = me;
+    NamedType const* to_remove = nullptr;
+    if (my tag == TYPE_IDENTIFIER) {
+        if (through_identifier) {
+            if (my identifier->named_type) {
+                to_remove = my identifier->named_type;
+                if (!hset_named_type_cptr_insert(&ctx->currently_resolving, to_remove).inserted) {
+                    return &type_excessively_deep_error;
+                }
+            }
+        } else {
+            return me;
+        }
+    }
 
     Type const* tmp = type_resolve_one_layer_internal(ctx, me);
     if (tmp) {
@@ -634,7 +650,9 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
         ctx->recursion_level--;
     }
 
-    if (currently_resolving_null) ctx->currently_resolving = nullptr;
+    if (to_remove) {
+        hset_named_type_cptr_erase(&ctx->currently_resolving, to_remove);
+    }
     return me;
 }
 

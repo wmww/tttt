@@ -23,3 +23,7 @@
 
 #define wrap_forward_hmap(key_type, key_prefix, val_type, val_prefix) \
     wrap_forward_hmap_full(Hmap##key_type##val_type, hmap_##key_prefix##_##val_prefix, key_type, val_type)
+
+#define wrap_forward_hset(type, prefix) \
+    forward_hset(hset_##prefix, type); \
+    typedef hset_##prefix Hset##type
