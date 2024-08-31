@@ -242,10 +242,10 @@ NameStack* name_stack_pull_frame_into_new_stack(NameStack* me) {
     return ret;
 }
 
-Type name_stack_make_interface_from(NameStack const* me) {
-    ASSERT(vec_stack_frame_size(&my stack) == 1);
+Type name_stack_make_interface_from(NameStack const* ref) {
+    ASSERT(vec_stack_frame_size(&ref->stack) == 1);
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_str_named_variable_ptr, my stack.data->variables) {
+    c_foreach(i, hmap_str_named_variable_ptr, ref->stack.data->variables) {
         vec_interface_member_push(&members, interface_member_make(
             i.ref->second->full,
             span_null, // Interface name

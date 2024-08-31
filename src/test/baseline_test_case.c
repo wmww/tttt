@@ -327,8 +327,29 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
     render_lines_woven_with_file(target, my source_path, false, czview_sv(my source_view), &my types);
 }
 
-void baseline_test_case_add_symbol(BaselineTestCase* me, csview name, Span span, Span decl_span) {
-    baseline_test_case_add_symbol_with_scope(me, c_sv(""), name, span, false, decl_span);
+void baseline_test_case_add_symbol_deprecated(BaselineTestCase* me, Span name, Span span, Span decl_span) {
+    baseline_test_case_add_symbol(me, (BaselineSym){
+        .declarations = c_init(vec_span, {decl_span}),
+        .span = span,
+        .name = name.sv,
+    });
+}
+
+void baseline_test_case_add_symbol_with_scope_deprecated(
+    BaselineTestCase* me,
+    Span scope,
+    Span name,
+    Span span,
+    bool name_is_value,
+    Span decl_span
+) {
+    baseline_test_case_add_symbol(me, (BaselineSym){
+        .declarations = c_init(vec_span, {decl_span}),
+        .namespaces = c_init(vec_span, {scope}),
+        .span = span,
+        .name = name.sv,
+        .name_is_value = name_is_value,
+    });
 }
 
 static void append_decl(cstr* target, const char* source_path, Span span) {
@@ -389,36 +410,46 @@ static void append_decl(cstr* target, const char* source_path, Span span) {
     cstr_append_fmt(target, ", Decl(%s, %u, %u)", basename_of(source_path), format_line, format_col);
 }
 
-void baseline_test_case_add_symbol_with_scope(
-    BaselineTestCase* me,
-    csview scope,
-    csview name,
-    Span span,
-    bool name_is_value,
-    Span decl_span
-) {
-    unsigned line_for_placement = span_line_index(span);
-    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SPAN(span));
-    if (csview_empty(scope)) {
-        cstr_append_sv(&text, name);
-    } else if (name_is_value) {
-        cstr_append_sv(&text, scope);
-        cstr_append_sv(&text, c_sv("["));
-        cstr_append_span(&text, span);
-        cstr_append_sv(&text, c_sv("]"));
-    } else {
-        cstr_append_sv(&text, scope);
-        cstr_append_sv(&text, c_sv("."));
-        cstr_append_sv(&text, name);
+void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
+    unsigned line_for_placement = span_line_index(data.span);
+
+    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SPAN(data.span));
+
+    bool has_namespace = false;
+    c_foreach(i, vec_span, data.namespaces) {
+        if (span_valid(*i.ref)) {
+            if (has_namespace) {
+                cstr_append_lit(&text, ".");
+            }
+            cstr_append_span(&text, *i.ref);
+            has_namespace = true;
+        }
     }
 
-    append_decl(&text, my source_path, decl_span);
+    if (data.name_is_value) {
+        if (has_namespace) cstr_append_lit(&text, "[");
+        cstr_append_span(&text, data.span);
+        if (has_namespace) cstr_append_lit(&text, "]");
+    } else {
+        if (has_namespace) {
+            cstr_append_lit(&text, ".");
+        }
+        cstr_append_sv(&text, csview_size(data.name) ? data.name : data.span.sv);
+    }
 
-    cstr_append(&text, ")");
+    c_foreach(i, vec_span, data.declarations) {
+        if (span_valid(*i.ref)) {
+            append_decl(&text, my source_path, *i.ref);
+        }
+    }
+
+    cstr_append_lit(&text, ")");
     vec_line_numbered_str_push(&my symbols, (LineNumberedStr){
         .line = line_for_placement,
         .str = text,
     });
+    vec_span_drop(&data.declarations);
+    vec_span_drop(&data.namespaces);
 }
 
 static void append_span_contents_without_newlines(cstr* target, Span span) {

@@ -207,6 +207,8 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
 
+    static const char* prototype_str = "prototype";
+
     if (!resolve_instance) {
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
@@ -214,7 +216,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             true,
             false,
             cstr_lit("prototype"),
-            span_null,
+            span_make(prototype_str, prototype_str, prototype_str + strlen(prototype_str)),
             false,
             type_ref(&my instance_identifier_type)
         ));

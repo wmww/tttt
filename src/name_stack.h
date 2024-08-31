@@ -41,7 +41,7 @@ void name_stack_push_generic_frame(NameStack* me, Generic const* generic);
 void name_stack_push_name_stack_frame(NameStack* me, NameStack const* ref);
 void name_stack_pop_frame(NameStack* me);
 NameStack* name_stack_pull_frame_into_new_stack(NameStack* me);
-Type name_stack_make_interface_from(NameStack const* me);
+Type name_stack_make_interface_from(NameStack const* ref);
 void name_stack_add_variable(NameStack* me, NamedVariable* var);
 void name_stack_add_type(NameStack* me, NamedType* type);
 void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var);

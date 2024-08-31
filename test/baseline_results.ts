@@ -1802,7 +1802,7 @@ const baselines = {
     },
     'assignmentIndexedToPrimitives': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignmentNestedInLiterals': {
@@ -5857,7 +5857,7 @@ const baselines = {
     },
     'contextualTypeArrayReturnType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeCaching': {
@@ -7747,7 +7747,7 @@ const baselines = {
     },
     'declarationEmitMappedTypePropertyFromNumericStringKey': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitMappedTypeTemplateTypeofSymbol': {
@@ -8732,7 +8732,7 @@ const baselines = {
     },
     'deleteReadonly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'deleteReadonlyInStrictNullChecks': {
@@ -11467,7 +11467,7 @@ const baselines = {
     },
     'escapedReservedCompilerNamedIdentifier': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'esmModeDeclarationFileWithExportAssignment': {
@@ -15332,7 +15332,7 @@ const baselines = {
     },
     'inOperatorWithFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'inOperatorWithGeneric': {
@@ -15947,7 +15947,7 @@ const baselines = {
     },
     'inferringAnyFunctionType1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferringAnyFunctionType2': {
@@ -18532,7 +18532,7 @@ const baselines = {
     },
     'limitDeepInstantiations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'listFailure': {
@@ -21992,7 +21992,7 @@ const baselines = {
     },
     'objectLiteralExcessProperties': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralFreshnessWithSpread': {
@@ -27887,7 +27887,7 @@ const baselines = {
     },
     'typeAnnotationBestCommonTypeInArrayLiteral': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeArgInference': {
@@ -49202,7 +49202,7 @@ const baselines = {
     },
     'parserStatementIsNotAMemberVariableDeclaration1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserUnfinishedTypeNameBeforeKeyword1': {
@@ -55587,7 +55587,7 @@ const baselines = {
     },
     'numericIndexerConstrainsPropertyDeclarations2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'numericIndexingResults': {
@@ -57172,7 +57172,7 @@ const baselines = {
     },
     'assignmentCompatWithObjectMembersNumericNames': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'assignmentCompatWithObjectMembersOptionality': {

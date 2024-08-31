@@ -1041,7 +1041,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
 
     Span name;
     if (!parse_identifier(&p, &name)) {
-        parse_error(&p, span_from_token(&p), TS_CODE_NONE, "interface does not have a name");
+        parse_error(&p, span_from_pos(&p), 1438, "Interface must be given a name.");
         name = span_null;
     }
     hop_whitespace(&p);

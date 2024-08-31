@@ -35,13 +35,24 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me);
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me);
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me);
 
+typedef struct BaselineSym {
+    VecSpan declarations;   // Where this symbol was declared, multiple in the case of declaration merging. Empty spans
+                            // are ignored.
+    VecSpan namespaces;     // Includes the interface/class name if applicable. Empty spans are ignored, `span`/
+                            // `name_value` is added to the end
+    Span span;              // Used for placing this symbol in the output
+    csview name;            // The specific identifier or value, defaults to the contents of `span` if not set
+    bool name_is_value;     // If to use namespace['property'] notation
+} BaselineSym;
+
 // These are used by traversial to assemble the test case data while the test is being run. After the test has completed
 // (and run_baseline_test_case() has returned) these should no longer be called.
-void baseline_test_case_add_symbol(BaselineTestCase* me, csview name, Span span, Span decl_span);
-void baseline_test_case_add_symbol_with_scope(
+void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data);
+void baseline_test_case_add_symbol_deprecated(BaselineTestCase* me, Span name, Span span, Span decl_span);
+void baseline_test_case_add_symbol_with_scope_deprecated(
     BaselineTestCase* me,
-    csview scope,
-    csview name,
+    Span scope,
+    Span name,
     Span span,
     bool name_is_value,
     Span decl_span

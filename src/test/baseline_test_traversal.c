@@ -15,7 +15,7 @@
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
-        baseline_test_case_add_symbol(ctx, i.ref->name.sv, i.ref->name, i.ref->name);
+        baseline_test_case_add_symbol_deprecated(ctx, i.ref->name, i.ref->name, i.ref->name);
         type_compile_test_info(&i.ref->extends, ctx);
         if (i.ref->fallback_explicit) {
             type_compile_test_info(&i.ref->fallback, ctx);
@@ -23,19 +23,19 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     }
 }
 
-void binding_content_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
+void binding_content_compile_test_info(Binding const* me, Span scope, Span full, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
             baseline_test_case_add_type(ctx, my content_span, &type_undefined);
             break;
 
         case BINDING_IDENTIFIER:
-            baseline_test_case_add_symbol_with_scope(
+           baseline_test_case_add_symbol_with_scope_deprecated(
                 ctx,
-                scope.sv,
-                my content_span.sv,
+                scope,
                 my content_span,
-                name_is_value,
+                my content_span,
+                false,
                 span_valid(full) ? full : my content_span
             );
             if (my identifier) {
@@ -45,20 +45,20 @@ void binding_content_compile_test_info(Binding const* me, bool name_is_value, Sp
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_content_compile_test_info(i.ref, false, scope, i.ref->content_span, ctx);
+                binding_content_compile_test_info(i.ref, scope, i.ref->content_span, ctx);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_content_compile_test_info(&i.ref->target, false, scope, i.ref->target.content_span, ctx);
+                binding_content_compile_test_info(&i.ref->target, scope, i.ref->target.content_span, ctx);
             }
             break;
     }
 }
 
-void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope, Span full, BaselineTestCase* ctx) {
-    binding_content_compile_test_info(me, name_is_value, scope, full, ctx);
+void binding_compile_test_info(Binding const* me, Span scope, Span full, BaselineTestCase* ctx) {
+    binding_content_compile_test_info(me, scope, full, ctx);
     if (my has_explicit_type) {
         type_compile_test_info(&my explicit_type, ctx);
     }
@@ -66,12 +66,11 @@ void binding_compile_test_info(Binding const* me, bool name_is_value, Span scope
 
 void initialized_binding_compile_test_info(
     InitializedBinding const* me,
-    bool name_is_value,
     Span scope,
     Span full,
     BaselineTestCase* ctx
 ) {
-    binding_compile_test_info(&my binding, name_is_value, scope, full, ctx);
+    binding_compile_test_info(&my binding, scope, full, ctx);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
         expr_compile_test_info(&my value, ctx);
     }
@@ -80,10 +79,10 @@ void initialized_binding_compile_test_info(
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
-            baseline_test_case_add_symbol_with_scope(
+            baseline_test_case_add_symbol_with_scope_deprecated(
                 ctx,
-                scope.sv,
-                cstr_sv(&my key.name_string),
+                scope,
+                my key.span,
                 my key.span,
                 my key.name_is_value,
                 my span
@@ -92,7 +91,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_INDEX:
-            baseline_test_case_add_symbol(ctx, my key.span.sv, my key.span, my key.span);
+            baseline_test_case_add_symbol_deprecated(ctx, my key.span, my key.span, my key.span);
             baseline_test_case_add_type(ctx, my key.span, &my key.index);
             type_compile_test_info(&my key.index, ctx);
             break;
@@ -102,9 +101,9 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_MAPPED:
-            baseline_test_case_add_symbol(
+            baseline_test_case_add_symbol_deprecated(
                 ctx,
-                my key.mapped.type_name.sv,
+                my key.mapped.type_name,
                 my key.mapped.type_name,
                 my key.mapped.type_name
             );
@@ -139,9 +138,9 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             if (span_equals(my identifier->name, "object")) {
                 break;
             }
-            baseline_test_case_add_symbol(
+            baseline_test_case_add_symbol_deprecated(
                 ctx,
-                my identifier->name.sv,
+                my identifier->name,
                 my identifier->name,
                 my identifier->named_type ? my identifier->named_type->full : span_null
             );
@@ -151,9 +150,9 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_INFERRED:
-            baseline_test_case_add_symbol(
+            baseline_test_case_add_symbol_deprecated(
                 ctx,
-                my inferred.get->name.sv,
+                my inferred.get->name,
                 my inferred.get->name,
                 my inferred.get->named_type ? my inferred.get->named_type->full : span_null
             );
@@ -164,7 +163,6 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             c_foreach(i, vec_callable_arg, my callable->args) {
                 binding_content_compile_test_info(
                     &i.ref->source->initializer.binding,
-                    false,
                     span_null,
                     i.ref->source->span,
                     ctx
@@ -227,10 +225,10 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
 void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
-        baseline_test_case_add_symbol_with_scope(
+        baseline_test_case_add_symbol_with_scope_deprecated(
             ctx,
-            scope.sv,
-            my name.sv,
+            scope,
+            my name,
             my name,
             false,
             my full_span
@@ -239,7 +237,7 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
     }
     generic_compile_test_info(&my generic, ctx);
     c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_compile_test_info(&i.ref->initializer, false, span_null, i.ref->span, ctx);
+        initialized_binding_compile_test_info(&i.ref->initializer, span_null, i.ref->span, ctx);
     }
     if (my ret_explicit && !my is_constructor) {
         type_compile_test_info(&my ret, ctx);
@@ -249,7 +247,7 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_compile_test_info(i.ref, false, span_null, span_null, ctx);
+        initialized_binding_compile_test_info(i.ref, span_null, span_null, ctx);
     }
 }
 
@@ -260,10 +258,10 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             break;
 
         case CLASS_ITEM_MEMBER:
-            baseline_test_case_add_symbol_with_scope(
+            baseline_test_case_add_symbol_with_scope_deprecated(
                 ctx,
-                class_name.sv,
-                cstr_sv(&my member.name_string),
+                class_name,
+                my member.name_span,
                 my member.name_span,
                 my member.name_is_value,
                 my span
@@ -275,10 +273,10 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             break;
 
         case CLASS_ITEM_FIELD: {
-            baseline_test_case_add_symbol_with_scope(
+            baseline_test_case_add_symbol_with_scope_deprecated(
                 ctx,
-                class_name.sv,
-                my field.name_span.sv,
+                class_name,
+                my field.name_span,
                 my field.name_span,
                 my field.name_is_value,
                 span_valid(my span) ? my span : my field.name_span
@@ -308,7 +306,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
-        baseline_test_case_add_symbol(ctx, my name.sv, my name, my full_span);
+        baseline_test_case_add_symbol_deprecated(ctx, my name, my name, my full_span);
         if (is_expr) {
             baseline_test_case_add_type(ctx, my name, &my class_identifier_type);
         } else {
@@ -352,9 +350,9 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(
+    baseline_test_case_add_symbol_deprecated(
         ctx,
-        my name.sv,
+        my name,
         my name,
         my full_span
     );
@@ -412,9 +410,9 @@ type Beep<T> = {beep: 7}
 }
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(
+    baseline_test_case_add_symbol_deprecated(
         ctx,
-        my name.sv,
+        my name,
         my name,
         my full_span
     );
@@ -426,9 +424,9 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(
+    baseline_test_case_add_symbol_deprecated(
         ctx,
-        my name.sv,
+        my name,
         my name,
         my full_span
     );
@@ -442,7 +440,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 
         case EXPR_LITERAL:
             if (my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined")) {
-                baseline_test_case_add_symbol(ctx, c_sv("undefined"), my inner_span, span_null);
+                baseline_test_case_add_symbol_deprecated(ctx, my inner_span, my inner_span, span_null);
             }
             break;
 
@@ -452,9 +450,9 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     span_valid(my identifier.var->name)
                 )
             ) {
-                baseline_test_case_add_symbol(
+                baseline_test_case_add_symbol_deprecated(
                     ctx,
-                    my identifier.name.sv,
+                    my identifier.name,
                     my identifier.name,
                     my identifier.var->full
                 );
@@ -485,10 +483,10 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                         cstr_eq(&i.ref->key.name_string, &prop_t.value.string)
                     ) {
                         if (my property->form == PROPERTY_EXPR_DOT) {
-                            baseline_test_case_add_symbol_with_scope(
+                            baseline_test_case_add_symbol_with_scope_deprecated(
                                 ctx,
-                                i.ref->origin_interface_name.sv,
-                                cstr_sv(&i.ref->key.name_string),
+                                i.ref->origin_interface_name,
+                                i.ref->key.span,
                                 my outer_span,
                                 i.ref->key.name_is_value,
                                 i.ref->span
@@ -496,10 +494,10 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                         }
                         expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
-                        baseline_test_case_add_symbol_with_scope(
+                        baseline_test_case_add_symbol_with_scope_deprecated(
                             ctx,
-                            i.ref->origin_interface_name.sv,
-                            cstr_sv(&i.ref->key.name_string),
+                            i.ref->origin_interface_name,
+                            i.ref->key.span,
                             my property->prop.outer_span,
                             i.ref->key.name_is_value,
                             i.ref->span
@@ -554,9 +552,9 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
-                baseline_test_case_add_symbol(
+                baseline_test_case_add_symbol_deprecated(
                     ctx,
-                    cstr_sv(&i.ref->name_string),
+                    i.ref->name_span,
                     i.ref->name_span,
                     i.ref->name_span
                 );
@@ -685,7 +683,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
             if (my try_catch->catch_var.tag != BINDING_NOOP) {
-                binding_compile_test_info(&my try_catch->catch_var, false, span_null, span_null, ctx);
+                binding_compile_test_info(&my try_catch->catch_var, span_null, span_null, ctx);
                 block_compile_test_info(&my try_catch->catch_block, ctx);
             }
             block_compile_test_info(&my try_catch->finally_block, ctx);
