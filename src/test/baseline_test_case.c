@@ -327,31 +327,6 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
     render_lines_woven_with_file(target, my source_path, false, czview_sv(my source_view), &my types);
 }
 
-void baseline_test_case_add_symbol_deprecated(BaselineTestCase* me, Span name, Span span, Span decl_span) {
-    baseline_test_case_add_symbol(me, (BaselineSym){
-        .declarations = c_init(vec_span, {decl_span}),
-        .span = span,
-        .name = name.sv,
-    });
-}
-
-void baseline_test_case_add_symbol_with_scope_deprecated(
-    BaselineTestCase* me,
-    Span scope,
-    Span name,
-    Span span,
-    bool name_is_value,
-    Span decl_span
-) {
-    baseline_test_case_add_symbol(me, (BaselineSym){
-        .declarations = c_init(vec_span, {decl_span}),
-        .namespaces = c_init(vec_span, {scope}),
-        .span = span,
-        .name = name.sv,
-        .name_is_value = name_is_value,
-    });
-}
-
 static void append_decl(cstr* target, const char* source_path, Span span) {
     if (!span_valid(span)) {
         return;
@@ -434,13 +409,19 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         if (has_namespace) {
             cstr_append_lit(&text, ".");
         }
-        cstr_append_sv(&text, csview_size(data.name) ? data.name : data.span.sv);
+        cstr_append_span(&text, span_valid(data.name) ? data.name : data.span);
     }
 
+    bool found_decl = false;
     c_foreach(i, vec_span, data.declarations) {
         if (span_valid(*i.ref)) {
             append_decl(&text, my source_path, *i.ref);
+            found_decl = true;
         }
+    }
+
+    if (!found_decl && !data.allow_declaration_empty) {
+        append_decl(&text, my source_path, data.span);
     }
 
     cstr_append_lit(&text, ")");
