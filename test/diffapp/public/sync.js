@@ -116,32 +116,55 @@ addEventListener('beforeunload', () => {
   isBeingUnloaded = true;
 });
 
+let currentlyFetching = null; // We should only have one in-flight fetch to /events or /reset at a time
+
+function tryReset() {
+  if (currentlyFetching) {
+    return;
+  }
+  currentlyFetching = true;
+  fetch('/reset?token=' + token)
+    .then(() => {
+      currentlyFetching = false;
+      fetchEvents();
+    }).catch(() => {
+      currentlyFetching = false;
+      if (connectedToServer) {
+        connectedToServer = false;
+        updateErrors();
+      }
+      setTimeout(tryReset, 500);
+    });
+}
+
 function fetchEvents() {
+  // This request may be long-running, assume we are connected at the start rather than showing "disconnected" message
+  // while we wait for it to return something. If we're not connected it will fail quickly and this function will not
+  // be called again until the /reset endpoint succeeds
+  if (!connectedToServer) {
+    connectedToServer = true;
+    updateErrors();
+  }
+  if (currentlyFetching) {
+    return;
+  }
+  currentlyFetching = true;
   fetch('/events?token=' + token)
     .then(resp => resp.json())
     .then(json => {
+      currentlyFetching = false;
       // console.log('Got message: ', json);
       try {
-        if (!connectedToServer) {
-          connectedToServer = true;
-          updateErrors();
-        }
         handleEvents(json);
         fetchEvents();
       } catch (e) {
         surfaceError(e);
         setTimeout(fetchEvents, 1000);
       }
-    })
-    .catch(err => {
+    }).catch(() => {
+      currentlyFetching = false;
       if (!isBeingUnloaded) {
-        if (connectedToServer) {
-          connectedToServer = false;
-          fetchEvents();
-        } else {
-          updateErrors();
-          setTimeout(fetchEvents, 500);
-        }
+        tryReset();
       }
     });
 }

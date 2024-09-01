@@ -91,14 +91,23 @@ function sendEvents() {
 function addPendingResponse(token, response) {
   const prev = responses.get(token);
   if (prev) {
-    response.writeHead(400);
-    response.end('Got newer events request');
+    prev.writeHead(400);
+    prev.end('Got newer events request');
   }
   responses.set(token, response);
   if (!sessions.has(token)) {
     sessions.set(token, new Set(properties.keys()));
   }
   sendEvents();
+}
+
+function resetToken(token) {
+  const prev = responses.get(token);
+  if (prev) {
+    responses.delete(token);
+    prev.writeHead(400);
+    prev.end('Request cancelled');
+  }
 }
 
 // If sourceToken is set, it will not be notified (it's the soure of the change, so it already knows about it)
@@ -142,7 +151,7 @@ function setPropertyToContentsOf(key, filePath, ignoreMissing) {
 function clearAndInvokeAll(funcs) {
   const local = funcs.slice();
   funcs.length = 0;
-  for (func of local) {
+  for (const func of local) {
     try {
       if (func) {
         func();
@@ -580,6 +589,12 @@ function handleRequest(request, response) {
 
       case '/events':
         addPendingResponse(getTokenFrom(url), response);
+        break;
+
+      case '/reset':
+        resetToken(getTokenFrom(url));
+        response.writeHead(200);
+        response.end();
         break;
 
       case '/setCode':
