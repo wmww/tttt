@@ -1,6 +1,8 @@
 #include "interface.h"
 #include "interface_member.h"
 #include "display.h"
+#include "name_stack.h"
+#include "error.h"
 
 void interface_drop(Interface* me) {
     vec_interface_member_drop(&my members);
@@ -12,53 +14,131 @@ Interface interface_clone(Interface me) {
     };
 }
 
-Interface interface_from_merged(VecType const* types) {
+static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceMember const* needle) {
+    // PERF: do not merge interfaces this way, for obvious reasons
+    c_foreach(i, vec_interface_member, *haystack) {
+        switch (needle->key.tag) {
+            case INTERFACE_KEY_NAME:
+                if (cstr_equals_s(&needle->key.name_string, i.ref->key.name_string)) {
+                    return i.ref - haystack->data;
+                }
+                break;
+
+            case INTERFACE_KEY_INDEX:
+            case INTERFACE_KEY_EXPR:
+            case INTERFACE_KEY_MAPPED:
+            case INTERFACE_KEY_CALLABLE:
+                // TODO
+                if (needle->key.tag == i.ref->key.tag) {
+                    return i.ref - haystack->data;
+                }
+                break;
+        }
+    }
+    return -1;
+}
+
+Type interface_from_merged(VecType const* types) {
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(type_i, vec_type, *types) {
         Type const* type = type_resolve(type_i.ref);
-        if (type->tag != TYPE_INTERFACE) {
+        if (type->tag == TYPE_ANY) {
+            vec_interface_member_drop(&members);
+            return type_any;
+        } else if (type->tag != TYPE_INTERFACE) {
             cstr type_s = cstr_null;
             display_type(debug_display(&type_s), type);
             PANIC("Only interfaces can be merged, but one of the types in the merge list was %s", cstr_str(&type_s));
         }
-        // PERF: do not merge interfaces this way, for obvious reasons
         c_foreach(new_member_i, vec_interface_member, type->interface.members) {
             InterfaceMember const* new_member = new_member_i.ref;
-            InterfaceMember* matching = nullptr;
-            c_foreach(existing_member_i, vec_interface_member, members) {
-                InterfaceMember* existing_member = existing_member_i.ref;
-                switch (new_member->key.tag) {
-                    case INTERFACE_KEY_NAME:
-                        if (cstr_equals_s(&new_member->key.name_string, existing_member->key.name_string)) {
-                            matching = existing_member;
-                        }
-                        break;
-
-                    case INTERFACE_KEY_INDEX:
-                    case INTERFACE_KEY_EXPR:
-                    case INTERFACE_KEY_MAPPED:
-                    case INTERFACE_KEY_CALLABLE:
-                        // TODO
-                        if (new_member->key.tag == existing_member->key.tag) {
-                            matching = existing_member;
-                        }
-                        break;
-                }
-                if (matching) {
-                    break;
-                }
-            }
+            intptr_t matching_index = index_of_matching(&members, new_member);
+            InterfaceMember* matching = matching_index < 0 ?
+                nullptr :
+                vec_interface_member_at_mut(&members, matching_index);
             if (matching) {
                 // Somewhere we want to compare types and show errors if they're different, but that can be done in the
                 // typecheck function of the interface declarations. For now just use the type of the first member we
                 // encounter with each name.
-                // TODO: add declarations
+
+                // Only safe because spans are POD (clone is a no-op)
+                vec_span_insert_n(
+                    &matching->declarations,
+                    vec_span_size(&matching->declarations),
+                    new_member->declarations.data,
+                    vec_span_size(&new_member->declarations)
+                );
             } else {
                 vec_interface_member_push(&members, interface_member_clone(*new_member));
             }
         }
     }
-    return (Interface){
+    return type_interface((Interface){
         .members = members,
-    };
+    });
+}
+
+void interface_typecheck(Interface const* me, ErrorCtx* errs) {
+    c_foreach(i, vec_interface_member, my members) {
+        interface_member_typecheck(i.ref, errs);
+    }
+}
+
+void interface_typecheck_members_against(Interface* me, NamedType const* named, ErrorCtx* errs) {
+    if (!named || !named->is_merged) {
+        return;
+    }
+    Type const* from_named = type_resolve(&named->type);
+    if (from_named->tag != TYPE_INTERFACE) {
+        NONFATAL(
+            "Tried to typecheck against %.*s, which isn't interface. type tag: %d",
+            c_SPAN(named->name),
+            from_named->tag
+        );
+        return;
+    }
+    VecInterfaceMember const* reference = &from_named->interface.members;
+    c_foreach(i, vec_interface_member, my members) {
+        intptr_t index = index_of_matching(reference, i.ref);
+        if (index < 0) {
+            continue;
+        }
+        InterfaceMember const* matching = vec_interface_member_at(reference, index);
+        // TODO: put this back once it doesn't cause problems with function overloads in the standard library
+        __(errs); /*
+        bool check_type = true;
+        if (vec_span_size(&i.ref->declarations) &&
+            vec_span_size(&matching->declarations) &&
+            span_cmp(*i.ref->declarations.data, *matching->declarations.data) == 0
+        ) {
+            // If our declaration span is the first span of the matching member it's type will be from us. Don't bother
+            // checking if it matches
+            check_type = false;
+        }
+        if (check_type && i.ref->key.tag == INTERFACE_KEY_NAME && (
+            !type_extends(&i.ref->type, &matching->type) ||
+            !type_extends(&matching->type, &i.ref->type)
+        )) {
+            cstr msg = cstr_lit("Subsequent property declarations must have the same type.  Property '");
+            cstr_append_span(&msg, i.ref->key.span);
+            cstr_append_lit(&msg, "' must be of type '");
+            cstr_append_type_error_msg(&msg, &matching->type);
+            cstr_append_lit(&msg, "', but here has type '");
+            cstr_append_type_error_msg(&msg, &i.ref->type);
+            cstr_append_lit(&msg, "'.");
+            Error* error = error_ctx_error_s(errs, i.ref->key.span, 2717, msg);
+            error_related_error(
+                error,
+                matching->key.span,
+                6203,
+                "'%.*s' was also declared here.",
+                c_SPAN(matching->key.span)
+            );
+            //type_drop(&i.ref->type);
+            //i.ref->type = type_clone(matching->type);
+        }
+        */
+        vec_span_drop(&i.ref->declarations);
+        i.ref->declarations = vec_span_clone(matching->declarations);
+    }
 }

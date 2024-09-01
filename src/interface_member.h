@@ -3,7 +3,7 @@
 #include "type.h"
 
 typedef struct InterfaceMember {
-    Span span;
+    VecSpan declarations;
     Span origin_interface_name; // The original interface this member came from, used in tests
     bool readonly; // NOT used for mapped types
     bool optional; // NOT used for mapped types
@@ -39,7 +39,7 @@ typedef struct InterfaceMember {
 } InterfaceMember;
 
 static inline InterfaceMember interface_member_make(
-    Span span,
+    Span declaration,
     Span origin_interface_name,
     bool readonly,
     bool optional,
@@ -49,7 +49,7 @@ static inline InterfaceMember interface_member_make(
     Type type
 ) {
     return (InterfaceMember) {
-        .span = span,
+        .declarations = vec_span_single(declaration),
         .origin_interface_name = origin_interface_name,
         .readonly = readonly,
         .optional = optional,

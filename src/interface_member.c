@@ -4,6 +4,7 @@
 #include "name_stack.h"
 
 void interface_member_drop(InterfaceMember* me) {
+    vec_span_drop(&my declarations);
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
         case INTERFACE_KEY_INDEX: type_drop(&my key.index); break;
@@ -19,6 +20,7 @@ void interface_member_drop(InterfaceMember* me) {
 }
 
 InterfaceMember interface_member_clone(InterfaceMember me) {
+    me.declarations = vec_span_clone(me.declarations);
     switch (me.key.tag) {
         case INTERFACE_KEY_NAME: me.key.name_string = cstr_clone(me.key.name_string); break;
         case INTERFACE_KEY_INDEX: me.key.index = type_clone(me.key.index); break;

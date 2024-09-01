@@ -35,7 +35,7 @@ void binding_content_compile_test_info(Binding const* me, Span full, BaselineTes
 
         case BINDING_IDENTIFIER:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = c_init(vec_span, {full}),
+                .declarations = vec_span_single(full),
                 .span = my content_span,
             });
             if (my identifier) {
@@ -79,8 +79,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = c_init(vec_span, {my span}),
-                .namespaces = c_init(vec_span, {scope}),
+                .declarations = vec_span_clone(my declarations),
+                .namespaces = vec_span_single(scope),
                 .span = my key.span,
                 .name_is_value = my key.name_is_value,
             });
@@ -215,8 +215,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = c_init(vec_span, {my full_span}),
-            .namespaces = c_init(vec_span, {scope}),
+            .declarations = vec_span_single(my full_span),
+            .namespaces = vec_span_single(scope),
             .span = my name,
         });
         baseline_test_case_add_type(ctx, my name, lazy_type_get(&my lazy_type));
@@ -245,8 +245,8 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 
         case CLASS_ITEM_MEMBER:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = c_init(vec_span, {my span}),
-                .namespaces = c_init(vec_span, {class_name}),
+                .declarations = vec_span_single(my span),
+                .namespaces = vec_span_single(class_name),
                 .span = my member.name_span,
                 .name_is_value = my member.name_is_value,
             });
@@ -258,8 +258,8 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 
         case CLASS_ITEM_FIELD: {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = c_init(vec_span, {my span}),
-                .namespaces = c_init(vec_span, {class_name}),
+                .declarations = vec_span_single(my span),
+                .namespaces = vec_span_single(class_name),
                 .span = my field.name_span,
                 .name_is_value = my field.name_is_value,
             });
@@ -432,7 +432,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 )
             ) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = c_init(vec_span, {my identifier.var->full}),
+                    .declarations = vec_span_single(my identifier.var->full),
                     .span = my identifier.name,
                 });
             }
@@ -463,9 +463,9 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                     ) {
                         if (my property->form == PROPERTY_EXPR_DOT) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                                .declarations = c_init(vec_span, {i.ref->span}),
+                                .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
-                                .namespaces = c_init(vec_span, {i.ref->origin_interface_name}),
+                                .namespaces = vec_span_single(i.ref->origin_interface_name),
                                 .span = my outer_span,
                                 .name = i.ref->key.span,
                                 .name_is_value = i.ref->key.name_is_value,
@@ -474,9 +474,9 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                         expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
-                            .declarations = c_init(vec_span, {i.ref->span}),
+                            .declarations = vec_span_clone(i.ref->declarations),
                             .allow_declaration_empty = true,
-                            .namespaces = c_init(vec_span, {i.ref->origin_interface_name}),
+                            .namespaces = vec_span_single(i.ref->origin_interface_name),
                             .span = my property->prop.outer_span,
                             .name = i.ref->key.span,
                             .name_is_value = i.ref->key.name_is_value,

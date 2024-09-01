@@ -4,6 +4,8 @@
 
 typedef struct InterfaceMember InterfaceMember;
 typedef struct Type Type;
+typedef struct NamedType NamedType;
+typedef struct ErrorCtx ErrorCtx;
 wrap_forward_vec(InterfaceMember, interface_member);
 wrap_forward_vec(Type, type);
 
@@ -13,4 +15,6 @@ typedef struct Interface {
 
 void interface_drop(Interface* me);
 Interface interface_clone(Interface me);
-Interface interface_from_merged(VecType const* types);
+Type interface_from_merged(VecType const* types);
+void interface_typecheck(Interface const* me, ErrorCtx* errs);
+void interface_typecheck_members_against(Interface* me, NamedType const* named, ErrorCtx* errs);

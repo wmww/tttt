@@ -19037,7 +19037,7 @@ const baselines = {
     },
     'methodSignatureHandledDeclarationKindForSymbol': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mismatchedClassConstructorVariable': {

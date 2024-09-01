@@ -1945,12 +1945,12 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             parse_index_or_expr_interface_member(&p, false, &ret->interface_memeber)
         ) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
-            ret->interface_memeber.span = span_end(a);
+            ret->interface_memeber.declarations = vec_span_single(span_end(a));
             ret->interface_memeber.readonly = span_valid(readonly_span);
         } else if (parse_function_args(&p, true, false, &func)) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
-                .span = span_end(a),
+                .declarations = vec_span_single(span_end(a)),
                 .readonly = span_valid(readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
                 .type = function_impl_into_type(func),

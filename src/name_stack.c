@@ -31,7 +31,7 @@ NamedType* make_named_type(Span name, Span declaration_full, Type type, Generic 
     }
     return c_new(NamedType, {
         .name = name,
-        .declarations = c_init(vec_span, {declaration_full}),
+        .declarations = vec_span_single(declaration_full),
         .type = type,
         .generic = generic,
     });
@@ -56,8 +56,8 @@ void named_type_destroy(NamedType* me) {
 Type named_type_evaluate_type(NamedType* me) {
     // This should only be called when evaluating our LazyType, and our
     // LazyType should only be used when there are multiple types to merge
-    ASSERT(vec_type_size(&my merged_types) > 1);
-    Type ret = type_interface(interface_from_merged(&my merged_types));
+    ASSERT(my is_merged && vec_type_size(&my merged_types) > 1);
+    Type ret = interface_from_merged(&my merged_types);
     vec_type_drop(&my merged_types);
     my merged_types = vec_type_init();
     return ret;
@@ -390,7 +390,7 @@ NamedType* name_stack_add_mergeable_type(
         // Two classes can't be merged, so if we try fall back to normal duplicate name behavior
         NamedType* ret = c_new(NamedType, {
             .name = name,
-            .declarations = c_init(vec_span, {declaration_full}),
+            .declarations = vec_span_single(declaration_full),
             .type = type,
             .generic = generic,
             .is_class = is_class,
@@ -403,7 +403,7 @@ NamedType* name_stack_add_mergeable_type(
         // Merge declarations
         NamedType* merged = existing->second;
         // TODO: check generics are equal
-        if (merged->lazy_type.tag == LAZY_TYPE_UNINITIALIZED) {
+        if (!merged->is_merged) {
             // Previously this was not a merged declaration, so we have some setup to do
             // 1. move the previous type into the merged vec
             // 2. set up our lazy type
@@ -413,6 +413,7 @@ NamedType* name_stack_add_mergeable_type(
             vec_type_push(&merged->merged_types, merged->type);
             merged->lazy_type.tag = LAZY_TYPE_NAMED_TYPE;
             merged->type = type_lazy(&merged->lazy_type);
+            merged->is_merged = true;
         }
         vec_span_push(&merged->declarations, declaration_full);
         vec_type_push(&merged->merged_types, type);

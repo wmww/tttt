@@ -413,23 +413,10 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
         case TYPE_INFERRED:
             break;
 
-        case TYPE_IDENTIFIER:
-            identifier_type_typecheck(my identifier, errs);
-            break;
-
-        case TYPE_CALLABLE:
-            callable_type_typecheck(my callable, errs);
-            break;
-
-        case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, my interface.members) {
-                interface_member_typecheck(i.ref, errs);
-            }
-            break;
-
-        case TYPE_ARRAY:
-            type_typecheck(my array.element, errs);
-            break;
+        case TYPE_IDENTIFIER: identifier_type_typecheck(my identifier, errs); break;
+        case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
+        case TYPE_INTERFACE: interface_typecheck(&my interface, errs); break;
+        case TYPE_ARRAY: type_typecheck(my array.element, errs); break;
 
         case TYPE_TUPLE:
             c_foreach(i, vec_tuple_element, my tuple.elements) {
@@ -437,13 +424,8 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             }
             break;
 
-        case TYPE_INDEXED:
-            indexed_type_typecheck(my indexed, errs);
-            break;
-
-        case TYPE_KEYOF:
-            keyof_type_typecheck(my keyof, errs);
-            break;
+        case TYPE_INDEXED: indexed_type_typecheck(my indexed, errs); break;
+        case TYPE_KEYOF: keyof_type_typecheck(my keyof, errs); break;
 
         case TYPE_TERNARY:
             type_typecheck(&my ternary->maybe_sub, errs);
@@ -452,9 +434,7 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             type_typecheck(&my ternary->if_false, errs);
             break;
 
-        case TYPE_ABSTRACTED:
-            type_typecheck(&my abstracted->inner, errs);
-            break;
+        case TYPE_ABSTRACTED: type_typecheck(&my abstracted->inner, errs); break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:

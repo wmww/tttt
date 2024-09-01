@@ -123,5 +123,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         }
         //my effective_type = type_composite(my effective_type, type_clone(extends.ref->type), TYPE_INTERSECTION);
     }
+
     type_typecheck(&my type, errs);
+    interface_typecheck_members_against(&my type.interface, my named_type, errs);
 }

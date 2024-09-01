@@ -252,7 +252,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                 if (!resolve_instance && !has_constructor) {
                     has_constructor = true;
                     InterfaceMember member = {
-                        .span = i.ref->constructor.func.full_span,
+                        .declarations = vec_span_single(i.ref->constructor.func.full_span),
                         .origin_interface_name = my name,
                         .key.span = i.ref->constructor.name_span,
                         .key.tag = INTERFACE_KEY_CALLABLE,
@@ -395,4 +395,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     c_foreach(i, vec_type, my implements) {
         // TODO: check that we do, in fact, implement each type
     }
+
+    ASSERT(my instance_type.tag == LAZY_TYPE_EVALUATED && my instance_type.evaluated.tag == TYPE_INTERFACE);
+    interface_typecheck_members_against(&my instance_type.evaluated.interface, my instance_named_type, errs);
 }

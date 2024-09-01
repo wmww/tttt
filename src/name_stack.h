@@ -24,6 +24,7 @@ typedef struct NamedType {
     Generic const* generic;
     bool is_class;
     bool is_typeof_class;
+    bool is_merged;
     VecType merged_types;   // All the interface types that will be merged together to make our type, not used if this
                             // is not a merged declaration and cleared once the merge happens
     LazyType lazy_type; // Only used if this is a merged declaration. In that case, `type` is set to be a lazy that
