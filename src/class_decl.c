@@ -103,14 +103,14 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 
 void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     ASSERT(!my instance_named_type);
-    my instance_named_type = make_named_type(
+    my instance_named_type = name_stack_add_mergeable_type(
+        names,
         my name,
         my full_span,
         type_lazy(&my instance_type),
-        &my generic
+        &my generic,
+        true
     );
-    my instance_named_type->is_class = true;
-    name_stack_add_type(names, my instance_named_type);
 
     VecSpannedType generic_params; // Used multiple times
 

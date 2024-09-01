@@ -5,8 +5,11 @@
 #include "function_impl.h"
 #include "class_decl.h"
 #include "interface_decl.h"
+#include "name_stack.h"
 
 void lazy_type_evaluate(LazyType* me) {
+    // THREADSAFETY: this will probably need to be rewritten to be threadsafe
+
     typeof(my tag) initial_tag = my tag;
     my tag = LAZY_TYPE_IN_FLIGHT;
 
@@ -49,6 +52,10 @@ void lazy_type_evaluate(LazyType* me) {
 
         case LAZY_TYPE_IDENTIFIER_TYPE:
             result = identifier_type_evaluate_type(c_container_of(me, IdentifierType, type));
+            break;
+
+        case LAZY_TYPE_NAMED_TYPE:
+            result = named_type_evaluate_type(c_container_of(me, NamedType, lazy_type));
             break;
     }
 

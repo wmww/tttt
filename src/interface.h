@@ -3,7 +3,9 @@
 #include "prelude.h"
 
 typedef struct InterfaceMember InterfaceMember;
+typedef struct Type Type;
 wrap_forward_vec(InterfaceMember, interface_member);
+wrap_forward_vec(Type, type);
 
 typedef struct Interface {
     VecInterfaceMember members;
@@ -11,4 +13,4 @@ typedef struct Interface {
 
 void interface_drop(Interface* me);
 Interface interface_clone(Interface me);
-void cstr_append_interface_error_msg(cstr* target, Interface const* me);
+Interface interface_from_merged(VecType const* types);

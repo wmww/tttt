@@ -21,6 +21,7 @@ typedef struct LazyType {
         LAZY_TYPE_CLASS_CLASS,
         LAZY_TYPE_INTERFACE_DECL,
         LAZY_TYPE_IDENTIFIER_TYPE,
+        LAZY_TYPE_NAMED_TYPE,
     } tag;
     Type evaluated; // Should be {0} when tag is not LAZY_TYPE_EVALUATED
 } LazyType;

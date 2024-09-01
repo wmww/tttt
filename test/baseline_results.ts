@@ -636,7 +636,7 @@ const baselines = {
         types: false,
     },
     'ambientClassMergesOverloadsWithInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3567,7 +3567,7 @@ const baselines = {
     },
     'classExtendsNull2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classExtendsNull3': {
@@ -3877,7 +3877,7 @@ const baselines = {
     },
     'classWithMultipleBaseClasses': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classWithOverloadImplementationOfWrongName': {
@@ -5282,7 +5282,7 @@ const baselines = {
     },
     'conflictingMemberTypesInBases': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'conflictingTypeAnnotatedVar': {
@@ -6851,8 +6851,8 @@ const baselines = {
         types: undefined,
     },
     'declFileForClassWithMultipleBaseClasses': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'declFileForClassWithPrivateOverloadedFunction': {
@@ -12091,7 +12091,7 @@ const baselines = {
         types: false,
     },
     'exportInterfaceClassAndValue': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12231,8 +12231,8 @@ const baselines = {
         types: false,
     },
     'exportTwoInterfacesWithSameName': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'exportVisibility': {
@@ -15637,7 +15637,7 @@ const baselines = {
     },
     'indexerConstraints': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'indexerConstraints2': {
@@ -20221,9 +20221,9 @@ const baselines = {
         types: false,
     },
     'multiExtendsSplitInterfaces2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'multiImportExport': {
         errors: undefined,
@@ -23732,7 +23732,7 @@ const baselines = {
     },
     'propertiesAndIndexers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'propertiesAndIndexers2': {
@@ -29931,7 +29931,7 @@ const baselines = {
         types: undefined,
     },
     'unusedTypeParameters9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -31807,7 +31807,7 @@ const baselines = {
     },
     'classImplementsMergedClassInterface': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classInsideBlock': {
@@ -31851,7 +31851,7 @@ const baselines = {
         types: undefined,
     },
     'mergedInheritedClassInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33386,7 +33386,7 @@ const baselines = {
         types: false,
     },
     'accessorsOverrideProperty5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45028,7 +45028,7 @@ const baselines = {
     'mergedInheritedMembersSatisfyAbstractBase': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mergedInterfacesWithConflictingPropertyNames': {
         errors: false,
@@ -45041,24 +45041,24 @@ const baselines = {
         types: false,
     },
     'mergedInterfacesWithIndexers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mergedInterfacesWithIndexers2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedInterfacesWithInheritedPrivates': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedInterfacesWithInheritedPrivates2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mergedInterfacesWithInheritedPrivates3': {
         errors: false,
@@ -45076,7 +45076,7 @@ const baselines = {
         types: false,
     },
     'mergedInterfacesWithMultipleBases3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -55416,7 +55416,7 @@ const baselines = {
         types: true,
     },
     'callSignaturesThatDifferOnlyByReturnType3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -55471,7 +55471,7 @@ const baselines = {
         types: true,
     },
     'identicalCallSignatures3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -55572,7 +55572,7 @@ const baselines = {
     },
     'multipleNumericIndexers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'multipleStringIndexers': {

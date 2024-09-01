@@ -13,6 +13,10 @@
 #include "callable_type.h"
 #include "name_stack.h"
 
+static inline VecSpan named_type_declarations(NamedType const* me) {
+    return me ? vec_span_clone(my declarations) : vec_span_init();
+}
+
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name });
@@ -127,9 +131,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 break;
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = c_init(vec_span, {
-                    my identifier->named_type ? my identifier->named_type->full : span_null
-                }),
+                .declarations = named_type_declarations(my identifier->named_type),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
             });
@@ -140,9 +142,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
         case TYPE_INFERRED:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = c_init(vec_span, {
-                    my inferred.get->named_type ? my inferred.get->named_type->full : span_null
-                }),
+                .declarations = named_type_declarations(my inferred.get->named_type),
                 .allow_declaration_empty = true,
                 .span = my inferred.get->name,
             });
@@ -288,7 +288,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = c_init(vec_span, {my full_span}),
+            .declarations = named_type_declarations(my instance_named_type),
             .span = my name,
         });
         if (is_expr) {
@@ -335,7 +335,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = c_init(vec_span, {my full_span}),
+        .declarations = named_type_declarations(my named_type),
         .span = my name,
     });
     Type to_drop = {0};
@@ -393,7 +393,7 @@ type Beep<T> = {beep: 7}
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = c_init(vec_span, {my full_span}),
+        .declarations = named_type_declarations(my named_type),
         .span = my name,
     });
     generic_compile_test_info(&my generic, ctx);
@@ -405,7 +405,7 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = c_init(vec_span, {my full_span}),
+        .declarations = named_type_declarations(my value_named_type),
         .span = my name,
     });
     baseline_test_case_add_type(ctx, my name, &my value_named_var->type);
