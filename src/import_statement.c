@@ -16,7 +16,7 @@ void import_statement_drop(ImportStatement* me) {
 }
 
 void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx* errs) {
-    __ errs;
+    ignore errs;
 
     ASSERT(!my default_named_var);
     ASSERT(!my default_named_type);

@@ -245,7 +245,7 @@ JsArray js_array_clone(JsArray me) {
 }
 
 void js_func_value_drop(JsFuncValue* me) {
-    __ me;
+    ignore me;
 }
 
 void native_func_value_drop(NativeFuncValue* me) {

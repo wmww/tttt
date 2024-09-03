@@ -15,7 +15,7 @@ void interface_decl_drop(InterfaceDecl* me) {
 }
 
 void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    __(errs);
+    ignore errs;
     ASSERT(!my named_type);
     my named_type = name_stack_add_mergeable_type(
         names,

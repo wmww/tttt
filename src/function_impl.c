@@ -19,7 +19,7 @@ void function_impl_drop(FunctionImpl* me) {
 }
 
 void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
-    __(errs);
+    ignore errs;
     ASSERT(!my named_var);
     my named_var = make_named_variable(my name, my full_span, type_lazy(&my lazy_type), &my generic);
     name_stack_add_variable(names, my named_var);

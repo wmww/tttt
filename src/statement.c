@@ -45,7 +45,7 @@ void type_decl_drop(TypeDecl* me) {
 }
 
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
-    __(errs);
+    ignore errs;
     ASSERT(!my named_type);
     my named_type = make_named_type(my name, my full_span, type_ref(&my type), &my generic);
     name_stack_add_type(names, my named_type);
@@ -104,7 +104,7 @@ void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx*
 }
 
 Type namespace_decl_evaluate_type(NamespaceDecl* me) {
-    __(me);
+    ignore me;
     return type_any;
 }
 

@@ -560,7 +560,7 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
             break;
         }
 
-        __( *p.pos == '>' || expect_char(&p, ',') );
+        ignore( *p.pos == '>' || expect_char(&p, ',') );
         hop_whitespace(&p);
     }
     expect_char(&p, '>');
@@ -1219,7 +1219,7 @@ static bool parse_function_args(
                     }
                 } else {
                     hop_whitespace(&p);
-                    __( *p.pos == ')' || expect_char(&p, ',') );
+                    ignore( *p.pos == ')' || expect_char(&p, ',') );
                 }
             }
 
@@ -1495,7 +1495,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
         }
         hop_whitespace(&p);
 
-        __( *p.pos == '}' || expect_char(&p, ',') || hop_char(&p, ';') );
+        ignore( *p.pos == '}' || expect_char(&p, ',') || hop_char(&p, ';') );
         hop_whitespace(&p);
     }
 
@@ -1524,7 +1524,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
         }
         hop_whitespace(&p);
 
-        __( *p.pos == ']' || expect_char(&p, ',') );
+        ignore( *p.pos == ']' || expect_char(&p, ',') );
         hop_whitespace(&p);
     }
 
@@ -2176,7 +2176,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
         }
         hop_whitespace(&p);
 
-        __( *p.pos == ')' || (expect_char(&p, ',') && p.pos--) );
+        ignore( *p.pos == ')' || (expect_char(&p, ',') && p.pos--) );
 
         bool first_comma = true;
         while (*p.pos == ',') {
@@ -2792,7 +2792,7 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
         }
         hop_whitespace(&p);
 
-        __( *p.pos == '}' || expect_char(&p, ',') );
+        ignore( *p.pos == '}' || expect_char(&p, ',') );
         hop_whitespace(&p);
     }
     expect_char(&p, '}');
@@ -2891,7 +2891,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             }
             hop_whitespace(&p);
 
-            __( *p.pos == ']' || expect_char(&p, ',') );
+            ignore( *p.pos == ']' || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
         expect_char(&p, ']');
@@ -2933,7 +2933,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             }
             hop_whitespace(&p);
 
-            __( *p.pos == '}' || expect_char(&p, ',') );
+            ignore( *p.pos == '}' || expect_char(&p, ',') );
             hop_whitespace(&p);
         }
         expect_char(&p, '}');

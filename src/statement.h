@@ -51,7 +51,7 @@ typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     Block contents;
-    NameStack* name_stack;
+    NameStack* name_stack; // owned
     Type value_type;
     NamedType* value_named_type;
     NamedVariable* value_named_var;

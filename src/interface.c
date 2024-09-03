@@ -105,7 +105,7 @@ void interface_typecheck_members_against(Interface* me, NamedType const* named, 
         }
         InterfaceMember const* matching = vec_interface_member_at(reference, index);
         // TODO: put this back once it doesn't cause problems with function overloads in the standard library
-        __(errs); /*
+        ignore errs; /*
         bool check_type = true;
         if (vec_span_size(&i.ref->declarations) &&
             vec_span_size(&matching->declarations) &&
