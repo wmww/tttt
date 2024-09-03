@@ -385,7 +385,7 @@ NamedType* name_stack_add_mergeable_type(
         &vec_stack_frame_back(&my stack)->types,
         name.sv
     );
-    if (!existing || (is_class && existing->second->is_class)) {
+    if (!existing || !existing->second->is_mergeable || (is_class && existing->second->is_class)) {
         // If there is no existing type by this name the normal add type process is fine
         // Two classes can't be merged, so if we try fall back to normal duplicate name behavior
         NamedType* ret = c_new(NamedType, {
@@ -394,6 +394,7 @@ NamedType* name_stack_add_mergeable_type(
             .type = type,
             .generic = generic,
             .is_class = is_class,
+            .is_mergeable = true,
         });
         // This might error and not add ret to the name stack. Even if that happens we want to return ret (the caller
         // will own it either way)

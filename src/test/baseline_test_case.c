@@ -327,7 +327,7 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
     render_lines_woven_with_file(target, my source_path, false, czview_sv(my source_view), &my types);
 }
 
-static void append_decl(cstr* target, const char* source_path, Span span) {
+static void baseline_test_case_append_decl(BaselineTestCase const* me, cstr* target, Span span) {
     if (!span_valid(span)) {
         return;
     }
@@ -382,7 +382,7 @@ static void append_decl(cstr* target, const char* source_path, Span span) {
     span.sv = csview_from_n(start, 0);
     unsigned format_line = span_line_index(span);
     unsigned format_col = span_col_index(span);
-    cstr_append_fmt(target, ", Decl(%s, %u, %u)", basename_of(source_path), format_line, format_col);
+    cstr_append_fmt(target, ", Decl(%s, %u, %u)", basename_of(my source_path), format_line, format_col);
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
@@ -415,13 +415,13 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     bool found_decl = false;
     c_foreach(i, vec_span, data.declarations) {
         if (span_valid(*i.ref)) {
-            append_decl(&text, my source_path, *i.ref);
+            baseline_test_case_append_decl(me, &text, *i.ref);
             found_decl = true;
         }
     }
 
     if (!found_decl && !data.allow_declaration_empty) {
-        append_decl(&text, my source_path, data.span);
+        baseline_test_case_append_decl(me, &text, data.span);
     }
 
     cstr_append_lit(&text, ")");
