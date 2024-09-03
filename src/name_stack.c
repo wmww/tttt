@@ -63,8 +63,8 @@ Type named_type_evaluate_type(NamedType* me) {
     return ret;
 }
 
-wrap_forward_box(NameStack, name_stack);
-wrap_forward_hmap_str(BoxNameStack, box_name_stack);
+typedef NameStack const* NameStackCPtr;
+wrap_forward_hmap_str(NameStackCPtr, name_stack_cptr);
 
 #define i_key_ssv
 #define i_val_names NamedTypePtr, named_type_ptr
@@ -84,7 +84,7 @@ typedef struct StackFrame {
     StackFrameTag tag;
     HmapStrNamedTypePtr types;
     HmapStrNamedVariablePtr variables;
-    HmapStrBoxNameStack namespaces;
+    HmapStrNameStackCPtr namespaces;
 } StackFrame;
 
 StackFrame stack_frame_init(StackFrameTag tag);
@@ -100,14 +100,9 @@ typedef struct NameStack {
 } NameStack;
 
 static void name_stack_drop(NameStack* me);
-static NameStack name_stack_clone(NameStack me);
-
-#define i_key_class_names NameStack, name_stack
-#define i_is_forward
-#include "wrap_stc/box.h"
 
 #define i_key_ssv
-#define i_val_class_names BoxNameStack, box_name_stack
+#define i_val_names NameStackCPtr, name_stack_cptr
 #define i_is_forward
 #include "wrap_stc/hmap.h"
 
@@ -120,13 +115,13 @@ StackFrame stack_frame_init(StackFrameTag tag) {
 void stack_frame_drop(StackFrame* me) {
     hmap_str_named_type_ptr_drop(&my types);
     hmap_str_named_variable_ptr_drop(&my variables);
-    hmap_str_box_name_stack_drop(&my namespaces);
+    hmap_str_name_stack_cptr_drop(&my namespaces);
 }
 
 StackFrame stack_frame_clone(StackFrame me) {
     me.types = hmap_str_named_type_ptr_clone(me.types);
     me.variables = hmap_str_named_variable_ptr_clone(me.variables);
-    me.namespaces = hmap_str_box_name_stack_clone(me.namespaces);
+    me.namespaces = hmap_str_name_stack_cptr_clone(me.namespaces);
     return me;
 }
 
@@ -215,11 +210,6 @@ static void name_stack_drop(NameStack* me) {
         PANIC("stack size %ld on drop, 1 expected", vec_stack_frame_size(&my stack));
     }
     vec_stack_frame_drop(&my stack);
-}
-
-static NameStack name_stack_clone(NameStack me) {
-    me.stack = vec_stack_frame_clone(me.stack);
-    return me;
 }
 
 void name_stack_destroy(NameStack* me) {
@@ -423,17 +413,16 @@ NamedType* name_stack_add_mergeable_type(
     }
 }
 
-void name_stack_add_namespace(NameStack* me, Span name, NameStack* ref) {
-    ASSERT(vec_stack_frame_size(&ref->stack) == 1);
+void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
+    ASSERT(vec_stack_frame_size(&ns->stack) == 1);
 
     // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
     // NameStacks may not need to be clonable if that's the case
     cstr name_string = cstr_from_span(name);
-    BoxNameStack box = box_name_stack_make(name_stack_clone(*ref));
-    hmap_str_box_name_stack_result result = hmap_str_box_name_stack_insert(
+    hmap_str_name_stack_cptr_result result = hmap_str_name_stack_cptr_insert(
         &vec_stack_frame_back(&my stack)->namespaces,
         name_string,
-        box
+        ns
     );
     if (!result.inserted) {
         // TODO: declaration merging
@@ -478,9 +467,9 @@ NamedType* name_stack_get_type(NameStack const* me, csview name) {
 
 NameStack const* name_stack_get_namespace(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        hmap_str_box_name_stack_value const* result = hmap_str_box_name_stack_get(&i.ref->namespaces, name);
+        hmap_str_name_stack_cptr_value const* result = hmap_str_name_stack_cptr_get(&i.ref->namespaces, name);
         if (result) {
-            return result->second.get;
+            return result->second;
         }
     }
     return nullptr;

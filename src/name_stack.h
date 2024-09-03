@@ -63,7 +63,7 @@ NamedType* name_stack_add_mergeable_type(
     Generic const* generic,
     bool is_class
 );
-void name_stack_add_namespace(NameStack* me, Span name, NameStack* ref);
+void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns); // ns is owned externally
 bool name_stack_has_function(NameStack* me);
 NamedVariable* name_stack_get_variable(NameStack const* me, csview name);
 NamedType* name_stack_get_type(NameStack const* me, csview name);
