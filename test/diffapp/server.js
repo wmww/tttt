@@ -91,8 +91,12 @@ function sendEvents() {
 function addPendingResponse(token, response) {
   const prev = responses.get(token);
   if (prev) {
-    prev.writeHead(400);
-    prev.end('Got newer events request');
+    try {
+      prev.writeHead(400);
+      prev.end('Got newer events request');
+    } catch (e) {
+      console.error('Failed to cancel overridden request: ' + e);
+    }
   }
   responses.set(token, response);
   if (!sessions.has(token)) {
