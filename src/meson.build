@@ -20,6 +20,8 @@ core_files = files(
     'display.c',
     'parser.c',
     'error.c',
+    'source_file.c',
+    'program.c',
     'name_stack.c',
     'filesystem.c',
     'engine.c',
@@ -34,6 +36,7 @@ test_files = core_files + files(
     'test/baseline_test_case.c',
     'test/baseline_test_traversal.c',
     'test/subprocess.c',
+    'test/mock_filesystem.c',
 )
 
 baseline_test_files = test_files + files('test/baseline_test_main.c')

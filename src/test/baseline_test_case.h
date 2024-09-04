@@ -4,6 +4,9 @@
 
 typedef struct Span Span;
 typedef struct Type Type;
+typedef struct Program Program;
+typedef struct MockFilesystem MockFilesystem;
+typedef struct SourceFile SourceFile;
 typedef struct JsObject JsObject;
 typedef struct BaselineTestSuite BaselineTestSuite;
 typedef struct LineNumberedStr LineNumberedStr;
@@ -16,12 +19,10 @@ csview test_name_from_path(const char* path);
 typedef struct BaselineTestCase {
     const char* source_path; // Not owned
     bool did_run;
-    // We keep an owned source buffer with a czview pointing into it instead of just a cstr because errors have spans
-    // that point into the source buffer. If we used a cstr it could be optimized to a small string which would then
-    // change memory addresses when this struct is returned by value.
-    char* owned_source;
-    czview source_view;
-    ErrorCtx error_ctx;
+    ErrorCtx* error_ctx;
+    MockFilesystem* filesystem;
+    Program* program;
+    SourceFile const* main_source;
     VecLineNumberedStr symbols;
     VecLineNumberedStr types;
 } BaselineTestCase;

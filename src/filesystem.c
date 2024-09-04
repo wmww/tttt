@@ -81,9 +81,27 @@ csview dirname_of(const char* path) {
     return c_sv(path, basename_of(path) - path);
 }
 
-bool read_entire_file(const char* path, bool debug_on_fail, cstr* ret) {
+static bool real_filesystem_canonicalize_path(Filesystem const* me, const char* path, cstr* ret) {
+    char buffer[PATH_MAX];
+    if (realpath(path, buffer)) {
+        *ret = cstr_from(buffer);
+        return true;
+    } else {
+        if (my debug_on_fail) {
+            fprintf(
+                stderr,
+                "Could not canonicalize %s: %s\n",
+                path,
+                strerror(errno)
+            );
+        }
+        return false;
+    }
+}
+
+static bool real_filesystem_read_entire_file(Filesystem const* me, const char* path, cstr* ret) {
     if (!path_is_reg_file(path)) {
-        if (debug_on_fail) {
+        if (my debug_on_fail) {
             fprintf(stderr, "%s: not a file\n", path);
         }
         return false;
@@ -91,26 +109,26 @@ bool read_entire_file(const char* path, bool debug_on_fail, cstr* ret) {
     FILE* f = fopen(path, "rb");
     cstr target = cstr_null;
     if (!f) {
-        if (debug_on_fail) {
+        if (my debug_on_fail) {
             fprintf(stderr, "%s: failed to open: %s\n", path, strerror(errno));
         }
         goto err;
     }
     if (fseek(f, 0, SEEK_END) != 0) {
-        if (debug_on_fail) {
+        if (my debug_on_fail) {
             fprintf(stderr, "%s: seek failed\n", path);
         }
         goto err;
     };
     long len = ftell(f);
     if (len < 0) {
-        if (debug_on_fail) {
+        if (my debug_on_fail) {
             fprintf(stderr, "%s: ftell failed: %s\n", path, strerror(errno));
         }
         goto err;
     }
     if (len > read_file_len_limit - 1) {
-        if (debug_on_fail) {
+        if (my debug_on_fail) {
             fprintf(
                 stderr,
                 "%s cannot be read because it is %.3fMB (max allowed is %.3fMB)\n",
@@ -121,20 +139,20 @@ bool read_entire_file(const char* path, bool debug_on_fail, cstr* ret) {
         goto err;
     } else if (len > 0) {
         if (fseek(f, 0, SEEK_SET) != 0) {
-            if (debug_on_fail) {
+            if (my debug_on_fail) {
                 fprintf(stderr, "%s: seek failed\n", path);
             }
             goto err;
         };
         char* buf = cstr_resize(&target, len, 0);
         if (!buf) {
-            if (debug_on_fail) {
+            if (my debug_on_fail) {
                 fprintf(stderr, "%s: failed to allocate %.3fMB to read into\n", path, len + 1.0);
             }
             goto err;
         }
         if (fread(buf, len, 1, f) != 1) {
-            if (debug_on_fail) {
+            if (my debug_on_fail) {
                 fprintf(stderr, "%s: failed to read\n", path);
             }
             goto err;
@@ -153,3 +171,15 @@ err:
     cstr_drop(&target);
     return false;
 }
+
+Filesystem const real_filesystem_noisy = {
+    .canonicalize_path = real_filesystem_canonicalize_path,
+    .read_entire_file = real_filesystem_read_entire_file,
+    .debug_on_fail = true,
+};
+
+Filesystem const real_filesystem_quiet = {
+    .canonicalize_path = real_filesystem_canonicalize_path,
+    .read_entire_file = real_filesystem_read_entire_file,
+    .debug_on_fail = false,
+};

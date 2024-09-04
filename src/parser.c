@@ -3777,11 +3777,7 @@ Block parse_file(const char* source, ErrorCtx* errs) {
         .error_count = 0,
     };
 
-    if (p.pos[0] == '\xEF' && p.pos[1] == '\xBB' && p.pos[2] == '\xBF') {
-        // Skip Byte Order Mark nonsense
-        p.pos += 3;
-    }
-
+    p.pos = file_start_excluding_bom(p.pos);
     hop_whitespace(&p);
 
     Block scope = {0};

@@ -179,3 +179,11 @@ const char* string_to_double(
     );
     return p;
 }
+
+const char* file_start_excluding_bom(const char* contents) {
+    if (contents[0] == '\xEF' && contents[1] == '\xBB' && contents[2] == '\xBF') {
+        // Skip Byte Order Mark nonsense
+        contents += 3;
+    }
+    return contents;
+}

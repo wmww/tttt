@@ -7,6 +7,18 @@ void block_drop(Block* me) {
     vec_statement_drop(&my statements);
 }
 
+void block_add_names(Block const* me, NameStack* names, ErrorCtx* errs) {
+    c_foreach(i, vec_statement, my statements) {
+        statement_add_names(i.ref, names, errs);
+    }
+}
+
+void block_resolve_names_only(Block const* me, NameStack* names, ErrorCtx* errs) {
+    c_foreach(i, vec_statement, my statements) {
+        statement_resolve_names(i.ref, names, errs);
+    }
+}
+
 void block_resolve_names_without_stack_frame(Block const* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_statement, my statements) {
         statement_add_names(i.ref, names, errs);

@@ -144,6 +144,7 @@ button, .fake-button {
   margin: 0 10px 10px 10px;
   overflow-x: auto;
   overflow-y: auto;
+  overscroll-behavior: none; /* no bounce */
   border-radius: 10px;
 }
 

@@ -5,6 +5,7 @@
 #include "value.h"
 #include "result.h"
 #include "math.h"
+#include "source_file.h"
 
 typedef ArcObject StackFrame;
 #define stack_frame_drop arc_js_object_drop
@@ -584,7 +585,7 @@ static Result boolean_impl(Engine* engine, int argc, Value const argv[], void* d
     return result_ok(value_boolean(argc > 0 ? value_to_boolean(argv) : false));
 }
 
-void eval_program(Block const* scope, ArcObject root) {
+void run_in_engine(SourceFile const* source, ArcObject root) {
     if (!root.get) {
         root = arc_js_object_make((JsObject){0});
     }
@@ -598,7 +599,7 @@ void eval_program(Block const* scope, ArcObject root) {
     Engine engine = {
         .stack = c_init(vec_stack_frame, {root}),
     };
-    Result res = engine_run_block(&engine, scope);
+    Result res = engine_run_block(&engine, &source->ast);
     if (res.tag == RESULT_ERR) {
         cstr err = cstr_null;
         cstr_append_value_js(&err, &res.value);

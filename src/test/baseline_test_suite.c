@@ -2,10 +2,9 @@
 #include "baseline_test_case.h"
 #include "baseline_test_result.h"
 #include "filesystem.h"
-#include "parser.h"
+#include "program.h"
 #include "engine.h"
 #include "value.h"
-#include "block.h"
 #include "result.h"
 #include "subprocess.h"
 
@@ -268,26 +267,19 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
 }
 
 static void load_saved_results(BaselineTestSuite* me, const char* results_path) {
-    cstr results_source;
-
-    if (!read_entire_file(results_path, true, &results_source)) {
-        my prev_results = arc_js_object_make((JsObject){0});
-    }
-
     ErrorCtx errs = error_ctx_init();
-    Block ast = parse_file(cstr_str(&results_source), &errs);
-    block_resolve_names_toplevel(&ast, &errs);
-    block_typecheck_toplevel(&ast, &errs);
+    Program* program = program_new(&errs, nullptr);
+
+    SourceFile const* results_source = program_load(program, results_path);
+    // Don't bother typechecking
+
     if (!error_ctx_empty(&errs)) {
         print_error_ctx(&errs);
-        error_ctx_drop(&errs);
-        block_drop(&ast);
-        cstr_drop(&results_source);
-        my prev_results = arc_js_object_make((JsObject){0});
+        PANIC("Failed to load saved results");
     }
 
     ArcObject root = arc_js_object_make((JsObject){0});
-    eval_program(&ast, arc_js_object_clone(root));
+    run_in_engine(results_source, arc_js_object_clone(root));
 
     Result prev_commit_result = js_object_get(root.get, c_sv("tsCommit"));
     my prev_typescript_commit = prev_commit_result.value.tag == VALUE_STRING ?
@@ -302,9 +294,8 @@ static void load_saved_results(BaselineTestSuite* me, const char* results_path) 
     result_drop(&prev_commit_result);
     result_drop(&baselines_result);
     arc_js_object_drop(&root);
-    block_drop(&ast);
+    program_destroy(program);
     error_ctx_drop(&errs);
-    cstr_drop(&results_source);
 }
 
 static cstr get_git_hash_of_repo(const char* repo) {

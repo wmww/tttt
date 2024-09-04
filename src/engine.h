@@ -1,6 +1,6 @@
 #pragma once
 
-typedef struct Block Block;
+typedef struct SourceFile SourceFile;
 typedef struct arc_js_object ArcObject;
 
-void eval_program(Block const* scope, ArcObject root);
+void run_in_engine(SourceFile const* scope, ArcObject root);

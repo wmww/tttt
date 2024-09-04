@@ -25,7 +25,7 @@ static bool compare_outputs(
 ) {
     cstr expected = cstr_null;
     if (path_is_reg_file(path_of_expected)) {
-        if (!read_entire_file(path_of_expected, false, &expected)) {
+        if (!filesystem_read_entire_file(&real_filesystem_quiet, path_of_expected, &expected)) {
             if (show_diff_on_error) {
                 printf("%.*s: %s could not be read\n", c_SV(test_name), path_of_expected);
             }

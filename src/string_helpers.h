@@ -26,6 +26,9 @@ static inline bool streq(const char* a, const char* b) {
 
 csview csview_trim_whitespace(csview sv);
 static inline const char* csview_end_ptr(csview sv) { return sv.buf + sv.size; }
+static inline csview csview_from_range(const char* start, const char* end) {
+    return csview_from_n(start, end - start);
+}
 
 // Parses a double from the string start. Does not access string beyond end. If end is null assumes start is
 // null-terminated. Either sets ret and returns a pointer to the end of the section parsed (one past last character
@@ -38,3 +41,6 @@ const char* string_to_double(
     bool leading_zero_octal,
     double* ret
 );
+
+// Skip the Byte Order Mark
+const char* file_start_excluding_bom(const char* contents);

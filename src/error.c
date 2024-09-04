@@ -142,6 +142,7 @@ bool error_ctx_empty(ErrorCtx const* me) {
 }
 
 static int error_cmp(Error const* a, Error const* b) {
+    // TODO: sort based on sorce file
     int ret = span_cmp(a->span, b->span);
     if (ret) {
         return ret;
@@ -170,6 +171,9 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
 Error* error_ctx_append_error(ErrorCtx* me, Error error) {
     if (error.phase == ERROR_PHASE_UNKOWN) {
         NONFATAL("Error added with unkown phase: %s", cstr_str(&error.message));
+    }
+    if (error.phase == ERROR_PHASE_PARSE) {
+        my has_parse_errors = true;
     }
     intptr_t insertion_index = insertion_index_for_span(me, &error);
     if (insertion_index >= 0) {

@@ -61,6 +61,7 @@ void error_config_enable_strict(ErrorConfig* me);
 
 typedef struct ErrorCtx {
     ErrorPhase phase;
+    bool has_parse_errors;
     VecError errors;
     ErrorConfig conf;
 } ErrorCtx;

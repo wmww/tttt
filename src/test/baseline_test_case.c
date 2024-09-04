@@ -1,11 +1,11 @@
 #include "baseline_test_case.h"
 #include "baseline_test_traversal.h"
-#include "filesystem.h"
+#include "mock_filesystem.h"
+#include "program.h"
+#include "source_file.h"
 #include "string_helpers.h"
 #include "error.h"
-#include "block.h"
 #include "several_types.h"
-#include "parser.h"
 #include "value.h"
 
 typedef struct LineNumberedStr {
@@ -67,15 +67,18 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
     cstr unparsed_contents = cstr_null;
     *ret = cstr_null;
 
-    if (!read_entire_file(test->source_path, noisy, &unparsed_contents)) {
+    if (!filesystem_read_entire_file(
+        noisy ? &real_filesystem_noisy : &real_filesystem_quiet,
+        test->source_path,
+        &unparsed_contents
+    )) {
         return false;
     }
 
-    csview contents_sv = cstr_sv(&unparsed_contents);
-    // Get rid of byte order mark
-    if (csview_starts_with(contents_sv, "\xEF\xBB\xBF")) {
-        contents_sv = csview_last(contents_sv, csview_size(contents_sv) - 3);
-    }
+    csview contents_sv = csview_from_range(
+        file_start_excluding_bom(cstr_str(&unparsed_contents)),
+        csview_end_ptr(cstr_sv(&unparsed_contents))
+    );
 
     bool has_line = false;
     bool has_filename = false;
@@ -92,14 +95,14 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
                     has_filename = true;
                 }
             } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
-                error_config_enable_strict(&test->error_ctx.conf);
+                error_config_enable_strict(&test->error_ctx->conf);
             } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
-                test->error_ctx.conf.no_implicit_any = true;
+                test->error_ctx->conf.no_implicit_any = true;
             }
         } else {
             cstr_append_sv(ret, i.line);
             if ((has_line || csview_size(i.line)) &&
-                i.line.buf + i.line.size < contents_sv.buf + contents_sv.size
+                csview_end_ptr(i.line) < csview_end_ptr(contents_sv)
             ) {
                 cstr_append(ret, "\r\n");
                 has_line = true;
@@ -116,28 +119,28 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
         inhibit_nonfatals();
     }
 
+    ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
+    MockFilesystem* fs = mock_filesystem_new();
+    Program* program = program_new(errs, &fs->super);
+
     BaselineTestCase ret = {
         .source_path = source_path,
+        .error_ctx = errs,
+        .filesystem = fs,
+        .program = program,
     };
 
-    cstr source_cstr;
-    if (!load_test_source(&ret, noisy, &source_cstr)) {
-        return ret;
-    }
-    intptr_t source_size = cstr_size(&source_cstr);
-    ret.owned_source = cstr_into_owned_ptr(source_cstr);
-    ret.source_view = (czview){.str = ret.owned_source, .size = source_size};
+    bool load_success = load_test_source(&ret, noisy, &fs->read_contents);
 
-    Block ast = parse_file(ret.owned_source, &ret.error_ctx);
+    ret.main_source = program_load(program, source_path);
+
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
     // but name errors are shown reguardless
-    bool show_type_errors = error_ctx_empty(&ret.error_ctx);
-    block_resolve_names_toplevel(&ast, &ret.error_ctx);
-    block_typecheck_toplevel(&ast, show_type_errors ? &ret.error_ctx : nullptr);
-    block_compile_test_info(&ast, &ret);
-    block_drop(&ast);
+    program_typecheck(program, !errs->has_parse_errors);
 
-    ret.did_run = true;
+    block_compile_test_info(&ret.main_source->ast, &ret);
+
+    ret.did_run = load_success;
 
     if (!noisy) {
         uninhibit_nonfatals();
@@ -147,8 +150,10 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
 }
 
 void baseline_test_case_drop(BaselineTestCase* me) {
-    free(my owned_source);
-    error_ctx_drop(&my error_ctx);
+    program_destroy(my program);
+    mock_filesystem_destroy(my filesystem);
+    error_ctx_drop(my error_ctx);
+    free(my error_ctx);
     vec_line_numbered_str_drop(&my symbols);
     vec_line_numbered_str_drop(&my types);
 }
@@ -243,14 +248,14 @@ static void render_lines_woven_with_file(
 }
 
 void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) {
-    if (error_ctx_empty(&my error_ctx)) {
+    if (error_ctx_empty(my error_ctx)) {
         return;
     }
 
     const char* source_basename = basename_of(my source_path);
     VecLineNumberedStr error_lines = vec_line_numbered_str_init();
 
-    c_foreach(error, vec_error, my error_ctx.errors) {
+    c_foreach(error, vec_error, my error_ctx->errors) {
         unsigned line = span_line_index(error.ref->span);
         unsigned col = span_col_index(error.ref->span);
 
@@ -307,24 +312,24 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         target,
         "\r\n\r\n==== %s (%ld errors) ====\r\n",
         source_basename,
-        vec_error_size(&my error_ctx.errors)
+        vec_error_size(&my error_ctx->errors)
     );
     render_lines_woven_with_file(
         target,
         my source_path,
         true,
-        czview_sv(my source_view),
+        cstr_sv(&my main_source->contents),
         &error_lines
     );
     vec_line_numbered_str_drop(&error_lines);
 }
 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
-    render_lines_woven_with_file(target, my source_path, false, czview_sv(my source_view), &my symbols);
+    render_lines_woven_with_file(target, my source_path, false, cstr_sv(&my main_source->contents), &my symbols);
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
-    render_lines_woven_with_file(target, my source_path, false, czview_sv(my source_view), &my types);
+    render_lines_woven_with_file(target, my source_path, false, cstr_sv(&my main_source->contents), &my types);
 }
 
 static void baseline_test_case_append_decl(BaselineTestCase const* me, cstr* target, Span span) {

@@ -2,10 +2,23 @@
 
 #include "statement.h"
 
+/*
+ *    module_name      path
+ *             \       /
+ * import * as foo from './file'
+ *
+ * items[0].source/name     items[1].name
+ *         |  items[1].source   |    path
+ *         |      /      ,------'     /
+ * import {foo, bar as baz} from './file'
+ */
+
 typedef struct ImportItem {
     bool type_only;
     Span source;
     Span name; // may be same as source
+    Type imported_value_type;
+    NameStack const* name_stack; // unowned
     NamedVariable* named_var;
     NamedType* named_type;
 } ImportItem;
@@ -22,6 +35,8 @@ typedef struct ImportStatement {
     NamedVariable* default_named_var;
     NamedType* default_named_type;
     Span module_name;
+    Type imported_value_type;
+    NameStack const* name_stack; // unowned
     NamedVariable* module_named_var;
     NamedType* module_named_type;
     VecImportItem items;
