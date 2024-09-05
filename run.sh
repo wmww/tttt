@@ -8,9 +8,9 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 rm -f vgcore.*
 
 # Configure if needed
-if test ! -e build; then
-    meson setup build
+if test ! -e debug; then
+    meson setup debug --buildtype debug
 fi
-ninja -C build
+ninja -C debug
 
-valgrind --leak-check=full --show-leak-kinds=all --quiet ./build/tttt "$@"
+valgrind --leak-check=full --show-leak-kinds=all --quiet debug/tttt "$@"

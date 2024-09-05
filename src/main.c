@@ -4,20 +4,27 @@
 #include "error.h"
 #include "display.h"
 #include "source_file.h"
+#include "string_helpers.h"
 
 int main(int argc, const char** argv) {
-    ErrorCtx errs = error_ctx_init();
-    error_config_enable_strict(&errs.conf);
-    Program* program = program_new(&errs, nullptr);
-    int ret = 0;
-
     if (argc > 2) {
         printf("%sToo many arguments%s\n", color_error, color_normal);
         return 1;
     } else if (argc < 2) {
         printf("%sToo few arguments%s\n", color_error, color_normal);
         return 1;
+    } else if (streq(argv[1], "--help") || streq(argv[1], "-h")) {
+        printf(
+            "The Tess TypeScript Typechecker\n\n"
+            "USAGE: tttt [TSPATH]\n"
+        );
+        return 0;
     }
+
+    ErrorCtx errs = error_ctx_init();
+    error_config_enable_strict(&errs.conf);
+    Program* program = program_new(&errs, nullptr);
+    int ret = 0;
 
     SourceFile const* source = program_load(program, argv[1]);
 

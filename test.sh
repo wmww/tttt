@@ -8,12 +8,12 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 rm -f vgcore.*
 
 # Configure if needed
-if test ! -e build; then
-    meson setup build
+if test ! -e debug; then
+    meson setup debug --buildtype debug
 fi
-ninja -C build
+ninja -C debug
 
 # We need a copy of the TypeScript repo to run tests
 test/clone_typescript_if_needed.sh
 
-valgrind --leak-check=full --show-leak-kinds=all --exit-on-first-error=yes --error-exitcode=1 --quiet ./build/baseline_tests "$@"
+valgrind --leak-check=full --show-leak-kinds=all --exit-on-first-error=yes --error-exitcode=1 --quiet debug/baseline_tests "$@"

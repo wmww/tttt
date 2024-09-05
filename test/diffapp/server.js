@@ -319,7 +319,7 @@ class TtttRunner {
     };
 
     subprocessThen(
-      ['ninja', '-C', path.join(ttttRoot, 'build'), 'diffapp_runner'],
+      ['ninja', '-C', path.join(ttttRoot, 'debug'), 'diffapp_runner'],
       (code, stdout, stderr) => {
         if (code !== 0) {
           if (stdout) {
