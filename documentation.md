@@ -3,43 +3,43 @@
 ## Programs
 The repository contains three programs.
 
-### `tttt`
+### tttt
 The actual typechecker, drop-in replacement for tsc. See `build/tttt --help` for usage.
 
-Can be compiled and run with `./run.sh`, though this makes a debug build and runs under Valgrind, so isn't fast.
+Can be compiled and run with `./run.sh`. This makes a debug build and runs it under Valgrind, so won't be fast.
 
-Fully written in C. Code lives in [src/](src/). The only dependency is an MIT-licensed container library called STC (no relation to the swc-related project of the same name). This dependency is included in the repository under [thirdparty/](thirdparty/), and automatically compiled by the build system.
+Completely written in C. Code lives in [src](src/). The only dependency is an MIT-licensed C container library called STC (no relation to the swc-related project of the same name). It's included in this repository under [thirdparty](thirdparty/), and automatically compiled by the build system.
 
-## `baseline_tests`
+### baseline_tests
 Runs tttt against TypeScript's official test suite. See `build/baseline_tests --help` for usage.
 
-Can be compiled and run with `./test.sh` (debug, under Valgrind) or `./fasttest.sh` (release, not under Valgrind). Regex filtering of tests and displaying diffs of failed tests is supported, see `./test.sh --help` for details.
+Can be compiled and run with `./test.sh` (debug build, under Valgrind, takes minutes) or `./fasttest.sh` (release build, not under Valgrind, takes seconds). Features like regex filtering and displaying diffs are supported, see `./test.sh --help` for details.
 
-Includes most `tttt` code, as well as additional C code in [src/test/](src/test/)).
+The tests target includes most `tttt` code, as well as additional C code in [src/test](src/test/).
 
-## `diffapp`
+### diffapp
 A graphical app that allows you to edit TypeScript code and see tsc's and tttt's test output for that code in real time. Recompiles and re-runs `tttt` on save.
 
 Generally run via `./diffapp.sh`. A test name or source file can be specified. If there's already a running instance the script will send the given test to that instance.
 
-A nodejs web app with an html/css/js frontend in [test/diffapp/](test/diffapp/). It's intended to run locally (basically uses the browser as a GUI toolkit). The tttt integration lives in [src/test/diffapp_runner.c](src/test/diffapp_runner.c).
+It's a nodejs web app with an html/css/js frontend in [test/diffapp](test/diffapp/). It's intended to run locally (basically uses the browser as a GUI toolkit only). The tttt integration lives in [src/test/diffapp_runner.c](src/test/diffapp_runner.c).
 
 ## Architecture
-To keep development fast, LoC down, Tess sane and (in specific cases) tttt fast, we do things the most straightforward way wherever possible. You'll find abstractions and """patterns""" only where they're absolutely helpful.
+To keep development fast, LoC down, Tess sane and (in specific cases) tttt fast, we do things the most straightforward way wherever possible.
 
 ### AST
 At the core of tttt is a TypeScript AST (Abstract Syntax Tree). This is a data structure that maps to parsed source code, and on which the typechecker runs. AST nodes are:
-- `Block`s - sequences of statements, often surrounded by `{` `}`s
-- `Statement`s - chunks of code that do not evaluate to a value, often each on their own line or separated by `;`
-- `Binding`s - assignments and function parameter lists use bindings. These are often simply identifier names, but can be more complicated in the case of destructuring
-- `Expr`s - nestable expressions, including value literals
-- `Type`s - user-specified types. Note that during typechecking many types are created, passed around and dropped. These are represented by the same `Type` struct, but are not considered part of the AST (relevant for memory management)
+- `Block` - sequence of statements, often surrounded by `{` `}`s
+- `Statement` - chunk of code that does not result in a value, often each on their own line or separated by `;`
+- `Binding` - assignments and function parameter lists use bindings. They are often simply identifier names, but can be more complicated in the case of destructuring
+- `Expr` - nestable expression, such as a function call or value literal
+- `Type` - specified type. Note during typechecking many types are created, passed around and dropped. These are represented by the same `Type` struct, but are not considered part of the AST (relevant for memory management, see below)
 
-This list is not exhaustive as there are other structs owned by these. Each of these types has it's own `.h` and `.c` files, look through them for more details.
+This list is not exhaustive as there are other structs owned by these. Each of these structs has it's own `.h` and `.c` files. Look through them for more details.
 
 There is no AST node struct, interface or visitor. The AST is simply a *concept* that includes these structs, and is relevant for reasoning about the architecture.
 
-### `Span`
+### Span
 A span is a reference to a sections of source code, often used for error messages. Spans do not own anything, and do not need to be dropped. Identifier names are generally stores as spans, referring to the bit of source code where they appear.
 
 ### Parser
@@ -47,16 +47,16 @@ The parser (including our minimal custom parsing framework) lives in `parser.c`.
 
 See dedicated sections for details.
 
-### `Program`
+### Program
 The `Program` struct owns the source code buffers and ASTs of all loaded files, manages imports, etc.
 
-### `NameStack`
+### NameStack
 The abstraction for adding and looking up identifier names. Scopes can be pushed and popped.
 
-### `LazyType`
+### LazyType
 `LazyType`s are owned by the AST. They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to add a name to the `NameStack` with a type in the resolve names phase, but not calculate what that type actually is until the typecheck phase when all names are resolved.
 
-### `Engine`
+### Engine
 tttt includes a JavaScript interpreter that evaluates an AST. It's not fast, standards complaint, tested, complete, or a priority.
 
 ## Phases
@@ -66,7 +66,7 @@ The process of loading and typechecking TypeScript code is done in several phase
 The `Filesystem` abstraction allows tests to mock the filesystem, so the `Program` sees multiple files without the test runner having to write them to disk.
 
 ### Parse
-The parser creates an AST from the source code string.
+The parser creates an AST from the source code string, see below.
 
 ### Resolve names
 Identifier names (of both values and types) are added to a `NameStack`, and then names are looked up wherever they are used. The top scope of the `NameStack` is kept around (subject to change), but nested scopes are not preserved after this phase is complete.
@@ -86,16 +86,16 @@ One easy way to tell if a struct may not always be owned by the AST is if it's c
 
 Since types are *sometimes* part of the AST (generally when they are explicitly specified by the programmer) they sometimes need to own other AST things (such as how `infer`ed types own a `NamedType`). In these cases clones of the AST types will generally pick up either counted references or non-owning references of these things, but this can get a bit messy and possibly should be improved.
 
-### `NameStack`
+### NameStack
 The `NameStack` is temporary. Each scope within it only lives long enough to add and resolve names within that scope. Currently the root scope is kept around as a namespace but this is subject to change.
 
-### `NamedType`/`NamedValue`
+### NamedType/NamedValue
 The `NameStack` is used to look these up, but they are owned by the AST struct that declares them. They live as long as the AST, and are not created or destroyed in the typecheck phase. It's generally a better ides to use a `Named*` pointer to disambiguate names rather than the name string itself. Let the `NameStack` code handle scopes and shadowing so nowhere else has to.
 
 ## Parsing
 As mentioned above the parsing framework is custom, but it should be fairly straightforward.
 
-### `Parser` struct
+### Parser struct
 Each parse function (generally) creates it's own instance of `Parser` named `p`. This stores a current position in the source code, a pointer to the parser one level up (it's "parent") and some other things.
 
 Each perse function receives a pointer to it's parent parser as an argument, as well as a pointer to an instance of the data structure it will attempt to populate, called `ret`. It returns a bool:
