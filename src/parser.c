@@ -213,7 +213,7 @@ typedef struct Anchor {
     const char* start;
 } Anchor;
 
-static inline Anchor span_start(Parser* parser) {
+static inline Anchor anchor(Parser* parser) {
     return (Anchor) {
         .parser = parser,
         .start = parser->pos,
@@ -227,7 +227,7 @@ static inline Anchor span_starting_at(Parser* parser, Span start) {
     };
 }
 
-static inline Span span_end(Anchor spanner) {
+static inline Span span_from(Anchor spanner) {
     return span_make(
         spanner.parser->shared->file_start,
         spanner.start,
@@ -245,10 +245,10 @@ static inline Span span_from_previous_char(Parser* me) {
 
 static Span span_from_token(Parser* me) {
     Parser p = parser(me);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     hop_token(&p);
     parse_fail(&p);
-    return span_end(a);
+    return span_from(a);
 }
 
 // TODO: unicode support: https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D
@@ -281,11 +281,11 @@ static inline bool hop_identifier_or_keyword(Parser* parent) {
 
 // ret can be nullptr
 static bool parse_identifier(Parser* parent, Span* ret) {
-    Anchor a = span_start(parent);
+    Anchor a = anchor(parent);
     if (!hop_identifier_or_keyword(parent)) {
         return false;
     }
-    Span s = span_end(a);
+    Span s = span_from(a);
     if (span_equals(s, "return") ||
         span_equals(s, "throw") ||
         span_equals(s, "case") ||
@@ -494,14 +494,14 @@ static bool hop_token(Parser* parent) {
 }
 
 static Span hop_token_get_span(Parser* parent) {
-    Anchor a = span_start(parent);
+    Anchor a = anchor(parent);
     hop_token(parent);
-    return span_end(a);
+    return span_from(a);
 }
 
 static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     Span name;
     if (!parse_identifier(&p, &name)) {
@@ -531,7 +531,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
 
     *ret = (GenericItem){
         .name = name,
-        .full_span = span_end(a),
+        .full_span = span_from(a),
         .extends_explicit = extends_explicit,
         .extends = extends,
         .fallback_explicit = fallback_explicit,
@@ -581,9 +581,9 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
     while (*p.pos && *p.pos != '>') {
         trailing_comma_span = span_null;
         Type t;
-        Anchor type_a = span_start(&p);
+        Anchor type_a = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-            vec_spanned_type_push(ret, spanned_type(span_end(type_a), t));
+            vec_spanned_type_push(ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
             parse_error(&p, span_from_token(&p), 1110, "Type expected.");
@@ -737,7 +737,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Parser p = parser(parent);
     VecSpannedType generic_params = {0};
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     Span name;
     VecSpan namespaces = vec_span_init();
@@ -767,7 +767,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     *ret = (IdentifierType){
         .namespaces = namespaces,
         .name = name,
-        .full_span = span_end(a),
+        .full_span = span_from(a),
         .generic_params = generic_params,
     };
     return parse_success(&p);
@@ -775,7 +775,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
 static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "infer")) {
         return parse_fail(&p);
@@ -797,7 +797,7 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
 
     *ret = (InferredType){
         .name = name,
-        .full_span = span_end(a),
+        .full_span = span_from(a),
         .extends = extends,
     };
     return parse_success(&p);
@@ -805,7 +805,7 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
 
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     union {
         IdentifierType identifier;
@@ -817,7 +817,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
 
     Span readonly_span = span_null;
     if (hop_start_if_ends_on_word_break(&p, "readonly")) {
-        readonly_span = span_end(a);
+        readonly_span = span_from(a);
         hop_whitespace(&p);
     }
 
@@ -991,7 +991,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
 static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "type")) {
         return parse_fail(&p);
@@ -1023,7 +1023,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
 
     *ret = (TypeDecl) {
         .name = name,
-        .full_span = span_end(a),
+        .full_span = span_from(a),
         .generic = generic,
         .type = type,
     };
@@ -1032,7 +1032,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
 
 static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "interface")) {
         return parse_fail(&p);
@@ -1064,12 +1064,12 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
 
         while (*p.pos) {
             Type t;
-            Anchor type_start = span_start(&p);
+            Anchor type_start = anchor(&p);
             if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
                 if (span_valid(last_type_span)) {
                     vec_spanned_type_push(&extends, spanned_type(last_type_span, last_type));
                 }
-                last_type_span = span_end(type_start);
+                last_type_span = span_from(type_start);
                 last_type = t;
                 if (!span_valid(last_comma_span) && last_type.tag == TYPE_INTERFACE) {
                     second_last_comma_span = span_null;
@@ -1120,7 +1120,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
 
     *ret = (InterfaceDecl) {
         .name = name,
-        .full_span = span_end(a),
+        .full_span = span_from(a),
         .generic = generic,
         .extends = extends,
         .type = type_interface(interface),
@@ -1160,7 +1160,7 @@ static bool parse_function_args(
         ret->generic = (Generic){0};
     }
 
-    Anchor args_start = span_start(&p);
+    Anchor args_start = anchor(&p);
 
     if (hop_char(&p, '(')) {
         hop_whitespace(&p);
@@ -1174,12 +1174,12 @@ static bool parse_function_args(
                 bool explicit_optional = false;
                 bool rest = false;
                 Span rest_span = span_null;
-                Anchor arg_start = span_start(&p);
+                Anchor arg_start = anchor(&p);
 
                 if (hop_start(&p, "...")) {
                     hop_whitespace(&p);
                     rest = true;
-                    rest_span = span_end(arg_start);
+                    rest_span = span_from(arg_start);
                 }
 
                 if (!parse_binding_content(&p, &initializer.binding)) {
@@ -1203,7 +1203,7 @@ static bool parse_function_args(
                 }
 
                 vec_function_arg_push(&ret->args, (FunctionArg){
-                    .span = span_end(arg_start),
+                    .span = span_from(arg_start),
                     .rest_span = rest_span,
                     .initializer = initializer,
                     .explicit_optional = explicit_optional,
@@ -1237,7 +1237,7 @@ static bool parse_function_args(
         goto drop_and_fail;
     }
 
-    ret->args_span = span_end(args_start);
+    ret->args_span = span_from(args_start);
 
     bool parse_ret_type = true;
     if (parse_type_return_syntax) {
@@ -1264,9 +1264,9 @@ static bool parse_function_args(
     hop_whitespace(&p);
 
     if (parse_ret_type) {
-        Anchor ret_a = span_start(&p);
+        Anchor ret_a = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
-            ret->ret_span = span_end(ret_a);
+            ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
             hop_whitespace(&p);
             if (p.whitespace != WHITESPACE_NEWLINE && ret->ret.tag == TYPE_IDENTIFIER) {
@@ -1307,7 +1307,7 @@ drop_and_fail:
 static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
     Parser p = parser(parent);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     bool is_definitely_function = false;
     Span lone_arg_name;
 
@@ -1337,19 +1337,19 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
 
     bool newline_after_args = p.whitespace == WHITESPACE_NEWLINE;
 
-    Anchor arrow_a = span_start(&p);
+    Anchor arrow_a = anchor(&p);
     if (!hop_start(&p, "=>")) {
         function_impl_drop(ret);
         if (is_definitely_function) {
             *ret = (FunctionImpl){0};
             expected_token_error(&p, "=>");
-            ret->full_span = span_end(a);
+            ret->full_span = span_from(a);
             return parse_success(&p);
         } else {
             return parse_fail(&p);
         }
     }
-    ret->arrow_span = span_end(arrow_a);
+    ret->arrow_span = span_from(arrow_a);
 
     if (newline_after_args) {
         // This will generate an error in the typecheck phase, why it's not a parse error I have no idea.
@@ -1370,25 +1370,25 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     }
 
     ret->has_body = true;
-    ret->full_span = span_end(a);
+    ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
 static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!parse_function_args(&p, false, false, ret)) {
         return parse_fail(&p);
     }
 
-    ret->full_span = span_end(a);
+    ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
 static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!parse_function_args(&p, false, false, ret)) {
         return parse_fail(&p);
@@ -1403,13 +1403,13 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
         parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
     }
 
-    ret->full_span = span_end(a);
+    ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
 static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "function")) {
         return parse_fail(&p);
@@ -1428,13 +1428,13 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     }
 
     ret->name = name;
-    ret->full_span = span_end(a);
+    ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
 static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     Span name_span;
     cstr name_string;
 
@@ -1445,11 +1445,11 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         } else if (parse_literal(&p, &name_value)) {
             if (name_value.tag == VALUE_STRING) {
                 name_string = name_value.string;
-                name_span = span_end(a);
+                name_span = span_from(a);
             } else {
                 name_string = cstr_null;
                 cstr_append_value_js(&name_string, &name_value);
-                name_span = span_end(a);
+                name_span = span_from(a);
                 value_drop(&name_value);
             }
         } else {
@@ -1535,7 +1535,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 
 static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     *ret = (InterfaceMember){
         .key.tag = INTERFACE_KEY_MAPPED,
     };
@@ -1588,16 +1588,16 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     }
 
     expect_char(&p, ']');
-    ret->key.span = span_end(a);
+    ret->key.span = span_from(a);
     hop_whitespace(&p);
 
    if (hop_char(&p, '+')) {
         ret->key.mapped.optional = 1;
-        ret->key.span = span_end(a);
+        ret->key.span = span_from(a);
         hop_whitespace(&p);
     } else if (hop_char(&p, '-')) {
         ret->key.mapped.optional = -1;
-        ret->key.span = span_end(a);
+        ret->key.span = span_from(a);
         hop_whitespace(&p);
     }
 
@@ -1608,7 +1608,7 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     } else {
         expect_char(&p, '?');
     }
-    ret->key.span = span_end(a);
+    ret->key.span = span_from(a);
     hop_whitespace(&p);
 
     expect_char(&p, ':');
@@ -1631,14 +1631,14 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     hop_whitespace(&p);
 
     bool show_errors = true;
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     if (is_index) {
         bool fail_if_no_colon = true;
 
         if (!parse_identifier(&p, nullptr)) {
             return parse_fail(&p);
         }
-        ret->key.span = span_end(a);
+        ret->key.span = span_from(a);
         hop_whitespace(&p);
         if (hop_char(&p, '?')) {
             parse_error(
@@ -1666,7 +1666,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
             return parse_fail(&p);
         }
         ret->key.expr = arc_expr_make(expr);
-        ret->key.span = span_end(a);
+        ret->key.span = span_from(a);
     }
     hop_whitespace(&p);
 
@@ -1684,7 +1684,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
 // This function is a clusterfuck. I'm sorry.
 static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     enum {
         MODIFIER_ERROR_NONE = 0,
@@ -1718,14 +1718,14 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     while (true) {
         Span next_name_span;
         Value value;
-        Anchor name_start = span_start(&p);
+        Anchor name_start = anchor(&p);
         if (parse_identifier(&p, &next_name_span)) {
         } else if (*p.pos == '[') {
             next_name_span = span_null;
         } else if (parse_literal(&p, &value)) {
             cstr_append_value_js(&name_string, &value);
             value_drop(&value);
-            next_name_span = span_end(name_start);
+            next_name_span = span_from(name_start);
             name_is_value = true;
         } else {
             break;
@@ -1853,13 +1853,13 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
 
     if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
         ret->tag = CLASS_ITEM_CONSTRUCTOR;
-        name_span = span_end(a);
+        name_span = span_from(a);
         if (!parse_function_fn(&p, &ret->constructor.func)) {
             parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
             ret->constructor.func = (FunctionImpl){0};
         }
         ret->constructor.name_span = name_span;
-        ret->constructor.func.full_span = span_end(a);
+        ret->constructor.func.full_span = span_from(a);
         ret->constructor.func.is_constructor = true;
         if (span_valid(readonly_span)) {
             modifier_error = INVALID_READONLY;
@@ -1945,12 +1945,12 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             parse_index_or_expr_interface_member(&p, false, &ret->interface_memeber)
         ) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
-            ret->interface_memeber.declarations = vec_span_single(span_end(a));
+            ret->interface_memeber.declarations = vec_span_single(span_from(a));
             ret->interface_memeber.readonly = span_valid(readonly_span);
         } else if (parse_function_args(&p, true, false, &func)) {
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
-                .declarations = vec_span_single(span_end(a)),
+                .declarations = vec_span_single(span_from(a)),
                 .readonly = span_valid(readonly_span),
                 .key.tag = INTERFACE_KEY_CALLABLE,
                 .type = function_impl_into_type(func),
@@ -2050,13 +2050,13 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             break;
     }
 
-    ret->span = span_end(a);
+    ret->span = span_from(a);
     return parse_success(&p);
 }
 
 static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     bool is_abstract = false;
     if (hop_start_if_ends_on_word_break(&p, "abstract")) {
@@ -2117,7 +2117,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     }
 
     if (!expect_char(&p, '{')) {
-        ret->full_span = span_end(a);
+        ret->full_span = span_from(a);
         return parse_success(&p);
     }
     hop_whitespace(&p);
@@ -2131,7 +2131,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
                 1068,
                 "Unexpected token. A constructor, method, accessor, or property was expected."
             );
-            ret->full_span = span_end(a);
+            ret->full_span = span_from(a);
             return parse_success(&p);
         }
         if (is_abstract && item.tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -2152,7 +2152,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     }
     expect_char(&p, '}');
 
-    ret->full_span = span_end(a);
+    ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
@@ -2391,12 +2391,12 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
 static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
 
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     UnaryOp op = 0;
     if (!parse_left_unary_op(&p, &op) || unary_op_get_precedence(op) < ctx.min_precedence) {
         return parse_fail(&p);
     }
-    Span op_span = span_end(a);
+    Span op_span = span_from(a);
     hop_whitespace(&p);
 
     Expr expr;
@@ -2507,7 +2507,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
         *left_and_ret = expr_call(
-            span_end(a),
+            span_from(a),
             c_new(CallExpr, {
                 .uses_new = false,
                 .callable = *left_and_ret,
@@ -2519,7 +2519,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (parse_dot_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
-            span_end(a),
+            span_from(a),
             c_new(PropertyExpr, {
                 .expr = *left_and_ret,
                 .prop = parsed.expr_a,
@@ -2531,7 +2531,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
         *left_and_ret = expr_ternary(
-            span_end(a),
+            span_from(a),
             c_new(TernaryExpr, {
                 .condition = *left_and_ret,
                 .yes = parsed.expr_a,
@@ -2543,7 +2543,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (parse_bracket_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
-            span_end(a),
+            span_from(a),
             c_new(PropertyExpr, {
                 .expr = *left_and_ret,
                 .prop = parsed.expr_a,
@@ -2555,7 +2555,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (as_type_precedence > ctx.min_precedence && parse_as_type(&p, &parsed.type)) {
         *left_and_ret = expr_as_type(
-            span_end(a),
+            span_from(a),
             c_new(AsTypeExpr, {
                 .expr = *left_and_ret,
                 .type = parsed.type,
@@ -2572,7 +2572,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         if (parse_arrow_function(&sub_p, ctx, &parsed.function)) {
             parse_success(&sub_p);
             expr_drop(left_and_ret);
-            *left_and_ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
+            *left_and_ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
             return parse_success(&p);
         } else {
             parse_fail(&sub_p);
@@ -2582,7 +2582,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     if (!hit_newline) {
         if (parse_right_unary_op(&p, &parsed.unary)) {
             *left_and_ret = expr_unary_op(
-                span_end(a),
+                span_from(a),
                 c_new(UnaryOpExpr, {
                     .op = parsed.unary,
                     .expr = *left_and_ret,
@@ -2616,7 +2616,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
         }
 
         *left_and_ret = expr_binary_op(
-            span_end(a),
+            span_from(a),
             c_new(BinaryOpExpr, {
                 .left = *left_and_ret,
                 .op = BINARY_OP_COMMA,
@@ -2669,7 +2669,7 @@ static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
     ret->currently_getting_type = nullptr;
 
@@ -2686,7 +2686,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
     } else if (parse_class_decl(&p, &parsed.class_decl)) {
-        *ret = expr_class_decl(span_end(a), c_new(ClassDecl, parsed.class_decl));
+        *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
         hop_whitespace(&p);
         ExprCtx sub_ctx = ctx;
@@ -2696,14 +2696,14 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         if (!parse_call_args(&p, &call.args)) {
             call.args = vec_expr_init();
         }
-        *ret = expr_call(span_end(a), c_new(CallExpr, call));
+        *ret = expr_call(span_from(a), c_new(CallExpr, call));
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
-        *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
+        *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
     } else if (parse_identifier_expr(&p, ctx, ret)) {
         inner_span_set = true;
     } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
-        *ret = expr_function(span_end(a), c_new(FunctionImpl, parsed.function));
+        *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         if (!parse_expr(&p, expr_ctx_null, ret)) {
@@ -2725,7 +2725,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         hop_whitespace(&p);
 
         expect_expr(&p, ctx, &e);
-        *ret = expr_as_type(span_end(a), c_new(AsTypeExpr, {
+        *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
             .expr = e,
             .type = t,
             .angle_bracket_syntax = true,
@@ -2735,9 +2735,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
 
     if (!inner_span_set) {
-        ret->inner_span = span_end(a);
+        ret->inner_span = span_from(a);
     }
-    ret->outer_span = span_end(a);
+    ret->outer_span = span_from(a);
     if (!ret->currently_getting_type) {
         ret->currently_getting_type = c_new(bool, false);
     }
@@ -2868,7 +2868,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 // Only parses content, sets type and value to defaults
 static bool parse_binding_content(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
     Binding binding;
 
     if (parse_identifier(&p, nullptr)) {
@@ -2941,7 +2941,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         return parse_fail(&p);
     }
 
-    ret->content_span = span_end(a);
+    ret->content_span = span_from(a);
     return parse_success(&p);
 }
 
@@ -2951,14 +2951,14 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     }
     hop_whitespace(parent);
 
-    Anchor a = span_start(parent);
+    Anchor a = anchor(parent);
 
     Type type;
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
     ret->explicit_type = type;
     ret->assigned_type = (Type){0};
-    ret->explicit_type_span = span_end(a);
+    ret->explicit_type_span = span_from(a);
 
     return true;
 }
@@ -3007,7 +3007,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
     } else {
         return parse_fail(&p);
     }
-    Anchor end_of_keyword = span_start(&p);
+    Anchor end_of_keyword = anchor(&p);
     hop_whitespace(&p);
 
     Span comma_span = span_null;
@@ -3025,7 +3025,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
                     variable_statement_drop(ret);
                     return parse_fail(&p);
                 } else {
-                    Span s = span_end(end_of_keyword);
+                    Span s = span_from(end_of_keyword);
                     s.sv.size = 0;
                     parse_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
@@ -3340,7 +3340,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
 
 static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (hop_start_if_ends_on_word_break(&p, "case")) {
         hop_whitespace(&p);
@@ -3362,7 +3362,7 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
 
         *ret = (SwitchCase){
             .is_pattern = false,
-            .default_span = span_end(a),
+            .default_span = span_from(a),
             .statements = {0},
         };
     } else {
@@ -3487,7 +3487,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
 
 static bool parse_return(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "return")) {
         return parse_fail(&p);
@@ -3495,7 +3495,7 @@ static bool parse_return(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
 
     if (!parse_expr(&p, expr_ctx_null, ret)) {
-        *ret = expr_undefined(span_end(a));
+        *ret = expr_undefined(span_from(a));
     }
 
     return parse_success(&p);
@@ -3503,7 +3503,7 @@ static bool parse_return(Parser* parent, Expr* ret) {
 
 static bool parse_throw(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "throw")) {
         return parse_fail(&p);
@@ -3511,7 +3511,7 @@ static bool parse_throw(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
 
     if (!parse_expr(&p, expr_ctx_null, ret)) {
-        *ret = expr_undefined(span_end(a));
+        *ret = expr_undefined(span_from(a));
     }
 
     return parse_success(&p);
@@ -3519,7 +3519,7 @@ static bool parse_throw(Parser* parent, Expr* ret) {
 
 static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "namespace")) {
         return parse_fail(&p);
@@ -3534,17 +3534,17 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
 
     if (!parse_identifier(&p, &ret->name)) {
         Value val;
-        Anchor a = span_start(&p);
+        Anchor a = anchor(&p);
         if (*p.pos == '{') {
             parse_error(&p, span_from_token(&p), 1437, "Namespace must be given a name.");
         } else if (parse_literal(&p, &val)) {
             if (val.tag == VALUE_STRING) {
-                parse_error(&p, span_end(a), 1003, "Identifier expected.");
+                parse_error(&p, span_from(a), 1003, "Identifier expected.");
             } else {
                 cstr msg = cstr_lit("Namespace name cannot be '");
                 cstr_append_value_error_msg(&msg, &val);
                 cstr_append_sv(&msg, c_sv("'."));
-                parse_error(&p, span_end(a), 2819, "%s", cstr_str(&msg));
+                parse_error(&p, span_from(a), 2819, "%s", cstr_str(&msg));
                 cstr_drop(&msg);
             }
             value_drop(&val);
@@ -3560,13 +3560,13 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
         expected_token_error(&p, "{");
     }
 
-    ret->full_span = span_end(a);
+    ret->full_span = span_from(a);
     return parse_success(&p);
 }
 
 static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     union {
         VariableStatement variable;
@@ -3581,13 +3581,13 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     bool declared = false;
     bool modifier_error = false;
 
-    Anchor modifier_start = span_start(&p);
+    Anchor modifier_start = anchor(&p);
     while (true) {
         if (hop_start_if_ends_on_word_break(&p, "export")) {
             if (toplevel) {
                 exported = DECL_EXPORTED_YES;
             } else if (!modifier_error) {
-                parse_error(&p, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                parse_error(&p, span_from(modifier_start), 1184, "Modifiers cannot appear here.");
                 modifier_error = true;
             }
         } else if (hop_start_if_ends_on_word_break(&p, "default")) {
@@ -3600,21 +3600,21 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                     modifier_error = true;
                 }
             } else if (!modifier_error) {
-                parse_error(&p, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                parse_error(&p, span_from(modifier_start), 1184, "Modifiers cannot appear here.");
                 modifier_error = true;
             }
         } else if (hop_start_if_ends_on_word_break(&p, "declare")) {
             if (toplevel) {
                 declared = true;
             } else if (!modifier_error) {
-                parse_error(&p, span_end(modifier_start), 1184, "Modifiers cannot appear here.");
+                parse_error(&p, span_from(modifier_start), 1184, "Modifiers cannot appear here.");
                 modifier_error = true;
             }
         } else {
             break;
         }
         hop_whitespace(&p);
-        modifier_start = span_start(&p);
+        modifier_start = anchor(&p);
     }
     hop_whitespace(&p);
 
@@ -3630,7 +3630,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
-        parsed.function.full_span = span_end(a);
+        parsed.function.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_FUNCTION,
             .decl = {
@@ -3640,7 +3640,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_class_decl(&p, &parsed.class)) {
-        parsed.class.full_span = span_end(a);
+        parsed.class.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
             .decl = {
@@ -3650,7 +3650,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_type_decl(&p, &parsed.type_decl)) {
-        parsed.type_decl.full_span = span_end(a);
+        parsed.type_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
             .decl = {
@@ -3660,7 +3660,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
-        parsed.interface_decl.full_span = span_end(a);
+        parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_INTERFACE,
             .decl = {
@@ -3692,7 +3692,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
-    Anchor a = span_start(&p);
+    Anchor a = anchor(&p);
 
     if (*p.pos == ';') {
         *ret = statement_noop;
@@ -3708,7 +3708,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     } else if (parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
-        ret->break_span = span_end(a);
+        ret->break_span = span_from(a);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
     } else if (parse_throw(&p, &ret->expr)) {
