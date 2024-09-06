@@ -154,16 +154,19 @@ static int error_cmp(Error const* a, Error const* b) {
 }
 
 static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
-    intptr_t i = vec_error_size(&my errors);
-    while (i > 0) {
+    for (intptr_t i = vec_error_size(&my errors); i > 0; i--) {
         int cmp = error_cmp(vec_error_at(&my errors, i - 1), error);
         if (cmp < 0) {
             return i;
         } else if (cmp == 0) {
-            // If two errors are in the same place and the the same phase, discard all but the first
-            return -1;
+            if (error->phase == ERROR_PHASE_TYPECHECK) {
+                // Allow multiple typechecking errors for the same span
+                return i - 1;
+            } else {
+                // Do not allow multiple errors for the same span of other types
+                return -1;
+            }
         }
-        i--;
     }
     return 0;
 }

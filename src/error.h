@@ -12,7 +12,6 @@ typedef enum ErrorPhase {
     ERROR_PHASE_PARSE,
     ERROR_PHASE_RESOLVE_NAMES,
     ERROR_PHASE_TYPECHECK,
-    ERROR_PHASE_TYPECHECK_2, // Required for unclear reasons
     ERROR_PHASE_RELATED, // Only used for sub-errors in another Error's related_errors vec
 } ErrorPhase;
 
