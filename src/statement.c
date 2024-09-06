@@ -103,11 +103,6 @@ void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx*
     name_stack_pop_frame(names);
 }
 
-Type namespace_decl_evaluate_type(NamespaceDecl* me) {
-    ignore me;
-    return type_any;
-}
-
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
     StatementCtx statement_ctx = statement_ctx_toplevel();
     block_typecheck(&my contents, &statement_ctx, errs);

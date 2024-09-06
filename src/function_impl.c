@@ -51,9 +51,10 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
         initialized_binding_resolve_names(&i.ref->initializer, names, errs);
     }
 
-    // Resolve names in the function body, and return type. don't push a stack frame since the toplevel function body
+    // Processes names in the function body and return type. don't push a stack frame since the toplevel function body
     // should be the same namespace as the arguments
-    block_resolve_names_without_stack_frame(&my body, names, errs);
+    block_add_names(&my body, names, errs);
+    block_lookup_names(&my body, names, errs);
     type_resolve_names(&my ret, names, errs);
 
     // Pop the stack frame we pushed above

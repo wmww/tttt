@@ -110,7 +110,7 @@ SourceFile const* program_load(Program* me, const char* path) {
     ErrorPhase prev_phase = error_ctx_swap_phase(my errs, ERROR_PHASE_RESOLVE_NAMES);
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
-        block_resolve_names_only(&source->ast, source->name_stack, my errs);
+        block_lookup_names(&source->ast, source->name_stack, my errs);
         name_stack_pop_frame(source->name_stack);
     }
     error_ctx_swap_phase(my errs, prev_phase);
