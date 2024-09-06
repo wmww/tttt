@@ -22258,7 +22258,7 @@ const baselines = {
     'optionalParamterAndVariableDeclaration': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'optionalParamterAndVariableDeclaration2': {
         errors: false,
@@ -33931,7 +33931,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccessNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42213,12 +42213,12 @@ const baselines = {
     'logicalAndOperatorWithTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalOrExpressionIsContextuallyTyped': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalOrExpressionIsNotContextuallyTyped': {
         errors: true,
@@ -43061,22 +43061,22 @@ const baselines = {
         types: false,
     },
     'typeGuardOfFormInstanceOf': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardOfFormInstanceOfOnInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardOfFormIsType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardOfFormIsTypeOnInterfaces': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43166,12 +43166,12 @@ const baselines = {
         types: false,
     },
     'typeGuardsInClassAccessors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardsInClassMethods': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43221,7 +43221,7 @@ const baselines = {
         types: false,
     },
     'typeGuardsInProperties': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

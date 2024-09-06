@@ -240,13 +240,7 @@ static Type binary_op_evaluate_type(
         case BINARY_OP_INSTANCEOF: return type_boolean;
 
         case BINARY_OP_AND_AND:
-        case BINARY_OP_OR_OR:
-            // TODO: use union type once we support it
-            if (type_extends(left, right) && type_extends(right, left)) {
-                return type_clone(*left);
-            } else {
-                return type_any;
-            }
+        case BINARY_OP_OR_OR: return type_composite(TYPE_UNION, type_clone(*left), type_clone(*right));
 
         case BINARY_OP_PLUS_EQUAL:
         case BINARY_OP_STAR_STAR_EQUAL:
