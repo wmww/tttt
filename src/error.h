@@ -65,16 +65,6 @@ typedef struct ErrorCtx {
     ErrorConfig conf;
 } ErrorCtx;
 
-static inline ErrorPhase error_ctx_get_phase(ErrorCtx* me) { return me ? my phase : ERROR_PHASE_UNKOWN; }
-static inline ErrorPhase error_ctx_swap_phase(ErrorCtx* me, ErrorPhase phase) {
-    if (me) {
-        my phase = (phase += my phase) - my phase;
-        return phase - my phase;
-    } else {
-        return ERROR_PHASE_UNKOWN;
-    }
-}
-
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 void error_ctx_drop(ErrorCtx* me);
 void error_ctx_sort(ErrorCtx* me);
