@@ -6,6 +6,7 @@ const child_process = require('child_process');
 const port = 3030;
 // Earlier in the list takes precedence
 const ttttRoot = path.dirname(path.dirname(__dirname));
+const ttttBuildDir = path.join(ttttRoot, 'debug');
 const tscRoot = path.join(ttttRoot, 'test', 'TypeScript');
 const publicDirectories = [
   path.join(__dirname, 'public'),
@@ -319,7 +320,7 @@ class TtttRunner {
     };
 
     subprocessThen(
-      ['ninja', '-C', path.join(ttttRoot, 'debug'), 'diffapp_runner'],
+      ['ninja', '-C', ttttBuildDir, 'diffapp_runner'],
       (code, stdout, stderr) => {
         if (code !== 0) {
           if (stdout) {
@@ -337,7 +338,7 @@ class TtttRunner {
           '--error-exitcode=69',
           '--num-callers=30',
           '--quiet',
-          path.join(ttttRoot, 'build', 'diffapp_runner'),
+          path.join(ttttBuildDir, 'diffapp_runner'),
           codePath
         ];
         subprocessThen(
