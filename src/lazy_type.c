@@ -27,7 +27,7 @@ void lazy_type_evaluate(LazyType* me) {
             break;
 
         case LAZY_TYPE_EXPR:
-            result = expr_get_type_and_typecheck(c_container_of(me, Expr, lazy_type), nullptr);
+            result = expr_evaluate_type(c_container_of(me, Expr, lazy_type));
             break;
 
         case LAZY_TYPE_FOR_EACH_LOOP_VAR:

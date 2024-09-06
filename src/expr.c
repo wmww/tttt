@@ -198,29 +198,108 @@ static BinaryOp binary_op_without_assignment(BinaryOp op) {
     }
 }
 
-static Type binary_op_get_type_and_typecheck(
-    Type left,
+static Type binary_op_evaluate_type(
+    Type const* left,
     BinaryOp op,
-    Type right,
+    Type const* right,
+    Expr const* expr
+) {
+    switch (op) {
+        case BINARY_OP_PLUS:
+            if (type_extends(left, &type_string) || type_extends(right, &type_string)) {
+                return type_string;
+            } else if (type_extends(left, &type_number) && type_extends(right, &type_number)) {
+                return type_number;
+            } else {
+                return type_any;
+            }
+
+        case BINARY_OP_STAR_STAR:
+        case BINARY_OP_STAR:
+        case BINARY_OP_SLASH:
+        case BINARY_OP_MOD:
+        case BINARY_OP_MINUS:
+        case BINARY_OP_LESS_LESS:
+        case BINARY_OP_GREATER_GREATER:
+        case BINARY_OP_GREATER_GREATER_GREATER:
+        case BINARY_OP_AND:
+        case BINARY_OP_XOR:
+        case BINARY_OP_OR: return type_number;
+
+        case BINARY_OP_EQUAL: return type_clone(*right);
+
+        case BINARY_OP_DOUBLE_EQUAL:
+        case BINARY_OP_TRIPLE_EQUAL:
+        case BINARY_OP_NOT_EQUAL:
+        case BINARY_OP_TRIPLE_NOT_EQUAL:
+        case BINARY_OP_LESS:
+        case BINARY_OP_GREATER:
+        case BINARY_OP_LESS_EQUAL:
+        case BINARY_OP_GREATER_EQUAL:
+        case BINARY_OP_IN:
+        case BINARY_OP_INSTANCEOF: return type_boolean;
+
+        case BINARY_OP_AND_AND:
+        case BINARY_OP_OR_OR:
+            // TODO: use union type once we support it
+            if (type_extends(left, right) && type_extends(right, left)) {
+                return type_clone(*left);
+            } else {
+                return type_any;
+            }
+
+        case BINARY_OP_PLUS_EQUAL:
+        case BINARY_OP_STAR_STAR_EQUAL:
+        case BINARY_OP_STAR_EQUAL:
+        case BINARY_OP_SLASH_EQUAL:
+        case BINARY_OP_MOD_EQUAL:
+        case BINARY_OP_MINUS_EQUAL:
+        case BINARY_OP_LESS_LESS_EQUAL:
+        case BINARY_OP_GREATER_GREATER_EQUAL:
+        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL:
+        case BINARY_OP_AND_EQUAL:
+        case BINARY_OP_XOR_EQUAL:
+        case BINARY_OP_OR_EQUAL:
+        case BINARY_OP_AND_AND_EQUAL:
+        case BINARY_OP_OR_OR_EQUAL:
+        case BINARY_OP_EH_EH_EQUAL: {
+            BinaryOp without_assignment = binary_op_without_assignment(op);
+            Type a = binary_op_evaluate_type(left, without_assignment, right, expr);
+            Type b = binary_op_evaluate_type(left, BINARY_OP_EQUAL, &a, expr);
+            type_drop(&a);
+            return b;
+        }
+
+        case BINARY_OP_COMMA:
+            // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
+            return type_clone(*right);
+
+        case BINARY_OP_EH_EH:
+            return type_clone(*left);
+    }
+    UNREACHABLE;
+}
+
+static void binary_op_typecheck(
+    Type const* left,
+    BinaryOp op,
+    Type const* right,
     Expr const* expr,
     ErrorCtx* errs
 ) {
-    Type ret = type_any;
     switch (op) {
         case BINARY_OP_PLUS:
-            if (type_extends(&left, &type_string) || type_extends(&right, &type_string)) {
-                ret = type_string;
-            } else if (type_extends(&left, &type_number) && type_extends(&right, &type_number)) {
-                ret = type_number;
-            } else if (errs) {
+            // PERF: we also do this checks when evaluating the type, shouldn't need to duplicate them
+            if (type_extends(left, &type_string) || type_extends(right, &type_string)) {
+            } else if (type_extends(left, &type_number) && type_extends(right, &type_number)) {
+            } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
                 cstr message = cstr_lit("Operator '+' cannot be applied to types '");
-                cstr_append_type_error_msg(&message, &left);
+                cstr_append_type_error_msg(&message, left);
                 cstr_append_sv(&message, c_sv("' and '"));
-                cstr_append_type_error_msg(&message, &right);
+                cstr_append_type_error_msg(&message, right);
                 cstr_append_sv(&message, c_sv("'."));
                 error_ctx_error_s(errs, expr->inner_span, 2365, message);
-                ret = type_any;
             }
             break;
 
@@ -235,7 +314,7 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_AND:
         case BINARY_OP_XOR:
         case BINARY_OP_OR:
-            if (!type_extends(&left, &type_number)) {
+            if (!type_extends(left, &type_number)) {
                 error_ctx_error(
                     errs,
                     expr->binary_op->left.outer_span,
@@ -243,7 +322,7 @@ static Type binary_op_get_type_and_typecheck(
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            if (!type_extends(&right, &type_number)) {
+            if (!type_extends(right, &type_number)) {
                 error_ctx_error(
                     errs,
                     expr->binary_op->right.outer_span,
@@ -251,7 +330,6 @@ static Type binary_op_get_type_and_typecheck(
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            ret = type_number;
             break;
 
         case BINARY_OP_EQUAL:
@@ -259,7 +337,7 @@ static Type binary_op_get_type_and_typecheck(
                 case EXPR_IDENTIFIER:
                     if (expr->binary_op->left.identifier.var) {
                         check_assignable_or_error(
-                            &right,
+                            right,
                             &expr->binary_op->left.identifier.var->type,
                             expr->binary_op->left.outer_span,
                             errs
@@ -280,25 +358,20 @@ static Type binary_op_get_type_and_typecheck(
                     );
                     break;
             }
-            ret = right;
-            right = type_any;
             break;
 
         case BINARY_OP_DOUBLE_EQUAL:
         case BINARY_OP_TRIPLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_NOT_EQUAL:
-            if (!type_overlaps(&left, &right)) {
-                if (errs) {
-                    cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
-                    cstr_append_type_error_msg(&message, &left);
-                    cstr_append_sv(&message, c_sv("' and '"));
-                    cstr_append_type_error_msg(&message, &right);
-                    cstr_append_sv(&message, c_sv("' have no overlap."));
-                    error_ctx_error_s(errs, expr->outer_span, 2367, message);
-                }
+            if (!type_overlaps(left, right)) {
+                cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
+                cstr_append_type_error_msg(&message, left);
+                cstr_append_sv(&message, c_sv("' and '"));
+                cstr_append_type_error_msg(&message, right);
+                cstr_append_sv(&message, c_sv("' have no overlap."));
+                error_ctx_error_s(errs, expr->outer_span, 2367, message);
             }
-            ret = type_boolean;
             break;
 
         case BINARY_OP_LESS:
@@ -308,18 +381,10 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_IN:
         case BINARY_OP_INSTANCEOF:
             // TODO: figure out rules and typecheck
-            ret = type_boolean;
             break;
 
         case BINARY_OP_AND_AND:
         case BINARY_OP_OR_OR:
-            // TODO: use union type once we support it
-            if (type_extends(&left, &right) && type_extends(&right, &left)) {
-                ret = left;
-                left = type_any;
-            } else {
-                ret = type_any;
-            }
             break;
 
         case BINARY_OP_PLUS_EQUAL:
@@ -338,43 +403,164 @@ static Type binary_op_get_type_and_typecheck(
         case BINARY_OP_OR_OR_EQUAL:
         case BINARY_OP_EH_EH_EQUAL: {
             BinaryOp without_assignment = binary_op_without_assignment(op);
-            ret = binary_op_get_type_and_typecheck(type_clone(left), without_assignment, right, expr, errs);
-            ret = binary_op_get_type_and_typecheck(left, BINARY_OP_EQUAL, ret, expr, errs);
-            left = type_any;
-            right = type_any;
-        }   break;
+            binary_op_typecheck(left, without_assignment, right, expr, errs);
+            Type t = binary_op_evaluate_type(left, without_assignment, right, expr);
+            binary_op_typecheck(left, BINARY_OP_EQUAL, &t, expr, errs);
+            type_drop(&t);
+        }
 
         case BINARY_OP_COMMA:
-            // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
-            ret = right;
-            right = type_any;
-            break;
-
         case BINARY_OP_EH_EH:
-            // TODO
-            ret = left;
-            left = type_any;
             break;
     }
-    type_drop(&left);
-    type_drop(&right);
-    return ret;
 }
 
-Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
-    Type ret;
+Type expr_evaluate_type(Expr const* me) {
+    switch (my tag) {
+        case EXPR_IMPLICIT_ANY: return type_any;
+        case EXPR_LITERAL: return type_value(value_clone(my literal));
+
+        case EXPR_IDENTIFIER:
+            if (my identifier.var) {
+                if (vec_spanned_type_size(&my identifier.generic_params) &&
+                    !generic_empty(my identifier.var->generic)
+                ) {
+                    return generic_degenericize_type(
+                        my identifier.var->generic,
+                        type_ref(&my identifier.var->type),
+                        &my identifier.generic_params
+                    );
+                } else {
+                    return type_ref(&my identifier.var->type);
+                }
+            } else {
+                return type_any;
+            }
+            UNREACHABLE;
+
+        case EXPR_BINARY_OP:
+            return binary_op_evaluate_type(
+                expr_get_type(&my binary_op->left),
+                my binary_op->op,
+                expr_get_type(&my binary_op->right),
+                me
+            );
+
+        case EXPR_UNARY_OP:
+            switch (my unary_op->op) {
+                case UNARY_OP_LEFT_BANG: return type_boolean;
+                case UNARY_OP_TYPEOF: return type_string;
+                case UNARY_OP_TILDE: return type_number;
+
+                case UNARY_OP_PLUS:
+                case UNARY_OP_MINUS:
+                    if (!expr_is_perenthisized(&my unary_op->expr) &&
+                        my unary_op->expr.tag == EXPR_LITERAL &&
+                        my unary_op->expr.literal.tag == VALUE_NUMBER
+                    ) {
+                        return type_value(value_number(
+                            my unary_op->op == UNARY_OP_PLUS ?
+                                my unary_op->expr.literal.number :
+                                -my unary_op->expr.literal.number
+                        ));
+                    } else {
+                        return type_number;
+                    }
+
+                case UNARY_OP_LEFT_PLUS_PLUS:
+                case UNARY_OP_LEFT_MINUS_MINUS:
+                case UNARY_OP_RIGHT_PLUS_PLUS:
+                case UNARY_OP_RIGHT_MINUS_MINUS: return type_number;
+
+                case UNARY_OP_RIGHT_BANG: {
+                    Type ret = type_clone(*expr_get_type(&my unary_op->expr));
+                    type_remove_null_and_undefined(&ret);
+                    return ret;
+                }
+            }
+            UNREACHABLE;
+
+        case EXPR_PROPERTY: {
+            Type ret = type_any;
+            index_type_of(
+                expr_get_type(&my property->expr),
+                expr_get_type(&my property->prop),
+                my property->prop.outer_span,
+                false,
+                nullptr,
+                &ret
+            );
+            return ret;
+        }
+
+        case EXPR_AS_TYPE: return type_ref(&my as_type->type);
+
+        case EXPR_TERNARY:
+            return type_composite(
+                TYPE_UNION,
+                type_ref(expr_get_type(&my ternary->yes)),
+                type_ref(expr_get_type(&my ternary->no))
+            );
+
+        case EXPR_CALL:
+            return type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, nullptr);
+
+        case EXPR_FUNCTION:
+            return type_lazy(&my function->lazy_type);
+
+        case EXPR_OBJECT: {
+            Interface interface = {0};
+            c_foreach(i, vec_object_expr_item, my object) {
+                Type type = type_clone(*expr_get_type(&i.ref->value));
+                type_abstract_literals(&type);
+                vec_interface_member_push(
+                    &interface.members,
+                    interface_member_make(
+                        span_between(i.ref->name_span, i.ref->value.outer_span),
+                        span_null,
+                        false,
+                        false,
+                        cstr_clone(i.ref->name_string),
+                        i.ref->name_span,
+                        false,
+                        type
+                    )
+                );
+            }
+            return type_interface(interface);
+        }
+
+        case EXPR_ARRAY: {
+            Type index_t = type_never;
+            c_foreach(i, vec_expr, my array) {
+                Type type = type_clone(*expr_get_type(i.ref));
+                type_abstract_literals(&type);
+                if (type.tag != TYPE_VALUE || type.value.tag != VALUE_UNDEFINED) {
+                    index_t = type_composite(TYPE_UNION, index_t, type);
+                }
+            }
+            if (index_t.tag == TYPE_NEVER) {
+                // TODO: this should only happen if strict_null_checks is false
+                // Uh oh, are we going to need an ErrorConfig here? That might be a problem
+                index_t = type_any;
+            }
+            return type_array(c_new(Type, index_t), false);
+        }
+
+        case EXPR_CLASS_DECL:
+            return type_ref(&my class_decl->class_identifier_type);
+    }
+    UNREACHABLE;
+}
+
+void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
-            ret = type_any;
-            break;
-
         case EXPR_LITERAL:
-            ret = type_value(value_clone(my literal));
             break;
 
         case EXPR_IDENTIFIER:
             if (my identifier.var) {
-                ret = type_ref(&my identifier.var->type);
                 if (vec_spanned_type_size(&my identifier.generic_params)) {
                     c_foreach(i, vec_spanned_type, my identifier.generic_params) {
                         type_typecheck(&i.ref->type, errs);
@@ -390,153 +576,99 @@ Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs) {
                             "Expected 0 type arguments, but got %zd.",
                             vec_spanned_type_size(&my identifier.generic_params)
                         );
-                    } else {
-                        ret = generic_degenericize_type(
-                            my identifier.var->generic,
-                            ret,
-                            &my identifier.generic_params
-                        );
                     }
                 }
-            } else {
-                ret = type_any;
             }
             break;
 
         case EXPR_BINARY_OP:
-            ret = binary_op_get_type_and_typecheck(
-                expr_get_type_and_typecheck(&my binary_op->left, errs),
+            expr_typecheck(&my binary_op->left, errs);
+            expr_typecheck(&my binary_op->right, errs);
+            binary_op_typecheck(
+                expr_get_type(&my binary_op->left),
                 my binary_op->op,
-                expr_get_type_and_typecheck(&my binary_op->right, errs),
+                expr_get_type(&my binary_op->right),
                 me,
                 errs
             );
             break;
 
-        case EXPR_UNARY_OP: {
-            UnaryOpExpr* una = my unary_op;
-            Type type = expr_get_type_and_typecheck(&una->expr, errs);
-            ret = type_any;
-            switch (una->op) {
-                // TODO: add typechecking
-                case UNARY_OP_LEFT_BANG: ret = type_boolean; break;
-                case UNARY_OP_TYPEOF: ret = type_string; break;
-                case UNARY_OP_TILDE: ret = type_number; break;
-
+        case EXPR_UNARY_OP:
+            expr_typecheck(&my unary_op->expr, errs);
+            switch (my unary_op->op) {
+                case UNARY_OP_LEFT_BANG:
+                case UNARY_OP_TYPEOF:
+                case UNARY_OP_TILDE:
                 case UNARY_OP_PLUS:
                 case UNARY_OP_MINUS:
-                    if (!expr_is_perenthisized(&una->expr) &&
-                        una->expr.tag == EXPR_LITERAL &&
-                        una->expr.literal.tag == VALUE_NUMBER
-                    ) {
-                        ret = type_value(value_number(
-                            una->op == UNARY_OP_PLUS ?
-                                una->expr.literal.number :
-                                -una->expr.literal.number
-                        ));
-                    } else {
-                        ret = type_number;
-                    }
+                case UNARY_OP_LEFT_PLUS_PLUS:
+                case UNARY_OP_LEFT_MINUS_MINUS:
+                case UNARY_OP_RIGHT_PLUS_PLUS:
+                case UNARY_OP_RIGHT_MINUS_MINUS:
+                    // TODO: add typechecking
                     break;
 
-                case UNARY_OP_LEFT_PLUS_PLUS: ret = type_number; break;
-                case UNARY_OP_LEFT_MINUS_MINUS: ret = type_number; break;
-                case UNARY_OP_RIGHT_PLUS_PLUS: ret = type_number; break;
-                case UNARY_OP_RIGHT_MINUS_MINUS: ret = type_number; break;
                 case UNARY_OP_RIGHT_BANG:
-                    type_remove_null_and_undefined(&type);
-                    ret = type;
-                    type = type_any;
                     break;
             }
-            type_drop(&type);
-        }   break;
+            break;
 
         case EXPR_PROPERTY: {
-            Type value = expr_get_type_and_typecheck(&my property->expr, errs);
-            Type prop = expr_get_type_and_typecheck(&my property->prop, errs);
-            ret = type_any;
+            expr_typecheck(&my property->expr, errs);
+            expr_typecheck(&my property->prop, errs);
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
-            index_type_of(&value, &prop, my property->prop.outer_span, error_if_not_found, errs, &ret);
-            type_drop(&value);
-            type_drop(&prop);
+            index_type_of(
+                expr_get_type(&my property->expr),
+                expr_get_type(&my property->prop),
+                my property->prop.outer_span,
+                error_if_not_found,
+                errs,
+                nullptr
+            );
         }   break;
 
-        case EXPR_AS_TYPE: {
+        case EXPR_AS_TYPE:
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+            expr_typecheck(&my as_type->expr, errs);
             type_typecheck(&my as_type->type, errs);
-            Type t = expr_get_type_and_typecheck(&my as_type->expr, errs);
-            type_drop(&t);
-            ret = type_clone(my as_type->type);
-        }   break;
+            break;
 
-        case EXPR_TERNARY: {
-            Type condition_type = expr_get_type_and_typecheck(&my ternary->condition, errs);
-            type_drop(&condition_type);
-            ret = expr_get_type_and_typecheck(&my ternary->yes, errs);
-            ret = type_composite(TYPE_UNION, ret, expr_get_type_and_typecheck(&my ternary->no, errs));
-        }   break;
+        case EXPR_TERNARY:
+            expr_typecheck(&my ternary->condition, errs);
+            expr_typecheck(&my ternary->yes, errs);
+            expr_typecheck(&my ternary->no, errs);
+            break;
 
         case EXPR_CALL: {
-            Type callable = expr_get_type_and_typecheck(&my call->callable, errs);
+            expr_typecheck(&my call->callable, errs);
             c_foreach(i, vec_expr, my call->args) {
-                Type t = expr_get_type_and_typecheck(i.ref, errs);
-                type_drop(&t);
+                expr_typecheck(i.ref, errs);
             }
-            ret = type_typecheck_call(&callable, my call, my outer_span, errs);
-            type_drop(&callable);
+            Type type = type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, errs);
+            type_drop(&type);
         }   break;
 
         case EXPR_FUNCTION:
             function_impl_typecheck(my function, errs);
-            ret = type_clone(*lazy_type_get(&my function->lazy_type));
             break;
 
-        case EXPR_OBJECT: {
-            Interface interface = {0};
+        case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
-                Type t = expr_get_type_and_typecheck(&i.ref->value, errs);
-                type_abstract_literals(&t);
-                vec_interface_member_push(
-                    &interface.members,
-                    interface_member_make(
-                        span_between(i.ref->name_span, i.ref->value.outer_span),
-                        span_null,
-                        false,
-                        false,
-                        cstr_clone(i.ref->name_string),
-                        i.ref->name_span,
-                        false,
-                        t
-                    )
-                );
+                expr_typecheck(&i.ref->value, errs);
             }
-            ret = type_interface(interface);
-        }   break;
+            break;
 
-        case EXPR_ARRAY: {
-            Type index_t = type_never;
+        case EXPR_ARRAY:
             c_foreach(i, vec_expr, my array) {
-                Type t = expr_get_type_and_typecheck(i.ref, errs);
-                type_abstract_literals(&t);
-                if (t.tag != TYPE_VALUE || t.value.tag != VALUE_UNDEFINED) {
-                    index_t = type_composite(TYPE_UNION, index_t, t);
-                }
+                expr_typecheck(i.ref, errs);
             }
-            if (index_t.tag == TYPE_NEVER) {
-                // TODO: this should only happen if strict_null_checks is false
-                index_t = type_any;
-            }
-            ret = type_array(c_new(Type, index_t), false);
-        }   break;
+            break;
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
-            ret = type_clone(my class_decl->class_identifier_type);
             break;
     }
-    return ret;
 }
 
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence

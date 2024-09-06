@@ -1126,7 +1126,7 @@ static bool index_type_of_internal(
                 }
             }
             if (index->tag == TYPE_UNION ? found_in_all : found_in_any) {
-                *ret = comp;
+                if (ret) *ret = comp; else type_drop(&comp);
                 return true;
             } else {
                 type_drop(&comp);
@@ -1155,7 +1155,7 @@ static bool index_type_of_internal(
 
     switch (my tag) {
         case TYPE_NEVER:
-            *ret = type_never;
+            if (ret) *ret = type_never;
             return true;
 
         case TYPE_VOID:
@@ -1186,7 +1186,7 @@ static bool index_type_of_internal(
 
         case TYPE_STRING:
             if (type_extends(index, &type_number)) {
-                *ret = type_string;
+                if (ret) *ret = type_string;
                 return true;
             } else {
                 return false;
@@ -1239,7 +1239,7 @@ static bool index_type_of_internal(
                 }
             }
             if (found) {
-                *ret = comp;
+                if (ret) *ret = comp; else type_drop(&comp);
                 return true;
             } else {
                 type_drop(&comp);
@@ -1261,7 +1261,7 @@ static bool index_type_of_internal(
 
         case TYPE_ARRAY:
             if (type_extends(index, &type_number)) {
-                *ret = type_clone(*my array.element);
+                if (ret) *ret = type_clone(*my array.element);
                 return true;
             } else {
                 return false;
@@ -1298,7 +1298,7 @@ static bool index_type_of_internal(
                     comp = type_composite_internal(ctx, TYPE_UNION, comp, type_clone(i.ref->type));
                 }
             }
-            *ret = comp;
+            if (ret) *ret = comp; else type_drop(&comp);
             return true;
         }
 
@@ -1317,13 +1317,12 @@ static bool index_type_of_internal(
                 }
             }
             if (my tag == TYPE_UNION ? found_in_all : found_in_any) {
-                *ret = comp;
+                if (ret) *ret = comp; else type_drop(&comp);
                 return true;
             } else {
                 type_drop(&comp);
                 return false;
             }
-            return ret;
         }
 
         case TYPE_IDENTIFIER:
@@ -1548,12 +1547,11 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             c_foreach(i, vec_expr, call->args) {
                 intptr_t index = i.ref - call->args.data;
                 // Don't report errors, errors inside argument expressions are reported elsewhere
-                Type arg_type = expr_get_type_and_typecheck(i.ref, nullptr);
                 if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
                     CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);
                     if (!check_assignable_or_error_internal(
                         "Argument of type",
-                        &arg_type,
+                        expr_get_type(i.ref),
                         "parameter of type",
                         &arg->type,
                         2345,
@@ -1562,12 +1560,11 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                     )) {
                         check_types_against_callable = false;
                     }
-                    type_drop(&arg_type);
                 } else if (last_arg_rest) {
                     rest_span = span_between(rest_span, i.ref->outer_span);
-                    vec_tuple_element_push(&rest_tuple, (TupleElement){.type = arg_type});
-                } else {
-                    type_drop(&arg_type);
+                    vec_tuple_element_push(&rest_tuple, (TupleElement){
+                        .type = type_ref(expr_get_type(i.ref)),
+                    });
                 }
             }
 

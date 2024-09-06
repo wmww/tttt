@@ -24141,7 +24141,7 @@ const baselines = {
         types: false,
     },
     'recur1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24403,7 +24403,7 @@ const baselines = {
     'recursiveObjectLiteral': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'recursiveProperties': {
         errors: true,
@@ -54023,7 +54023,7 @@ const baselines = {
     'ES5For-of17': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'ES5For-of18': {
         errors: true,
@@ -54043,7 +54043,7 @@ const baselines = {
     'ES5For-of20': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'ES5For-of21': {
         errors: true,

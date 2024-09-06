@@ -130,6 +130,11 @@ static inline bool expr_is_perenthisized(Expr* me) {
     return span_start_ptr(my inner_span) != span_start_ptr(my outer_span);
 }
 
+// Should only be used in the typecheck phase
+static inline Type const* expr_get_type(Expr* me) {
+    return lazy_type_get(&my lazy_type);
+}
+
 extern const Expr expr_implicit_any_no_span;
 extern const int as_type_precedence;
 extern const int ternary_precedence;
@@ -137,8 +142,8 @@ extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
 void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs);
-// PERF: maybe make this return a lazy type?
-Type expr_get_type_and_typecheck(Expr const* me, ErrorCtx* errs);
+Type expr_evaluate_type(Expr const* me); // Should only be used by LazyType
+void expr_typecheck(Expr const* me, ErrorCtx* errs);
 
 #define i_key_class_names Expr, expr
 #define i_no_clone

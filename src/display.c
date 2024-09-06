@@ -653,21 +653,25 @@ static void display_class_decl(Display d, ClassDecl const* me) {
 }
 
 void display_expr(Display d, Expr const* me) {
-    switch (my tag) {
-        case EXPR_IMPLICIT_ANY:
-        case EXPR_LITERAL:
-        case EXPR_AS_TYPE:
-        case EXPR_IDENTIFIER:
-        case EXPR_OBJECT:
-        case EXPR_ARRAY:
-            break;
+    if (d.debug) {
+        switch (my tag) {
+            case EXPR_IMPLICIT_ANY:
+            case EXPR_LITERAL:
+            case EXPR_AS_TYPE:
+            case EXPR_IDENTIFIER:
+            case EXPR_OBJECT:
+            case EXPR_ARRAY:
+                break;
 
-        default: {
-            Type t = expr_get_type_and_typecheck(me, nullptr);
-            display_colored(d, color_implicit, "<");
-            display_type(d, &t);
-            display_colored(d, color_implicit, ">");
-            type_drop(&t);
+            default:
+                display_colored(d, color_implicit, "<");
+                if (my lazy_type.tag == LAZY_TYPE_EVALUATED) {
+                    display_type(d, &my lazy_type.evaluated);
+                } else {
+                    display_colored(d, color_error, "/* unevaluated */");
+                }
+                display_colored(d, color_implicit, ">");
+                break;
         }
     }
 

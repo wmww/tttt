@@ -65,7 +65,7 @@ void binding_compile_test_info(Binding const* me, Span full, BaselineTestCase* c
 }
 
 void initialized_binding_compile_test_info(
-    InitializedBinding const* me,
+    InitializedBinding* me,
     Span full,
     BaselineTestCase* ctx
 ) {
@@ -309,8 +309,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        Type type = expr_get_type_and_typecheck(&my extends, nullptr);
-        Type const* resolved = type_resolve_until_identifier(&type);
+        Type const* resolved = type_resolve_until_identifier(expr_get_type(&my extends));
         if (resolved->tag == TYPE_IDENTIFIER &&
             resolved->identifier->named_type &&
             resolved->identifier->named_type->is_typeof_class
@@ -323,7 +322,6 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         } else {
             expr_compile_test_info(&my extends, ctx);
         }
-        type_drop(&type);
     }
     c_foreach(i, vec_type, my implements) {
         type_compile_test_info(i.ref, ctx);
@@ -412,7 +410,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
     block_compile_test_info(&my contents, ctx);
 }
 
-void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
+void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
 
@@ -452,14 +450,16 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
 
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
-            Type expr_t = expr_get_type_and_typecheck(&my property->expr, nullptr);
-            Type const* expr_t_resolved = type_resolve(&expr_t);
-            Type prop_t = expr_get_type_and_typecheck(&my property->prop, nullptr);
+            Type const* expr_t_resolved = type_resolve(expr_get_type(&my property->expr));
+            Type const* prop_t = expr_get_type(&my property->prop);
 
-            if (expr_t_resolved->tag == TYPE_INTERFACE && prop_t.tag == TYPE_VALUE && prop_t.value.tag == VALUE_STRING) {
+            if (expr_t_resolved->tag == TYPE_INTERFACE &&
+                prop_t->tag == TYPE_VALUE &&
+                prop_t->value.tag == VALUE_STRING
+            ) {
                 c_foreach(i, vec_interface_member, expr_t_resolved->interface.members) {
                     if (i.ref->key.tag == INTERFACE_KEY_NAME &&
-                        cstr_eq(&i.ref->key.name_string, &prop_t.value.string)
+                        cstr_eq(&i.ref->key.name_string, &prop_t->value.string)
                     ) {
                         if (my property->form == PROPERTY_EXPR_DOT) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -486,9 +486,6 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
                 }
             }
 
-            type_drop(&prop_t);
-            type_drop(&expr_t);
-
             if (!has_compiled_expr_info) {
                 expr_compile_test_info(&my property->expr, ctx);
             }
@@ -496,9 +493,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
             if (my property->form == PROPERTY_EXPR_BRACKET) {
                 expr_compile_test_info(&my property->prop, ctx);
             } else {
-                Type t = expr_get_type_and_typecheck(me, nullptr);
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, &t);
-                type_drop(&t);
+                baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type(me));
             }
         }   break;
 
@@ -532,7 +527,7 @@ void expr_compile_test_info_inner(Expr const* me, BaselineTestCase* ctx) {
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name_span });
-                Type t = expr_get_type_and_typecheck(&i.ref->value, nullptr);
+                Type t = type_clone(*expr_get_type(&i.ref->value));
                 type_abstract_literals(&t);
                 baseline_test_case_add_type(
                     ctx,
@@ -566,7 +561,7 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
     return false;
 }
 
-void expr_compile_test_info(Expr const* me, BaselineTestCase* ctx) {
+void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     if (my tag == EXPR_IDENTIFIER && my identifier.var) {
         // Do NOT degenericize
         baseline_test_case_add_type_recursive(
@@ -581,9 +576,7 @@ void expr_compile_test_info(Expr const* me, BaselineTestCase* ctx) {
         // Don't drop, since we didn't allocate
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
     } else {
-        Type t = expr_get_type_and_typecheck(me, nullptr);
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
-        type_drop(&t);
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, expr_get_type(me));
     }
 
     expr_compile_test_info_inner(me, ctx);
@@ -611,7 +604,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             int cond_size = vec_expr_size(&my if_else.conditions);
             for (int i = 0; i < statement_size; i++) {
                 if (i < cond_size) {
-                    expr_compile_test_info(vec_expr_at(&my if_else.conditions, i), ctx);
+                    expr_compile_test_info(vec_expr_at_mut(&my if_else.conditions, i), ctx);
                 }
                 statement_compile_test_info(vec_statement_at_mut(&my if_else.statements, i), ctx);
             }

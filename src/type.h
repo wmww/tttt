@@ -196,7 +196,9 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b);
 Type type_composite(typeof((Type){}.tag) tag, Type a, Type b);
 void composite_type_simplify(Type* me);
 
+// PERF: should type_drop() be inlined?
 void type_drop(Type* me);
+// PERF: should type_clone() be inlined?
 Type type_clone(Type me);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
 static inline Type type_move(Type* me) {

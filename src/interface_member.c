@@ -75,10 +75,9 @@ void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs) {
             type_typecheck(&my key.index, errs);
             break;
 
-        case INTERFACE_KEY_EXPR: {
-            Type t = expr_get_type_and_typecheck(my key.expr.get, errs);
-            type_drop(&t);
-        }   break;
+        case INTERFACE_KEY_EXPR:
+            expr_typecheck(my key.expr.get, errs);
+            break;
 
         case INTERFACE_KEY_MAPPED:
             type_typecheck(&my key.mapped.in_type, errs);

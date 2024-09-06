@@ -332,8 +332,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     type_typecheck(lazy_type_get(&my class_type), errs);
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        Type extends_type = expr_get_type_and_typecheck(&my extends, errs);
-        if (extends_type.tag == TYPE_VALUE && extends_type.value.tag == VALUE_NULL) {
+        expr_typecheck(&my extends, errs);
+        Type const* extends_type = expr_get_type(&my extends);
+        if (extends_type->tag == TYPE_VALUE && extends_type->value.tag == VALUE_NULL) {
         } else {
             CallExpr call_expr = {
                 .uses_new = true,
@@ -341,10 +342,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 .callable = expr_implicit_any(my extends.outer_span),
                 .args = vec_expr_init(),
             };
-            Type extends_result = type_typecheck_call(&extends_type, &call_expr, my extends.outer_span, errs);
+            Type extends_result = type_typecheck_call(extends_type, &call_expr, my extends.outer_span, errs);
             type_drop(&extends_result);
         }
-        type_drop(&extends_type);
     }
 
     int constructor_count = 0;
@@ -360,11 +360,15 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_FIELD: {
-                Type value = expr_get_type_and_typecheck(&i.ref->field.value, errs);
+                expr_typecheck(&i.ref->field.value, errs);
                 if (i.ref->field.has_explicit_type) {
-                    check_assignable_or_error(&value, &i.ref->field.explicit_type, i.ref->field.name_span, errs);
+                    check_assignable_or_error(
+                        expr_get_type(&i.ref->field.value),
+                        &i.ref->field.explicit_type,
+                        i.ref->field.name_span,
+                        errs
+                    );
                 }
-                type_drop(&value);
             }   break;
 
             case CLASS_ITEM_INTERFACE_MEMBER: break;

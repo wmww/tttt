@@ -304,7 +304,7 @@ CallableType generic_infer_callable_types(
     }
     VecType arg_types = {0};
     c_foreach(i, vec_expr, *args) {
-        vec_type_push(&arg_types, expr_get_type_and_typecheck(i.ref, nullptr));
+        vec_type_push(&arg_types, type_ref(expr_get_type(i.ref)));
     }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         collect_generic_candidates(

@@ -371,6 +371,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                         i.ref->binding.has_explicit_type = false;
                         binding_add_names(&i.ref->binding, type_lazy(&my for_each_loop->var_type), names, errs);
                         binding_resolve_names(&i.ref->binding, names, errs);
+                        expr_resolve_names(&i.ref->value, names, errs);
                     }
                     break;
 
@@ -488,9 +489,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                 PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
             }
             c_foreach(i, vec_expr, my if_else.conditions) {
-                Type t = expr_get_type_and_typecheck(i.ref, errs);
                 // Conditions do not have to be booleans
-                type_drop(&t);
+                expr_typecheck(i.ref, errs);
             }
             c_foreach(i, vec_statement, my if_else.statements) {
                 statement_typecheck(i.ref, ctx, errs);
@@ -500,10 +500,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_FOR_LOOP: {
             statement_typecheck(&my for_loop->initialization, ctx, errs);
-            Type t = expr_get_type_and_typecheck(&my for_loop->condition, errs);
-            type_drop(&t);
-            t = expr_get_type_and_typecheck(&my for_loop->afterthought, errs);
-            type_drop(&t);
+            expr_typecheck(&my for_loop->condition, errs);
+            expr_typecheck(&my for_loop->afterthought, errs);
             bool break_was_allowed = ctx->break_allowed;
             ctx->break_allowed = true;
             statement_typecheck(&my for_loop->body, ctx, errs);
@@ -574,23 +572,21 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             }
 
             switch (my for_each_loop->variable.tag) {
-                case FOR_EACH_LOOP_STATEMENT: {
+                case FOR_EACH_LOOP_STATEMENT:
                     c_foreach(i, vec_initialized_binding, my for_each_loop->variable.statement.initializers) {
                         binding_typecheck(&i.ref->binding, errs);
                     }
-                }   break;
+                    break;
 
-                case FOR_EACH_LOOP_EXPR: {
-                    Type existing_var_type = expr_get_type_and_typecheck(&my for_each_loop->variable.expr, errs);
+                case FOR_EACH_LOOP_EXPR:
+                    expr_typecheck(&my for_each_loop->variable.expr, errs);
                     check_assignable_or_error(
                         lazy_type_get(&my for_each_loop->var_type),
-                        &existing_var_type,
+                        expr_get_type(&my for_each_loop->variable.expr),
                         my for_each_loop->variable.expr.outer_span,
                         errs
                     );
-                    type_drop(&existing_var_type);
                     break;
-                }
             }
 
             bool break_was_allowed = ctx->break_allowed;
@@ -600,22 +596,23 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
         }   break;
 
         case STATEMENT_SWITCH: {
-            Type needle_type = expr_get_type_and_typecheck(&my switch_->needle, errs);
+            expr_typecheck(&my switch_->needle, errs);
+            Type const* needle_type = expr_get_type(&my switch_->needle);
             intptr_t default_count = 0;
             bool break_was_allowed = ctx->break_allowed;
             ctx->break_allowed = true;
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 if (i.ref->is_pattern) {
-                    Type pattern_type = expr_get_type_and_typecheck(&i.ref->pattern, errs);
-                    if (errs && !type_overlaps(&needle_type, &pattern_type)) {
+                    expr_typecheck(&i.ref->pattern, errs);
+                    Type const* pattern_type = expr_get_type(&i.ref->pattern);
+                    if (errs && !type_overlaps(needle_type, pattern_type)) {
                         cstr message = cstr_lit("Type '");
-                        cstr_append_type_error_msg(&message, &pattern_type);
+                        cstr_append_type_error_msg(&message, pattern_type);
                         cstr_append_sv(&message, c_sv("' is not comparable to type '"));
-                        cstr_append_type_error_msg(&message, &needle_type);
+                        cstr_append_type_error_msg(&message, needle_type);
                         cstr_append_sv(&message, c_sv("'."));
                         error_ctx_error_s(errs, i.ref->pattern.outer_span, 2678, message);
                     }
-                    type_drop(&pattern_type);
                 } else {
                     default_count++;
                     if (default_count == 2) {
@@ -631,7 +628,6 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     statement_typecheck(j.ref, ctx, errs);
                 }
             }
-            type_drop(&needle_type);
             ctx->break_allowed = break_was_allowed;
         }   break;
 
@@ -656,22 +652,28 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-        case STATEMENT_THROW_EXPR: {
-            Type t = expr_get_type_and_typecheck(&my expr, errs);
-            type_drop(&t);
-        }   break;
+        case STATEMENT_THROW_EXPR:
+            expr_typecheck(&my expr, errs);
+            break;
 
         case STATEMENT_RETURN_EXPR: {
-            Type t = expr_get_type_and_typecheck(&my expr, errs);
+            expr_typecheck(&my expr, errs);
 
             if (ctx->specified_return) {
-                check_assignable_or_error(&t, ctx->specified_return, my expr.outer_span, errs);
+                check_assignable_or_error(
+                    expr_get_type(&my expr),
+                    ctx->specified_return,
+                    my expr.outer_span,
+                    errs
+                );
             }
 
             if (ctx->collect_returned_types) {
-                ctx->impl_return = type_composite(TYPE_UNION, ctx->impl_return, t);
-            } else {
-                type_drop(&t);
+                ctx->impl_return = type_composite(
+                    TYPE_UNION,
+                    ctx->impl_return,
+                    type_clone(*expr_get_type(&my expr))
+                );
             }
         }   break;
 
