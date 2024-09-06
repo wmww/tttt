@@ -54,7 +54,18 @@ The `Program` struct owns the source code buffers and ASTs of all loaded files, 
 The abstraction for adding and looking up identifier names. Scopes can be pushed and popped.
 
 ### LazyType
-`LazyType`s are owned by the AST. They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to add a name to the `NameStack` with a type in the resolve names phase, but not calculate what that type actually is until the typecheck phase when all names are resolved.
+`LazyType` is a struct owned by the AST. They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to add a name to the `NameStack` with a type in the resolve names phase, but not calculate what that type actually is until the typecheck phase when all names are resolved.
+
+The process goes something like this:
+1. An AST struct, for example `Expr`, contains a `LazyType`
+2. In the resolve names phase, it set's it's LazyType's tag to `LAZY_TYPE_EXPR`
+3. That function or some other function then creates a `Type` with a pointer to it's LazyType using `type_lazy()` (the expressions type hasn't and *can't* be evaluated yet since names haven't been fully resolved, so this is the only way to pass around it's type)
+4. Later, in the typecheck phase, `type_resolve()` is called on the `Type`, which calls `lazy_type_get()`
+5. The tag of the LazyType is `LAZY_TYPE_EXPR`, so `lazy_type_evaluate()` uses the pointer to the LazyType to calculate a pointer to it's containing `Expr` and calls `expr_evaluate_type()`
+6. It then sets `.evaluated` to the returned type, the tag to `LAZY_TYPE_EVALUATED` and returns a pointer to the evaluated type
+7. Future calls to `lazy_type_get()` for the same Expr quickly return a pointer to the evaluated type, without needing to call `lazy_type_evaluate()`
+
+LazyTypes play a critical role in detecting self-referential types. While a LazyType is being evaluated it's put in an in-flight state. If something tries to evaluate it again in the same call stack it's evaluated type is set to `type_self_referential_error`.
 
 ### Engine
 tttt includes a JavaScript interpreter that evaluates an AST. It's not fast, standards complaint, tested, complete, or a priority.
