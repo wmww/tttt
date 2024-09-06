@@ -521,14 +521,12 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             if (!vec_initialized_binding_empty(&my for_each_loop->variable.statement.initializers) &&
                                 my for_each_loop->variable.statement.initializers.data->binding.tag != BINDING_IDENTIFIER
                             ) {
-                                ErrorPhase prev_phase = error_ctx_swap_phase(errs, ERROR_PHASE_TYPECHECK);
                                 error_ctx_error(
                                     errs,
                                     my for_each_loop->variable.statement.initializers.data->binding.content_span,
                                     2491,
                                     "The left-hand side of a 'for...in' statement cannot be a destructuring pattern."
                                 );
-                                error_ctx_swap_phase(errs, prev_phase);
                             }
                             break;
 
@@ -536,14 +534,12 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             if (my for_each_loop->variable.expr.tag == EXPR_ARRAY ||
                                 my for_each_loop->variable.expr.tag == EXPR_OBJECT
                             ) {
-                                ErrorPhase prev_phase = error_ctx_swap_phase(errs, ERROR_PHASE_TYPECHECK);
                                 error_ctx_error(
                                     errs,
                                     my for_each_loop->variable.expr.outer_span,
                                     2491,
                                     "The left-hand side of a 'for...in' statement cannot be a destructuring pattern."
                                 );
-                                error_ctx_swap_phase(errs, prev_phase);
                             }
                             break;
                     }

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "prelude.h"
 #include "type.h"
 
 typedef struct Statement Statement;

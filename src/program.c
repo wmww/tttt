@@ -22,18 +22,17 @@ typedef SourceFile* SourceFilePtr;
 #include "wrap_stc/vec.h"
 
 typedef struct Program {
-    // TODO: move ErrorPhase to our header and rename to ProgramPhase
-    ErrorPhase phase;
     ErrorCtx* errs; // unowned
     Filesystem const* fs;
-    HmapStrBoxSourceFile source_files;
+    HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
+                                       // Keys are canonical paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
     SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
 
 Program* program_new(ErrorCtx* errs, Filesystem const* fs_override) {
+    ASSERT(errs);
     return c_new(Program, {
-        .phase = ERROR_PHASE_UNKOWN,
         .errs = errs,
         .fs = fs_override ? fs_override : &real_filesystem_quiet,
         .not_found_file = source_file_make(cstr_null, cstr_null, errs),
@@ -68,9 +67,11 @@ static SourceFile const* program_add_source(Program* me, const char* path) {
         cstr_sv(&canonical_path)
     );
     if (value) {
+        // A source file is already created for this path
         cstr_drop(&canonical_path);
         return value->second.get;
     } else {
+        // No source file is created for this path, load it
         cstr contents;
         if (!filesystem_read_entire_file(my fs, cstr_str(&canonical_path), &contents)) {
             cstr_drop(&canonical_path);
@@ -87,40 +88,46 @@ static SourceFile const* program_add_source(Program* me, const char* path) {
 }
 
 SourceFile const* program_load(Program* me, const char* path) {
-    ASSERT(my phase == ERROR_PHASE_UNKOWN);
-    my phase = ERROR_PHASE_RESOLVE_NAMES;
+    // Add the source file to the program
     SourceFile const* main_source = program_add_source(me, path);
     if (!main_source) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
         return &my not_found_file;
     }
+
+    // This function should only be called by our owner, not indirectly by ourselves
+    ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
+    my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
+
+    // There will initially be one pending source file (the one we just added). In each iteration more pending source
+    // files may be added due to imports.
     while (vec_source_file_ptr_size(&my pending_source_files)) {
-        VecSourceFilePtr pending_files = my pending_source_files;
-        my pending_source_files = vec_source_file_ptr_init();
-        c_foreach(i, vec_source_file_ptr, pending_files) {
-            SourceFile* source = *i.ref;
-            source->ast = parse_file(cstr_str(&source->contents), my errs);
-            ErrorPhase prev_phase = error_ctx_swap_phase(my errs, ERROR_PHASE_RESOLVE_NAMES);
-            name_stack_push_block_frame(source->name_stack);
-            block_add_names(&source->ast, source->name_stack, my errs);
-            error_ctx_swap_phase(my errs, prev_phase);
-        }
-        vec_source_file_ptr_drop(&pending_files);
+        // Remove the top source file from the pending list and parse it (order of processing shouldn't matter here)
+        SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
+        source->ast = parse_file(cstr_str(&source->contents), my errs);
+
+        // Push a block frame for this source file's name stack, it will be popped when traversing the hashmap below
+        name_stack_push_block_frame(source->name_stack);
+        block_add_names(&source->ast, source->name_stack, my errs);
     }
-    ErrorPhase prev_phase = error_ctx_swap_phase(my errs, ERROR_PHASE_RESOLVE_NAMES);
+
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
         block_lookup_names(&source->ast, source->name_stack, my errs);
+
+        // Pop the stack frame we pushed above, this is a bit hacky but works.
         name_stack_pop_frame(source->name_stack);
     }
-    error_ctx_swap_phase(my errs, prev_phase);
-    my phase = ERROR_PHASE_UNKOWN;
+
+    my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
 }
 
 SourceFile const* program_queue_import(Program* me, Span path_span, const char* path) {
-    ASSERT(my phase == ERROR_PHASE_RESOLVE_NAMES);
+    ASSERT(my errs->phase == ERROR_PHASE_RESOLVE_NAMES);
+
     SourceFile const* source = program_add_source(me, path);
+
     if (!source) {
         error_ctx_error(
             my errs,
@@ -131,20 +138,20 @@ SourceFile const* program_queue_import(Program* me, Span path_span, const char* 
         );
         return &my not_found_file;
     }
+
     return source;
-    return nullptr;
 }
 
 void program_typecheck(Program* me, bool show_errors) {
-    ASSERT(my phase == ERROR_PHASE_UNKOWN);
-    my phase = ERROR_PHASE_TYPECHECK;
-    ErrorPhase prev_phase = error_ctx_swap_phase(my errs, ERROR_PHASE_TYPECHECK);
+    ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
+    my errs->phase = ERROR_PHASE_TYPECHECK;
+
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
         StatementCtx statement_ctx = statement_ctx_toplevel();
         block_typecheck(&source->ast, &statement_ctx, show_errors ? my errs : nullptr);
         statement_ctx_drop(&statement_ctx);
     }
-    error_ctx_swap_phase(my errs, prev_phase);
-    my phase = ERROR_PHASE_UNKOWN;
+
+    my errs->phase = ERROR_PHASE_UNKOWN;
 }
