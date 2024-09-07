@@ -12,49 +12,6 @@
 
 static const long read_file_len_limit = 1024l * 1024l * 1024l; // 1GB
 
-bool path_is_reg_file(const char* path)
-{
-    struct stat buf_stat;
-    if (!path || stat(path, &buf_stat) < 0) {
-        return false;
-    }
-    return S_ISREG(buf_stat.st_mode);
-}
-
-bool path_is_directory(const char* path)
-{
-    struct stat buf_stat;
-    if (!path || stat(path, &buf_stat) < 0) {
-        return false;
-    }
-    return S_ISDIR(buf_stat.st_mode);
-}
-
-bool for_each_item_in_dir(
-    const char* dir_path,
-    void (*callback)(void* data, const char* dir_path, const char* name),
-    void* data
-) {
-    DIR* directory = opendir(dir_path);
-    if (!directory) {
-        fprintf(stderr, "Could not open %s\n", dir_path);
-        return false;
-    }
-    struct dirent* item;
-    while ((item = readdir(directory))) {
-        if (*item->d_name != '.' ||
-            (strcmp(item->d_name, ".") != 0 && strcmp(item->d_name, ".."))
-        ) {
-            callback(data, dir_path, item->d_name);
-        }
-    }
-    if (closedir(directory) < 0) {
-        fprintf(stderr, "Could not close %s\n", dir_path);
-        return false;
-    }
-    return true;
-}
-
 const char* file_extension_of(const char* path) {
     const char* ret = "";
     for (const char* i = path; *i; i++) {
@@ -81,7 +38,52 @@ csview dirname_of(const char* path) {
     return c_sv(path, basename_of(path) - path);
 }
 
-static bool real_filesystem_canonicalize_path(Filesystem const* me, const char* path, cstr* ret) {
+bool real_fs_is_reg_file(Fs const* me, const char* path) {
+    ignore me;
+    struct stat buf_stat;
+    if (!path || stat(path, &buf_stat) < 0) {
+        return false;
+    }
+    return S_ISREG(buf_stat.st_mode);
+}
+
+bool real_fs_is_directory(Fs const* me, const char* path) {
+    ignore me;
+    struct stat buf_stat;
+    if (!path || stat(path, &buf_stat) < 0) {
+        return false;
+    }
+    return S_ISDIR(buf_stat.st_mode);
+}
+
+bool real_fs_for_each_item_in_dir(
+    Fs const* me,
+    const char* dir_path,
+    void (*callback)(void* data, const char* dir_path, const char* name),
+    void* data
+) {
+    ignore me;
+    DIR* directory = opendir(dir_path);
+    if (!directory) {
+        fprintf(stderr, "Could not open %s\n", dir_path);
+        return false;
+    }
+    struct dirent* item;
+    while ((item = readdir(directory))) {
+        if (*item->d_name != '.' ||
+            (strcmp(item->d_name, ".") != 0 && strcmp(item->d_name, ".."))
+        ) {
+            callback(data, dir_path, item->d_name);
+        }
+    }
+    if (closedir(directory) < 0) {
+        fprintf(stderr, "Could not close %s\n", dir_path);
+        return false;
+    }
+    return true;
+}
+
+static bool real_fs_canonicalize_path(Fs const* me, const char* path, cstr* ret) {
     char buffer[PATH_MAX];
     if (realpath(path, buffer)) {
         *ret = cstr_from(buffer);
@@ -99,8 +101,8 @@ static bool real_filesystem_canonicalize_path(Filesystem const* me, const char* 
     }
 }
 
-static bool real_filesystem_read_entire_file(Filesystem const* me, const char* path, cstr* ret) {
-    if (!path_is_reg_file(path)) {
+static bool real_fs_read_entire_file(Fs const* me, const char* path, cstr* ret) {
+    if (!fs_is_reg_file(me, path)) {
         if (my debug_on_fail) {
             fprintf(stderr, "%s: not a file\n", path);
         }
@@ -172,14 +174,20 @@ err:
     return false;
 }
 
-Filesystem const real_filesystem_noisy = {
-    .canonicalize_path = real_filesystem_canonicalize_path,
-    .read_entire_file = real_filesystem_read_entire_file,
+Fs const real_fs_noisy = {
+    .is_reg_file = real_fs_is_reg_file,
+    .is_directory = real_fs_is_directory,
+    .for_each_item_in_dir = real_fs_for_each_item_in_dir,
+    .canonicalize_path = real_fs_canonicalize_path,
+    .read_entire_file = real_fs_read_entire_file,
     .debug_on_fail = true,
 };
 
-Filesystem const real_filesystem_quiet = {
-    .canonicalize_path = real_filesystem_canonicalize_path,
-    .read_entire_file = real_filesystem_read_entire_file,
+Fs const real_fs_quiet = {
+    .is_reg_file = real_fs_is_reg_file,
+    .is_directory = real_fs_is_directory,
+    .for_each_item_in_dir = real_fs_for_each_item_in_dir,
+    .canonicalize_path = real_fs_canonicalize_path,
+    .read_entire_file = real_fs_read_entire_file,
     .debug_on_fail = false,
 };

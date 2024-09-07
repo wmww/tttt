@@ -5,11 +5,10 @@
 typedef struct Program Program;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct SourceFile SourceFile;
-typedef struct Filesystem Filesystem;
+typedef struct Fs Fs;
 typedef struct arc_js_object ArcObject;
 
-// fs_override can be null to use to use the real filesystem
-Program* program_new(ErrorCtx* errs, Filesystem const* fs_override);
+Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
 // Parses and resolves names into the global scope, used for adding standard library type declarations. Preloaded files

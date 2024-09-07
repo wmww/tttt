@@ -4,7 +4,7 @@
 int main(int argc, const char** argv) {
     ASSERT(argc == 2);
     const char* test_path = argv[1];
-    if (!path_is_reg_file(test_path)) {
+    if (!fs_is_reg_file(&real_fs_noisy, test_path)) {
         PANIC("%s is not a file", test_path);
     }
 

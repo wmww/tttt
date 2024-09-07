@@ -24,18 +24,19 @@ typedef SourceFile* SourceFilePtr;
 
 typedef struct Program {
     ErrorCtx* errs; // unowned
-    Filesystem const* fs;
+    Fs const* fs;
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
                                        // Keys are canonical paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
     SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
 
-Program* program_new(ErrorCtx* errs, Filesystem const* fs_override) {
+Program* program_new(ErrorCtx* errs, Fs const* fs) {
     ASSERT(errs);
+    ASSERT(fs);
     return c_new(Program, {
         .errs = errs,
-        .fs = fs_override ? fs_override : &real_filesystem_quiet,
+        .fs = fs,
         .not_found_file = source_file_make(cstr_null, cstr_null, errs),
     });
 }
@@ -60,7 +61,7 @@ void program_preload(Program* me, const char* path) {
 // Returns null if path can't be loaded
 static SourceFile const* program_add_source(Program* me, const char* path) {
     cstr canonical_path;
-    if (!filesystem_canonicalize_path(my fs, path, &canonical_path)) {
+    if (!fs_canonicalize_path(my fs, path, &canonical_path)) {
         return nullptr;
     }
     hmap_str_box_source_file_value const* value = hmap_str_box_source_file_get(
@@ -74,7 +75,7 @@ static SourceFile const* program_add_source(Program* me, const char* path) {
     } else {
         // No source file is created for this path, load it
         cstr contents;
-        if (!filesystem_read_entire_file(my fs, cstr_str(&canonical_path), &contents)) {
+        if (!fs_read_entire_file(my fs, cstr_str(&canonical_path), &contents)) {
             cstr_drop(&canonical_path);
             return nullptr;
         }
@@ -90,7 +91,7 @@ static SourceFile const* program_add_source(Program* me, const char* path) {
 
 static void program_handle_import(Program* me, ImportStatement* import) {
     cstr source_path = cstr_clone(import->path);
-    if (path_is_directory(cstr_str(&source_path))) {
+    if (fs_is_directory(my fs, cstr_str(&source_path))) {
         cstr_append_lit(&source_path, "/index.ts");
     } else {
         cstr_append_lit(&source_path, ".ts");

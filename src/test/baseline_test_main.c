@@ -79,11 +79,11 @@ static bool parse_args(int argc, const char** argv) {
         }
     }
 
-    if (!path_is_directory(tests_dir)) {
+    if (!fs_is_directory(&real_fs_noisy, tests_dir)) {
         fprintf(stderr, "%s%s is not a directory%s\n", color_error, tests_dir, color_normal);
         return false;
     }
-    if (!path_is_reg_file(results_path)) {
+    if (!fs_is_reg_file(&real_fs_noisy,results_path)) {
         fprintf(stderr, "%s%s is not a file%s\n", color_error, results_path, color_normal);
         return false;
     }

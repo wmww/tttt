@@ -36,7 +36,7 @@ test_files = core_files + files(
     'test/baseline_test_case.c',
     'test/baseline_test_traversal.c',
     'test/subprocess.c',
-    'test/mock_filesystem.c',
+    'test/mock_fs.c',
 )
 
 baseline_test_files = test_files + files('test/baseline_test_main.c')

@@ -49,10 +49,10 @@ static void load_path(void* data, const char* dir_path, const char* name) {
     BaselineTestSuite* me = data;
     cstr full_path = cstr_from_fmt("%s/%s", dir_path, name);
 
-    if (path_is_directory(cstr_str(&full_path))) {
-        for_each_item_in_dir(cstr_str(&full_path), load_path, me);
+    if (fs_is_directory(&real_fs_quiet, cstr_str(&full_path))) {
+        fs_for_each_item_in_dir(&real_fs_quiet, cstr_str(&full_path), load_path, me);
         cstr_drop(&full_path);
-    } else if (path_is_reg_file(cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
+    } else if (fs_is_reg_file(&real_fs_quiet, cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
         vec_baseline_test_result_push(
             &my results,
             make_baseline_test_result(full_path)
@@ -68,8 +68,8 @@ static void load_path(void* data, const char* dir_path, const char* name) {
 
 static void load_subdir(BaselineTestSuite* me, const char* subdir) {
     cstr full_dir = cstr_from_fmt("%s/cases/%s", my tests_dir, subdir);
-    if (path_is_directory(cstr_str(&full_dir))) {
-        for_each_item_in_dir(cstr_str(&full_dir), load_path, me);
+    if (fs_is_directory(&real_fs_quiet, cstr_str(&full_dir))) {
+        fs_for_each_item_in_dir(&real_fs_quiet, cstr_str(&full_dir), load_path, me);
     } else {
         fprintf(stderr, "%s%s is not a directory%s\n", color_error, cstr_str(&full_dir), color_normal);
     }
@@ -268,7 +268,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
 
 static void load_saved_results(BaselineTestSuite* me, const char* results_path) {
     ErrorCtx errs = error_ctx_init();
-    Program* program = program_new(&errs, nullptr);
+    Program* program = program_new(&errs, &real_fs_quiet);
 
     SourceFile const* results_source = program_load(program, results_path);
     // Don't bother typechecking

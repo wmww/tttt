@@ -1,6 +1,6 @@
 #include "baseline_test_case.h"
 #include "baseline_test_traversal.h"
-#include "mock_filesystem.h"
+#include "mock_fs.h"
 #include "program.h"
 #include "source_file.h"
 #include "string_helpers.h"
@@ -67,8 +67,8 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
     cstr unparsed_contents = cstr_null;
     *ret = cstr_null;
 
-    if (!filesystem_read_entire_file(
-        noisy ? &real_filesystem_noisy : &real_filesystem_quiet,
+    if (!fs_read_entire_file(
+        noisy ? &real_fs_noisy : &real_fs_quiet,
         test->source_path,
         &unparsed_contents
     )) {
@@ -120,13 +120,13 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
     }
 
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
-    MockFilesystem* fs = mock_filesystem_new();
+    MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, &fs->super);
 
     BaselineTestCase ret = {
         .source_path = source_path,
         .error_ctx = errs,
-        .filesystem = fs,
+        .fs = fs,
         .program = program,
     };
 
@@ -151,7 +151,7 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
 
 void baseline_test_case_drop(BaselineTestCase* me) {
     program_destroy(my program);
-    mock_filesystem_destroy(my filesystem);
+    mock_fs_destroy(my fs);
     error_ctx_drop(my error_ctx);
     free(my error_ctx);
     vec_line_numbered_str_drop(&my symbols);

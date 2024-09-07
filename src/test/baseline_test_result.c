@@ -24,8 +24,8 @@ static bool compare_outputs(
     bool show_diff_on_error
 ) {
     cstr expected = cstr_null;
-    if (path_is_reg_file(path_of_expected)) {
-        if (!filesystem_read_entire_file(&real_filesystem_quiet, path_of_expected, &expected)) {
+    if (fs_is_reg_file(&real_fs_quiet, path_of_expected)) {
+        if (!fs_read_entire_file(&real_fs_quiet, path_of_expected, &expected)) {
             if (show_diff_on_error) {
                 printf("%.*s: %s could not be read\n", c_SV(test_name), path_of_expected);
             }
@@ -86,7 +86,7 @@ void baseline_test_result_run(
 
     // It's ok if errors file doesn't exist
 
-    if (!path_is_reg_file(cstr_str(&symbols_path))) {
+    if (!fs_is_reg_file(&real_fs_quiet, cstr_str(&symbols_path))) {
         if (noisy) {
             fprintf(
                 stderr,
@@ -100,7 +100,7 @@ void baseline_test_result_run(
         goto cleanup;
     }
 
-    if (!path_is_reg_file(cstr_str(&types_path))) {
+    if (!fs_is_reg_file(&real_fs_quiet, cstr_str(&types_path))) {
         if (noisy) {
             fprintf(
                 stderr,

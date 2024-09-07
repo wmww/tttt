@@ -5,7 +5,7 @@
 typedef struct Span Span;
 typedef struct Type Type;
 typedef struct Program Program;
-typedef struct MockFilesystem MockFilesystem;
+typedef struct MockFs MockFs;
 typedef struct SourceFile SourceFile;
 typedef struct JsObject JsObject;
 typedef struct BaselineTestSuite BaselineTestSuite;
@@ -20,7 +20,7 @@ typedef struct BaselineTestCase {
     const char* source_path; // Not owned
     bool did_run;
     ErrorCtx* error_ctx;
-    MockFilesystem* filesystem;
+    MockFs* fs;
     Program* program;
     SourceFile const* main_source;
     VecLineNumberedStr symbols;
