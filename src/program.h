@@ -19,9 +19,6 @@ void program_preload(Program* me, const char* path);
 // Parses and resolves names of the given file and all imports
 SourceFile const* program_load(Program* me, const char* path);
 
-// Returned stack frame may not be populated yet, but can be added to a name stack as an interface
-SourceFile const* program_queue_import(Program* me, Span path_span, const char* path);
-
 // Typechecks the loaded file and all imports, does not typecheck preloaded files
 // TODO: Typechecking shouldn't be required at all if show_errors is false, so remove this arg
 void program_typecheck(Program* me, bool show_errors);

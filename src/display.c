@@ -866,10 +866,10 @@ static void display_import_statement(Display d, ImportStatement const* me) {
         display_colored_span(d, color_name, my module_name);
         force_brace_list = false;
     }
-    if (!force_brace_list) {
-        display_lit(d, ", ");
-    }
     if (force_brace_list || !vec_import_item_empty(&my items)) {
+        if (!force_brace_list) {
+            display_lit(d, ", ");
+        }
         display_lit(d, "{");
         c_foreach(i, vec_import_item, my items) {
             if (i.ref->type_only) {

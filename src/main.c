@@ -51,8 +51,8 @@ int main(int argc, const char** argv) {
 
     if (!error_ctx_empty(&errs)) {
         print_error_ctx(&errs);
-        errs = error_ctx_init();
         error_ctx_drop(&errs);
+        errs = error_ctx_init();
         ret = 1;
     }
 

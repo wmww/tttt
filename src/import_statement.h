@@ -13,6 +13,8 @@
  * import {foo, bar as baz} from './file'
  */
 
+typedef struct SourceFile SourceFile;
+
 typedef struct ImportItem {
     bool type_only;
     Span source;
@@ -30,6 +32,7 @@ void import_item_drop(ImportItem* me);
 #include "wrap_stc/vec.h"
 
 typedef struct ImportStatement {
+    Span import_keyword_span;
     bool type_only;
     Span default_name;
     NamedVariable* default_named_var;
@@ -42,6 +45,7 @@ typedef struct ImportStatement {
     VecImportItem items;
     cstr path;
     Span path_span;
+    SourceFile const* source_file;
 } ImportStatement;
 
 void import_statement_drop(ImportStatement* me);

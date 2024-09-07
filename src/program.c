@@ -6,6 +6,7 @@
 #include "statement.h"
 #include "source_file.h"
 #include "name_stack.h"
+#include "import_statement.h"
 
 #define i_key_class_names SourceFile, source_file
 #define i_no_clone
@@ -87,6 +88,31 @@ static SourceFile const* program_add_source(Program* me, const char* path) {
     }
 }
 
+static void program_handle_import(Program* me, ImportStatement* import) {
+    cstr source_path = cstr_clone(import->path);
+    if (path_is_directory(cstr_str(&source_path))) {
+        cstr_append_lit(&source_path, "/index.ts");
+    } else {
+        cstr_append_lit(&source_path, ".ts");
+    }
+    // TODO: handle js
+    SourceFile const* source = program_add_source(me, cstr_str(&source_path));
+    cstr_drop(&source_path);
+
+    if (source) {
+        import->source_file = source;
+    } else {
+        error_ctx_error(
+            my errs,
+            import->path_span,
+            2307,
+            "Cannot find module '%s' or its corresponding type declarations.",
+            cstr_str(&import->path)
+        );
+        import->source_file = &my not_found_file;
+    }
+}
+
 SourceFile const* program_load(Program* me, const char* path) {
     // Add the source file to the program
     SourceFile const* main_source = program_add_source(me, path);
@@ -106,6 +132,13 @@ SourceFile const* program_load(Program* me, const char* path) {
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
         source->ast = parse_file(cstr_str(&source->contents), my errs);
 
+        // Load imported files
+        c_foreach(i, vec_statement, source->ast.statements) {
+            if (i.ref->tag == STATEMENT_IMPORT) {
+                program_handle_import(me, i.ref->import);
+            }
+        }
+
         // Push a block frame for this source file's name stack, it will be popped when traversing the hashmap below
         name_stack_push_block_frame(source->name_stack);
         block_add_names(&source->ast, source->name_stack, my errs);
@@ -114,32 +147,17 @@ SourceFile const* program_load(Program* me, const char* path) {
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
         block_lookup_names(&source->ast, source->name_stack, my errs);
+    }
 
-        // Pop the stack frame we pushed above, this is a bit hacky but works.
+    c_foreach(i, hmap_str_box_source_file, my source_files) {
+        SourceFile* source = i.ref->second.get;
+        // Pop the stack frame we pushed above. Do this in it's own loop since files might need the topmost name stack
+        // from other files to lookup names
         name_stack_pop_frame(source->name_stack);
     }
 
     my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
-}
-
-SourceFile const* program_queue_import(Program* me, Span path_span, const char* path) {
-    ASSERT(my errs->phase == ERROR_PHASE_RESOLVE_NAMES);
-
-    SourceFile const* source = program_add_source(me, path);
-
-    if (!source) {
-        error_ctx_error(
-            my errs,
-            path_span,
-            2307,
-            "Cannot find module '%.*s' or its corresponding type declarations.",
-            c_SPAN(path_span)
-        );
-        return &my not_found_file;
-    }
-
-    return source;
 }
 
 void program_typecheck(Program* me, bool show_errors) {

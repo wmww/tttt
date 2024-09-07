@@ -253,9 +253,9 @@ NameStack* name_stack_pull_frame_into_new_stack(NameStack* me) {
 }
 
 Type name_stack_make_interface_from(NameStack const* ref) {
-    ASSERT(vec_stack_frame_size(&ref->stack) == 1);
+    ASSERT(vec_stack_frame_size(&ref->stack) > 0);
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_str_named_variable_ptr, ref->stack.data->variables) {
+    c_foreach(i, hmap_str_named_variable_ptr, vec_stack_frame_back(&ref->stack)->variables) {
         vec_interface_member_push(&members, interface_member_make(
             i.ref->second->full,
             span_null, // Interface name
@@ -414,8 +414,6 @@ NamedType* name_stack_add_mergeable_type(
 }
 
 void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
-    ASSERT(vec_stack_frame_size(&ns->stack) == 1);
-
     // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
     // NameStacks may not need to be clonable if that's the case
     cstr name_string = cstr_from_span(name);

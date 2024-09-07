@@ -2802,11 +2802,13 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
 
 static bool parse_import_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
     ImportStatement import = {0};
 
     if (!hop_start_if_ends_on_word_break(&p, "import")) {
         return parse_fail(&p);
     }
+    import.import_keyword_span = span_from(a);
     hop_whitespace(&p);
 
     if (hop_start_if_ends_on_word_break(&p, "type")) {
