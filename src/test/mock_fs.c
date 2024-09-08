@@ -1,5 +1,10 @@
 #include "mock_fs.h"
 
+typedef struct MockFs {
+    Fs super;
+    cstr read_contents;
+} MockFs;
+
 static bool mock_fs_is_reg_file(Fs const* me, const char* path) {
     ignore me;
     ignore path;
@@ -54,4 +59,14 @@ MockFs* mock_fs_new() {
 void mock_fs_destroy(MockFs* me) {
     cstr_drop(&my read_contents);
     free(me);
+}
+
+void mock_fs_create_file(MockFs* me, const char* path, cstr contents) {
+    ignore path;
+    cstr_drop(&my read_contents);
+    my read_contents = contents;
+}
+
+Fs const* mock_fs_get_fs(MockFs const* me) {
+    return &my super;
 }

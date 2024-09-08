@@ -63,9 +63,9 @@ static bool tag_equals(csview tag, const char* str) {
 }
 
 // Returns true on success, on fail ret is set to cstr_null
-static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
+static bool load_test_source(BaselineTestCase* test, bool noisy, MockFs* fs) {
     cstr unparsed_contents = cstr_null;
-    *ret = cstr_null;
+    cstr source_contents = cstr_null;
 
     if (!fs_read_entire_file(
         noisy ? &real_fs_noisy : &real_fs_quiet,
@@ -89,7 +89,7 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
                 if (has_filename) {
                     // We do not yet support multi-file tests
                     cstr_drop(&unparsed_contents);
-                    cstr_take(ret, cstr_null);
+                    cstr_drop(&source_contents);
                     return false;
                 } else {
                     has_filename = true;
@@ -100,17 +100,18 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, cstr* ret) {
                 test->error_ctx->conf.no_implicit_any = true;
             }
         } else {
-            cstr_append_sv(ret, i.line);
+            cstr_append_sv(&source_contents, i.line);
             if ((has_line || csview_size(i.line)) &&
                 csview_end_ptr(i.line) < csview_end_ptr(contents_sv)
             ) {
-                cstr_append(ret, "\r\n");
+                cstr_append(&source_contents, "\r\n");
                 has_line = true;
             }
         }
     }
 
     cstr_drop(&unparsed_contents);
+    mock_fs_create_file(fs, test->source_path, source_contents);
     return true;
 }
 
@@ -121,7 +122,7 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
 
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     MockFs* fs = mock_fs_new();
-    Program* program = program_new(errs, &fs->super);
+    Program* program = program_new(errs, mock_fs_get_fs(fs));
 
     BaselineTestCase ret = {
         .source_path = source_path,
@@ -130,7 +131,7 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
         .program = program,
     };
 
-    bool load_success = load_test_source(&ret, noisy, &fs->read_contents);
+    bool load_success = load_test_source(&ret, noisy, fs);
 
     ret.main_source = program_load(program, source_path);
 
