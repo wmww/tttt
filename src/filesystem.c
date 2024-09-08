@@ -7,10 +7,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include "filesystem.h"
+#include "string_helpers.h"
 
 static const long read_file_len_limit = 1024l * 1024l * 1024l; // 1GB
+static const char path_sep = '/';
 
 const char* file_extension_of(const char* path) {
     const char* ret = "";
@@ -36,6 +39,48 @@ const char* basename_of(const char* path) {
 
 csview dirname_of(const char* path) {
     return c_sv(path, basename_of(path) - path);
+}
+
+static void push_path_to_absolute(cstr* absolute, const char* path) {
+    while (*path) {
+        const char* end = strchr(path, path_sep);
+        csview segment;
+        if (end) {
+            segment = csview_from_range(path, end);
+            path = end + 1;
+        } else {
+            end = path + strlen(path);
+            segment = csview_from_range(path, end);
+            path = end;
+        }
+        if (!csview_size(segment) || csview_equals_sv(segment, c_sv("."))) {
+        } else if (csview_equals_sv(segment, c_sv(".."))) {
+            intptr_t i = cstr_size(absolute);
+            while (i > 0) {
+                i--;
+                if (cstr_str(absolute)[i] == path_sep) {
+                    break;
+                }
+            }
+            if (i < 1) i = 1;
+            cstr_resize(absolute, i, 0);
+        } else {
+            if (cstr_size(absolute) > 1) {
+                cstr_append_n(absolute, &path_sep, 1);
+            }
+            cstr_append_sv(absolute, segment);
+        }
+    }
+}
+
+cstr absolute_path_of(const char* cwd, const char* path) {
+    if (*cwd != path_sep) PANIC("cwd must be absolute path, is '%s'", cwd);
+    cstr ret = cstr_from_n(&path_sep, 1);
+    if (*path != path_sep) {
+        push_path_to_absolute(&ret, cwd);
+    }
+    push_path_to_absolute(&ret, path);
+    return ret;
 }
 
 bool real_fs_is_reg_file(Fs const* me, const char* path) {
@@ -83,6 +128,7 @@ bool real_fs_for_each_item_in_dir(
     return true;
 }
 
+/*
 static bool real_fs_canonicalize_path(Fs const* me, const char* path, cstr* ret) {
     char buffer[PATH_MAX];
     if (realpath(path, buffer)) {
@@ -99,6 +145,27 @@ static bool real_fs_canonicalize_path(Fs const* me, const char* path, cstr* ret)
         }
         return false;
     }
+}
+*/
+
+static cstr real_fs_get_cwd_internal(Fs const* me) {
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd))) {
+        return cstr_from(cwd);
+    } else {
+        if (my debug_on_fail) {
+            fprintf(stderr, "Failed to determine current working directory\n");
+        }
+        return cstr_lit("/");
+    }
+}
+
+const char* real_fs_get_cwd(Fs const* me) {
+    static cstr cached_cwd = {0};
+    if (!cstr_size(&cached_cwd)) {
+        cached_cwd = real_fs_get_cwd_internal(me);
+    }
+    return cstr_str(&cached_cwd);
 }
 
 static bool real_fs_read_entire_file(Fs const* me, const char* path, cstr* ret) {
@@ -178,7 +245,7 @@ Fs const real_fs_noisy = {
     .is_reg_file = real_fs_is_reg_file,
     .is_directory = real_fs_is_directory,
     .for_each_item_in_dir = real_fs_for_each_item_in_dir,
-    .canonicalize_path = real_fs_canonicalize_path,
+    .get_cwd = real_fs_get_cwd,
     .read_entire_file = real_fs_read_entire_file,
     .debug_on_fail = true,
 };
@@ -187,7 +254,7 @@ Fs const real_fs_quiet = {
     .is_reg_file = real_fs_is_reg_file,
     .is_directory = real_fs_is_directory,
     .for_each_item_in_dir = real_fs_for_each_item_in_dir,
-    .canonicalize_path = real_fs_canonicalize_path,
+    .get_cwd = real_fs_get_cwd,
     .read_entire_file = real_fs_read_entire_file,
     .debug_on_fail = false,
 };

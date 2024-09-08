@@ -26,7 +26,7 @@ typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs;
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
-                                       // Keys are canonical paths.
+                                       // Keys are absolute paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
     SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
@@ -60,30 +60,28 @@ void program_preload(Program* me, const char* path) {
 
 // Returns null if path can't be loaded
 static SourceFile const* program_add_source(Program* me, const char* path) {
-    cstr canonical_path;
-    if (!fs_canonicalize_path(my fs, path, &canonical_path)) {
-        return nullptr;
-    }
+    cstr absolute_path;
+    absolute_path = fs_absolute_path_of(my fs, path);
     hmap_str_box_source_file_value const* value = hmap_str_box_source_file_get(
         &my source_files,
-        cstr_sv(&canonical_path)
+        cstr_sv(&absolute_path)
     );
     if (value) {
         // A source file is already created for this path
-        cstr_drop(&canonical_path);
+        cstr_drop(&absolute_path);
         return value->second.get;
     } else {
         // No source file is created for this path, load it
         cstr contents;
-        if (!fs_read_entire_file(my fs, cstr_str(&canonical_path), &contents)) {
-            cstr_drop(&canonical_path);
+        if (!fs_read_entire_file(my fs, cstr_str(&absolute_path), &contents)) {
+            cstr_drop(&absolute_path);
             return nullptr;
         }
         SourceFile* source_file = c_new(
             SourceFile,
-            source_file_make(cstr_clone(canonical_path), contents, my errs)
+            source_file_make(cstr_clone(absolute_path), contents, my errs)
         );
-        hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
+        hmap_str_box_source_file_insert(&my source_files, absolute_path, box_source_file_from_ptr(source_file));
         vec_source_file_ptr_push(&my pending_source_files, source_file);
         return source_file;
     }

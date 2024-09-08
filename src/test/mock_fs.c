@@ -1,5 +1,7 @@
 #include "mock_fs.h"
 
+static const char* mock_cwd = "/home/mockfs";
+
 typedef struct MockFs {
     Fs super;
     cstr read_contents;
@@ -30,10 +32,9 @@ static bool mock_fs_for_each_item_in_dir(
     return false;
 }
 
-static bool mock_fs_canonicalize_path(Fs const* super, const char* path, cstr* ret) {
-    ignore super;
-    *ret = cstr_from(path);
-    return true;
+const char* mock_fs_get_cwd(Fs const* me) {
+    ignore me;
+    return mock_cwd;
 }
 
 static bool mock_fs_read_entire_file(Fs const* super, const char* path, cstr* ret) {
@@ -49,7 +50,7 @@ MockFs* mock_fs_new() {
             .is_reg_file = mock_fs_is_reg_file,
             .is_directory = mock_fs_is_directory,
             .for_each_item_in_dir = mock_fs_for_each_item_in_dir,
-            .canonicalize_path = mock_fs_canonicalize_path,
+            .get_cwd = mock_fs_get_cwd,
             .read_entire_file = mock_fs_read_entire_file,
             .debug_on_fail = false,
         }
