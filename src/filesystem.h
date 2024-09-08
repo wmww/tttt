@@ -2,6 +2,8 @@
 
 #include "prelude.h"
 
+extern const char path_sep;
+
 // Returns a pointer into the given string, returns nullptr if it has no extension
 const char* file_extension_of(const char* path);
 // Returns the final component of the given path, or "" if the path ends in a /

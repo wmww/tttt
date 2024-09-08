@@ -38616,7 +38616,7 @@ const baselines = {
         types: undefined,
     },
     'importEmptyFromModuleNotExisted': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

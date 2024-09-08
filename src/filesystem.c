@@ -13,7 +13,7 @@
 #include "string_helpers.h"
 
 static const long read_file_len_limit = 1024l * 1024l * 1024l; // 1GB
-static const char path_sep = '/';
+const char path_sep = '/';
 
 const char* file_extension_of(const char* path) {
     const char* ret = "";
