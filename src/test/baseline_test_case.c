@@ -96,17 +96,15 @@ static bool load_test_source(BaselineTestCase* me) {
 
     bool has_line = false;
     cstr current_filename = cstr_from(my source_path);
-    bool default_filename = true;
     c_foreach(i, lines_sv, contents_sv) {
         csview tag_key, tag_value;
         if (parse_tag(i.line, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
-                if (!default_filename || cstr_size(&source_contents)) {
+                if (cstr_size(&source_contents)) {
                     add_virtual_source_file(me, cstr_str(&current_filename), source_contents);
                     source_contents = cstr_null;
                 }
                 has_line = false;
-                default_filename = false;
                 cstr_take(&current_filename, cstr_from_sv(tag_value));
             } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
                 error_config_enable_strict(&my error_ctx->conf);
