@@ -282,11 +282,7 @@ void name_stack_add_type(NameStack* me, NamedType* type) {
 
 void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
     Span name_span = var->name;
-    hmap_str_named_variable_ptr_result result = hmap_str_named_variable_ptr_insert(
-        &vec_stack_frame_back(&my stack)->variables,
-        name_string,
-        var
-    );
+    auto result = hmap_str_named_variable_ptr_insert(&vec_stack_frame_back(&my stack)->variables, name_string, var);
     if (!result.inserted) {
         switch (vec_stack_frame_back(&my stack)->tag) {
             case STACK_FRAME_BLOCK:
@@ -329,11 +325,7 @@ void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* v
 
 void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
     Span name_span = type->name;
-    hmap_str_named_type_ptr_result result = hmap_str_named_type_ptr_insert(
-        &vec_stack_frame_back(&my stack)->types,
-        name_string,
-        type
-    );
+    auto result = hmap_str_named_type_ptr_insert(&vec_stack_frame_back(&my stack)->types, name_string, type);
     if (!result.inserted) {
         switch (vec_stack_frame_back(&my stack)->tag) {
             case STACK_FRAME_BLOCK:
@@ -371,10 +363,7 @@ NamedType* name_stack_add_mergeable_type(
     if (generic_empty(generic)) {
         generic = nullptr;
     }
-    hmap_str_named_type_ptr_value const* existing = hmap_str_named_type_ptr_get(
-        &vec_stack_frame_back(&my stack)->types,
-        name.sv
-    );
+    auto existing = hmap_str_named_type_ptr_get(&vec_stack_frame_back(&my stack)->types, name.sv);
     if (!existing || !existing->second->is_mergeable || (is_class && existing->second->is_class)) {
         // If there is no existing type by this name the normal add type process is fine
         // Two classes can't be merged, so if we try fall back to normal duplicate name behavior
@@ -417,11 +406,7 @@ void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
     // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
     // NameStacks may not need to be clonable if that's the case
     cstr name_string = cstr_from_span(name);
-    hmap_str_name_stack_cptr_result result = hmap_str_name_stack_cptr_insert(
-        &vec_stack_frame_back(&my stack)->namespaces,
-        name_string,
-        ns
-    );
+    auto result = hmap_str_name_stack_cptr_insert(&vec_stack_frame_back(&my stack)->namespaces, name_string, ns);
     if (!result.inserted) {
         // TODO: declaration merging
         error_ctx_error(
@@ -445,7 +430,7 @@ bool name_stack_has_function(NameStack* me) {
 
 NamedVariable* name_stack_get_variable(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        hmap_str_named_variable_ptr_value const* result = hmap_str_named_variable_ptr_get(&i.ref->variables, name);
+        auto result = hmap_str_named_variable_ptr_get(&i.ref->variables, name);
         if (result) {
             return result->second;
         }
@@ -455,7 +440,7 @@ NamedVariable* name_stack_get_variable(NameStack const* me, csview name) {
 
 NamedType* name_stack_get_type(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        hmap_str_named_type_ptr_value const* result = hmap_str_named_type_ptr_get(&i.ref->types, name);
+        auto result = hmap_str_named_type_ptr_get(&i.ref->types, name);
         if (result) {
             return result->second;
         }
@@ -465,7 +450,7 @@ NamedType* name_stack_get_type(NameStack const* me, csview name) {
 
 NameStack const* name_stack_get_namespace(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        hmap_str_name_stack_cptr_value const* result = hmap_str_name_stack_cptr_get(&i.ref->namespaces, name);
+        auto result = hmap_str_name_stack_cptr_get(&i.ref->namespaces, name);
         if (result) {
             return result->second;
         }

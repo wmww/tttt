@@ -29,8 +29,6 @@ const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 #define i_type hmap_str_bool
 #include "wrap_stc/hmap.h"
 typedef hmap_str_bool HmapStrBool;
-typedef hmap_str_bool_result HmapStrBoolResult;
-typedef hmap_str_bool_value HmapStrBoolValue;
 
 typedef struct TypeCtx {
     unsigned recursion_level;
@@ -903,7 +901,7 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
         hset_named_type_cptr_drop(&key.named_types);
         key_sv = cstr_sv(&key.target); // Hacky but should work as long as we don't use it after key is dropped
         // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
-        HmapStrBoolResult result = hmap_str_bool_insert(&ctx->extends_results, key.target, default_result);
+        auto result = hmap_str_bool_insert(&ctx->extends_results, key.target, default_result);
         if (!result.inserted) {
             return result.ref->second;
         }
@@ -917,7 +915,7 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
 
     if (add_to_extends_results) {
         if (ret != default_result) {
-            HmapStrBoolValue* result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
+            auto result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
             ASSERT(result);
             result->second = ret;
         }

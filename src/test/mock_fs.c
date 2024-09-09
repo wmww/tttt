@@ -55,7 +55,7 @@ static inline MockFsNode* mock_fs_dir_add(MockFsNode* me, cstr name, MockFsNode 
     if (my tag != MOCK_FS_NODE_DIR) {
         NONFATAL("Mock fs: tried to add node to non-directory");
     }
-    hmap_str_mock_fs_node_result result = hmap_str_mock_fs_node_insert(&my dir, name, node);
+    auto result = hmap_str_mock_fs_node_insert(&my dir, name, node);
     if (result.inserted) {
         return &result.ref->second;
     } else {
@@ -88,11 +88,11 @@ static inline MockFsNode* lookup_node(MockFs const* me, const char* path, bool c
             path = nullptr;
         }
         if (cstr_size(&segment)) {
-            hmap_str_mock_fs_node_value* value = hmap_str_mock_fs_node_get_mut(&ret->dir, cstr_str(&segment));
+            auto value = hmap_str_mock_fs_node_get_mut(&ret->dir, cstr_str(&segment));
             if (value) {
                 ret = &value->second;
             } else if (create_dirs) {
-                hmap_str_mock_fs_node_result result = hmap_str_mock_fs_node_insert(&ret->dir, segment, mock_fs_dir());
+                auto result = hmap_str_mock_fs_node_insert(&ret->dir, segment, mock_fs_dir());
                 segment = cstr_null;
                 ret = &result.ref->second;
             } else {

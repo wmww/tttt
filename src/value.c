@@ -220,7 +220,7 @@ void js_object_set(JsObject* me, cstr key, Value val) {
 }
 
 Result js_object_get(JsObject const* me, csview key) {
-    hmap_str_object_item_value const* value = hmap_str_object_item_get(&my items, key);
+    auto value = hmap_str_object_item_get(&my items, key);
     if (value) {
         return result_ok(value_clone(value->second.value));
     } else {

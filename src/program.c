@@ -62,10 +62,7 @@ void program_preload(Program* me, const char* path) {
 static SourceFile const* program_add_source(Program* me, const char* path) {
     cstr absolute_path;
     absolute_path = fs_absolute_path_of(my fs, path);
-    hmap_str_box_source_file_value const* value = hmap_str_box_source_file_get(
-        &my source_files,
-        cstr_sv(&absolute_path)
-    );
+    auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&absolute_path));
     if (value) {
         // A source file is already created for this path
         cstr_drop(&absolute_path);
