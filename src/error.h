@@ -9,6 +9,7 @@ wrap_forward_vec(Error, error);
 
 typedef enum ErrorPhase {
     ERROR_PHASE_UNKOWN = 0,
+    ERROR_PHASE_LOAD,
     ERROR_PHASE_PARSE,
     ERROR_PHASE_RESOLVE_NAMES,
     ERROR_PHASE_TYPECHECK,

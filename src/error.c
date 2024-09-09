@@ -1,5 +1,6 @@
 #include "error.h"
 #include "string_helpers.h"
+#include "source_file.h"
 
 void error_drop(Error* me) {
     cstr_drop(&my message);
@@ -23,7 +24,7 @@ void display_error(Display d, Error const* me) {
 
     display_s(d, prefix);
     display_color(d, color_path);
-    display_lit(d, "filename.ts");
+    display_str(d, span_valid(my span) ? cstr_str(&my span.source->absolute_path) : "[unkown file]");
     display_color(d, color_line_number);
     display_fmt(d, ":%u", line);
     display_color(d, color_implicit);

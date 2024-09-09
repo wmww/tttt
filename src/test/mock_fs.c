@@ -74,6 +74,10 @@ static inline MockFsNode* lookup_node(MockFs const* me, const char* path, bool c
     MockFsNode* ret = c_const_cast(MockFsNode*, &my root);
     path = cstr_str(&absolute);
     while (path && ret) {
+        if (ret->tag != MOCK_FS_NODE_DIR) {
+            ret = nullptr;
+            break;
+        }
         const char* end = strchr(path, path_sep);
         cstr segment;
         if (end) {
@@ -83,21 +87,19 @@ static inline MockFsNode* lookup_node(MockFs const* me, const char* path, bool c
             segment = cstr_from(path);
             path = nullptr;
         }
-        if (cstr_empty(&segment)) {
-        } else if (ret->tag == MOCK_FS_NODE_DIR) {
+        if (cstr_size(&segment)) {
             hmap_str_mock_fs_node_value* value = hmap_str_mock_fs_node_get_mut(&ret->dir, cstr_str(&segment));
             if (value) {
                 ret = &value->second;
-                cstr_drop(&segment);
             } else if (create_dirs) {
                 hmap_str_mock_fs_node_result result = hmap_str_mock_fs_node_insert(&ret->dir, segment, mock_fs_dir());
+                segment = cstr_null;
                 ret = &result.ref->second;
             } else {
                 ret = nullptr;
             }
-        } else {
-            ret = nullptr;
         }
+        cstr_drop(&segment);
     }
     cstr_drop(&absolute);
     return ret;

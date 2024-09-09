@@ -15,7 +15,8 @@ void program_destroy(Program* me);
 // are not added to the import database
 void program_preload(Program* me, const char* path);
 
-// Parses and resolves names of the given file and all imports
+// Parses and resolves names of the given file and all imports. Can be called multiple times, but can not be called
+// indirectly by itself (this is not how imports are handled)
 SourceFile const* program_load(Program* me, const char* path);
 
 // Typechecks the loaded file and all imports, does not typecheck preloaded files

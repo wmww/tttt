@@ -1,12 +1,12 @@
 #pragma once
 
 #include "error.h"
+#include "source_file.h"
 
 typedef struct Span Span;
 typedef struct Type Type;
 typedef struct Program Program;
 typedef struct MockFs MockFs;
-typedef struct SourceFile SourceFile;
 typedef struct JsObject JsObject;
 typedef struct BaselineTestSuite BaselineTestSuite;
 typedef struct LineNumberedStr LineNumberedStr;
@@ -16,15 +16,30 @@ wrap_forward_vec(LineNumberedStr, line_numbered_str);
 // Get the name of a test given it's path (just strips the dir and extension). output is only valid as long as input is.
 csview test_name_from_path(const char* path);
 
-typedef struct BaselineTestCase {
-    const char* source_path; // Not owned
-    bool did_run;
-    ErrorCtx* error_ctx;
-    MockFs* fs;
-    Program* program;
-    SourceFile const* main_source;
+// A virtual file within a test case
+typedef struct BaselineTestFile {
+    cstr path;
+    SourceFile const* source;
     VecLineNumberedStr symbols;
     VecLineNumberedStr types;
+    VecLineNumberedStr errors;
+    intptr_t error_count;
+} BaselineTestFile;
+
+void baseline_test_file_drop(BaselineTestFile* me);
+
+#define i_key_class_names BaselineTestFile, baseline_test_file
+#define i_no_clone
+#include "wrap_stc/vec.h"
+
+typedef struct BaselineTestCase {
+    const char* source_path; // Not owned, path to real file on disk that may describe several virtual files
+    bool did_run;
+    ErrorCtx* error_ctx;
+    bool noisy;
+    MockFs* fs;
+    Program* program;
+    VecBaselineTestFile files;
 } BaselineTestCase;
 
 // Never prints to stdout, only prints to stderr if noisy is true, or if it panics

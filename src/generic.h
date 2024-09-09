@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lazy_type.h"
+#include "type.h"
 
 typedef struct TypeRefinement {
     NamedType const* target;

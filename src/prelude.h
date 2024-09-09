@@ -15,6 +15,7 @@ __attribute__((noreturn))
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 #define PANIC(...) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
 #define ASSERT(cond) if (!(cond)) panic_internal("assertion failed", __FILE__, __LINE__, "%s", #cond)
+#define ASSERT_FMT(cond, ...) if (!(cond)) panic_internal("assertion failed", __FILE__, __LINE__, __VA_ARGS__)
 #define UNREACHABLE PANIC("unreachable reached \\x_x/")
 
 void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));

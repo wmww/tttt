@@ -12,6 +12,7 @@
 #include "callable_type.h"
 #include "type.h"
 #include "error.h"
+#include "source_file.h"
 #include "math_helpers.h"
 #include "string_helpers.h"
 
@@ -23,7 +24,7 @@ typedef vec_u8 VecU8;
 #define MAX_ERRORS 500 // Must be less than the max value storable in Parser.error_count
 
 typedef struct ParserShared {
-    const char* const file_start;
+    SourceFile const* source;
     const char* fail_cache_start;
     VecU8 fail_cache;
     VecError errors;
@@ -229,18 +230,18 @@ static inline Anchor span_starting_at(Parser* parser, Span start) {
 
 static inline Span span_from(Anchor spanner) {
     return span_make(
-        spanner.parser->shared->file_start,
+        spanner.parser->shared->source,
         spanner.start,
         spanner.parser->pos
     );
 }
 
 static inline Span span_from_pos(Parser* me) {
-    return span_make(my shared->file_start, my pos, my pos);
+    return span_make(my shared->source, my pos, my pos);
 }
 
 static inline Span span_from_previous_char(Parser* me) {
-    return span_make(my shared->file_start, my pos - 1, my pos);
+    return span_make(my shared->source, my pos - 1, my pos);
 }
 
 static Span span_from_token(Parser* me) {
@@ -308,7 +309,7 @@ static inline bool expect_identifier(Parser* parent, Span* ret) {
         return true;
     } else {
         parse_error(parent, span_from_token(parent), 1003, "Identifier expected.");
-        *ret = span_null;
+        *ret = span_from_pos(parent);
         return false;
     }
 }
@@ -2886,6 +2887,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 vec_binding_push(&ret->array, binding);
             } else if (*p.pos == ',') {
                 vec_binding_push(&ret->array, (Binding){
+                    .content_span = span_from_pos(&p),
                     .tag = BINDING_NOOP,
                 });
             } else {
@@ -3311,7 +3313,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
             p.pos++;
         } else if (parse_statement(&p, toplevel, &statement)) {
             vec_statement_push(ret, statement);
-            bool ended_on_brace = p.pos > p.shared->file_start && *(p.pos - 1) == '}';
+            bool ended_on_brace = p.pos > source_file_start(p.shared->source) && *(p.pos - 1) == '}';
             hop_whitespace(&p);
             if (p.whitespace == WHITESPACE_NEWLINE ||
                 statement.tag == STATEMENT_NOOP ||
@@ -3765,26 +3767,25 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     return parse_success(&p);
 }
 
-Block parse_file(const char* source, ErrorCtx* errs) {
+void parse_file(SourceFile* source, ErrorCtx* errs) {
     ParserShared shared = {
-        .file_start = source,
-        .fail_cache_start = source,
+        .source = source,
+        .fail_cache_start = source_file_start(source),
         .errors = vec_error_init(),
     };
 
     Parser p = {
         .shared = &shared,
         .parent = nullptr,
-        .pos = source,
+        .pos = source_file_start(source),
         .error_count = 0,
     };
 
     p.pos = file_start_excluding_bom(p.pos);
     hop_whitespace(&p);
 
-    Block scope = {0};
     while (true) {
-        parse_append_statement_sequence(&p, true, &scope.statements);
+        parse_append_statement_sequence(&p, true, &source->ast.statements);
         if (*p.pos) {
             parse_error(&p, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
             hop_whitespace(&p);
@@ -3799,5 +3800,4 @@ Block parse_file(const char* source, ErrorCtx* errs) {
     }
 
     parser_shared_drop(&shared);
-    return scope;
 }

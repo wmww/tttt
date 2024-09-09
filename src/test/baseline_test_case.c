@@ -29,6 +29,13 @@ csview test_name_from_path(const char* path) {
     return name;
 }
 
+void baseline_test_file_drop(BaselineTestFile* me) {
+    cstr_drop(&my path);
+    vec_line_numbered_str_drop(&my symbols);
+    vec_line_numbered_str_drop(&my types);
+    vec_line_numbered_str_drop(&my errors);
+}
+
 static bool parse_tag(csview line, csview* key, csview* value) {
     line = csview_trim_whitespace(line);
     if (!csview_starts_with(line, "//")) {
@@ -62,14 +69,21 @@ static bool tag_equals(csview tag, const char* str) {
     return true;
 }
 
+static void add_virtual_source_file(BaselineTestCase* me, const char* virtual_path, cstr contents) {
+    mock_fs_create_file(my fs, virtual_path, contents);
+    vec_baseline_test_file_push(&my files, (BaselineTestFile){
+        .path = cstr_from(virtual_path),
+    });
+}
+
 // Returns true on success, on fail ret is set to cstr_null
-static bool load_test_source(BaselineTestCase* test, bool noisy, MockFs* fs) {
+static bool load_test_source(BaselineTestCase* me) {
     cstr unparsed_contents = cstr_null;
     cstr source_contents = cstr_null;
 
     if (!fs_read_entire_file(
-        noisy ? &real_fs_noisy : &real_fs_quiet,
-        test->source_path,
+        my noisy ? &real_fs_noisy : &real_fs_quiet,
+        my source_path,
         &unparsed_contents
     )) {
         return false;
@@ -81,23 +95,23 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, MockFs* fs) {
     );
 
     bool has_line = false;
-    bool has_filename = false;
+    cstr current_filename = cstr_from(my source_path);
+    bool default_filename = true;
     c_foreach(i, lines_sv, contents_sv) {
         csview tag_key, tag_value;
         if (parse_tag(i.line, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
-                if (has_filename) {
-                    // We do not yet support multi-file tests
-                    cstr_drop(&unparsed_contents);
-                    cstr_drop(&source_contents);
-                    return false;
-                } else {
-                    has_filename = true;
+                if (!default_filename || cstr_size(&source_contents)) {
+                    add_virtual_source_file(me, cstr_str(&current_filename), source_contents);
+                    source_contents = cstr_null;
                 }
+                has_line = false;
+                default_filename = false;
+                cstr_take(&current_filename, cstr_from_sv(tag_value));
             } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
-                error_config_enable_strict(&test->error_ctx->conf);
+                error_config_enable_strict(&my error_ctx->conf);
             } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
-                test->error_ctx->conf.no_implicit_any = true;
+                my error_ctx->conf.no_implicit_any = true;
             }
         } else {
             cstr_append_sv(&source_contents, i.line);
@@ -110,9 +124,87 @@ static bool load_test_source(BaselineTestCase* test, bool noisy, MockFs* fs) {
         }
     }
 
+    add_virtual_source_file(me, cstr_str(&current_filename), source_contents);
+    cstr_drop(&current_filename);
     cstr_drop(&unparsed_contents);
-    mock_fs_create_file(fs, test->source_path, source_contents);
+
     return true;
+}
+
+static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
+    ASSERT_FMT(source, "tests detected null span");
+    c_foreach(i, vec_baseline_test_file, my files) {
+        if (i.ref->source == source) {
+            return i.ref;
+        }
+    }
+    PANIC("failed to find test for source file %s", cstr_str(&source->absolute_path));
+}
+
+static void process_errors(BaselineTestCase* me) {
+    if (error_ctx_empty(my error_ctx)) {
+        return;
+    }
+
+    SourceFile const* current_source = nullptr;
+    BaselineTestFile* current_test_file = nullptr;
+
+    c_foreach(error, vec_error, my error_ctx->errors) {
+        if (!span_valid(error.ref->span)) {
+            continue;
+        }
+
+        if (error.ref->span.source != current_source) {
+            current_source = error.ref->span.source;
+            current_test_file = find_file(me, current_source);
+        }
+
+        ASSERT(current_test_file);
+
+        unsigned line = span_line_index(error.ref->span);
+        unsigned col = span_col_index(error.ref->span);
+
+        LineNumberedStr item = {
+            .line = line,
+            .str = cstr_null,
+        };
+
+        if (span_valid(error.ref->span)) {
+            for (unsigned j = 0; j < col + 4; j++) {
+                cstr_append_sv(&item.str, c_sv(" "));
+            }
+            for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
+                cstr_append_sv(&item.str, c_sv("~"));
+            }
+            cstr_append(&item.str, "\r\n");
+        } else {
+            cstr_append(&item.str, "<NO SPAN>\r\n");
+        }
+
+        cstr_append_fmt(
+            &item.str,
+            "!!! error TS%d: %s",
+            error.ref->ts_code,
+            cstr_str(&error.ref->message)
+        );
+
+        c_foreach(related, vec_error, error.ref->related_errors) {
+            unsigned related_line = span_line_index(related.ref->span);
+            unsigned related_col = span_col_index(related.ref->span);
+            cstr_append_fmt(
+                &item.str,
+                "\r\n!!! related TS%d %s:%u:%u: %s",
+                related.ref->ts_code,
+                basename_of(cstr_str(&current_source->absolute_path)),
+                related_line + 1,
+                related_col + 1,
+                cstr_str(&related.ref->message)
+            );
+        }
+
+        vec_line_numbered_str_push(&current_test_file->errors, item);
+        current_test_file->error_count++;
+    }
 }
 
 BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
@@ -129,19 +221,25 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
         .error_ctx = errs,
         .fs = fs,
         .program = program,
+        .noisy = noisy,
     };
 
-    bool load_success = load_test_source(&ret, noisy, fs);
+    ret.did_run = load_test_source(&ret);
 
-    ret.main_source = program_load(program, source_path);
+    c_foreach(i, vec_baseline_test_file, ret.files) {
+        i.ref->source = program_load(program, cstr_str(&i.ref->path));
+    }
 
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
     // but name errors are shown reguardless
     program_typecheck(program, !errs->has_parse_errors);
 
-    block_compile_test_info(&ret.main_source->ast, &ret);
+    c_foreach(i, vec_baseline_test_file, ret.files) {
+        // PERF: perhaps mark the file as "current" so we don't have to look it up
+        block_compile_test_info(&i.ref->source->ast, &ret);
+    }
 
-    ret.did_run = load_success;
+    process_errors(&ret);
 
     if (!noisy) {
         uninhibit_nonfatals();
@@ -155,8 +253,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     mock_fs_destroy(my fs);
     error_ctx_drop(my error_ctx);
     free(my error_ctx);
-    vec_line_numbered_str_drop(&my symbols);
-    vec_line_numbered_str_drop(&my types);
+    vec_baseline_test_file_drop(&my files);
 }
 
 static const char* relative_test_path(const char* test_path) {
@@ -182,7 +279,7 @@ static bool line_effectively_empty(csview line) {
     );
 }
 
-static void render_lines_woven_with_file(
+static bool render_lines_woven_with_file(
     cstr* target,
     const char* source_path,
     bool is_errors,
@@ -193,12 +290,9 @@ static void render_lines_woven_with_file(
     unsigned line = 0;
     unsigned index = 0;
     intptr_t vec_size = vec_line_numbered_str_size(lines);
-    const char* relative_path = relative_test_path(source_path);
     bool newline_if_next_line_non_empty = false;
 
     if (!is_errors) {
-        cstr_append_fmt(target, "//// [%s] ////\r\n", relative_path);
-        cstr_append(target, "\r\n");
         cstr_append_fmt(target, "=== %s ===\r\n", basename_of(source_path));
         newline_if_next_line_non_empty = vec_size == 0;
     }
@@ -243,9 +337,7 @@ static void render_lines_woven_with_file(
         cstr_append_fmt(target, "\r\n%s", line_indent);
     }
 
-    if (!is_errors && newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
-        cstr_append(target, "\r\n");
-    }
+    return newline_if_next_line_non_empty;
 }
 
 void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) {
@@ -253,91 +345,79 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         return;
     }
 
-    const char* source_basename = basename_of(my source_path);
-    VecLineNumberedStr error_lines = vec_line_numbered_str_init();
-
     c_foreach(error, vec_error, my error_ctx->errors) {
         unsigned line = span_line_index(error.ref->span);
         unsigned col = span_col_index(error.ref->span);
+        const char* basename = span_valid(error.ref->span) ?
+            basename_of(cstr_str(&error.ref->span.source->absolute_path)) :
+            "(nil)";
 
         cstr_append_fmt(
             target,
             "%s(%u,%u): error TS%d: %s\r\n",
-            source_basename, line + 1, col + 1,
+            basename, line + 1, col + 1,
             error.ref->ts_code,
             cstr_str(&error.ref->message)
         );
-
-        LineNumberedStr item = {
-            .line = line,
-            .str = cstr_null,
-        };
-
-        if (span_valid(error.ref->span)) {
-            for (unsigned j = 0; j < col + 4; j++) {
-                cstr_append_sv(&item.str, c_sv(" "));
-            }
-            for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
-                cstr_append_sv(&item.str, c_sv("~"));
-            }
-            cstr_append(&item.str, "\r\n");
-        } else {
-            cstr_append(&item.str, "<NO SPAN>\r\n");
-        }
-
-        cstr_append_fmt(
-            &item.str,
-            "!!! error TS%d: %s",
-            error.ref->ts_code,
-            cstr_str(&error.ref->message)
-        );
-
-        c_foreach(related, vec_error, error.ref->related_errors) {
-            unsigned related_line = span_line_index(related.ref->span);
-            unsigned related_col = span_col_index(related.ref->span);
-            cstr_append_fmt(
-                &item.str,
-                "\r\n!!! related TS%d %s:%u:%u: %s",
-                related.ref->ts_code,
-                source_basename,
-                related_line + 1,
-                related_col + 1,
-                cstr_str(&related.ref->message)
-            );
-        }
-
-        vec_line_numbered_str_push(&error_lines, item);
     }
 
-    cstr_append_fmt(
-        target,
-        "\r\n\r\n==== %s (%ld errors) ====\r\n",
-        source_basename,
-        vec_error_size(&my error_ctx->errors)
-    );
-    render_lines_woven_with_file(
-        target,
-        my source_path,
-        true,
-        cstr_sv(&my main_source->contents),
-        &error_lines
-    );
-    vec_line_numbered_str_drop(&error_lines);
+    c_foreach(i, vec_baseline_test_file, my files) {
+        cstr_append_fmt(
+            target,
+            "\r\n\r\n==== %s (%ld errors) ====\r\n",
+            basename_of(cstr_str(&i.ref->path)),
+            i.ref->error_count
+        );
+
+        render_lines_woven_with_file(
+            target,
+            cstr_str(&i.ref->path),
+            true,
+            cstr_sv(&i.ref->source->contents),
+            &i.ref->errors
+        );
+    }
 }
 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
-    render_lines_woven_with_file(target, my source_path, false, cstr_sv(&my main_source->contents), &my symbols);
+    cstr_append_fmt(target, "//// [%s] ////\r\n\r\n", relative_test_path(my source_path));
+    bool newline_if_next_line_non_empty = false;
+    c_foreach(i, vec_baseline_test_file, my files) {
+        newline_if_next_line_non_empty = render_lines_woven_with_file(
+            target,
+            cstr_str(&i.ref->path),
+            false,
+            cstr_sv(&i.ref->source->contents),
+            &i.ref->symbols
+        );
+    }
+    if (newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
+        cstr_append(target, "\r\n");
+    }
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
-    render_lines_woven_with_file(target, my source_path, false, cstr_sv(&my main_source->contents), &my types);
+    cstr_append_fmt(target, "//// [%s] ////\r\n\r\n", relative_test_path(my source_path));
+    bool newline_if_next_line_non_empty = false;
+    c_foreach(i, vec_baseline_test_file, my files) {
+        newline_if_next_line_non_empty = render_lines_woven_with_file(
+            target,
+            cstr_str(&i.ref->path),
+            false,
+            cstr_sv(&i.ref->source->contents),
+            &i.ref->types
+        );
+    }
+    if (newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
+        cstr_append(target, "\r\n");
+    }
 }
 
-static void baseline_test_case_append_decl(BaselineTestCase const* me, cstr* target, Span span) {
+static void append_decl(cstr* target, Span span) {
     if (!span_valid(span)) {
         return;
     }
-    const char* file_start = span.file_start;
+    const char* file_start = source_file_start(span.source);
     const char* start = span_start_ptr(span);
     bool keep_going = true;
     // The space before the symbol is included in the span. Why? I have no idea.
@@ -388,7 +468,13 @@ static void baseline_test_case_append_decl(BaselineTestCase const* me, cstr* tar
     span.sv = csview_from_n(start, 0);
     unsigned format_line = span_line_index(span);
     unsigned format_col = span_col_index(span);
-    cstr_append_fmt(target, ", Decl(%s, %u, %u)", basename_of(my source_path), format_line, format_col);
+    cstr_append_fmt(
+        target,
+        ", Decl(%s, %u, %u)",
+        basename_of(cstr_str(&span.source->absolute_path)),
+        format_line,
+        format_col
+    );
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
@@ -421,17 +507,18 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     bool found_decl = false;
     c_foreach(i, vec_span, data.declarations) {
         if (span_valid(*i.ref)) {
-            baseline_test_case_append_decl(me, &text, *i.ref);
+            append_decl(&text, *i.ref);
             found_decl = true;
         }
     }
 
     if (!found_decl && !data.allow_declaration_empty) {
-        baseline_test_case_append_decl(me, &text, data.span);
+        append_decl(&text, data.span);
     }
 
     cstr_append_lit(&text, ")");
-    vec_line_numbered_str_push(&my symbols, (LineNumberedStr){
+    BaselineTestFile* test_file = find_file(me, data.span.source);
+    vec_line_numbered_str_push(&test_file->symbols, (LineNumberedStr){
         .line = line_for_placement,
         .str = text,
     });
@@ -474,7 +561,7 @@ void baseline_test_case_add_type_recursive(
         outer_last = inner_last;
         base_case = true;
     }
-    outer_span = span_make(inner_span.file_start, outer_start, outer_last + 1);
+    outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
 
     intptr_t line = span_line_index(outer_span);
     cstr str = cstr_lit(">");
@@ -486,7 +573,8 @@ void baseline_test_case_add_type_recursive(
     } else {
         cstr_append_type_error_msg(&str, type);
     }
-    vec_line_numbered_str_push(&my types, (LineNumberedStr){
+    BaselineTestFile* test_file = find_file(me, outer_span.source);
+    vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
         .str = str,
     });

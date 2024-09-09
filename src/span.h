@@ -2,8 +2,10 @@
 
 #include "prelude.h"
 
+typedef struct SourceFile SourceFile;
+
 typedef struct Span {
-    const char* file_start;
+    SourceFile const* source;
     csview sv;
 } Span;
 
@@ -11,21 +13,21 @@ typedef struct Span {
 #define span_equals(span, lit) csview_equals_sv((span).sv, c_sv(lit))
 #define c_SPAN(span) c_SV((span).sv)
 
-static inline Span span_make(const char* file_start, const char* start, const char* end) {
+static inline Span span_make(SourceFile const* source, const char* start, const char* end) {
     return (Span){
-        .file_start = file_start,
+        .source = source,
         .sv = csview_from_n(start, end - start),
     };
 }
 
-static inline bool span_valid(Span me) { return me.file_start; }
+static inline bool span_valid(Span me) { return me.source; }
 
 static inline const char* span_start_ptr(Span me) {
     return me.sv.buf;
 }
 
 static inline const char* span_end_ptr(Span me) {
-    return me.file_start ? me.sv.buf + me.sv.size : nullptr;
+    return me.source ? me.sv.buf + me.sv.size : nullptr;
 }
 
 unsigned span_line_index(Span me);

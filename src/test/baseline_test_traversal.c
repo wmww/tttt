@@ -390,10 +390,12 @@ type Beep<T> = {beep: 7}
 }
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = named_type_declarations(my named_type),
-        .span = my name,
-    });
+    if (span_valid(my name)) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = named_type_declarations(my named_type),
+            .span = my name,
+        });
+    }
     generic_compile_test_info(&my generic, ctx);
     c_foreach(i, vec_spanned_type, my extends) {
         type_compile_test_info(&i.ref->type, ctx);
@@ -402,11 +404,13 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = named_type_declarations(my value_named_type),
-        .span = my name,
-    });
-    baseline_test_case_add_type(ctx, my name, &my value_named_var->type);
+    if (span_valid(my name)) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = named_type_declarations(my value_named_type),
+            .span = my name,
+        });
+        baseline_test_case_add_type(ctx, my name, &my value_named_var->type);
+    }
     block_compile_test_info(&my contents, ctx);
 }
 
@@ -467,7 +471,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                                 .allow_declaration_empty = true,
                                 .namespaces = vec_span_single(i.ref->origin_interface_name),
                                 .span = my outer_span,
-                                .name = i.ref->key.span,
+                                .name = span_valid(i.ref->key.span) ? i.ref->key.span : my property->prop.outer_span,
                                 .name_is_value = i.ref->key.name_is_value,
                             });
                         }

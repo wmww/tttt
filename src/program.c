@@ -113,23 +113,27 @@ static void program_handle_import(Program* me, ImportStatement* import) {
 }
 
 SourceFile const* program_load(Program* me, const char* path) {
+    // This function should only be called by our owner, not indirectly by ourselves
+    ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
+    my errs->phase = ERROR_PHASE_LOAD;
+
     // Add the source file to the program
     SourceFile const* main_source = program_add_source(me, path);
     if (!main_source) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
+        my errs->phase = ERROR_PHASE_UNKOWN;
         return &my not_found_file;
     }
 
-    // This function should only be called by our owner, not indirectly by ourselves
-    ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
+    VecSourceFilePtr in_flight_source_files = vec_source_file_ptr_init();
 
     // There will initially be one pending source file (the one we just added). In each iteration more pending source
     // files may be added due to imports.
     while (vec_source_file_ptr_size(&my pending_source_files)) {
         // Remove the top source file from the pending list and parse it (order of processing shouldn't matter here)
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
-        source->ast = parse_file(cstr_str(&source->contents), my errs);
+        parse_file(source, my errs);
 
         // Load imported files
         c_foreach(i, vec_statement, source->ast.statements) {
@@ -141,20 +145,24 @@ SourceFile const* program_load(Program* me, const char* path) {
         // Push a block frame for this source file's name stack, it will be popped when traversing the hashmap below
         name_stack_push_block_frame(source->name_stack);
         block_add_names(&source->ast, source->name_stack, my errs);
+
+        // Add it to the list to process below
+        vec_source_file_ptr_push(&in_flight_source_files, source);
     }
 
-    c_foreach(i, hmap_str_box_source_file, my source_files) {
-        SourceFile* source = i.ref->second.get;
+    c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
+        SourceFile* source = *i.ref;
         block_lookup_names(&source->ast, source->name_stack, my errs);
     }
 
-    c_foreach(i, hmap_str_box_source_file, my source_files) {
-        SourceFile* source = i.ref->second.get;
+    c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
+        SourceFile* source = *i.ref;
         // Pop the stack frame we pushed above. Do this in it's own loop since files might need the topmost name stack
         // from other files to lookup names
         name_stack_pop_frame(source->name_stack);
     }
 
+    vec_source_file_ptr_drop(&in_flight_source_files);
     my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
 }
