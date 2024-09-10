@@ -40,7 +40,7 @@ void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCt
                         errs,
                         my name,
                         2694,
-                        "Namespace '%.*s' has no exported member '%.*s'.",
+                        "Scope '%.*s' has no exported member '%.*s'.",
                         c_SPAN(*vec_span_back(&my namespaces)),
                         c_SPAN(my name)
                     );

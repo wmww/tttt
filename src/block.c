@@ -20,11 +20,11 @@ void block_lookup_names(Block const* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void block_resolve_names(Block const* me, NameStack* names, ErrorCtx* errs) {
-    Namespace namespace = namespace_init();
-    namespace_push_to_stack(&namespace, names);
+    Scope scope = scope_init();
+    scope_push_to_stack(&scope, names);
     block_add_names(me, names, errs);
     block_lookup_names(me, names, errs);
-    namespace_drop(&namespace);
+    scope_drop(&scope);
 }
 
 void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {

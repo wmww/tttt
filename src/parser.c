@@ -3548,12 +3548,12 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
         Value val;
         Anchor a = anchor(&p);
         if (*p.pos == '{') {
-            parse_error(&p, span_from_token(&p), 1437, "Namespace must be given a name.");
+            parse_error(&p, span_from_token(&p), 1437, "Scope must be given a name.");
         } else if (parse_literal(&p, &val)) {
             if (val.tag == VALUE_STRING) {
                 parse_error(&p, span_from(a), 1003, "Identifier expected.");
             } else {
-                cstr msg = cstr_lit("Namespace name cannot be '");
+                cstr msg = cstr_lit("Scope name cannot be '");
                 cstr_append_value_error_msg(&msg, &val);
                 cstr_append_sv(&msg, c_sv("'."));
                 parse_error(&p, span_from(a), 2819, "%s", cstr_str(&msg));

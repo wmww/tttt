@@ -1,13 +1,13 @@
 #pragma once
 
 #include "block.h"
-#include "namespace.h"
+#include "scope.h"
 
 typedef struct SourceFile {
     cstr absolute_path;
     cstr contents;
     Block ast;
-    Namespace namespace;
+    Scope scope;
     NameStack* name_stack;
 } SourceFile;
 

@@ -1,10 +1,10 @@
-#include "namespace.h"
+#include "scope.h"
 #include "name_stack.h"
 
-void name_stack_push_block_namespace(NameStack* me, Namespace* namespace);
-void name_stack_push_function_namespace(NameStack* me, Namespace* namespace);
-void name_stack_push_generic_namespace(NameStack* me, Generic const* generic, Namespace* namespace);
-void name_stack_pop_namespace(NameStack* me, Namespace* namespace);
+void name_stack_push_block_scope(NameStack* me, Scope* scope);
+void name_stack_push_function_scope(NameStack* me, Scope* scope);
+void name_stack_push_generic_scope(NameStack* me, Generic const* generic, Scope* scope);
+void name_stack_pop_scope(NameStack* me, Scope* scope);
 
 NamedVariable* make_named_variable(Span name, Span declaration_full, Type type, Generic const* generic) {
     if (generic_empty(generic)) {
@@ -62,9 +62,9 @@ Type named_type_evaluate_type(NamedType* me) {
     return ret;
 }
 
-void namespace_drop(Namespace* me) {
+void scope_drop(Scope* me) {
     if (my current_name_stack) {
-        name_stack_pop_namespace(my current_name_stack, me);
+        name_stack_pop_scope(my current_name_stack, me);
     }
     hmap_str_named_type_ptr_drop(&my types);
     hmap_str_named_variable_ptr_drop(&my variables);
@@ -72,7 +72,7 @@ void namespace_drop(Namespace* me) {
     hmap_str_named_import_drop(&my imports);
 }
 
-Namespace namespace_clone(Namespace me) {
+Scope scope_clone(Scope me) {
     me.types = hmap_str_named_type_ptr_clone(me.types);
     me.variables = hmap_str_named_variable_ptr_clone(me.variables);
     me.namespaces = hmap_str_name_stack_cptr_clone(me.namespaces);
@@ -81,26 +81,26 @@ Namespace namespace_clone(Namespace me) {
     return me;
 }
 
-void namespace_push_to_stack(Namespace* me, NameStack* stack) {
+void scope_push_to_stack(Scope* me, NameStack* stack) {
     ASSERT(!my current_name_stack);
     my current_name_stack = stack;
-    name_stack_push_block_namespace(stack, me);
+    name_stack_push_block_scope(stack, me);
 }
 
-void namespace_push_to_stack_as_function(Namespace* me, NameStack* stack) {
+void scope_push_to_stack_as_function(Scope* me, NameStack* stack) {
     ASSERT(!my current_name_stack);
     my current_name_stack = stack;
-    name_stack_push_function_namespace(stack, me);
+    name_stack_push_function_scope(stack, me);
 }
 
-void namespace_generic_push_to_stack(Namespace* me, Generic* generic, NameStack* stack) {
+void scope_generic_push_to_stack(Scope* me, Generic* generic, NameStack* stack) {
     ASSERT(!my current_name_stack);
     my current_name_stack = stack;
-    name_stack_push_generic_namespace(stack, generic, me);
+    name_stack_push_generic_scope(stack, generic, me);
 }
 
-void namespace_pop_from_stack(Namespace* me) {
+void scope_pop_from_stack(Scope* me) {
     ASSERT(my current_name_stack);
-    name_stack_pop_namespace(my current_name_stack, me);
+    name_stack_pop_scope(my current_name_stack, me);
     my current_name_stack = nullptr;
 }

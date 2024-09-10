@@ -70,7 +70,7 @@ typedef NamedVariable* NamedVariablePtr;
 #define i_is_forward
 #include "wrap_stc/hmap.h"
 
-typedef struct Namespace {
+typedef struct Scope {
     csview default_export;
     bool currently_adding_import; // If the current add_import() call stack has already seen this stack frame
                                   // Threadsafety: may have to change this system
@@ -78,17 +78,17 @@ typedef struct Namespace {
     HmapStrNamedVariablePtr variables;
     HmapStrNameStackCPtr namespaces;
     HmapStrNamedImport imports;
-    NameStack* current_name_stack; // The NameStack this namespace is in, or null if none
-} Namespace;
+    NameStack* current_name_stack; // The NameStack this scope is in, or null if none
+} Scope;
 
-void namespace_drop(Namespace* me);
-Namespace namespace_clone(Namespace me);
+void scope_drop(Scope* me);
+Scope scope_clone(Scope me);
 
-static inline Namespace namespace_init() {
-    return (Namespace){0};
+static inline Scope scope_init() {
+    return (Scope){0};
 }
 
-void namespace_push_to_stack(Namespace* me, NameStack* stack);
-void namespace_push_to_stack_as_function(Namespace* me, NameStack* stack);
-void namespace_generic_push_to_stack(Namespace* me, Generic* generic, NameStack* stack);
-void namespace_pop_from_stack(Namespace* me); // This call is not needed if namespace is dropped while on stack
+void scope_push_to_stack(Scope* me, NameStack* stack);
+void scope_push_to_stack_as_function(Scope* me, NameStack* stack);
+void scope_generic_push_to_stack(Scope* me, Generic* generic, NameStack* stack);
+void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dropped while on stack

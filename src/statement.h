@@ -6,7 +6,7 @@
 #include "function_impl.h"
 #include "interface_decl.h"
 #include "binding.h"
-#include "namespace.h"
+#include "scope.h"
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
@@ -46,13 +46,13 @@ void type_decl_drop(TypeDecl* me);
 void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 
-// Namespace declaration
+// Scope declaration
 
 typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     Block contents;
-    Namespace namespace;
+    Scope scope;
     NameStack* name_stack; // owned
     Type value_type;
     NamedType* value_named_type;

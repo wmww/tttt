@@ -174,16 +174,16 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
     my class_type.tag = LAZY_TYPE_CLASS_CLASS;
 
-    Namespace generic_ns = namespace_init();
-    namespace_generic_push_to_stack(&generic_ns, &my generic, names);
+    Scope generic_scope = scope_init();
+    scope_generic_push_to_stack(&generic_scope, &my generic, names);
 
     expr_resolve_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
         type_resolve_names(i.ref, names, errs);
     }
 
-    Namespace class_this_ns = namespace_init();
-    namespace_push_to_stack(&class_this_ns, names);
+    Scope class_this_scope = scope_init();
+    scope_push_to_stack(&class_this_scope, names);
     name_stack_add_variable_s(names, cstr_lit("this"), my class_named_var);
     name_stack_add_type_s(names, cstr_lit("this"), my class_named_type);
     c_foreach(i, vec_class_item, my items) {
@@ -191,10 +191,10 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             class_item_resolve_names(i.ref, names, errs);
         }
     }
-    namespace_drop(&class_this_ns);
+    scope_drop(&class_this_scope);
 
-    Namespace instance_this_ns = namespace_init();
-    namespace_push_to_stack(&instance_this_ns, names);
+    Scope instance_this_scope = scope_init();
+    scope_push_to_stack(&instance_this_scope, names);
     name_stack_add_variable_s(names, cstr_lit("this"), my instance_named_var);
     name_stack_add_type_s(names, cstr_lit("this"), my instance_named_type);
     c_foreach(i, vec_class_item, my items) {
@@ -202,9 +202,9 @@ void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             class_item_resolve_names(i.ref, names, errs);
         }
     }
-    namespace_drop(&instance_this_ns);
+    scope_drop(&instance_this_scope);
 
-    namespace_drop(&generic_ns);
+    scope_drop(&generic_scope);
 }
 
 Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {

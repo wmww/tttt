@@ -13,10 +13,10 @@ typedef enum StackFrameTag {
 
 typedef struct StackFrame {
     StackFrameTag tag;
-    Namespace* namespace;
+    Scope* scope;
 } StackFrame;
 
-StackFrame stack_frame_init(StackFrameTag tag, Namespace* namespace);
+StackFrame stack_frame_init(StackFrameTag tag, Scope* scope);
 void stack_frame_drop(StackFrame* me);
 StackFrame stack_frame_clone(StackFrame me);
 
@@ -24,17 +24,17 @@ StackFrame stack_frame_clone(StackFrame me);
 #include "wrap_stc/vec.h"
 
 typedef struct NameStack {
-    Namespace global_namespace;
+    Scope global_scope;
     VecStackFrame stack;
     ErrorCtx* errs;
 } NameStack;
 
 static void name_stack_drop(NameStack* me);
 
-StackFrame stack_frame_init(StackFrameTag tag, Namespace* namespace) {
+StackFrame stack_frame_init(StackFrameTag tag, Scope* scope) {
     return (StackFrame){
         .tag = tag,
-        .namespace = namespace,
+        .scope = scope,
     };
 }
 
@@ -46,8 +46,8 @@ StackFrame stack_frame_clone(StackFrame me) {
     return me;
 }
 
-static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag, Namespace* namespace) {
-    vec_stack_frame_push(&my stack, stack_frame_init(tag, namespace));
+static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag, Scope* scope) {
+    vec_stack_frame_push(&my stack, stack_frame_init(tag, scope));
 }
 
 NameStack* name_stack_new(ErrorCtx* errs) {
@@ -55,7 +55,7 @@ NameStack* name_stack_new(ErrorCtx* errs) {
         .stack = vec_stack_frame_init(),
         .errs = errs,
     });
-    vec_stack_frame_push(&ret->stack, stack_frame_init(STACK_FRAME_BLOCK, &ret->global_namespace));
+    vec_stack_frame_push(&ret->stack, stack_frame_init(STACK_FRAME_BLOCK, &ret->global_scope));
 
 #define BUILTIN_VAR(name, t) \
     static NamedVariable name = { 0 }; \
@@ -123,7 +123,7 @@ static void name_stack_drop(NameStack* me) {
         vec_stack_frame_size(&my stack) != 1,
         "Name stack dropped with %zd frames left on it",
         vec_stack_frame_size(&my stack));
-    namespace_drop(&my global_namespace);
+    scope_drop(&my global_scope);
     vec_stack_frame_drop(&my stack);
 }
 
@@ -132,33 +132,33 @@ void name_stack_destroy(NameStack* me) {
     free(me);
 }
 
-// Declared and used exclusivly by namespace.c
-void name_stack_push_block_namespace(NameStack* me, Namespace* namespace) {
-    name_stack_push_frame_private(me, STACK_FRAME_BLOCK, namespace);
+// Declared and used exclusivly by scope.c
+void name_stack_push_block_scope(NameStack* me, Scope* scope) {
+    name_stack_push_frame_private(me, STACK_FRAME_BLOCK, scope);
 }
 
-// Declared and used exclusivly by namespace.c
-void name_stack_push_function_namespace(NameStack* me, Namespace* namespace) {
-    name_stack_push_frame_private(me, STACK_FRAME_FUNCTION, namespace);
+// Declared and used exclusivly by scope.c
+void name_stack_push_function_scope(NameStack* me, Scope* scope) {
+    name_stack_push_frame_private(me, STACK_FRAME_FUNCTION, scope);
 }
 
-// Declared and used exclusivly by namespace.c
-void name_stack_push_generic_namespace(NameStack* me, Generic const* generic, Namespace* namespace) {
+// Declared and used exclusivly by scope.c
+void name_stack_push_generic_scope(NameStack* me, Generic const* generic, Scope* scope) {
     if (generic_empty(generic)) {
         // Frame is only needed so a frame can be unconditionally popped later
-        name_stack_push_frame_private(me, STACK_FRAME_BLOCK, namespace);
+        name_stack_push_frame_private(me, STACK_FRAME_BLOCK, scope);
     } else {
-        name_stack_push_frame_private(me, STACK_FRAME_GENERIC, namespace);
+        name_stack_push_frame_private(me, STACK_FRAME_GENERIC, scope);
         generic_resolve_names(generic, me, my errs);
     }
 }
 
-// Declared and used exclusivly by namespace.c
-void name_stack_pop_namespace(NameStack* me, Namespace* namespace) {
-    PANIC_IF(vec_stack_frame_empty(&my stack), "Tried to pop too many namespaces");
+// Declared and used exclusivly by scope.c
+void name_stack_pop_scope(NameStack* me, Scope* scope) {
+    PANIC_IF(vec_stack_frame_empty(&my stack), "Tried to pop too many scopes");
     PANIC_IF(
-        vec_stack_frame_back(&my stack)->namespace != namespace,
-        "Tried to pop incorrect namespace, %zd namespaces on the stack",
+        vec_stack_frame_back(&my stack)->scope != scope,
+        "Tried to pop incorrect scope, %zd scopes on the stack",
         vec_stack_frame_size(&my stack));
     vec_stack_frame_pop(&my stack);
 }
@@ -168,7 +168,7 @@ NameStack* name_stack_pull_frame_into_new_stack(NameStack* me) {
         PANIC("More stack frames popped than pushed");
     }
     StackFrame frame = vec_stack_frame_pull(&my stack);
-    ASSERT(!frame.namespace->current_name_stack);
+    ASSERT(!frame.scope->current_name_stack);
     NameStack* ret = c_new(NameStack, {
         .stack = vec_stack_frame_init(),
         .errs = my errs,
@@ -180,7 +180,7 @@ NameStack* name_stack_pull_frame_into_new_stack(NameStack* me) {
 Type name_stack_make_interface_from(NameStack const* ref) {
     ASSERT(vec_stack_frame_size(&ref->stack) > 0);
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_str_named_variable_ptr, vec_stack_frame_back(&ref->stack)->namespace->variables) {
+    c_foreach(i, hmap_str_named_variable_ptr, vec_stack_frame_back(&ref->stack)->scope->variables) {
         vec_interface_member_push(&members, interface_member_make(
             i.ref->second->full,
             span_null, // Interface name
@@ -207,7 +207,7 @@ void name_stack_add_type(NameStack* me, NamedType* type) {
 
 void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
     Span name_span = var->name;
-    auto result = hmap_str_named_variable_ptr_insert(&vec_stack_frame_back(&my stack)->namespace->variables, name_string, var);
+    auto result = hmap_str_named_variable_ptr_insert(&vec_stack_frame_back(&my stack)->scope->variables, name_string, var);
     if (!result.inserted) {
         switch (vec_stack_frame_back(&my stack)->tag) {
             case STACK_FRAME_BLOCK:
@@ -250,7 +250,7 @@ void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* v
 
 void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
     Span name_span = type->name;
-    auto result = hmap_str_named_type_ptr_insert(&vec_stack_frame_back(&my stack)->namespace->types, name_string, type);
+    auto result = hmap_str_named_type_ptr_insert(&vec_stack_frame_back(&my stack)->scope->types, name_string, type);
     if (!result.inserted) {
         switch (vec_stack_frame_back(&my stack)->tag) {
             case STACK_FRAME_BLOCK:
@@ -288,7 +288,7 @@ NamedType* name_stack_add_mergeable_type(
     if (generic_empty(generic)) {
         generic = nullptr;
     }
-    auto existing = hmap_str_named_type_ptr_get(&vec_stack_frame_back(&my stack)->namespace->types, name.sv);
+    auto existing = hmap_str_named_type_ptr_get(&vec_stack_frame_back(&my stack)->scope->types, name.sv);
     if (!existing || !existing->second->is_mergeable || (is_class && existing->second->is_class)) {
         // If there is no existing type by this name the normal add type process is fine
         // Two classes can't be merged, so if we try fall back to normal duplicate name behavior
@@ -331,7 +331,7 @@ void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
     // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
     // NameStacks may not need to be clonable if that's the case
     cstr name_string = cstr_from_span(name);
-    auto result = hmap_str_name_stack_cptr_insert(&vec_stack_frame_back(&my stack)->namespace->namespaces, name_string, ns);
+    auto result = hmap_str_name_stack_cptr_insert(&vec_stack_frame_back(&my stack)->scope->namespaces, name_string, ns);
     if (!result.inserted) {
         // TODO: declaration merging
         error_ctx_error(
@@ -346,7 +346,7 @@ void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
 
 void name_stack_add_import(NameStack* me, NamedImport import) {
     auto result = hmap_str_named_import_insert(
-        &vec_stack_frame_back(&my stack)->namespace->imports,
+        &vec_stack_frame_back(&my stack)->scope->imports,
         cstr_from_span(import.decl_name),
         import
     );
@@ -366,7 +366,7 @@ static void add_import(NameStack* me, Span decl_name, NamedImport* import) {
     StackFrame* stack_frame = vec_stack_frame_back(&name_stack->stack);
     csview source_name = span_valid(import->source_name) ?
         import->source_name.sv :
-        stack_frame->namespace->default_export;
+        stack_frame->scope->default_export;
 
     if (import->error_reported) {
         return;
@@ -395,12 +395,12 @@ static void add_import(NameStack* me, Span decl_name, NamedImport* import) {
 
     if (!found) {
         auto result = hmap_str_named_import_get_mut(
-            &stack_frame->namespace->imports,
+            &stack_frame->scope->imports,
             source_name
         );
         if (result) {
-            stack_frame->namespace->currently_adding_import = true;
-            if (vec_stack_frame_back(&result->second.source_file->name_stack->stack)->namespace->currently_adding_import) {
+            stack_frame->scope->currently_adding_import = true;
+            if (vec_stack_frame_back(&result->second.source_file->name_stack->stack)->scope->currently_adding_import) {
                 error_ctx_error(
                     my errs,
                     span_between(import->decl_name, import->source_name),
@@ -413,7 +413,7 @@ static void add_import(NameStack* me, Span decl_name, NamedImport* import) {
                 add_import(me, decl_name, &result->second);
             }
             found = true;
-            stack_frame->namespace->currently_adding_import = false;
+            stack_frame->scope->currently_adding_import = false;
         }
     }
 
@@ -431,14 +431,14 @@ static void add_import(NameStack* me, Span decl_name, NamedImport* import) {
 }
 
 void name_stack_process_imports(NameStack* me) {
-    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->namespace->imports;
+    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->scope->imports;
     c_foreach(i, hmap_str_named_import, *imports) {
         add_import(me, i.ref->second.decl_name, &i.ref->second);
     }
 }
 
 void name_stack_clear_imports(NameStack* me) {
-    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->namespace->imports;
+    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->scope->imports;
     hmap_str_named_import_drop(imports);
     *imports = hmap_str_named_import_init();
 }
@@ -454,7 +454,7 @@ bool name_stack_has_function(NameStack* me) {
 
 NamedVariable* name_stack_get_variable(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        auto result = hmap_str_named_variable_ptr_get(&i.ref->namespace->variables, name);
+        auto result = hmap_str_named_variable_ptr_get(&i.ref->scope->variables, name);
         if (result) {
             return result->second;
         }
@@ -464,7 +464,7 @@ NamedVariable* name_stack_get_variable(NameStack const* me, csview name) {
 
 NamedType* name_stack_get_type(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        auto result = hmap_str_named_type_ptr_get(&i.ref->namespace->types, name);
+        auto result = hmap_str_named_type_ptr_get(&i.ref->scope->types, name);
         if (result) {
             return result->second;
         }
@@ -474,7 +474,7 @@ NamedType* name_stack_get_type(NameStack const* me, csview name) {
 
 NameStack const* name_stack_get_namespace(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        auto result = hmap_str_name_stack_cptr_get(&i.ref->namespace->namespaces, name);
+        auto result = hmap_str_name_stack_cptr_get(&i.ref->scope->namespaces, name);
         if (result) {
             return result->second;
         }

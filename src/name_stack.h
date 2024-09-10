@@ -1,6 +1,6 @@
 #pragma once
 
-#include "namespace.h"
+#include "scope.h"
 
 typedef struct NameStack NameStack;
 

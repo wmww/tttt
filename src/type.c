@@ -374,11 +374,11 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
             type_resolve_names(&my ternary->maybe_sub, names, errs);
             type_resolve_names(&my ternary->maybe_super, names, errs);
 
-            Namespace inferred_types_ns = namespace_init();
-            namespace_push_to_stack(&inferred_types_ns, names);
+            Scope inferred_types_scope = scope_init();
+            scope_push_to_stack(&inferred_types_scope, names);
             type_add_inferred_names(&my ternary->maybe_super, names);
             type_resolve_names(&my ternary->if_true, names, errs);
-            namespace_drop(&inferred_types_ns);
+            scope_drop(&inferred_types_scope);
 
             type_resolve_names(&my ternary->if_false, names, errs);
         }   break;

@@ -22,7 +22,7 @@ core_files = files(
     'error.c',
     'source_file.c',
     'program.c',
-    'namespace.c',
+    'scope.c',
     'name_stack.c',
     'filesystem.c',
     'engine.c',

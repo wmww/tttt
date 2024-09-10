@@ -37,8 +37,8 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
 }
 
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
-    Namespace namespace;
-    bool namespace_initialized = false;
+    Scope scope;
+    bool scope_initialized = false;
 
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
@@ -48,9 +48,9 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
         case INTERFACE_KEY_MAPPED:
             type_resolve_names(&my key.mapped.in_type, names, errs);
             type_resolve_names(&my key.mapped.as_type, names, errs);
-            namespace = namespace_init();
-            namespace_push_to_stack(&namespace, names);
-            namespace_initialized = true;
+            scope = scope_init();
+            scope_push_to_stack(&scope, names);
+            scope_initialized = true;
             if (!my key.mapped.named_type) {
                 my key.mapped.named_type = make_named_type(
                     my key.mapped.type_name,
@@ -67,8 +67,8 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
 
     type_resolve_names(&my type, names, errs);
 
-    if (namespace_initialized) {
-        namespace_drop(&namespace);
+    if (scope_initialized) {
+        scope_drop(&scope);
     }
 }
 

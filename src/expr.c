@@ -165,10 +165,10 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_CLASS_DECL: {
-            Namespace class_name_ns = namespace_init();
-            namespace_push_to_stack(&class_name_ns, names);
+            Scope class_name_scope = scope_init();
+            scope_push_to_stack(&class_name_scope, names);
             class_decl_add_names(my class_decl, names, errs);
-            namespace_drop(&class_name_ns);
+            scope_drop(&class_name_scope);
             class_decl_resolve_names(my class_decl, names, errs);
         }   break;
     }
