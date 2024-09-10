@@ -42,6 +42,12 @@ NamedType* make_named_type(Span name, Span declaration_full, Type type, Generic 
 void named_type_destroy(NamedType* me);
 Type named_type_evaluate_type(NamedType* me);
 
+typedef struct NamedImport {
+    Span decl_name;
+    Span source_name;
+    SourceFile const* source_file;
+} NamedImport;
+
 NameStack* name_stack_new(ErrorCtx* errs);
 void name_stack_destroy(NameStack* me);
 void name_stack_push_block_frame(NameStack* me);
@@ -64,6 +70,8 @@ NamedType* name_stack_add_mergeable_type(
     bool is_class
 );
 void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns); // ns is owned externally
+void name_stack_add_import(NameStack* me, NamedImport import);
+void name_stack_process_imports(NameStack* me);
 bool name_stack_has_function(NameStack* me);
 NamedVariable* name_stack_get_variable(NameStack const* me, csview name);
 NamedType* name_stack_get_type(NameStack const* me, csview name);

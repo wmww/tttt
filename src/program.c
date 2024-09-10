@@ -149,15 +149,22 @@ SourceFile const* program_load(Program* me, const char* path) {
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
+        name_stack_process_imports(source->name_stack);
+    }
+
+    c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
+        SourceFile* source = *i.ref;
         block_lookup_names(&source->ast, source->name_stack, my errs);
     }
 
+    /*
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
         // Pop the stack frame we pushed above. Do this in it's own loop since files might need the topmost name stack
         // from other files to lookup names
         name_stack_pop_frame(source->name_stack);
     }
+    */
 
     vec_source_file_ptr_drop(&in_flight_source_files);
     my errs->phase = ERROR_PHASE_UNKOWN;

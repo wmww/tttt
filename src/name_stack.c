@@ -3,6 +3,7 @@
 #include "several_types.h"
 #include "error.h"
 #include "interface_member.h"
+#include "source_file.h"
 
 typedef NamedType* NamedTypePtr;
 typedef NamedVariable* NamedVariablePtr;
@@ -74,6 +75,10 @@ wrap_forward_hmap_str(NameStackCPtr, name_stack_cptr);
 #define i_val_names NamedVariablePtr, named_variable_ptr
 #include "wrap_stc/hmap.h"
 
+#define i_key_ssv
+#define i_val_names NamedImport, named_import
+#include "wrap_stc/hmap.h"
+
 typedef enum StackFrameTag {
     STACK_FRAME_BLOCK,
     STACK_FRAME_FUNCTION,
@@ -82,9 +87,11 @@ typedef enum StackFrameTag {
 
 typedef struct StackFrame {
     StackFrameTag tag;
+    csview default_export;
     HmapStrNamedTypePtr types;
     HmapStrNamedVariablePtr variables;
     HmapStrNameStackCPtr namespaces;
+    HmapStrNamedImport imports;
 } StackFrame;
 
 StackFrame stack_frame_init(StackFrameTag tag);
@@ -116,12 +123,17 @@ void stack_frame_drop(StackFrame* me) {
     hmap_str_named_type_ptr_drop(&my types);
     hmap_str_named_variable_ptr_drop(&my variables);
     hmap_str_name_stack_cptr_drop(&my namespaces);
+    if (hmap_str_named_import_size(&my imports)) {
+        NONFATAL("Stack frame dropped with imports not empty");
+    }
+    hmap_str_named_import_drop(&my imports);
 }
 
 StackFrame stack_frame_clone(StackFrame me) {
     me.types = hmap_str_named_type_ptr_clone(me.types);
     me.variables = hmap_str_named_variable_ptr_clone(me.variables);
     me.namespaces = hmap_str_name_stack_cptr_clone(me.namespaces);
+    me.imports = hmap_str_named_import_clone(me.imports);
     return me;
 }
 
@@ -206,9 +218,11 @@ void name_stack_push_function_frame(NameStack* me) {
 }
 
 static void name_stack_drop(NameStack* me) {
+    /*
     if (vec_stack_frame_size(&my stack) != 1) {
         PANIC("stack size %ld on drop, 1 expected", vec_stack_frame_size(&my stack));
     }
+    */
     vec_stack_frame_drop(&my stack);
 }
 
@@ -417,6 +431,96 @@ void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
             c_SPAN(name)
         );
     }
+}
+
+void name_stack_add_import(NameStack* me, NamedImport import) {
+    auto result = hmap_str_named_import_insert(
+        &vec_stack_frame_back(&my stack)->imports,
+        cstr_from_span(import.decl_name),
+        import
+    );
+    if (!result.inserted) {
+        error_ctx_error(
+            my errs,
+            import.decl_name,
+            2300,
+            "Duplicate identifier '%.*s'.",
+            c_SPAN(import.decl_name)
+        );
+    }
+}
+
+static void add_import(NameStack* me, Span name, NamedImport const* import) {
+    NameStack const* name_stack = import->source_file->name_stack;
+    csview source_name = span_valid(import->source_name) ?
+        import->source_name.sv :
+        vec_stack_frame_back(&name_stack->stack)->default_export;
+    bool found = false;
+    {
+        NamedVariable* var = name_stack_get_variable(name_stack, source_name);
+        if (var) {
+            name_stack_add_variable_s(me, cstr_from_span(import->decl_name), var);
+            found = true;
+        }
+    }{
+        NamedType* type = name_stack_get_type(name_stack, source_name);
+        if (type) {
+            name_stack_add_type_s(me, cstr_from_span(import->decl_name), type);
+            found = true;
+        }
+    }{
+        NameStack const* namespace = name_stack_get_namespace(name_stack, source_name);
+        if (namespace) {
+            name_stack_add_namespace(me, import->decl_name, namespace);
+            found = true;
+        }
+    }
+    if (!found) {
+        auto result = hmap_str_named_import_get(
+            &vec_stack_frame_back(&name_stack->stack)->imports,
+            source_name
+        );
+        if (result) {
+            add_import(me, name, &result->second);
+            found = true;
+        }
+    }
+    if (!found) {
+        error_ctx_error(
+            my errs,
+            import->source_name,
+            2305,
+            "Module '%s' has no exported member '%.*s'.",
+            cstr_str(&import->source_file->absolute_path),
+            c_SPAN(import->source_name)
+        );
+
+#define BUILTIN_VAR(name, t) \
+    static NamedVariable name = { 0 }; \
+    name.type = t;
+
+#define BUILTIN_TYPE(name, t) \
+    static NamedType name = { 0 }; \
+    name.type = t
+
+    BUILTIN_VAR(builtin_var_any, type_any);
+    BUILTIN_TYPE(builtin_type_any, type_any);
+
+#undef BUILTIN_VAR
+#undef BUILTIN_TYPE
+
+        name_stack_add_variable_s(me, cstr_from_span(import->decl_name), &builtin_var_any);
+        name_stack_add_type_s(me, cstr_from_span(import->decl_name), &builtin_type_any);
+    }
+}
+
+void name_stack_process_imports(NameStack* me) {
+    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->imports;
+    c_foreach(i, hmap_str_named_import, *imports) {
+        add_import(me, i.ref->second.decl_name, &i.ref->second);
+    }
+    hmap_str_named_import_drop(imports);
+    *imports = hmap_str_named_import_init();
 }
 
 bool name_stack_has_function(NameStack* me) {

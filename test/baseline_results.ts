@@ -8576,7 +8576,7 @@ const baselines = {
         types: false,
     },
     'defaultDeclarationEmitDefaultImport': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -11036,17 +11036,17 @@ const baselines = {
         types: false,
     },
     'es6ImportDefaultBinding': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'es6ImportDefaultBindingAmd': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'es6ImportDefaultBindingDts': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -11171,22 +11171,22 @@ const baselines = {
         types: false,
     },
     'es6ImportNameSpaceImport': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'es6ImportNameSpaceImportAmd': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'es6ImportNameSpaceImportDts': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'es6ImportNameSpaceImportInEs5': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -11381,7 +11381,7 @@ const baselines = {
         types: true,
     },
     'es6UseOfTopLevelRequire': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -11831,7 +11831,7 @@ const baselines = {
         types: true,
     },
     'exportDefaultAbstractClass': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -11881,7 +11881,7 @@ const baselines = {
         types: undefined,
     },
     'exportDefaultInterface': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -15926,7 +15926,7 @@ const baselines = {
         types: true,
     },
     'inferredIndexerOnNamespaceImport': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -26956,7 +26956,7 @@ const baselines = {
         types: false,
     },
     'symbolMergeValueAndImportedType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38496,12 +38496,12 @@ const baselines = {
         types: false,
     },
     'exportAndImport-es5-amd': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'exportAndImport-es5': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46976,7 +46976,7 @@ const baselines = {
         types: false,
     },
     'noAssertForUnparseableTypedefs': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -52816,7 +52816,7 @@ const baselines = {
         types: true,
     },
     'propertyAssignmentOnUnresolvedImportedSymbol': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
