@@ -33,14 +33,14 @@ CallableType callable_type_clone(CallableType me) {
 
 void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs) {
     if (my owned_function_impl) {
-        function_impl_resolve_names(my owned_function_impl, names, errs);
+        function_impl_lookup_names(my owned_function_impl, names, errs);
 
         generic_drop(&my generic);
         my generic = generic_clone(my owned_function_impl->generic);
         c_foreach(i, vec_callable_arg, my args) {
             type_drop(&i.ref->type);
             i.ref->type = type_ref(binding_get_effective_type(&i.ref->source->initializer.binding));
-            type_resolve_names(&i.ref->type, names, errs);
+            type_lookup_names(&i.ref->type, names, errs);
         }
         // If me owns a FunctionImpl, that means the type was parsed as a type (not generated from an implementaiton)
         // That means it doesn't have a function body

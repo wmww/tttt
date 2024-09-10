@@ -15,7 +15,7 @@ typedef struct Block {
 } Block;
 
 void block_drop(Block* me);
-void block_add_names(Block const* me, NameStack* names, ErrorCtx* errs);
+void block_add_names(Block const* me, Scope* scope);
 void block_lookup_names(Block const* me, NameStack* names, ErrorCtx* errs);
 void block_resolve_names(Block const* me, NameStack* names, ErrorCtx* errs);
 void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs);

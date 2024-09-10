@@ -15,7 +15,7 @@ void binding_drop(Binding* me) {
     type_drop(&my assigned_type);
 }
 
-void binding_add_names(Binding* me, Type assigned, NameStack* names, ErrorCtx* errs) {
+void binding_add_names(Binding* me, Type assigned, Scope* scope) {
     my assigned_type = assigned;
 
     switch (my tag) {
@@ -29,7 +29,7 @@ void binding_add_names(Binding* me, Type assigned, NameStack* names, ErrorCtx* e
                 type_ref(binding_get_effective_type(me)),
                 nullptr
             );
-            name_stack_add_variable(names, my identifier);
+            scope_add_variable(scope, my identifier);
             break;
 
         case BINDING_ARRAY: {
@@ -43,8 +43,7 @@ void binding_add_names(Binding* me, Type assigned, NameStack* names, ErrorCtx* e
                         .is_from_binding = true,
                         .array_only = true,
                     })),
-                    names,
-                    errs
+                    scope
                 );
             }
         }   break;
@@ -58,36 +57,35 @@ void binding_add_names(Binding* me, Type assigned, NameStack* names, ErrorCtx* e
                         .index = type_value(value_clone(i.ref->source)),
                         .is_from_binding = true,
                     })),
-                    names,
-                    errs
+                    scope
                 );
             }
         }   break;
     }
 }
 
-void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs) {
+void binding_lookup_names(Binding* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case BINDING_NOOP:
         case BINDING_IDENTIFIER: break;
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_resolve_names(i.ref, names, errs);
+                binding_lookup_names(i.ref, names, errs);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_resolve_names(&i.ref->target, names, errs);
+                binding_lookup_names(&i.ref->target, names, errs);
             }
             break;
     }
 
     if (my has_explicit_type) {
-        type_resolve_names(&my explicit_type, names, errs);
+        type_lookup_names(&my explicit_type, names, errs);
     }
-    type_resolve_names(&my assigned_type, names, errs);
+    type_lookup_names(&my assigned_type, names, errs);
 }
 
 Type const* binding_get_effective_type(Binding const* me) {
@@ -181,21 +179,20 @@ void initialized_binding_drop(InitializedBinding* me) {
     expr_drop(&my value);
 }
 
-void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs) {
+void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, Scope* scope) {
     binding_add_names(
         &my binding,
         make_type_abstracted(
             type_lazy(&my value.lazy_type),
             !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && abstract_literals
         ),
-        names,
-        errs
+        scope
     );
 }
 
-void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs) {
-    binding_resolve_names(&my binding, names, errs);
-    expr_resolve_names(&my value, names, errs);
+void initialized_binding_lookup_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs) {
+    binding_lookup_names(&my binding, names, errs);
+    expr_lookup_names(&my value, names, errs);
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {

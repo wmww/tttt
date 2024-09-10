@@ -12,21 +12,26 @@ void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }
 
-void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs) {
+void variable_statement_add_names(VariableStatement* me, bool declared, Scope* scope) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         if (my keyword == VAR_INIT_CONST &&
             i.ref->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
-            error_ctx_error(errs, i.ref->binding.content_span, 1155, "'const' declarations must be initialized.");
+            error_ctx_error(
+                scope->errs,
+                i.ref->binding.content_span,
+                1155,
+                "'const' declarations must be initialized."
+            );
         }
-        initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, names, errs);
+        initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, scope);
     }
 }
 
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_resolve_names(i.ref, names, errs);
+        initialized_binding_lookup_names(i.ref, names, errs);
     }
 }
 
@@ -44,11 +49,10 @@ void type_decl_drop(TypeDecl* me) {
     named_type_destroy(my named_type);
 }
 
-void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs) {
-    ignore errs;
+void type_decl_add_names(TypeDecl* me, Scope* scope) {
     ASSERT(!my named_type);
     my named_type = make_named_type(my name, my full_span, type_ref(&my type), &my generic);
-    name_stack_add_type(names, my named_type);
+    scope_add_type(scope, my named_type);
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
@@ -60,27 +64,22 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
 
 void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
-    scope_drop(&my scope);
-    name_stack_destroy(my name_stack);
+    scope_drop(&my inner_scope);
     type_drop(&my value_type);
     named_type_destroy(my value_named_type);
     named_variable_destroy(my value_named_var);
 }
 
-void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    my scope = scope_init();
-    scope_push_to_stack(&my scope, names);
+void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
+    my inner_scope = scope_init(scope->errs);
     c_foreach(i, vec_statement, my contents.statements) {
-        statement_add_names(i.ref, names, errs);
+        statement_add_names(i.ref, &my inner_scope);
     }
-    ASSERT(!my name_stack);
-    my scope.current_name_stack = nullptr;
-    my name_stack = name_stack_pull_frame_into_new_stack(names);
 
-    name_stack_add_namespace(names, my name, my name_stack);
+    scope_add_namespace(scope, my name, &my inner_scope);
 
     ASSERT(my value_type.tag == 0);
-    my value_type = name_stack_make_interface_from(my name_stack);
+    my value_type = scope_make_interface_from(&my inner_scope);
 
     ASSERT(!my value_named_type);
     ASSERT(!my value_named_var);
@@ -95,15 +94,15 @@ void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* err
         })),
         nullptr
     );
-    name_stack_add_variable(names, my value_named_var);
+    scope_add_variable(scope, my value_named_var);
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    scope_push_to_stack(&my scope, names);
+    scope_push_to_stack(&my inner_scope, names);
     c_foreach(i, vec_statement, my contents.statements) {
         statement_resolve_names(i.ref, names, errs);
     }
-    scope_pop_from_stack(&my scope);
+    scope_pop_from_stack(&my inner_scope);
 }
 
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
@@ -255,34 +254,34 @@ void statement_drop(Statement* me) {
     }
 }
 
-void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs) {
+void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_IMPORT:
-            import_statement_add_names(my import, names, errs);
+            import_statement_add_names(my import, scope);
             break;
 
         case STATEMENT_DECL_VARIABLE:
-            variable_statement_add_names(&my decl.variable, my decl.declared, names, errs);
+            variable_statement_add_names(&my decl.variable, my decl.declared, scope);
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_add_names(&my decl.function, names, errs);
+            function_impl_add_names(&my decl.function, scope);
             break;
 
         case STATEMENT_DECL_CLASS:
-            class_decl_add_names(my decl.class, names, errs);
+            class_decl_add_names(my decl.class, scope);
             break;
 
         case STATEMENT_DECL_TYPE:
-            type_decl_add_names(&my decl.type, names, errs);
+            type_decl_add_names(&my decl.type, scope);
             break;
 
         case STATEMENT_DECL_INTERFACE:
-            interface_decl_add_names(my decl.interface, names, errs);
+            interface_decl_add_names(my decl.interface, scope);
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_add_names(&my decl.namespace, names, errs);
+            namespace_decl_add_names(&my decl.namespace, scope);
             break;
 
         case STATEMENT_NOOP:
@@ -309,33 +308,37 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_IF_ELSE:
             c_foreach(i, vec_expr, my if_else.conditions) {
-                expr_resolve_names(i.ref, names, errs);
+                expr_lookup_names(i.ref, names, errs);
             }
             c_foreach(i, vec_statement, my if_else.statements) {
-                Scope branch_scope = scope_init();
+                Scope branch_scope = scope_init(errs);
+                statement_add_names(i.ref, &branch_scope);
                 scope_push_to_stack(&branch_scope, names);
-                statement_add_names(i.ref, names, errs);
                 statement_resolve_names(i.ref, names, errs);
                 scope_drop(&branch_scope);
             }
             break;
 
         case STATEMENT_FOR_LOOP: {
-            Scope loop_scope = scope_init();
+            Scope loop_scope = scope_init(errs);
+            statement_add_names(&my for_loop->initialization, &loop_scope);
+
             scope_push_to_stack(&loop_scope, names);
-            statement_add_names(&my for_loop->initialization, names, errs);
             statement_resolve_names(&my for_loop->initialization, names, errs);
-            expr_resolve_names(&my for_loop->condition, names, errs);
-            expr_resolve_names(&my for_loop->afterthought, names, errs);
-            statement_add_names(&my for_loop->body, names, errs);
+            expr_lookup_names(&my for_loop->condition, names, errs);
+            expr_lookup_names(&my for_loop->afterthought, names, errs);
+            scope_pop_from_stack(&loop_scope);
+
+            statement_add_names(&my for_loop->body, &loop_scope);
+
+            scope_push_to_stack(&loop_scope, names);
             statement_resolve_names(&my for_loop->body, names, errs);
             scope_drop(&loop_scope);
         }   break;
 
         case STATEMENT_FOR_EACH_LOOP: {
             my for_each_loop->var_type.tag = LAZY_TYPE_FOR_EACH_LOOP_VAR;
-            Scope loop_scope = scope_init();
-            scope_push_to_stack(&loop_scope, names);
+            Scope loop_scope = scope_init(errs);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
                     VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
@@ -375,32 +378,44 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                         // up in test AST traversial (as required), but will not be typechecked (as required). This
                         // is dumb but it works.
                         i.ref->binding.has_explicit_type = false;
-                        binding_add_names(&i.ref->binding, type_lazy(&my for_each_loop->var_type), names, errs);
-                        binding_resolve_names(&i.ref->binding, names, errs);
-                        expr_resolve_names(&i.ref->value, names, errs);
+                        binding_add_names(&i.ref->binding, type_lazy(&my for_each_loop->var_type), &loop_scope);
                     }
+                    scope_push_to_stack(&loop_scope, names);
+                    c_foreach(i, vec_initialized_binding, *initializers) {
+                        binding_lookup_names(&i.ref->binding, names, errs);
+                        expr_lookup_names(&i.ref->value, names, errs);
+                    }
+                    scope_pop_from_stack(&loop_scope);
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
-                    expr_resolve_names(&my for_each_loop->variable.expr, names, errs);
+                    expr_lookup_names(&my for_each_loop->variable.expr, names, errs);
                     break;
             }
-            expr_resolve_names(&my for_each_loop->iterable, names, errs);
-            statement_add_names(&my for_each_loop->body, names, errs);
+
+            scope_push_to_stack(&loop_scope, names);
+            expr_lookup_names(&my for_each_loop->iterable, names, errs);
+            scope_pop_from_stack(&loop_scope);
+
+            statement_add_names(&my for_each_loop->body, &loop_scope);
+
+            scope_push_to_stack(&loop_scope, names);
             statement_resolve_names(&my for_each_loop->body, names, errs);
             scope_drop(&loop_scope);
         }   break;
 
         case STATEMENT_SWITCH: {
-            expr_resolve_names(&my switch_->needle, names, errs);
-            Scope switch_scope = scope_init();
+            expr_lookup_names(&my switch_->needle, names, errs);
+            Scope switch_scope = scope_init(errs);
+            c_foreach(i, vec_switch_case, my switch_->cases) {
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    statement_add_names(j.ref, &switch_scope);
+                }
+            }
             scope_push_to_stack(&switch_scope, names);
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 if (i.ref->is_pattern) {
-                    expr_resolve_names(&i.ref->pattern, names, errs);
-                }
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    statement_add_names(j.ref, names, errs);
+                    expr_lookup_names(&i.ref->pattern, names, errs);
                 }
                 c_foreach(j, vec_statement, i.ref->statements) {
                     statement_resolve_names(j.ref, names, errs);
@@ -412,10 +427,10 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_TRY_CATCH: {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
-            Scope catch_scope = scope_init();
+            Scope catch_scope = scope_init(errs);
+            binding_add_names(&my try_catch->catch_var, type_any, &catch_scope);
             scope_push_to_stack(&catch_scope, names);
-            binding_add_names(&my try_catch->catch_var, type_any, names, errs);
-            binding_resolve_names(&my try_catch->catch_var, names, errs);
+            binding_lookup_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);
             scope_drop(&catch_scope);
 
@@ -425,7 +440,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_THROW_EXPR:
-            expr_resolve_names(&my expr, names, errs);
+            expr_lookup_names(&my expr, names, errs);
             break;
 
         case STATEMENT_RETURN_EXPR:
@@ -437,7 +452,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                     "A 'return' statement can only be used within a function body."
                 );
             }
-            expr_resolve_names(&my expr, names, errs);
+            expr_lookup_names(&my expr, names, errs);
             break;
 
         case STATEMENT_IMPORT: break;
@@ -447,31 +462,31 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION: {
-            Scope this_scope = scope_init();
-            scope_push_to_stack(&this_scope, names);
+            Scope this_scope = scope_init(errs);
 
             static NamedVariable this_var;
             this_var = (NamedVariable){ .type = type_any };
-            name_stack_add_variable_s(names, cstr_lit("this"), &this_var);
+            scope_add_variable_s(&this_scope, cstr_lit("this"), &this_var);
 
-            function_impl_resolve_names(&my decl.function, names, errs);
+            scope_push_to_stack(&this_scope, names);
+            function_impl_lookup_names(&my decl.function, names, errs);
 
             scope_drop(&this_scope);
         }   break;
 
         case STATEMENT_DECL_CLASS:
-            class_decl_resolve_names(my decl.class, names, errs);
+            class_decl_lookup_names(my decl.class, names, errs);
             break;
 
         case STATEMENT_DECL_TYPE: {
-            Scope generic_scope = scope_init();
-            scope_generic_push_to_stack(&generic_scope, &my decl.type.generic, names);
-            type_resolve_names(&my decl.type.type, names, errs);
+            Scope generic_scope = scope_init(errs);
+            scope_push_generic_to_stack(&generic_scope, &my decl.type.generic, names);
+            type_lookup_names(&my decl.type.type, names, errs);
             scope_drop(&generic_scope);
         }   break;
 
         case STATEMENT_DECL_INTERFACE:
-            interface_decl_resolve_names(my decl.interface, names, errs);
+            interface_decl_lookup_names(my decl.interface, names, errs);
             break;
 
         case STATEMENT_DECL_NAMESPACE:

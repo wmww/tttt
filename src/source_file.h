@@ -8,7 +8,6 @@ typedef struct SourceFile {
     cstr contents;
     Block ast;
     Scope scope;
-    NameStack* name_stack;
 } SourceFile;
 
 SourceFile source_file_make(cstr absolute_path, cstr contents, ErrorCtx* errs);

@@ -34,9 +34,9 @@ typedef struct ObjectBindingItem {
 } ObjectBindingItem;
 
 void binding_drop(Binding* me);
-void binding_add_names(Binding* me, Type input, NameStack* names, ErrorCtx* errs);
+void binding_add_names(Binding* me, Type input, Scope* scope);
 Type const* binding_get_effective_type(Binding const* me); // Only valid after binding_add_names() is called
-void binding_resolve_names(Binding* me, NameStack* names, ErrorCtx* errs);
+void binding_lookup_names(Binding* me, NameStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 void binding_typecheck(Binding* me, ErrorCtx* errs);
 
@@ -58,8 +58,8 @@ typedef struct InitializedBinding {
 } InitializedBinding;
 
 void initialized_binding_drop(InitializedBinding* me);
-void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, NameStack* names, ErrorCtx* errs);
-void initialized_binding_resolve_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs);
+void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, Scope* scope);
+void initialized_binding_lookup_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 
 #define i_key_class_names InitializedBinding, initialized_binding

@@ -28,7 +28,7 @@ typedef struct VariableStatement {
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
-void variable_statement_add_names(VariableStatement* me, bool declared, NameStack* names, ErrorCtx* errs);
+void variable_statement_add_names(VariableStatement* me, bool declared, Scope* scope);
 void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 
@@ -43,7 +43,7 @@ typedef struct TypeDecl {
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
-void type_decl_add_names(TypeDecl* me, NameStack* names, ErrorCtx* errs);
+void type_decl_add_names(TypeDecl* me, Scope* scope);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 
 // Scope declaration
@@ -52,15 +52,14 @@ typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     Block contents;
-    Scope scope;
-    NameStack* name_stack; // owned
+    Scope inner_scope;
     Type value_type;
     NamedType* value_named_type;
     NamedVariable* value_named_var;
 } NamespaceDecl;
 
 void namespace_decl_drop(NamespaceDecl* me);
-void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
+void namespace_decl_add_names(NamespaceDecl* me, Scope* scope);
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs);
 
@@ -151,7 +150,7 @@ static inline DeclExported statement_get_exported(Statement const* me) {
 }
 
 void statement_drop(Statement* me);
-void statement_add_names(Statement* me, NameStack* names, ErrorCtx* errs);
+void statement_add_names(Statement* me, Scope* scope);
 void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs);
 void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs);
 

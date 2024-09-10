@@ -5,8 +5,8 @@
 #include "error.h"
 #include "statement.h"
 #include "source_file.h"
-#include "name_stack.h"
 #include "import_statement.h"
+#include "name_stack.h"
 
 #define i_key_class_names SourceFile, source_file
 #define i_no_clone
@@ -59,7 +59,7 @@ void program_preload(Program* me, const char* path) {
 }
 
 // Returns null if path can't be loaded
-static SourceFile const* program_add_source(Program* me, const char* path) {
+static SourceFile* program_add_source(Program* me, const char* path) {
     cstr absolute_path;
     absolute_path = fs_absolute_path_of(my fs, path);
     auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&absolute_path));
@@ -94,7 +94,7 @@ static void program_handle_import(Program* me, ImportStatement* import) {
         cstr_append_lit(&source_path, ".ts");
     }
     // TODO: handle js
-    SourceFile const* source = program_add_source(me, cstr_str(&source_path));
+    SourceFile* source = program_add_source(me, cstr_str(&source_path));
     cstr_drop(&source_path);
 
     if (source) {
@@ -141,9 +141,8 @@ SourceFile const* program_load(Program* me, const char* path) {
             }
         }
 
-        // Push a block frame for this source file's name stack, it will be popped when traversing the hashmap below
-        scope_push_to_stack(&source->scope, source->name_stack);
-        block_add_names(&source->ast, source->name_stack, my errs);
+        // Add the toplevel block's names to the file's scope
+        block_add_names(&source->ast, &source->scope);
 
         // Add it to the list to process below
         vec_source_file_ptr_push(&in_flight_source_files, source);
@@ -151,13 +150,19 @@ SourceFile const* program_load(Program* me, const char* path) {
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
-        name_stack_process_imports(source->name_stack);
+        scope_process_imports(&source->scope);
     }
+
+    NameStack* names = name_stack_new();
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
-        block_lookup_names(&source->ast, source->name_stack, my errs);
+        scope_push_to_stack(&source->scope, names);
+        block_lookup_names(&source->ast, names, my errs);
+        scope_pop_from_stack(&source->scope);
     }
+
+    name_stack_destroy(names);
 
     /*
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {

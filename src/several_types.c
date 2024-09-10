@@ -22,42 +22,64 @@ IdentifierType identifier_type_clone(IdentifierType me) {
     };
 }
 
-void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
+void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
     if (!my named_type) {
-        NameStack const* namespace = names;
-        c_foreach(i, vec_span, my namespaces) {
-            namespace = name_stack_get_namespace(namespace, i.ref->sv);
-            if (!namespace) {
-                error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
-                break;
-            }
-        }
-        if (namespace) {
-            my named_type = name_stack_get_type(namespace, my name.sv);
-            if (!my named_type) {
-                if (vec_span_size(&my namespaces)) {
-                    error_ctx_error(
-                        errs,
-                        my name,
-                        2694,
-                        "Scope '%.*s' has no exported member '%.*s'.",
-                        c_SPAN(*vec_span_back(&my namespaces)),
-                        c_SPAN(my name)
-                    );
+        if (vec_span_size(&my namespaces)) {
+            Scope const* scope = nullptr;
+            Span prev_span = span_null;
+            c_foreach(i, vec_span, my namespaces) {
+                if (scope) {
+                    auto result = hmap_str_scope_cptr_get(&scope->namespaces, i.ref->sv);
+                    scope = result ? result->second : nullptr;
+                    if (!scope) {
+                        error_ctx_error(
+                            errs,
+                            my name,
+                            2694,
+                            "Scope '%.*s' has no exported member '%.*s'.",
+                            c_SPAN(prev_span),
+                            c_SPAN(my name)
+                        );
+                        break;
+                    }
                 } else {
-                    error_ctx_error(
-                        errs,
-                        my name,
-                        2304,
-                        "Cannot find name '%.*s'.",
-                        c_SPAN(my name)
-                    );
+                    scope = name_stack_get_namespace(names, i.ref->sv);
+                    if (!scope) {
+                        error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
+                        break;
+                    }
                 }
+                if (scope) {
+                    auto result = hmap_str_named_type_ptr_get(&scope->types, my name.sv);
+                    my named_type = result ? result->second : nullptr;
+                    if (!my named_type) {
+                        error_ctx_error(
+                            errs,
+                            my name,
+                            2694,
+                            "Scope '%.*s' has no exported member '%.*s'.",
+                            c_SPAN(*vec_span_back(&my namespaces)),
+                            c_SPAN(my name)
+                        );
+                    }
+                }
+                prev_span = *i.ref;
+            }
+        } else {
+            my named_type = name_stack_get_type(names, my name.sv);
+            if (!my named_type) {
+                error_ctx_error(
+                    errs,
+                    my name,
+                    2304,
+                    "Cannot find name '%.*s'.",
+                    c_SPAN(my name)
+                );
             }
         }
     }
     c_foreach(i, vec_spanned_type, my generic_params) {
-        type_resolve_names(&i.ref->type, names, errs);
+        type_lookup_names(&i.ref->type, names, errs);
     }
 }
 
@@ -118,9 +140,9 @@ IndexedType indexed_type_clone(IndexedType me) {
     };
 }
 
-void indexed_type_resolve_names(IndexedType* me, NameStack* names, ErrorCtx* errs) {
-    type_resolve_names(&my interface, names, errs);
-    type_resolve_names(&my index, names, errs);
+void indexed_type_lookup_names(IndexedType* me, NameStack* names, ErrorCtx* errs) {
+    type_lookup_names(&my interface, names, errs);
+    type_lookup_names(&my index, names, errs);
 }
 
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
@@ -143,8 +165,8 @@ KeyofType keyof_type_clone(KeyofType me) {
     };
 }
 
-void keyof_type_resolve_names(KeyofType* me, NameStack* names, ErrorCtx* errs) {
-    type_resolve_names(&my interface, names, errs);
+void keyof_type_lookup_names(KeyofType* me, NameStack* names, ErrorCtx* errs) {
+    type_lookup_names(&my interface, names, errs);
 }
 
 void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs) {

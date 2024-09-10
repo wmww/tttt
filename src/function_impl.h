@@ -42,8 +42,8 @@ typedef struct FunctionImpl {
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
-void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
-void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
+void function_impl_add_names(FunctionImpl* me, Scope* scope);
+void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs);
 Type function_impl_into_type(FunctionImpl me);
 Type function_impl_evaluate_type(FunctionImpl* me);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

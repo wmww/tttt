@@ -141,7 +141,7 @@ extern const int ternary_precedence;
 extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
-void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs);
+void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs);
 Type expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 

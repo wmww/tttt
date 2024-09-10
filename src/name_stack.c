@@ -1,22 +1,10 @@
 #include "name_stack.h"
-#include "generic.h"
-#include "several_types.h"
-#include "error.h"
-#include "interface_member.h"
-#include "source_file.h"
-
-typedef enum StackFrameTag {
-    STACK_FRAME_BLOCK,
-    STACK_FRAME_FUNCTION,
-    STACK_FRAME_GENERIC,
-} StackFrameTag;
 
 typedef struct StackFrame {
-    StackFrameTag tag;
     Scope* scope;
 } StackFrame;
 
-StackFrame stack_frame_init(StackFrameTag tag, Scope* scope);
+StackFrame stack_frame_init(Scope* scope);
 void stack_frame_drop(StackFrame* me);
 StackFrame stack_frame_clone(StackFrame me);
 
@@ -26,14 +14,12 @@ StackFrame stack_frame_clone(StackFrame me);
 typedef struct NameStack {
     Scope global_scope;
     VecStackFrame stack;
-    ErrorCtx* errs;
 } NameStack;
 
 static void name_stack_drop(NameStack* me);
 
-StackFrame stack_frame_init(StackFrameTag tag, Scope* scope) {
+StackFrame stack_frame_init(Scope* scope) {
     return (StackFrame){
-        .tag = tag,
         .scope = scope,
     };
 }
@@ -46,16 +32,16 @@ StackFrame stack_frame_clone(StackFrame me) {
     return me;
 }
 
-static inline void name_stack_push_frame_private(NameStack* me, StackFrameTag tag, Scope* scope) {
-    vec_stack_frame_push(&my stack, stack_frame_init(tag, scope));
+static inline void name_stack_push_frame_private(NameStack* me, Scope* scope) {
+    vec_stack_frame_push(&my stack, stack_frame_init(scope));
 }
 
-NameStack* name_stack_new(ErrorCtx* errs) {
-    NameStack* ret = c_new(NameStack, {
-        .stack = vec_stack_frame_init(),
-        .errs = errs,
+NameStack* name_stack_new() {
+    NameStack* me = c_new(NameStack, {
+        .global_scope = scope_init(null_error_ctx),
+        .stack = vec_stack_frame_init()
     });
-    vec_stack_frame_push(&ret->stack, stack_frame_init(STACK_FRAME_BLOCK, &ret->global_scope));
+    vec_stack_frame_push(&my stack, stack_frame_init(&my global_scope));
 
 #define BUILTIN_VAR(name, t) \
     static NamedVariable name = { 0 }; \
@@ -80,42 +66,42 @@ NameStack* name_stack_new(ErrorCtx* errs) {
 #undef BUILTIN_VAR
 #undef BUILTIN_TYPE
 
-    name_stack_add_variable_s(ret, cstr_lit("console"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("String"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Number"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Boolean"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("NaN"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Date"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Error"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Set"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Array"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("Object"), &builtin_var_any);
-    name_stack_add_variable_s(ret, cstr_lit("this"), &builtin_var_undefined);
+    scope_add_variable_s(&my global_scope, cstr_lit("console"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("String"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Number"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Boolean"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("NaN"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Date"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Error"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Set"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Array"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("Object"), &builtin_var_any);
+    scope_add_variable_s(&my global_scope, cstr_lit("this"), &builtin_var_undefined);
 
-    name_stack_add_type_s(ret, cstr_lit("any"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("unknown"), &builtin_type_unkown);
-    name_stack_add_type_s(ret, cstr_lit("never"), &builtin_type_never);
-    name_stack_add_type_s(ret, cstr_lit("void"), &builtin_type_void);
-    name_stack_add_type_s(ret, cstr_lit("object"), &builtin_type_object);
-    name_stack_add_type_s(ret, cstr_lit("boolean"), &builtin_type_boolean);
-    name_stack_add_type_s(ret, cstr_lit("number"), &builtin_type_number);
-    name_stack_add_type_s(ret, cstr_lit("string"), &builtin_type_string);
-    name_stack_add_type_s(ret, cstr_lit("String"), &builtin_type_string);
-    name_stack_add_type_s(ret, cstr_lit("Number"), &builtin_type_number);
-    name_stack_add_type_s(ret, cstr_lit("Boolean"), &builtin_type_boolean);
-    name_stack_add_type_s(ret, cstr_lit("Date"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("bigint"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("symbol"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("intrinsic"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("Error"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("Set"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("Array"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("Object"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("BooleanConstructor"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("NumberConstructor"), &builtin_type_any);
-    name_stack_add_type_s(ret, cstr_lit("StringConstructor"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("any"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("unknown"), &builtin_type_unkown);
+    scope_add_type_s(&my global_scope, cstr_lit("never"), &builtin_type_never);
+    scope_add_type_s(&my global_scope, cstr_lit("void"), &builtin_type_void);
+    scope_add_type_s(&my global_scope, cstr_lit("object"), &builtin_type_object);
+    scope_add_type_s(&my global_scope, cstr_lit("boolean"), &builtin_type_boolean);
+    scope_add_type_s(&my global_scope, cstr_lit("number"), &builtin_type_number);
+    scope_add_type_s(&my global_scope, cstr_lit("string"), &builtin_type_string);
+    scope_add_type_s(&my global_scope, cstr_lit("String"), &builtin_type_string);
+    scope_add_type_s(&my global_scope, cstr_lit("Number"), &builtin_type_number);
+    scope_add_type_s(&my global_scope, cstr_lit("Boolean"), &builtin_type_boolean);
+    scope_add_type_s(&my global_scope, cstr_lit("Date"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("bigint"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("symbol"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("intrinsic"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("Error"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("Set"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("Array"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("Object"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("BooleanConstructor"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("NumberConstructor"), &builtin_type_any);
+    scope_add_type_s(&my global_scope, cstr_lit("StringConstructor"), &builtin_type_any);
 
-    return ret;
+    return me;
 }
 
 static void name_stack_drop(NameStack* me) {
@@ -133,24 +119,8 @@ void name_stack_destroy(NameStack* me) {
 }
 
 // Declared and used exclusivly by scope.c
-void name_stack_push_block_scope(NameStack* me, Scope* scope) {
-    name_stack_push_frame_private(me, STACK_FRAME_BLOCK, scope);
-}
-
-// Declared and used exclusivly by scope.c
-void name_stack_push_function_scope(NameStack* me, Scope* scope) {
-    name_stack_push_frame_private(me, STACK_FRAME_FUNCTION, scope);
-}
-
-// Declared and used exclusivly by scope.c
-void name_stack_push_generic_scope(NameStack* me, Generic const* generic, Scope* scope) {
-    if (generic_empty(generic)) {
-        // Frame is only needed so a frame can be unconditionally popped later
-        name_stack_push_frame_private(me, STACK_FRAME_BLOCK, scope);
-    } else {
-        name_stack_push_frame_private(me, STACK_FRAME_GENERIC, scope);
-        generic_resolve_names(generic, me, my errs);
-    }
+void name_stack_push_scope(NameStack* me, Scope* scope) {
+    name_stack_push_frame_private(me, scope);
 }
 
 // Declared and used exclusivly by scope.c
@@ -163,289 +133,9 @@ void name_stack_pop_scope(NameStack* me, Scope* scope) {
     vec_stack_frame_pop(&my stack);
 }
 
-NameStack* name_stack_pull_frame_into_new_stack(NameStack* me) {
-    if (vec_stack_frame_size(&my stack) < 2) {
-        PANIC("More stack frames popped than pushed");
-    }
-    StackFrame frame = vec_stack_frame_pull(&my stack);
-    ASSERT(!frame.scope->current_name_stack);
-    NameStack* ret = c_new(NameStack, {
-        .stack = vec_stack_frame_init(),
-        .errs = my errs,
-    });
-    vec_stack_frame_push(&ret->stack, frame);
-    return ret;
-}
-
-Type name_stack_make_interface_from(NameStack const* ref) {
-    ASSERT(vec_stack_frame_size(&ref->stack) > 0);
-    VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_str_named_variable_ptr, vec_stack_frame_back(&ref->stack)->scope->variables) {
-        vec_interface_member_push(&members, interface_member_make(
-            i.ref->second->full,
-            span_null, // Interface name
-            false, // readonly
-            false, // optional
-            cstr_from_span(i.ref->second->name),
-            i.ref->second->name,
-            false, // name is value
-            type_clone(i.ref->second->type)
-        ));
-    }
-    return type_interface((Interface){
-        members
-    });
-}
-
-void name_stack_add_variable(NameStack* me, NamedVariable* var) {
-    name_stack_add_variable_s(me, cstr_from_span(var->name), var);
-}
-
-void name_stack_add_type(NameStack* me, NamedType* type) {
-    name_stack_add_type_s(me, cstr_from_span(type->name), type);
-}
-
-void name_stack_add_variable_s(NameStack* me, cstr name_string, NamedVariable* var) {
-    Span name_span = var->name;
-    auto result = hmap_str_named_variable_ptr_insert(&vec_stack_frame_back(&my stack)->scope->variables, name_string, var);
-    if (!result.inserted) {
-        switch (vec_stack_frame_back(&my stack)->tag) {
-            case STACK_FRAME_BLOCK:
-                error_ctx_error(
-                    my errs,
-                    name_span,
-                    2451,
-                    "Cannot redeclare block-scoped variable '%.*s'.",
-                    c_SPAN(name_span)
-                );
-                error_ctx_error(
-                    my errs,
-                    result.ref->second->name,
-                    2451,
-                    "Cannot redeclare block-scoped variable '%.*s'.",
-                    c_SPAN(result.ref->second->name)
-                );
-                break;
-
-            case STACK_FRAME_FUNCTION:
-            case STACK_FRAME_GENERIC:
-                error_ctx_error(
-                    my errs,
-                    name_span,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(name_span)
-                );
-                error_ctx_error(
-                    my errs,
-                    result.ref->second->name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(result.ref->second->name)
-                );
-                break;
-        }
-    }
-}
-
-void name_stack_add_type_s(NameStack* me, cstr name_string, NamedType* type) {
-    Span name_span = type->name;
-    auto result = hmap_str_named_type_ptr_insert(&vec_stack_frame_back(&my stack)->scope->types, name_string, type);
-    if (!result.inserted) {
-        switch (vec_stack_frame_back(&my stack)->tag) {
-            case STACK_FRAME_BLOCK:
-            case STACK_FRAME_FUNCTION:
-                error_ctx_error(
-                    my errs,
-                    result.ref->second->name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(result.ref->second->name)
-                );
-                // Fallthrough
-
-            case STACK_FRAME_GENERIC:
-                error_ctx_error(
-                    my errs,
-                    name_span,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(name_span)
-                );
-                break;
-        }
-    }
-}
-
-NamedType* name_stack_add_mergeable_type(
-    NameStack* me,
-    Span name,
-    Span declaration_full,
-    Type type,
-    Generic const* generic,
-    bool is_class
-) {
-    if (generic_empty(generic)) {
-        generic = nullptr;
-    }
-    auto existing = hmap_str_named_type_ptr_get(&vec_stack_frame_back(&my stack)->scope->types, name.sv);
-    if (!existing || !existing->second->is_mergeable || (is_class && existing->second->is_class)) {
-        // If there is no existing type by this name the normal add type process is fine
-        // Two classes can't be merged, so if we try fall back to normal duplicate name behavior
-        NamedType* ret = c_new(NamedType, {
-            .name = name,
-            .declarations = vec_span_single(declaration_full),
-            .type = type,
-            .generic = generic,
-            .is_class = is_class,
-            .is_mergeable = true,
-        });
-        // This might error and not add ret to the name stack. Even if that happens we want to return ret (the caller
-        // will own it either way)
-        name_stack_add_type_s(me, cstr_from_span(name), ret);
-        return ret;
-    } else {
-        // Merge declarations
-        NamedType* merged = existing->second;
-        // TODO: check generics are equal
-        if (!merged->is_merged) {
-            // Previously this was not a merged declaration, so we have some setup to do
-            // 1. move the previous type into the merged vec
-            // 2. set up our lazy type
-            // 3. make our type refer to our lazy type
-            // Resolving our type later (in the typecheck phase) will then result in named_type_evaluate_type() being
-            // called, which will do the actual merging
-            vec_type_push(&merged->merged_types, merged->type);
-            merged->lazy_type.tag = LAZY_TYPE_NAMED_TYPE;
-            merged->type = type_lazy(&merged->lazy_type);
-            merged->is_merged = true;
-        }
-        vec_span_push(&merged->declarations, declaration_full);
-        vec_type_push(&merged->merged_types, type);
-        merged->ref_count_minus_1++;
-        return merged;
-    }
-}
-
-void name_stack_add_namespace(NameStack* me, Span name, NameStack const* ns) {
-    // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
-    // NameStacks may not need to be clonable if that's the case
-    cstr name_string = cstr_from_span(name);
-    auto result = hmap_str_name_stack_cptr_insert(&vec_stack_frame_back(&my stack)->scope->namespaces, name_string, ns);
-    if (!result.inserted) {
-        // TODO: declaration merging
-        error_ctx_error(
-            my errs,
-            name,
-            TS_CODE_NONE,
-            "Duplicate namespace '%.*s'.",
-            c_SPAN(name)
-        );
-    }
-}
-
-void name_stack_add_import(NameStack* me, NamedImport import) {
-    auto result = hmap_str_named_import_insert(
-        &vec_stack_frame_back(&my stack)->scope->imports,
-        cstr_from_span(import.decl_name),
-        import
-    );
-    if (!result.inserted) {
-        error_ctx_error(
-            my errs,
-            import.decl_name,
-            2300,
-            "Duplicate identifier '%.*s'.",
-            c_SPAN(import.decl_name)
-        );
-    }
-}
-
-static void add_import(NameStack* me, Span decl_name, NamedImport* import) {
-    NameStack const* name_stack = import->source_file->name_stack;
-    StackFrame* stack_frame = vec_stack_frame_back(&name_stack->stack);
-    csview source_name = span_valid(import->source_name) ?
-        import->source_name.sv :
-        stack_frame->scope->default_export;
-
-    if (import->error_reported) {
-        return;
-    }
-
-    bool found = false;
-    {
-        NamedVariable* var = name_stack_get_variable(name_stack, source_name);
-        if (var) {
-            name_stack_add_variable_s(me, cstr_from_span(decl_name), var);
-            found = true;
-        }
-    }{
-        NamedType* type = name_stack_get_type(name_stack, source_name);
-        if (type) {
-            name_stack_add_type_s(me, cstr_from_span(decl_name), type);
-            found = true;
-        }
-    }{
-        NameStack const* namespace = name_stack_get_namespace(name_stack, source_name);
-        if (namespace) {
-            name_stack_add_namespace(me, decl_name, namespace);
-            found = true;
-        }
-    }
-
-    if (!found) {
-        auto result = hmap_str_named_import_get_mut(
-            &stack_frame->scope->imports,
-            source_name
-        );
-        if (result) {
-            stack_frame->scope->currently_adding_import = true;
-            if (vec_stack_frame_back(&result->second.source_file->name_stack->stack)->scope->currently_adding_import) {
-                error_ctx_error(
-                    my errs,
-                    span_between(import->decl_name, import->source_name),
-                    2303,
-                    "Circular definition of import alias '%.*s'.",
-                    c_SPAN(import->decl_name)
-                );
-                import->error_reported = true;
-            } else {
-                add_import(me, decl_name, &result->second);
-            }
-            found = true;
-            stack_frame->scope->currently_adding_import = false;
-        }
-    }
-
-    if (!found) {
-        error_ctx_error(
-            my errs,
-            import->source_name,
-            2305,
-            "Module '%s' has no exported member '%.*s'.",
-            cstr_str(&import->source_file->absolute_path),
-            c_SPAN(import->source_name)
-        );
-        import->error_reported = true;
-    }
-}
-
-void name_stack_process_imports(NameStack* me) {
-    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->scope->imports;
-    c_foreach(i, hmap_str_named_import, *imports) {
-        add_import(me, i.ref->second.decl_name, &i.ref->second);
-    }
-}
-
-void name_stack_clear_imports(NameStack* me) {
-    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->scope->imports;
-    hmap_str_named_import_drop(imports);
-    *imports = hmap_str_named_import_init();
-}
-
 bool name_stack_has_function(NameStack* me) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        if (i.ref->tag == STACK_FRAME_FUNCTION) {
+        if (i.ref->scope->tag == SCOPE_FUNCTION) {
             return true;
         }
     }
@@ -472,9 +162,9 @@ NamedType* name_stack_get_type(NameStack const* me, csview name) {
     return nullptr;
 }
 
-NameStack const* name_stack_get_namespace(NameStack const* me, csview name) {
+Scope const* name_stack_get_namespace(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        auto result = hmap_str_name_stack_cptr_get(&i.ref->scope->namespaces, name);
+        auto result = hmap_str_scope_cptr_get(&i.ref->scope->namespaces, name);
         if (result) {
             return result->second;
         }

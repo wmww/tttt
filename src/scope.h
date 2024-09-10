@@ -43,12 +43,12 @@ Type named_type_evaluate_type(NamedType* me);
 typedef struct NamedImport {
     Span decl_name;
     Span source_name;
-    SourceFile const* source_file;
+    SourceFile* source_file;
     bool error_reported;
 } NamedImport;
 
-typedef NameStack const* NameStackCPtr;
-wrap_forward_hmap_str(NameStackCPtr, name_stack_cptr);
+typedef Scope const* ScopeCPtr;
+wrap_forward_hmap_str(ScopeCPtr, scope_cptr);
 
 typedef NamedType* NamedTypePtr;
 typedef NamedVariable* NamedVariablePtr;
@@ -66,17 +66,23 @@ typedef NamedVariable* NamedVariablePtr;
 #include "wrap_stc/hmap.h"
 
 #define i_key_ssv
-#define i_val_names NameStackCPtr, name_stack_cptr
+#define i_val_names ScopeCPtr, scope_cptr
 #define i_is_forward
 #include "wrap_stc/hmap.h"
 
 typedef struct Scope {
+    enum {
+        SCOPE_DEFAULT,
+        SCOPE_FUNCTION,
+        SCOPE_GENERIC
+    } tag;
+    ErrorCtx* errs;
     csview default_export;
     bool currently_adding_import; // If the current add_import() call stack has already seen this stack frame
                                   // Threadsafety: may have to change this system
     HmapStrNamedTypePtr types;
     HmapStrNamedVariablePtr variables;
-    HmapStrNameStackCPtr namespaces;
+    HmapStrScopeCPtr namespaces;
     HmapStrNamedImport imports;
     NameStack* current_name_stack; // The NameStack this scope is in, or null if none
 } Scope;
@@ -84,11 +90,39 @@ typedef struct Scope {
 void scope_drop(Scope* me);
 Scope scope_clone(Scope me);
 
-static inline Scope scope_init() {
-    return (Scope){0};
+static inline Scope scope_init(ErrorCtx* errs) {
+    return (Scope){
+        .tag = SCOPE_DEFAULT,
+        .errs = errs,
+    };
+}
+
+static inline Scope scope_init_function(ErrorCtx* errs) {
+    return (Scope){
+        .tag = SCOPE_FUNCTION,
+        .errs = errs,
+    };
 }
 
 void scope_push_to_stack(Scope* me, NameStack* stack);
-void scope_push_to_stack_as_function(Scope* me, NameStack* stack);
-void scope_generic_push_to_stack(Scope* me, Generic* generic, NameStack* stack);
+// Cannot be a scope_init_* function because me needs to be stable
+void scope_push_generic_to_stack(Scope* me, Generic* generic, NameStack* stack);
 void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dropped while on stack
+
+void scope_add_variable(Scope* me, NamedVariable* var);
+void scope_add_type(Scope* me, NamedType* type);
+void scope_add_variable_s(Scope* me, cstr name_string, NamedVariable* var);
+void scope_add_type_s(Scope* me, cstr name_string, NamedType* type);
+NamedType* scope_add_mergeable_type(
+    Scope* me,
+    Span name,
+    Span declaration_full,
+    Type type,
+    Generic const* generic,
+    bool is_class
+);
+void scope_add_namespace(Scope* me, Span name, Scope const* scope); // scope is owned externally
+void scope_add_import(Scope* me, NamedImport import);
+
+void scope_process_imports(Scope* me);
+Type scope_make_interface_from(Scope const* me);

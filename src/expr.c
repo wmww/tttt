@@ -85,7 +85,7 @@ void expr_drop(Expr* me) {
     lazy_type_drop(&my lazy_type);
 }
 
-void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
+void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_EXPR;
 
     switch (my tag) {
@@ -112,64 +112,64 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
                 );
             }
             c_foreach(i, vec_spanned_type, my identifier.generic_params) {
-                type_resolve_names(&i.ref->type, names, errs);
+                type_lookup_names(&i.ref->type, names, errs);
             }
         }   break;
 
         case EXPR_BINARY_OP:
-            expr_resolve_names(&my binary_op->left, names, errs);
-            expr_resolve_names(&my binary_op->right, names, errs);
+            expr_lookup_names(&my binary_op->left, names, errs);
+            expr_lookup_names(&my binary_op->right, names, errs);
             break;
 
         case EXPR_UNARY_OP:
-            expr_resolve_names(&my unary_op->expr, names, errs);
+            expr_lookup_names(&my unary_op->expr, names, errs);
             break;
 
         case EXPR_PROPERTY:
-            expr_resolve_names(&my property->expr, names, errs);
-            expr_resolve_names(&my property->prop, names, errs);
+            expr_lookup_names(&my property->expr, names, errs);
+            expr_lookup_names(&my property->prop, names, errs);
             break;
 
         case EXPR_AS_TYPE:
-            expr_resolve_names(&my as_type->expr, names, errs);
-            type_resolve_names(&my as_type->type, names, errs);
+            expr_lookup_names(&my as_type->expr, names, errs);
+            type_lookup_names(&my as_type->type, names, errs);
             break;
 
         case EXPR_TERNARY:
-            expr_resolve_names(&my ternary->condition, names, errs);
-            expr_resolve_names(&my ternary->yes, names, errs);
-            expr_resolve_names(&my ternary->no, names, errs);
+            expr_lookup_names(&my ternary->condition, names, errs);
+            expr_lookup_names(&my ternary->yes, names, errs);
+            expr_lookup_names(&my ternary->no, names, errs);
             break;
 
         case EXPR_CALL:
-            expr_resolve_names(&my call->callable, names, errs);
+            expr_lookup_names(&my call->callable, names, errs);
             c_foreach(i, vec_expr, my call->args) {
-                expr_resolve_names(i.ref, names, errs);
+                expr_lookup_names(i.ref, names, errs);
             }
             break;
 
         case EXPR_FUNCTION:
-            function_impl_resolve_names(my function, names, errs);
+            function_impl_lookup_names(my function, names, errs);
             break;
 
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
-                expr_resolve_names(&i.ref->value, names, errs);
+                expr_lookup_names(&i.ref->value, names, errs);
             }
             break;
 
         case EXPR_ARRAY:
             c_foreach(i, vec_expr, my array) {
-                expr_resolve_names(i.ref, names, errs);
+                expr_lookup_names(i.ref, names, errs);
             }
             break;
 
         case EXPR_CLASS_DECL: {
-            Scope class_name_scope = scope_init();
+            Scope class_name_scope = scope_init(errs);
+            class_decl_add_names(my class_decl, &class_name_scope);
             scope_push_to_stack(&class_name_scope, names);
-            class_decl_add_names(my class_decl, names, errs);
             scope_drop(&class_name_scope);
-            class_decl_resolve_names(my class_decl, names, errs);
+            class_decl_lookup_names(my class_decl, names, errs);
         }   break;
     }
 }

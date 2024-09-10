@@ -18,7 +18,7 @@ typedef struct IdentifierType {
 
 void identifier_type_drop(IdentifierType* me);
 IdentifierType identifier_type_clone(IdentifierType me);
-void identifier_type_resolve_names(IdentifierType* me, NameStack* names, ErrorCtx* errs);
+void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx* errs);
 Type identifier_type_evaluate_type(IdentifierType* me);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
@@ -76,7 +76,7 @@ typedef struct IndexedType {
 
 void indexed_type_drop(IndexedType* me);
 IndexedType indexed_type_clone(IndexedType me);
-void indexed_type_resolve_names(IndexedType* me, NameStack* names, ErrorCtx* errs);
+void indexed_type_lookup_names(IndexedType* me, NameStack* names, ErrorCtx* errs);
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs);
 
 // Keyof
@@ -89,7 +89,7 @@ typedef struct KeyofType {
 
 void keyof_type_drop(KeyofType* me);
 KeyofType keyof_type_clone(KeyofType me);
-void keyof_type_resolve_names(KeyofType* me, NameStack* names, ErrorCtx* errs);
+void keyof_type_lookup_names(KeyofType* me, NameStack* names, ErrorCtx* errs);
 void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 
 // Ternary

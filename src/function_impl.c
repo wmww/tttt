@@ -18,27 +18,24 @@ void function_impl_drop(FunctionImpl* me) {
     block_drop(&my body);
 }
 
-void function_impl_add_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
-    ignore errs;
+void function_impl_add_names(FunctionImpl* me, Scope* scope) {
     ASSERT(!my named_var);
     my named_var = make_named_variable(my name, my full_span, type_lazy(&my lazy_type), &my generic);
-    name_stack_add_variable(names, my named_var);
+    scope_add_variable(scope, my named_var);
 }
 
-void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
+void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_FUNCTION;
 
     // Handle generics (includes adding names)
-    Scope generic_scope = scope_init();
-    scope_generic_push_to_stack(&generic_scope, &my generic, names);
+    Scope generic_scope = scope_init(errs);
+    scope_push_generic_to_stack(&generic_scope, &my generic, names);
 
-    // Push a stack frame for arguments to live in
-    Scope function_scope = scope_init();
-    scope_push_to_stack_as_function(&function_scope, names);
 
+    Scope function_scope = scope_init_function(errs);
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_add_names(&i.ref->initializer, true, names, errs);
+        initialized_binding_add_names(&i.ref->initializer, true, &function_scope);
         if (!i.ref->initializer.binding.has_explicit_type &&
             i.ref->initializer.value.tag == EXPR_IMPLICIT_ANY
         ) {
@@ -48,16 +45,21 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
         }
     }
 
+    scope_push_to_stack(&function_scope, names);
     // Now that names for all arguments are added, resolve all names
     c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_resolve_names(&i.ref->initializer, names, errs);
+        initialized_binding_lookup_names(&i.ref->initializer, names, errs);
     }
+    scope_pop_from_stack(&function_scope);
 
     // Processes names in the function body and return type. don't push a stack frame since the toplevel function body
     // should be the same namespace as the arguments
-    block_add_names(&my body, names, errs);
+    block_add_names(&my body, &function_scope);
+
+    scope_push_to_stack(&function_scope, names);
     block_lookup_names(&my body, names, errs);
-    type_resolve_names(&my ret, names, errs);
+    type_lookup_names(&my ret, names, errs);
+    scope_pop_from_stack(&function_scope);
 
     scope_drop(&function_scope);
     scope_drop(&generic_scope);

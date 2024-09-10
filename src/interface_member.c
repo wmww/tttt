@@ -36,21 +36,19 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
     return me;
 }
 
-void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
+void interface_member_lookup_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
     Scope scope;
     bool scope_initialized = false;
 
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
-        case INTERFACE_KEY_INDEX: type_resolve_names(&my key.index, names, errs); break;
-        case INTERFACE_KEY_EXPR: expr_resolve_names(my key.expr.get, names, errs); break;
+        case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index, names, errs); break;
+        case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.get, names, errs); break;
 
         case INTERFACE_KEY_MAPPED:
-            type_resolve_names(&my key.mapped.in_type, names, errs);
-            type_resolve_names(&my key.mapped.as_type, names, errs);
-            scope = scope_init();
-            scope_push_to_stack(&scope, names);
-            scope_initialized = true;
+            type_lookup_names(&my key.mapped.in_type, names, errs);
+            type_lookup_names(&my key.mapped.as_type, names, errs);
+            scope = scope_init(errs);
             if (!my key.mapped.named_type) {
                 my key.mapped.named_type = make_named_type(
                     my key.mapped.type_name,
@@ -59,13 +57,15 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
                     nullptr
                 );
             }
-            name_stack_add_type(names, my key.mapped.named_type);
+            scope_add_type(&scope, my key.mapped.named_type);
+            scope_push_to_stack(&scope, names);
+            scope_initialized = true;
             break;
 
         case INTERFACE_KEY_CALLABLE: break;
     }
 
-    type_resolve_names(&my type, names, errs);
+    type_lookup_names(&my type, names, errs);
 
     if (scope_initialized) {
         scope_drop(&scope);

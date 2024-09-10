@@ -245,7 +245,7 @@ void cstr_append_type_error_msg(cstr* target, Type const* me) {
     display_type(error_display(target), me);
 }
 
-static void type_add_inferred_names(Type const* me, NameStack* names) {
+static void type_add_inferred_names(Type const* me, Scope* scope) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -259,7 +259,7 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
 
         case TYPE_IDENTIFIER:
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
-                type_add_inferred_names(&i.ref->type, names);
+                type_add_inferred_names(&i.ref->type, scope);
             }
             break;
 
@@ -273,69 +273,69 @@ static void type_add_inferred_names(Type const* me, NameStack* names) {
                     type_ref(&my inferred.get->extends),
                     nullptr
                 );
-                name_stack_add_type(names, my inferred.get->named_type);
+                scope_add_type(scope, my inferred.get->named_type);
             }
             break;
 
         case TYPE_CALLABLE:
             c_foreach(i, vec_callable_arg, my callable->args) {
-                type_add_inferred_names(&i.ref->type, names);
+                type_add_inferred_names(&i.ref->type, scope);
             }
-            type_add_inferred_names(&my callable->ret, names);
+            type_add_inferred_names(&my callable->ret, scope);
             break;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                type_add_inferred_names(&i.ref->type, names);
+                type_add_inferred_names(&i.ref->type, scope);
             }
             break;
 
         case TYPE_ARRAY:
-            type_add_inferred_names(my array.element, names);
+            type_add_inferred_names(my array.element, scope);
             break;
 
         case TYPE_TUPLE:
             c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_add_inferred_names(&i.ref->type, names);
+                type_add_inferred_names(&i.ref->type, scope);
             }
             break;
 
         case TYPE_INDEXED:
-            type_add_inferred_names(&my indexed->interface, names);
-            type_add_inferred_names(&my indexed->index, names);
+            type_add_inferred_names(&my indexed->interface, scope);
+            type_add_inferred_names(&my indexed->index, scope);
             break;
 
         case TYPE_KEYOF:
-            type_add_inferred_names(&my keyof->interface, names);
+            type_add_inferred_names(&my keyof->interface, scope);
             break;
 
         case TYPE_TERNARY:
-            type_add_inferred_names(&my ternary->maybe_sub, names);
-            type_add_inferred_names(&my ternary->maybe_super, names);
-            type_add_inferred_names(&my ternary->if_true, names);
-            type_add_inferred_names(&my ternary->if_false, names);
+            type_add_inferred_names(&my ternary->maybe_sub, scope);
+            type_add_inferred_names(&my ternary->maybe_super, scope);
+            type_add_inferred_names(&my ternary->if_true, scope);
+            type_add_inferred_names(&my ternary->if_false, scope);
             break;
 
         case TYPE_ABSTRACTED:
-            type_add_inferred_names(&my abstracted->inner, names);
+            type_add_inferred_names(&my abstracted->inner, scope);
             break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                type_add_inferred_names(i.ref, names);
+                type_add_inferred_names(i.ref, scope);
             }
             break;
 
         case TYPE_LAZY: break;
 
         case TYPE_REF:
-            type_add_inferred_names(my ref, names);
+            type_add_inferred_names(my ref, scope);
             break;
     }
 }
 
-void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
+void type_lookup_names(Type* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -348,49 +348,49 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
         case TYPE_INFERRED:
             break;
 
-        case TYPE_IDENTIFIER: identifier_type_resolve_names(my identifier, names, errs); break;
+        case TYPE_IDENTIFIER: identifier_type_lookup_names(my identifier, names, errs); break;
         case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
-                interface_member_resolve_names(i.ref, names, errs);
+                interface_member_lookup_names(i.ref, names, errs);
             }
             break;
 
         case TYPE_ARRAY:
-            type_resolve_names(my array.element, names, errs);
+            type_lookup_names(my array.element, names, errs);
             break;
 
         case TYPE_TUPLE:
             c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_resolve_names(&i.ref->type, names, errs);
+                type_lookup_names(&i.ref->type, names, errs);
             }
             break;
 
-        case TYPE_INDEXED: indexed_type_resolve_names(my indexed, names, errs); break;
-        case TYPE_KEYOF: keyof_type_resolve_names(my keyof, names, errs); break;
+        case TYPE_INDEXED: indexed_type_lookup_names(my indexed, names, errs); break;
+        case TYPE_KEYOF: keyof_type_lookup_names(my keyof, names, errs); break;
 
         case TYPE_TERNARY: {
-            type_resolve_names(&my ternary->maybe_sub, names, errs);
-            type_resolve_names(&my ternary->maybe_super, names, errs);
+            type_lookup_names(&my ternary->maybe_sub, names, errs);
+            type_lookup_names(&my ternary->maybe_super, names, errs);
 
-            Scope inferred_types_scope = scope_init();
+            Scope inferred_types_scope = scope_init(errs);
+            type_add_inferred_names(&my ternary->maybe_super, &inferred_types_scope);
             scope_push_to_stack(&inferred_types_scope, names);
-            type_add_inferred_names(&my ternary->maybe_super, names);
-            type_resolve_names(&my ternary->if_true, names, errs);
+            type_lookup_names(&my ternary->if_true, names, errs);
             scope_drop(&inferred_types_scope);
 
-            type_resolve_names(&my ternary->if_false, names, errs);
+            type_lookup_names(&my ternary->if_false, names, errs);
         }   break;
 
         case TYPE_ABSTRACTED:
-            type_resolve_names(&my abstracted->inner, names, errs);
+            type_lookup_names(&my abstracted->inner, names, errs);
             break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                type_resolve_names(i.ref, names, errs);
+                type_lookup_names(i.ref, names, errs);
             }
             break;
 

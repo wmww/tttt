@@ -78,7 +78,7 @@ typedef struct ClassDecl {
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
-void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
-void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
+void class_decl_add_names(ClassDecl* me, Scope* scope);
+void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs);
 Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

@@ -36,8 +36,8 @@ typedef struct ImportStatement {
     VecImportItem items;
     cstr path;
     Span path_span;
-    SourceFile const* source_file;
+    SourceFile* source_file;
 } ImportStatement;
 
 void import_statement_drop(ImportStatement* me);
-void import_statement_add_names(ImportStatement* me, NameStack* names, ErrorCtx* errs);
+void import_statement_add_names(ImportStatement* me, Scope* scope);

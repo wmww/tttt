@@ -42,3 +42,6 @@ void uninhibit_nonfatals();
         NONFATAL("%s", cstr_str(&tmp)); \
         cstr_drop(&tmp); \
     } while (false)
+
+// Used so we can easily find where null error contexts are being used to refactor them later
+#define null_error_ctx nullptr

@@ -14,11 +14,10 @@ void interface_decl_drop(InterfaceDecl* me) {
     named_type_destroy(my named_type);
 }
 
-void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    ignore errs;
+void interface_decl_add_names(InterfaceDecl* me, Scope* scope) {
     ASSERT(!my named_type);
-    my named_type = name_stack_add_mergeable_type(
-        names,
+    my named_type = scope_add_mergeable_type(
+        scope,
         my name,
         my full_span,
         type_lazy(&my lazy_type),
@@ -27,17 +26,17 @@ void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* err
     );
 }
 
-void interface_decl_resolve_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
+void interface_decl_lookup_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_INTERFACE_DECL;
-    Scope generic_scope = scope_init();
-    scope_generic_push_to_stack(&generic_scope, &my generic, names);
+    Scope generic_scope = scope_init(errs);
+    scope_push_generic_to_stack(&generic_scope, &my generic, names);
     c_foreach(i, vec_spanned_type, my extends) {
-        type_resolve_names(&i.ref->type, names, errs);
+        type_lookup_names(&i.ref->type, names, errs);
     }
-    Scope block_scope = scope_init();
+    Scope block_scope = scope_init(errs);
+    scope_add_type_s(&block_scope, cstr_lit("this"), my named_type);
     scope_push_to_stack(&block_scope, names);
-    name_stack_add_type_s(names, cstr_lit("this"), my named_type);
-    type_resolve_names(&my type, names, errs);
+    type_lookup_names(&my type, names, errs);
     scope_drop(&block_scope);
     scope_drop(&generic_scope);
 }

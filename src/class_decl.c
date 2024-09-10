@@ -76,23 +76,23 @@ void class_decl_drop(ClassDecl* me) {
     type_drop(&my class_identifier_type);
 }
 
-void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
+void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
-            function_impl_resolve_names(&my constructor.func, names, errs);
+            function_impl_lookup_names(&my constructor.func, names, errs);
             break;
 
         case CLASS_ITEM_MEMBER:
-            function_impl_resolve_names(&my member.func, names, errs);
+            function_impl_lookup_names(&my member.func, names, errs);
             break;
 
         case CLASS_ITEM_FIELD:
-            type_resolve_names(&my field.explicit_type, names, errs);
-            expr_resolve_names(&my field.value, names, errs);
+            type_lookup_names(&my field.explicit_type, names, errs);
+            expr_lookup_names(&my field.value, names, errs);
             break;
 
         case CLASS_ITEM_INTERFACE_MEMBER:
-            interface_member_resolve_names(&my interface_memeber, names, errs);
+            interface_member_lookup_names(&my interface_memeber, names, errs);
             break;
 
         case CLASS_ITEM_STATIC_BLOCK:
@@ -101,10 +101,10 @@ void class_item_resolve_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+void class_decl_add_names(ClassDecl* me, Scope* scope) {
     ASSERT(!my instance_named_type);
-    my instance_named_type = name_stack_add_mergeable_type(
-        names,
+    my instance_named_type = scope_add_mergeable_type(
+        scope,
         my name,
         my full_span,
         type_lazy(&my instance_type),
@@ -150,13 +150,13 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
 
     ASSERT(!my class_named_var);
     my class_named_var = make_named_variable(my name, my full_span, type_ref(&my class_identifier_type), &my generic);
-    name_stack_add_variable(names, my class_named_var);
+    scope_add_variable(scope, my class_named_var);
 
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
             if (i.ref->constructor.func.ret_explicit) {
                 error_ctx_error(
-                    errs,
+                    scope->errs,
                     i.ref->constructor.func.ret_span,
                     1093,
                     "Type annotation cannot appear on a constructor declaration."
@@ -170,36 +170,36 @@ void class_decl_add_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-void class_decl_resolve_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
     my class_type.tag = LAZY_TYPE_CLASS_CLASS;
 
-    Scope generic_scope = scope_init();
-    scope_generic_push_to_stack(&generic_scope, &my generic, names);
+    Scope generic_scope = scope_init(errs);
+    scope_push_generic_to_stack(&generic_scope, &my generic, names);
 
-    expr_resolve_names(&my extends, names, errs);
+    expr_lookup_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
-        type_resolve_names(i.ref, names, errs);
+        type_lookup_names(i.ref, names, errs);
     }
 
-    Scope class_this_scope = scope_init();
+    Scope class_this_scope = scope_init(errs);
+    scope_add_variable_s(&class_this_scope, cstr_lit("this"), my class_named_var);
+    scope_add_type_s(&class_this_scope, cstr_lit("this"), my class_named_type);
     scope_push_to_stack(&class_this_scope, names);
-    name_stack_add_variable_s(names, cstr_lit("this"), my class_named_var);
-    name_stack_add_type_s(names, cstr_lit("this"), my class_named_type);
     c_foreach(i, vec_class_item, my items) {
         if (class_item_is_static(i.ref)) {
-            class_item_resolve_names(i.ref, names, errs);
+            class_item_lookup_names(i.ref, names, errs);
         }
     }
     scope_drop(&class_this_scope);
 
-    Scope instance_this_scope = scope_init();
+    Scope instance_this_scope = scope_init(errs);
+    scope_add_variable_s(&instance_this_scope, cstr_lit("this"), my instance_named_var);
+    scope_add_type_s(&instance_this_scope, cstr_lit("this"), my instance_named_type);
     scope_push_to_stack(&instance_this_scope, names);
-    name_stack_add_variable_s(names, cstr_lit("this"), my instance_named_var);
-    name_stack_add_type_s(names, cstr_lit("this"), my instance_named_type);
     c_foreach(i, vec_class_item, my items) {
         if (!class_item_is_static(i.ref)) {
-            class_item_resolve_names(i.ref, names, errs);
+            class_item_lookup_names(i.ref, names, errs);
         }
     }
     scope_drop(&instance_this_scope);

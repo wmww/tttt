@@ -37,17 +37,20 @@ Generic generic_clone(Generic me) {
     };
 }
 
-void generic_resolve_names(Generic const* me, NameStack* names, ErrorCtx* errs) {
+void generic_add_names(Generic const* me, Scope* scope) {
     c_foreach(i, vec_generic_item, my items) {
         if (!i.ref->named_type) {
             i.ref->owns_named_type = true;
             i.ref->named_type = make_named_type(i.ref->name, i.ref->name, type_ref(&i.ref->extends), nullptr);
         }
-        name_stack_add_type(names, i.ref->named_type);
+        scope_add_type(scope, i.ref->named_type);
     }
+}
+
+void generic_lookup_names(Generic const* me, NameStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
-        type_resolve_names(&i.ref->extends, names, errs);
-        type_resolve_names(&i.ref->fallback, names, errs);
+        type_lookup_names(&i.ref->extends, names, errs);
+        type_lookup_names(&i.ref->fallback, names, errs);
     }
 }
 
