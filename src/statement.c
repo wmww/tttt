@@ -60,6 +60,7 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
 
 void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
+    namespace_drop(&my namespace);
     name_stack_destroy(my name_stack);
     type_drop(&my value_type);
     named_type_destroy(my value_named_type);
@@ -67,11 +68,13 @@ void namespace_decl_drop(NamespaceDecl* me) {
 }
 
 void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    name_stack_push_block_frame(names);
+    my namespace = namespace_init();
+    namespace_push_to_stack(&my namespace, names);
     c_foreach(i, vec_statement, my contents.statements) {
         statement_add_names(i.ref, names, errs);
     }
     ASSERT(!my name_stack);
+    my namespace.current_name_stack = nullptr;
     my name_stack = name_stack_pull_frame_into_new_stack(names);
 
     name_stack_add_namespace(names, my name, my name_stack);
@@ -96,11 +99,11 @@ void namespace_decl_add_names(NamespaceDecl* me, NameStack* names, ErrorCtx* err
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
-    name_stack_push_name_stack_frame(names, my name_stack);
+    namespace_push_to_stack(&my namespace, names);
     c_foreach(i, vec_statement, my contents.statements) {
         statement_resolve_names(i.ref, names, errs);
     }
-    name_stack_pop_frame(names);
+    namespace_pop_from_stack(&my namespace);
 }
 
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
@@ -309,27 +312,30 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                 expr_resolve_names(i.ref, names, errs);
             }
             c_foreach(i, vec_statement, my if_else.statements) {
-                name_stack_push_block_frame(names);
+                Namespace branch_ns = namespace_init();
+                namespace_push_to_stack(&branch_ns, names);
                 statement_add_names(i.ref, names, errs);
                 statement_resolve_names(i.ref, names, errs);
-                name_stack_pop_frame(names);
+                namespace_drop(&branch_ns);
             }
             break;
 
-        case STATEMENT_FOR_LOOP:
-            name_stack_push_block_frame(names);
+        case STATEMENT_FOR_LOOP: {
+            Namespace loop_ns = namespace_init();
+            namespace_push_to_stack(&loop_ns, names);
             statement_add_names(&my for_loop->initialization, names, errs);
             statement_resolve_names(&my for_loop->initialization, names, errs);
             expr_resolve_names(&my for_loop->condition, names, errs);
             expr_resolve_names(&my for_loop->afterthought, names, errs);
             statement_add_names(&my for_loop->body, names, errs);
             statement_resolve_names(&my for_loop->body, names, errs);
-            name_stack_pop_frame(names);
-            break;
+            namespace_drop(&loop_ns);
+        }   break;
 
-        case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_FOR_EACH_LOOP: {
             my for_each_loop->var_type.tag = LAZY_TYPE_FOR_EACH_LOOP_VAR;
-            name_stack_push_block_frame(names);
+            Namespace loop_ns = namespace_init();
+            namespace_push_to_stack(&loop_ns, names);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
                     VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
@@ -382,12 +388,13 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             expr_resolve_names(&my for_each_loop->iterable, names, errs);
             statement_add_names(&my for_each_loop->body, names, errs);
             statement_resolve_names(&my for_each_loop->body, names, errs);
-            name_stack_pop_frame(names);
-            break;
+            namespace_drop(&loop_ns);
+        }   break;
 
-        case STATEMENT_SWITCH:
+        case STATEMENT_SWITCH: {
             expr_resolve_names(&my switch_->needle, names, errs);
-            name_stack_push_block_frame(names);
+            Namespace switch_ns = namespace_init();
+            namespace_push_to_stack(&switch_ns, names);
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 if (i.ref->is_pattern) {
                     expr_resolve_names(&i.ref->pattern, names, errs);
@@ -399,20 +406,21 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
                     statement_resolve_names(j.ref, names, errs);
                 }
             }
-            name_stack_pop_frame(names);
-            break;
+            namespace_drop(&switch_ns);
+        }   break;
 
-        case STATEMENT_TRY_CATCH:
+        case STATEMENT_TRY_CATCH: {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
-            name_stack_push_block_frame(names);
+            Namespace catch_ns = namespace_init();
+            namespace_push_to_stack(&catch_ns, names);
             binding_add_names(&my try_catch->catch_var, type_any, names, errs);
             binding_resolve_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);
-            name_stack_pop_frame(names);
+            namespace_drop(&catch_ns);
 
             block_resolve_names(&my try_catch->finally_block, names, errs);
-            break;
+        }   break;
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -439,7 +447,8 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION: {
-            name_stack_push_block_frame(names);
+            Namespace this_ns = namespace_init();
+            namespace_push_to_stack(&this_ns, names);
 
             static NamedVariable this_var;
             this_var = (NamedVariable){ .type = type_any };
@@ -447,18 +456,19 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
             function_impl_resolve_names(&my decl.function, names, errs);
 
-            name_stack_pop_frame(names);
+            namespace_drop(&this_ns);
         }   break;
 
         case STATEMENT_DECL_CLASS:
             class_decl_resolve_names(my decl.class, names, errs);
             break;
 
-        case STATEMENT_DECL_TYPE:
-            name_stack_push_generic_frame(names, &my decl.type.generic);
+        case STATEMENT_DECL_TYPE: {
+            Namespace generic_ns = namespace_init();
+            namespace_generic_push_to_stack(&generic_ns, &my decl.type.generic, names);
             type_resolve_names(&my decl.type.type, names, errs);
-            name_stack_pop_frame(names);
-            break;
+            namespace_drop(&generic_ns);
+        }   break;
 
         case STATEMENT_DECL_INTERFACE:
             interface_decl_resolve_names(my decl.interface, names, errs);

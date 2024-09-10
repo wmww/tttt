@@ -78,6 +78,7 @@ typedef struct Namespace {
     HmapStrNamedVariablePtr variables;
     HmapStrNameStackCPtr namespaces;
     HmapStrNamedImport imports;
+    NameStack* current_name_stack; // The NameStack this namespace is in, or null if none
 } Namespace;
 
 void namespace_drop(Namespace* me);
@@ -86,3 +87,8 @@ Namespace namespace_clone(Namespace me);
 static inline Namespace namespace_init() {
     return (Namespace){0};
 }
+
+void namespace_push_to_stack(Namespace* me, NameStack* stack);
+void namespace_push_to_stack_as_function(Namespace* me, NameStack* stack);
+void namespace_generic_push_to_stack(Namespace* me, Generic* generic, NameStack* stack);
+void namespace_pop_from_stack(Namespace* me); // This call is not needed if namespace is dropped while on stack

@@ -164,12 +164,13 @@ void expr_resolve_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             }
             break;
 
-        case EXPR_CLASS_DECL:
-            name_stack_push_block_frame(names);
+        case EXPR_CLASS_DECL: {
+            Namespace class_name_ns = namespace_init();
+            namespace_push_to_stack(&class_name_ns, names);
             class_decl_add_names(my class_decl, names, errs);
-            name_stack_pop_frame(names);
+            namespace_drop(&class_name_ns);
             class_decl_resolve_names(my class_decl, names, errs);
-            break;
+        }   break;
     }
 }
 

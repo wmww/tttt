@@ -130,7 +130,7 @@ static bool load_test_source(BaselineTestCase* me) {
 }
 
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
-    ASSERT_FMT(source, "tests detected null span");
+    PANIC_IF(!source, "Tests detected null span");
     c_foreach(i, vec_baseline_test_file, my files) {
         if (i.ref->source == source) {
             return i.ref;

@@ -370,17 +370,18 @@ void type_resolve_names(Type* me, NameStack* names, ErrorCtx* errs) {
         case TYPE_INDEXED: indexed_type_resolve_names(my indexed, names, errs); break;
         case TYPE_KEYOF: keyof_type_resolve_names(my keyof, names, errs); break;
 
-        case TYPE_TERNARY:
+        case TYPE_TERNARY: {
             type_resolve_names(&my ternary->maybe_sub, names, errs);
             type_resolve_names(&my ternary->maybe_super, names, errs);
 
-            name_stack_push_block_frame(names);
+            Namespace inferred_types_ns = namespace_init();
+            namespace_push_to_stack(&inferred_types_ns, names);
             type_add_inferred_names(&my ternary->maybe_super, names);
             type_resolve_names(&my ternary->if_true, names, errs);
-            name_stack_pop_frame(names);
+            namespace_drop(&inferred_types_ns);
 
             type_resolve_names(&my ternary->if_false, names, errs);
-            break;
+        }   break;
 
         case TYPE_ABSTRACTED:
             type_resolve_names(&my abstracted->inner, names, errs);

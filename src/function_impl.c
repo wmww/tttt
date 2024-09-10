@@ -29,10 +29,12 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     my lazy_type.tag = LAZY_TYPE_FUNCTION;
 
     // Handle generics (includes adding names)
-    name_stack_push_generic_frame(names, &my generic);
+    Namespace generic_ns = namespace_init();
+    namespace_generic_push_to_stack(&generic_ns, &my generic, names);
 
     // Push a stack frame for arguments to live in
-    name_stack_push_function_frame(names);
+    Namespace function_ns = namespace_init();
+    namespace_push_to_stack_as_function(&function_ns, names);
 
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_function_arg, my args) {
@@ -57,11 +59,8 @@ void function_impl_resolve_names(FunctionImpl* me, NameStack* names, ErrorCtx* e
     block_lookup_names(&my body, names, errs);
     type_resolve_names(&my ret, names, errs);
 
-    // Pop the stack frame we pushed above
-    name_stack_pop_frame(names);
-
-    // Pop the generics frame
-    name_stack_pop_frame(names);
+    namespace_drop(&function_ns);
+    namespace_drop(&generic_ns);
 }
 
 static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me) {

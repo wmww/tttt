@@ -37,6 +37,9 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
 }
 
 void interface_member_resolve_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
+    Namespace namespace;
+    bool namespace_initialized = false;
+
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
         case INTERFACE_KEY_INDEX: type_resolve_names(&my key.index, names, errs); break;
@@ -45,7 +48,9 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
         case INTERFACE_KEY_MAPPED:
             type_resolve_names(&my key.mapped.in_type, names, errs);
             type_resolve_names(&my key.mapped.as_type, names, errs);
-            name_stack_push_block_frame(names);
+            namespace = namespace_init();
+            namespace_push_to_stack(&namespace, names);
+            namespace_initialized = true;
             if (!my key.mapped.named_type) {
                 my key.mapped.named_type = make_named_type(
                     my key.mapped.type_name,
@@ -62,8 +67,8 @@ void interface_member_resolve_names(InterfaceMember* me, NameStack* names, Error
 
     type_resolve_names(&my type, names, errs);
 
-    if (my key.tag == INTERFACE_KEY_MAPPED) {
-        name_stack_pop_frame(names);
+    if (namespace_initialized) {
+        namespace_drop(&namespace);
     }
 }
 

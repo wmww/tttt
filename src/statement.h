@@ -6,6 +6,7 @@
 #include "function_impl.h"
 #include "interface_decl.h"
 #include "binding.h"
+#include "namespace.h"
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct StatementCtx StatementCtx;
@@ -51,6 +52,7 @@ typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     Block contents;
+    Namespace namespace;
     NameStack* name_stack; // owned
     Type value_type;
     NamedType* value_named_type;

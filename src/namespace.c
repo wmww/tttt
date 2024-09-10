@@ -1,4 +1,10 @@
 #include "namespace.h"
+#include "name_stack.h"
+
+void name_stack_push_block_namespace(NameStack* me, Namespace* namespace);
+void name_stack_push_function_namespace(NameStack* me, Namespace* namespace);
+void name_stack_push_generic_namespace(NameStack* me, Generic const* generic, Namespace* namespace);
+void name_stack_pop_namespace(NameStack* me, Namespace* namespace);
 
 NamedVariable* make_named_variable(Span name, Span declaration_full, Type type, Generic const* generic) {
     if (generic_empty(generic)) {
@@ -57,6 +63,9 @@ Type named_type_evaluate_type(NamedType* me) {
 }
 
 void namespace_drop(Namespace* me) {
+    if (my current_name_stack) {
+        name_stack_pop_namespace(my current_name_stack, me);
+    }
     hmap_str_named_type_ptr_drop(&my types);
     hmap_str_named_variable_ptr_drop(&my variables);
     hmap_str_name_stack_cptr_drop(&my namespaces);
@@ -68,5 +77,30 @@ Namespace namespace_clone(Namespace me) {
     me.variables = hmap_str_named_variable_ptr_clone(me.variables);
     me.namespaces = hmap_str_name_stack_cptr_clone(me.namespaces);
     me.imports = hmap_str_named_import_clone(me.imports);
+    me.current_name_stack = nullptr;
     return me;
+}
+
+void namespace_push_to_stack(Namespace* me, NameStack* stack) {
+    ASSERT(!my current_name_stack);
+    my current_name_stack = stack;
+    name_stack_push_block_namespace(stack, me);
+}
+
+void namespace_push_to_stack_as_function(Namespace* me, NameStack* stack) {
+    ASSERT(!my current_name_stack);
+    my current_name_stack = stack;
+    name_stack_push_function_namespace(stack, me);
+}
+
+void namespace_generic_push_to_stack(Namespace* me, Generic* generic, NameStack* stack) {
+    ASSERT(!my current_name_stack);
+    my current_name_stack = stack;
+    name_stack_push_generic_namespace(stack, generic, me);
+}
+
+void namespace_pop_from_stack(Namespace* me) {
+    ASSERT(my current_name_stack);
+    name_stack_pop_namespace(my current_name_stack, me);
+    my current_name_stack = nullptr;
 }

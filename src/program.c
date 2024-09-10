@@ -142,7 +142,7 @@ SourceFile const* program_load(Program* me, const char* path) {
         }
 
         // Push a block frame for this source file's name stack, it will be popped when traversing the hashmap below
-        name_stack_push_block_frame(source->name_stack);
+        namespace_push_to_stack(&source->namespace, source->name_stack);
         block_add_names(&source->ast, source->name_stack, my errs);
 
         // Add it to the list to process below

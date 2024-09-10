@@ -29,15 +29,17 @@ void interface_decl_add_names(InterfaceDecl* me, NameStack* names, ErrorCtx* err
 
 void interface_decl_resolve_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_INTERFACE_DECL;
-    name_stack_push_generic_frame(names, &my generic);
+    Namespace generic_ns = namespace_init();
+    namespace_generic_push_to_stack(&generic_ns, &my generic, names);
     c_foreach(i, vec_spanned_type, my extends) {
         type_resolve_names(&i.ref->type, names, errs);
     }
-    name_stack_push_block_frame(names);
+    Namespace block_ns = namespace_init();
+    namespace_push_to_stack(&block_ns, names);
     name_stack_add_type_s(names, cstr_lit("this"), my named_type);
     type_resolve_names(&my type, names, errs);
-    name_stack_pop_frame(names);
-    name_stack_pop_frame(names);
+    namespace_drop(&block_ns);
+    namespace_drop(&generic_ns);
 }
 
 Type interface_decl_evaluate_type(InterfaceDecl* me) {
