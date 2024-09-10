@@ -1,53 +1,8 @@
 #pragma once
 
-#include "type.h"
-#include "expr.h"
-#include "generic.h"
-#include "display.h" // HsetNamedTypeCPtr is forward-declared in display.h for reasons
+#include "namespace.h"
 
 typedef struct NameStack NameStack;
-
-typedef struct NamedVariable {
-    Span name;
-    Span full;
-    Type type;
-    Generic const* generic;
-} NamedVariable;
-
-NamedVariable* make_named_variable(Span name, Span declaration_full, Type type, Generic const* generic);
-void named_variable_destroy(NamedVariable* me);
-
-typedef struct NamedType {
-    Span name;
-    VecSpan declarations;
-    Type type;
-    Generic const* generic;
-    bool is_class;
-    bool is_typeof_class;
-    bool is_mergeable;
-    bool is_merged;
-    VecType merged_types;   // All the interface types that will be merged together to make our type, not used if this
-                            // is not a merged declaration and cleared once the merge happens
-    LazyType lazy_type; // Only used if this is a merged declaration. In that case, `type` is set to be a lazy that
-                        // points to this LazyType.
-    // THREADSAFETY: this will need to be atomic
-    intptr_t ref_count_minus_1; // 0 means there is 1 reference
-} NamedType;
-
-#define i_key_names NamedTypeCPtr, named_type_cptr
-#define i_is_forward
-#include "wrap_stc/hset.h"
-
-NamedType* make_named_type(Span name, Span declaration_full, Type type, Generic const* generic);
-void named_type_destroy(NamedType* me);
-Type named_type_evaluate_type(NamedType* me);
-
-typedef struct NamedImport {
-    Span decl_name;
-    Span source_name;
-    SourceFile const* source_file;
-    bool error_reported;
-} NamedImport;
 
 NameStack* name_stack_new(ErrorCtx* errs);
 void name_stack_destroy(NameStack* me);
