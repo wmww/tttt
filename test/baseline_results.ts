@@ -4801,7 +4801,7 @@ const baselines = {
         types: true,
     },
     'commentsOnRequireStatement': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11811,7 +11811,7 @@ const baselines = {
         types: false,
     },
     'exportDeclarationWithModuleSpecifierNameOnNextLine1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24586,7 +24586,7 @@ const baselines = {
         types: false,
     },
     'reexportNameAliasedAndHoisted': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

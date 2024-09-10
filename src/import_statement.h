@@ -30,6 +30,7 @@ void import_item_drop(ImportItem* me);
 typedef struct ImportStatement {
     Span import_keyword_span;
     bool type_only;
+    bool is_export;
     Span default_name;
     Span module_name;
     VecImportItem items;

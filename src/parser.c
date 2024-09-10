@@ -2806,7 +2806,10 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     Anchor a = anchor(&p);
     ImportStatement import = {0};
 
-    if (!hop_start_if_ends_on_word_break(&p, "import")) {
+    if (hop_start_if_ends_on_word_break(&p, "import")) {
+    } else if (hop_start_if_ends_on_word_break(&p, "export")) {
+        import.is_export = true;
+    } else {
         return parse_fail(&p);
     }
     import.import_keyword_span = span_from(a);
@@ -2846,7 +2849,12 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     }
 
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
-        expected_token_error(&p, "from");
+        if (import.is_export) {
+            import_statement_drop(&import);
+            return parse_fail(&p);
+        } else {
+            expected_token_error(&p, "from");
+        }
     }
     hop_whitespace(&p);
 
