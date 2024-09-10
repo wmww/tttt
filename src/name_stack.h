@@ -46,6 +46,7 @@ typedef struct NamedImport {
     Span decl_name;
     Span source_name;
     SourceFile const* source_file;
+    bool error_reported;
 } NamedImport;
 
 NameStack* name_stack_new(ErrorCtx* errs);

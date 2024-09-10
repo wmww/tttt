@@ -88,6 +88,8 @@ typedef enum StackFrameTag {
 typedef struct StackFrame {
     StackFrameTag tag;
     csview default_export;
+    bool currently_adding_import; // If the current add_import() call stack has already seen this stack frame
+                                  // Threadsafety: may have to change this system
     HmapStrNamedTypePtr types;
     HmapStrNamedVariablePtr variables;
     HmapStrNameStackCPtr namespaces;
@@ -123,9 +125,6 @@ void stack_frame_drop(StackFrame* me) {
     hmap_str_named_type_ptr_drop(&my types);
     hmap_str_named_variable_ptr_drop(&my variables);
     hmap_str_name_stack_cptr_drop(&my namespaces);
-    if (hmap_str_named_import_size(&my imports)) {
-        NONFATAL("Stack frame dropped with imports not empty");
-    }
     hmap_str_named_import_drop(&my imports);
 }
 
@@ -450,41 +449,62 @@ void name_stack_add_import(NameStack* me, NamedImport import) {
     }
 }
 
-static void add_import(NameStack* me, Span name, NamedImport const* import) {
+static void add_import(NameStack* me, Span decl_name, NamedImport* import) {
     NameStack const* name_stack = import->source_file->name_stack;
+    StackFrame* stack_frame = vec_stack_frame_back(&name_stack->stack);
     csview source_name = span_valid(import->source_name) ?
         import->source_name.sv :
-        vec_stack_frame_back(&name_stack->stack)->default_export;
+        stack_frame->default_export;
+
+    if (import->error_reported) {
+        return;
+    }
+
     bool found = false;
     {
         NamedVariable* var = name_stack_get_variable(name_stack, source_name);
         if (var) {
-            name_stack_add_variable_s(me, cstr_from_span(import->decl_name), var);
+            name_stack_add_variable_s(me, cstr_from_span(decl_name), var);
             found = true;
         }
     }{
         NamedType* type = name_stack_get_type(name_stack, source_name);
         if (type) {
-            name_stack_add_type_s(me, cstr_from_span(import->decl_name), type);
+            name_stack_add_type_s(me, cstr_from_span(decl_name), type);
             found = true;
         }
     }{
         NameStack const* namespace = name_stack_get_namespace(name_stack, source_name);
         if (namespace) {
-            name_stack_add_namespace(me, import->decl_name, namespace);
+            name_stack_add_namespace(me, decl_name, namespace);
             found = true;
         }
     }
+
     if (!found) {
-        auto result = hmap_str_named_import_get(
-            &vec_stack_frame_back(&name_stack->stack)->imports,
+        auto result = hmap_str_named_import_get_mut(
+            &stack_frame->imports,
             source_name
         );
         if (result) {
-            add_import(me, name, &result->second);
+            stack_frame->currently_adding_import = true;
+            if (vec_stack_frame_back(&result->second.source_file->name_stack->stack)->currently_adding_import) {
+                error_ctx_error(
+                    my errs,
+                    span_between(import->decl_name, import->source_name),
+                    2303,
+                    "Circular definition of import alias '%.*s'.",
+                    c_SPAN(import->decl_name)
+                );
+                import->error_reported = true;
+            } else {
+                add_import(me, decl_name, &result->second);
+            }
             found = true;
+            stack_frame->currently_adding_import = false;
         }
     }
+
     if (!found) {
         error_ctx_error(
             my errs,
@@ -494,23 +514,7 @@ static void add_import(NameStack* me, Span name, NamedImport const* import) {
             cstr_str(&import->source_file->absolute_path),
             c_SPAN(import->source_name)
         );
-
-#define BUILTIN_VAR(name, t) \
-    static NamedVariable name = { 0 }; \
-    name.type = t;
-
-#define BUILTIN_TYPE(name, t) \
-    static NamedType name = { 0 }; \
-    name.type = t
-
-    BUILTIN_VAR(builtin_var_any, type_any);
-    BUILTIN_TYPE(builtin_type_any, type_any);
-
-#undef BUILTIN_VAR
-#undef BUILTIN_TYPE
-
-        name_stack_add_variable_s(me, cstr_from_span(import->decl_name), &builtin_var_any);
-        name_stack_add_type_s(me, cstr_from_span(import->decl_name), &builtin_type_any);
+        import->error_reported = true;
     }
 }
 
@@ -519,6 +523,10 @@ void name_stack_process_imports(NameStack* me) {
     c_foreach(i, hmap_str_named_import, *imports) {
         add_import(me, i.ref->second.decl_name, &i.ref->second);
     }
+}
+
+void name_stack_clear_imports(NameStack* me) {
+    HmapStrNamedImport* imports = &vec_stack_frame_back(&my stack)->imports;
     hmap_str_named_import_drop(imports);
     *imports = hmap_str_named_import_init();
 }

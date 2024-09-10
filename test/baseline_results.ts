@@ -2931,7 +2931,7 @@ const baselines = {
         types: false,
     },
     'caseInsensitiveFileSystemWithCapsImportTypeDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44341,7 +44341,7 @@ const baselines = {
         types: undefined,
     },
     'exportDeclaration_moduleSpecifier-isolatedModules': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46646,7 +46646,7 @@ const baselines = {
         types: false,
     },
     'jsdocLinkTag1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46656,12 +46656,12 @@ const baselines = {
         types: false,
     },
     'jsdocLinkTag3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'jsdocLinkTag4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

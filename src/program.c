@@ -85,7 +85,9 @@ static SourceFile const* program_add_source(Program* me, const char* path) {
 }
 
 static void program_handle_import(Program* me, ImportStatement* import) {
-    cstr source_path = cstr_clone(import->path);
+    cstr start_path = cstr_from_sv(dirname_of(cstr_str(&import->import_keyword_span.source->absolute_path)));
+    cstr source_path = absolute_path_of(cstr_str(&start_path), cstr_str(&import->path));
+    cstr_drop(&start_path);
     if (fs_is_directory(my fs, cstr_str(&source_path))) {
         cstr_append_lit(&source_path, "/index.ts");
     } else {
