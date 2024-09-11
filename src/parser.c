@@ -2823,13 +2823,21 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     if (hop_char(&p, '*')) {
         hop_whitespace(&p);
 
-        if (!hop_start_if_ends_on_word_break(&p, "as")) {
-            expected_token_error(&p, "as");
-        }
-        hop_whitespace(&p);
+        if (import.is_export) {
+            if (hop_start_if_ends_on_word_break(&p, "as")) {
+                hop_whitespace(&p);
+                expect_identifier(&p, &import.module_name);
+                hop_whitespace(&p);
+            }
+        } else {
+            if (!hop_start_if_ends_on_word_break(&p, "as")) {
+                expected_token_error(&p, "as");
+            }
+            hop_whitespace(&p);
 
-        expect_identifier(&p, &import.module_name);
-        hop_whitespace(&p);
+            expect_identifier(&p, &import.module_name);
+            hop_whitespace(&p);
+        }
     } else {
         if (parse_identifier(&p, &import.default_name)) {
             hop_whitespace(&p);
