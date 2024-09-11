@@ -164,15 +164,6 @@ SourceFile const* program_load(Program* me, const char* path) {
 
     name_stack_destroy(names);
 
-    /*
-    c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
-        SourceFile* source = *i.ref;
-        // Pop the stack frame we pushed above. Do this in it's own loop since files might need the topmost name stack
-        // from other files to lookup names
-        name_stack_pop_frame(source->name_stack);
-    }
-    */
-
     vec_source_file_ptr_drop(&in_flight_source_files);
     my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
@@ -190,4 +181,8 @@ void program_typecheck(Program* me, bool show_errors) {
     }
 
     my errs->phase = ERROR_PHASE_UNKOWN;
+}
+
+intptr_t program_get_file_count(Program const* me) {
+    return hmap_str_box_source_file_size(&my source_files);
 }

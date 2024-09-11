@@ -57,9 +57,11 @@ int main(int argc, const char** argv) {
         ret = 1;
     }
 
-    printf("%sRunning...%s\n", color_good, color_normal);
-    run_in_engine(source, arc_js_object_init());
-    printf("%sRun succeeded%s\n", color_good, color_normal);
+    printf("%sChecked %zd files%s\n", color_good, program_get_file_count(program), color_normal);
+
+    //printf("%sRunning...%s\n", color_good, color_normal);
+    //run_in_engine(source, arc_js_object_init());
+    //printf("%sRun succeeded%s\n", color_good, color_normal);
 
     program_destroy(program);
     error_ctx_drop(&errs);

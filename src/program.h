@@ -22,3 +22,6 @@ SourceFile const* program_load(Program* me, const char* path);
 // Typechecks the loaded file and all imports, does not typecheck preloaded files
 // TODO: Typechecking shouldn't be required at all if show_errors is false, so remove this arg
 void program_typecheck(Program* me, bool show_errors);
+
+// Returns the number of source files loaded or imported
+intptr_t program_get_file_count(Program const* me);
