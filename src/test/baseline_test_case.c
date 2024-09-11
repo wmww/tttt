@@ -277,12 +277,13 @@ static bool line_effectively_empty(csview line) {
     );
 }
 
-static bool render_lines_woven_with_file(
+static void render_lines_woven_with_file(
     cstr* target,
     const char* source_path,
     bool is_errors,
     csview source_contents,
-    VecLineNumberedStr const* lines
+    VecLineNumberedStr const* lines,
+    bool is_last_file
 ) {
     const char* line_indent = is_errors ? "    " : "";
     unsigned line = 0;
@@ -335,7 +336,9 @@ static bool render_lines_woven_with_file(
         cstr_append_fmt(target, "\r\n%s", line_indent);
     }
 
-    return newline_if_next_line_non_empty;
+    if (is_last_file && !is_errors && newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
+        cstr_append(target, "\r\n");
+    }
 }
 
 void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) {
@@ -372,42 +375,37 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
             cstr_str(&i.ref->path),
             true,
             cstr_sv(&i.ref->source->contents),
-            &i.ref->errors
+            &i.ref->errors,
+            i.ref == vec_baseline_test_file_back(&my files)
         );
     }
 }
 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_fmt(target, "//// [%s] ////\r\n\r\n", relative_test_path(my source_path));
-    bool newline_if_next_line_non_empty = false;
     c_foreach(i, vec_baseline_test_file, my files) {
-        newline_if_next_line_non_empty = render_lines_woven_with_file(
+        render_lines_woven_with_file(
             target,
             cstr_str(&i.ref->path),
             false,
             cstr_sv(&i.ref->source->contents),
-            &i.ref->symbols
+            &i.ref->symbols,
+            i.ref == vec_baseline_test_file_back(&my files)
         );
-    }
-    if (newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
-        cstr_append(target, "\r\n");
     }
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
     cstr_append_fmt(target, "//// [%s] ////\r\n\r\n", relative_test_path(my source_path));
-    bool newline_if_next_line_non_empty = false;
     c_foreach(i, vec_baseline_test_file, my files) {
-        newline_if_next_line_non_empty = render_lines_woven_with_file(
+        render_lines_woven_with_file(
             target,
             cstr_str(&i.ref->path),
             false,
             cstr_sv(&i.ref->source->contents),
-            &i.ref->types
+            &i.ref->types,
+            i.ref == vec_baseline_test_file_back(&my files)
         );
-    }
-    if (newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
-        cstr_append(target, "\r\n");
     }
 }
 
