@@ -99,13 +99,12 @@ class AnnotatedEditor extends Editor {
         }
 
         for (const i of Diff.diffArrays(sectionLinesA, sectionLinesB)) {
-          if (i.added) {
-            tokenizeAnnotationInto(i.value, 'token-diff-b', this.annotationWithNulls);
-          } else if (i.removed) {
-            tokenizeAnnotationInto(i.value, 'token-diff-a', this.annotationWithNulls);
-          } else {
-            tokenizeAnnotationInto(i.value, 'token-diff-both', this.annotationWithNulls);
-          }
+          let className = i.added ?
+            'token-diff-b' :
+            (i.removed ? 'token-diff-a' : 'token-diff-both');
+          tokenizeAnnotationInto(i.value, this.annotationWithNulls, {
+            classes: [className],
+          });
         }
       }
     }

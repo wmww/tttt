@@ -228,6 +228,10 @@ button, .fake-button {
   background-color: var(--green-bg);
 }
 
+.token-line-end {
+  color: #ffffff30;
+}
+
 .diff-out-of-date .token-diff-both,
 .diff-out-of-date .token-diff-a,
 .diff-out-of-date .token-diff-b,

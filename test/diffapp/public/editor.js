@@ -70,12 +70,24 @@ class Editor {
       return null;
     }
 
-    if (range.startContainer.tokenOffset !== undefined) {
-      return range.startContainer.tokenOffset + range.startOffset;
-    } else if (range.startContainer.parentElement.tokenOffset !== undefined) {
-      return range.startContainer.parentElement.tokenOffset + range.startOffset;
-    } else {
+    let editorStartOfElem = undefined;
+    let editorEndOfElem = undefined;
+    if (range.startContainer.editorStart !== undefined) {
+      editorStartOfElem = range.startContainer.editorStart;
+      editorEndOfElem = range.startContainer.editorEnd;
+    } else if (range.startContainer.parentElement.editorStart !== undefined) {
+      editorStartOfElem = range.startContainer.parentElement.editorStart;
+      editorEndOfElem = range.startContainer.parentElement.editorEnd;
+    }
+
+    if (editorStartOfElem === undefined) {
       return null;
+    } else {
+      let offset = editorStartOfElem + range.startOffset;
+      if (offset > editorEndOfElem) {
+        offset = editorEndOfElem;
+      }
+      return offset;
     }
   }
 
@@ -92,25 +104,40 @@ class Editor {
     const beforeSelection = rawValue.slice(0, selectionStart);
     const selection = rawValue.slice(selectionStart, selectionEnd);
     const afterSelection = rawValue.slice(selectionEnd);
-    const cursorToken = {
-      type: Token.CURSOR,
-      offset: selectionForward ? selectionEnd : selectionStart,
-    };
+    const cursorPosition = selectionForward ? selectionEnd : selectionStart;
     const tokens = [];
-    addLineStartTokensTo(true, indent, tokens);
-    tokenizeStringInto(beforeSelection, 0, undefined, true, indent, tokens);
-    if (!selectionForward && document.activeElement == this.inputElem) {
-      tokens.push(cursorToken);
-    }
-    tokenizeStringInto(selection, selectionStart, 'token-selected', true, indent, tokens);
-    if (selectionForward && document.activeElement == this.inputElem) {
-      tokens.push(cursorToken);
-    }
-    tokenizeStringInto(afterSelection, selectionEnd, undefined, true, indent, tokens);
-    tokens.push({
-      type: Token.ENDLINE,
-      offset: rawValue.length,
+    addLineStartTokensTo(tokens, {
+      indent: indent,
+      lineNumbers: true,
+      editorStart: 0,
+      editorEnd: 0,
     });
+    tokenizeStringInto(beforeSelection, tokens, {
+      lineNumbers: true,
+      indent: indent,
+      editorStart: 0,
+      editorEnd: beforeSelection.length,
+    });
+    if (!selectionForward && document.activeElement == this.inputElem) {
+      tokens.push(makeCursorToken(cursorPosition));
+    }
+    tokenizeStringInto(selection, tokens, {
+      lineNumbers: true,
+      indent: indent,
+      editorStart: selectionStart,
+      editorEnd: selectionEnd,
+      classes: ['token-selected'],
+    });
+    if (selectionForward && document.activeElement == this.inputElem) {
+      tokens.push(makeCursorToken(cursorPosition));
+    }
+    tokenizeStringInto(afterSelection, tokens, {
+      lineNumbers: true,
+      indent: indent,
+      editorStart: selectionEnd,
+      editorEnd: rawValue.length,
+    });
+    tokens.push(makeEndlineToken(rawValue.length));
     return tokens;
   }
 

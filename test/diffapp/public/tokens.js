@@ -7,22 +7,32 @@ const Token = Object.freeze({
   ENDLINE: 'token-endline',
 });
 
-function addLineStartTokensTo(lineNumbers, indent, tokens) {
-  if (lineNumbers) {
-    tokens.push({type: Token.LINE_NUMBER});
-  }
-  if (indent) {
-    tokens.push({
-      type: Token.TEXT,
-      text: indent,
-      extraClass: 'token-indent',
-    });
+// Options sent to these functions may be mutated by the functions. They may contain:
+// - lineNumbers: bool, add line numbers to start of lines
+// - indent: string, start each line with given text
+// - classes: array of strings, classes to add to final element
+// - editorStart: number, start character in editor buffer the text maps to
+// - editorEnd: number, max position in editor buffer the text maps to (bounded only by textContent length if undefined)
+
+function makeCursorToken(cursorPosition) {
+  return {
+    type: Token.CURSOR,
+    editorStart: cursorPosition,
+    editorEnd: cursorPosition,
+  };
+}
+
+function makeEndlineToken(editorPosition) {
+  return {
+    type: Token.ENDLINE,
+    editorStart: editorPosition,
+    editorEnd: editorPosition,
   }
 }
 
 const singleLineRegex = /([^\r\n]*)([\r\n]*)/;
 // Takes an array of annotation lines which includes newlines
-function tokenizeAnnotationInto(annotationLines, className, tokens) {
+function tokenizeAnnotationInto(annotationLines, tokens, options) {
   for (const line of annotationLines) {
     const match = singleLineRegex.exec(line);
     if (match) {
@@ -30,50 +40,77 @@ function tokenizeAnnotationInto(annotationLines, className, tokens) {
         tokens.push({
           type: Token.TEXT,
           text: match[1],
-          offset: null,
-          extraClass: className,
+          classes: options.classes,
         });
       }
       if (match[2]) {
         tokens.push({
           type: Token.TEXT,
           text: match[2].replace('\n', '\\n').replace('\r', '\\r'),
-          offset: null,
-          extraClass: className,
+          classes:  [...(options.classes ?? []), 'token-line-end'],
         });
       }
       if (match[1] || match[2]) {
         tokens.push({
           type: Token.NEWLINE,
-          offset: null,
-          extraClass: className,
+          classes: options.classes,
         });
       }
     }
   }
 }
 
+// See top of file for options
+function addLineStartTokensTo(tokens, options) {
+  if (options.lineNumbers) {
+    tokens.push({
+      type: Token.LINE_NUMBER,
+      editorStart: options.editorStart,
+      editorEnd: options.editorStart,
+    });
+  }
+  if (options.indent) {
+    tokens.push({
+      type: Token.TEXT,
+      text: options.indent,
+      editorStart: options.editorStart,
+      editorEnd: options.editorStart,
+      classes: ['token-indent'],
+    });
+  }
+}
+
+// Turn text into tokens and push them to the tokens array. See top of file for options
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
-function tokenizeStringInto(text, offset, extraClass, lineNumbers, indent, tokens) {
-  let prevLastIndex = textTokenRegex.lastIndex = 0;
+function tokenizeStringInto(text, tokens, options) {
+  const initialEditorStart = options.editorStart;
+  const initialEditorEnd = options.editorEnd ?? Infinity;
+  textTokenRegex.lastIndex = 0;
   let match;
   while (match = textTokenRegex.exec(text)) {
     if (match[1]) {
       tokens.push({
         type: Token.TEXT,
         text: match[1],
-        offset: offset === null ? null : offset + prevLastIndex,
-        extraClass: extraClass,
+        editorStart: options.editorStart,
+        editorEnd: Math.min(options.editorEnd + match[1].length, initialEditorEnd),
+        classes: options.classes,
       });
     } else if (match[2]) {
       tokens.push({
         type: Token.NEWLINE,
-        offset: offset === null ? null : offset + prevLastIndex,
-        extraClass: extraClass,
+        editorStart: options.editorStart,
+        editorEnd: options.editorStart,
+        classes: options.classes,
       });
-      addLineStartTokensTo(lineNumbers, indent, tokens);
     }
-    prevLastIndex = textTokenRegex.lastIndex;
+    if (initialEditorStart !== undefined) {
+      options.editorStart = initialEditorStart + textTokenRegex.lastIndex;
+      options.editorEnd = options.editorStart;
+    }
+    if (match[2]) {
+      addLineStartTokensTo(tokens, options);
+    }
   }
 }
 
@@ -132,25 +169,34 @@ function tokenizeStderrInto(text, tokens) {
   }
 }
 
-function applyTokenToElem(token, elem) {
-  if (token.offset !== undefined && token.offset !== null) {
-    elem.tokenOffset = token.offset;
-  }
-  if (token.extraClass) {
-    elem.classList.add(token.extraClass);
-  }
-  if (token.onclick) {
-    elem.onclick = token.onclick;
-  }
-  if (token.color) {
-    elem.style.color = token.color;
-  }
-}
-
 function renderTokensTo(parent, tokens) {
   let pendingLine = null;
   let lineNumberTally = 0;
-  let addLineNumber = false;
+  let lineNumberToken = null;
+  let lastEditorEnd = undefined;
+
+  function applyTokenToElem(token, elem) {
+    if (token.editorStart !== undefined) {
+      elem.editorStart = token.editorStart;
+      if (token.editorEnd !== undefined) {
+        elem.editorEnd = token.editorEnd;
+      }
+    } else {
+      elem.editorStart = lastEditorEnd;
+      elem.editorEnd = lastEditorEnd;
+    }
+    if (Array.isArray(token.classes)) {
+      for (const c of token.classes) {
+        elem.classList.add(c);
+      }
+    }
+    if (token.onclick) {
+      elem.onclick = token.onclick;
+    }
+    if (token.color) {
+      elem.style.color = token.color;
+    }
+  }
 
   function ensureLine() {
     if (!pendingLine) {
@@ -166,18 +212,19 @@ function renderTokensTo(parent, tokens) {
       applyTokenToElem(token, div);
       pendingLine.appendChild(div);
 
-      if (addLineNumber) {
+      if (lineNumberToken) {
         const lineNumberSpan = document.createElement('span');
         lineNumberSpan.classList.add('token-line-number');
         lineNumberTally++;
         lineNumberSpan.textContent = lineNumberTally;
+        applyTokenToElem(lineNumberToken, lineNumberSpan);
         pendingLine.prepend(lineNumberSpan);
       }
 
       parent.appendChild(pendingLine);
 
       pendingLine = null;
-      addLineNumber = false;
+      lineNumberToken = null;
     }
   }
 
@@ -188,6 +235,10 @@ function renderTokensTo(parent, tokens) {
   ensureLine();
 
   for (const token of tokens) {
+    if (token.editorEnd !== undefined) {
+      lastEditorEnd = token.editorEnd;
+    }
+
     switch (token.type) {
 
       case Token.TEXT: {
@@ -207,7 +258,7 @@ function renderTokensTo(parent, tokens) {
       } break;
 
       case Token.LINE_NUMBER: {
-        addLineNumber = true;
+        lineNumberToken = token;
       } break;
 
       case Token.BUTTON: {
