@@ -1,8 +1,59 @@
+const annotationLineRegex = /([^\r\n]*)(\r\n|\n|\r)?/y;
+const newlineRegex = /\r\n|\n|\r/;
+
+// Returns two lists of the same length, one with the line contents and the other with newlines ('\n', '\n\r', '')
+function splitLinesWithNewlines(text) {
+  text = text ?? '';
+  annotationLineRegex.lastIndex = 0;
+  const lines = [];
+  const newlines = [];
+  let match;
+  while (match = annotationLineRegex.exec(text)) {
+    lines.push(match[1]);
+    if (match[2] !== undefined) {
+      newlines.push(match[2]);
+    } else {
+      newlines.push('');
+      break;
+    }
+  }
+  return [lines, newlines];
+}
+
+// Takes a list of reference lines and a single annotation string. Diffs them (ignoring newlines), and returns
+// (string[] | undefined)[]. Each non-undefined element is an array of lines, which contain the newline characters at
+// the end. Each undefined represents one line of reference.
+function processAnnotaiton(referenceLines, annotationString) {
+  const [annotationLines, annotationNewlines] = splitLinesWithNewlines(annotationString);
+  const lineDiff = Diff.diffArrays(referenceLines, annotationLines);
+
+  let ret = [];
+  let annotationIndex = 0;
+  for (const elem of lineDiff) {
+    if (elem.added) {
+      // elem.value is a list of line strings
+      const lines = [];
+      for (const line of elem.value) {
+        lines.push(line + annotationNewlines[annotationIndex]);
+        annotationIndex++;
+      }
+      ret.push(lines);
+    } else {
+      if (!elem.removed) {
+        annotationIndex += elem.value.length;
+      }
+      for (const _line of elem.value) {
+        ret.push(undefined);
+      }
+    }
+  }
+  return ret;
+}
+
 class AnnotatedEditor extends Editor {
   constructor(inputElem, viewElem) {
     super(inputElem, viewElem);
     this.indent = null;
-    this.newlineRegex = /\r?\n/g;
     // An array of tokens representing the diff of the results. It also contains nulls, each representing one
     // line (not token!) of input.
     this.annotationWithNulls = [];
@@ -17,38 +68,14 @@ class AnnotatedEditor extends Editor {
   setAnnotations(annotationA, annotationB, referenceValue, indent) {
     this.indent = indent;
 
-    annotationA = annotationA ?? '';
-    annotationB = annotationB ?? '';
     referenceValue = referenceValue ?? '';
-
-    let linesValue = referenceValue.split(this.newlineRegex);
+    let referenceLines = referenceValue.split(newlineRegex);
     if (this.indent) {
-      for (let i = 0; i < linesValue.length; i++) {
-        linesValue[i] = this.indent + linesValue[i]
-      }
-    }
-    const linesA = annotationA.split(this.newlineRegex);
-    const linesB = annotationB.split(this.newlineRegex);
-    const lineDiffA = Diff.diffArrays(linesValue, linesA);
-    const lineDiffB = Diff.diffArrays(linesValue, linesB);
-
-    // Returns added sets of lines joined and a single undefined for each non-added line
-    const processLineDiff = lineDiff => {
-      let ret = [];
-      for (const elem of lineDiff) {
-        if (elem.added) {
-          ret.push(elem.value.join('\n'));
-        } else {
-          for (let i = 0; i < elem.value.length; i++) {
-            ret.push(undefined);
-          }
-        }
-      }
-      return ret;
+      referenceLines = referenceLines.map(line => this.indent + line);
     }
 
-    const processedA = processLineDiff(lineDiffA);
-    const processedB = processLineDiff(lineDiffB);
+    const processedA = processAnnotaiton(referenceLines, annotationA);
+    const processedB = processAnnotaiton(referenceLines, annotationB);
 
     let indexA = 0;
     let indexB = 0;
@@ -59,47 +86,29 @@ class AnnotatedEditor extends Editor {
         indexA++;
         indexB++;
       } else {
-        let resultA = '';
+        let sectionLinesA = [];
         if (processedA[indexA] !== undefined) {
-          resultA = processedA[indexA];
+          sectionLinesA = processedA[indexA];
           indexA++;
         }
 
-        let resultB = '';
+        let sectionLinesB = [];
         if (processedB[indexB] !== undefined) {
-          resultB = processedB[indexB];
+          sectionLinesB = processedB[indexB];
           indexB++;
         }
 
-        const sectionLinesA = resultA.split(this.newlineRegex);
-        const sectionLinesB = resultB.split(this.newlineRegex);
         for (const i of Diff.diffArrays(sectionLinesA, sectionLinesB)) {
           if (i.added) {
-            tokenizeStringInto(i.value.join('\n'), null, 'token-diff-b', false, null, this.annotationWithNulls);
+            tokenizeAnnotationInto(i.value, 'token-diff-b', this.annotationWithNulls);
           } else if (i.removed) {
-            tokenizeStringInto(i.value.join('\n'), null, 'token-diff-a', false, null, this.annotationWithNulls);
+            tokenizeAnnotationInto(i.value, 'token-diff-a', this.annotationWithNulls);
           } else {
-            tokenizeStringInto(i.value.join('\n'), null, 'token-diff-both', false, null, this.annotationWithNulls);
-          }
-          if (this.annotationWithNulls &&
-            this.annotationWithNulls[this.annotationWithNulls.length - 1] &&
-            this.annotationWithNulls[this.annotationWithNulls.length - 1].type !== Token.NEWLINE
-          ) {
-            this.annotationWithNulls.push({
-              type: Token.NEWLINE,
-              extraClass: 'token-diff-both',
-              offset: null,
-            });
+            tokenizeAnnotationInto(i.value, 'token-diff-both', this.annotationWithNulls);
           }
         }
       }
     }
-
-    this.annotationWithNulls.push({
-      type: Token.ENDLINE,
-      extraClass: 'token-diff-both',
-      offset: null,
-    });
 
     this.render();
   }

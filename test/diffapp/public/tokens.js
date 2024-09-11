@@ -20,6 +20,39 @@ function addLineStartTokensTo(lineNumbers, indent, tokens) {
   }
 }
 
+const singleLineRegex = /([^\r\n]*)([\r\n]*)/;
+// Takes an array of annotation lines which includes newlines
+function tokenizeAnnotationInto(annotationLines, className, tokens) {
+  for (const line of annotationLines) {
+    const match = singleLineRegex.exec(line);
+    if (match) {
+      if (match[1]) {
+        tokens.push({
+          type: Token.TEXT,
+          text: match[1],
+          offset: null,
+          extraClass: className,
+        });
+      }
+      if (match[2]) {
+        tokens.push({
+          type: Token.TEXT,
+          text: match[2].replace('\n', '\\n').replace('\r', '\\r'),
+          offset: null,
+          extraClass: className,
+        });
+      }
+      if (match[1] || match[2]) {
+        tokens.push({
+          type: Token.NEWLINE,
+          offset: null,
+          extraClass: className,
+        });
+      }
+    }
+  }
+}
+
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
 function tokenizeStringInto(text, offset, extraClass, lineNumbers, indent, tokens) {
   let prevLastIndex = textTokenRegex.lastIndex = 0;
