@@ -233,10 +233,12 @@ button, .fake-button {
   color: #ffffff30;
 }
 
+/*
 .token-line-end.token-diff-a,
 .token-line-end.token-diff-b {
   display: inline-block;
 }
+*/
 
 .diff-out-of-date .token-diff-both,
 .diff-out-of-date .token-diff-a,
