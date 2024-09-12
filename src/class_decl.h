@@ -12,7 +12,7 @@ typedef enum AccessModifier {
 typedef struct ClassItem {
     enum {
         CLASS_ITEM_CONSTRUCTOR,
-        CLASS_ITEM_MEMBER,
+        CLASS_ITEM_METHOD,
         CLASS_ITEM_FIELD,
         CLASS_ITEM_INTERFACE_MEMBER,
         CLASS_ITEM_STATIC_BLOCK,
@@ -31,7 +31,7 @@ typedef struct ClassItem {
             Span name_span;
             bool name_is_value;
             FunctionImpl func;
-        } member;
+        } method;
         struct {
             bool is_static;
             bool is_readonly;

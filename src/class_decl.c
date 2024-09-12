@@ -12,9 +12,9 @@ void class_item_drop(ClassItem* me) {
             function_impl_drop(&my constructor.func);
             break;
 
-        case CLASS_ITEM_MEMBER:
-            cstr_drop(&my member.name_string);
-            function_impl_drop(&my member.func);
+        case CLASS_ITEM_METHOD:
+            cstr_drop(&my method.name_string);
+            function_impl_drop(&my method.func);
             break;
 
         case CLASS_ITEM_FIELD:
@@ -36,7 +36,7 @@ void class_item_drop(ClassItem* me) {
 bool class_item_is_static(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR: return false;
-        case CLASS_ITEM_MEMBER: return my member.is_static;
+        case CLASS_ITEM_METHOD: return my method.is_static;
         case CLASS_ITEM_FIELD: return my field.is_static;
         case CLASS_ITEM_INTERFACE_MEMBER: return false;
         case CLASS_ITEM_STATIC_BLOCK: return true;
@@ -47,7 +47,7 @@ bool class_item_is_static(ClassItem* me) {
 Type class_item_get_type(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR: return type_lazy(&my constructor.func.lazy_type);
-        case CLASS_ITEM_MEMBER: return type_lazy(&my member.func.lazy_type);
+        case CLASS_ITEM_METHOD: return type_lazy(&my method.func.lazy_type);
         case CLASS_ITEM_FIELD:
             return make_type_abstracted(
                 my field.has_explicit_type ?
@@ -82,8 +82,8 @@ void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
             function_impl_lookup_names(&my constructor.func, names, errs);
             break;
 
-        case CLASS_ITEM_MEMBER:
-            function_impl_lookup_names(&my member.func, names, errs);
+        case CLASS_ITEM_METHOD:
+            function_impl_lookup_names(&my method.func, names, errs);
             break;
 
         case CLASS_ITEM_FIELD:
@@ -263,16 +263,16 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                 }
                 break;
 
-            case CLASS_ITEM_MEMBER:
-                if (i.ref->member.is_static != resolve_instance) {
+            case CLASS_ITEM_METHOD:
+                if (i.ref->method.is_static != resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i.ref->span,
                         my name,
                         false,
-                        i.ref->member.is_optional,
-                        cstr_clone(i.ref->member.name_string),
-                        i.ref->member.name_span,
-                        i.ref->member.name_is_value,
+                        i.ref->method.is_optional,
+                        cstr_clone(i.ref->method.name_string),
+                        i.ref->method.name_span,
+                        i.ref->method.name_is_value,
                         class_item_get_type(i.ref)
                     );
                     vec_interface_member_push(&interface.members, member);
@@ -356,8 +356,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 constructor_count++;
                 break;
 
-            case CLASS_ITEM_MEMBER:
-                function_impl_typecheck(&i.ref->member.func, errs);
+            case CLASS_ITEM_METHOD:
+                function_impl_typecheck(&i.ref->method.func, errs);
                 break;
 
             case CLASS_ITEM_FIELD: {

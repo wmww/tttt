@@ -927,21 +927,21 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         ClassItem item;
         if (parse_class_item(&p, true, &item)) {
             switch (item.tag) {
-                case CLASS_ITEM_MEMBER: {
+                case CLASS_ITEM_METHOD: {
                     InterfaceMember member = interface_member_make(
                         item.span,
                         span_null,
                         false,
-                        item.member.is_optional,
-                        cstr_move(&item.member.name_string),
-                        item.member.name_span,
-                        item.member.name_is_value,
-                        function_impl_into_type(item.member.func)
+                        item.method.is_optional,
+                        cstr_move(&item.method.name_string),
+                        item.method.name_span,
+                        item.method.name_is_value,
+                        function_impl_into_type(item.method.func)
                     );
                     ASSERT(member.key.tag == INTERFACE_KEY_NAME);
                     member.key.name_is_member_function = true;
                     vec_interface_member_push(&members, member);
-                    item.member.func = (FunctionImpl){0};
+                    item.method.func = (FunctionImpl){0};
                 }   break;
 
                 case CLASS_ITEM_FIELD:
@@ -1897,9 +1897,9 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
         FunctionImpl func;
         if (parse_function_fn(&p, &func)) {
             *ret = (ClassItem) {
-                .tag = CLASS_ITEM_MEMBER,
+                .tag = CLASS_ITEM_METHOD,
                 .access = ret->access,
-                .member = {
+                .method = {
                     .is_static = span_valid(static_span),
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,

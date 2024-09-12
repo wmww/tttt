@@ -243,17 +243,17 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             function_impl_compile_test_info(&my constructor.func, class_name, ctx);
             break;
 
-        case CLASS_ITEM_MEMBER:
+        case CLASS_ITEM_METHOD:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my span),
                 .namespaces = vec_span_single(class_name),
-                .span = my member.name_span,
-                .name_is_value = my member.name_is_value,
+                .span = my method.name_span,
+                .name_is_value = my method.name_is_value,
             });
             Type t = class_item_get_type(me);
-            baseline_test_case_add_type(ctx, my member.name_span, &t);
+            baseline_test_case_add_type(ctx, my method.name_span, &t);
             type_drop(&t);
-            function_impl_compile_test_info(&my member.func, class_name, ctx);
+            function_impl_compile_test_info(&my method.func, class_name, ctx);
             break;
 
         case CLASS_ITEM_FIELD: {

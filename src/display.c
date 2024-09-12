@@ -603,17 +603,17 @@ static void display_class_decl(Display d, ClassDecl const* me) {
                 display_function_impl(d, &i.ref->constructor.func, false);
                 break;
 
-            case CLASS_ITEM_MEMBER:
-                if (i.ref->member.is_static) {
+            case CLASS_ITEM_METHOD:
+                if (i.ref->method.is_static) {
                     display_lit(d, "static ");
                 }
                 display_color(d, color_name);
-                display_s(d, i.ref->member.name_string);
+                display_s(d, i.ref->method.name_string);
                 display_normal(d);
-                if (i.ref->member.is_optional) {
+                if (i.ref->method.is_optional) {
                     display_lit(d, "?");
                 }
-                display_function_impl(d, &i.ref->member.func, false);
+                display_function_impl(d, &i.ref->method.func, false);
                 break;
 
             case CLASS_ITEM_FIELD:
