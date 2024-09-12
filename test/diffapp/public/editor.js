@@ -1,3 +1,6 @@
+const doubleClickThresh = 400;
+const wordCharRe = /\w/;
+
 class Editor {
   constructor(inputElem, viewElem) {
     inputElem.value = '';
@@ -6,6 +9,10 @@ class Editor {
     this.viewElem = viewElem;
     this.selectionAnchor = null;
     this.selectionFocus = null;
+    this.lastMousedownTime = null;
+    this.lastMousedownClientX = null
+    this.lastMousedownClientY = null;
+    this.selectByWord = false;
 
     document.addEventListener('selectionchange', () => {
       if (document.activeElement == inputElem) {
@@ -33,10 +40,31 @@ class Editor {
         start = this.selectionFocus;
       }
       this.inputElem.focus({preventScroll: true});
+      if (this.selectByWord) {
+        const value = this.inputElem.value;
+        while (start > 0 && wordCharRe.test(value[start - 1])) {
+          start--;
+        }
+        while (end < value.length && wordCharRe.test(value[end])) {
+          end++;
+        }
+      }
       this.inputElem.setSelectionRange(start, end, direction);
     }
 
     this.viewElem.addEventListener('mousedown', ev => {
+      const time = performance.now();
+      if (
+        this.lastMousedownTime &&
+        time - this.lastMousedownTime < doubleClickThresh &&
+        ev.clientX === this.lastMousedownClientX &&
+        ev.clientY === this.lastMousedownClientY
+      ) {
+        this.selectByWord = true;
+      }
+      this.lastMousedownTime = time;
+      this.lastMousedownClientX = ev.clientX;
+      this.lastMousedownClientY = ev.clientY;
       selectTo(ev);
       this.viewElem.addEventListener('mousemove', selectTo);
     });
@@ -46,6 +74,7 @@ class Editor {
       selectTo(ev);
       this.selectionAnchor = null;
       this.selectionFocus = null;
+      this.selectByWord = false;
     });
   }
 
