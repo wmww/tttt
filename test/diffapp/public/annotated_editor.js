@@ -102,9 +102,11 @@ class AnnotatedEditor extends Editor {
           let className = i.added ?
             'token-diff-b' :
             (i.removed ? 'token-diff-a' : 'token-diff-both');
-          tokenizeAnnotationInto(i.value, this.annotationWithNulls, {
-            classes: [className],
-          });
+          for (const line of i.value) {
+            tokenizeStringInto(line, this.annotationWithNulls, {
+              classes: [className],
+            });
+          }
         }
       }
     }

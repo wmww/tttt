@@ -30,36 +30,6 @@ function makeEndlineToken(editorPosition) {
   }
 }
 
-const singleLineRegex = /([^\r\n]*)([\r\n]*)/;
-// Takes an array of annotation lines which includes newlines
-function tokenizeAnnotationInto(annotationLines, tokens, options) {
-  for (const line of annotationLines) {
-    const match = singleLineRegex.exec(line);
-    if (match) {
-      if (match[1]) {
-        tokens.push({
-          type: Token.TEXT,
-          text: match[1],
-          classes: options.classes,
-        });
-      }
-      if (match[2]) {
-        tokens.push({
-          type: Token.TEXT,
-          text: match[2].replace('\n', '\\n').replace('\r', '\\r'),
-          classes:  [...(options.classes ?? []), 'token-line-end'],
-        });
-      }
-      if (match[1] || match[2]) {
-        tokens.push({
-          type: Token.NEWLINE,
-          classes: options.classes,
-        });
-      }
-    }
-  }
-}
-
 // See top of file for options
 function addLineStartTokensTo(tokens, options) {
   if (options.lineNumbers) {
@@ -97,6 +67,13 @@ function tokenizeStringInto(text, tokens, options) {
         classes: options.classes,
       });
     } else if (match[2]) {
+      tokens.push({
+        type: Token.TEXT,
+        text: match[2].replace('\n', '\\n').replace('\r', '\\r'),
+        editorStart: options.editorStart,
+        editorEnd: options.editorStart,
+        classes:  [...(options.classes ?? []), 'token-line-end'],
+      });
       tokens.push({
         type: Token.NEWLINE,
         editorStart: options.editorStart,
