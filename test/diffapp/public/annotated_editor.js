@@ -1,8 +1,7 @@
 const annotationLineRegex = /([^\r\n]*)(\r\n|\n|\r)?/y;
 const newlineRegex = /\r\n|\n|\r/;
 
-// Returns two lists of the same length, one with the line contents and the other with newlines ('\n', '\n\r', ''). The
-// last item of both lists is always '' (this is the only item with both empty)
+// Returns two lists of the same length, one with the line contents and the other with newlines ('\n', '\n\r', '').
 function splitLinesWithNewlines(text) {
   text = text ?? '';
   annotationLineRegex.lastIndex = 0;
@@ -20,8 +19,6 @@ function splitLinesWithNewlines(text) {
       newlines.push('');
     }
   }
-  lines.push('');
-  newlines.push('');
   return [lines, newlines];
 }
 
@@ -30,12 +27,12 @@ function splitLinesWithNewlines(text) {
 // the end. Each undefined represents one line of reference.
 function processAnnotaiton(referenceLines, annotationString) {
   const [annotationLines, annotationNewlines] = splitLinesWithNewlines(annotationString);
-  const lineDiff = Diff.diffArrays(referenceLines, annotationLines);
+  const lineDiff = Diff.diffArrays(annotationLines, referenceLines);
 
   let ret = [];
   let annotationIndex = 0;
   for (const elem of lineDiff) {
-    if (elem.added) {
+    if (elem.removed) {
       // elem.value is a list of line strings
       const lines = [];
       for (const line of elem.value) {
@@ -81,7 +78,6 @@ class AnnotatedEditor extends Editor {
 
     const processedA = processAnnotaiton(referenceLines, annotationA);
     const processedB = processAnnotaiton(referenceLines, annotationB);
-    console.log('a:', processedA, 'b:', processedB);
 
     let indexA = 0;
     let indexB = 0;
@@ -112,7 +108,7 @@ class AnnotatedEditor extends Editor {
             tokenizeStringInto(line, this.annotationWithNulls, {
               classes: [className],
             });
-            if (line === '') {
+            if (!line.endsWith('\n')) {
               addEofTokensTo(this.annotationWithNulls, {
                 classes: [className]
               });
