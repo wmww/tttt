@@ -22,12 +22,20 @@ function makeCursorToken(cursorPosition) {
   };
 }
 
-function makeEndlineToken(editorPosition) {
-  return {
+function addEofTokensTo(tokens, options) {
+  tokens.push({
+    type: Token.TEXT,
+    text: 'EOF',
+    editorStart: options.editorStart,
+    editorEnd: options.editorEnd,
+    classes:  [...(options.classes ?? []), 'token-line-end'],
+  });
+  tokens.push({
     type: Token.ENDLINE,
-    editorStart: editorPosition,
-    editorEnd: editorPosition,
-  }
+    editorStart: options.editorEnd,
+    editorEnd: options.editorEnd,
+    classes: options.classes,
+  });
 }
 
 // See top of file for options
@@ -59,11 +67,14 @@ function tokenizeStringInto(text, tokens, options) {
   let match;
   while (match = textTokenRegex.exec(text)) {
     if (match[1]) {
+      const editorEnd = options.editorEnd === undefined ?
+        undefined :
+        Math.min(options.editorEnd + match[1].length, initialEditorEnd);
       tokens.push({
         type: Token.TEXT,
         text: match[1],
         editorStart: options.editorStart,
-        editorEnd: Math.min(options.editorEnd + match[1].length, initialEditorEnd),
+        editorEnd: editorEnd,
         classes: options.classes,
       });
     } else if (match[2]) {

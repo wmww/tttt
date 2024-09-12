@@ -160,13 +160,17 @@ class Editor {
     if (selectionForward && document.activeElement == this.inputElem) {
       tokens.push(makeCursorToken(cursorPosition));
     }
+    const valueLen = rawValue.length;
     tokenizeStringInto(afterSelection, tokens, {
       lineNumbers: true,
       indent: indent,
       editorStart: selectionEnd,
-      editorEnd: rawValue.length,
+      editorEnd: valueLen,
     });
-    tokens.push(makeEndlineToken(rawValue.length));
+    addEofTokensTo(tokens, {
+      editorStart: valueLen,
+      editorEnd: valueLen
+    });
     return tokens;
   }
 

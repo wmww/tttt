@@ -1,7 +1,8 @@
 const annotationLineRegex = /([^\r\n]*)(\r\n|\n|\r)?/y;
 const newlineRegex = /\r\n|\n|\r/;
 
-// Returns two lists of the same length, one with the line contents and the other with newlines ('\n', '\n\r', '')
+// Returns two lists of the same length, one with the line contents and the other with newlines ('\n', '\n\r', ''). The
+// last item of both lists is always '' (this is the only item with both empty)
 function splitLinesWithNewlines(text) {
   text = text ?? '';
   annotationLineRegex.lastIndex = 0;
@@ -9,14 +10,18 @@ function splitLinesWithNewlines(text) {
   const newlines = [];
   let match;
   while (match = annotationLineRegex.exec(text)) {
+    if (!match[1] && !match[2]) {
+      break;
+    }
     lines.push(match[1]);
     if (match[2] !== undefined) {
       newlines.push(match[2]);
     } else {
       newlines.push('');
-      break;
     }
   }
+  lines.push('');
+  newlines.push('');
   return [lines, newlines];
 }
 
@@ -76,6 +81,7 @@ class AnnotatedEditor extends Editor {
 
     const processedA = processAnnotaiton(referenceLines, annotationA);
     const processedB = processAnnotaiton(referenceLines, annotationB);
+    console.log('a:', processedA, 'b:', processedB);
 
     let indexA = 0;
     let indexB = 0;
@@ -106,6 +112,11 @@ class AnnotatedEditor extends Editor {
             tokenizeStringInto(line, this.annotationWithNulls, {
               classes: [className],
             });
+            if (line === '') {
+              addEofTokensTo(this.annotationWithNulls, {
+                classes: [className]
+              });
+            }
           }
         }
       }
