@@ -40,11 +40,11 @@ static bool compare_outputs(
     } else {
         cstr result_display = cstr_from_fmt("tttt %s:\n", output_name);
         cstr_append_sv(&result_display, our_result);
-        cstr_append_sv(&result_display, c_sv("\n"));
+        cstr_append_lit(&result_display, "\n");
 
         cstr expected_display = cstr_from_fmt("%s:\n", path_of_expected);
         cstr_append_sv(&expected_display, expected_sv);
-        cstr_append_sv(&expected_display, c_sv("\n"));
+        cstr_append_lit(&expected_display, "\n");
 
         if (show_diff_on_error) {
             printf("%.*s: %s did not match:\n", c_SV(test_name), output_name);

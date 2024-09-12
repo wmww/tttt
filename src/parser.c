@@ -3563,7 +3563,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             } else {
                 cstr msg = cstr_lit("Scope name cannot be '");
                 cstr_append_value_error_msg(&msg, &val);
-                cstr_append_sv(&msg, c_sv("'."));
+                cstr_append_lit(&msg, "'.");
                 parse_error(&p, span_from(a), 2819, "%s", cstr_str(&msg));
                 cstr_drop(&msg);
             }

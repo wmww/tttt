@@ -169,10 +169,10 @@ static void process_errors(BaselineTestCase* me) {
 
         if (span_valid(error.ref->span)) {
             for (unsigned j = 0; j < col + 4; j++) {
-                cstr_append_sv(&item.str, c_sv(" "));
+                cstr_append_lit(&item.str, " ");
             }
             for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
-                cstr_append_sv(&item.str, c_sv("~"));
+                cstr_append_lit(&item.str, "~");
             }
             cstr_append(&item.str, "\r\n");
         } else {

@@ -153,7 +153,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             if (errs && !type_extends_array(binding_get_effective_type(me))) {
                 cstr msg = cstr_lit("Type '");
                 cstr_append_type_error_msg(&msg, binding_get_effective_type(me));
-                cstr_append_sv(&msg, c_sv("' is not an array type."));
+                cstr_append_lit(&msg, "' is not an array type.");
                 error_ctx_error_s(errs, my content_span, 2461, msg);
             }
             c_foreach(i, vec_binding, my array) {

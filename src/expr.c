@@ -291,9 +291,9 @@ static void binary_op_typecheck(
                 // TODO: it seems special handling of possibly null or undefined types is needed
                 cstr message = cstr_lit("Operator '+' cannot be applied to types '");
                 cstr_append_type_error_msg(&message, left);
-                cstr_append_sv(&message, c_sv("' and '"));
+                cstr_append_lit(&message, "' and '");
                 cstr_append_type_error_msg(&message, right);
-                cstr_append_sv(&message, c_sv("'."));
+                cstr_append_lit(&message, "'.");
                 error_ctx_error_s(errs, expr->inner_span, 2365, message);
             }
             break;
@@ -362,9 +362,9 @@ static void binary_op_typecheck(
             if (!type_overlaps(left, right)) {
                 cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
                 cstr_append_type_error_msg(&message, left);
-                cstr_append_sv(&message, c_sv("' and '"));
+                cstr_append_lit(&message, "' and '");
                 cstr_append_type_error_msg(&message, right);
-                cstr_append_sv(&message, c_sv("' have no overlap."));
+                cstr_append_lit(&message, "' have no overlap.");
                 error_ctx_error_s(errs, expr->outer_span, 2367, message);
             }
             break;

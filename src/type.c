@@ -1140,7 +1140,7 @@ static bool index_type_of_internal(
         if (errs) {
             cstr msg = cstr_lit("Type '");
             cstr_append_type_error_msg(&msg, index);
-            cstr_append_sv(&msg, c_sv("' cannot be used as an index type."));
+            cstr_append_lit(&msg, "' cannot be used as an index type.");
             error_ctx_error_s(errs, index_span, 2538, msg);
         }
         return false;
@@ -1249,9 +1249,9 @@ static bool index_type_of_internal(
                     } else {
                         cstr_append_type_error_msg(&msg, index);
                     }
-                    cstr_append_sv(&msg, c_sv("' does not exist on type '"));
+                    cstr_append_lit(&msg, "' does not exist on type '");
                     cstr_append_type_error_msg(&msg, me_original);
-                    cstr_append_sv(&msg, c_sv("'."));
+                    cstr_append_lit(&msg, "'.");
                     error_ctx_error_s(errs, index_span, 2551, msg);
                 }
                 return false;
@@ -1281,7 +1281,7 @@ static bool index_type_of_internal(
                     vec_tuple_element_size(&my tuple.elements)
                 );
                 cstr_append_value_error_msg(&msg, &index->value);
-                cstr_append_sv(&msg, c_sv("'."));
+                cstr_append_lit(&msg, "'.");
                 error_ctx_error_s(errs, index_span, 2493, msg);
             }
 
@@ -1618,7 +1618,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         if (call->is_extends) {
             cstr msg = cstr_lit("Type '");
             cstr_append_type_error_msg(&msg, me);
-            cstr_append_sv(&msg, c_sv("' is not a constructor function type."));
+            cstr_append_lit(&msg, "' is not a constructor function type.");
             error_ctx_error_s(errs, call->callable.outer_span, 2507, msg);
         } else {
             error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");

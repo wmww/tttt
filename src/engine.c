@@ -326,7 +326,7 @@ static Result MUST_USE engine_eval_call(Engine* me, CallExpr const* call_expr) {
         default: {
             cstr message = cstr_null;
             cstr_append_value_js(&message, &callable);
-            cstr_append_sv(&message, c_sv(" is not a function"));
+            cstr_append_lit(&message, " is not a function");
             ret = result_err(value_string(message));
         }
     }
@@ -556,7 +556,7 @@ static Result console_log_impl(Engine* engine, int argc, Value const argv[], voi
     for (int i = 0; i < argc; i++) {
         cstr_append_value_js(&str, &argv[i]);
         if (i < argc - 1) {
-            cstr_append_sv(&str, c_sv(" "));
+            cstr_append_lit(&str, " ");
         }
     }
     printf("%s\n", cstr_str(&str));

@@ -579,7 +579,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                             if (errs) {
                                 cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
                                 cstr_append_type_error_msg(&msg, iterable_type);
-                                cstr_append_sv(&msg, c_sv("'."));
+                                cstr_append_lit(&msg, "'.");
                                 error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
                             }
                         }   break;
@@ -590,7 +590,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     if (errs && !type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
                         cstr msg = cstr_lit("Type '");
                         cstr_append_type_error_msg(&msg, iterable_type);
-                        cstr_append_sv(&msg, c_sv("' is not an array type or a string type."));
+                        cstr_append_lit(&msg, "' is not an array type or a string type.");
                         error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2495, msg);
                     }
                     break;
@@ -633,9 +633,9 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     if (errs && !type_overlaps(needle_type, pattern_type)) {
                         cstr message = cstr_lit("Type '");
                         cstr_append_type_error_msg(&message, pattern_type);
-                        cstr_append_sv(&message, c_sv("' is not comparable to type '"));
+                        cstr_append_lit(&message, "' is not comparable to type '");
                         cstr_append_type_error_msg(&message, needle_type);
-                        cstr_append_sv(&message, c_sv("'."));
+                        cstr_append_lit(&message, "'.");
                         error_ctx_error_s(errs, i.ref->pattern.outer_span, 2678, message);
                     }
                 } else {
