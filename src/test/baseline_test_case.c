@@ -332,12 +332,17 @@ static void render_lines_woven_with_file(
         line++;
     }
 
-    if (csview_ends_with(source_contents, "\n")) {
-        cstr_append_fmt(target, "\r\n%s", line_indent);
+    intptr_t newlines_at_end_of_source = 0;
+    for (const char* p = csview_end_ptr(source_without_ws); p < csview_end_ptr(source_contents); p++) {
+        if (*p == '\n') newlines_at_end_of_source++;
+        else if (*p != '\r') newlines_at_end_of_source = 0;
     }
 
-    if (is_last_file && !is_errors && newline_if_next_line_non_empty && !cstr_ends_with(target, "\r\n\r\n")) {
-        cstr_append(target, "\r\n");
+    if (newlines_at_end_of_source == 1 ||
+        (is_last_file && newlines_at_end_of_source > 0) ||
+        (is_last_file && !is_errors && newline_if_next_line_non_empty)
+    ) {
+        cstr_append_fmt(target, "\r\n%s", line_indent);
     }
 }
 
