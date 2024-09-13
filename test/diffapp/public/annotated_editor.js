@@ -107,6 +107,7 @@ class AnnotatedEditor extends Editor {
           for (const line of i.value) {
             tokenizeStringInto(line, this.annotationWithNulls, {
               classes: [className],
+              copyErrorButtons: true,
             });
             if (!line.endsWith('\n')) {
               addEofTokensTo(this.annotationWithNulls, {

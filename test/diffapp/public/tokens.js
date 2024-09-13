@@ -59,7 +59,10 @@ function addLineStartTokensTo(tokens, options) {
 }
 
 // Turn text into tokens and push them to the tokens array. See top of file for options
+// Additional options respected:
+// - copyErrorButtons: if to detect error messages and make a button for copying them
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
+const errorMessageRegex = /(?<beforeError>!!! error )(?<tsCode>TS(?<codeInner>\d+):)(?<errorMessage>.*)/;
 function tokenizeStringInto(text, tokens, options) {
   const initialEditorStart = options.editorStart;
   const initialEditorEnd = options.editorEnd ?? Infinity;
@@ -70,13 +73,47 @@ function tokenizeStringInto(text, tokens, options) {
       const editorEnd = options.editorEnd === undefined ?
         undefined :
         Math.min(options.editorEnd + match[1].length, initialEditorEnd);
-      tokens.push({
-        type: Token.TEXT,
-        text: match[1],
-        editorStart: options.editorStart,
-        editorEnd: editorEnd,
-        classes: options.classes,
-      });
+      let errorMatch;
+      if (options.copyErrorButtons &&
+          (errorMatch = errorMessageRegex.exec(match[1]))
+      ) {
+        tokens.push({
+          type: Token.TEXT,
+          text: errorMatch.groups.beforeError,
+          editorStart: editorEnd,
+          editorEnd: editorEnd,
+          classes: options.classes,
+        });
+        const text = (
+          errorMatch.groups.codeInner +
+          ', "' +
+          errorMatch.groups.errorMessage.replace('"', '\\"') +
+          '"')
+        tokens.push({
+          type: Token.BUTTON,
+          text: errorMatch.groups.tsCode,
+          onclick: () => {
+            console.log('Clicking...');
+            navigator.clipboard.writeText(text);
+          },
+          classes: options.classes,
+        });
+        tokens.push({
+          type: Token.TEXT,
+          text: errorMatch.groups.errorMessage,
+          editorStart: editorEnd,
+          editorEnd: editorEnd,
+          classes: options.classes,
+        });
+      } else {
+        tokens.push({
+          type: Token.TEXT,
+          text: match[1],
+          editorStart: options.editorStart,
+          editorEnd: editorEnd,
+          classes: options.classes,
+        });
+      }
     } else if (match[2]) {
       tokens.push({
         type: Token.TEXT,
@@ -169,7 +206,7 @@ function renderTokensTo(parent, tokens) {
       if (token.editorEnd !== undefined) {
         elem.editorEnd = token.editorEnd;
       }
-    } else {
+    } else if (!token.onclick) {
       elem.editorStart = lastEditorEnd;
       elem.editorEnd = lastEditorEnd;
     }
@@ -250,11 +287,14 @@ function renderTokensTo(parent, tokens) {
       } break;
 
       case Token.BUTTON: {
+        const div = document.createElement('div');
         const button = document.createElement('button');
         button.classList.add(token.type);
         button.textContent = token.text;
         applyTokenToElem(token, button);
-        pendingLine.appendChild(button);
+        applyTokenToElem(token, div);
+        div.appendChild(button)
+        pendingLine.appendChild(div);
       } break;
 
       case Token.NEWLINE: {
