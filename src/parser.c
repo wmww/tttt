@@ -82,7 +82,7 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
 static bool parse_interface(Parser* parent, Interface* ret);
-static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret);
+static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret);
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
@@ -925,7 +925,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         ClassItem item;
-        if (parse_class_item(&p, true, &item)) {
+        if (parse_class_item(&p, true, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
                     InterfaceMember member = interface_member_make(
@@ -1683,13 +1683,15 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
 }
 
 // This function is a clusterfuck. I'm sorry.
-static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
+static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
     enum {
         MODIFIER_ERROR_NONE = 0,
         READONLY_ALREADY_SEEN,
+        ABSTRACT_ALREADY_SEEN,
+        ABSTRACT_NOT_ON_ABSTRACT_CLASS,
         ACCCESS_ALREADY_SEEN,
         MUST_PRECEDE_READONLY,
         MUST_PRECEDE_STATIC,
@@ -1708,6 +1710,7 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
     Span modifier_error_span = span_null;
     Span access_span = span_null;
     Span readonly_span = span_null;
+    Span abstract_span = span_null;
     Span static_span = span_null;
     Span async_span = span_null;
 
@@ -1740,6 +1743,30 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
                 }
             } else {
                 readonly_span = name_span;
+            }
+        } else if (span_equals(name_span, "abstract")) {
+            if (!is_abstract) {
+                if (!modifier_error) {
+                    modifier_error = ABSTRACT_NOT_ON_ABSTRACT_CLASS;
+                    modifier_error_span = name_span;
+                }
+            } else if (span_valid(abstract_span)) {
+                if (!modifier_error) {
+                    modifier_error = ABSTRACT_ALREADY_SEEN;
+                    modifier_error_span = name_span;
+                }
+            } else {
+                abstract_span = name_span;
+            }
+
+            if (!modifier_error) {
+                if (is_type) {
+                    modifier_error = MODIFIER_ON_TYPE;
+                    modifier_error_span = name_span;
+                } else if (span_valid(async_span)) {
+                    modifier_error = MUST_PRECEDE_ASYNC;
+                    modifier_error_span = name_span;
+                }
             }
         } else if (span_equals(name_span, "static")) {
             if (span_valid(static_span)) {
@@ -1970,6 +1997,14 @@ static bool parse_class_item(Parser* parent, bool is_type, ClassItem* ret) {
             parse_error(&p, modifier_error_span, 1030, "'readonly' modifier already seen.");
             break;
 
+        case ABSTRACT_ALREADY_SEEN:
+            parse_error(&p, modifier_error_span, 1030, "'abstract' modifier already seen.");
+            break;
+
+        case ABSTRACT_NOT_ON_ABSTRACT_CLASS:
+            parse_error(&p, modifier_error_span, 1253, "Abstract properties can only appear within an abstract class.");
+            break;
+
         case ACCCESS_ALREADY_SEEN:
             parse_error(&p, modifier_error_span, 1028, "Accessibility modifier already seen.");
             break;
@@ -2125,7 +2160,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
     ClassItem item;
     while (*p.pos && *p.pos != '}') {
-        if (!parse_class_item(&p, false, &item)) {
+        if (!parse_class_item(&p, false, is_abstract, &item)) {
             parse_error(
                 &p,
                 span_from_token(&p),

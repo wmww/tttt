@@ -607,6 +607,9 @@ static void display_class_decl(Display d, ClassDecl const* me) {
                 if (i.ref->method.is_static) {
                     display_lit(d, "static ");
                 }
+                if (i.ref->method.is_abstract) {
+                    display_lit(d, "abstract ");
+                }
                 display_color(d, color_name);
                 display_s(d, i.ref->method.name_string);
                 display_normal(d);
@@ -619,6 +622,9 @@ static void display_class_decl(Display d, ClassDecl const* me) {
             case CLASS_ITEM_FIELD:
                 if (i.ref->field.is_static) {
                     display_lit(d, "static ");
+                }
+                if (i.ref->field.is_abstract) {
+                    display_lit(d, "abstract ");
                 }
                 if (i.ref->field.is_readonly) {
                     display_lit(d, "readonly ");

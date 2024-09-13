@@ -246,7 +246,7 @@ const baselines = {
         types: true,
     },
     'abstractPropertyBasics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7726,7 +7726,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLocalClassDeclarationMixin': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31651,7 +31651,7 @@ const baselines = {
         types: false,
     },
     'classAbstractUsingAbstractMethod1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33316,7 +33316,7 @@ const baselines = {
         types: false,
     },
     'mixinAbstractClassesReturnTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

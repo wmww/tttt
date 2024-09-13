@@ -27,6 +27,7 @@ typedef struct ClassItem {
         struct {
             bool is_static;
             bool is_optional;
+            bool is_abstract;
             cstr name_string;
             Span name_span;
             bool name_is_value;
@@ -36,6 +37,7 @@ typedef struct ClassItem {
             bool is_static;
             bool is_readonly;
             bool is_optional;
+            bool is_abstract;
             cstr name_string;
             Span name_span;
             bool name_is_value;
