@@ -29,6 +29,7 @@ void uninhibit_nonfatals();
 #define MUST_USE __attribute__((warn_unused_result))
 
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
+#define PANIC_DBG PANIC("AAaaa");
 #define PANIC_AFTER_DBG(count, ...) do { \
         static int panic_count = 0; \
         panic_count++; \

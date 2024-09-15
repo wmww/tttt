@@ -121,7 +121,7 @@ const baselines = {
         types: true,
     },
     'ClassDeclarationWithInvalidConstOnPropertyDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5506,7 +5506,7 @@ const baselines = {
         types: false,
     },
     'constInClassExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20272,8 +20272,8 @@ const baselines = {
     },
     'multipleClassPropertyModifiersErrors': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'multipleExportAssignments': {
         errors: false,
@@ -20768,7 +20768,7 @@ const baselines = {
     'nestedGlobalNamespaceInClass': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nestedHomomorphicMappedTypesWithArrayConstraint1': {
         errors: false,
@@ -26278,7 +26278,7 @@ const baselines = {
     'staticModifierAlreadySeen': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'staticMustPrecedePublic': {
         errors: true,
@@ -33466,7 +33466,7 @@ const baselines = {
         types: undefined,
     },
     'autoAccessor8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47961,7 +47961,7 @@ const baselines = {
         types: false,
     },
     'override10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49652,8 +49652,8 @@ const baselines = {
     },
     'parserIndexMemberDeclaration10': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserIndexMemberDeclaration2': {
         errors: true,
@@ -49882,7 +49882,7 @@ const baselines = {
     },
     'parserMemberAccessorDeclaration8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserMemberAccessorDeclaration9': {
@@ -49897,8 +49897,8 @@ const baselines = {
     },
     'parserMemberFunctionDeclaration2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserMemberFunctionDeclaration3': {
         errors: true,
@@ -49927,8 +49927,8 @@ const baselines = {
     },
     'parserMemberVariableDeclaration2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserMemberVariableDeclaration3': {
         errors: true,

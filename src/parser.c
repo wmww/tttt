@@ -23,6 +23,9 @@ typedef vec_u8 VecU8;
 
 #define MAX_ERRORS 500 // Must be less than the max value storable in Parser.error_count
 
+// Yes it's just the & operator, but IMO it makes it more readable
+#define BITFIELD_OVERLAPS(e, pattern) (bool)((e) & (pattern))
+
 typedef struct ParserShared {
     SourceFile const* source;
     const char* fail_cache_start;
@@ -62,7 +65,7 @@ typedef struct Parser {
     WhitespaceType whitespace; // the type of whitespace detected in the most recent call to hop_whitespace()
     const char* whitespace_end; // the end of the most recent whitespace (whitespace type is retained if same as pos)
     uint8_t fail_cache_flag;
-    uint16_t error_count;
+    uint16_t error_count; // Number of errors added to this parser, includes children only after they succeed
 #ifdef DEBUG_BUILD
     bool has_panding_child;
 #endif
@@ -1682,234 +1685,311 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     return parse_success(&p);
 }
 
-// This function is a clusterfuck. I'm sorry.
-static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
+#define MODIFIER_LIST_MAX_LEN 50
+typedef struct {
+    enum {
+        MODIFIER_READONLY,
+        MODIFIER_ABSTRACT,
+        MODIFIER_STATIC,
+        MODIFIER_ACCESSOR,
+        MODIFIER_EXPORT,
+        MODIFIER_ASYNC,
+        MODIFIER_DECLARE,
+        MODIFIER_OVERRIDE,
+        MODIFIER_PRIVATE,
+        MODIFIER_PROTECTED,
+        MODIFIER_PUBLIC,
+        MODIFIER_CONST,
+        MODIFIER_ENUM_COUNT,
+    } modifier;
+    Span span;
+} ModifierList[MODIFIER_LIST_MAX_LEN + 1];
+
+static bool parse_modifiers(Parser* parent, ModifierList ret) {
     Parser p = parser(parent);
-    Anchor a = anchor(&p);
+    const char* end_pos = p.pos;
+    bool has_static = false;
 
-    enum {
-        MODIFIER_ERROR_NONE = 0,
-        READONLY_ALREADY_SEEN,
-        ABSTRACT_ALREADY_SEEN,
-        ABSTRACT_NOT_ON_ABSTRACT_CLASS,
-        ACCCESS_ALREADY_SEEN,
-        MUST_PRECEDE_READONLY,
-        MUST_PRECEDE_STATIC,
-        MUST_PRECEDE_ASYNC,
-        INVALID_READONLY,
-        UNEXPECTED_IDENT,
-        MODIFIERS_CANNOT_APPEAR,
-        MODIFIER_ON_TYPE,
-        EXPORT_INVALID,
-    } modifier_error = 0;
-    enum {
-        NOT_GETTER_SETTER = 0,
-        IS_GETTER,
-        IS_SETTER,
-    } getter_setter = 0;
-    Span modifier_error_span = span_null;
-    Span access_span = span_null;
-    Span readonly_span = span_null;
-    Span abstract_span = span_null;
-    Span static_span = span_null;
-    Span async_span = span_null;
-
-    cstr name_string = cstr_null;
-    Span name_span = span_null;
-    bool name_is_value = false;
-
-    ret->access = ACCESS_MODIFIER_PUBLIC;
+    int i = 0;
     while (true) {
-        Span next_name_span;
-        Value value;
-        Anchor name_start = anchor(&p);
-        if (parse_identifier(&p, &next_name_span)) {
-        } else if (*p.pos == '[') {
-            next_name_span = span_null;
-        } else if (parse_literal(&p, &value)) {
-            cstr_append_value_js(&name_string, &value);
-            value_drop(&value);
-            next_name_span = span_from(name_start);
-            name_is_value = true;
+        Anchor modifier_start = anchor(&p);
+        if (!hop_identifier_or_keyword(&p)) {
+            goto loop_end;
+        }
+        Span span = span_from(modifier_start);
+
+        hop_whitespace(&p);
+        if (p.whitespace == WHITESPACE_NEWLINE) {
+            goto loop_end;
+        }
+
+        if (!is_identifier_char(*p.pos)) {
+            switch (*p.pos) {
+                case '[': case '"': case '\'': break;
+                default:
+                    // If the current parse is going to succeed at all, what we just parsed must be an identifier not a
+                    // modifier. Break without handling it
+                    goto loop_end;
+            }
+        }
+
+        typeof(ret[0].modifier) modifier;
+
+        if (span_equals(span, "readonly")) {
+            modifier = MODIFIER_READONLY;
+        } else if (span_equals(span, "abstract")) {
+            modifier = MODIFIER_ABSTRACT;
+        } else if (span_equals(span, "static")) {
+            modifier = MODIFIER_STATIC;
+            if (has_static) {
+                // Why is the logic for static different? I don't know
+                break;
+            }
+            has_static = true;
+        } else if (span_equals(span, "accessor")) {
+            modifier = MODIFIER_ACCESSOR;
+        } else if (span_equals(span, "export")) {
+            modifier = MODIFIER_EXPORT;
+        } else if (span_equals(span, "async")) {
+            modifier = MODIFIER_ASYNC;
+        } else if (span_equals(span, "declare")) {
+            modifier = MODIFIER_DECLARE;
+        } else if (span_equals(span, "override")) {
+            modifier = MODIFIER_OVERRIDE;
+        } else if (span_equals(span, "private")) {
+            modifier = MODIFIER_PRIVATE;
+        } else if (span_equals(span, "protected")) {
+            modifier = MODIFIER_PROTECTED;
+        } else if (span_equals(span, "public")) {
+            modifier = MODIFIER_PUBLIC;
+        } else if (span_equals(span, "const")) {
+            modifier = MODIFIER_CONST;
+        } else if (span_equals(span, "var")) {
+            return parse_fail(&p);
         } else {
             break;
         }
 
-        if (span_equals(name_span, "readonly")) {
-            if (span_valid(readonly_span)) {
-                if (!modifier_error) {
-                    modifier_error = READONLY_ALREADY_SEEN;
-                    modifier_error_span = name_span;
-                }
-            } else {
-                readonly_span = name_span;
-            }
-        } else if (span_equals(name_span, "abstract")) {
-            if (!is_abstract) {
-                if (!modifier_error) {
-                    modifier_error = ABSTRACT_NOT_ON_ABSTRACT_CLASS;
-                    modifier_error_span = name_span;
-                }
-            } else if (span_valid(abstract_span)) {
-                if (!modifier_error) {
-                    modifier_error = ABSTRACT_ALREADY_SEEN;
-                    modifier_error_span = name_span;
-                }
-            } else {
-                abstract_span = name_span;
-            }
-
-            if (!modifier_error) {
-                if (is_type) {
-                    modifier_error = MODIFIER_ON_TYPE;
-                    modifier_error_span = name_span;
-                } else if (span_valid(async_span)) {
-                    modifier_error = MUST_PRECEDE_ASYNC;
-                    modifier_error_span = name_span;
-                }
-            }
-        } else if (span_equals(name_span, "static")) {
-            if (span_valid(static_span)) {
-                if (!modifier_error) {
-                    modifier_error = UNEXPECTED_IDENT;
-                    modifier_error_span = name_span;
-                }
-            } else {
-                static_span = name_span;
-            }
-
-            if (!modifier_error) {
-                if (is_type) {
-                    modifier_error = MODIFIER_ON_TYPE;
-                    modifier_error_span = name_span;
-                } else if (span_valid(async_span)) {
-                    modifier_error = MUST_PRECEDE_ASYNC;
-                    modifier_error_span = name_span;
-                }
-            }
-        } else if (span_equals(name_span, "export")) {
-            if (!modifier_error) {
-                modifier_error = EXPORT_INVALID;
-                modifier_error_span = name_span;
-            }
-        } else if (span_equals(name_span, "async")) {
-            if (span_valid(async_span)) {
-                if (!modifier_error) {
-                    modifier_error = UNEXPECTED_IDENT;
-                    modifier_error_span = name_span;
-                }
-            } else {
-                async_span = name_span;
-            }
-
-            if (!modifier_error) {
-                if (is_type) {
-                    modifier_error = MODIFIER_ON_TYPE;
-                    modifier_error_span = name_span;
-                }
-            }
-        } else if (span_equals(name_span, "declare")) {
-        } else if (span_equals(name_span, "get")) {
-            getter_setter = IS_GETTER;
-        } else if (span_equals(name_span, "set")) {
-            getter_setter = IS_SETTER;
-        } else if (
-            span_equals(name_span, "public") ||
-            span_equals(name_span, "protected") ||
-            span_equals(name_span, "private")
-        ) {
-            if (span_equals(name_span, "public")) {
-            } else if (span_equals(name_span, "protected")) {
-                if (!span_valid(access_span)) ret->access = ACCESS_MODIFIER_PROTECTED;
-            } else if (span_equals(name_span, "private")) {
-                if (!span_valid(access_span)) ret->access = ACCESS_MODIFIER_PRIVATE;
-            }
-
-            if (!modifier_error) {
-                if (is_type) {
-                    modifier_error = MODIFIER_ON_TYPE;
-                    modifier_error_span = name_span;
-                } else if (span_valid(access_span)) {
-                    modifier_error = ACCCESS_ALREADY_SEEN;
-                    modifier_error_span = name_span;
-                } else if (span_valid(readonly_span)) {
-                    modifier_error = MUST_PRECEDE_READONLY;
-                    modifier_error_span = name_span;
-                } else if (span_valid(static_span)) {
-                    modifier_error = MUST_PRECEDE_STATIC;
-                    modifier_error_span = name_span;
-                } else if (span_valid(async_span)) {
-                    modifier_error = MUST_PRECEDE_ASYNC;
-                    modifier_error_span = name_span;
-                }
-            }
-
-            if (!span_valid(access_span)) {
-                access_span = name_span;
-            }
-        } else if (span_valid(name_span) && !modifier_error) {
-            if (span_equals(name_span, "var")) {
-                return parse_fail(&p);
-            }
-            // If previous name is not empty
-            modifier_error = UNEXPECTED_IDENT;
-            modifier_error_span = name_span;
+        if (i < MODIFIER_LIST_MAX_LEN) {
+            ret[i].modifier = modifier;
+            ret[i].span = span;
+            i++;
         }
-        hop_whitespace(&p);
+        end_pos = span_end_ptr(span);
+    }
+    loop_end:
 
-        name_span = next_name_span;
+    ret[i].span = span_null;
+    p.pos = end_pos;
+    return parse_success(&p);
+}
 
-        if (!span_valid(name_span)) {
-            break;
+typedef enum {
+    MODIFIER_FLAG_MODIFIERS_NOT_ALLOWED  = 1 << 0,
+    MODIFIER_FLAG_TYPE_MEMEBER           = 1 << 1,
+    MODIFIER_FLAG_ABSTRACT               = 1 << 2,
+    MODIFIER_FLAG_FIELD                  = 1 << 3,
+    MODIFIER_FLAG_METHOD                 = 1 << 4,
+    MODIFIER_FLAG_CLASS_STATIC_BLOCK     = 1 << 5,
+} ModifierFlags;
+
+static void process_modifiers(
+    Parser* parent,
+    Span name,
+    ModifierList modifiers,
+    ModifierFlags flags,
+    bool ret[MODIFIER_ENUM_COUNT]
+) {
+    memset(ret, 0, MODIFIER_ENUM_COUNT * sizeof(ret[0]));
+    bool accessibility_seen = false;
+    bool has_modifier_error = false;
+
+// Only shows the first modifier
+#define MODIFIER_ERROR(...) \
+    if (!has_modifier_error) { parse_error(__VA_ARGS__); } \
+    modifier_is_error = true; \
+    has_modifier_error = true \
+
+    // Modifier order:
+    // (private|protected|public) (static|accessor) readonly
+    static const int modifier_ordering[MODIFIER_ENUM_COUNT] = {
+        [MODIFIER_READONLY]     = 2,
+        [MODIFIER_ABSTRACT]     = 0,
+        [MODIFIER_STATIC]       = 1,
+        [MODIFIER_ACCESSOR]     = 1,
+        [MODIFIER_EXPORT]       = 0,
+        [MODIFIER_ASYNC]        = 0,
+        [MODIFIER_DECLARE]      = 0,
+        [MODIFIER_OVERRIDE]     = 0,
+        [MODIFIER_PRIVATE]      = 0,
+        [MODIFIER_PROTECTED]    = 0,
+        [MODIFIER_PUBLIC]       = 0,
+        [MODIFIER_CONST]        = 0,
+    };
+
+    for (int i = 0; span_valid(modifiers[i].span); i++) {
+        auto modifier = modifiers[i].modifier;
+        Span span = modifiers[i].span;
+        bool modifier_is_error = false;
+
+        if (BITFIELD_OVERLAPS(flags, MODIFIER_FLAG_MODIFIERS_NOT_ALLOWED)) {
+            MODIFIER_ERROR(parent, span, 1184, "Modifiers cannot appear here.");
         }
 
-        if (p.whitespace == WHITESPACE_NEWLINE) {
-            break;
+        switch (modifier) {
+            case MODIFIER_READONLY:
+                if (!BITFIELD_OVERLAPS(flags, MODIFIER_FLAG_FIELD)) {
+                    MODIFIER_ERROR(parent, span, 1024,
+                        "'readonly' modifier can only appear on a property declaration or index signature.");
+                }
+                break;
+
+            case MODIFIER_ABSTRACT:
+                if (!BITFIELD_OVERLAPS(flags, MODIFIER_FLAG_ABSTRACT)) {
+                    MODIFIER_ERROR(parent, span, 1253, "Abstract properties can only appear within an abstract class.");
+                }
+                break;
+
+            case MODIFIER_STATIC:
+            case MODIFIER_ACCESSOR:
+                break;
+
+            case MODIFIER_EXPORT:
+                if (BITFIELD_OVERLAPS(flags, MODIFIER_FLAG_FIELD | MODIFIER_FLAG_METHOD)) {
+                    MODIFIER_ERROR(parent, span, 1031,
+                        "'export' modifier cannot appear on class elements of this kind.");
+                }
+                break;
+
+            case MODIFIER_ASYNC:
+            case MODIFIER_DECLARE:
+            case MODIFIER_OVERRIDE:
+                break;
+
+            case MODIFIER_PRIVATE:
+            case MODIFIER_PROTECTED:
+            case MODIFIER_PUBLIC:
+                if (accessibility_seen) {
+                    MODIFIER_ERROR(parent, span, 1028, "Accessibility modifier already seen.");
+                }
+                accessibility_seen = true;
+                break;
+
+            case MODIFIER_CONST:
+                if (BITFIELD_OVERLAPS(flags, MODIFIER_FLAG_FIELD | MODIFIER_FLAG_METHOD)) {
+                    MODIFIER_ERROR(parent, name, 1248, "A class member cannot have the 'const' keyword.");
+                }
+                break;
+
+            case MODIFIER_ENUM_COUNT:
+            default:
+                UNREACHABLE;
         }
 
-        if (getter_setter) {
-            break;
+        if (i && modifier_ordering[modifiers[i - 1].modifier] > modifier_ordering[modifier]) {
+            MODIFIER_ERROR(parent, span, 1029,
+                "'%.*s' modifier must precede '%.*s' modifier.",
+                c_SPAN(span), c_SPAN(modifiers[i - 1].span));
         }
 
-        if (name_is_value) {
-            break;
+        if (BITFIELD_OVERLAPS(flags, MODIFIER_FLAG_TYPE_MEMEBER)) {
+            switch (modifier) {
+                case MODIFIER_ABSTRACT:
+                case MODIFIER_ASYNC:
+                case MODIFIER_PRIVATE:
+                case MODIFIER_PROTECTED:
+                case MODIFIER_PUBLIC:
+                    MODIFIER_ERROR(parent, span, 1070, "'%.*s' modifier cannot appear on a type member.", c_SPAN(span));
+                    break;
+
+                default: break;
+            }
+        }
+
+        if (ret[modifier]) {
+            MODIFIER_ERROR(parent, span, 1030, "'%.*s' modifier already seen.", c_SPAN(span));
+        } else if (!modifier_is_error) {
+            ret[modifier] = true;
         }
     }
+
+#undef MODIFIER_ERROR
+}
+
+static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* name_ret, bool* name_is_value_ret) {
+    Value value;
+    Anchor a = anchor(parent);
+    if (parse_identifier(parent, span_ret)) {
+        *name_ret = cstr_from_span(*span_ret);
+        *name_is_value_ret = false;
+        return true;
+    } else if (parse_literal(parent, &value)) {
+        *name_ret = cstr_null;
+        cstr_append_value_js(name_ret, &value);
+        value_drop(&value);
+        *span_ret = span_from(a);
+        *name_is_value_ret = true;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
+    ModifierList modifier_list; // Typedefed to an array, so sending it to parse_modifiers() passes by reference
+    if (!parse_modifiers(&p, modifier_list)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    bool is_getter = false, is_setter = false;
+    ignore is_setter;
+    ignore is_getter;
+
+    Span name_span;
+    cstr name_string;
+    bool name_is_value;
+    if (parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
+        if (!name_is_value && (span_equals(name_span, "get") || span_equals(name_span, "set"))) {
+            hop_whitespace(&p);
+
+            Span real_name_span;
+            cstr real_name_string;
+            bool real_name_is_value;
+            if (parse_name_or_value(&p, &real_name_span, &real_name_string, &real_name_is_value)) {
+                if (span_equals(name_span, "get")) {
+                    is_getter = true;
+                } else {
+                    is_setter = true;
+                }
+                cstr_drop(&name_string);
+                name_span = real_name_span;
+                name_string = real_name_string;
+                name_is_value = real_name_is_value;
+            }
+        }
+    } else {
+        name_span = span_null;
+        name_string = cstr_null;
+        name_is_value = false;
+    }
+    hop_whitespace(&p);
 
     bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
-    if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
-        ret->tag = CLASS_ITEM_CONSTRUCTOR;
-        name_span = span_from(a);
-        if (!parse_function_fn(&p, &ret->constructor.func)) {
-            parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
-            ret->constructor.func = (FunctionImpl){0};
-        }
-        ret->constructor.name_span = name_span;
-        ret->constructor.func.full_span = span_from(a);
-        ret->constructor.func.is_constructor = true;
-        if (span_valid(readonly_span)) {
-            modifier_error = INVALID_READONLY;
-            modifier_error_span = readonly_span;
-        }
-    } else if (
+    if (
         !is_type &&
         !name_is_value &&
         span_equals(name_span, "static") &&
         parse_block(&p, false, &ret->static_block)
     ) {
+        bool modifiers[MODIFIER_ENUM_COUNT];
+        process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_MODIFIERS_NOT_ALLOWED, modifiers);
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
-        if (span_valid(async_span)) {
-            modifier_error = MODIFIERS_CANNOT_APPEAR;
-            modifier_error_span = async_span;
-        } else if (span_valid(readonly_span)) {
-            modifier_error = MODIFIERS_CANNOT_APPEAR;
-            modifier_error_span = readonly_span;
-        } else if (span_valid(access_span)) {
-            modifier_error = MODIFIERS_CANNOT_APPEAR;
-            modifier_error_span = access_span;
-        }
     } else if (span_valid(name_span)) {
         if (span_valid(name_span) && cstr_empty(&name_string)) {
             name_string = cstr_from_span(name_span);
@@ -1922,12 +2002,32 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
         }
 
         FunctionImpl func;
-        if (parse_function_fn(&p, &func)) {
-            *ret = (ClassItem) {
+        bool modifiers[MODIFIER_ENUM_COUNT];
+        ModifierFlags flags =
+            (is_type ? MODIFIER_FLAG_TYPE_MEMEBER : 0) |
+            (is_abstract ? MODIFIER_FLAG_ABSTRACT : 0);
+        if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
+            process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_METHOD | flags, modifiers);
+            name_span = span_from(a);
+            if (!parse_function_fn(&p, &func)) {
+                parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
+                func = (FunctionImpl){0};
+            }
+            func.full_span = span_from(a);
+            func.is_constructor = true;
+            *ret = (ClassItem){
+                .tag = CLASS_ITEM_CONSTRUCTOR,
+                .constructor = {
+                    .name_span = name_span,
+                    .func = func,
+                }
+            };
+        } else if (parse_function_fn(&p, &func)) {
+            process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_METHOD | flags, modifiers);
+            *ret = (ClassItem){
                 .tag = CLASS_ITEM_METHOD,
-                .access = ret->access,
                 .method = {
-                    .is_static = span_valid(static_span),
+                    .is_static = modifiers[MODIFIER_STATIC],
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
                     .is_optional = optional,
@@ -1935,18 +2035,15 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
                     .func = func,
                 }
             };
-
-            if (span_valid(readonly_span)) {
-                modifier_error = INVALID_READONLY;
-                modifier_error_span = readonly_span;
-            }
         } else {
-            *ret = (ClassItem) {
+            bool is_definitely_field = false;
+
+            process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_FIELD | flags, modifiers);
+            *ret = (ClassItem){
                 .tag = CLASS_ITEM_FIELD,
-                .access = ret->access,
                 .field = {
-                    .is_readonly = span_valid(readonly_span),
-                    .is_static = span_valid(static_span),
+                    .is_readonly = modifiers[MODIFIER_READONLY],
+                    .is_static = modifiers[MODIFIER_STATIC],
                     .is_optional = optional,
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
@@ -1959,27 +2056,53 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
                 ret->field.explicit_type = binding.explicit_type;
                 ret->field.explicit_type_span = binding.explicit_type_span;
                 ret->field.has_explicit_type = binding.has_explicit_type;
+                is_definitely_field = true;
                 hop_whitespace(&p);
             }
 
             if (parse_initialization_or_set_to_default(&p, expr_ctx_null, &ret->field.value)) {
+                is_definitely_field = true;
                 hop_whitespace(&p);
             }
+
+            if (p.whitespace != WHITESPACE_NEWLINE) {
+                switch (*p.pos) {
+                    case ';': case ',': case '}': case '\0': break;
+                    default:
+                        if (is_definitely_field) {
+                            expect_char(&p, ';');
+                        } else if (span_equals(name_span, "function")) {
+                            class_item_drop(ret);
+                            return parse_fail(&p);
+                        } else {
+                            parse_error(&p, name_span, 1434, "Unexpected keyword or identifier.");
+                        }
+                }
+            }
         }
+        ret->access = modifiers[MODIFIER_PRIVATE] ?
+            ACCESS_MODIFIER_PRIVATE :
+            (modifiers[MODIFIER_PROTECTED] ?
+                ACCESS_MODIFIER_PROTECTED :
+                ACCESS_MODIFIER_PUBLIC);
     } else {
+        bool modifiers[MODIFIER_ENUM_COUNT];
+
         FunctionImpl func;
         if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
             parse_index_or_expr_interface_member(&p, true, &ret->interface_memeber) ||
             parse_index_or_expr_interface_member(&p, false, &ret->interface_memeber)
         ) {
+            process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_TYPE_MEMEBER | MODIFIER_FLAG_FIELD, modifiers);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.declarations = vec_span_single(span_from(a));
-            ret->interface_memeber.readonly = span_valid(readonly_span);
+            ret->interface_memeber.readonly = modifiers[MODIFIER_READONLY];
         } else if (parse_function_args(&p, true, false, &func)) {
+            process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_TYPE_MEMEBER | MODIFIER_FLAG_METHOD, modifiers);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
                 .declarations = vec_span_single(span_from(a)),
-                .readonly = span_valid(readonly_span),
+                .readonly = modifiers[MODIFIER_READONLY],
                 .key.tag = INTERFACE_KEY_CALLABLE,
                 .type = function_impl_into_type(func),
             };
@@ -1987,104 +2110,13 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
             cstr_drop(&name_string);
             return parse_fail(&p);
         }
+
+        hop_whitespace(&p);
+        if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != ',' && *p.pos != '}') {
+            expect_char(&p, ';');
+        }
     }
     cstr_drop(&name_string);
-
-    switch (modifier_error) {
-        case MODIFIER_ERROR_NONE: break;
-
-        case READONLY_ALREADY_SEEN:
-            parse_error(&p, modifier_error_span, 1030, "'readonly' modifier already seen.");
-            break;
-
-        case ABSTRACT_ALREADY_SEEN:
-            parse_error(&p, modifier_error_span, 1030, "'abstract' modifier already seen.");
-            break;
-
-        case ABSTRACT_NOT_ON_ABSTRACT_CLASS:
-            parse_error(&p, modifier_error_span, 1253, "Abstract properties can only appear within an abstract class.");
-            break;
-
-        case ACCCESS_ALREADY_SEEN:
-            parse_error(&p, modifier_error_span, 1028, "Accessibility modifier already seen.");
-            break;
-
-        case MUST_PRECEDE_READONLY:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1029,
-                "'%.*s' modifier must precede 'readonly' modifier.",
-                c_SPAN(modifier_error_span)
-            );
-            break;
-
-        case MUST_PRECEDE_STATIC:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1029,
-                "'%.*s' modifier must precede 'static' modifier.",
-                c_SPAN(modifier_error_span)
-            );
-            break;
-
-        case MUST_PRECEDE_ASYNC:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1029,
-                "'%.*s' modifier must precede 'async' modifier.",
-                c_SPAN(modifier_error_span)
-            );
-            break;
-
-        case INVALID_READONLY:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1024,
-                "'readonly' modifier can only appear on a property declaration or index signature."
-            );
-            break;
-
-        case UNEXPECTED_IDENT:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1434,
-                "Unexpected keyword or identifier."
-            );
-            break;
-
-        case MODIFIERS_CANNOT_APPEAR:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1184,
-                "Modifiers cannot appear here."
-            );
-            break;
-
-        case MODIFIER_ON_TYPE:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1070,
-                "'%.*s' modifier cannot appear on a type member.",
-                c_SPAN(modifier_error_span)
-            );
-            break;
-
-        case EXPORT_INVALID:
-            parse_error(
-                &p,
-                modifier_error_span,
-                1031,
-                "'export' modifier cannot appear on class elements of this kind."
-            );
-            break;
-    }
 
     ret->span = span_from(a);
     return parse_success(&p);
@@ -2178,8 +2210,6 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
         if (!*p.pos || *p.pos == '}') {
             break;
-        } else if (p.whitespace != WHITESPACE_NEWLINE) {
-            expect_char(&p, ';');
         }
 
         do {
