@@ -57,8 +57,8 @@ const baselines = {
     },
     'ArrowFunctionExpression1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ClassDeclaration10': {
         errors: false,
@@ -177,7 +177,7 @@ const baselines = {
     },
     'MemberAccessorDeclaration15': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ParameterList13': {
@@ -187,28 +187,28 @@ const baselines = {
     },
     'ParameterList4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ParameterList5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ParameterList6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ParameterList7': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ParameterList8': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'SystemModuleForStatementNoInitializer': {
         errors: false,
@@ -317,7 +317,7 @@ const baselines = {
     },
     'accessorParameterAccessibilityModifier': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'accessorWithInitializer': {
@@ -1133,7 +1133,7 @@ const baselines = {
     'arrayAssignmentTest3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arrayAssignmentTest4': {
         errors: false,
@@ -3728,17 +3728,17 @@ const baselines = {
     'classMemberInitializerWithLamdaScoping2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'classMemberInitializerWithLamdaScoping3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'classMemberInitializerWithLamdaScoping4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'classMemberInitializerWithLamdaScoping5': {
         errors: true,
@@ -3991,7 +3991,7 @@ const baselines = {
         types: false,
     },
     'collectionPatternNoError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4926,7 +4926,7 @@ const baselines = {
         types: false,
     },
     'comparabilityTypeParametersRelatedByUnion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5592,28 +5592,28 @@ const baselines = {
     },
     'constructorArgsErrors1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'constructorArgsErrors2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorArgsErrors3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorArgsErrors4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorArgsErrors5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'constructorAsType': {
         errors: false,
@@ -7241,14 +7241,14 @@ const baselines = {
         types: false,
     },
     'declarationEmitClassPrivateConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitClassPrivateConstructor2': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitClassSetAccessorParamNameInJs': {
         errors: true,
@@ -7861,7 +7861,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitParameterProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10388,7 +10388,7 @@ const baselines = {
     'errorForwardReferenceForwadingConstructor': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'errorHandlingInInstanceOf': {
         errors: true,
@@ -10926,7 +10926,7 @@ const baselines = {
         types: false,
     },
     'es6ClassTest8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12318,7 +12318,7 @@ const baselines = {
     'extendBaseClassBeforeItsDeclared': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'extendConstructSignatureInInterface': {
         errors: false,
@@ -13766,7 +13766,7 @@ const baselines = {
         types: false,
     },
     'genericClasses4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13776,7 +13776,7 @@ const baselines = {
         types: false,
     },
     'genericClassesInModule2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14036,7 +14036,7 @@ const baselines = {
         types: false,
     },
     'genericInstanceOf': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14311,7 +14311,7 @@ const baselines = {
         types: true,
     },
     'genericTypeWithCallableMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15801,7 +15801,7 @@ const baselines = {
         types: false,
     },
     'inferenceDoesntCompareAgainstUninstantiatedTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15881,7 +15881,7 @@ const baselines = {
         types: false,
     },
     'inferentialTypingUsingApparentType3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16686,9 +16686,9 @@ const baselines = {
         types: true,
     },
     'interfaceSubtyping': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'interfaceWithCommaSeparators': {
         errors: true,
@@ -17713,7 +17713,7 @@ const baselines = {
     'jsFileCompilationPublicParameterModifier': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsFileCompilationRestParamJsDocFunction': {
         errors: false,
@@ -19222,8 +19222,8 @@ const baselines = {
     },
     'modifierOnParameter1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'modifierParenCast': {
         errors: true,
@@ -21893,7 +21893,7 @@ const baselines = {
     'objectCreationExpressionInFunctionParameter': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectCreationOfElementAccessExpression': {
         errors: false,
@@ -22708,7 +22708,7 @@ const baselines = {
     'paramPropertiesInSignatures': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterDestructuringObjectLiteral': {
         errors: false,
@@ -22743,7 +22743,7 @@ const baselines = {
     'parameterPropertyInConstructor3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterPropertyInConstructorWithPrologues': {
         errors: false,
@@ -22751,19 +22751,19 @@ const baselines = {
         types: false,
     },
     'parameterPropertyInitializerInInitializers': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterPropertyOutsideConstructor': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parameterPropertyReferencingOtherParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterReferenceInInitializer1': {
         errors: false,
@@ -23838,7 +23838,7 @@ const baselines = {
     'propertyParameterWithQuestionMark': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'propertySignatures': {
         errors: false,
@@ -23978,7 +23978,7 @@ const baselines = {
     'raiseErrorOnParameterProperty': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ramdaToolsNoInfinite': {
         errors: false,
@@ -24102,7 +24102,7 @@ const baselines = {
     },
     'readonlyInNonPropertyParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'readonlyMembers': {
@@ -24436,7 +24436,7 @@ const baselines = {
         types: true,
     },
     'recursiveSpecializationOfSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25561,7 +25561,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationClass': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28006,7 +28006,7 @@ const baselines = {
         types: true,
     },
     'typeConstraintsWithConstructSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29496,7 +29496,7 @@ const baselines = {
         types: false,
     },
     'unusedLocalProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29673,12 +29673,12 @@ const baselines = {
     'unusedParameterProperty1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unusedParameterProperty2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unusedParameterUsedInTypeOf': {
         errors: false,
@@ -32128,7 +32128,7 @@ const baselines = {
     'classConstructorAccessibility3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'classConstructorAccessibility4': {
         errors: true,
@@ -32198,12 +32198,12 @@ const baselines = {
     'constructorParameterProperties2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitReadonly': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'readonlyConstructorAssignment': {
         errors: false,
@@ -32213,7 +32213,7 @@ const baselines = {
     'readonlyInAmbientClass': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'readonlyInConstructorParameters': {
         errors: false,
@@ -32223,7 +32223,7 @@ const baselines = {
     'readonlyReadonly': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorWithAssignableReturnExpression': {
         errors: false,
@@ -32231,9 +32231,9 @@ const baselines = {
         types: true,
     },
     'constructorWithExpressionLessReturn': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'quotedConstructors': {
         errors: false,
@@ -34111,9 +34111,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitWorkWithInlineComments': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportDefaultExpressionComments': {
         errors: true,
@@ -48322,8 +48322,8 @@ const baselines = {
     },
     'parserArrowFunctionExpression1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserArrowFunctionExpression10': {
         errors: undefined,
@@ -49832,7 +49832,7 @@ const baselines = {
     },
     'parserMemberAccessorDeclaration15': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserMemberAccessorDeclaration16': {
@@ -50192,28 +50192,28 @@ const baselines = {
     },
     'parserParameterList4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserParameterList5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserParameterList6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserParameterList7': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserParameterList8': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserParameterList9': {
         errors: false,
@@ -50341,9 +50341,9 @@ const baselines = {
         types: true,
     },
     'Protected9': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserharness': {
         errors: false,
@@ -54936,12 +54936,12 @@ const baselines = {
         types: false,
     },
     'localTypes2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'localTypes3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56856,7 +56856,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

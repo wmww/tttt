@@ -1411,6 +1411,10 @@ static bool parse_function_args(
                 Span rest_span = span_null;
                 Anchor arg_start = anchor(&p);
 
+                ModifierList modifier_list;
+                parse_modifiers(&p, modifier_list);
+                hop_whitespace(&p);
+
                 if (hop_start(&p, "...")) {
                     hop_whitespace(&p);
                     rest = true;
