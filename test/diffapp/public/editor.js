@@ -20,7 +20,13 @@ class Editor {
       }
     });
 
-    this.inputElem.addEventListener('focusout', () => this.render());
+    this.inputElem.addEventListener('focusout', () => {
+      // Re-rendering prevents buttons in the editor from being clicked (they are destroyed and recreated in the frame
+      // before the click event can go through). This simulates the only change that would result from re-rendering.
+      document.querySelectorAll('.token-cursor').forEach(elem => {
+        elem.style.display = 'none';
+      })
+    });
 
     const selectTo = ev => {
       let offset = this.tokenOffsetAtPoint(ev.clientX, ev.clientY);
@@ -53,6 +59,9 @@ class Editor {
     }
 
     this.viewElem.addEventListener('mousedown', ev => {
+      if (ev.target.onclick) {
+        return;
+      }
       const time = performance.now();
       if (
         this.lastMousedownTime &&
@@ -67,6 +76,7 @@ class Editor {
       this.lastMousedownClientY = ev.clientY;
       selectTo(ev);
       this.viewElem.addEventListener('mousemove', selectTo);
+      this.render();
     });
 
     this.viewElem.addEventListener('mouseup', ev => {

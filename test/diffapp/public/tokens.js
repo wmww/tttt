@@ -62,7 +62,7 @@ function addLineStartTokensTo(tokens, options) {
 // Additional options respected:
 // - copyErrorButtons: if to detect error messages and make a button for copying them
 const textTokenRegex = /([^\r\n]+)|(\r\n|\r|\n)/y;
-const errorMessageRegex = /(?<beforeError>!!! error )(?<tsCode>TS(?<codeInner>\d+):)(?<errorMessage>.*)/;
+const errorMessageRegex = /(?<beforeError>!!! error )(?<tsCode>TS(?<codeInner>\d+))(?<errorMessage>: (?<errorMessageInner>.*))/;
 function tokenizeStringInto(text, tokens, options) {
   const initialEditorStart = options.editorStart;
   const initialEditorEnd = options.editorEnd ?? Infinity;
@@ -87,14 +87,15 @@ function tokenizeStringInto(text, tokens, options) {
         const text = (
           errorMatch.groups.codeInner +
           ', "' +
-          errorMatch.groups.errorMessage.replace('"', '\\"') +
+          errorMatch.groups.errorMessageInner.replace('"', '\\"') +
           '"')
         tokens.push({
           type: Token.BUTTON,
           text: errorMatch.groups.tsCode,
           onclick: () => {
-            console.log('Clicking...');
-            navigator.clipboard.writeText(text);
+            navigator.clipboard.writeText(text).catch(e => {
+              console.error('Error thrown copying text (sometimes it works anyway lol):', e);
+            });
           },
           classes: options.classes,
         });
