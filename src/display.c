@@ -427,7 +427,7 @@ static void display_ternary_type(Display d, TernaryType* me) {
 void display_type(Display d, Type const* me) {
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
-        display_fmt(d, "%d{", me->tag);
+        display_fmt(d, "(%d:", me->tag);
     }
 
     switch (my tag) {
@@ -523,9 +523,9 @@ void display_type(Display d, Type const* me) {
             break;
 
         case TYPE_LAZY:
-            if (d.debug) display_colored(d, color_implicit, "{-> ");
+            if (d.debug) display_colored(d, color_implicit, "(~> ");
             display_type(d, lazy_type_get(my lazy));
-            if (d.debug) display_colored(d, color_implicit, "}");
+            if (d.debug) display_colored(d, color_implicit, ")");
             break;
 
         case TYPE_REF:
@@ -540,7 +540,7 @@ void display_type(Display d, Type const* me) {
     }
 
     if (d.hash_key) {
-        display_lit(d, "}");
+        display_lit(d, ")");
     }
 }
 

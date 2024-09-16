@@ -5,7 +5,6 @@
 #include "function_impl.h"
 #include "class_decl.h"
 #include "interface_decl.h"
-#include "name_stack.h"
 
 void lazy_type_evaluate(LazyType* me) {
     // THREADSAFETY: this will probably need to be rewritten to be threadsafe
@@ -60,6 +59,7 @@ void lazy_type_evaluate(LazyType* me) {
     }
 
     if (initial_tag != LAZY_TYPE_IDENTIFIER_TYPE) {
+        // TODO: this seems wrong, is it needed once chains of multiple self-referential LazyTypes are handled correctly?
         type_resolve(&result); // Ignore return value, do this so we'll pick up on self-referential types
     }
 
