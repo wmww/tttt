@@ -46,6 +46,7 @@ typedef enum WhitespaceType {
 
 typedef struct ExprCtx {
     bool reject_in_operator;
+    bool reject_operators;
     int min_precedence;
 } ExprCtx;
 
@@ -2159,7 +2160,9 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
 
-        expect_expr(&p, expr_ctx_null, &ret->extends);
+        ExprCtx ctx = expr_ctx_null;
+        ctx.reject_operators = true;
+        expect_expr(&p, ctx, &ret->extends);
         hop_whitespace(&p);
 
         if (hop_char(&p, ',')) {
@@ -2649,7 +2652,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
     }
 
-    if (!hit_newline) {
+    if (!ctx.reject_operators && !hit_newline) {
         if (parse_right_unary_op(&p, &parsed.unary)) {
             *left_and_ret = expr_unary_op(
                 span_from(a),
@@ -2662,7 +2665,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
     }
 
-    if (parse_binary_op_expr(&p, ctx, left_and_ret)) {
+    if (!ctx.reject_operators && parse_binary_op_expr(&p, ctx, left_and_ret)) {
         return parse_success(&p);
     }
 
@@ -2709,7 +2712,9 @@ static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser generic_p = parser(&p);
     hop_whitespace(&generic_p);
     if (parse_generic_params(&generic_p, &ret->identifier.generic_params)) {
-        if (generic_p.error_count == 0) {
+        if (ctx.reject_operators) {
+            parse_success(&generic_p);
+        } else if (generic_p.error_count == 0) {
             Parser next_p = parser(&generic_p);
             Expr expr;
             hop_whitespace(&next_p);

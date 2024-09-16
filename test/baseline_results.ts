@@ -3532,8 +3532,8 @@ const baselines = {
     },
     'classExtendsInterface': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classExtendsInterfaceInExpression': {
         errors: false,
@@ -5536,7 +5536,7 @@ const baselines = {
         types: false,
     },
     'constraintCheckInGenericBaseTypeReference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6866,7 +6866,7 @@ const baselines = {
         types: false,
     },
     'declFileForFunctionTypeAsTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6896,8 +6896,8 @@ const baselines = {
         types: false,
     },
     'declFileGenericClassWithGenericExtendedClass': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declFileGenericType': {
@@ -7507,7 +7507,7 @@ const baselines = {
     },
     'declarationEmitExpressionInExtends3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExpressionInExtends4': {
@@ -13656,12 +13656,12 @@ const baselines = {
         types: false,
     },
     'genericBaseClassLiteralProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'genericBaseClassLiteralProperty2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13731,8 +13731,8 @@ const baselines = {
         types: false,
     },
     'genericClassStaticMethod': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'genericClassWithStaticFactory': {
@@ -13761,7 +13761,7 @@ const baselines = {
         types: true,
     },
     'genericClasses3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13887,12 +13887,12 @@ const baselines = {
     },
     'genericDerivedTypeWithSpecializedBase': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericDerivedTypeWithSpecializedBase2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericFunctionCallSignatureReturnTypeMismatch': {
@@ -14262,7 +14262,7 @@ const baselines = {
     },
     'genericTypeAssertions2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericTypeAssertions3': {
@@ -14361,8 +14361,8 @@ const baselines = {
         types: false,
     },
     'genericWithIndexerOfTypeParameterType2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'genericWithNoConstraintComparableWithCurlyCurly': {
@@ -15677,7 +15677,7 @@ const baselines = {
     },
     'indirectSelfReferenceGeneric': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'indirectTypeParameterReferences': {
@@ -15776,7 +15776,7 @@ const baselines = {
         types: true,
     },
     'inferTypeParameterConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16136,7 +16136,7 @@ const baselines = {
         types: true,
     },
     'inheritanceOfGenericConstructorMethod1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16402,7 +16402,7 @@ const baselines = {
     },
     'instanceSubtypeCheck2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceofNarrowReadonlyArray': {
@@ -18721,8 +18721,8 @@ const baselines = {
         types: true,
     },
     'mappedTypeInferenceToMappedType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mappedTypeMultiInference': {
@@ -20321,12 +20321,12 @@ const baselines = {
         types: false,
     },
     'mutuallyRecursiveGenericBaseTypes2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mutuallyRecursiveInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21611,7 +21611,7 @@ const baselines = {
         types: false,
     },
     'nonGenericClassExtendingGenericClassWithAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24162,7 +24162,7 @@ const baselines = {
     },
     'recursiveBaseCheck3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveBaseCheck4': {
@@ -24177,7 +24177,7 @@ const baselines = {
     },
     'recursiveBaseCheck6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveBaseConstructorCreation1': {
@@ -24192,7 +24192,7 @@ const baselines = {
     },
     'recursiveBaseConstructorCreation3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveClassBaseType': {
@@ -31726,7 +31726,7 @@ const baselines = {
         types: false,
     },
     'classExtendingClass': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31757,12 +31757,12 @@ const baselines = {
     },
     'classExtendsItself': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classExtendsItselfIndirectly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classExtendsItselfIndirectly2': {
@@ -31787,7 +31787,7 @@ const baselines = {
     },
     'classIsSubtypeOfBaseType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constructorFunctionTypeIsAssignableToBaseType': {
@@ -32447,7 +32447,7 @@ const baselines = {
     },
     'classWithBaseClassButNoConstructor': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classWithConstructors': {
@@ -32532,7 +32532,7 @@ const baselines = {
     },
     'derivedClassTransitivity3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'derivedClassTransitivity4': {
@@ -32567,7 +32567,7 @@ const baselines = {
     },
     'derivedGenericClassWithAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'superInStaticMembers1': {
@@ -46007,7 +46007,7 @@ const baselines = {
     },
     'jsDeclarationsClassesErr': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsCommonjsRelativePath': {
@@ -57461,8 +57461,8 @@ const baselines = {
         types: false,
     },
     'arrayLiteralsWithRecursiveGenerics': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'infiniteExpansionThroughInstantiation': {
@@ -57992,7 +57992,7 @@ const baselines = {
     },
     'objectTypesIdentityWithPrivates3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectTypesIdentityWithPublics': {
