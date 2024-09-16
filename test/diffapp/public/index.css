@@ -145,6 +145,7 @@ button, .fake-button {
   overflow-x: auto;
   overflow-y: auto;
   border-radius: 10px;
+  background-color: var(--panel);
 }
 
 .token-view {
@@ -157,7 +158,6 @@ button, .fake-button {
   box-sizing: border-box;
   font-family: Consolas, "Lucida Console", monospace;
   color: var(--code-text);
-  background-color: var(--panel);
   cursor: text;
   user-select: none;
 }
@@ -165,7 +165,6 @@ button, .fake-button {
 #code-view-container {
   flex-basis: 0;
   flex-grow: 1;
-  background-color: var(--panel);
 }
 
 #code-view {
