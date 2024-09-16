@@ -600,10 +600,6 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
         return me;
     }
 
-    if (ctx->recursion_level > 50) {
-        return &type_excessively_deep_error;
-    }
-
     NamedType const* to_remove = nullptr;
     if (my tag == TYPE_IDENTIFIER) {
         if (through_identifier) {
@@ -884,7 +880,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 }
 
 static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
-    if (ctx->recursion_level > 40) {
+    if (ctx->recursion_level > 400) {
         NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }
@@ -1086,7 +1082,7 @@ static bool index_type_of_internal(
     ErrorCtx* errs,
     Type* ret
 ) {
-    if (ctx->recursion_level > 50) {
+    if (ctx->recursion_level > 500) {
         NONFATAL("Max type recursion depth exceeded (index_type_of_internal)");
         return false;
     }
