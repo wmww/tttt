@@ -74,6 +74,12 @@ class Editor {
       this.lastMousedownTime = time;
       this.lastMousedownClientX = ev.clientX;
       this.lastMousedownClientY = ev.clientY;
+      if (ev.shiftKey) {
+        this.selectionAnchor = (
+          this.inputElem.selectionDirection === 'backward' ?
+          this.inputElem.selectionEnd :
+          this.inputElem.selectionStart);
+      }
       selectTo(ev);
       this.viewElem.addEventListener('mousemove', selectTo);
       this.render();
