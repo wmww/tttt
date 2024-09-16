@@ -336,7 +336,7 @@ class TtttRunner {
           '--show-leak-kinds=all',
           '--exit-on-first-error=yes',
           '--error-exitcode=69',
-          '--num-callers=30',
+          '--num-callers=100',
           '--quiet',
           path.join(ttttBuildDir, 'diffapp_runner'),
           codePath
