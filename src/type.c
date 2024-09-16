@@ -33,7 +33,6 @@ typedef hmap_str_bool HmapStrBool;
 typedef struct TypeCtx {
     unsigned recursion_level;
     HsetNamedTypeCPtr currently_resolving;
-    unsigned extends_attempts;
     HmapStrBool extends_results;
 } TypeCtx;
 
@@ -888,8 +887,7 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     static const bool default_result = true;
     HashKeyTarget key = {0};
     csview key_sv;
-    bool add_to_extends_results = ctx->extends_attempts > 10 &&
-        (sub->tag == TYPE_IDENTIFIER || super->tag == TYPE_IDENTIFIER);
+    bool add_to_extends_results = sub->tag == TYPE_IDENTIFIER || super->tag == TYPE_IDENTIFIER;
 
     if (add_to_extends_results) {
         display_type(hash_key_display(&key), sub);
@@ -911,8 +909,6 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
         if (!result.inserted) {
             return result.ref->second;
         }
-    } else {
-        ctx->extends_attempts++;
     }
 
     ctx->recursion_level++;
