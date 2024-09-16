@@ -682,15 +682,18 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_RETURN_EXPR: {
-            expr_typecheck(&my expr, errs);
+            // TODO: remove this check once we've split typechecking from type evaluation
+            if (errs) {
+                expr_typecheck(&my expr, errs);
 
-            if (ctx->specified_return) {
-                check_assignable_or_error(
-                    expr_get_type(&my expr),
-                    ctx->specified_return,
-                    my expr.outer_span,
-                    errs
-                );
+                if (ctx->specified_return) {
+                    check_assignable_or_error(
+                        expr_get_type(&my expr),
+                        ctx->specified_return,
+                        my expr.outer_span,
+                        errs
+                    );
+                }
             }
 
             if (ctx->collect_returned_types) {

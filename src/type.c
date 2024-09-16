@@ -1552,17 +1552,20 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 intptr_t index = i.ref - call->args.data;
                 // Don't report errors, errors inside argument expressions are reported elsewhere
                 if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
-                    CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);
-                    if (!check_assignable_or_error_internal(
-                        "Argument of type",
-                        expr_get_type(i.ref),
-                        "parameter of type",
-                        &arg->type,
-                        2345,
-                        i.ref->outer_span,
-                        errs
-                    )) {
-                        check_types_against_callable = false;
+                    // TODO: remove this check once we've split typechecking from type evaluation
+                    if (errs) {
+                        CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);
+                        if (!check_assignable_or_error_internal(
+                            "Argument of type",
+                            expr_get_type(i.ref),
+                            "parameter of type",
+                            &arg->type,
+                            2345,
+                            i.ref->outer_span,
+                            errs
+                        )) {
+                            check_types_against_callable = false;
+                        }
                     }
                 } else if (last_arg_rest) {
                     rest_span = span_between(rest_span, i.ref->outer_span);
