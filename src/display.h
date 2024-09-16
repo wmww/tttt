@@ -110,3 +110,6 @@ void display_type(Display d, Type const* me);
 void display_expr(Display d, Expr const* me);
 void display_statement(Display d, Statement const* me);
 void display_block(Display d, Block const* me);
+
+// Useful for calling from GDB
+void print_type_dbg(Type const* me);

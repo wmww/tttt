@@ -1107,3 +1107,10 @@ void display_block(Display d, Block const* me) {
     display_newline(d);
     display_lit(d, "}");
 }
+
+void print_type_dbg(Type const* me) {
+    cstr s = cstr_null;
+    display_type(debug_display(&s), me);
+    fprintf(stderr, "Type %p: %s\n", (void*)me, cstr_str(&s));
+    cstr_drop(&s);
+}
