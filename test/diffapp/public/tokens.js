@@ -140,7 +140,7 @@ function tokenizeStringInto(text, tokens, options) {
   }
 }
 
-const stderrTokenRegex = /(?<beforeLink>[^\r\n\u001b]* )(?<valgrindLink>\w+ \((?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+)\))|(?<gccLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+):(?<charNum>\d+):)|(?<normalLine>[^\r\n\u001b]+)|(\u001b(\[(?<escapeCode>[\d;]+)m))|(?<newline>\r\n|\r|\n)/y;
+const stderrTokenRegex = /(?<beforeLink>[^\r\n\u001b]* )(?<valgrindLink>\w+ \((?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+)\))|(?<gccLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+):(?<charNum>\d+):)|(?<ttttLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+))|(?<normalLine>[^\r\n\u001b]+)|(\u001b(\[(?<escapeCode>[\d;]+)m))|(?<newline>\r\n|\r|\n)/y;
 function tokenizeStderrInto(text, tokens) {
   let match;
   let color = null;
@@ -177,6 +177,15 @@ function tokenizeStderrInto(text, tokens) {
         onclick: () => nativeEditorJumpTo(filename, lineNum, charNum),
         color: color,
       });
+    } else if (match.groups.ttttLink) {
+      const filename = match.groups.filename;
+      const lineNum = match.groups.lineNum;
+      tokens.push({
+        type: Token.BUTTON,
+        text: match.groups.ttttLink,
+        onclick: () => nativeEditorJumpTo(filename, lineNum, null),
+        color: color,
+      });
     } else if (match.groups.newline) {
       tokens.push({
         type: Token.NEWLINE,
@@ -186,7 +195,7 @@ function tokenizeStderrInto(text, tokens) {
         switch (code) {
           case '0': color = null; break;
           case '31': color = '#ff3020'; break;
-          case '94': color = '#4060ff'; break;
+          case '94': color = '#20a0ff'; break;
           case '1': break;
           default: console.log('Unkown BASH color code ' + code);
         }
