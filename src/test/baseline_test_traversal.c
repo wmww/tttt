@@ -309,7 +309,14 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        Type const* resolved = type_resolve_until_identifier(expr_get_type(&my extends));
+        Type const* unresolved = expr_get_type(&my extends);
+        if (my extends.tag == EXPR_IDENTIFIER) {
+            NONFATAL_DBG("Identifier value '%.*s' has %zd generic params", c_SPAN(my extends.outer_span), vec_spanned_type_size(&my extends.identifier.generic_params));
+        }
+        if (unresolved->tag == TYPE_IDENTIFIER) {
+            NONFATAL_DBG("Identifier type '%.*s' has %zd generic params", c_SPAN(unresolved->identifier->name), vec_spanned_type_size(&unresolved->identifier->generic_params));
+        }
+        Type const* resolved = type_resolve_until_identifier(unresolved);
         if (resolved->tag == TYPE_IDENTIFIER &&
             resolved->identifier->named_type &&
             resolved->identifier->named_type->is_typeof_class

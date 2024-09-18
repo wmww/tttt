@@ -2209,8 +2209,17 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
             ret->full_span = span_from(a);
             return parse_success(&p);
         }
-        if (is_abstract && item.tag == CLASS_ITEM_CONSTRUCTOR) {
-            item.constructor.func.is_abstract_constructor = true;
+        if (item.tag == CLASS_ITEM_CONSTRUCTOR) {
+            if (!generic_empty(&item.constructor.func.generic)) {
+                Span generics_span = span_between(
+                    item.constructor.func.generic.items.data->full_span,
+                    vec_generic_item_back(&item.constructor.func.generic.items)->full_span
+                );
+                parse_error(&p, generics_span, 1092, "Type parameters cannot appear on a constructor declaration.");
+            }
+            if (is_abstract) {
+                item.constructor.func.is_abstract_constructor = true;
+            }
         }
         vec_class_item_push(&ret->items, item);
         hop_whitespace(&p);

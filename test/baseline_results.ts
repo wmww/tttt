@@ -48671,7 +48671,7 @@ const baselines = {
         types: true,
     },
     'parserConstructorDeclaration9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56781,7 +56781,7 @@ const baselines = {
         types: false,
     },
     'constraintSatisfactionWithAny': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -112,13 +112,27 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
         true
     );
 
-    VecSpannedType generic_params; // Used multiple times
+    ASSERT(!my class_named_var);
+    my class_named_var = make_named_variable(my name, my full_span, type_ref(&my class_identifier_type), &my generic);
+    scope_add_variable(scope, my class_named_var);
+}
 
+void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+    my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
+    my class_type.tag = LAZY_TYPE_CLASS_CLASS;
+
+    Scope generic_scope = scope_init(errs);
+    scope_push_generic_to_stack(&generic_scope, &my generic, names);
+
+    VecSpannedType generic_params; // Used multiple times
     ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
     generic_params = (VecSpannedType){0};
     c_foreach(i, vec_generic_item, my generic.items) {
         // Is it the fallback type, always any or something else? unclear.
-        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
+        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_identifier(c_new(IdentifierType, {
+            .name = i.ref->name,
+            .named_type = i.ref->named_type,
+        }))));
     }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
@@ -148,15 +162,11 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
         .named_type = my class_named_type,
     }));
 
-    ASSERT(!my class_named_var);
-    my class_named_var = make_named_variable(my name, my full_span, type_ref(&my class_identifier_type), &my generic);
-    scope_add_variable(scope, my class_named_var);
-
     c_foreach(i, vec_class_item, my items) {
         if (i.ref->tag == CLASS_ITEM_CONSTRUCTOR) {
             if (i.ref->constructor.func.ret_explicit) {
                 error_ctx_error(
-                    scope->errs,
+                    errs,
                     i.ref->constructor.func.ret_span,
                     1093,
                     "Type annotation cannot appear on a constructor declaration."
@@ -168,14 +178,6 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
             i.ref->constructor.func.ret = type_ref(&my instance_identifier_type);
         }
     }
-}
-
-void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
-    my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
-    my class_type.tag = LAZY_TYPE_CLASS_CLASS;
-
-    Scope generic_scope = scope_init(errs);
-    scope_push_generic_to_stack(&generic_scope, &my generic, names);
 
     expr_lookup_names(&my extends, names, errs);
     c_foreach(i, vec_type, my implements) {
@@ -211,6 +213,9 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
 
     if (!resolve_instance) {
+        Type prototype_type = type_clone(my instance_identifier_type);
+        VecSpannedType params = {0};
+        prototype_type = generic_degenericize_type(&my generic, prototype_type, &params);
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
             my name,
@@ -219,7 +224,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("prototype"),
             span_null,
             false,
-            type_ref(&my instance_identifier_type)
+            prototype_type
         ));
 
         // TODO: Use the declaration in Object of lib.es5.d.ts instead
@@ -252,12 +257,16 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             case CLASS_ITEM_CONSTRUCTOR:
                 if (!resolve_instance && !has_constructor) {
                     has_constructor = true;
+                    Type type = type_clone(*lazy_type_get(&i.ref->constructor.func.lazy_type));
+                    ASSERT(type.tag == TYPE_CALLABLE);
+                    generic_drop(&type.callable->generic);
+                    type.callable->generic = generic_clone(my generic);
                     InterfaceMember member = {
                         .declarations = vec_span_single(i.ref->constructor.func.full_span),
                         .origin_interface_name = my name,
                         .key.span = i.ref->constructor.name_span,
                         .key.tag = INTERFACE_KEY_CALLABLE,
-                        .type = class_item_get_type(i.ref),
+                        .type = type,
                     };
                     vec_interface_member_push(&interface.members, member);
                 }
@@ -310,6 +319,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             .ret = type_ref(&my instance_identifier_type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
+            .generic = generic_clone(my generic),
         };
         InterfaceMember member = {
             .origin_interface_name = my name,
