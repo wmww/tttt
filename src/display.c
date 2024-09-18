@@ -248,7 +248,9 @@ static void display_identifier_type(Display d, IdentifierType* me) {
 }
 
 static void display_inferred_type(Display d, InferredType* me) {
-    display_lit(d, "infer ");
+    if (d.debug) {
+        display_lit(d, "infer ");
+    }
     display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {

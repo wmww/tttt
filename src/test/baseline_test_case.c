@@ -568,12 +568,7 @@ void baseline_test_case_add_type_recursive(
     cstr str = cstr_lit(">");
     append_span_contents_without_newlines(&str, outer_span);
     cstr_append(&str, " : ");
-    if (type->tag == TYPE_INFERRED) {
-        // Inferred identifiers in ternaries include the infer keyword, which the tests don't like
-        cstr_append_span(&str, type->inferred.get->name);
-    } else {
-        cstr_append_type_error_msg(&str, type);
-    }
+    cstr_append_type_error_msg(&str, type);
     BaselineTestFile* test_file = find_file(me, outer_span.source);
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,

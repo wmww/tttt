@@ -18253,7 +18253,7 @@ const baselines = {
     'largeTupleTypes': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'lastPropertyInLiteralWins': {
         errors: false,
