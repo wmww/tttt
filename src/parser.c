@@ -1081,6 +1081,20 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
             .has_cache = false,
             .cached = {0},
         }));
+    } else if (hop_start_if_ends_on_word_break(&p, "typeof")) {
+        hop_whitespace(&p);
+        Expr expr;
+        ExprCtx expr_ctx = {
+            .reject_operators = true,
+        };
+        if (!parse_expr(&p, expr_ctx, &expr)) {
+            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+            expr = expr_implicit_any(span_from_pos(&p));
+        }
+        *ret = type_typeof(c_new(TypeofType, {
+            .expr = c_new(Expr, expr),
+            .owns_expr = true,
+        }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
     } else if (parse_function_args(&p, true, true, &parsed.func)) {

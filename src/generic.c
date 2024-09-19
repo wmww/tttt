@@ -119,6 +119,7 @@ static void collect_generic_candidates(
         case TYPE_INFERRED:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
+        case TYPE_TYPEOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
         case TYPE_LAZY:
@@ -226,6 +227,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                 my keyof->has_cache = false;
             }
             return;
+
+        case TYPE_TYPEOF: return;
 
         case TYPE_TERNARY:
             replace_named_types_with(&my ternary->maybe_sub, refinements);

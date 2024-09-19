@@ -173,6 +173,28 @@ void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs) {
     type_typecheck(&my interface, errs);
 }
 
+// Typeof
+
+void typeof_type_drop(TypeofType* me) {
+    if (my owns_expr) {
+        expr_drop(my expr);
+        free(my expr);
+    }
+}
+
+TypeofType typeof_type_clone(TypeofType me) {
+    me.owns_expr = false;
+    return me;
+}
+
+void typeof_type_lookup_names(TypeofType* me, NameStack* names, ErrorCtx* errs) {
+    expr_lookup_names(my expr, names, errs);
+}
+
+void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs) {
+    expr_typecheck(my expr, errs);
+}
+
 // Ternary
 
 void ternary_type_drop(TernaryType* me) {

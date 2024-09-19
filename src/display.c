@@ -497,6 +497,11 @@ void display_type(Display d, Type const* me) {
         case TYPE_TERNARY: display_ternary_type(d, my ternary); break;
         case TYPE_ABSTRACTED: display_type(d, abstracted_type_resolve(my abstracted)); break;
 
+        case TYPE_TYPEOF:
+            display_lit(d, "typeof ");
+            display_expr(d, my typeof_->expr);
+            break;
+
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             if (d.debug) {

@@ -195,6 +195,11 @@ void type_drop(Type* me) {
             free(my keyof);
             break;
 
+        case TYPE_TYPEOF:
+            typeof_type_drop(my typeof_);
+            free(my typeof_);
+            break;
+
         case TYPE_TERNARY:
             ternary_type_drop(my ternary);
             free(my ternary);
@@ -233,6 +238,7 @@ Type type_clone(Type me) {
         case TYPE_TUPLE: return type_tuple(vec_tuple_element_clone(me.tuple.elements), me.tuple.readonly);
         case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
         case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
+        case TYPE_TYPEOF: return type_typeof(c_new(TypeofType, typeof_type_clone(*me.typeof_)));
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
         case TYPE_ABSTRACTED: return type_abstracted(c_new(AbstractedType, abstracted_type_clone(*me.abstracted)));
         case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
@@ -308,6 +314,8 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             type_add_inferred_names(&my keyof->interface, scope);
             break;
 
+        case TYPE_TYPEOF: break;
+
         case TYPE_TERNARY:
             type_add_inferred_names(&my ternary->maybe_sub, scope);
             type_add_inferred_names(&my ternary->maybe_super, scope);
@@ -368,6 +376,7 @@ void type_lookup_names(Type* me, NameStack* names, ErrorCtx* errs) {
 
         case TYPE_INDEXED: indexed_type_lookup_names(my indexed, names, errs); break;
         case TYPE_KEYOF: keyof_type_lookup_names(my keyof, names, errs); break;
+        case TYPE_TYPEOF: typeof_type_lookup_names(my typeof_, names, errs); break;
 
         case TYPE_TERNARY: {
             type_lookup_names(&my ternary->maybe_sub, names, errs);
@@ -424,6 +433,7 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
 
         case TYPE_INDEXED: indexed_type_typecheck(my indexed, errs); break;
         case TYPE_KEYOF: keyof_type_typecheck(my keyof, errs); break;
+        case TYPE_TYPEOF: typeof_type_typecheck(my typeof_, errs); break;
 
         case TYPE_TERNARY:
             type_typecheck(&my ternary->maybe_sub, errs);
@@ -566,8 +576,8 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
             }
             return &my keyof->cached;
 
+        case TYPE_TYPEOF: return &type_any;
         case TYPE_TERNARY: return type_resolve_ternary_type(ctx, my ternary);
-
         case TYPE_ABSTRACTED: return abstracted_type_resolve(my abstracted);
 
         case TYPE_UNION:
@@ -846,6 +856,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
+        case TYPE_TYPEOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
         case TYPE_LAZY:
@@ -964,6 +975,7 @@ void type_abstract_literals(Type* me) {
         case TYPE_ARRAY:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
+        case TYPE_TYPEOF:
         case TYPE_TERNARY:
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -1329,6 +1341,7 @@ static bool index_type_of_internal(
         case TYPE_INFERRED:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
+        case TYPE_TYPEOF:
         case TYPE_TERNARY:
         case TYPE_ABSTRACTED:
         case TYPE_LAZY:

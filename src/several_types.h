@@ -92,6 +92,18 @@ KeyofType keyof_type_clone(KeyofType me);
 void keyof_type_lookup_names(KeyofType* me, NameStack* names, ErrorCtx* errs);
 void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 
+// Typeof
+
+typedef struct TypeofType {
+    Expr* expr;
+    bool owns_expr;
+} TypeofType;
+
+void typeof_type_drop(TypeofType* me);
+TypeofType typeof_type_clone(TypeofType me);
+void typeof_type_lookup_names(TypeofType* me, NameStack* names, ErrorCtx* errs);
+void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs);
+
 // Ternary
 
 typedef struct TernaryType {

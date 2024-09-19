@@ -9,6 +9,7 @@ typedef struct InferredType InferredType;
 typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
 typedef struct KeyofType KeyofType;
+typedef struct TypeofType TypeofType;
 typedef struct AbstractedType AbstractedType;
 typedef struct CallableType CallableType;
 typedef struct TupleElement TupleElement;
@@ -44,6 +45,7 @@ typedef struct Type {
         TYPE_TUPLE,
         TYPE_INDEXED,
         TYPE_KEYOF,
+        TYPE_TYPEOF,
         TYPE_TERNARY,
         TYPE_ABSTRACTED,
         TYPE_UNION,
@@ -71,6 +73,7 @@ typedef struct Type {
         } tuple;
         IndexedType* indexed;
         KeyofType* keyof;
+        TypeofType* typeof_;
         TernaryType* ternary;
         AbstractedType* abstracted;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
@@ -154,6 +157,13 @@ static inline Type type_keyof(KeyofType* keyof) {
     return (Type){
         .tag = TYPE_KEYOF,
         .keyof = keyof,
+    };
+}
+
+static inline Type type_typeof(TypeofType* typeof_) {
+    return (Type){
+        .tag = TYPE_TYPEOF,
+        .typeof_ = typeof_,
     };
 }
 
