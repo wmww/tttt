@@ -14,7 +14,6 @@
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
 const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true, };
-const Type type_excessively_deep_error = { .tag = TYPE_ANY, .any.excessively_deep_error = true, };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
 const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
@@ -616,7 +615,7 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
                 if (hset_named_type_cptr_insert(&ctx->currently_resolving, to_remove).inserted) {
                     to_remove = my identifier->named_type;
                 } else {
-                    return &type_excessively_deep_error;
+                    return &type_any;
                 }
             }
         } else {

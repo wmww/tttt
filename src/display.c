@@ -677,8 +677,10 @@ static void display_identifier_expr(Display d, IdentifierExpr const* me) {
         }
         display_lit(d, ">");
     }
-    if (!my var) {
-        display_colored(d, color_error, " /* unresolved */");
+    if (d.debug) {
+        if (!my var) {
+            display_colored(d, color_error, " /* unresolved */");
+        }
     }
 }
 
