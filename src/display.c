@@ -660,6 +660,23 @@ static void display_class_decl(Display d, ClassDecl const* me) {
     display_lit(d, "}");
 }
 
+static void display_identifier_expr(Display d, IdentifierExpr const* me) {
+    display_colored_span(d, color_name, my name);
+    if (!vec_spanned_type_empty(&my generic_params)) {
+        display_lit(d, "<");
+        c_foreach(i, vec_spanned_type, my generic_params) {
+            display_type(d, &i.ref->type);
+            if (i.ref != i.end - 1) {
+                display_lit(d, ", ");
+            }
+        }
+        display_lit(d, ">");
+    }
+    if (!my var) {
+        display_colored(d, color_error, " /* unresolved */");
+    }
+}
+
 void display_expr(Display d, Expr const* me) {
     if (d.debug) {
         switch (my tag) {
@@ -694,25 +711,8 @@ void display_expr(Display d, Expr const* me) {
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: display_lit(d, "/* implicit any */"); break;
-
         case EXPR_LITERAL: display_value(d, &my literal); break;
-
-        case EXPR_IDENTIFIER:
-            display_colored_span(d, color_name, my identifier.name);
-            if (!vec_spanned_type_empty(&my identifier.generic_params)) {
-                display_lit(d, "<");
-                c_foreach(i, vec_spanned_type, my identifier.generic_params) {
-                    display_type(d, &i.ref->type);
-                    if (i.ref != i.end - 1) {
-                        display_lit(d, ", ");
-                    }
-                }
-                display_lit(d, ">");
-            }
-            if (!my identifier.var) {
-                display_colored(d, color_error, " /* unresolved */");
-            }
-            break;
+        case EXPR_IDENTIFIER: display_identifier_expr(d, &my identifier); break;
 
         case EXPR_BINARY_OP: {
             if (!paren_depth) {

@@ -14,6 +14,72 @@ const int as_type_precedence = 90;
 const int ternary_precedence = 20;
 const int new_keyword_precedence = 170;
 
+void identifier_expr_drop(IdentifierExpr* me) {
+    vec_spanned_type_drop(&my generic_params);
+}
+
+void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx* errs) {
+    my var = name_stack_get_variable(names, my name.sv);
+    if (my var) {
+    } else if (name_stack_get_type(names, my name.sv)) {
+        error_ctx_error(
+            errs, my name, 2693,
+            "'%.*s' only refers to a type, but is being used as a value here.",
+            c_SPAN(my name)
+        );
+    } else {
+        error_ctx_error(
+            errs,
+            my name,
+            2304,
+            "Cannot find name '%.*s'.",
+            c_SPAN(my name)
+        );
+    }
+    c_foreach(i, vec_spanned_type, my generic_params) {
+        type_lookup_names(&i.ref->type, names, errs);
+    }
+}
+
+Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
+    if (my var) {
+        if (vec_spanned_type_size(&my generic_params) &&
+            !generic_empty(my var->generic)
+        ) {
+            return generic_degenericize_type(
+                my var->generic,
+                type_ref(&my var->type),
+                &my generic_params
+            );
+        } else {
+            return type_ref(&my var->type);
+        }
+    } else {
+        return type_any;
+    }
+}
+void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
+    if (my var) {
+        if (vec_spanned_type_size(&my generic_params)) {
+            c_foreach(i, vec_spanned_type, my generic_params) {
+                type_typecheck(&i.ref->type, errs);
+            }
+            if (generic_empty(my var->generic)) {
+                error_ctx_error(
+                    errs,
+                    span_between(
+                        vec_spanned_type_at(&my generic_params, 0)->span,
+                        (vec_spanned_type_end(&my generic_params).end - 1)->span
+                    ),
+                    2558,
+                    "Expected 0 type arguments, but got %zd.",
+                    vec_spanned_type_size(&my generic_params)
+                );
+            }
+        }
+    }
+}
+
 void expr_drop(Expr* me) {
     free(my currently_getting_type);
     switch (my tag) {
@@ -25,7 +91,7 @@ void expr_drop(Expr* me) {
             break;
 
         case EXPR_IDENTIFIER:
-            vec_spanned_type_drop(&my identifier.generic_params);
+            identifier_expr_drop(&my identifier);
             break;
 
         case EXPR_BINARY_OP:
@@ -93,28 +159,9 @@ void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs) {
         case EXPR_LITERAL:
             break;
 
-        case EXPR_IDENTIFIER: {
-            my identifier.var = name_stack_get_variable(names, my identifier.name.sv);
-            if (my identifier.var) {
-            } else if (name_stack_get_type(names, my identifier.name.sv)) {
-                error_ctx_error(
-                    errs, my identifier.name, 2693,
-                    "'%.*s' only refers to a type, but is being used as a value here.",
-                    c_SPAN(my identifier.name)
-                );
-            } else {
-                error_ctx_error(
-                    errs,
-                    my identifier.name,
-                    2304,
-                    "Cannot find name '%.*s'.",
-                    c_SPAN(my identifier.name)
-                );
-            }
-            c_foreach(i, vec_spanned_type, my identifier.generic_params) {
-                type_lookup_names(&i.ref->type, names, errs);
-            }
-        }   break;
+        case EXPR_IDENTIFIER:
+            identifier_expr_lookup_names(&my identifier, names, errs);
+            break;
 
         case EXPR_BINARY_OP:
             expr_lookup_names(&my binary_op->left, names, errs);
@@ -414,24 +461,7 @@ Type expr_evaluate_type(Expr const* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: return type_any;
         case EXPR_LITERAL: return type_value(value_clone(my literal));
-
-        case EXPR_IDENTIFIER:
-            if (my identifier.var) {
-                if (vec_spanned_type_size(&my identifier.generic_params) &&
-                    !generic_empty(my identifier.var->generic)
-                ) {
-                    return generic_degenericize_type(
-                        my identifier.var->generic,
-                        type_ref(&my identifier.var->type),
-                        &my identifier.generic_params
-                    );
-                } else {
-                    return type_ref(&my identifier.var->type);
-                }
-            } else {
-                return type_any;
-            }
-            UNREACHABLE;
+        case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);
 
         case EXPR_BINARY_OP:
             return binary_op_evaluate_type(
@@ -555,25 +585,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             break;
 
         case EXPR_IDENTIFIER:
-            if (my identifier.var) {
-                if (vec_spanned_type_size(&my identifier.generic_params)) {
-                    c_foreach(i, vec_spanned_type, my identifier.generic_params) {
-                        type_typecheck(&i.ref->type, errs);
-                    }
-                    if (generic_empty(my identifier.var->generic)) {
-                        error_ctx_error(
-                            errs,
-                            span_between(
-                                vec_spanned_type_at(&my identifier.generic_params, 0)->span,
-                                (vec_spanned_type_end(&my identifier.generic_params).end - 1)->span
-                            ),
-                            2558,
-                            "Expected 0 type arguments, but got %zd.",
-                            vec_spanned_type_size(&my identifier.generic_params)
-                        );
-                    }
-                }
-            }
+            identifier_expr_typecheck(&my identifier, errs);
             break;
 
         case EXPR_BINARY_OP:

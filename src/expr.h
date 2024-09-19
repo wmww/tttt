@@ -22,6 +22,17 @@ typedef struct NamedVariable NamedVariable;
 wrap_forward_vec(ObjectExprItem, object_expr_item);
 wrap_forward_vec(Expr, expr);
 
+typedef struct IdentifierExpr {
+    Span name;
+    NamedVariable* var;
+    VecSpannedType generic_params;
+} IdentifierExpr;
+
+void identifier_expr_drop(IdentifierExpr* me);
+void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx* errs);
+Type identifier_expr_evaluate_type(IdentifierExpr const* me);
+void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
+
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
     Span outer_span; // Includes parentheses
@@ -43,11 +54,7 @@ typedef struct Expr {
     } tag;
     union {
         Value literal;
-        struct {
-            Span name;
-            NamedVariable* var;
-            VecSpannedType generic_params;
-        } identifier;
+        IdentifierExpr identifier;
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
         PropertyExpr* property;
@@ -71,8 +78,8 @@ static inline Expr expr_literal(Span span, Value value) {
     return (Expr){ .tag = EXPR_LITERAL, .literal = value, EXPR_DEFAULT(span) };
 }
 
-static inline Expr expr_identifier(Span name) {
-    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier.name = name, EXPR_DEFAULT(name) };
+static inline Expr expr_identifier(IdentifierExpr identifier_expr) {
+    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier = identifier_expr, EXPR_DEFAULT(identifier_expr.name) };
 }
 
 static inline Expr expr_binary_op(Span span, BinaryOpExpr* op) {

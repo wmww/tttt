@@ -11,7 +11,6 @@
 #include "class_decl.h"
 #include "function_impl.h"
 #include "callable_type.h"
-#include "name_stack.h"
 
 static inline VecSpan named_type_declarations(NamedType const* me) {
     return me ? vec_span_clone(my declarations) : vec_span_init();
@@ -421,6 +420,18 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
     block_compile_test_info(&my contents, ctx);
 }
 
+void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
+    if (my var && (!span_equals(my name, "this") || span_valid(my var->name))) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_single(my var->full),
+            .span = my name,
+        });
+    }
+    c_foreach(i, vec_spanned_type, my generic_params) {
+        type_compile_test_info(&i.ref->type, ctx);
+    }
+}
+
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
@@ -434,21 +445,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             }
             break;
 
-        case EXPR_IDENTIFIER: {
-            if (my identifier.var && (
-                    !span_equals(my identifier.name, "this") ||
-                    span_valid(my identifier.var->name)
-                )
-            ) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_single(my identifier.var->full),
-                    .span = my identifier.name,
-                });
-            }
-            c_foreach(i, vec_spanned_type, my identifier.generic_params) {
-                type_compile_test_info(&i.ref->type, ctx);
-            }
-        }   break;
+        case EXPR_IDENTIFIER:
+            identifier_expr_compile_test_info(&my identifier, ctx);
+            break;
 
         case EXPR_BINARY_OP:
             expr_compile_test_info(&my binary_op->left, ctx);
