@@ -35461,7 +35461,7 @@ const baselines = {
         types: undefined,
     },
     'logicalAssignment9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42601,12 +42601,12 @@ const baselines = {
         types: true,
     },
     'nullishCoalescingOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nullishCoalescingOperator10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42621,12 +42621,12 @@ const baselines = {
         types: false,
     },
     'nullishCoalescingOperator2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nullishCoalescingOperator3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42641,17 +42641,17 @@ const baselines = {
         types: false,
     },
     'nullishCoalescingOperator6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nullishCoalescingOperator8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -42686,12 +42686,12 @@ const baselines = {
         types: undefined,
     },
     'nullishCoalescingOperator_es2020': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nullishCoalescingOperator_not_strict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -46276,7 +46276,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsOptionalTypeLiteralProps2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

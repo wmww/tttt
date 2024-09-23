@@ -2625,18 +2625,6 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
-        *left_and_ret = expr_ternary(
-            span_from(a),
-            c_new(TernaryExpr, {
-                .condition = *left_and_ret,
-                .yes = parsed.expr_a,
-                .no = parsed.expr_b,
-            })
-        );
-        return parse_success(&p);
-    }
-
     if (parse_bracket_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_from(a),
@@ -2689,6 +2677,18 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     if (!ctx.reject_operators && parse_binary_op_expr(&p, ctx, left_and_ret)) {
+        return parse_success(&p);
+    }
+
+    if (ternary_precedence >= ctx.min_precedence && parse_ternary_expr(&p, ctx, &parsed.expr_a, &parsed.expr_b)) {
+        *left_and_ret = expr_ternary(
+            span_from(a),
+            c_new(TernaryExpr, {
+                .condition = *left_and_ret,
+                .yes = parsed.expr_a,
+                .no = parsed.expr_b,
+            })
+        );
         return parse_success(&p);
     }
 
