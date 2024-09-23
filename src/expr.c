@@ -316,8 +316,11 @@ static Type binary_op_evaluate_type(
             // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
             return type_clone(*right);
 
-        case BINARY_OP_EH_EH:
-            return type_clone(*left);
+        case BINARY_OP_EH_EH: {
+            Type a = type_clone(*left);
+            type_remove_null_and_undefined(&a);
+            return type_composite(TYPE_UNION, a, type_clone(*right));
+        }
     }
     UNREACHABLE;
 }

@@ -42608,7 +42608,7 @@ const baselines = {
     'nullishCoalescingOperator10': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator11': {
         errors: false,
@@ -42648,12 +42648,12 @@ const baselines = {
     'nullishCoalescingOperator7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator9': {
         errors: false,
