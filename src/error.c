@@ -121,17 +121,24 @@ void error_ctx_drop(ErrorCtx* me) {
 
 void print_error_ctx(ErrorCtx const* me) {
     cstr str = cstr_null;
-    const int max_display = 10;
-    c_foreach_n(i, vec_error, my errors, max_display) {
-        display_error(debug_display(&str), i.ref);
-        printf("%s\n\n", cstr_str(&str));
-        cstr_clear(&str);
+    const intptr_t max_display = 10;
+    intptr_t displayed = 0;
+    c_foreach(i, vec_error, my errors) {
+        if (i.ref->phase == ERROR_PHASE_PARSE || !my has_parse_errors) {
+            display_error(debug_display(&str), i.ref);
+            printf("%s\n\n", cstr_str(&str));
+            cstr_clear(&str);
+            displayed++;
+        }
+        if (displayed >= max_display) {
+            break;
+        }
     }
-    if (vec_error_size(&my errors) > max_display) {
+    if (vec_error_size(&my errors) > displayed) {
         printf(
             "%s  %ld additional errors not shown%s\n\n",
             color_error,
-            vec_error_size(&my errors) - max_display,
+            vec_error_size(&my errors) - displayed,
             color_normal
         );
     }
