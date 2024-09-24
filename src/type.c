@@ -1475,12 +1475,7 @@ Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
             }
 
             if (!generic_empty(&callable->generic)) {
-                inferred = generic_infer_callable_types(
-                    &callable->generic,
-                    callable,
-                    &call->args,
-                    nullptr
-                );
+                inferred = generic_infer_callable_types(&callable->generic, callable, &call->args);
                 callable = &inferred;
             }
 
@@ -1556,12 +1551,7 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             }
 
             if (!generic_empty(&callable->generic)) {
-                inferred = generic_infer_callable_types(
-                    &callable->generic,
-                    callable,
-                    &call->args,
-                    errs
-                );
+                inferred = generic_infer_callable_types(&callable->generic, callable, &call->args);
                 callable = &inferred;
             }
 

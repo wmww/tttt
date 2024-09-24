@@ -3021,7 +3021,7 @@ const baselines = {
         types: false,
     },
     'chainedSpecializationToObjectTypeLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5176,7 +5176,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypeBasedContextualTypeReturnTypeWidening': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5186,7 +5186,7 @@ const baselines = {
         types: true,
     },
     'conditionalTypeContextualTypeSimplificationsSuceeds': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5806,7 +5806,7 @@ const baselines = {
         types: false,
     },
     'contextualSignatureInstantiation2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5821,7 +5821,7 @@ const baselines = {
         types: false,
     },
     'contextualSignatureInstantiationWithTypeParameterConstrainedToOuterTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6196,12 +6196,12 @@ const baselines = {
         types: false,
     },
     'contextualTypingReturnStatementWithReturnTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'contextualTypingTwoInstancesOfSameTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6636,7 +6636,7 @@ const baselines = {
         types: false,
     },
     'couldNotSelectGenericOverload': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -7746,7 +7746,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitMappedTypePropertyFromNumericStringKey': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8966,7 +8966,7 @@ const baselines = {
         types: false,
     },
     'destructuringWithGenericParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12816,7 +12816,7 @@ const baselines = {
         types: false,
     },
     'freshLiteralTypesInIntersections': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13936,7 +13936,7 @@ const baselines = {
         types: true,
     },
     'genericFunctions2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13946,7 +13946,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsAndConditionalInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13956,7 +13956,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsWithOptionalParameters1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13966,7 +13966,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsWithOptionalParameters3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14026,7 +14026,7 @@ const baselines = {
         types: false,
     },
     'genericInferenceDefaultTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14421,7 +14421,7 @@ const baselines = {
         types: true,
     },
     'genericsAndHigherOrderFunctions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14626,7 +14626,7 @@ const baselines = {
         types: true,
     },
     'icomparable': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15506,7 +15506,7 @@ const baselines = {
         types: true,
     },
     'indexSignaturesInferentialTyping': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15761,12 +15761,12 @@ const baselines = {
         types: false,
     },
     'inferTupleFromBindingPattern': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'inferTypeArgumentsInSignatureWithRestParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15886,7 +15886,7 @@ const baselines = {
         types: false,
     },
     'inferentialTypingWithFunctionType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15896,7 +15896,7 @@ const baselines = {
         types: false,
     },
     'inferentialTypingWithFunctionTypeNested': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15906,7 +15906,7 @@ const baselines = {
         types: false,
     },
     'inferentialTypingWithFunctionTypeZip': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15916,7 +15916,7 @@ const baselines = {
         types: false,
     },
     'inferentiallyTypingAnEmptyArray': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15971,7 +15971,7 @@ const baselines = {
         types: false,
     },
     'inferringReturnTypeFromConstructSignatureGeneric': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18676,7 +18676,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeContextualTypesApplied': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18706,7 +18706,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeInferenceAliasSubstitution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18726,12 +18726,12 @@ const baselines = {
         types: false,
     },
     'mappedTypeMultiInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'mappedTypeNestedGenericInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -21621,7 +21621,7 @@ const baselines = {
         types: false,
     },
     'nonInferrableTypePropagation1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -21971,7 +21971,7 @@ const baselines = {
         types: true,
     },
     'objectLiteralArraySpecialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22766,7 +22766,7 @@ const baselines = {
         types: true,
     },
     'parameterReferenceInInitializer1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23606,7 +23606,7 @@ const baselines = {
         types: false,
     },
     'promiseChaining': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23681,7 +23681,7 @@ const baselines = {
         types: false,
     },
     'promiseTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -23721,7 +23721,7 @@ const baselines = {
         types: false,
     },
     'propagationOfPromiseInitialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24501,7 +24501,7 @@ const baselines = {
         types: true,
     },
     'recursiveUnionTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25121,7 +25121,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedContravariantInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25166,7 +25166,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedTypePrimitiveConstraintProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26631,7 +26631,7 @@ const baselines = {
         types: false,
     },
     'subtypeRelationForNever': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27931,7 +27931,7 @@ const baselines = {
         types: true,
     },
     'typeArgumentInferenceOrdering': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28131,12 +28131,12 @@ const baselines = {
         types: false,
     },
     'typeInferenceFBoundedTypeParams': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeInferenceFixEarly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28146,12 +28146,12 @@ const baselines = {
         types: false,
     },
     'typeInferenceReturnTypeCallback': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeInferenceTypePredicate': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28166,7 +28166,7 @@ const baselines = {
         types: false,
     },
     'typeInferenceWithTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28296,7 +28296,7 @@ const baselines = {
         types: true,
     },
     'typeParameterConstraintInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28746,7 +28746,7 @@ const baselines = {
         types: false,
     },
     'typeofObjectInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28896,7 +28896,7 @@ const baselines = {
         types: true,
     },
     'undefinedArgumentInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28911,7 +28911,7 @@ const baselines = {
         types: false,
     },
     'undefinedInferentialTyping': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -43001,7 +43001,7 @@ const baselines = {
         types: false,
     },
     'typeGuardFunctionGenerics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54651,7 +54651,7 @@ const baselines = {
         types: false,
     },
     'intersectionTypeInference2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55266,7 +55266,7 @@ const baselines = {
         types: true,
     },
     'genericInstantiationEquivalentToObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56261,7 +56261,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypesAsTypeParameterConstraint01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56401,7 +56401,7 @@ const baselines = {
         types: false,
     },
     'inferThisType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -58081,7 +58081,7 @@ const baselines = {
         types: false,
     },
     'genericCallWithFunctionTypedArguments3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -58226,7 +58226,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58241,12 +58241,12 @@ const baselines = {
         types: false,
     },
     'keyofInferenceIntersectsResults': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'keyofInferenceLowerPriorityThanReturn': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

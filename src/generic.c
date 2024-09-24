@@ -54,12 +54,7 @@ void generic_lookup_names(Generic const* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-static void collect_generic_candidates(
-    Type const* me,
-    Type const* arg,
-    VecTypeRefinement* results,
-    ErrorCtx* errs
-) {
+static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeRefinement* results) {
     arg = type_resolve(arg);
     me  = type_resolve_until_identifier(me);
 
@@ -86,34 +81,24 @@ static void collect_generic_candidates(
             return;
 
         case TYPE_CALLABLE:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with callable not yet implemented"
-            );
+            NONFATAL("inferring types of generic with callable not yet implemented");
             return;
 
         case TYPE_INTERFACE:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with interface not yet implemented"
-            );
+            NONFATAL("inferring types of generic with interface not yet implemented");
             return;
 
         case TYPE_ARRAY:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with array not yet implemented"
-            );
+            NONFATAL("inferring types of generic with array not yet implemented");
             return;
 
         case TYPE_TUPLE:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with tuple not yet implemented"
-            );
+            NONFATAL("inferring types of generic with tuple not yet implemented");
             return;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            error_ctx_error(errs, span_null, TS_CODE_NONE,
-                "inferring types of generic with union/intersection not yet implemented"
-            );
+            NONFATAL("inferring types of generic with union/intersection not yet implemented");
             return;
 
         case TYPE_INFERRED:
@@ -289,12 +274,7 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
     return t;
 }
 
-CallableType generic_infer_callable_types(
-    Generic const* me,
-    CallableType* callable,
-    VecExpr const* args,
-    ErrorCtx* errs
-) {
+CallableType generic_infer_callable_types(Generic const* me, CallableType* callable, VecExpr const* args) {
     int call_arg_count = vec_expr_size(args);
     int callable_arg_count = vec_callable_arg_size(&callable->args);
     VecTypeRefinement refinements = {0};
@@ -316,8 +296,7 @@ CallableType generic_infer_callable_types(
         collect_generic_candidates(
             &vec_callable_arg_at_mut(&callable->args, i)->type,
             vec_type_at(&arg_types, i),
-            &refinements,
-            errs
+            &refinements
         );
     }
 
