@@ -171,7 +171,7 @@ SourceFile const* program_load(Program* me, const char* path) {
     return main_source;
 }
 
-void program_typecheck(Program* me, bool show_errors) {
+void program_typecheck(Program* me) {
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_error_config(&my errs->config);
@@ -179,7 +179,7 @@ void program_typecheck(Program* me, bool show_errors) {
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
         StatementCtx statement_ctx = statement_ctx_toplevel();
-        block_typecheck(&source->ast, &statement_ctx, show_errors ? my errs : nullptr);
+        block_typecheck(&source->ast, &statement_ctx, my errs);
         statement_ctx_drop(&statement_ctx);
     }
 

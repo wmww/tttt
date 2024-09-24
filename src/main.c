@@ -36,7 +36,7 @@ int main(int argc, const char** argv) {
         ret = 1;
     }
 
-    program_typecheck(program, true);
+    program_typecheck(program);
 
     if (error_ctx_empty(&errs)) {
         printf("%sTypecheck passed%s\n", color_good, color_normal);

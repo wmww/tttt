@@ -230,7 +230,9 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
 
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
     // but name errors are shown reguardless
-    program_typecheck(program, !errs->has_parse_errors);
+    if (!errs->has_parse_errors) {
+        program_typecheck(program);
+    }
 
     set_error_config(&errs->config);
     c_foreach(i, vec_baseline_test_file, ret.files) {
