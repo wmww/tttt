@@ -115,6 +115,7 @@ SourceFile const* program_load(Program* me, const char* path) {
     // This function should only be called by our owner, not indirectly by ourselves
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_LOAD;
+    set_error_config(&my errs->config);
 
     // Add the source file to the program
     SourceFile const* main_source = program_add_source(me, path);
@@ -164,6 +165,7 @@ SourceFile const* program_load(Program* me, const char* path) {
 
     name_stack_destroy(names);
 
+    clear_error_config();
     vec_source_file_ptr_drop(&in_flight_source_files);
     my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
@@ -172,6 +174,7 @@ SourceFile const* program_load(Program* me, const char* path) {
 void program_typecheck(Program* me, bool show_errors) {
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_TYPECHECK;
+    set_error_config(&my errs->config);
 
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
@@ -180,6 +183,7 @@ void program_typecheck(Program* me, bool show_errors) {
         statement_ctx_drop(&statement_ctx);
     }
 
+    clear_error_config();
     my errs->phase = ERROR_PHASE_UNKOWN;
 }
 

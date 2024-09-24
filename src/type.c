@@ -1254,7 +1254,7 @@ static bool index_type_of_internal(
                 return true;
             } else {
                 type_drop(&comp);
-                if (errs && errs->conf.no_unchecked_indexed_access && error_if_not_found) {
+                if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
                     cstr msg = cstr_lit("Property '");
                     if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
                         cstr_append_s(&msg, index->value.string);
@@ -1375,7 +1375,7 @@ static bool check_assignable_or_error_internal(
 ) {
     Type local_type = {0};
 
-    if (errs && !errs->conf.strict_null_checks) {
+    if (!get_error_config()->strict_null_checks) {
         local_type = type_clone(*source);
         type_remove_null_and_undefined(&local_type);
         source = &local_type;
@@ -1467,7 +1467,7 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 }
             } else if (call->uses_new) {
                 if (!callable->is_constructor) {
-                    if (errs && errs->conf.no_implicit_any) {
+                    if (get_error_config()->no_implicit_any) {
                         error_ctx_error(
                             errs,
                             span,

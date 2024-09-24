@@ -23,7 +23,7 @@ int main(int argc, const char** argv) {
     }
 
     ErrorCtx errs = error_ctx_init();
-    error_config_enable_strict(&errs.conf);
+    error_config_enable_strict(&errs.config);
     Program* program = program_new(&errs, &real_fs_quiet);
     int ret = 0;
 

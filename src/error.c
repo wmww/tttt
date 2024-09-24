@@ -221,3 +221,15 @@ Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fm
     va_end(args);
     return error_ctx_error_s(me, span, ts_code, message);
 }
+
+ErrorConfig const* global_error_config_private = nullptr;
+void set_error_config(ErrorConfig const* conf) {
+    // Threadsafety: this will need to be thread-local or refactored entirely
+    ASSERT(!global_error_config_private);
+    global_error_config_private = conf;
+}
+
+void clear_error_config() {
+    ASSERT(global_error_config_private);
+    global_error_config_private = nullptr;
+}

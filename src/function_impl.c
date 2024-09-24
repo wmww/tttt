@@ -39,7 +39,7 @@ void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* er
         if (!i.ref->initializer.binding.has_explicit_type &&
             i.ref->initializer.value.tag == EXPR_IMPLICIT_ANY
         ) {
-            if (errs && errs->conf.no_implicit_any) {
+            if (get_error_config()->no_implicit_any) {
                 binding_add_implicit_any_type_errors(&i.ref->initializer.binding, true, errs);
             }
         }

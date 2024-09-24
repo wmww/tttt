@@ -63,7 +63,7 @@ typedef struct ErrorCtx {
     ErrorPhase phase;
     bool has_parse_errors;
     VecError errors;
-    ErrorConfig conf;
+    ErrorConfig config;
 } ErrorCtx;
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
@@ -78,5 +78,13 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
 /// noop and returns null if me is null. Returned Error can be used to add related errors, but is owned by the ErrorCtx.
 /// Additional calls into this ErrorCtx invalidate returned Error.
 Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+
+extern ErrorConfig const* global_error_config_private;
+void set_error_config(ErrorConfig const* conf);
+void clear_error_config();
+static inline ErrorConfig const* get_error_config() {
+    PANIC_IF(!global_error_config_private, "global ErrorConfig unset");
+    return global_error_config_private;
+}
 
 #define TS_CODE_NONE 0

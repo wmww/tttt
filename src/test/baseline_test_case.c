@@ -107,9 +107,9 @@ static bool load_test_source(BaselineTestCase* me) {
                 has_line = false;
                 cstr_take(&current_filename, cstr_from_sv(tag_value));
             } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
-                error_config_enable_strict(&my error_ctx->conf);
+                error_config_enable_strict(&my error_ctx->config);
             } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
-                my error_ctx->conf.no_implicit_any = true;
+                my error_ctx->config.no_implicit_any = true;
             }
         } else {
             cstr_append_sv(&source_contents, i.line);
@@ -232,10 +232,12 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
     // but name errors are shown reguardless
     program_typecheck(program, !errs->has_parse_errors);
 
+    set_error_config(&errs->config);
     c_foreach(i, vec_baseline_test_file, ret.files) {
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         block_compile_test_info(&i.ref->source->ast, &ret);
     }
+    clear_error_config();
 
     process_errors(&ret);
 
