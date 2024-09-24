@@ -50396,9 +50396,9 @@ const baselines = {
         types: false,
     },
     'parser509669': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser509677': {
         errors: true,

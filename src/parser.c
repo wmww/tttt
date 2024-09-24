@@ -47,6 +47,7 @@ typedef enum WhitespaceType {
 typedef struct ExprCtx {
     bool reject_in_operator;
     bool reject_operators;
+    bool is_parsing_ternary;
     int min_precedence;
 } ExprCtx;
 
@@ -96,6 +97,7 @@ static bool parse_function_args(
     Parser* parent,
     bool parse_abstract_and_new,
     bool parse_type_return_syntax,
+    bool parse_function_args,
     FunctionImpl* ret
 );
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
@@ -583,7 +585,7 @@ static bool parse_modifiers(Parser* parent, ModifierList ret) {
             modifier = MODIFIER_PUBLIC;
         } else if (span_equals(span, "const")) {
             modifier = MODIFIER_CONST;
-        } else if (span_equals(span, "var")) {
+        } else if (span_equals(span, "var") || span_equals(span, "let")) {
             return parse_fail(&p);
         } else {
             break;
@@ -799,6 +801,12 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
         ignore( *p.pos == '>' || expect_char(&p, ',') );
         hop_whitespace(&p);
     }
+
+    if (generic_empty(ret) && *p.pos != '>') {
+        generic_drop(ret);
+        return parse_fail(&p);
+    }
+
     expect_char(&p, '>');
 
     return parse_success(&p);
@@ -1097,7 +1105,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
-    } else if (parse_function_args(&p, true, true, &parsed.func)) {
+    } else if (parse_function_args(&p, true, true, true, &parsed.func)) {
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
         *ret = type_inferred(arc_inferred_type_make(parsed.inferred));
@@ -1382,6 +1390,7 @@ static bool parse_function_args(
     Parser* parent,
     bool parse_abstract_and_new,
     bool parse_type_return_syntax,
+    bool parse_ret_type,
     FunctionImpl* ret
 ) {
     Parser p = parser(parent);
@@ -1487,13 +1496,13 @@ static bool parse_function_args(
         }
     } else if (is_definitely_function) {
         expected_token_error(&p, "(");
+        //goto drop_and_fail;
     } else {
         goto drop_and_fail;
     }
 
     ret->args_span = span_from(args_start);
 
-    bool parse_ret_type = true;
     if (parse_type_return_syntax) {
         hop_whitespace(&p);
 
@@ -1565,11 +1574,15 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     bool is_definitely_function = false;
     Span lone_arg_name;
 
-    if (parse_function_args(&p, false, false, ret)) {
+    if (parse_function_args(&p, false, false, !ctx.is_parsing_ternary, ret)) {
 
         is_definitely_function =
             !vec_function_arg_empty(&ret->args) &&
             vec_function_arg_at(&ret->args, 0)->initializer.binding.has_explicit_type;
+
+        if (ret->ret_explicit) {
+            is_definitely_function = true;
+        }
 
     } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
@@ -1593,13 +1606,10 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
 
     Anchor arrow_a = anchor(&p);
     if (!hop_start(&p, "=>")) {
-        function_impl_drop(ret);
         if (is_definitely_function) {
-            *ret = (FunctionImpl){0};
             expected_token_error(&p, "=>");
-            ret->full_span = span_from(a);
-            return parse_success(&p);
         } else {
+            function_impl_drop(ret);
             return parse_fail(&p);
         }
     }
@@ -1632,7 +1642,7 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!parse_function_args(&p, false, false, ret)) {
+    if (!parse_function_args(&p, false, false, true, ret)) {
         return parse_fail(&p);
     }
 
@@ -1644,7 +1654,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!parse_function_args(&p, false, false, ret)) {
+    if (!parse_function_args(&p, false, false, true, ret)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -2116,7 +2126,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.declarations = vec_span_single(span_from(a));
             ret->interface_memeber.readonly = modifiers[MODIFIER_READONLY];
-        } else if (parse_function_args(&p, true, false, &func)) {
+        } else if (parse_function_args(&p, true, false, true, &func)) {
             process_modifiers(&p, name_span, modifier_list, MODIFIER_FLAG_TYPE_MEMEBER | MODIFIER_FLAG_METHOD, modifiers);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
@@ -2329,6 +2339,7 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
 static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr* ret_no) {
     Parser p = parser(parent);
     ctx.min_precedence = ternary_precedence - 1;
+    ctx.is_parsing_ternary = true;
 
     if (!hop_char(&p, '?')) {
         return parse_fail(&p);
@@ -2389,7 +2400,7 @@ static bool parse_as_type(Parser* parent, Type* ret) {
 static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     Parser p = parser(parent);
 
-    // TODO: transform this into a big switch or hashmap or something
+    // PERF: transform this into a big switch or hashmap or something
     if (hop_start(&p, ">>>=")) *op = BINARY_OP_GREATER_GREATER_GREATER_EQUAL;
     else if (hop_start(&p, "===")) *op = BINARY_OP_TRIPLE_EQUAL;
     else if (hop_start(&p, "!==")) *op = BINARY_OP_TRIPLE_NOT_EQUAL;
@@ -2429,6 +2440,7 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op) {
     else if (hop_start(&p, "*")) *op = BINARY_OP_STAR;
     else if (hop_start(&p, "/")) *op = BINARY_OP_SLASH;
     else if (hop_start(&p, "%")) *op = BINARY_OP_MOD;
+    else if (hop_start(&p, "=>")) return parse_fail(&p);
     else if (hop_start(&p, "=")) *op = BINARY_OP_EQUAL;
     else if (hop_start(&p, "+")) *op = BINARY_OP_PLUS;
     else if (hop_start(&p, "-")) *op = BINARY_OP_MINUS;
@@ -2813,16 +2825,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         expect_char(&p, ')');
         inner_span_set = true;
     } else if (hop_char(&p, '<')) {
-        Type t;
-        Expr e;
         hop_whitespace(&p);
 
+        Type t;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
         hop_whitespace(&p);
 
         expect_char(&p, '>');
         hop_whitespace(&p);
 
+        Expr e;
         expect_expr(&p, ctx, &e);
         *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
             .expr = e,
@@ -3437,7 +3449,10 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
             ) {
             } else if (hop_char(&p, ';')) {
             } else if (*p.pos) {
-                if (statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER) {
+                if (statement.tag == STATEMENT_EXPR &&
+                    statement.expr.tag == EXPR_IDENTIFIER &&
+                    !expr_is_perenthisized(&statement.expr)
+                ) {
                     parse_error(&p, statement.expr.inner_span, 1434, "Unexpected keyword or identifier.");
                 } else {
                     expected_token_error(&p, ";");
