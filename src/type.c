@@ -1370,7 +1370,7 @@ static bool check_assignable_or_error_internal(
     const char* target_label,
     Type const* target,
     unsigned ts_code,
-    Span span,
+    Span target_span,
     ErrorCtx* errs
 ) {
     Type local_type = {0};
@@ -1400,7 +1400,7 @@ static bool check_assignable_or_error_internal(
     type_drop(&local_type);
     error_ctx_error(
         errs,
-        span,
+        target_span,
         ts_code,
         "%s '%s' is not assignable to %s '%s'.",
         source_label,
@@ -1412,8 +1412,12 @@ static bool check_assignable_or_error_internal(
     return false;
 }
 
-void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs) {
-    check_assignable_or_error_internal("Type", source, "type", target, 2322, span, errs);
+void type_error_if_not_assignable(Type const* source, Type const* target, Span target_span, ErrorCtx* errs) {
+    if (!errs) {
+        // TODO: change to assertion and then remove entirely
+        return;
+    }
+    check_assignable_or_error_internal("Type", source, "type", target, 2322, target_span, errs);
 }
 
 static intptr_t min_args_of_callable(CallableType* me) {
@@ -1449,7 +1453,7 @@ static intptr_t max_args_of_callable(CallableType* me) {
     }
 }
 
-Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
+Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
     me = type_resolve(me);
 
     switch (my tag) {
@@ -1459,7 +1463,69 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         case TYPE_CALLABLE: {
             CallableType inferred = {0};
             CallableType* callable = my callable;
-            bool override_ret_with_any = false;
+
+            if (call->is_extends) {
+                if (!callable->is_constructor) {
+                    return type_any;
+                }
+            } else if (call->uses_new) {
+                if (!callable->is_constructor || callable->is_abstract_constructor) {
+                    return type_any;
+                }
+            }
+
+            if (!generic_empty(&callable->generic)) {
+                inferred = generic_infer_callable_types(
+                    &callable->generic,
+                    callable,
+                    &call->args,
+                    nullptr
+                );
+                callable = &inferred;
+            }
+
+            Type ret = type_clone(callable->ret);
+            callable_type_drop(&inferred);
+            return ret;
+        }
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION: {
+            Type ret = type_composite_base(my tag);
+            c_foreach(i, vec_type, my composite) {
+                ret = type_composite(
+                    my tag,
+                    ret,
+                    type_call_evaluate_type(i.ref, call)
+                );
+            }
+            return ret;
+        }
+
+        case TYPE_INTERFACE:
+            c_foreach(i, vec_interface_member, my interface.members) {
+                // TODO: add to overload list instead of selecting first option
+                if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                    return type_call_evaluate_type(&i.ref->type, call);
+                }
+            }
+            break;
+
+        default: break;
+    }
+
+    return type_any;
+}
+
+void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
+    me = type_resolve(me);
+
+    switch (my tag) {
+        case TYPE_ANY: return;
+
+        case TYPE_CALLABLE: {
+            CallableType inferred = {0};
+            CallableType* callable = my callable;
 
             if (call->is_extends) {
                 if (!callable->is_constructor) {
@@ -1475,10 +1541,8 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                             "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type."
                         );
                     }
-                    override_ret_with_any = true;
                 } else if (callable->is_abstract_constructor) {
                     error_ctx_error(errs, span, 2511, "Cannot create an instance of an abstract class.");
-                    override_ret_with_any = true;
                 }
             } else {
                 if (callable->is_constructor) {
@@ -1600,29 +1664,22 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 type_drop(&rest_type);
             }
 
-            Type ret = override_ret_with_any ? type_any : type_clone(callable->ret);
             callable_type_drop(&inferred);
-            return ret;
-        }
+        }   return;
 
         case TYPE_UNION:
-        case TYPE_INTERSECTION: {
-            Type ret = type_composite_base(my tag);
+        case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                ret = type_composite(
-                    my tag,
-                    ret,
-                    type_typecheck_call(i.ref, call, span, errs)
-                );
-            }
-            return ret;
-        }
+                type_typecheck_call(i.ref, call, span, errs);
+            };
+            return;
 
         case TYPE_INTERFACE:
             c_foreach(i, vec_interface_member, my interface.members) {
                 // TODO: add to overload list instead of selecting first option
                 if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    return type_typecheck_call(&i.ref->type, call, span, errs);
+                    type_typecheck_call(&i.ref->type, call, span, errs);
+                    return;
                 }
             }
             break;
@@ -1640,5 +1697,4 @@ Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
         }
     }
-    return type_any;
 }

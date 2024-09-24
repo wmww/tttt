@@ -236,8 +236,9 @@ bool index_type_of(
     ErrorCtx* errs,
     Type* ret
 );
-void check_assignable_or_error(Type const* source, Type const* target, Span span, ErrorCtx* errs);
-Type type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs);
+void type_error_if_not_assignable(Type const* source, Type const* target, Span target_span, ErrorCtx* errs);
+Type type_call_evaluate_type(Type const* me, CallExpr const* call);
+void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs);
 
 #define i_key_class_names Type, type
 #define i_is_forward

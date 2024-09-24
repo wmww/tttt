@@ -605,7 +605,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
 
                 case FOR_EACH_LOOP_EXPR:
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
-                    check_assignable_or_error(
+                    type_error_if_not_assignable(
                         lazy_type_get(&my for_each_loop->var_type),
                         expr_get_type(&my for_each_loop->variable.expr),
                         my for_each_loop->variable.expr.outer_span,
@@ -687,7 +687,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                 expr_typecheck(&my expr, errs);
 
                 if (ctx->specified_return) {
-                    check_assignable_or_error(
+                    type_error_if_not_assignable(
                         expr_get_type(&my expr),
                         ctx->specified_return,
                         my expr.outer_span,

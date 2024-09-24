@@ -124,7 +124,7 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 void binding_typecheck(Binding* me, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_typecheck(&my explicit_type, errs);
-        check_assignable_or_error(
+        type_error_if_not_assignable(
             &my assigned_type,
             &my explicit_type,
             my content_span,

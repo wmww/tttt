@@ -381,7 +381,7 @@ static void binary_op_typecheck(
             switch (expr->binary_op->left.tag) {
                 case EXPR_IDENTIFIER:
                     if (expr->binary_op->left.identifier.var) {
-                        check_assignable_or_error(
+                        type_error_if_not_assignable(
                             right,
                             &expr->binary_op->left.identifier.var->type,
                             expr->binary_op->left.outer_span,
@@ -531,7 +531,7 @@ Type expr_evaluate_type(Expr const* me) {
             );
 
         case EXPR_CALL:
-            return type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, nullptr);
+            return type_call_evaluate_type(expr_get_type(&my call->callable), my call);
 
         case EXPR_FUNCTION:
             return type_lazy(&my function->lazy_type);
@@ -655,8 +655,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             c_foreach(i, vec_expr, my call->args) {
                 expr_typecheck(i.ref, errs);
             }
-            Type type = type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, errs);
-            type_drop(&type);
+            type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, errs);
         }   break;
 
         case EXPR_FUNCTION:
