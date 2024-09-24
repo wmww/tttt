@@ -5948,7 +5948,7 @@ const baselines = {
     'contextualTyping15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping16': {
         errors: true,
@@ -5998,7 +5998,7 @@ const baselines = {
     'contextualTyping24': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping25': {
         errors: true,
@@ -6048,7 +6048,7 @@ const baselines = {
     'contextualTyping33': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping34': {
         errors: true,
@@ -6088,12 +6088,12 @@ const baselines = {
     'contextualTyping40': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping41': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping5': {
         errors: false,
@@ -6178,7 +6178,7 @@ const baselines = {
     'contextualTypingOfLambdaWithMultipleSignatures2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypingOfObjectLiterals': {
         errors: true,
@@ -6213,7 +6213,7 @@ const baselines = {
     'contextualTypingWithGenericAndNonGenericSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypingWithGenericSignature': {
         errors: true,
@@ -13348,7 +13348,7 @@ const baselines = {
     'functionToFunctionWithPropError': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionType': {
         errors: false,
@@ -22943,7 +22943,7 @@ const baselines = {
     'parseShortform': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseTypes': {
         errors: false,
@@ -50128,7 +50128,7 @@ const baselines = {
     'parserObjectType5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserObjectType6': {
         errors: false,
@@ -55163,7 +55163,7 @@ const baselines = {
     'objectTypeWithCallSignatureHidingMembersOfFunction': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectTypeWithCallSignatureHidingMembersOfFunctionAssignmentCompat': {
         errors: false,
@@ -55208,7 +55208,7 @@ const baselines = {
     'objectTypeWithStringIndexerHidingObjectIndexer': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectTypeWithStringNamedNumericProperty': {
         errors: false,
@@ -55398,7 +55398,7 @@ const baselines = {
     'callSignatureWithoutAnnotationsOrBody': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callSignatureWithoutReturnTypeAnnotationInference': {
         errors: false,

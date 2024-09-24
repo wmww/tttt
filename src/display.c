@@ -359,13 +359,14 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
         my type.tag == TYPE_CALLABLE
     ) {
         display_callable(d, my type.callable, true);
+    } else if (my key.tag == INTERFACE_KEY_CALLABLE) {
+        ASSERT(my type.tag == TYPE_CALLABLE);
+        display_callable(d, my type.callable, true);
     } else {
-        if (my key.tag != INTERFACE_KEY_CALLABLE) {
-            if (my optional) {
-                display_lit(d, "?");
-            }
-            display_lit(d, ": ");
+        if (my optional) {
+            display_lit(d, "?");
         }
+        display_lit(d, ": ");
         display_type(d, &my type);
     }
 }
@@ -383,9 +384,18 @@ static void display_interface(Display d, Interface const* me) {
     display_lit(d, "{");
     d.indent++;
     c_foreach(i, vec_interface_member, my members) {
-        display_newline(d);
-        display_interface_member(d, i.ref);
-        display_lit(d, ";");
+        if (i.ref->key.tag != INTERFACE_KEY_NAME) {
+            display_newline(d);
+            display_interface_member(d, i.ref);
+            display_lit(d, ";");
+        }
+    }
+    c_foreach(i, vec_interface_member, my members) {
+        if (i.ref->key.tag == INTERFACE_KEY_NAME) {
+            display_newline(d);
+            display_interface_member(d, i.ref);
+            display_lit(d, ";");
+        }
     }
     d.indent--;
 
