@@ -227,14 +227,13 @@ bool type_extends_array(Type const* sub);
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 
-// Returns true if found, false if not. ret is unmodified if false is returned. both ret and errors may be null.
-bool index_type_of(
+Type index_type_evaluate_type(Type const* me, Type const* index);
+void index_type_typecheck(
     Type const* me,
     Type const* index,
     Span index_span,
     bool error_if_not_found,
-    ErrorCtx* errs,
-    Type* ret
+    ErrorCtx* errs
 );
 void type_error_if_not_assignable(Type const* source, Type const* target, Span target_span, ErrorCtx* errs);
 Type type_call_evaluate_type(Type const* me, CallExpr const* call);

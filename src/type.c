@@ -799,8 +799,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                 c_foreach(i, vec_tuple_element, sub->tuple.elements) {
                     if (i.ref->rest) {
                         // Make sure every item in the rest tuple/array extends the array type
-                        Type elem = type_any;
-                        index_type_of(&i.ref->type, &type_number, span_null, false, nullptr, &elem);
+                        Type elem = index_type_evaluate_type(&i.ref->type, &type_number);
                         bool extends = type_extends_internal(ctx, &elem, super->array.element, refinements);
                         type_drop(&elem);
                         if (!extends) return false;
@@ -1089,6 +1088,7 @@ void type_remove_null_and_undefined(Type* me) {
     }
 }
 
+// Returns true if index found (ret is set). Else returns false and ret is unchanged.
 static bool index_type_of_internal(
     TypeCtx* ctx,
     Type const* me,
@@ -1350,18 +1350,24 @@ static bool index_type_of_internal(
     UNREACHABLE;
 }
 
-bool index_type_of(
+Type index_type_evaluate_type(Type const* me, Type const* index) {
+    TypeCtx ctx = {0};
+    Type ret = type_any;
+    index_type_of_internal(&ctx, me, index, span_null, false, nullptr, &ret);
+    type_ctx_drop(&ctx);
+    return ret;
+}
+
+void index_type_typecheck(
     Type const* me,
     Type const* index,
     Span index_span,
     bool error_if_not_found,
-    ErrorCtx* errs,
-    Type* ret
+    ErrorCtx* errs
 ) {
     TypeCtx ctx = {0};
-    bool found = index_type_of_internal(&ctx, me, index, index_span, error_if_not_found, errs, ret);
+    index_type_of_internal(&ctx, me, index, index_span, error_if_not_found, errs, nullptr);
     type_ctx_drop(&ctx);
-    return found;
 }
 
 static bool check_assignable_or_error_internal(

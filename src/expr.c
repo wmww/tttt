@@ -508,18 +508,11 @@ Type expr_evaluate_type(Expr const* me) {
             }
             UNREACHABLE;
 
-        case EXPR_PROPERTY: {
-            Type ret = type_any;
-            index_type_of(
+        case EXPR_PROPERTY:
+            return index_type_evaluate_type(
                 expr_get_type(&my property->expr),
-                expr_get_type(&my property->prop),
-                my property->prop.outer_span,
-                false,
-                nullptr,
-                &ret
+                expr_get_type(&my property->prop)
             );
-            return ret;
-        }
 
         case EXPR_AS_TYPE: return type_ref(&my as_type->type);
 
@@ -627,13 +620,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             expr_typecheck(&my property->expr, errs);
             expr_typecheck(&my property->prop, errs);
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
-            index_type_of(
+            index_type_typecheck(
                 expr_get_type(&my property->expr),
                 expr_get_type(&my property->prop),
                 my property->prop.outer_span,
                 error_if_not_found,
-                errs,
-                nullptr
+                errs
             );
         }   break;
 

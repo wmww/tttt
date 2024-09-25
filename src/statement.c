@@ -153,7 +153,7 @@ Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             if (type_is_self_referential(iterable_type)) {
                 var_type = type_self_referential_error;
             } else if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
-                index_type_of(iterable_type, &type_number, span_null, false, nullptr, &var_type);
+                var_type = index_type_evaluate_type(iterable_type, &type_number);
             }
             break;
     }
