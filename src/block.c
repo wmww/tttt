@@ -27,7 +27,15 @@ void block_resolve_names(Block const* me, NameStack* names, ErrorCtx* errs) {
     scope_drop(&scope);
 }
 
-void block_typecheck(Block* me, StatementCtx* ctx, ErrorCtx* errs) {
+Type block_evaluate_return_type(Block* me) {
+    Type ret = type_composite_base(TYPE_UNION);
+    c_foreach(i, vec_statement, my statements) {
+        ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i.ref));
+    }
+    return ret;
+}
+
+void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     c_foreach(i, vec_statement, my statements) {
         statement_typecheck(i.ref, ctx, errs);
     }

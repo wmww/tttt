@@ -106,9 +106,7 @@ void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx*
 }
 
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
-    StatementCtx statement_ctx = statement_ctx_toplevel();
-    block_typecheck(&my contents, &statement_ctx, errs);
-    statement_ctx_drop(&statement_ctx);
+    block_typecheck(&my contents, (BlockTypecheckCtx){0}, errs);
 }
 
 // If statements
@@ -499,7 +497,68 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
     }
 }
 
-void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
+Type statement_evaluate_return_type(Statement* me) {
+    switch (my tag) {
+        case STATEMENT_BLOCK: return block_evaluate_return_type(&my block);
+
+        case STATEMENT_IF_ELSE: {
+            Type ret = type_composite_base(TYPE_UNION);
+            c_foreach(i, vec_statement, my if_else.statements) {
+                ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i.ref));
+            }
+            return ret;
+        }
+
+        case STATEMENT_FOR_LOOP:
+            return type_composite(
+                TYPE_UNION,
+                statement_evaluate_return_type(&my for_loop->initialization),
+                statement_evaluate_return_type(&my for_loop->body)
+            );
+
+        case STATEMENT_FOR_EACH_LOOP:
+            return statement_evaluate_return_type(&my for_each_loop->body);
+
+        case STATEMENT_SWITCH: {
+            Type ret = type_composite_base(TYPE_UNION);
+            c_foreach(i, vec_switch_case, my switch_->cases) {
+                c_foreach(j, vec_statement, i.ref->statements) {
+                    ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(j.ref));
+                }
+            }
+            return ret;
+        }
+
+        case STATEMENT_TRY_CATCH:
+            return type_composite(
+                TYPE_UNION,
+                type_composite(
+                    TYPE_UNION,
+                    block_evaluate_return_type(&my try_catch->try_block),
+                    block_evaluate_return_type(&my try_catch->catch_block)
+                ),
+                block_evaluate_return_type(&my try_catch->finally_block)
+            );
+
+        case STATEMENT_RETURN_EXPR: return type_clone(*expr_get_type(&my expr));
+
+        case STATEMENT_NOOP:
+        case STATEMENT_BREAK:
+        case STATEMENT_EXPR:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+        case STATEMENT_THROW_EXPR:
+        case STATEMENT_IMPORT:
+        case STATEMENT_DECL_VARIABLE:
+        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_CLASS:
+        case STATEMENT_DECL_TYPE:
+        case STATEMENT_DECL_INTERFACE:
+        case STATEMENT_DECL_NAMESPACE: return type_never;
+    }
+    UNREACHABLE;
+}
+
+void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
@@ -527,10 +586,8 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             statement_typecheck(&my for_loop->initialization, ctx, errs);
             expr_typecheck(&my for_loop->condition, errs);
             expr_typecheck(&my for_loop->afterthought, errs);
-            bool break_was_allowed = ctx->break_allowed;
-            ctx->break_allowed = true;
+            ctx.break_allowed = true;
             statement_typecheck(&my for_loop->body, ctx, errs);
-            ctx->break_allowed = break_was_allowed;
             break;
         }
 
@@ -614,18 +671,15 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     break;
             }
 
-            bool break_was_allowed = ctx->break_allowed;
-            ctx->break_allowed = true;
+            ctx.break_allowed = true;
             statement_typecheck(&my for_each_loop->body, ctx, errs);
-            ctx->break_allowed = break_was_allowed;
         }   break;
 
         case STATEMENT_SWITCH: {
             expr_typecheck(&my switch_->needle, errs);
             Type const* needle_type = expr_get_type(&my switch_->needle);
             intptr_t default_count = 0;
-            bool break_was_allowed = ctx->break_allowed;
-            ctx->break_allowed = true;
+            ctx.break_allowed = true;
             c_foreach(i, vec_switch_case, my switch_->cases) {
                 if (i.ref->is_pattern) {
                     expr_typecheck(&i.ref->pattern, errs);
@@ -653,7 +707,6 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
                     statement_typecheck(j.ref, ctx, errs);
                 }
             }
-            ctx->break_allowed = break_was_allowed;
         }   break;
 
         case STATEMENT_TRY_CATCH:
@@ -665,7 +718,7 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_BREAK:
-            if (!ctx->break_allowed) {
+            if (!ctx.break_allowed) {
                 error_ctx_error(
                     errs,
                     my break_span,
@@ -686,22 +739,14 @@ void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs) {
             if (errs) {
                 expr_typecheck(&my expr, errs);
 
-                if (ctx->specified_return) {
+                if (ctx.specified_return) {
                     type_error_if_not_assignable(
                         expr_get_type(&my expr),
-                        ctx->specified_return,
+                        ctx.specified_return,
                         my expr.outer_span,
                         errs
                     );
                 }
-            }
-
-            if (ctx->collect_returned_types) {
-                ctx->impl_return = type_composite(
-                    TYPE_UNION,
-                    ctx->impl_return,
-                    type_clone(*expr_get_type(&my expr))
-                );
             }
         }   break;
 
@@ -738,20 +783,4 @@ void switch_case_drop(SwitchCase* me) {
         expr_drop(&my pattern);
     }
     vec_statement_drop(&my statements);
-}
-
-StatementCtx statement_ctx_toplevel() {
-    return (StatementCtx){0};
-}
-
-StatementCtx statement_ctx_function(Type const* specified_return, bool collect_returned_types) {
-    return (StatementCtx){
-        .specified_return = specified_return,
-        .collect_returned_types = collect_returned_types,
-        .impl_return = type_never,
-    };
-}
-
-void statement_ctx_drop(StatementCtx* me) {
-    type_drop(&my impl_return);
 }

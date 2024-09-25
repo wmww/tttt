@@ -9,7 +9,6 @@
 #include "scope.h"
 
 typedef struct ErrorCtx ErrorCtx;
-typedef struct StatementCtx StatementCtx;
 typedef struct ForLoopStatement ForLoopStatement;
 typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
@@ -152,7 +151,8 @@ static inline DeclExported statement_get_exported(Statement const* me) {
 void statement_drop(Statement* me);
 void statement_add_names(Statement* me, Scope* scope);
 void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs);
-void statement_typecheck(Statement* me, StatementCtx* ctx, ErrorCtx* errs);
+Type statement_evaluate_return_type(Statement* me);
+void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 #define i_key_class_names Statement, statement
 #define i_is_forward
@@ -221,16 +221,3 @@ typedef struct TryCatchStatement {
     Block catch_block;
     Block finally_block;
 } TryCatchStatement;
-
-// Statement context
-
-typedef struct StatementCtx {
-    bool collect_returned_types;
-    Type impl_return;
-    Type const* specified_return;
-    bool break_allowed;
-} StatementCtx;
-
-StatementCtx statement_ctx_toplevel();
-StatementCtx statement_ctx_function(Type const* specified_return, bool collect_returned_types);
-void statement_ctx_drop(StatementCtx* me);

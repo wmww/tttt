@@ -2523,12 +2523,12 @@ const baselines = {
     'blockScopedSameNameFunctionDeclarationStrictES5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedSameNameFunctionDeclarationStrictES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedVariablesUseBeforeDef': {
         errors: false,
@@ -6561,7 +6561,7 @@ const baselines = {
         types: false,
     },
     'controlFlowOuterVariable': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14043,7 +14043,7 @@ const baselines = {
     'genericInterfaceFunctionTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericInterfaceImplementation': {
         errors: true,
@@ -25076,7 +25076,7 @@ const baselines = {
         types: false,
     },
     'returnInfiniteIntersection': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -27586,7 +27586,7 @@ const baselines = {
         types: true,
     },
     'thisWhenTypeCheckFails': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -383,11 +383,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_INTERFACE_MEMBER: break;
 
-            case CLASS_ITEM_STATIC_BLOCK: {
-                StatementCtx ctx = statement_ctx_toplevel();
-                block_typecheck(&i.ref->static_block, &ctx, errs);
-                statement_ctx_drop(&ctx);
-            }   break;
+            case CLASS_ITEM_STATIC_BLOCK:
+                block_typecheck(&i.ref->static_block, (BlockTypecheckCtx){0}, errs);
+                break;
         }
     }
 

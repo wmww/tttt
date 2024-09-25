@@ -95,19 +95,25 @@ Type function_impl_evaluate_type(FunctionImpl* me) {
     Type result = function_impl_make_callable_sans_inferred_ret(me);
 
     if (!my ret_explicit && my has_body) {
-        StatementCtx ctx = statement_ctx_function(&type_any, true);
-        block_typecheck(&my body, &ctx, nullptr);
+        Type ret_type;
+        if (my evaluating_ret) {
+            ret_type = type_self_referential_error;
+        } else {
+            my evaluating_ret = true;
+            ret_type = block_evaluate_return_type(&my body);
+            my evaluating_ret = false;
+        }
 
         type_drop(&result.callable->ret);
-        if (ctx.impl_return.tag == TYPE_NEVER) {
+        if (ret_type.tag == TYPE_NEVER) {
             // This will need to be improved
             result.callable->ret = type_void;
         } else {
-            result.callable->ret = type_move(&ctx.impl_return);
+            result.callable->ret = type_move(&ret_type);
             type_abstract_literals(&result.callable->ret);
         }
 
-        statement_ctx_drop(&ctx);
+        type_drop(&ret_type);
     }
 
     return result;
@@ -124,7 +130,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         error_ctx_error(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
-    StatementCtx ctx = statement_ctx_function(my ret_explicit ? &my ret : &type_any, false);
-    block_typecheck(&my body, &ctx, errs);
-    statement_ctx_drop(&ctx);
+    BlockTypecheckCtx ctx = {
+        .specified_return = my ret_explicit ? &my ret : &type_any,
+        .break_allowed = false,
+    };
+    block_typecheck(&my body, ctx, errs);
 }

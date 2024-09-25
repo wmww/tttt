@@ -12,13 +12,9 @@ void lazy_type_evaluate(LazyType* me) {
     typeof(my tag) initial_tag = my tag;
     my tag = LAZY_TYPE_IN_FLIGHT;
 
-    Type result;
+    Type result = {0};
     switch (initial_tag) {
-        case LAZY_TYPE_UNINITIALIZED:
-            PANIC("LazyType is uninitialized");
-            result = type_any;
-            break;
-
+        case LAZY_TYPE_UNINITIALIZED: PANIC("LazyType is uninitialized");
         case LAZY_TYPE_EVALUATED: PANIC("lazy_type_evaluate() called when already evaluated");
 
         case LAZY_TYPE_IN_FLIGHT:
@@ -72,7 +68,12 @@ void lazy_type_evaluate(LazyType* me) {
 
         case LAZY_TYPE_EVALUATED:
             // A subcall set our evaluated type, don't mess with it
-            type_drop(&result);
+            if (initial_tag == LAZY_TYPE_FUNCTION) {
+                type_drop(&my evaluated);
+                my evaluated = result;
+            } else {
+                type_drop(&result);
+            }
             break;
 
         default: PANIC("LazyType tag changed to something other than LAZY_TYPE_EVALUATED during evaluation");\

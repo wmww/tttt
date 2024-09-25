@@ -178,9 +178,7 @@ void program_typecheck(Program* me) {
 
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
-        StatementCtx statement_ctx = statement_ctx_toplevel();
-        block_typecheck(&source->ast, &statement_ctx, my errs);
-        statement_ctx_drop(&statement_ctx);
+        block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
     }
 
     clear_error_config();
