@@ -94,6 +94,26 @@ void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs) {
     type_typecheck(&my type, errs);
 }
 
+bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index) {
+    switch (my key.tag) {
+        case INTERFACE_KEY_NAME: {
+            // Don't clone the string, and don't drop it the type. Hacky but safe.
+            Type key = type_value(value_string(my key.name_string));
+            return type_extends(&key, index);
+        }
+
+        case INTERFACE_KEY_INDEX:
+            return type_overlaps(&my key.index, index);
+
+        case INTERFACE_KEY_EXPR:
+        case INTERFACE_KEY_MAPPED:
+        case INTERFACE_KEY_CALLABLE:
+            // TODO
+            return false;
+    }
+    UNREACHABLE;
+}
+
 bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super) {
     if (sub->key.tag == INTERFACE_KEY_CALLABLE && super->key.tag == INTERFACE_KEY_CALLABLE) {
         return true;
