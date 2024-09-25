@@ -633,18 +633,16 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                             break;
 
                         default: {
-                            if (errs) {
-                                cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
-                                cstr_append_type_error_msg(&msg, iterable_type);
-                                cstr_append_lit(&msg, "'.");
-                                error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
-                            }
+                            cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
+                            cstr_append_type_error_msg(&msg, iterable_type);
+                            cstr_append_lit(&msg, "'.");
+                            error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
                         }   break;
                     }
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    if (errs && !type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
+                    if (!type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
                         cstr msg = cstr_lit("Type '");
                         cstr_append_type_error_msg(&msg, iterable_type);
                         cstr_append_lit(&msg, "' is not an array type or a string type.");
@@ -684,7 +682,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                 if (i.ref->is_pattern) {
                     expr_typecheck(&i.ref->pattern, errs);
                     Type const* pattern_type = expr_get_type(&i.ref->pattern);
-                    if (errs && !type_overlaps(needle_type, pattern_type)) {
+                    if (!type_overlaps(needle_type, pattern_type)) {
                         cstr message = cstr_lit("Type '");
                         cstr_append_type_error_msg(&message, pattern_type);
                         cstr_append_lit(&message, "' is not comparable to type '");
@@ -734,21 +732,17 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             expr_typecheck(&my expr, errs);
             break;
 
-        case STATEMENT_RETURN_EXPR: {
-            // TODO: remove this check once we've split typechecking from type evaluation
-            if (errs) {
-                expr_typecheck(&my expr, errs);
-
-                if (ctx.specified_return) {
-                    type_error_if_not_assignable(
-                        expr_get_type(&my expr),
-                        ctx.specified_return,
-                        my expr.outer_span,
-                        errs
-                    );
-                }
+        case STATEMENT_RETURN_EXPR:
+            expr_typecheck(&my expr, errs);
+            if (ctx.specified_return) {
+                type_error_if_not_assignable(
+                    expr_get_type(&my expr),
+                    ctx.specified_return,
+                    my expr.outer_span,
+                    errs
+                );
             }
-        }   break;
+            break;
 
         case STATEMENT_IMPORT: break;
 

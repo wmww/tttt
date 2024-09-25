@@ -70,10 +70,6 @@ void display_error(Display d, Error const* me) {
 }
 
 void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
-    if (!me) {
-        cstr_drop(&message);
-        return;
-    }
     vec_error_push(&my related_errors, (Error){
         .message = message,
         .span = span,
@@ -83,9 +79,6 @@ void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message)
 }
 
 void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) {
-    if (!me) {
-        return;
-    }
     cstr message = cstr_null;
     va_list args;
     va_start(args, fmt);
@@ -196,12 +189,6 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error) {
 }
 
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
-    if (!me) {
-        // Inefficient to create owned string if it's just going to be dropped, so warn
-        NONFATAL("error_ctx_error_s() called with null ErrorCtx: %s", cstr_str(&message));
-        cstr_drop(&message);
-        return nullptr;
-    }
     return error_ctx_append_error(me, (Error){
         .message = message,
         .span = span,
@@ -211,9 +198,6 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
 }
 
 Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) {
-    if (!me) {
-        return nullptr;
-    }
     cstr message = cstr_null;
     va_list args;
     va_start(args, fmt);
