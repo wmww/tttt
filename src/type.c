@@ -10,6 +10,7 @@
 #include "name_stack.h"
 #include "display.h"
 #include "error.h"
+#include "math_helpers.h"
 
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
@@ -926,8 +927,144 @@ bool type_extends(Type const* sub, Type const* super) {
     return ret;
 }
 
+static bool composite_type_overlaps(Type const* composite, Type const* other) {
+    ASSERT(composite->tag == TYPE_UNION || composite->tag == TYPE_INTERSECTION);
+    bool overlaps_in_all = true;
+    bool overlaps_in_any = false;
+    c_foreach(i, vec_type, composite->composite) {
+        if (type_overlaps(other, i.ref)) {
+            overlaps_in_any = true;
+        } else {
+            overlaps_in_all = false;
+        }
+    }
+    return composite->tag == TYPE_UNION ? overlaps_in_any : overlaps_in_all;
+}
+
+static bool array_type_overlaps(Type const* a, Type const* b) {
+    Type a_item = index_type_evaluate_type(a, &type_number);
+    Type b_item = index_type_evaluate_type(b, &type_number);
+    bool overlaps = type_overlaps(&a_item, &b_item);
+    type_drop(&a_item);
+    type_drop(&b_item);
+    return overlaps;
+}
+
 bool type_overlaps(Type const* a, Type const* b) {
-    return type_extends(a, b) || type_extends(b, a); // TODO: do this correctly
+    a = type_resolve(a);
+    b = type_resolve(b);
+
+    if (b->tag == TYPE_UNION || b->tag == TYPE_INTERSECTION) {
+        return composite_type_overlaps(b, a);
+    }
+
+    switch (a->tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+            return type_extends(b, a);
+
+        case TYPE_VALUE:
+            return type_extends(a, b);
+
+        case TYPE_CALLABLE:
+            switch (b->tag) {
+                case TYPE_CALLABLE: {
+                    intptr_t a_min_args = callable_type_min_arg_count(a->callable);
+                    intptr_t a_max_args = callable_type_max_arg_count(a->callable);
+                    intptr_t b_min_args = callable_type_min_arg_count(b->callable);
+                    intptr_t b_max_args = callable_type_max_arg_count(b->callable);
+                    if (a_min_args > b_max_args || a_max_args < b_min_args) {
+                        return false;
+                    }
+                    intptr_t shared_min_args = iptrmax(a_min_args, b_min_args);
+                    for (intptr_t i = 0; i < shared_min_args; i++) {
+                        Type arg_a = callable_type_get_arg_type(a->callable, i);
+                        Type arg_b = callable_type_get_arg_type(a->callable, i);
+                        bool overlaps = type_overlaps(&arg_a, &arg_b);
+                        type_drop(&arg_a);
+                        type_drop(&arg_b);
+                        if (!overlaps) {
+                            return false;
+                        }
+                    }
+                    return type_overlaps(&a->callable->ret, &b->callable->ret);
+                }
+
+                case TYPE_INTERFACE:
+                    c_foreach(i, vec_interface_member, b->interface.members) {
+                        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                            if (type_overlaps(a, &i.ref->type)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+
+                default: return false;
+            }
+
+        case TYPE_INTERFACE:
+            // TODO?
+            return type_extends(a, b) && type_extends(b, a);
+
+        case TYPE_ARRAY:
+        case TYPE_TUPLE:
+            switch (b->tag) {
+                case TYPE_ARRAY:
+                case TYPE_TUPLE:
+                    if (a->tag == TYPE_TUPLE && b->tag == TYPE_TUPLE) {
+                        intptr_t a_min_elems = type_min_numeric_index(a);
+                        intptr_t a_max_elems = type_max_numeric_index(a);
+                        intptr_t b_min_elems = type_min_numeric_index(b);
+                        intptr_t b_max_elems = type_max_numeric_index(b);
+                        if (a_min_elems > b_max_elems || a_max_elems < b_min_elems) {
+                            return false;
+                        }
+                        intptr_t shared_min_elems = iptrmax(a_min_elems, b_min_elems);
+                        for (intptr_t i = 0; i < shared_min_elems; i++) {
+                            Type index = type_value(value_number(i));
+                            // No need to drop index
+                            Type elem_a = index_type_evaluate_type(a, &index);
+                            Type elem_b = index_type_evaluate_type(b, &index);
+                            bool overlaps = type_overlaps(&elem_a, &elem_b);
+                            type_drop(&elem_a);
+                            type_drop(&elem_b);
+                            if (!overlaps) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    } else {
+                        return array_type_overlaps(a, b);
+                    }
+
+                case TYPE_INTERFACE:
+                    return type_extends(a, b) && type_extends(b, a);
+
+                default: return false;
+            }
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            return composite_type_overlaps(a, b);
+
+        case TYPE_IDENTIFIER:
+        case TYPE_INFERRED:
+        case TYPE_INDEXED:
+        case TYPE_KEYOF:
+        case TYPE_TYPEOF:
+        case TYPE_TERNARY:
+        case TYPE_ABSTRACTED:
+        case TYPE_LAZY:
+        case TYPE_REF:
+            UNREACHABLE; // Should have been resolved
+    }
+    UNREACHABLE;
 }
 
 bool type_extends_array(Type const* sub) {
@@ -939,6 +1076,48 @@ bool type_extends_array(Type const* sub) {
         }
     };
     return type_extends(sub, &array_any);
+}
+
+static inline intptr_t type_get_numeric_index_bound(Type const* me, bool get_max) {
+    me = type_resolve(me);
+    switch (my tag) {
+        // case TYPE_INTERFACE: // TODO?
+
+        case TYPE_ARRAY:
+            return get_max ? INTPTR_MAX : 0;
+
+        case TYPE_TUPLE: {
+            intptr_t ret = vec_tuple_element_size(&my tuple.elements);
+            if (!vec_tuple_element_empty(&my tuple.elements) && vec_tuple_element_back(&my tuple.elements)->rest) {
+                ret--;
+                ret += type_get_numeric_index_bound(&vec_tuple_element_back(&my tuple.elements)->type, get_max);
+            }
+            return ret;
+        }
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            intptr_t result = get_max ? -1 : 0;
+            c_foreach(i, vec_type, my composite) {
+                intptr_t bound = type_get_numeric_index_bound(i.ref, get_max);
+                if (get_max) {
+                    result = iptrmin(result, bound);
+                } else {
+                    result = iptrmax(result, bound);
+                }
+            }
+            return result;
+
+        default: return get_max ? -1 : 0;
+    }
+}
+
+intptr_t type_min_numeric_index(Type const* me) {
+    return type_get_numeric_index_bound(me, false);
+}
+
+intptr_t type_max_numeric_index(Type const* me) {
+    return type_get_numeric_index_bound(me, true);
 }
 
 void type_abstract_literals(Type* me) {
@@ -1442,39 +1621,6 @@ void type_error_if_not_assignable(Type const* source, Type const* target, Span t
     check_assignable_or_error_internal("Type", source, "type", target, 2322, target_span, errs);
 }
 
-static intptr_t min_args_of_callable(CallableType* me) {
-    intptr_t args_size = vec_callable_arg_size(&my args);
-    intptr_t ret = args_size;
-    if (args_size && vec_callable_arg_at(&my args, args_size - 1)->source->rest) {
-        Type const* arg_type = type_resolve(&vec_callable_arg_at_mut(&my args, args_size - 1)->type);
-        if (arg_type->tag == TYPE_TUPLE && vec_tuple_element_size(&arg_type->tuple.elements) > 0) {
-            // TODO: account for rest arguments within tuple
-            return args_size - 1 + vec_tuple_element_size(&arg_type->tuple.elements);
-        } else {
-            ret--;
-        }
-    }
-    while (ret && vec_callable_arg_at(&my args, ret - 1)->optional) {
-        ret--;
-    }
-    return ret;
-}
-
-static intptr_t max_args_of_callable(CallableType* me) {
-    intptr_t args_size = vec_callable_arg_size(&my args);
-    CallableArg* last_arg = args_size ? vec_callable_arg_at_mut(&my args, args_size - 1) : nullptr;
-    if (last_arg && last_arg->source->rest) {
-        if (last_arg->type.tag == TYPE_TUPLE) {
-            // TODO: account for rest arguments within tuple
-            return args_size - 1 + vec_tuple_element_size(&last_arg->type.tuple.elements);
-        } else {
-            return INTPTR_MAX;
-        }
-    } else {
-        return args_size;
-    }
-}
-
 Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
     me = type_resolve(me);
 
@@ -1579,8 +1725,8 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 
             intptr_t call_arg_count = vec_expr_size(&call->args);
             intptr_t callable_arg_count = vec_callable_arg_size(&callable->args);
-            intptr_t min_args = min_args_of_callable(callable);
-            intptr_t max_args = max_args_of_callable(callable);
+            intptr_t min_args = callable_type_min_arg_count(callable);
+            intptr_t max_args = callable_type_max_arg_count(callable);
             bool check_types_against_callable = true;
 
             if (call_arg_count < min_args || call_arg_count > max_args) {

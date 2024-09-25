@@ -224,6 +224,8 @@ Type const* type_resolve_until_identifier(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 bool type_overlaps(Type const* a, Type const* b);
 bool type_extends_array(Type const* sub);
+intptr_t type_min_numeric_index(Type const* me); // returns 0 if numeric indexes unsupported on this type
+intptr_t type_max_numeric_index(Type const* me); // returns INTPTR_MAX if unbounded, -1 if unsupported
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 

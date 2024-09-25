@@ -3,6 +3,7 @@
 #include "name_stack.h"
 #include "function_impl.h"
 #include "error.h"
+#include "several_types.h"
 
 void callable_arg_drop(CallableArg* me) {
     type_drop(&my type);
@@ -116,4 +117,57 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     }
 
     type_typecheck(&my ret, errs);
+}
+
+static inline bool callable_type_has_rest(CallableType const* me) {
+    return !vec_callable_arg_empty(&my args) && vec_callable_arg_back(&my args)->source->rest;
+}
+
+Type callable_type_get_arg_type(CallableType const* me, intptr_t i) {
+    if (i >= vec_callable_arg_size(&my args) - 1 && callable_type_has_rest(me)) {
+        intptr_t i_in_rest = i - vec_callable_arg_size(&my args) + 1;
+        Type index_type = type_value(value_number(i_in_rest));
+        // No need to drop index_type
+        return index_type_evaluate_type(&vec_callable_arg_back(&my args)->type, &index_type);
+    } else if (i >= vec_callable_arg_size(&my args) || i < 0) {
+        return type_never;
+    } else {
+        CallableArg const* arg = vec_callable_arg_at(&my args, i);
+        Type ret = type_ref(&arg->type);
+        if (arg->optional) {
+            ret = type_composite(TYPE_UNION, ret, type_undefined);
+        }
+        return ret;
+    }
+}
+
+intptr_t callable_type_min_arg_count(CallableType const* me) {
+    intptr_t ret = vec_callable_arg_size(&my args);
+    if (callable_type_has_rest(me)) {
+        Type const* arg_type = type_resolve(&vec_callable_arg_back(&my args)->type);
+        if (arg_type->tag == TYPE_TUPLE && vec_tuple_element_size(&arg_type->tuple.elements) > 0) {
+            // TODO: account for rest arguments within tuple
+            return ret - 1 + vec_tuple_element_size(&arg_type->tuple.elements);
+        } else {
+            ret--;
+        }
+    }
+    while (ret && vec_callable_arg_at(&my args, ret - 1)->optional) {
+        ret--;
+    }
+    return ret;
+}
+
+intptr_t callable_type_max_arg_count(CallableType const* me) {
+    if (callable_type_has_rest(me)) {
+        if (vec_callable_arg_back(&my args)->type.tag == TYPE_TUPLE) {
+            // TODO: account for rest arguments within tuple
+            return vec_callable_arg_size(&my args) - 1 +
+                vec_tuple_element_size(&vec_callable_arg_back(&my args)->type.tuple.elements);
+        } else {
+            return INTPTR_MAX;
+        }
+    } else {
+        return vec_callable_arg_size(&my args);
+    }
 }
