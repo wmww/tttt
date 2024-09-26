@@ -1010,7 +1010,7 @@ bool type_overlaps(Type const* a, Type const* b) {
 
         case TYPE_INTERFACE:
             // TODO?
-            return type_extends(a, b) && type_extends(b, a);
+            return type_extends(a, b) || type_extends(b, a);
 
         case TYPE_ARRAY:
         case TYPE_TUPLE:

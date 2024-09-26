@@ -26916,7 +26916,7 @@ const baselines = {
         types: true,
     },
     'switchCasesExpressionTypeMismatch': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54771,7 +54771,7 @@ const baselines = {
         types: false,
     },
     'literalTypes3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57401,7 +57401,7 @@ const baselines = {
         types: false,
     },
     'equalityWithUnionTypes01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -57431,7 +57431,7 @@ const baselines = {
         types: false,
     },
     'switchCaseWithUnionTypes01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
