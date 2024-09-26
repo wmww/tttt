@@ -107,7 +107,7 @@ const baselines = {
     },
     'ClassDeclaration26': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ClassDeclaration8': {

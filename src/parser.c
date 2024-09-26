@@ -585,8 +585,6 @@ static bool parse_modifiers(Parser* parent, ModifierList ret) {
             modifier = MODIFIER_PUBLIC;
         } else if (span_equals(span, "const")) {
             modifier = MODIFIER_CONST;
-        } else if (span_equals(span, "var") || span_equals(span, "let")) {
-            return parse_fail(&p);
         } else {
             break;
         }
@@ -597,6 +595,13 @@ static bool parse_modifiers(Parser* parent, ModifierList ret) {
             i++;
         }
         end_pos = span_end_ptr(span);
+
+        switch (modifier) {
+            case MODIFIER_CONST:
+                goto loop_end;
+
+            default:;
+        }
     }
     loop_end:
 
@@ -703,7 +708,6 @@ static void process_modifiers(
                 break;
 
             case MODIFIER_ENUM_COUNT:
-            default:
                 UNREACHABLE;
         }
 
@@ -2099,10 +2103,23 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
                     case ';': case ',': case '}': case '\0': break;
                     default:
                         if (is_definitely_field) {
-                            expect_char(&p, ';');
+                            if (is_type) {
+                                expect_char(&p, ';');
+                            } else {
+                                if (!hop_char(&p, ';')) {
+                                    parse_error(&p, span_from_token(&p), 1442, "Expected '=' for property initializer.");
+                                }
+                            }
                         } else if (span_equals(name_span, "function")) {
                             class_item_drop(ret);
                             return parse_fail(&p);
+                        } else if (span_equals(name_span, "let") || span_equals(name_span, "var")) {
+                            if (span_valid(modifier_list[0].span)) {
+                                // If we have modifiers
+                                parse_error(&p, name_span, 1440, "Variable declaration not allowed at this  location.");
+                            } else {
+                                return parse_fail(&p);
+                            }
                         } else {
                             parse_error(&p, name_span, 1434, "Unexpected keyword or identifier.");
                         }
