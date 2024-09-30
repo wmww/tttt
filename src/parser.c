@@ -189,11 +189,17 @@ static void reset_fail_cache(Parser* me) {
     my shared->fail_cache._len = 0;
 }
 
-static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
-static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) {
+// Should only be called for the current active parser
+static inline Error* add_error_to_parser(Parser* me, Error error) {
 #ifdef DEBUG_BUILD
     ASSERT(!my has_panding_child);
 #endif
+    my error_count++;
+    return vec_error_push(&my shared->errors, error);
+}
+
+static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) {
     cstr message = cstr_null;
     if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
         return nullptr;
@@ -206,8 +212,7 @@ static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* f
         cstr_vfmt(&message, 0, fmt, args);
         va_end(args);
     }
-    my error_count++;
-    return vec_error_push(&my shared->errors, (Error){
+    return add_error_to_parser(me, (Error){
         .message = message,
         .span = span,
         .ts_code = ts_code,
