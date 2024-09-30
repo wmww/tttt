@@ -13,6 +13,7 @@ core_files = files(
     'block.c',
     'expr.c',
     'value.c',
+    'modifier_list.c',
     'statement.c',
     'import_statement.c',
     'binding.c',
