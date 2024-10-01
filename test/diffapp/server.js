@@ -605,6 +605,10 @@ function handleRequest(request, response) {
       case '/setCode':
         const token = getTokenFrom(url);
         receivePostBody(request, response, contents => {
+          if (contents.startsWith('\ufeff')) {
+            // Remove byte-order mark
+            contents = contents.substring(1);
+          }
           const serial = manager.addCommand({
             code: contents,
             kick: manager.allRunners(),
