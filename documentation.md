@@ -18,7 +18,7 @@ Can be compiled and run with `./test.sh` (debug build, under Valgrind, takes min
 The tests target includes most `tttt` code, as well as additional C code in [src/test](src/test/).
 
 ### diffapp
-A graphical app that allows you to edit TypeScript code and see tsc's and tttt's test output for that code in real time. Recompiles and re-runs `tttt` on save.
+A graphical app that allows you to edit TypeScript code and see tsc's and tttt's test output for that code in real time. It watches for changes to tttt's source code, and recompiles and re-runs tttt on save.
 
 Generally run via `./diffapp.sh`. A test name or source file can be specified. If there's already a running instance the script will send the given test to that instance.
 
@@ -40,28 +40,31 @@ This list is not exhaustive as there are other structs owned by these. Each of t
 There is no AST node struct, interface or visitor. The AST is simply a *concept* that includes these structs, and is relevant for reasoning about the architecture.
 
 ### Span
-A span is a reference to a sections of source code, often used for error messages. Spans do not own anything, and do not need to be dropped. Identifier names are generally stores as spans, referring to the bit of source code where they appear.
+A span is a reference to a section of source code, often used for error messages. Spans don't own anything, and don't need to be dropped. Identifier names are generally stores as spans.
 
 ### Parser
-The parser (including our minimal custom parsing framework) lives in `parser.c`. We do not compile grammars, combinate or tokenize. We simply take a const char* and use it to build an AST. Like real men.
+The parser (including a minimal custom parsing framework) lives in `parser.c`. We do not compile grammars, combinate or tokenize. We simply take a const char* and use it to build an AST. Like real men.
 
-See dedicated sections for details.
+See dedicated section below for details.
 
 ### Program
 The `Program` struct owns the source code buffers and ASTs of all loaded files, manages imports, etc.
 
+### Scope
+A lexical scope, keeps track of identifier names.
+
 ### NameStack
-The abstraction for adding and looking up identifier names. Scopes can be pushed and popped.
+Used for looking up identifier names, scopes can be pushed and popped.
 
 ### LazyType
-`LazyType` is a struct owned by the AST. They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to add a name to the `NameStack` with a type in the resolve names phase, but not calculate what that type actually is until the typecheck phase when all names are resolved.
+`LazyType` is a struct owned by the AST. They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to create a type while in the resolve names phase, but not evaluate what that type actually is until the typecheck phase when all names are resolved.
 
 The process goes something like this:
 1. An AST struct, for example `Expr`, contains a `LazyType`
-2. In the resolve names phase, it set's it's LazyType's tag to `LAZY_TYPE_EXPR`
-3. That function or some other function then creates a `Type` with a pointer to it's LazyType using `type_lazy()` (the expressions type hasn't and *can't* be evaluated yet since names haven't been fully resolved, so this is the only way to pass around it's type)
+2. In the resolve names phase, it sets its LazyType's tag to `LAZY_TYPE_EXPR`
+3. That function or some other function then creates a `Type` with a pointer to its LazyType using `type_lazy()` (the expression's type hasn't and *can't* be evaluated yet since names haven't been fully resolved, so this is the only way to pass around its type)
 4. Later, in the typecheck phase, `type_resolve()` is called on the `Type`, which calls `lazy_type_get()`
-5. The tag of the LazyType is `LAZY_TYPE_EXPR`, so `lazy_type_evaluate()` uses the pointer to the LazyType to calculate a pointer to it's containing `Expr` and calls `expr_evaluate_type()`
+5. The tag of the LazyType is `LAZY_TYPE_EXPR`, so `lazy_type_evaluate()` uses the pointer to the LazyType to calculate a pointer to its containing `Expr` and calls `expr_evaluate_type()`
 6. It then sets `.evaluated` to the returned type, the tag to `LAZY_TYPE_EVALUATED` and returns a pointer to the evaluated type
 7. Future calls to `lazy_type_get()` for the same Expr quickly return a pointer to the evaluated type, without needing to call `lazy_type_evaluate()`
 
@@ -80,7 +83,7 @@ The `Filesystem` abstraction allows tests to mock the filesystem, so the `Progra
 The parser creates an AST from the source code string, see below.
 
 ### Resolve names
-Identifier names (of both values and types) are added to a `NameStack`, and then names are looked up wherever they are used. The top scope of the `NameStack` is kept around (subject to change), but nested scopes are not preserved after this phase is complete.
+Identifier names (of both values and types) are added to a `Scope`, the `Scope` is pushed to the `NameStack`, and then names are looked up wherever they are used. Scopes are not preserved after this phase is complete (with the exception of those owned by namespaces, and other special cases).
 
 During this process additional imported source files may be added to the program. When resolving names is done for the current file(s) they are parsed and their names are resolved. This is repeated until no new files are added (see `program_load()`).
 
@@ -91,14 +94,11 @@ The AST is now in it's finished state, so we can traverse it looking for type er
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).
 
 ### Types
-Sometimes types are owned by the AST and sometimes they are not. Types will not be used after the AST is dropped, but clones of them, types created from them and the rest of the data may be used after a type is dropped.
+Sometimes types are owned by the AST and sometimes they are not. Types will not be used after the AST is dropped, but if a type is not part of the AST it may be dropped before final cleanup.
 
 One easy way to tell if a struct may not always be owned by the AST is if it's clonable. Types are clonable, but the AST is not. If something has a `*_clone()` function it's likely not always owned by the AST.
 
 Since types are *sometimes* part of the AST (generally when they are explicitly specified by the programmer) they sometimes need to own other AST things (such as how `infer`ed types own a `NamedType`). In these cases clones of the AST types will generally pick up either counted references or non-owning references of these things, but this can get a bit messy and possibly should be improved.
-
-### NameStack
-The `NameStack` is temporary. Each scope within it only lives long enough to add and resolve names within that scope. Currently the root scope is kept around as a namespace but this is subject to change.
 
 ### NamedType/NamedValue
 The `NameStack` is used to look these up, but they are owned by the AST struct that declares them. They live as long as the AST, and are not created or destroyed in the typecheck phase. It's generally a better ides to use a `Named*` pointer to disambiguate names rather than the name string itself. Let the `NameStack` code handle scopes and shadowing so nowhere else has to.
