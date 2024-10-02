@@ -279,20 +279,25 @@ static inline bool is_number_start_char(char c) {
     return (c >= '0' && c <= '9') || c == '.';
 }
 
-static inline bool hop_identifier_or_keyword(Parser* parent) {
+// ret can be null
+static inline bool parse_identifier_or_keyword(Parser* parent, Span* ret) {
+    Anchor a = anchor(parent);
     if (is_identifier_start_char(*parent->pos)) {
         parent->pos++;
         while (is_identifier_char(*parent->pos)) parent->pos++;
+        if (ret) {
+            *ret = span_from(a);
+        }
         return true;
     } else {
         return false;
     }
 }
 
-// ret can be nullptr
+// ret can be null
 static bool parse_identifier(Parser* parent, Span* ret) {
     Anchor a = anchor(parent);
-    if (!hop_identifier_or_keyword(parent)) {
+    if (!parse_identifier_or_keyword(parent, nullptr)) {
         return false;
     }
     Span s = span_from(a);
@@ -487,7 +492,7 @@ static bool hop_token(Parser* parent) {
     if (parse_literal(parent, &parsed.value)) {
         value_drop(&parsed.value);
         return true;
-    } else if (hop_identifier_or_keyword(parent)) {
+    } else if (parse_identifier_or_keyword(parent, nullptr)) {
         return true;
     } else if (hop_start(parent, "=>")) {
         return true;
@@ -517,14 +522,13 @@ static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
     *ret = (ModifierList){0};
 
     while (true) {
-        Anchor modifier_start = anchor(&p);
-        if (!hop_identifier_or_keyword(&p)) {
-            goto loop_end;
-        }
         SpannedModifier mod = {
             .tag = MODIFIER_ENUM_CAP,
-            .span = span_from(modifier_start),
+            .span = {0},
         };
+        if (!parse_identifier_or_keyword(&p, &mod.span)) {
+            goto loop_end;
+        }
 
         hop_whitespace(&p);
         if (p.whitespace == WHITESPACE_NEWLINE) {
@@ -1569,7 +1573,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     {
         Value name_value;
-        if (parse_identifier(&p, &name_span)) {
+        if (parse_identifier_or_keyword(&p, &name_span)) {
             name_string = cstr_from_span(name_span);
         } else if (parse_literal(&p, &name_value)) {
             if (name_value.tag == VALUE_STRING) {
@@ -1813,7 +1817,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
 static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* name_ret, bool* name_is_value_ret) {
     Value value;
     Anchor a = anchor(parent);
-    if (parse_identifier(parent, span_ret)) {
+    if (parse_identifier_or_keyword(parent, span_ret)) {
         *name_ret = cstr_from_span(*span_ret);
         *name_is_value_ret = false;
         return true;
@@ -2206,7 +2210,7 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
 
     Span prop;
-    if (!parse_identifier(&p, &prop)) {
+    if (!parse_identifier_or_keyword(&p, &prop)) {
         return parse_fail(&p);
     }
 

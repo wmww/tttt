@@ -6591,13 +6591,13 @@ const baselines = {
         types: false,
     },
     'convertClassExpressionToFunctionFromObjectProperty1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'convertClassExpressionToFunctionFromObjectProperty2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'convertKeywords': {
@@ -34151,7 +34151,7 @@ const baselines = {
         types: false,
     },
     'nullPropertyName': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46166,7 +46166,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsFunctionKeywordPropExhaustive': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
