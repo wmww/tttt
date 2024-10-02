@@ -1565,29 +1565,38 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
+static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* name_ret, bool* name_is_value_ret) {
+    Value value;
+    Anchor a = anchor(parent);
+    if (parse_identifier_or_keyword(parent, span_ret)) {
+        *name_ret = cstr_from_span(*span_ret);
+        *name_is_value_ret = false;
+        return true;
+    } else if (parse_literal(parent, &value)) {
+        if (value.tag == VALUE_STRING) {
+            *name_ret = value.string;
+            // Now value shouldn't be dropped
+        } else {
+            *name_ret = cstr_null;
+            cstr_append_value_js(name_ret, &value);
+            value_drop(&value);
+        }
+        *span_ret = span_from(a);
+        *name_is_value_ret = true;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     Parser p = parser(parent);
-    Anchor a = anchor(&p);
     Span name_span;
     cstr name_string;
+    bool name_is_value;
 
-    {
-        Value name_value;
-        if (parse_identifier_or_keyword(&p, &name_span)) {
-            name_string = cstr_from_span(name_span);
-        } else if (parse_literal(&p, &name_value)) {
-            if (name_value.tag == VALUE_STRING) {
-                name_string = name_value.string;
-                name_span = span_from(a);
-            } else {
-                name_string = cstr_null;
-                cstr_append_value_js(&name_string, &name_value);
-                name_span = span_from(a);
-                value_drop(&name_value);
-            }
-        } else {
-            return parse_fail(&p);
-        }
+    if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
+        return parse_fail(&p);
     }
     hop_whitespace(&p);
 
@@ -1812,25 +1821,6 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->type);
 
     return parse_success(&p);
-}
-
-static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* name_ret, bool* name_is_value_ret) {
-    Value value;
-    Anchor a = anchor(parent);
-    if (parse_identifier_or_keyword(parent, span_ret)) {
-        *name_ret = cstr_from_span(*span_ret);
-        *name_is_value_ret = false;
-        return true;
-    } else if (parse_literal(parent, &value)) {
-        *name_ret = cstr_null;
-        cstr_append_value_js(name_ret, &value);
-        value_drop(&value);
-        *span_ret = span_from(a);
-        *name_is_value_ret = true;
-        return true;
-    } else {
-        return false;
-    }
 }
 
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
