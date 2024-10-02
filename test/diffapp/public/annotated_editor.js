@@ -31,20 +31,20 @@ function processAnnotaiton(referenceLines, annotationString) {
 
   let ret = [];
   let annotationIndex = 0;
-  for (const elem of lineDiff) {
-    if (elem.removed) {
-      // elem.value is a list of line strings
+  for (const item of lineDiff) {
+    if (item.removed) {
+      // item.value is a list of line strings
       const lines = [];
-      for (const line of elem.value) {
+      for (const line of item.value) {
         lines.push(line + annotationNewlines[annotationIndex]);
         annotationIndex++;
       }
       ret.push(lines);
     } else {
-      if (!elem.removed) {
-        annotationIndex += elem.value.length;
+      if (!item.added) {
+        annotationIndex += item.value.length;
       }
-      for (const _line of elem.value) {
+      for (const _line of item.value) {
         ret.push(undefined);
       }
     }
