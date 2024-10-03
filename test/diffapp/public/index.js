@@ -5,8 +5,23 @@ const errorList = document.getElementById('error-list');
 const errorTemplate = document.getElementById('error-template');
 const token = Array(6).fill().map(() => String.fromCharCode(Math.floor(Math.random() * 26) + 97)).join('');
 
+const backButton = document.getElementById('back-button');
+const forwardButton = document.getElementById('forward-button');
 const editor = new AnnotatedEditor(codeInput, codeView);
-codeInput.addEventListener('input', onCodeInputChanged);
+editor.onValueChanged = onCodeValueChanged;
+
+backButton.onclick = () => {
+  editor.changeBuffer(-1);
+};
+
+forwardButton.onclick = () => {
+  editor.changeBuffer(1);
+};
+
+editor.onBuffersChanged = (prev, next) => {
+  backButton.disabled = prev === 0;
+  forwardButton.disabled = next === 0;
+};
 
 let clientErrors = [];
 let serverErrors = [];

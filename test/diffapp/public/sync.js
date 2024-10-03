@@ -7,20 +7,13 @@ let serverCode = '';
 let serverSerial = null;
 let codeDiffersFromServer = false;
 
-function codeChangedByServer(code, serial) {
-  serverCode = code;
-  serverSerial = serial;
-  codeDiffersFromServer = false;
-  editor.setValue(code);
-}
-
 const inputWaitMs = 50; // How long to wait after an input for more events to batch with it
 let inputTimeout;
-function onCodeInputChanged() {
+function onCodeValueChanged(value) {
   clearTimeout(inputTimeout);
   codeDiffersFromServer = true;
   inputTimeout = setTimeout(() => {
-    const code = codeInput.value
+    const code = value
     fetch('/setCode?token=' + token, {
       method: 'POST',
       body: code,
@@ -29,10 +22,18 @@ function onCodeInputChanged() {
       .then(t => {
         serverSerial = parseInt(t);
         serverCode = code;
-        codeDiffersFromServer = serverCode !== codeInput.value;
+        codeDiffersFromServer = serverCode !== value;
         updateOutOfDateState();
       });
   }, inputWaitMs);
+}
+
+function codeChangedByServer(code, serial) {
+  serverCode = code;
+  serverSerial = serial;
+  editor.setValue(code);
+  clearTimeout(inputTimeout);
+  codeDiffersFromServer = false;
 }
 
 function updateOutOfDateState() {

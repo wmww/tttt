@@ -14,10 +14,20 @@ class Editor {
     this.lastMousedownClientY = null;
     this.selectByWord = false;
 
+    this.previousBuffers = [];
+    this.nextBuffers = []; // NOTE: this array is backwards, 0 is the right-most element, length-1 is the left most
+
+    this.onBuffersChanged = () => {};
+    this.onValueChanged = () => {};
+
     document.addEventListener('selectionchange', () => {
       if (document.activeElement == inputElem) {
         this.render();
       }
+    });
+
+    inputElem.addEventListener('input', () => {
+      this.onValueChanged(this.inputElem.value);
     });
 
     this.inputElem.addEventListener('focusout', () => {
@@ -137,8 +147,41 @@ class Editor {
   }
 
   setValue(value) {
-    this.inputElem.value = value;
+    if (value !== this.inputElem.value) {
+      if (this.inputElem.value !== '') {
+        this.previousBuffers.push(this.inputElem.value);
+      }
+      this.inputElem.value = value;
+      this.render();
+      this.onValueChanged(value);
+      this.onBuffersChanged(this.previousBuffers.length, this.nextBuffers.length);
+    }
+  }
+
+  // -1 for back, 1 for forward, etc
+  changeBuffer(relative) {
+    let buffer = this.inputElem.value;
+    while (relative < 0) {
+      // nextBuffers is backwards to make this easy
+      this.nextBuffers.push(buffer);
+      buffer = this.previousBuffers.pop();
+      if (buffer === undefined) {
+        buffer = '';
+      }
+      relative++;
+    }
+    while (relative > 0) {
+      this.previousBuffers.push(buffer);
+      buffer = this.nextBuffers.pop();
+      if (buffer === undefined) {
+        buffer = '';
+      }
+      relative--;
+    }
+    this.inputElem.value = buffer;
     this.render();
+    this.onValueChanged(buffer);
+    this.onBuffersChanged(this.previousBuffers.length, this.nextBuffers.length);
   }
 
   tokenizeValue(indent) {

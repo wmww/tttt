@@ -124,6 +124,10 @@ button, .fake-button {
   padding: 0;
 }
 
+.floating-button:disabled {
+  opacity: 50%;
+}
+
 .channel-button {
   min-width: 100px;
   padding-top: 8px;
