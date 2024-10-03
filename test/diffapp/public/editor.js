@@ -28,6 +28,12 @@ class Editor {
 
     inputElem.addEventListener('input', () => {
       this.onValueChanged(this.inputElem.value);
+      if (this.nextBuffers.length) {
+        while (this.nextBuffers.length) {
+          this.previousBuffers.push(this.nextBuffers.pop());
+        }
+        this.onBuffersChanged(this.previousBuffers.length, this.nextBuffers.length);
+      }
     });
 
     this.inputElem.addEventListener('focusout', () => {
@@ -163,7 +169,9 @@ class Editor {
     let buffer = this.inputElem.value;
     while (relative < 0) {
       // nextBuffers is backwards to make this easy
-      this.nextBuffers.push(buffer);
+      if (buffer !== '') {
+        this.nextBuffers.push(buffer);
+      }
       buffer = this.previousBuffers.pop();
       if (buffer === undefined) {
         buffer = '';
@@ -171,7 +179,9 @@ class Editor {
       relative++;
     }
     while (relative > 0) {
-      this.previousBuffers.push(buffer);
+      if (buffer !== '') {
+        this.previousBuffers.push(buffer);
+      }
       buffer = this.nextBuffers.pop();
       if (buffer === undefined) {
         buffer = '';

@@ -12,15 +12,17 @@ editor.onValueChanged = onCodeValueChanged;
 
 backButton.onclick = () => {
   editor.changeBuffer(-1);
+  focusCode();
 };
 
 forwardButton.onclick = () => {
   editor.changeBuffer(1);
+  focusCode();
 };
 
+backButton.disabled = true;
 editor.onBuffersChanged = (prev, next) => {
   backButton.disabled = prev === 0;
-  forwardButton.disabled = next === 0;
 };
 
 let clientErrors = [];
@@ -50,6 +52,10 @@ function surfaceError(message) {
   }, 10000);
 }
 
+function focusCode() {
+  codeInput.focus({preventScroll: true});
+}
+
 let currentChannel;
 const channelButtons = Array.from(document.getElementsByClassName('channel-button'));
 function onChannelSelected(channel) {
@@ -60,7 +66,7 @@ function onChannelSelected(channel) {
   for (const button of channelButtons) {
     button.classList.toggle('active', button.id.endsWith(channel));
   }
-  codeInput.focus({preventScroll: true});
+  focusCode();
   updateEditor();
 }
 channelButtons.forEach(button => {
