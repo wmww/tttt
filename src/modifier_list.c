@@ -60,6 +60,7 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
                 break;
 
             case MODIFIER_EXPORT:
+            case MODIFIER_EXPORT_DEFAULT:
                 if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_FIELD | MODIFIER_VALIDATION_FLAG_METHOD)) {
                     MODIFIER_ERROR(errs, i.ref->span, 1031,
                         "'export' modifier cannot appear on class elements of this kind.");
@@ -74,7 +75,10 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
             case MODIFIER_PRIVATE:
             case MODIFIER_PROTECTED:
             case MODIFIER_PUBLIC:
-                if (accessibility_seen) {
+                if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT)) {
+                    MODIFIER_ERROR(errs, i.ref->span, 1044,
+                        "'%.*s' modifier cannot appear on a module or namespace element.", c_SPAN(i.ref->span));
+                } else if (accessibility_seen) {
                     MODIFIER_ERROR(errs, i.ref->span, 1028, "Accessibility modifier already seen.");
                 }
                 accessibility_seen = true;

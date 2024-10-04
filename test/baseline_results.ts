@@ -1901,8 +1901,8 @@ const baselines = {
         types: false,
     },
     'asyncFunctionWithForStatementNoInitializer': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'asyncFunctionsAcrossFiles': {
@@ -2137,7 +2137,7 @@ const baselines = {
     },
     'awaitExpressionInnerCommentEmit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitInClassInAsyncFunction': {
@@ -2952,7 +2952,7 @@ const baselines = {
     },
     'castOfAwait': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'castOfYield': {
@@ -10572,12 +10572,12 @@ const baselines = {
     },
     'es5-asyncFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionArrayLiterals': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionBinaryExpressions': {
@@ -10592,17 +10592,17 @@ const baselines = {
     },
     'es5-asyncFunctionConditionals': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionDoStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionElementAccess': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionForInStatements': {
@@ -10622,12 +10622,12 @@ const baselines = {
     },
     'es5-asyncFunctionHoisting': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionIfStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionLongObjectLiteral': {
@@ -10637,7 +10637,7 @@ const baselines = {
     },
     'es5-asyncFunctionNestedLoops': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionNewExpressions': {
@@ -10662,7 +10662,7 @@ const baselines = {
     },
     'es5-asyncFunctionSwitchStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionTryStatements': {
@@ -10672,7 +10672,7 @@ const baselines = {
     },
     'es5-asyncFunctionWhileStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionWithStatements': {
@@ -11843,7 +11843,7 @@ const baselines = {
     'exportDefaultAsyncFunction': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportDefaultAsyncFunction2': {
         errors: false,
@@ -11873,7 +11873,7 @@ const baselines = {
     'exportDefaultFunctionInNamespace': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDefaultImportedType': {
         errors: undefined,
@@ -17047,7 +17047,7 @@ const baselines = {
     },
     'invalidContinueInDownlevelAsync': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'invalidLetInForOfAndForIn_ES5': {
@@ -23621,14 +23621,14 @@ const baselines = {
         types: false,
     },
     'promiseDefinitionTest': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'promiseEmptyTupleNoException': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'promiseIdentity': {
         errors: false,
@@ -30713,7 +30713,7 @@ const baselines = {
     'awaitCallExpression1_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'awaitCallExpression2_es2017': {
         errors: false,
@@ -30733,7 +30733,7 @@ const baselines = {
     'awaitCallExpression5_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'awaitCallExpression6_es2017': {
         errors: false,
@@ -30767,22 +30767,22 @@ const baselines = {
     },
     'await_unaryExpression_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_unaryExpression_es2017_1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_unaryExpression_es2017_2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_unaryExpression_es2017_3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration10_es2017': {
@@ -30793,7 +30793,7 @@ const baselines = {
     'asyncFunctionDeclaration11_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration12_es2017': {
         errors: false,
@@ -30803,17 +30803,17 @@ const baselines = {
     'asyncFunctionDeclaration13_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration14_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration1_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration2_es2017': {
         errors: true,
@@ -30833,7 +30833,7 @@ const baselines = {
     'asyncFunctionDeclaration5_es2017': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration6_es2017': {
         errors: false,
@@ -30858,7 +30858,7 @@ const baselines = {
     'asyncAliasReturnType_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithParameterNameAsync_es5': {
         errors: true,
@@ -30952,8 +30952,8 @@ const baselines = {
     },
     'asyncClass_es5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asyncConstructor_es5': {
         errors: false,
@@ -30963,7 +30963,7 @@ const baselines = {
     'asyncDeclare_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncEnum_es5': {
         errors: false,
@@ -30982,8 +30982,8 @@ const baselines = {
     },
     'asyncInterface_es5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asyncMethodWithSuper_es5': {
         errors: false,
@@ -30996,8 +30996,8 @@ const baselines = {
         types: false,
     },
     'asyncMultiFile_es5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'asyncQualifiedReturnType_es5': {
@@ -31043,7 +31043,7 @@ const baselines = {
     'awaitCallExpression1_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'awaitCallExpression2_es5': {
         errors: false,
@@ -31063,7 +31063,7 @@ const baselines = {
     'awaitCallExpression5_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'awaitCallExpression6_es5': {
         errors: false,
@@ -31098,7 +31098,7 @@ const baselines = {
     'asyncFunctionDeclaration11_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration12_es5': {
         errors: false,
@@ -31108,12 +31108,12 @@ const baselines = {
     'asyncFunctionDeclaration13_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration14_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration15_es5': {
         errors: false,
@@ -31128,7 +31128,7 @@ const baselines = {
     'asyncFunctionDeclaration1_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration2_es5': {
         errors: true,
@@ -31148,7 +31148,7 @@ const baselines = {
     'asyncFunctionDeclaration5_es5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration6_es5': {
         errors: false,
@@ -31178,7 +31178,7 @@ const baselines = {
     'asyncAliasReturnType_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arrowFunctionWithParameterNameAsync_es6': {
         errors: true,
@@ -31262,8 +31262,8 @@ const baselines = {
     },
     'asyncClass_es6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asyncConstructor_es6': {
         errors: false,
@@ -31273,7 +31273,7 @@ const baselines = {
     'asyncDeclare_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncEnum_es6': {
         errors: false,
@@ -31292,8 +31292,8 @@ const baselines = {
     },
     'asyncInterface_es6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asyncMethodWithSuper_es6': {
         errors: false,
@@ -31306,8 +31306,8 @@ const baselines = {
         types: false,
     },
     'asyncMultiFile_es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'asyncQualifiedReturnType_es6': {
@@ -31358,7 +31358,7 @@ const baselines = {
     'awaitCallExpression1_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'awaitCallExpression2_es6': {
         errors: false,
@@ -31378,7 +31378,7 @@ const baselines = {
     'awaitCallExpression5_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'awaitCallExpression6_es6': {
         errors: false,
@@ -31407,22 +31407,22 @@ const baselines = {
     },
     'await_unaryExpression_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_unaryExpression_es6_1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_unaryExpression_es6_2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_unaryExpression_es6_3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration10_es6': {
@@ -31433,7 +31433,7 @@ const baselines = {
     'asyncFunctionDeclaration11_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration12_es6': {
         errors: false,
@@ -31443,12 +31443,12 @@ const baselines = {
     'asyncFunctionDeclaration13_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration14_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration15_es6': {
         errors: false,
@@ -31458,7 +31458,7 @@ const baselines = {
     'asyncFunctionDeclaration1_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration2_es6': {
         errors: true,
@@ -31478,7 +31478,7 @@ const baselines = {
     'asyncFunctionDeclaration5_es6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration6_es6': {
         errors: false,
@@ -49761,13 +49761,13 @@ const baselines = {
         types: false,
     },
     'parserInterfaceDeclaration3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserInterfaceDeclaration4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserInterfaceDeclaration5': {
@@ -49776,7 +49776,7 @@ const baselines = {
         types: true,
     },
     'parserInterfaceDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50301,9 +50301,9 @@ const baselines = {
         types: true,
     },
     'Protected1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'Protected2': {
         errors: false,
@@ -50471,7 +50471,7 @@ const baselines = {
         types: false,
     },
     'parser618973': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52037,7 +52037,7 @@ const baselines = {
     },
     'parserForOfStatement23': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserForOfStatement24': {

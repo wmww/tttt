@@ -514,10 +514,11 @@ static Span hop_token_get_span(Parser* parent) {
     return span_from(a);
 }
 
-static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
+static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* ret) {
     Parser p = parser(parent);
     const char* end_pos = p.pos;
     bool has_static = false;
+    bool prev_was_export = false;
 
     *ret = (ModifierList){0};
 
@@ -538,6 +539,14 @@ static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
         if (!is_identifier_char(*p.pos)) {
             switch (*p.pos) {
                 case '[': case '"': case '\'': break;
+
+                case '(':
+                case '{':
+                    if (is_member) {
+                        goto loop_end;
+                    }
+                    break;
+
                 default:
                     // If the current parse is going to succeed at all, what we just parsed must be an identifier not a
                     // modifier. Break without handling it
@@ -547,7 +556,7 @@ static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
 
         if (span_equals(mod.span, "readonly")) {
             mod.tag = MODIFIER_READONLY;
-        } else if (span_equals(mod.span, "abstract")) {
+        } else if (is_member && span_equals(mod.span, "abstract")) {
             mod.tag = MODIFIER_ABSTRACT;
         } else if (span_equals(mod.span, "static")) {
             mod.tag = MODIFIER_STATIC;
@@ -560,6 +569,8 @@ static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
             mod.tag = MODIFIER_ACCESSOR;
         } else if (span_equals(mod.span, "export")) {
             mod.tag = MODIFIER_EXPORT;
+        } else if (prev_was_export && span_equals(mod.span, "default")) {
+            mod.tag = MODIFIER_EXPORT_DEFAULT;
         } else if (span_equals(mod.span, "async")) {
             mod.tag = MODIFIER_ASYNC;
         } else if (span_equals(mod.span, "declare")) {
@@ -572,7 +583,7 @@ static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
             mod.tag = MODIFIER_PROTECTED;
         } else if (span_equals(mod.span, "public")) {
             mod.tag = MODIFIER_PUBLIC;
-        } else if (span_equals(mod.span, "const")) {
+        } else if (is_member && span_equals(mod.span, "const")) {
             mod.tag = MODIFIER_CONST;
         } else {
             break;
@@ -582,9 +593,14 @@ static bool parse_modifier_list(Parser* parent, ModifierList* ret) {
         ret->includes[mod.tag] = true;
         end_pos = span_end_ptr(mod.span);
 
+        prev_was_export = false;
         switch (mod.tag) {
             case MODIFIER_CONST:
                 goto loop_end;
+
+            case MODIFIER_EXPORT:
+                prev_was_export = true;
+                break;
 
             default:;
         }
@@ -1304,7 +1320,7 @@ static bool parse_function_args(
                 Anchor arg_start = anchor(&p);
 
                 ModifierList modifier_list;
-                parse_modifier_list(&p, &modifier_list);
+                parse_modifier_list(&p, true, &modifier_list);
                 modifier_list_drop(&modifier_list);
                 hop_whitespace(&p);
 
@@ -1828,7 +1844,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     Anchor a = anchor(&p);
 
     ModifierList modifiers;
-    if (!parse_modifier_list(&p, &modifiers)) {
+    if (!parse_modifier_list(&p, true, &modifiers)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -3335,7 +3351,6 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
             p.pos++;
         } else {
             parse_error(&p, hop_token_get_span(&p), 1128, "Declaration or statement expected.");
-            // TODO: woudln't this trap us in a loop?
         }
         hop_whitespace(&p); // TODO: is this needed?
     }
@@ -3582,46 +3597,21 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         Expr expr;
     } parsed;
 
-    DeclExported exported = DECL_EXPORTED_NO;
-    bool declared = false;
-    bool modifier_error = false;
-
-    Anchor modifier_start = anchor(&p);
-    while (true) {
-        if (hop_start_if_ends_on_word_break(&p, "export")) {
-            if (toplevel) {
-                exported = DECL_EXPORTED_YES;
-            } else if (!modifier_error) {
-                parse_error(&p, span_from(modifier_start), 1184, "Modifiers cannot appear here.");
-                modifier_error = true;
-            }
-        } else if (hop_start_if_ends_on_word_break(&p, "default")) {
-            if (toplevel) {
-                if (exported == DECL_EXPORTED_YES) {
-                    exported = DECL_EXPORTED_YES_DEFAULT;
-                    break;
-                } else if (!modifier_error) {
-                    expected_token_error(&p, "export");
-                    modifier_error = true;
-                }
-            } else if (!modifier_error) {
-                parse_error(&p, span_from(modifier_start), 1184, "Modifiers cannot appear here.");
-                modifier_error = true;
-            }
-        } else if (hop_start_if_ends_on_word_break(&p, "declare")) {
-            if (toplevel) {
-                declared = true;
-            } else if (!modifier_error) {
-                parse_error(&p, span_from(modifier_start), 1184, "Modifiers cannot appear here.");
-                modifier_error = true;
-            }
-        } else {
-            break;
-        }
-        hop_whitespace(&p);
-        modifier_start = anchor(&p);
+    ModifierList modifiers;
+    if (!parse_modifier_list(&p, false, &modifiers)) {
+        return parse_fail(&p);
     }
     hop_whitespace(&p);
+    DeclExported exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
+        DECL_EXPORTED_YES_DEFAULT :
+        (modifiers.includes[MODIFIER_EXPORT] ? DECL_EXPORTED_YES : DECL_EXPORTED_NO);
+
+    modifier_list_validate_during_parse(
+        &p,
+        &modifiers,
+        span_from(a),
+        toplevel ? MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT : MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED
+    );
 
     if (exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, &parsed.variable)
@@ -3630,7 +3620,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_VARIABLE,
             .decl = {
                 .exported = exported,
-                .declared = declared,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
                 .variable = parsed.variable,
             },
         };
@@ -3640,7 +3630,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_FUNCTION,
             .decl = {
                 .exported = exported,
-                .declared = declared,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
                 .function = parsed.function,
             },
         };
@@ -3650,7 +3640,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_CLASS,
             .decl = {
                 .exported = exported,
-                .declared = declared,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
                 .class = c_new(ClassDecl, parsed.class),
             },
         };
@@ -3660,7 +3650,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_TYPE,
             .decl = {
                 .exported = exported,
-                .declared = declared,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
                 .type = parsed.type_decl,
             },
         };
@@ -3670,7 +3660,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_INTERFACE,
             .decl = {
                 .exported = exported,
-                .declared = declared,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
                 .interface = c_new(InterfaceDecl, parsed.interface_decl),
             },
         };
@@ -3684,14 +3674,16 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .exported = exported,
-                .declared = declared,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
                 .namespace = ret->decl.namespace,
             },
         };
     } else {
+        modifier_list_drop(&modifiers);
         return parse_fail(&p);
     }
 
+    modifier_list_drop(&modifiers);
     return parse_success(&p);
 }
 

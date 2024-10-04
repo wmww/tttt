@@ -11,6 +11,7 @@ typedef struct SpannedModifier {
         MODIFIER_STATIC,
         MODIFIER_ACCESSOR,
         MODIFIER_EXPORT,
+        MODIFIER_EXPORT_DEFAULT,
         MODIFIER_ASYNC,
         MODIFIER_DECLARE,
         MODIFIER_OVERRIDE,
@@ -47,6 +48,7 @@ typedef enum {
     MODIFIER_VALIDATION_FLAG_FIELD                  = 1 << 3,
     MODIFIER_VALIDATION_FLAG_METHOD                 = 1 << 4,
     MODIFIER_VALIDATION_FLAG_CLASS_STATIC_BLOCK     = 1 << 5,
+    MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT     = 1 << 6,
 } ModifierValidationFlags;
 
 void modifier_list_validate(ModifierList const* me, Span name, ModifierValidationFlags flags, ErrorCtx* errs);
