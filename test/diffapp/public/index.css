@@ -129,9 +129,9 @@ button, .fake-button {
 }
 
 .channel-button {
-  min-width: 100px;
-  padding-top: 8px;
-  padding-bottom: 4px;
+  width: 100px;
+  white-space: nowrap;
+  padding: 8px 0 4px 0;
   border-bottom: 5px solid var(--panel);
 }
 
