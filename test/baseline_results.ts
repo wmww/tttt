@@ -657,28 +657,28 @@ const baselines = {
     },
     'ambientEnumElementInitializer1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ambientEnumElementInitializer2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ambientEnumElementInitializer3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ambientEnumElementInitializer4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ambientEnumElementInitializer5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ambientEnumElementInitializer6': {
         errors: false,
@@ -1467,7 +1467,7 @@ const baselines = {
     },
     'assignToEnum': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignToExistingClass': {
@@ -2002,13 +2002,13 @@ const baselines = {
     },
     'augmentedTypesClass': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentedTypesClass2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentedTypesClass2a': {
         errors: false,
@@ -2032,8 +2032,8 @@ const baselines = {
     },
     'augmentedTypesEnum2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentedTypesEnum3': {
         errors: false,
@@ -2052,8 +2052,8 @@ const baselines = {
     },
     'augmentedTypesInterface': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentedTypesModules': {
         errors: false,
@@ -2108,7 +2108,7 @@ const baselines = {
     'autonumberingInEnums': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'avoid': {
         errors: true,
@@ -4296,7 +4296,7 @@ const baselines = {
         types: false,
     },
     'collisionThisExpressionAndEnumInGlobal': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4426,7 +4426,7 @@ const baselines = {
         types: false,
     },
     'commentOnAmbientEnum': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4571,9 +4571,9 @@ const baselines = {
         types: false,
     },
     'commentOnExportEnumDeclaration': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'commentOnExpressionStatement1': {
         errors: true,
@@ -4716,8 +4716,8 @@ const baselines = {
         types: false,
     },
     'commentsEnums': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'commentsExternalModules': {
@@ -4931,8 +4931,8 @@ const baselines = {
         types: false,
     },
     'comparableRelationBidirectional': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'compareTypeParameterConstrainedByLiteralToLiteral': {
@@ -6452,7 +6452,7 @@ const baselines = {
     },
     'controlFlowBreakContinueWithLabel': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowCaching': {
@@ -6546,8 +6546,8 @@ const baselines = {
         types: false,
     },
     'controlFlowManyConsecutiveConditionsNoTimeout': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'controlFlowNoImplicitAny': {
@@ -6821,9 +6821,9 @@ const baselines = {
         types: true,
     },
     'declFileEnumUsedAsValue': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declFileEnums': {
         errors: false,
@@ -7081,8 +7081,8 @@ const baselines = {
         types: true,
     },
     'declFileTypeofEnum': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declFileTypeofFunction': {
@@ -7226,9 +7226,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitClassMemberNameConflict2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declarationEmitClassMemberWithComputedPropertyName': {
         errors: false,
@@ -10026,9 +10026,9 @@ const baselines = {
         types: false,
     },
     'emptyEnum': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emptyExpr': {
         errors: true,
@@ -10126,7 +10126,7 @@ const baselines = {
         types: false,
     },
     'enumAssignmentCompat4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10162,12 +10162,12 @@ const baselines = {
     },
     'enumCodeGenNewLines1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumConflictsWithGlobalIdentifier': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumDecl1': {
@@ -10187,8 +10187,8 @@ const baselines = {
     },
     'enumGenericTypeClash': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumIdentifierLiterals': {
         errors: false,
@@ -10196,18 +10196,18 @@ const baselines = {
         types: false,
     },
     'enumIndexer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'enumInitializersWithExponents': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumKeysQuotedAsObjectPropertiesInDeclarationEmit': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumLiteralAssignableToEnumInsideUnion': {
@@ -10221,29 +10221,29 @@ const baselines = {
         types: false,
     },
     'enumLiteralsSubtypeReduction': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumMapBackIntoItself': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumMemberReduction': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumMemberResolution': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumNegativeLiteral1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'enumNumbering1': {
         errors: false,
@@ -10252,7 +10252,7 @@ const baselines = {
     },
     'enumOperations': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumPropertyAccess': {
@@ -10278,17 +10278,17 @@ const baselines = {
     'enumWithExport': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumWithInfinityProperty': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumWithNaNProperty': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumWithNegativeInfinityProperty': {
         errors: false,
@@ -10296,14 +10296,14 @@ const baselines = {
         types: false,
     },
     'enumWithParenthesizedInitializer1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumWithPrimitiveName': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumWithQuotedElementName1': {
         errors: false,
@@ -10547,8 +10547,8 @@ const baselines = {
     },
     'es3-oldStyleOctalLiteralInEnums': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'es3-oldStyleOctalLiteralTypes': {
         errors: false,
@@ -10732,8 +10732,8 @@ const baselines = {
     },
     'es5-oldStyleOctalLiteralInEnums': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'es5-souremap-amd': {
         errors: true,
@@ -11502,8 +11502,8 @@ const baselines = {
     },
     'exactSpellingSuggestion': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'excessPropertiesInOverloads': {
         errors: false,
@@ -12272,7 +12272,7 @@ const baselines = {
     },
     'expr': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expressionTypeNodeShouldError': {
@@ -12511,12 +12511,12 @@ const baselines = {
         types: false,
     },
     'fakeInfinity2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'fakeInfinity3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14852,7 +14852,7 @@ const baselines = {
     },
     'implicitIndexSignatures': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importAliasAnExternalModuleInsideAnInternalModule': {
@@ -17607,8 +17607,8 @@ const baselines = {
     },
     'jsFileCompilationEnumSyntax': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationErrorOnDeclarationsWithJsFileReferenceWithNoOut': {
         errors: false,
@@ -17921,7 +17921,7 @@ const baselines = {
         types: false,
     },
     'jsdocAccessEnumType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19606,8 +19606,8 @@ const baselines = {
         types: false,
     },
     'moduleCodeGenTest5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'moduleCodegenTest4': {
@@ -20091,7 +20091,7 @@ const baselines = {
         types: true,
     },
     'moduleSameValueDuplicateExportedBindings2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21761,8 +21761,8 @@ const baselines = {
         types: true,
     },
     'numberAssignableToEnumInsideUnion': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'numberLiteralsWithLeadingZeros': {
@@ -22172,7 +22172,7 @@ const baselines = {
     },
     'operatorAddNullUndefined': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'optionalAccessorsInInterface1': {
@@ -25817,7 +25817,7 @@ const baselines = {
     },
     'sourceMapValidationEnums': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'sourceMapValidationExportAssignment': {
@@ -28056,7 +28056,7 @@ const baselines = {
         types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty11': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28716,7 +28716,7 @@ const baselines = {
         types: false,
     },
     'typeofEnum': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28836,9 +28836,9 @@ const baselines = {
         types: true,
     },
     'unaryPlus': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'uncalledFunctionChecksInConditional': {
         errors: false,
@@ -30967,8 +30967,8 @@ const baselines = {
     },
     'asyncEnum_es5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asyncGetter_es5': {
         errors: false,
@@ -31277,8 +31277,8 @@ const baselines = {
     },
     'asyncEnum_es6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asyncGetter_es6': {
         errors: false,
@@ -31737,7 +31737,7 @@ const baselines = {
     },
     'classExtendingPrimitive': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classExtendingPrimitive2': {
@@ -34588,7 +34588,7 @@ const baselines = {
     'decoratorOnEnum': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnEnum2': {
         errors: false,
@@ -35132,13 +35132,13 @@ const baselines = {
     },
     'enumConstantMemberWithString': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumConstantMemberWithStringEmitDeclaration': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumConstantMemberWithTemplateLiterals': {
         errors: false,
@@ -35157,7 +35157,7 @@ const baselines = {
     },
     'enumErrorOnConstantBindingWithInitializer': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumErrors': {
@@ -35182,8 +35182,8 @@ const baselines = {
     },
     'enumShadowedInfinityNaN': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'es2016IntlAPIs': {
         errors: false,
@@ -35196,7 +35196,7 @@ const baselines = {
         types: false,
     },
     'useObjectValuesAndEntries1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35911,7 +35911,7 @@ const baselines = {
         types: false,
     },
     'symbolType19': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41017,12 +41017,12 @@ const baselines = {
     },
     'compoundExponentiationAssignmentLHSCanBeAssigned1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'compoundExponentiationAssignmentLHSCannotBeAssigned': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'compoundExponentiationAssignmentLHSIsReference': {
@@ -41161,19 +41161,19 @@ const baselines = {
         types: true,
     },
     'exponentiationOperatorWithEnum': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exponentiationOperatorWithEnumUnion': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exponentiationOperatorWithInvalidOperands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithInvalidSimpleUnaryExpressionOperands': {
         errors: false,
@@ -41192,8 +41192,8 @@ const baselines = {
     },
     'exponentiationOperatorWithNullValueAndValidOperands': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exponentiationOperatorWithOnlyNullValueOrUndefinedValue': {
         errors: false,
@@ -41222,8 +41222,8 @@ const baselines = {
     },
     'exponentiationOperatorWithUndefinedValueAndValidOperands': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'trailingCommasInBindingPatterns': {
         errors: false,
@@ -41872,28 +41872,28 @@ const baselines = {
     },
     'compoundAdditionAssignmentLHSCanBeAssigned': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'compoundAdditionAssignmentLHSCannotBeAssigned': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'compoundAdditionAssignmentWithInvalidOperands': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'compoundArithmeticAssignmentLHSCanBeAssigned': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'compoundArithmeticAssignmentWithInvalidOperands': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'compoundAssignmentLHSIsReference': {
         errors: false,
@@ -41927,12 +41927,12 @@ const baselines = {
     },
     'additionOperatorWithNullValueAndValidOperator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'additionOperatorWithNumberAndEnum': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'additionOperatorWithOnlyNullValueOrUndefinedValue': {
@@ -41941,9 +41941,9 @@ const baselines = {
         types: true,
     },
     'additionOperatorWithStringAndEveryType': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'additionOperatorWithTypeParameter': {
         errors: false,
@@ -41957,7 +41957,7 @@ const baselines = {
     },
     'additionOperatorWithUndefinedValueAndValidOperator': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arithmeticOperatorWithAnyAndNumber': {
@@ -41966,19 +41966,19 @@ const baselines = {
         types: true,
     },
     'arithmeticOperatorWithEnum': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'arithmeticOperatorWithEnumUnion': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'arithmeticOperatorWithInvalidOperands': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'arithmeticOperatorWithNullValueAndInvalidOperands': {
         errors: false,
@@ -41987,8 +41987,8 @@ const baselines = {
     },
     'arithmeticOperatorWithNullValueAndValidOperands': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'arithmeticOperatorWithOnlyNullValueOrUndefinedValue': {
         errors: false,
@@ -42007,8 +42007,8 @@ const baselines = {
     },
     'arithmeticOperatorWithUndefinedValueAndValidOperands': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'comparisonOperatorWithIdenticalObjects': {
         errors: true,
@@ -42017,8 +42017,8 @@ const baselines = {
     },
     'comparisonOperatorWithIdenticalPrimitiveType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'comparisonOperatorWithIdenticalTypeParameter': {
         errors: true,
@@ -42068,12 +42068,12 @@ const baselines = {
     'comparisonOperatorWithNoRelationshipPrimitiveType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithNoRelationshipTypeParameter': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'comparisonOperatorWithNumberOperand': {
         errors: false,
@@ -42088,12 +42088,12 @@ const baselines = {
     'comparisonOperatorWithOneOperandIsAny': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithOneOperandIsNull': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'comparisonOperatorWithOneOperandIsUndefined': {
         errors: false,
@@ -42101,9 +42101,9 @@ const baselines = {
         types: false,
     },
     'comparisonOperatorWithSubtypeEnumAndNumber': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'comparisonOperatorWithSubtypeObjectOnCallSignature': {
         errors: false,
@@ -42152,7 +42152,7 @@ const baselines = {
     },
     'inOperatorWithInvalidOperands': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inOperatorWithValidOperands': {
@@ -42207,7 +42207,7 @@ const baselines = {
     },
     'logicalAndOperatorWithEveryType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'logicalAndOperatorWithTypeParameters': {
@@ -42227,7 +42227,7 @@ const baselines = {
     },
     'logicalOrOperatorWithEveryType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'logicalOrOperatorWithTypeParameters': {
@@ -42411,8 +42411,8 @@ const baselines = {
         types: true,
     },
     'stringEnumInElementAccess01': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'callOverload': {
@@ -42582,8 +42582,8 @@ const baselines = {
     },
     'strictModeOctalLiterals': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'newOperatorConformance': {
         errors: false,
@@ -42717,7 +42717,7 @@ const baselines = {
     },
     'incrementAndDecrement': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callChain.2': {
@@ -42986,8 +42986,8 @@ const baselines = {
         types: false,
     },
     'typeGuardEnums': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeGuardFunction': {
@@ -43522,7 +43522,7 @@ const baselines = {
     },
     'logicalNotOperatorWithEnumType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'logicalNotOperatorWithNumberType': {
@@ -43887,7 +43887,7 @@ const baselines = {
     },
     'exportAssignmentAndDeclaration': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAssignmentCircularModules': {
@@ -48676,19 +48676,19 @@ const baselines = {
         types: true,
     },
     'parserEnum1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnum2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserEnum3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnum4': {
         errors: false,
@@ -48711,14 +48711,14 @@ const baselines = {
         types: false,
     },
     'parserEnumDeclaration1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnumDeclaration2.d': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserEnumDeclaration2': {
         errors: false,
@@ -48727,13 +48727,13 @@ const baselines = {
     },
     'parserEnumDeclaration3.d': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserEnumDeclaration3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserEnumDeclaration4': {
         errors: false,
@@ -48741,24 +48741,24 @@ const baselines = {
         types: false,
     },
     'parserEnumDeclaration5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserEnumDeclaration6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserInterfaceKeywordInEnum': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserInterfaceKeywordInEnum1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserAccessibilityAfterStatic1': {
         errors: true,
@@ -53271,9 +53271,9 @@ const baselines = {
         types: false,
     },
     'scannerEnum1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'scannerImportDeclaration1': {
         errors: false,
@@ -54931,7 +54931,7 @@ const baselines = {
         types: false,
     },
     'localTypes1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55712,13 +55712,13 @@ const baselines = {
     },
     'invalidEnumAssignments': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'validEnumAssignments': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'directReferenceToNull': {
         errors: true,
@@ -55756,7 +55756,7 @@ const baselines = {
         types: false,
     },
     'validNumberAssignments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56087,7 +56087,7 @@ const baselines = {
     },
     'nonGenericTypeReferenceWithTypeArguments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectSpread': {
@@ -57003,7 +57003,7 @@ const baselines = {
     'anyAssignableToEveryType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'anyAssignableToEveryType2': {
         errors: false,
@@ -57098,7 +57098,7 @@ const baselines = {
     'assignmentCompatWithEnumIndexer': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithGenericCallSignatures': {
         errors: true,
@@ -57288,7 +57288,7 @@ const baselines = {
     'everyTypeAssignableToAny': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericCallWithObjectTypeArgsAndInitializers': {
         errors: false,
@@ -57303,7 +57303,7 @@ const baselines = {
     'nullAssignableToEveryType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nullAssignedToUndefined': {
         errors: false,
@@ -57311,9 +57311,9 @@ const baselines = {
         types: false,
     },
     'numberAssignableToEnum': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'optionalPropertyAssignableToStringIndexSignature': {
         errors: false,
@@ -57338,7 +57338,7 @@ const baselines = {
     'undefinedAssignableToEveryType': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unionTypesAssignability': {
         errors: false,
@@ -57362,7 +57362,7 @@ const baselines = {
     },
     'bestCommonTypeOfTuple': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'bestCommonTypeOfTuple2': {
@@ -57392,7 +57392,7 @@ const baselines = {
     },
     'equalityWithEnumTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'equalityWithIntersectionTypes01': {

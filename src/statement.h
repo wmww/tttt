@@ -9,6 +9,7 @@
 #include "scope.h"
 
 typedef struct ErrorCtx ErrorCtx;
+typedef struct EnumDecl EnumDecl;
 typedef struct ForLoopStatement ForLoopStatement;
 typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
@@ -95,6 +96,7 @@ typedef struct Statement {
         STATEMENT_IMPORT,
         STATEMENT_DECL_VARIABLE,
         STATEMENT_DECL_FUNCTION,
+        STATEMENT_DECL_ENUM,
         STATEMENT_DECL_CLASS,
         STATEMENT_DECL_TYPE,
         STATEMENT_DECL_INTERFACE,
@@ -117,6 +119,7 @@ typedef struct Statement {
                 VariableStatement variable;
                 // PERF: FunctionImpl is big and somewhat rare, perhaps this should be an owned pointer
                 FunctionImpl function;
+                EnumDecl* enum_;
                 ClassDecl* class;
                 TypeDecl type;
                 InterfaceDecl* interface;
@@ -132,6 +135,7 @@ static inline bool statement_tag_is_decl(typeof((Statement){}.tag) tag) {
     switch (tag) {
         case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_ENUM:
         case STATEMENT_DECL_CLASS:
         case STATEMENT_DECL_TYPE: return true;
         default: return false;

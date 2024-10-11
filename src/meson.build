@@ -9,6 +9,7 @@ core_files = files(
     'callable_type.c',
     'generic.c',
     'class_decl.c',
+    'enum_decl.c',
     'interface_decl.c',
     'block.c',
     'expr.c',

@@ -8,9 +8,9 @@
 #include "statement.h"
 #include "expr.h"
 #include "class_decl.h"
+#include "enum_decl.h"
 #include "function_impl.h"
 #include "import_statement.h"
-#include "name_stack.h"
 #include "string_helpers.h"
 
 #define has_underline(d) (d.flags & DISPLAY_FLAGS_UNDERLINE_TYPES)
@@ -216,11 +216,9 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (!d.hash_key || d.debug) {
-        if (d.debug) {
-            c_foreach(i, vec_span, my namespaces) {
-                display_colored_span(d, color_type, *i.ref);
-                display_lit(d, ".");
-            }
+        c_foreach(i, vec_span, my namespaces) {
+            display_colored_span(d, color_type, *i.ref);
+            display_lit(d, ".");
         }
         display_colored_span(d, color_type, my name);
     }
@@ -932,6 +930,25 @@ static void display_variable_statement(Display d, VariableStatement const* me) {
     }
 }
 
+static void display_enum_decl(Display d, EnumDecl const* me) {
+    display_lit(d, "enum ");
+    display_colored_span(d, color_name, my name);
+    display_lit(d, " {");
+    d.indent++;
+    c_foreach(i, vec_enum_case, my cases) {
+        display_newline(d);
+        display_colored_span(d, color_name, i.ref->name);
+        if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
+            display_lit(d, " = ");
+            display_expr(d, &i.ref->value);
+        }
+        display_lit(d, ",");
+    }
+    d.indent--;
+    display_newline(d);
+    display_lit(d, "}");
+}
+
 static void display_type_decl(Display d, TypeDecl const* me) {
     display_lit(d, "type ");
     display_colored_span(d, color_name, my name);
@@ -1100,6 +1117,10 @@ void display_statement(Display d, Statement const* me) {
             display_lit(d, "function ");
             display_colored_span(d, color_name, my decl.function.name);
             display_function_impl(d, &my decl.function, false);
+            break;
+
+        case STATEMENT_DECL_ENUM:
+            display_enum_decl(d, my decl.enum_);
             break;
 
         case STATEMENT_DECL_CLASS: display_class_decl(d, my decl.class); break;

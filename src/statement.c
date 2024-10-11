@@ -3,6 +3,7 @@
 #include "error.h"
 #include "name_stack.h"
 #include "class_decl.h"
+#include "enum_decl.h"
 #include "function_impl.h"
 #include "several_types.h"
 
@@ -232,6 +233,11 @@ void statement_drop(Statement* me) {
             function_impl_drop(&my decl.function);
             break;
 
+        case STATEMENT_DECL_ENUM:
+            enum_decl_drop(my decl.enum_);
+            free(my decl.enum_);
+            break;
+
         case STATEMENT_DECL_CLASS:
             class_decl_drop(my decl.class);
             free(my decl.class);
@@ -264,6 +270,10 @@ void statement_add_names(Statement* me, Scope* scope) {
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_add_names(&my decl.function, scope);
+            break;
+
+        case STATEMENT_DECL_ENUM:
+            enum_decl_add_names(my decl.enum_, scope);
             break;
 
         case STATEMENT_DECL_CLASS:
@@ -472,6 +482,10 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             scope_drop(&this_scope);
         }   break;
 
+        case STATEMENT_DECL_ENUM:
+            enum_decl_lookup_names(my decl.enum_, names, errs);
+            break;
+
         case STATEMENT_DECL_CLASS:
             class_decl_lookup_names(my decl.class, names, errs);
             break;
@@ -550,6 +564,7 @@ Type statement_evaluate_return_type(Statement* me) {
         case STATEMENT_IMPORT:
         case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_ENUM:
         case STATEMENT_DECL_CLASS:
         case STATEMENT_DECL_TYPE:
         case STATEMENT_DECL_INTERFACE:
@@ -752,6 +767,10 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_typecheck(&my decl.function, errs);
+            break;
+
+        case STATEMENT_DECL_ENUM:
+            enum_decl_typecheck(my decl.enum_, errs);
             break;
 
         case STATEMENT_DECL_CLASS:

@@ -9,6 +9,7 @@
 #include "statement.h"
 #include "block.h"
 #include "class_decl.h"
+#include "enum_decl.h"
 #include "function_impl.h"
 #include "callable_type.h"
 
@@ -237,6 +238,25 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         initialized_binding_compile_test_info(i.ref, span_null, ctx);
+    }
+}
+
+void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = vec_span_single(my full_span),
+        .span = my name,
+    });
+    baseline_test_case_add_type(ctx, my name, &my named_type->type);
+    c_foreach(i, vec_enum_case, my cases) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_single(i.ref->name),
+            .namespaces = vec_span_single(my name),
+            .span = i.ref->name,
+        });
+        baseline_test_case_add_type(ctx, i.ref->name, &i.ref->identifier_type);
+        if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
+            expr_compile_test_info(&i.ref->value, ctx);
+        }
     }
 }
 
@@ -673,6 +693,10 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_DECL_FUNCTION:
             function_impl_compile_test_info(&my decl.function, span_null, ctx);
+            break;
+
+        case STATEMENT_DECL_ENUM:
+            enum_decl_compile_test_info(my decl.enum_, ctx);
             break;
 
         case STATEMENT_DECL_CLASS:

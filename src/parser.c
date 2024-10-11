@@ -9,6 +9,7 @@
 #include "several_types.h"
 #include "generic.h"
 #include "class_decl.h"
+#include "enum_decl.h"
 #include "interface_decl.h"
 #include "callable_type.h"
 #include "type.h"
@@ -1266,6 +1267,50 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
         .generic = generic,
         .extends = extends,
         .type = type_interface(interface),
+    };
+    return parse_success(&p);
+}
+
+static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "enum")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    Span name;
+    expect_identifier(&p, &name);
+    hop_whitespace(&p);
+
+    expect_char(&p, '{');
+    hop_whitespace(&p);
+
+    VecEnumCase cases = vec_enum_case_init();
+    while (*p.pos && *p.pos != '}') {
+        EnumCase enum_case;
+        if (!expect_identifier(&p, &enum_case.name)) {
+            hop_token(&p);
+        }
+        hop_whitespace(&p);
+        if (hop_char(&p, '=')) {
+            hop_whitespace(&p);
+            expect_expr(&p, expr_ctx_null, &enum_case.value);
+        } else {
+            enum_case.value = expr_implicit_any_no_span;
+        }
+        ignore( *p.pos == '}' || hop_char(&p, ';') || expect_char(&p, ',') );
+        hop_whitespace(&p);
+        vec_enum_case_push(&cases, enum_case);
+    }
+
+    expect_char(&p, '}');
+
+    *ret = (EnumDecl) {
+        .name = name,
+        .full_span = span_from(a),
+        .cases = cases,
     };
     return parse_success(&p);
 }
@@ -3591,6 +3636,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     union {
         VariableStatement variable;
         FunctionImpl function;
+        EnumDecl enum_decl;
         ClassDecl class;
         TypeDecl type_decl;
         InterfaceDecl interface_decl;
@@ -3662,6 +3708,16 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .exported = exported,
                 .declared = modifiers.includes[MODIFIER_DECLARE],
                 .interface = c_new(InterfaceDecl, parsed.interface_decl),
+            },
+        };
+    } else if (parse_enum_decl(&p, &parsed.enum_decl)) {
+        parsed.enum_decl.full_span = span_from(a);
+        *ret = (Statement){
+            .tag = STATEMENT_DECL_ENUM,
+            .decl = {
+                .exported = exported,
+                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .enum_ = c_new(EnumDecl, parsed.enum_decl),
             },
         };
     } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {

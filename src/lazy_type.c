@@ -4,6 +4,7 @@
 #include "statement.h"
 #include "function_impl.h"
 #include "class_decl.h"
+#include "enum_decl.h"
 #include "interface_decl.h"
 
 void lazy_type_evaluate(LazyType* me) {
@@ -39,6 +40,14 @@ void lazy_type_evaluate(LazyType* me) {
 
         case LAZY_TYPE_CLASS_CLASS:
             result = class_decl_evaluate_type(c_container_of(me, ClassDecl, class_type), false);
+            break;
+
+        case LAZY_TYPE_ENUM_INSTANCE:
+            result = enum_decl_evaluate_instance_type(c_container_of(me, EnumDecl, instance_type));
+            break;
+
+        case LAZY_TYPE_ENUM_INTERFACE:
+            result = enum_decl_evaluate_interface_type(c_container_of(me, EnumDecl, interface_type));
             break;
 
         case LAZY_TYPE_INTERFACE_DECL:
