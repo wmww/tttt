@@ -263,6 +263,7 @@ typedef struct PropertyExpr {
         PROPERTY_EXPR_DOT,
         PROPERTY_EXPR_BRACKET,
     } form;
+    bool optional_chain;
 } PropertyExpr;
 
 // As type

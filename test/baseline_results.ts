@@ -5741,7 +5741,7 @@ const baselines = {
         types: false,
     },
     'contextualExpressionTypecheckingDoesntBlowStack': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -6476,7 +6476,7 @@ const baselines = {
         types: false,
     },
     'controlFlowDestructuringLoop': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -20556,7 +20556,7 @@ const baselines = {
         types: false,
     },
     'narrowingInCaseClauseAfterCaseClauseWithReturn': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -21681,7 +21681,7 @@ const baselines = {
         types: false,
     },
     'nonNullableTypes1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23781,7 +23781,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessExpressionInnerComments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27556,7 +27556,7 @@ const baselines = {
         types: true,
     },
     'thisInTypeQuery': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28396,7 +28396,7 @@ const baselines = {
         types: true,
     },
     'typeParameterLeak': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28516,7 +28516,7 @@ const baselines = {
         types: false,
     },
     'typePredicatesOptionalChaining2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30291,7 +30291,7 @@ const baselines = {
         types: true,
     },
     'voidUndefinedReduction': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -33926,7 +33926,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccess2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -34016,7 +34016,7 @@ const baselines = {
         types: false,
     },
     'controlFlowOptionalChain2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34026,7 +34026,7 @@ const baselines = {
         types: false,
     },
     'controlFlowStringIndex': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -34086,7 +34086,7 @@ const baselines = {
         types: false,
     },
     'switchWithConstrainedTypeVariable': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -42616,8 +42616,8 @@ const baselines = {
         types: false,
     },
     'nullishCoalescingOperator12': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'nullishCoalescingOperator2': {
@@ -42736,7 +42736,7 @@ const baselines = {
         types: false,
     },
     'callChainInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -42826,7 +42826,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessChain.2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54611,7 +54611,7 @@ const baselines = {
         types: false,
     },
     'intersectionOfUnionNarrowing': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -56506,7 +56506,7 @@ const baselines = {
         types: false,
     },
     'thisTypeOptionalCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

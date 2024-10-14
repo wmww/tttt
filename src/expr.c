@@ -618,14 +618,23 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_PROPERTY: {
             expr_typecheck(&my property->expr, errs);
             expr_typecheck(&my property->prop, errs);
+            Type to_drop = {0};
+            Type const* expr_type = expr_get_type(&my property->expr);
+            if (my property->optional_chain) {
+                to_drop = type_clone(*expr_type);
+                type_remove_null_and_undefined(&to_drop);
+                expr_type = &to_drop;
+            }
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
             index_type_typecheck(
-                expr_get_type(&my property->expr),
+                expr_type,
                 expr_get_type(&my property->prop),
+                my property->expr.outer_span,
                 my property->prop.outer_span,
                 error_if_not_found,
                 errs
             );
+            type_drop(&to_drop);
         }   break;
 
         case EXPR_AS_TYPE:

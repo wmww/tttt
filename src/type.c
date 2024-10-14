@@ -1446,6 +1446,7 @@ static void index_type_typecheck_internal(
     TypeCtx* ctx,
     Type const* me,
     Type const* index,
+    Span indexed_span,
     Span index_span,
     bool error_if_not_found,
     ErrorCtx* errs
@@ -1459,7 +1460,7 @@ static void index_type_typecheck_internal(
 
     if (index->tag == TYPE_UNION || index->tag == TYPE_INTERSECTION) {
         c_foreach(i, vec_type, index->composite) {
-            index_type_typecheck_internal(ctx, me, i.ref, index_span, error_if_not_found, errs);
+            index_type_typecheck_internal(ctx, me, i.ref, indexed_span, index_span, error_if_not_found, errs);
         }
     } else if (!type_is_simple_index_type(index)) {
         cstr msg = cstr_lit("Type '");
@@ -1473,15 +1474,60 @@ static void index_type_typecheck_internal(
     me = type_resolve_internal(ctx, me, true);
 
     switch (my tag) {
+        case TYPE_ANY: break;
+
+        case TYPE_VALUE:
+            switch (my value.tag) {
+                case VALUE_NULL:
+                case VALUE_UNDEFINED:
+                    if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+                        error_ctx_error(
+                            errs,
+                            indexed_span,
+                            18047,
+                            "'%.*s' is possibly '%s'.",
+                            c_SPAN(indexed_span),
+                            my value.tag == VALUE_NULL ? "null" : "undefined"
+                        );
+                    }
+                    break;
+
+                default:
+                    if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+                        cstr msg = cstr_lit("Property '");
+                        if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
+                            cstr_append_s(&msg, index->value.string);
+                        } else {
+                            cstr_append_type_error_msg(&msg, index);
+                        }
+                        cstr_append_lit(&msg, "' does not exist on type '");
+                        cstr_append_type_error_msg(&msg, me_original);
+                        cstr_append_lit(&msg, "'.");
+                        error_ctx_error_s(errs, index_span, 2339, msg);
+                    }
+                break;
+            }
+            break;
+
         case TYPE_NEVER:
         case TYPE_VOID:
         case TYPE_UNKNOWN:
-        case TYPE_ANY:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_CALLABLE:
-        case TYPE_VALUE:
         case TYPE_STRING:
+            if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+                cstr msg = cstr_lit("Property '");
+                if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
+                    cstr_append_s(&msg, index->value.string);
+                } else {
+                    cstr_append_type_error_msg(&msg, index);
+                }
+                cstr_append_lit(&msg, "' does not exist on type '");
+                cstr_append_type_error_msg(&msg, me_original);
+                cstr_append_lit(&msg, "'.");
+                error_ctx_error_s(errs, index_span, 2339, msg);
+            }
             break;
 
         case TYPE_INTERFACE: {
@@ -1532,7 +1578,7 @@ static void index_type_typecheck_internal(
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
-                index_type_typecheck_internal(ctx, i.ref, index, index_span, error_if_not_found, errs);
+                index_type_typecheck_internal(ctx, i.ref, index, indexed_span, index_span, error_if_not_found, errs);
             }
             break;
 
@@ -1552,12 +1598,13 @@ static void index_type_typecheck_internal(
 void index_type_typecheck(
     Type const* me,
     Type const* index,
+    Span indexed_span,
     Span index_span,
     bool error_if_not_found,
     ErrorCtx* errs
 ) {
     TypeCtx ctx = {0};
-    index_type_typecheck_internal(&ctx, me, index, index_span, error_if_not_found, errs);
+    index_type_typecheck_internal(&ctx, me, index, indexed_span, index_span, error_if_not_found, errs);
     type_ctx_drop(&ctx);
 }
 

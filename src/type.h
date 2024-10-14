@@ -235,6 +235,7 @@ Type index_type_evaluate_type(Type const* me, Type const* index);
 void index_type_typecheck(
     Type const* me,
     Type const* index,
+    Span indexed_span,
     Span index_span,
     bool error_if_not_found,
     ErrorCtx* errs

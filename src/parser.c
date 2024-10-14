@@ -2252,8 +2252,10 @@ static bool parse_right_unary_op(Parser* parent, UnaryOp* op) {
     return parse_success(&p);
 }
 
-static bool parse_dot_prop(Parser* parent, Expr* ret) {
+static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) {
     Parser p = parser(parent);
+
+    bool optional_chain = hop_char(&p, '?');
 
     if (!hop_char(&p, '.')) {
         return parse_fail(&p);
@@ -2266,6 +2268,7 @@ static bool parse_dot_prop(Parser* parent, Expr* ret) {
     }
 
     *ret = expr_literal(prop, value_string(cstr_from_span(prop)));
+    *optional_chain_ret = optional_chain;
     return parse_success(&p);
 }
 
@@ -2546,6 +2549,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     union {
         VecExpr args;
         struct {
+            bool optional_chain;
             Expr expr_a;
             Expr expr_b;
         };
@@ -2570,13 +2574,14 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (parse_dot_prop(&p, &parsed.expr_a)) {
+    if (parse_dot_prop(&p, &parsed.optional_chain, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_from(a),
             c_new(PropertyExpr, {
                 .expr = *left_and_ret,
                 .prop = parsed.expr_a,
                 .form = PROPERTY_EXPR_DOT,
+                .optional_chain = parsed.optional_chain,
             })
         );
         return parse_success(&p);

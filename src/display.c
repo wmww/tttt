@@ -775,6 +775,9 @@ void display_expr(Display d, Expr const* me) {
             }
 
             display_expr(d, &my property->expr);
+            if (my property->optional_chain) {
+                display_lit(d, "?");
+            }
 
             switch (my property->form) {
                 case PROPERTY_EXPR_DOT:
