@@ -130,7 +130,7 @@ static bool load_test_source(BaselineTestCase* me) {
 }
 
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
-    PANIC_IF(!source, "Tests detected null span");
+    PANIC_IF(!source, "Tests detected span with null source");
     c_foreach(i, vec_baseline_test_file, my files) {
         if (i.ref->source == source) {
             return i.ref;
@@ -358,7 +358,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     c_foreach(error, vec_error, my error_ctx->errors) {
         unsigned line = span_line_index(error.ref->span);
         unsigned col = span_col_index(error.ref->span);
-        const char* basename = span_valid(error.ref->span) ?
+        const char* basename = error.ref->span.source ?
             basename_of(cstr_str(&error.ref->span.source->absolute_path)) :
             "(nil)";
 
@@ -419,7 +419,7 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
 }
 
 static void append_decl(cstr* target, Span span) {
-    if (!span_valid(span)) {
+    if (!span_valid(span) || !span.source) {
         return;
     }
     const char* file_start = source_file_start(span.source);

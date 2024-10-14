@@ -20,14 +20,21 @@ static inline Span span_make(SourceFile const* source, const char* start, const 
     };
 }
 
-static inline bool span_valid(Span me) { return me.source; }
+static inline Span sv_make_span(csview sv) {
+    return (Span){
+        .source = nullptr,
+        .sv = sv,
+    };
+}
+
+static inline bool span_valid(Span me) { return me.sv.buf; }
 
 static inline const char* span_start_ptr(Span me) {
     return me.sv.buf;
 }
 
 static inline const char* span_end_ptr(Span me) {
-    return me.source ? me.sv.buf + me.sv.size : nullptr;
+    return me.sv.buf ? me.sv.buf + me.sv.size : nullptr;
 }
 
 unsigned span_line_index(Span me);

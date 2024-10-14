@@ -3,7 +3,7 @@
 #include "source_file.h"
 
 unsigned span_line_index(Span me) {
-    if (!span_valid(me)) {
+    if (!span_valid(me) || !me.source) {
         return 1;
     }
     const char* end = span_start_ptr(me);
@@ -25,26 +25,33 @@ unsigned span_col_index(Span me) {
 const char* span_line_start(Span me) {
     if (!span_valid(me)) {
         return nullptr;
+    } else if (!me.source) {
+        return me.sv.buf;
+    } else {
+        const char* pos = span_start_ptr(me);
+        while (pos > source_file_start(me.source) && *pos != '\n') {
+            pos--;
+        }
+        if (*pos == '\n') {
+            pos++;
+        }
+        return pos;
     }
-    const char* pos = span_start_ptr(me);
-    while (pos > source_file_start(me.source) && *pos != '\n') {
-        pos--;
-    }
-    if (*pos == '\n') {
-        pos++;
-    }
-    return pos;
 }
 
 const char* span_line_end(Span me) {
     if (!span_valid(me)) {
         return nullptr;
+    } else if (!me.source) {
+        return me.sv.buf + me.sv.size;
+    } else {
+        // Source files are null-terminated, so we can safely keep going until we hit null
+        const char* pos = span_start_ptr(me);
+        while (*pos && *pos != '\n') {
+            pos++;
+        }
+        return pos;
     }
-    const char* pos = span_start_ptr(me);
-    while (*pos && *pos != '\n') {
-        pos++;
-    }
-    return pos;
 }
 
 Span span_between(Span const a, Span const b) {
@@ -64,13 +71,20 @@ Span span_between(Span const a, Span const b) {
 }
 
 int span_cmp(Span a, Span b) {
-    if (!span_valid(a) || !span_valid(b)) {
-        switch (span_valid(a) | span_valid(b) << 1) {
-            case 1: return 1; // Only A is valid
-            case 2: return -1; // Only b is valid
-            default: return 0;
-        }
-    } else if (a.source != b.source) {
+    switch (span_valid(a) | (span_valid(b) << 1)) {
+        case 0: return 0; // Neither are valid
+        case 1: return 1; // Only A is valid
+        case 2: return -1; // Only b is valid
+        default: // Both are valid
+            break;
+    }
+    switch ((a.source != nullptr) | ((b.source != nullptr) << 1)) {
+        case 1: return 1; // Only A is valid
+        case 2: return -1; // Only b is valid
+        default: // Both or neither are valid
+            break;
+    }
+    if (a.source != b.source) {
         int cmp = cstr_cmp(&a.source->absolute_path, &b.source->absolute_path);
         if (!cmp) PANIC("Two different source files both have path %s", cstr_str(&a.source->absolute_path));
         return cmp;
