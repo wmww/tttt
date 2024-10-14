@@ -239,7 +239,7 @@ void statement_drop(Statement* me) {
         case STATEMENT_DECL_FUNCTION:
             function_impl_drop(my decl.function.impl);
             free(my decl.function.impl);
-            arc_declaration_drop(&my decl.function.this_declaration);
+            declaration_drop(&my decl.function.this_declaration);
             break;
 
         case STATEMENT_DECL_ENUM:
@@ -480,11 +480,11 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION: {
             Scope this_scope = scope_init(errs);
-            scope_init_declaration(&this_scope, &my decl.function.this_declaration, (DeclProps){
-                .name = sv_make_span(c_sv("this")),
+            declaration_init(&my decl.function.this_declaration, (DeclProps){
                 .tag = DECLARATION_VALUE,
                 .value_type = type_any,
             });
+            this_scope.this_declaration = &my decl.function.this_declaration;
 
             scope_push_to_stack(&this_scope, names);
             function_impl_lookup_names(my decl.function.impl, names, errs);

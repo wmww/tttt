@@ -118,7 +118,7 @@ typedef struct Statement {
             union {
                 VariableStatement variable;
                 struct {
-                    ArcDeclaration this_declaration;
+                    Declaration this_declaration;
                     FunctionImpl* impl;
                 } function;
                 EnumDecl* enum_;

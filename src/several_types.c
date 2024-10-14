@@ -21,7 +21,11 @@ IdentifierType identifier_type_clone(IdentifierType me) {
 
 void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
     if (!my decl_ref) {
-        if (vec_span_size(&my namespaces)) {
+        if (my is_this) {
+            my decl_ref = name_stack_get_this(names);
+        } else if (my is_super) {
+            my decl_ref = name_stack_get_super(names);
+        } else if (vec_span_size(&my namespaces)) {
             Scope const* scope = nullptr;
             Span prev_span = span_null;
             c_foreach(i, vec_span, my namespaces) {

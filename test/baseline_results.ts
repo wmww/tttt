@@ -1021,7 +1021,7 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInConstructor3_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1061,7 +1061,7 @@ const baselines = {
         types: false,
     },
     'argumentsReferenceInMethod3_Js': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3096,7 +3096,7 @@ const baselines = {
         types: false,
     },
     'checkJsFiles_noErrorLocation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3176,7 +3176,7 @@ const baselines = {
         types: false,
     },
     'checkSuperCallBeforeThisAccessing1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3186,12 +3186,12 @@ const baselines = {
         types: false,
     },
     'checkSuperCallBeforeThisAccessing3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'checkSuperCallBeforeThisAccessing4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3201,7 +3201,7 @@ const baselines = {
         types: false,
     },
     'checkSuperCallBeforeThisAccessing6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3581,7 +3581,7 @@ const baselines = {
         types: true,
     },
     'classFieldSuperAccessible': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4221,7 +4221,7 @@ const baselines = {
         types: false,
     },
     'collisionSuperAndLocalFunctionInConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4241,7 +4241,7 @@ const baselines = {
         types: false,
     },
     'collisionSuperAndLocalVarInConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4336,7 +4336,7 @@ const baselines = {
         types: false,
     },
     'collisionThisExpressionAndLocalVarWithSuperExperssion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5291,7 +5291,7 @@ const baselines = {
         types: true,
     },
     'conflictingTypeParameterSymbolTransfer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5706,7 +5706,7 @@ const baselines = {
         types: false,
     },
     'constructorWithCapturedSuper': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5721,7 +5721,7 @@ const baselines = {
         types: false,
     },
     'constructorWithSuperAndPrologue.es5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7931,7 +7931,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitProtectedMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9961,32 +9961,32 @@ const baselines = {
         types: false,
     },
     'emitSuperCallBeforeEmitParameterPropertyDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitSuperCallBeforeEmitParameterPropertyDeclaration1ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitSuperCallBeforeEmitPropertyDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitSuperCallBeforeEmitPropertyDeclaration1ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitSuperCallBeforeEmitPropertyDeclarationAndParameterPropertyDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitSuperCallBeforeEmitPropertyDeclarationAndParameterPropertyDeclaration1ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13336,12 +13336,12 @@ const baselines = {
         types: true,
     },
     'functionSubtypingOfVarArgs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionSubtypingOfVarArgs2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16216,7 +16216,7 @@ const baselines = {
         types: true,
     },
     'inheritedConstructorPropertyContextualType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22746,7 +22746,7 @@ const baselines = {
         types: true,
     },
     'parameterPropertyInConstructorWithPrologues': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26651,7 +26651,7 @@ const baselines = {
         types: false,
     },
     'super2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26666,7 +26666,7 @@ const baselines = {
         types: false,
     },
     'superAccessCastedCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26686,12 +26686,12 @@ const baselines = {
         types: false,
     },
     'superCallFromClassThatDerivesFromGenericType1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superCallFromClassThatDerivesFromGenericType2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26721,12 +26721,12 @@ const baselines = {
         types: false,
     },
     'superCallInNonStaticMethod': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superCallInStaticMethod': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26741,7 +26741,7 @@ const baselines = {
         types: false,
     },
     'superCallInsideObjectLiteralExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26756,7 +26756,7 @@ const baselines = {
         types: false,
     },
     'superCallWithMissingBaseClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26776,12 +26776,12 @@ const baselines = {
         types: false,
     },
     'superHasMethodsFromMergedInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superInCatchBlock1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26851,22 +26851,22 @@ const baselines = {
         types: false,
     },
     'superPropertyAccess_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superPropertyElementNoUnusedLexicalThisCapture': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superWithGenericSpecialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superWithGenerics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27582,7 +27582,7 @@ const baselines = {
     },
     'thisTypeAsConstraint': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'thisWhenTypeCheckFails': {
@@ -28211,7 +28211,7 @@ const baselines = {
         types: true,
     },
     'typeOfSuperCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28966,12 +28966,12 @@ const baselines = {
         types: false,
     },
     'underscoreThisInDerivedClass01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'underscoreThisInDerivedClass02': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32271,12 +32271,12 @@ const baselines = {
         types: false,
     },
     'emitStatementsBeforeSuperCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'emitStatementsBeforeSuperCallWithDefineFields': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34031,7 +34031,7 @@ const baselines = {
         types: false,
     },
     'controlFlowSuperPropertyAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36256,7 +36256,7 @@ const baselines = {
         types: false,
     },
     'emitClassDeclarationWithExtensionInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36281,7 +36281,7 @@ const baselines = {
         types: true,
     },
     'emitClassDeclarationWithPropertyAssignmentInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36291,7 +36291,7 @@ const baselines = {
         types: true,
     },
     'emitClassDeclarationWithSuperMethodCall01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46476,7 +46476,7 @@ const baselines = {
         types: false,
     },
     'extendsTag3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51267,7 +51267,7 @@ const baselines = {
     },
     'parserSuperExpression2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'parserSuperExpression3': {
@@ -52466,7 +52466,7 @@ const baselines = {
         types: false,
     },
     'inferringClassMembersFromAssignments5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54702,7 +54702,7 @@ const baselines = {
     },
     'circularIndexedAccessErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keyofAndForIn': {

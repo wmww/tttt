@@ -130,6 +130,9 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             if (span_equals(my identifier->name, "object")) {
                 break;
             }
+            if (my identifier->decl_ref && !span_valid(my identifier->decl_ref->name)) {
+                break;
+            }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declaration_get_spans(my identifier->decl_ref),
                 .allow_declaration_empty = true,
@@ -441,7 +444,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
-    if (my decl_ref && (!span_equals(my name, "this") || my decl_ref->value.name.source)) {
+    if (my decl_ref) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my decl_ref),
             .span = my name,
@@ -454,7 +457,17 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
 
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
-        case EXPR_IMPLICIT_ANY: break;
+        case EXPR_IMPLICIT_ANY:
+
+        case EXPR_THIS:
+        case EXPR_SUPER:
+            if (my this_or_super && span_valid(my this_or_super->name)) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = declaration_get_spans(my this_or_super),
+                    .span = my inner_span,
+                });
+            }
+            break;
 
         case EXPR_LITERAL:
             if (my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined")) {

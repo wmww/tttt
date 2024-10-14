@@ -78,7 +78,7 @@ bool name_stack_has_function(NameStack* me) {
     return false;
 }
 
-Declaration* name_stack_get_value(NameStack const* me, csview name) {
+Declaration const* name_stack_get_value(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         auto result = hmap_str_arc_declaration_get(&i.ref->scope->declarations, name);
         if (result && result->second.get->has_value) {
@@ -88,7 +88,7 @@ Declaration* name_stack_get_value(NameStack const* me, csview name) {
     return nullptr;
 }
 
-Declaration* name_stack_get_type(NameStack const* me, csview name) {
+Declaration const* name_stack_get_type(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         auto result = hmap_str_arc_declaration_get(&i.ref->scope->declarations, name);
         if (result && result->second.get->has_type) {
@@ -103,6 +103,24 @@ Scope const* name_stack_get_namespace(NameStack const* me, csview name) {
         auto result = hmap_str_scope_cptr_get(&i.ref->scope->namespaces, name);
         if (result) {
             return result->second;
+        }
+    }
+    return nullptr;
+}
+
+Declaration const* name_stack_get_this(NameStack const* me) {
+    c_foreach_rev(i, vec_stack_frame, my stack) {
+        if (i.ref->scope->this_declaration) {
+            return i.ref->scope->this_declaration;
+        }
+    }
+    return nullptr;
+}
+
+Declaration const* name_stack_get_super(NameStack const* me) {
+    c_foreach_rev(i, vec_stack_frame, my stack) {
+        if (i.ref->scope->super_declaration) {
+            return i.ref->scope->super_declaration;
         }
     }
     return nullptr;

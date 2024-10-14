@@ -75,8 +75,8 @@ typedef struct ClassDecl {
     Type instance_identifier_type;
     Declaration instance_type_declaration; // Not Arc because not added to scope directly
     Declaration class_typeof_declaration; // Not Arc because not added to scope directly
-    ArcDeclaration instance_this_declaration;
-    ArcDeclaration class_this_declaration;
+    Declaration instance_this_declaration;
+    Declaration class_this_declaration;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

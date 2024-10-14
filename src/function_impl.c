@@ -47,6 +47,11 @@ void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* er
                 binding_add_implicit_any_type_errors(&i.ref->initializer.binding, true, errs);
             }
         }
+        if (i.ref->initializer.binding.tag == BINDING_IDENTIFIER &&
+            span_equals(i.ref->initializer.binding.content_span, "this")
+        ) {
+            function_scope.this_declaration = i.ref->initializer.binding.declaration.get;
+        }
     }
 
     scope_push_to_stack(&function_scope, names);

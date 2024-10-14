@@ -69,7 +69,6 @@ static Scope make_global_scope(ErrorCtx* errs) {
     GLOBAL_VALUE("console", type_any);
 
     GLOBAL_VALUE("NaN", type_any);
-    GLOBAL_VALUE("this", type_undefined);
 
     GLOBAL_TYPE("any", type_any);
     GLOBAL_TYPE("unknown", type_unknown);

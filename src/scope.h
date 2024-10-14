@@ -33,6 +33,8 @@ typedef struct Scope {
     HmapStrArcDeclaration declarations;
     HmapStrScopeCPtr namespaces;
     HmapStrNamedImport imports;
+    Declaration const* this_declaration;
+    Declaration const* super_declaration;
     NameStack* current_name_stack; // The NameStack this scope is in, or null if none
 } Scope;
 

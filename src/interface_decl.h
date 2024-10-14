@@ -3,6 +3,7 @@
 #include "type.h"
 #include "lazy_type.h"
 #include "generic.h"
+#include "declaration.h"
 
 typedef struct InterfaceDecl {
     Span name;
@@ -12,7 +13,7 @@ typedef struct InterfaceDecl {
     Type type;
     LazyType lazy_type;
     ArcDeclaration declaration;
-    ArcDeclaration this_declaration;
+    Declaration this_declaration;
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);

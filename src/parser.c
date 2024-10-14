@@ -308,6 +308,8 @@ static bool parse_identifier(Parser* parent, Span* ret) {
         span_equals(s, "in") ||
         span_equals(s, "typeof") ||
         span_equals(s, "case") ||
+        span_equals(s, "this") ||
+        span_equals(s, "super") ||
         span_equals(s, "default")
     ) {
         parent->pos = a.start;
@@ -964,6 +966,18 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_number;
     } else if (hop_start_if_ends_on_word_break(&p, "string")) {
         *ret = type_string;
+    } else if (hop_start_if_ends_on_word_break(&p, "this")) {
+        *ret = type_identifier(c_new(IdentifierType, {
+            .name = span_from(a),
+            .full_span = span_from(a),
+            .is_this = true,
+        }));
+    } else if (hop_start_if_ends_on_word_break(&p, "super")) {
+        *ret = type_identifier(c_new(IdentifierType, {
+            .name = span_from(a),
+            .full_span = span_from(a),
+            .is_super = true,
+        }));
     } else if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
@@ -1375,7 +1389,11 @@ static bool parse_function_args(
                     rest_span = span_from(arg_start);
                 }
 
-                if (!parse_binding_content(&p, &initializer.binding)) {
+                if (parse_binding_content(&p, &initializer.binding)) {
+                } else if (hop_start_if_ends_on_word_break(&p, "this")) {
+                    initializer.binding.tag = BINDING_IDENTIFIER;
+                    initializer.binding.content_span = span_make(p.shared->source, p.pos - 4, p.pos);
+                } else {
                     goto drop_and_fail;
                 }
                 hop_whitespace(&p);
@@ -2760,6 +2778,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+    } else if (hop_start_if_ends_on_word_break(&p, "this")) {
+        *ret = expr_this(span_from(a));
+    } else if (hop_start_if_ends_on_word_break(&p, "super")) {
+        *ret = expr_super(span_from(a));
     } else if (parse_identifier_expr(&p, ctx, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;

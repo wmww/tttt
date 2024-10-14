@@ -83,6 +83,8 @@ void expr_drop(Expr* me) {
     free(my currently_getting_type);
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
+        case EXPR_THIS:
+        case EXPR_SUPER:
             break;
 
         case EXPR_LITERAL:
@@ -155,8 +157,9 @@ void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs) {
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
-        case EXPR_LITERAL:
-            break;
+        case EXPR_LITERAL: break;
+        case EXPR_THIS: my this_or_super = name_stack_get_this(names); break;
+        case EXPR_SUPER: my this_or_super = name_stack_get_super(names); break;
 
         case EXPR_IDENTIFIER:
             identifier_expr_lookup_names(&my identifier, names, errs);
@@ -462,6 +465,8 @@ static void binary_op_typecheck(
 Type expr_evaluate_type(Expr const* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: return type_any;
+        case EXPR_THIS: return my this_or_super ? type_ref(&my this_or_super->value.type) : type_undefined;
+        case EXPR_SUPER: return my this_or_super ? type_ref(&my this_or_super->value.type) : type_any;
         case EXPR_LITERAL: return type_value(value_clone(my literal));
         case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);
 
@@ -576,6 +581,8 @@ Type expr_evaluate_type(Expr const* me) {
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
+        case EXPR_THIS:
+        case EXPR_SUPER:
         case EXPR_LITERAL:
             break;
 
