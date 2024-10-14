@@ -114,7 +114,7 @@ void error_ctx_drop(ErrorCtx* me) {
 
 void print_error_ctx(ErrorCtx const* me) {
     cstr str = cstr_null;
-    const intptr_t max_display = 10;
+    const intptr_t max_display = 5000;
     intptr_t displayed = 0;
     c_foreach(i, vec_error, my errors) {
         if (i.ref->phase == ERROR_PHASE_PARSE || !my has_parse_errors) {
