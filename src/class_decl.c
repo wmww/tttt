@@ -68,12 +68,12 @@ void class_decl_drop(ClassDecl* me) {
     vec_class_item_drop(&my items);
     lazy_type_drop(&my instance_type);
     lazy_type_drop(&my class_type);
-    named_type_destroy(my instance_named_type);
-    named_type_destroy(my class_named_type);
-    named_variable_destroy(my instance_named_var);
-    named_variable_destroy(my class_named_var);
+    arc_declaration_drop(&my declaration);
     type_drop(&my instance_identifier_type);
-    type_drop(&my class_identifier_type);
+    declaration_drop(&my instance_type_declaration);
+    declaration_drop(&my class_typeof_declaration);
+    arc_declaration_drop(&my instance_this_declaration);
+    arc_declaration_drop(&my class_this_declaration);
 }
 
 void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
@@ -102,19 +102,57 @@ void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void class_decl_add_names(ClassDecl* me, Scope* scope) {
-    ASSERT(!my instance_named_type);
-    my instance_named_type = scope_add_mergeable_type(
-        scope,
-        my name,
-        my full_span,
-        type_lazy(&my instance_type),
-        &my generic,
-        true
-    );
+    declaration_init(&my instance_type_declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_CLASS,
+        .generic = &my generic,
+        .declared_type = type_lazy(&my instance_type),
+    });
 
-    ASSERT(!my class_named_var);
-    my class_named_var = make_named_variable(my name, my full_span, type_ref(&my class_identifier_type), &my generic);
-    scope_add_variable(scope, my class_named_var);
+    declaration_init(&my class_typeof_declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_CLASS,
+        .generic = nullptr,
+        .declared_type = type_lazy(&my class_type),
+        .is_typeof = true,
+    });
+
+    scope_init_declaration(scope, &my declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_CLASS,
+        .generic = &my generic,
+        .value_type = type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .decl_ref = &my class_typeof_declaration,
+        })),
+        .declared_type = type_ref(&my instance_identifier_type),
+    });
+}
+
+static void class_members_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs, bool static_members) {
+    Scope this_scope = scope_init(errs);
+
+    ArcDeclaration* this_declaration = static_members ? &my class_this_declaration : &my instance_this_declaration;
+    Type const* this_value_type = static_members ? &my declaration.get->value.type : &my declaration.get->type.type;
+    Type const* this_type_type = static_members ? &my class_typeof_declaration.type.type : &my declaration.get->value.type;
+    scope_init_declaration(&this_scope, this_declaration, (DeclProps) {
+        .name = sv_make_span(c_sv("this")),
+        .tag = DECLARATION_CLASS,
+        .value_type = type_ref(this_value_type),
+        .declared_type = type_ref(this_type_type),
+    });
+
+    scope_push_to_stack(&this_scope, names);
+    c_foreach(i, vec_class_item, my items) {
+        if (class_item_is_static(i.ref) == static_members) {
+            class_item_lookup_names(i.ref, names, errs);
+        }
+    }
+
+    scope_drop(&this_scope);
 }
 
 void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
@@ -124,42 +162,18 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     Scope generic_scope = scope_init(errs);
     scope_push_generic_to_stack(&generic_scope, &my generic, names);
 
-    VecSpannedType generic_params; // Used multiple times
-    ASSERT(my instance_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
-    generic_params = (VecSpannedType){0};
+    VecSpannedType generic_params = vec_spanned_type_init();
     c_foreach(i, vec_generic_item, my generic.items) {
         // Is it the fallback type, always any or something else? unclear.
         vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_identifier(c_new(IdentifierType, {
             .name = i.ref->name,
-            .named_type = i.ref->named_type,
+            .decl_ref = i.ref->declaration.get,
         }))));
     }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
-        .named_type = my instance_named_type,
+        .decl_ref = &my instance_type_declaration,
         .generic_params = generic_params,
-    }));
-
-    /*
-     * TODO: this supposed to be used somewhere?
-    generic_params = (VecSpannedType){0};
-    c_foreach(i, vec_generic_item, my generic.items) {
-        // Is it the fallback type, always any or something else? unclear.
-        vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_clone(i.ref->fallback)));
-    }
-    */
-
-    ASSERT(!my instance_named_var);
-    my instance_named_var = make_named_variable(my name, my full_span, type_ref(&my instance_identifier_type), nullptr);
-
-    ASSERT(!my class_named_type);
-    my class_named_type = make_named_type(my name, my full_span, type_lazy(&my class_type), nullptr);
-    my class_named_type->is_typeof_class = true;
-
-    ASSERT(my class_identifier_type.tag == TYPE_ANY); // Should only be set here, and only once
-    my class_identifier_type = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .named_type = my class_named_type,
     }));
 
     c_foreach(i, vec_class_item, my items) {
@@ -175,7 +189,7 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             }
             ASSERT(i.ref->constructor.func.ret.tag == TYPE_ANY);
             i.ref->constructor.func.ret_explicit = true;
-            i.ref->constructor.func.ret = type_ref(&my instance_identifier_type);
+            i.ref->constructor.func.ret = type_ref(&my declaration.get->type.type);
         }
     }
 
@@ -184,27 +198,8 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         type_lookup_names(i.ref, names, errs);
     }
 
-    Scope class_this_scope = scope_init(errs);
-    scope_add_variable_s(&class_this_scope, cstr_lit("this"), my class_named_var);
-    scope_add_type_s(&class_this_scope, cstr_lit("this"), my class_named_type);
-    scope_push_to_stack(&class_this_scope, names);
-    c_foreach(i, vec_class_item, my items) {
-        if (class_item_is_static(i.ref)) {
-            class_item_lookup_names(i.ref, names, errs);
-        }
-    }
-    scope_drop(&class_this_scope);
-
-    Scope instance_this_scope = scope_init(errs);
-    scope_add_variable_s(&instance_this_scope, cstr_lit("this"), my instance_named_var);
-    scope_add_type_s(&instance_this_scope, cstr_lit("this"), my instance_named_type);
-    scope_push_to_stack(&instance_this_scope, names);
-    c_foreach(i, vec_class_item, my items) {
-        if (!class_item_is_static(i.ref)) {
-            class_item_lookup_names(i.ref, names, errs);
-        }
-    }
-    scope_drop(&instance_this_scope);
+    class_members_lookup_names(me, names, errs, true);
+    class_members_lookup_names(me, names, errs, false);
 
     scope_drop(&generic_scope);
 }
@@ -213,7 +208,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
 
     if (!resolve_instance) {
-        Type prototype_type = type_clone(my instance_identifier_type);
+        Type prototype_type = type_clone(my declaration.get->type.type);
         VecSpannedType params = {0};
         prototype_type = generic_degenericize_type(&my generic, prototype_type, &params);
         vec_interface_member_push(&interface.members, interface_member_make(
@@ -316,7 +311,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
 
     if (!resolve_instance && !has_constructor) {
         FunctionImpl constructor = {
-            .ret = type_ref(&my instance_identifier_type),
+            .ret = type_ref(&my declaration.get->type.type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
             .generic = generic_clone(my generic),
@@ -409,5 +404,5 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
 
     ASSERT(my instance_type.tag == LAZY_TYPE_EVALUATED && my instance_type.evaluated.tag == TYPE_INTERFACE);
-    interface_typecheck_members_against(&my instance_type.evaluated.interface, my instance_named_type, errs);
+    interface_typecheck_members_against(&my instance_type.evaluated.interface, my declaration.get, errs);
 }

@@ -2,6 +2,7 @@
 
 #include "function_impl.h"
 #include "interface_member.h"
+#include "declaration.h"
 
 typedef enum AccessModifier {
     ACCESS_MODIFIER_PUBLIC,
@@ -70,13 +71,12 @@ typedef struct ClassDecl {
     VecClassItem items;
     LazyType instance_type;
     LazyType class_type;
-    // Perf: do these all need to be separate allocations?
-    NamedType* instance_named_type;
-    NamedType* class_named_type;
-    NamedVariable* instance_named_var;
-    NamedVariable* class_named_var;
+    ArcDeclaration declaration;
     Type instance_identifier_type;
-    Type class_identifier_type;
+    Declaration instance_type_declaration; // Not Arc because not added to scope directly
+    Declaration class_typeof_declaration; // Not Arc because not added to scope directly
+    ArcDeclaration instance_this_declaration;
+    ArcDeclaration class_this_declaration;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

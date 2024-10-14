@@ -39,7 +39,7 @@ typedef struct TypeDecl {
     Span full_span;
     Generic generic;
     Type type;
-    NamedType* named_type;
+    ArcDeclaration declaration;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
@@ -54,8 +54,8 @@ typedef struct NamespaceDecl {
     Block contents;
     Scope inner_scope;
     Type value_type;
-    NamedType* value_named_type;
-    NamedVariable* value_named_var;
+    Declaration value_type_declaration;
+    ArcDeclaration declaration;
 } NamespaceDecl;
 
 void namespace_decl_drop(NamespaceDecl* me);
@@ -117,8 +117,10 @@ typedef struct Statement {
             bool declared;
             union {
                 VariableStatement variable;
-                // PERF: FunctionImpl is big and somewhat rare, perhaps this should be an owned pointer
-                FunctionImpl function;
+                struct {
+                    ArcDeclaration this_declaration;
+                    FunctionImpl* impl;
+                } function;
                 EnumDecl* enum_;
                 ClassDecl* class;
                 TypeDecl type;

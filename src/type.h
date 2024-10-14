@@ -16,14 +16,14 @@ typedef struct TupleElement TupleElement;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct Scope Scope;
-typedef struct NamedType NamedType;
 typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
 typedef struct LazyType LazyType;
+typedef struct Declaration Declaration;
 
 wrap_forward_arc(Expr, expr);
-wrap_forward_arc(NamedType, named_type);
+wrap_forward_arc(Declaration, declaration);
 wrap_forward_vec(TupleElement, tuple_element);
 wrap_forward_arc(InferredType, inferred_type);
 
@@ -59,7 +59,7 @@ typedef struct Type {
         } any;
         Value value;
         IdentifierType* identifier;
-        ArcInferredType inferred;
+        ArcInferredType inferred; // TODO: does this still need to be an Arc?
         CallableType* callable;
         Interface interface;
         struct {
@@ -189,6 +189,8 @@ static inline Type type_lazy(LazyType* lazy) {
     };
 }
 
+// PERF: split into type_always_ref() and type_refclone(), the latter of which may create a value type if the given type
+// can be returned by value without needing to be dropped
 static inline Type type_ref(Type const* ref) {
     return (Type){
         .tag = TYPE_REF,
@@ -219,7 +221,7 @@ static inline Type type_move(Type* me) {
 void type_lookup_names(Type* me, NameStack* names, ErrorCtx* errs);
 void type_typecheck(Type const* me, ErrorCtx* errs);
 Type const* type_resolve(Type const* me);
-Type const* type_resolve_one_layer(Type const* me);
+Type const* type_resolve_one_layer(Type const* me); // Returns nullptr if nothing to resolve
 Type const* type_resolve_until_identifier(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 bool type_overlaps(Type const* a, Type const* b);

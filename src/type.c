@@ -32,7 +32,7 @@ typedef hmap_str_bool HmapStrBool;
 
 typedef struct TypeCtx {
     unsigned recursion_level;
-    HsetNamedTypeCPtr currently_resolving;
+    HsetDeclarationCPtr currently_resolving;
     HmapStrBool extends_results;
 } TypeCtx;
 
@@ -46,7 +46,7 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
 static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type const* index, Type* ret);
 
 static void type_ctx_drop(TypeCtx* me) {
-    hset_named_type_cptr_drop(&my currently_resolving);
+    hset_declaration_cptr_drop(&my currently_resolving);
     hmap_str_bool_drop(&my extends_results);
 }
 
@@ -94,25 +94,26 @@ static Type type_composite_internal(TypeCtx* ctx, typeof((Type){}.tag) tag, Type
         } else {
             return a;
         }
-    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends_internal(ctx, &a, &b, nullptr)) {
-        if (tag == TYPE_UNION) {
-            type_drop(&a);
-            return b;
-        } else {
-            type_drop(&b);
-            return a;
+    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && a.tag != TYPE_ARRAY && b.tag != TYPE_ARRAY) {
+        if (type_extends_internal(ctx, &a, &b, nullptr)) {
+            if (tag == TYPE_UNION) {
+                type_drop(&a);
+                return b;
+            } else {
+                type_drop(&b);
+                return a;
+            }
+        } else if (type_extends_internal(ctx, &b, &a, nullptr)) {
+            if (tag == TYPE_UNION) {
+                type_drop(&b);
+                return a;
+            } else {
+                type_drop(&a);
+                return b;
+            }
         }
-    } else if (a.tag != TYPE_INTERFACE && b.tag != TYPE_INTERFACE && type_extends_internal(ctx, &b, &a, nullptr)) {
-        if (tag == TYPE_UNION) {
-            type_drop(&b);
-            return a;
-        } else {
-            type_drop(&a);
-            return b;
-        }
-    } else {
-        return type_composite_without_simplify(tag, a, b);
     }
+    return type_composite_without_simplify(tag, a, b);
 }
 
 Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
@@ -261,17 +262,12 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             break;
 
         case TYPE_INFERRED:
-            if (my inferred.get->named_type) {
-                NONFATAL("Inferred type added multiple times");
-            } else {
-                my inferred.get->named_type = make_named_type(
-                    my inferred.get->name,
-                    my inferred.get->name,
-                    type_ref(&my inferred.get->extends),
-                    nullptr
-                );
-                scope_add_type(scope, my inferred.get->named_type);
-            }
+            scope_init_declaration(scope, &my inferred.get->declaration, (DeclProps){
+                .name = my inferred.get->name,
+                .full = my inferred.get->name,
+                .tag = DECLARATION_TYPE,
+                .declared_type = type_ref(&my inferred.get->extends),
+            });
             break;
 
         case TYPE_CALLABLE:
@@ -593,12 +589,12 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
         return me;
     }
 
-    NamedType const* to_remove = nullptr;
+    Declaration const* to_remove = nullptr;
     if (my tag == TYPE_IDENTIFIER) {
         if (through_identifier) {
-            if (my identifier->named_type) {
-                if (hset_named_type_cptr_insert(&ctx->currently_resolving, to_remove).inserted) {
-                    to_remove = my identifier->named_type;
+            if (my identifier->decl_ref) {
+                if (hset_declaration_cptr_insert(&ctx->currently_resolving, my identifier->decl_ref).inserted) {
+                    to_remove = my identifier->decl_ref;
                 } else {
                     return &type_any;
                 }
@@ -616,7 +612,7 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
     }
 
     if (to_remove) {
-        hset_named_type_cptr_erase(&ctx->currently_resolving, to_remove);
+        hset_declaration_cptr_erase(&ctx->currently_resolving, to_remove);
     }
     return me;
 }
@@ -826,7 +822,7 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
             if (refinements) {
                 if (type_extends_internal(ctx, sub, &super->inferred.get->extends, nullptr)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
-                        .target = super->inferred.get->named_type,
+                        .target = super->inferred.get->declaration.get,
                         .refined = sub,
                     });
                     return true;
@@ -889,7 +885,7 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
         cstr_append_lit(&key.target, " # ");
         intptr_t super_start = cstr_size(&key.target);
         display_type(hash_key_display(&key), super);
-        hset_named_type_cptr_drop(&key.named_types);
+        hset_declaration_cptr_drop(&key.declarations);
         if (csview_equals_sv(
             csview_slice(cstr_sv(&key.target), 0, sub_end),
             csview_slice(cstr_sv(&key.target), super_start, cstr_size(&key.target))

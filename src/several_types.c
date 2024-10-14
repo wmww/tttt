@@ -1,5 +1,6 @@
 #include "several_types.h"
 #include "name_stack.h"
+#include "generic.h"
 #include "error.h"
 
 // Identifier
@@ -11,19 +12,15 @@ void identifier_type_drop(IdentifierType* me) {
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
-    return (IdentifierType){
-        .namespaces = vec_span_clone(me.namespaces),
-        .name = me.name,
-        .full_span = me.full_span,
-        .named_type = me.named_type,
-        .generic_params = vec_spanned_type_clone(me.generic_params),
-        // PERF: perhaps this should clone the type if already evaluated?
-        .type = (LazyType){ .tag = LAZY_TYPE_IDENTIFIER_TYPE },
-    };
+    me.namespaces = vec_span_clone(me.namespaces);
+    me.generic_params = vec_spanned_type_clone(me.generic_params);
+    // PERF: perhaps this should clone the type if already evaluated?
+    me.type = (LazyType){ .tag = LAZY_TYPE_IDENTIFIER_TYPE };
+    return me;
 }
 
 void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
-    if (!my named_type) {
+    if (!my decl_ref) {
         if (vec_span_size(&my namespaces)) {
             Scope const* scope = nullptr;
             Span prev_span = span_null;
@@ -50,9 +47,9 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
                     }
                 }
                 if (scope) {
-                    auto result = hmap_str_named_type_ptr_get(&scope->types, my name.sv);
-                    my named_type = result ? result->second : nullptr;
-                    if (!my named_type) {
+                    auto result = hmap_str_arc_declaration_get(&scope->declarations, my name.sv);
+                    my decl_ref = result ? result->second.get : nullptr;
+                    if (!my decl_ref) {
                         error_ctx_error(
                             errs,
                             my name,
@@ -66,8 +63,8 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
                 prev_span = *i.ref;
             }
         } else {
-            my named_type = name_stack_get_type(names, my name.sv);
-            if (!my named_type) {
+            my decl_ref = name_stack_get_type(names, my name.sv);
+            if (!my decl_ref) {
                 error_ctx_error(
                     errs,
                     my name,
@@ -84,15 +81,16 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
 }
 
 Type identifier_type_evaluate_type(IdentifierType* me) {
-    if (my named_type) {
-        if (my named_type->generic) {
-            return generic_degenericize_type(
-                my named_type->generic,
-                type_clone(my named_type->type),
+    if (my decl_ref) {
+        if (my decl_ref->type.generic) {
+            Type ret = generic_degenericize_type(
+                my decl_ref->type.generic,
+                type_clone(my decl_ref->type.type),
                 &my generic_params
             );
+            return ret;
         } else {
-            return type_ref(&my named_type->type);
+            return type_ref(&my decl_ref->type.type);
         }
     } else {
         return type_any;
@@ -103,7 +101,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_typecheck(&i.ref->type, errs);
     }
-    if (my named_type) {
+    if (my decl_ref) {
         /*
         //This can be enabled once we're parsing the standard library
         if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my named_type->generic)) {
@@ -121,7 +119,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 
 void inferred_type_drop(InferredType* me) {
     type_drop(&my extends);
-    named_type_destroy(my named_type);
+    arc_declaration_drop(&my declaration);
 }
 
 // Indexed

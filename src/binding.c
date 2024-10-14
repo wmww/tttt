@@ -7,7 +7,7 @@
 void binding_drop(Binding* me) {
     switch (my tag) {
         case BINDING_NOOP: break;
-        case BINDING_IDENTIFIER: named_variable_destroy(my identifier); break;
+        case BINDING_IDENTIFIER: arc_declaration_drop(&my declaration); break;
         case BINDING_ARRAY: vec_binding_drop(&my array); break;
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
@@ -22,14 +22,12 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            ASSERT(!my identifier);
-            my identifier = make_named_variable(
-                my content_span,
-                my content_span,
-                type_ref(binding_get_effective_type(me)),
-                nullptr
-            );
-            scope_add_variable(scope, my identifier);
+            scope_init_declaration(scope, &my declaration, (DeclProps){
+                .name = my content_span,
+                .full = my content_span,
+                .tag = DECLARATION_VALUE,
+                .value_type = type_ref(binding_get_effective_type(me)),
+            });
             break;
 
         case BINDING_ARRAY: {
@@ -136,7 +134,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            if (my identifier) {
+            if (my declaration.get) {
                 Type const* type = type_resolve(binding_get_effective_type(me));
                 if (type_is_self_referential(type)) {
                     cstr msg = cstr_lit("'");

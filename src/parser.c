@@ -1289,7 +1289,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
 
     VecEnumCase cases = vec_enum_case_init();
     while (*p.pos && *p.pos != '}') {
-        EnumCase enum_case;
+        EnumCase enum_case = {0};
         if (!expect_identifier(&p, &enum_case.name)) {
             hop_token(&p);
         }
@@ -3677,7 +3677,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .decl = {
                 .exported = exported,
                 .declared = modifiers.includes[MODIFIER_DECLARE],
-                .function = parsed.function,
+                .function = {
+                    .impl = c_new(FunctionImpl, parsed.function),
+                },
             },
         };
     } else if (parse_class_decl(&p, &parsed.class)) {

@@ -3,7 +3,7 @@
 #include "type.h"
 
 typedef struct TypeRefinement {
-    NamedType const* target;
+    Declaration const* target;
     Type const* refined;
 } TypeRefinement;
 
@@ -19,8 +19,7 @@ typedef struct GenericItem {
     Type extends;
     bool fallback_explicit;
     Type fallback;
-    bool owns_named_type;
-    NamedType* named_type;
+    ArcDeclaration declaration;
 } GenericItem;
 
 void generic_item_drop(GenericItem* me);

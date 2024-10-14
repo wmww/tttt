@@ -121,11 +121,11 @@ static void display_binding_content(Display d, Binding const* me) {
         case BINDING_IDENTIFIER:
             display_colored_span(d, color_name, my content_span);
             if (d.debug) {
-                if (!my identifier) {
+                if (!my declaration.get) {
                     display_colored(d, color_error, " /* unresolved */");
                 } else if (!my has_explicit_type) {
                     display_colored(d, color_implicit, " /* ");
-                    display_type(d, &my identifier->type);
+                    display_type(d, &my declaration.get->type.type);
                     display_colored(d, color_implicit, " */");
                 }
             }
@@ -203,15 +203,15 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    if (d.hash_key && my named_type && vec_spanned_type_empty(&my generic_params)) {
-        if (hset_named_type_cptr_insert(&d.hash_key_target->named_types, my named_type).inserted) {
-            display_type(d, &my named_type->type);
-            hset_named_type_cptr_erase(&d.hash_key_target->named_types, my named_type);
+    if (d.hash_key && my decl_ref && vec_spanned_type_empty(&my generic_params)) {
+        if (hset_declaration_cptr_insert(&d.hash_key_target->declarations, my decl_ref).inserted) {
+            display_type(d, &my decl_ref->type.type);
+            hset_declaration_cptr_erase(&d.hash_key_target->declarations, my decl_ref);
             return;
         }
     }
 
-    if (my named_type && my named_type->is_typeof_class) {
+    if (my decl_ref && my decl_ref->type.is_typeof_class) {
         display_lit(d, "typeof ");
     }
 
@@ -224,7 +224,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my named_type);
+        display_fmt(d, "@%p", (void*)my decl_ref);
     }
 
     if (!vec_spanned_type_empty(&my generic_params)) {
@@ -239,7 +239,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (d.debug) {
-        if (!my named_type) {
+        if (!my decl_ref) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -252,11 +252,11 @@ static void display_inferred_type(Display d, InferredType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my named_type);
+        display_fmt(d, "@%p", (void*)my declaration.get);
     }
 
     if (d.debug) {
-        if (!my named_type) {
+        if (!my declaration.get) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -686,7 +686,7 @@ static void display_identifier_expr(Display d, IdentifierExpr const* me) {
         display_lit(d, ">");
     }
     if (d.debug) {
-        if (!my var) {
+        if (!my decl_ref) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -1115,8 +1115,8 @@ void display_statement(Display d, Statement const* me) {
 
         case STATEMENT_DECL_FUNCTION:
             display_lit(d, "function ");
-            display_colored_span(d, color_name, my decl.function.name);
-            display_function_impl(d, &my decl.function, false);
+            display_colored_span(d, color_name, my decl.function.impl->name);
+            display_function_impl(d, my decl.function.impl, false);
             break;
 
         case STATEMENT_DECL_ENUM:

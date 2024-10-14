@@ -47,13 +47,17 @@ void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
 void type_decl_drop(TypeDecl* me) {
     generic_drop(&my generic);
     type_drop(&my type);
-    named_type_destroy(my named_type);
+    arc_declaration_drop(&my declaration);
 }
 
 void type_decl_add_names(TypeDecl* me, Scope* scope) {
-    ASSERT(!my named_type);
-    my named_type = make_named_type(my name, my full_span, type_ref(&my type), &my generic);
-    scope_add_type(scope, my named_type);
+    scope_init_declaration(scope, &my declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_TYPE,
+        .generic = &my generic,
+        .declared_type = type_ref(&my type),
+    });
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
@@ -67,8 +71,8 @@ void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
     scope_drop(&my inner_scope);
     type_drop(&my value_type);
-    named_type_destroy(my value_named_type);
-    named_variable_destroy(my value_named_var);
+    declaration_drop(&my value_type_declaration);
+    arc_declaration_drop(&my declaration);
 }
 
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
@@ -82,20 +86,23 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
     ASSERT(my value_type.tag == 0);
     my value_type = scope_make_interface_from(&my inner_scope);
 
-    ASSERT(!my value_named_type);
-    ASSERT(!my value_named_var);
-    my value_named_type = make_named_type(my name, my full_span, type_ref(&my value_type), nullptr);
-    my value_named_type->is_typeof_class = true;
-    my value_named_var = make_named_variable(
-        my name,
-        my full_span,
-        type_identifier(c_new(IdentifierType, {
+    declaration_init(&my value_type_declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_TYPE,
+        .declared_type = type_ref(&my value_type),
+        .is_typeof = true,
+    });
+
+    scope_init_declaration(scope, &my declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_NAMESPACE,
+        .value_type = type_identifier(c_new(IdentifierType, {
             .name = my name,
-            .named_type = my value_named_type,
+            .decl_ref = &my value_type_declaration,
         })),
-        nullptr
-    );
-    scope_add_variable(scope, my value_named_var);
+    });
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
@@ -230,7 +237,9 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_drop(&my decl.function);
+            function_impl_drop(my decl.function.impl);
+            free(my decl.function.impl);
+            arc_declaration_drop(&my decl.function.this_declaration);
             break;
 
         case STATEMENT_DECL_ENUM:
@@ -269,7 +278,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_add_names(&my decl.function, scope);
+            function_impl_add_names(my decl.function.impl, scope);
             break;
 
         case STATEMENT_DECL_ENUM:
@@ -471,13 +480,14 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
 
         case STATEMENT_DECL_FUNCTION: {
             Scope this_scope = scope_init(errs);
-
-            static NamedVariable this_var;
-            this_var = (NamedVariable){ .type = type_any };
-            scope_add_variable_s(&this_scope, cstr_lit("this"), &this_var);
+            scope_init_declaration(&this_scope, &my decl.function.this_declaration, (DeclProps){
+                .name = sv_make_span(c_sv("this")),
+                .tag = DECLARATION_VALUE,
+                .value_type = type_any,
+            });
 
             scope_push_to_stack(&this_scope, names);
-            function_impl_lookup_names(&my decl.function, names, errs);
+            function_impl_lookup_names(my decl.function.impl, names, errs);
 
             scope_drop(&this_scope);
         }   break;
@@ -766,7 +776,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_typecheck(&my decl.function, errs);
+            function_impl_typecheck(my decl.function.impl, errs);
             break;
 
         case STATEMENT_DECL_ENUM:

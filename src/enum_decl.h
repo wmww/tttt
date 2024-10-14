@@ -1,11 +1,12 @@
 #pragma once
 
 #include "expr.h"
+#include "declaration.h"
 
 typedef struct EnumCase {
     Span name;
     Expr value;
-    NamedType* type_proxy;
+    Declaration declaration;
     Type identifier_type;
 } EnumCase;
 
@@ -20,12 +21,9 @@ typedef struct EnumDecl {
     VecEnumCase cases;
     LazyType instance_type;
     LazyType interface_type;
-    NamedVariable* named_var;
-    NamedType* named_type;
-    Type instance_identifier_type;
-    Type interface_identifier_type;
-    NamedType* instance_type_proxy;
-    NamedType* interface_type_proxy;
+    ArcDeclaration declaration; // Types are identifiers that refer to interface_declaration and instance_declaration
+    Declaration interface_declaration; // Not Arc because not added to scope directly
+    Declaration instance_declaration; // Not Arc because not added to scope directly
 } EnumDecl;
 
 void enum_decl_drop(EnumDecl* me);

@@ -25,11 +25,78 @@ typedef SourceFile* SourceFilePtr;
 typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs;
+    Scope global_scope; // Global values and types
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
                                        // Keys are absolute paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
     SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
+
+static Scope make_global_scope(ErrorCtx* errs) {
+    Scope ret = scope_init(errs);
+
+#define GLOBAL_VALUE(global_name, global_value) {\
+    ArcDeclaration declaration = {0}; \
+    scope_init_declaration(&ret, &declaration, (DeclProps) { \
+        .name = sv_make_span(c_sv(global_name)), \
+        .tag = DECLARATION_VALUE, \
+        .value_type = global_value, \
+    } ); \
+    arc_declaration_drop(&declaration); \
+}
+
+#define GLOBAL_TYPE(global_name, global_type) {\
+    ArcDeclaration declaration = {0}; \
+    scope_init_declaration(&ret, &declaration, (DeclProps) { \
+        .name = sv_make_span(c_sv(global_name)), \
+        .tag = DECLARATION_TYPE, \
+        .declared_type = global_type, \
+    } ); \
+    arc_declaration_drop(&declaration); \
+}
+
+#define GLOBAL_CLASS(global_name, global_value, global_type) {\
+    ArcDeclaration declaration = {0}; \
+    scope_init_declaration(&ret, &declaration, (DeclProps) { \
+        .name = sv_make_span(c_sv(global_name)), \
+        .tag = DECLARATION_CLASS, \
+        .value_type = global_value, \
+        .declared_type = global_type, \
+    } ); \
+    arc_declaration_drop(&declaration); \
+}
+
+    GLOBAL_VALUE("console", type_any);
+
+    GLOBAL_VALUE("NaN", type_any);
+    GLOBAL_VALUE("this", type_undefined);
+
+    GLOBAL_TYPE("any", type_any);
+    GLOBAL_TYPE("unknown", type_unknown);
+    GLOBAL_TYPE("never", type_never);
+    GLOBAL_TYPE("void", type_void);
+    GLOBAL_TYPE("object", type_object);
+    GLOBAL_TYPE("boolean", type_boolean);
+    GLOBAL_TYPE("number", type_number);
+    GLOBAL_TYPE("string", type_string);
+    GLOBAL_TYPE("bigint", type_any);
+    GLOBAL_TYPE("symbol", type_any);
+    GLOBAL_TYPE("intrinsic", type_any);
+    GLOBAL_TYPE("BooleanConstructor", type_any);
+    GLOBAL_TYPE("NumberConstructor", type_any);
+    GLOBAL_TYPE("StringConstructor", type_any);
+
+    GLOBAL_CLASS("Object", type_any, type_any);
+    GLOBAL_CLASS("Array", type_any, type_any);
+    GLOBAL_CLASS("Error", type_any, type_any);
+    GLOBAL_CLASS("Set", type_any, type_any);
+    GLOBAL_CLASS("Date", type_any, type_any);
+    GLOBAL_CLASS("String", type_any, type_string);
+    GLOBAL_CLASS("Number", type_any, type_number);
+    GLOBAL_CLASS("Boolean", type_any, type_boolean);
+
+    return ret;
+}
 
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     ASSERT(errs);
@@ -37,11 +104,13 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     return c_new(Program, {
         .errs = errs,
         .fs = fs,
+        .global_scope = make_global_scope(errs),
         .not_found_file = source_file_make(cstr_null, cstr_null, errs),
     });
 }
 
 static void program_drop(Program* me) {
+    scope_drop(&my global_scope);
     hmap_str_box_source_file_drop(&my source_files);
     vec_source_file_ptr_drop(&my pending_source_files);
     source_file_drop(&my not_found_file);
@@ -155,6 +224,7 @@ SourceFile const* program_load(Program* me, const char* path) {
     }
 
     NameStack* names = name_stack_new();
+    scope_push_to_stack(&my global_scope, names);
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
@@ -163,6 +233,7 @@ SourceFile const* program_load(Program* me, const char* path) {
         scope_pop_from_stack(&source->scope);
     }
 
+    scope_pop_from_stack(&my global_scope);
     name_stack_destroy(names);
 
     clear_error_config();

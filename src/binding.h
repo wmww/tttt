@@ -16,7 +16,7 @@ typedef struct Binding {
         BINDING_OBJECT,
     } tag;
     union {
-        NamedVariable* identifier;
+        ArcDeclaration declaration;
         VecBinding array;
         VecObjectBindingItem object;
     };

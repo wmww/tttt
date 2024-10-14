@@ -7,23 +7,16 @@
 #include "expr.h"
 #include "error.h"
 
-typedef NamedType const* NamedTypeCPtr;
-#define i_key_names NamedTypeCPtr, named_type_cptr
-#define i_val_class_names VecType, vec_type
-#include "wrap_stc/hmap.h"
-
 void generic_item_drop(GenericItem* me) {
     type_drop(&my extends);
     type_drop(&my fallback);
-    if (my owns_named_type) {
-        named_type_destroy(my named_type);
-    }
+    arc_declaration_drop(&my declaration);
 }
 
 GenericItem generic_item_clone(GenericItem me) {
     me.extends = type_clone(me.extends);
     me.fallback = type_clone(me.fallback);
-    me.owns_named_type = false;
+    me.declaration = arc_declaration_clone(me.declaration);
     return me;
 }
 
@@ -39,11 +32,12 @@ Generic generic_clone(Generic me) {
 
 void generic_add_names(Generic const* me, Scope* scope) {
     c_foreach(i, vec_generic_item, my items) {
-        if (!i.ref->named_type) {
-            i.ref->owns_named_type = true;
-            i.ref->named_type = make_named_type(i.ref->name, i.ref->name, type_ref(&i.ref->extends), nullptr);
-        }
-        scope_add_type(scope, i.ref->named_type);
+        scope_init_declaration(scope, &i.ref->declaration, (DeclProps){
+            .name = i.ref->name,
+            .full = i.ref->name,
+            .tag = DECLARATION_TYPE,
+            .declared_type = type_ref(&i.ref->extends),
+        });
     }
 }
 
@@ -70,9 +64,9 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
             return;
 
         case TYPE_IDENTIFIER:
-            if (my identifier->named_type) {
+            if (my identifier->decl_ref) {
                 c_foreach(i, vec_type_refinement, *results) {
-                    if (i.ref->target == my identifier->named_type) {
+                    if (i.ref->target == my identifier->decl_ref) {
                         i.ref->refined = arg;
                         break;
                     }
@@ -146,10 +140,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 replace_named_types_with(&i.ref->type, refinements);
             }
-            if (my identifier->named_type) {
+            if (my identifier->decl_ref) {
                 Type const* refinement = nullptr;
                 c_foreach(i, vec_type_refinement, *refinements) {
-                    if (i.ref->target == my identifier->named_type) {
+                    if (i.ref->target == my identifier->decl_ref) {
                         refinement = i.ref->refined;
                         break;
                     }
@@ -260,9 +254,9 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
     VecTypeRefinement refinements = vec_type_refinement_with_capacity(vec_generic_item_size(&my items));
     c_foreach(i, vec_generic_item, my items) {
         intptr_t index = i.ref - my items.data;
-        if (i.ref->named_type) {
+        if (i.ref->declaration.get) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->named_type,
+                .target = i.ref->declaration.get,
                 .refined = generic_param_at(generic_params, index),
             });
         } else {
@@ -279,9 +273,9 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
     int callable_arg_count = vec_callable_arg_size(&callable->args);
     VecTypeRefinement refinements = {0};
     c_foreach(i, vec_generic_item, my items) {
-        if (i.ref->named_type) {
+        if (i.ref->declaration.get) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->named_type,
+                .target = i.ref->declaration.get,
                 .refined = nullptr,
             });
         } else {

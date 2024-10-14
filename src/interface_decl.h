@@ -11,7 +11,8 @@ typedef struct InterfaceDecl {
     VecSpannedType extends; // Only used if is_interface is true
     Type type;
     LazyType lazy_type;
-    NamedType* named_type;
+    ArcDeclaration declaration;
+    ArcDeclaration this_declaration;
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);

@@ -5,7 +5,7 @@
 
 void enum_case_drop(EnumCase* me) {
     expr_drop(&my value);
-    named_type_destroy(my type_proxy);
+    declaration_drop(&my declaration);
     type_drop(&my identifier_type);
 }
 
@@ -13,46 +13,57 @@ void enum_decl_drop(EnumDecl* me) {
     vec_enum_case_drop(&my cases);
     lazy_type_drop(&my instance_type);
     lazy_type_drop(&my interface_type);
-    named_type_destroy(my named_type);
-    named_variable_destroy(my named_var);
-    type_drop(&my instance_identifier_type);
-    type_drop(&my interface_identifier_type);
-    named_type_destroy(my instance_type_proxy);
-    named_type_destroy(my interface_type_proxy);
+    arc_declaration_drop(&my declaration);
+    declaration_drop(&my interface_declaration);
+    declaration_drop(&my instance_declaration);
 }
 
 void enum_decl_add_names(EnumDecl* me, Scope* scope) {
-    ASSERT(!my named_type);
-    my named_type = make_named_type(my name, my full_span, type_ref(&my instance_identifier_type), nullptr);
-    scope_add_type(scope, my named_type);
-    my named_var = make_named_variable(my name, my full_span, type_ref(&my interface_identifier_type), nullptr);
-    scope_add_variable(scope, my named_var);
+    declaration_init(&my interface_declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_TYPE,
+        .declared_type = type_lazy(&my interface_type),
+        .is_typeof = true,
+    });
+
+    declaration_init(&my instance_declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_TYPE,
+        .declared_type = type_lazy(&my instance_type),
+    });
+
+    scope_init_declaration(scope, &my declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_ENUM,
+        .value_type = type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .decl_ref = &my interface_declaration,
+        })),
+        .declared_type = type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .decl_ref = &my instance_declaration,
+        })),
+    });
 }
 
 void enum_decl_lookup_names(EnumDecl* me, NameStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_ENUM_INSTANCE;
     my interface_type.tag = LAZY_TYPE_ENUM_INTERFACE;
 
-    my instance_type_proxy = make_named_type(my name, my full_span, type_lazy(&my instance_type), nullptr);
-    my interface_type_proxy = make_named_type(my name, my full_span, type_lazy(&my interface_type), nullptr);
-    my interface_type_proxy->is_typeof_class = true;
-
-    my instance_identifier_type = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .named_type = my instance_type_proxy,
-    }));
-
-    my interface_identifier_type = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .named_type = my interface_type_proxy,
-    }));
-
     c_foreach(i, vec_enum_case, my cases) {
-        i.ref->type_proxy = make_named_type(i.ref->name, i.ref->name, type_lazy(&i.ref->value.lazy_type), nullptr);
+        declaration_init(&i.ref->declaration, (DeclProps){
+            .name = i.ref->name,
+            .full = i.ref->name,
+            .tag = DECLARATION_TYPE,
+            .declared_type = type_lazy(&i.ref->value.lazy_type),
+        });
         i.ref->identifier_type = type_identifier(c_new(IdentifierType, {
             .namespaces = vec_span_single(my name),
             .name = i.ref->name,
-            .named_type = i.ref->type_proxy,
+            .decl_ref = &i.ref->declaration,
         }));
         expr_lookup_names(&i.ref->value, names, errs);
     }

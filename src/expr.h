@@ -17,14 +17,13 @@ typedef struct ClassDecl ClassDecl;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct NameStack NameStack;
 typedef struct Expr Expr;
-typedef struct NamedVariable NamedVariable;
 
 wrap_forward_vec(ObjectExprItem, object_expr_item);
 wrap_forward_vec(Expr, expr);
 
 typedef struct IdentifierExpr {
     Span name;
-    NamedVariable* var;
+    Declaration const* decl_ref;
     VecSpannedType generic_params;
 } IdentifierExpr;
 

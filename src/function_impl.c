@@ -14,14 +14,18 @@ void function_impl_drop(FunctionImpl* me) {
     vec_function_arg_drop(&my args);
     type_drop(&my ret);
     lazy_type_drop(&my lazy_type);
-    named_variable_destroy(my named_var);
+    arc_declaration_drop(&my declaration);
     block_drop(&my body);
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope) {
-    ASSERT(!my named_var);
-    my named_var = make_named_variable(my name, my full_span, type_lazy(&my lazy_type), &my generic);
-    scope_add_variable(scope, my named_var);
+    scope_init_declaration(scope, &my declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_VALUE,
+        .generic = &my generic,
+        .value_type = type_lazy(&my lazy_type),
+    });
 }
 
 void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {

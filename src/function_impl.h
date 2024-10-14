@@ -34,7 +34,7 @@ typedef struct FunctionImpl {
     bool is_abstract_constructor;
     LazyType lazy_type;
     bool evaluating_ret;
-    NamedVariable* named_var;
+    ArcDeclaration declaration;
     Span arrow_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;

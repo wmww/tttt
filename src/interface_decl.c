@@ -1,6 +1,5 @@
 #include "interface_decl.h"
 #include "error.h"
-#include "several_types.h"
 #include "interface_member.h"
 #include "interface.h"
 #include "type.h"
@@ -11,19 +10,18 @@ void interface_decl_drop(InterfaceDecl* me) {
     vec_spanned_type_drop(&my extends);
     type_drop(&my type);
     lazy_type_drop(&my lazy_type);
-    named_type_destroy(my named_type);
+    arc_declaration_drop(&my declaration);
+    arc_declaration_drop(&my this_declaration);
 }
 
 void interface_decl_add_names(InterfaceDecl* me, Scope* scope) {
-    ASSERT(!my named_type);
-    my named_type = scope_add_mergeable_type(
-        scope,
-        my name,
-        my full_span,
-        type_lazy(&my lazy_type),
-        &my generic,
-        false
-    );
+    scope_init_declaration(scope, &my declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
+        .tag = DECLARATION_INTERFACE,
+        .generic = &my generic,
+        .declared_type = type_lazy(&my lazy_type),
+    });
 }
 
 void interface_decl_lookup_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
@@ -34,9 +32,16 @@ void interface_decl_lookup_names(InterfaceDecl* me, NameStack* names, ErrorCtx* 
         type_lookup_names(&i.ref->type, names, errs);
     }
     Scope block_scope = scope_init(errs);
-    scope_add_type_s(&block_scope, cstr_lit("this"), my named_type);
+
+    scope_init_declaration(&block_scope, &my this_declaration, (DeclProps){
+        .name = sv_make_span(c_sv("this")),
+        .tag = DECLARATION_TYPE,
+        .value_type = type_any,
+    });
+
     scope_push_to_stack(&block_scope, names);
     type_lookup_names(&my type, names, errs);
+
     scope_drop(&block_scope);
     scope_drop(&generic_scope);
 }
@@ -126,5 +131,5 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     }
 
     type_typecheck(&my type, errs);
-    interface_typecheck_members_against(&my type.interface, my named_type, errs);
+    interface_typecheck_members_against(&my type.interface, my declaration.get, errs);
 }

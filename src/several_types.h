@@ -3,15 +3,13 @@
 #include "type.h"
 #include "lazy_type.h"
 
-typedef struct ErrorCtx ErrorCtx;
-
 // Identifier
 
 typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
     Span full_span;
-    NamedType* named_type;
+    Declaration const* decl_ref;
     VecSpannedType generic_params;
     LazyType type; // May contain a copy of the type with the generic parameters swapped in or a reference
 } IdentifierType;
@@ -38,7 +36,7 @@ typedef struct InferredType {
     Span name;
     Span full_span;
     Type extends;
-    NamedType* named_type;
+    ArcDeclaration declaration;
 } InferredType;
 
 void inferred_type_drop(InferredType* me);

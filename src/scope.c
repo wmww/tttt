@@ -3,79 +3,22 @@
 #include "error.h"
 #include "source_file.h"
 #include "interface_member.h"
+#include "generic.h"
 
 void name_stack_push_scope(NameStack* me, Scope* scope);
 void name_stack_pop_scope(NameStack* me, Scope* scope);
-
-NamedVariable* make_named_variable(Span name, Span declaration_full, Type type, Generic const* generic) {
-    if (generic_empty(generic)) {
-        generic = nullptr;
-    }
-    return c_new(NamedVariable, {
-        .name = name,
-        .full = declaration_full,
-        .type = type,
-        .generic = generic,
-    });
-}
-
-void named_variable_destroy(NamedVariable* me) {
-    if (!me) return;
-    type_drop(&my type);
-    free(me);
-}
-
-NamedType* make_named_type(Span name, Span declaration_full, Type type, Generic const* generic) {
-    if (generic_empty(generic)) {
-        generic = nullptr;
-    }
-    return c_new(NamedType, {
-        .name = name,
-        .declarations = vec_span_single(declaration_full),
-        .type = type,
-        .generic = generic,
-    });
-}
-
-static void named_type_drop(NamedType* me) {
-    vec_span_drop(&my declarations);
-    type_drop(&my type);
-    vec_type_drop(&my merged_types);
-    lazy_type_drop(&my lazy_type);
-}
-
-void named_type_destroy(NamedType* me) {
-    if (!me) return;
-    my ref_count_minus_1--;
-    if (my ref_count_minus_1 < 0) {
-        named_type_drop(me);
-        free(me);
-    }
-}
-
-Type named_type_evaluate_type(NamedType* me) {
-    // This should only be called when evaluating our LazyType, and our
-    // LazyType should only be used when there are multiple types to merge
-    ASSERT(my is_merged && vec_type_size(&my merged_types) > 1);
-    Type ret = interface_from_merged(&my merged_types);
-    vec_type_drop(&my merged_types);
-    my merged_types = vec_type_init();
-    return ret;
-}
 
 void scope_drop(Scope* me) {
     if (my current_name_stack) {
         name_stack_pop_scope(my current_name_stack, me);
     }
-    hmap_str_named_type_ptr_drop(&my types);
-    hmap_str_named_variable_ptr_drop(&my variables);
+    hmap_str_arc_declaration_drop(&my declarations);
     hmap_str_scope_cptr_drop(&my namespaces);
     hmap_str_named_import_drop(&my imports);
 }
 
 Scope scope_clone(Scope me) {
-    me.types = hmap_str_named_type_ptr_clone(me.types);
-    me.variables = hmap_str_named_variable_ptr_clone(me.variables);
+    me.declarations = hmap_str_arc_declaration_clone(me.declarations);
     me.namespaces = hmap_str_scope_cptr_clone(me.namespaces);
     me.imports = hmap_str_named_import_clone(me.imports);
     me.current_name_stack = nullptr;
@@ -106,137 +49,145 @@ void scope_pop_from_stack(Scope* me) {
     my current_name_stack = nullptr;
 }
 
-void scope_add_variable(Scope* me, NamedVariable* var) {
-    scope_add_variable_s(me, cstr_from_span(var->name), var);
-}
+void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
+    if (ret->get) {
+        NONFATAL("Declaration %.*s acquired multiple times", c_SPAN(ret->get->name));
+        arc_declaration_drop(ret);
+    }
+    auto existing = hmap_str_arc_declaration_get(&my declarations, props.name.sv);
+    bool existing_invalid = false;
+    if (existing) {
+        Declaration* declaration = existing->second.get;
+        if ((declaration->tag & DECLARATION_HAS_TYPE) && (props.tag & DECLARATION_HAS_TYPE)) {
+            bool can_merge = false;
+            switch (declaration->tag) {
+                case DECLARATION_INTERFACE:
+                    switch (props.tag) {
+                        case DECLARATION_INTERFACE:
+                        case DECLARATION_CLASS: can_merge = true;
+                        default: break;
+                    }
+                    break;
 
-void scope_add_type(Scope* me, NamedType* type) {
-    scope_add_type_s(me, cstr_from_span(type->name), type);
-}
+                case DECLARATION_CLASS:
+                    if (props.tag == DECLARATION_INTERFACE) {
+                        can_merge = true;
+                    }
+                    break;
 
-void scope_add_variable_s(Scope* me, cstr name_string, NamedVariable* var) {
-    ASSERT(!my current_name_stack);
-    Span name_span = var->name;
-    auto result = hmap_str_named_variable_ptr_insert(&my variables, name_string, var);
-    if (!result.inserted) {
-        switch (my tag) {
-            case SCOPE_DEFAULT:
-                error_ctx_error(
-                    my errs,
-                    name_span,
-                    2451,
-                    "Cannot redeclare block-scoped variable '%.*s'.",
-                    c_SPAN(name_span)
-                );
-                error_ctx_error(
-                    my errs,
-                    result.ref->second->name,
-                    2451,
-                    "Cannot redeclare block-scoped variable '%.*s'.",
-                    c_SPAN(result.ref->second->name)
-                );
-                break;
+                case DECLARATION_ENUM:
+                    if (props.tag == DECLARATION_ENUM) {
+                        can_merge = true;
+                    }
+                    break;
 
-            case SCOPE_FUNCTION:
-            case SCOPE_GENERIC:
+                default: break;
+            }
+            if (!can_merge) {
+                existing_invalid = true;
+                if (declaration->tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
+                    error_ctx_error(
+                        my errs,
+                        declaration->name,
+                        2567,
+                        "Enum declarations can only merge with namespace or other enum declarations."
+                    );
+                    error_ctx_error(
+                        my errs,
+                        props.name,
+                        2567,
+                        "Enum declarations can only merge with namespace or other enum declarations."
+                    );
+                } else {
+                    switch (my tag) {
+                        case SCOPE_DEFAULT:
+                        case SCOPE_FUNCTION:
+                            error_ctx_error(
+                                my errs,
+                                declaration->name,
+                                2300,
+                                "Duplicate identifier '%.*s'.",
+                                c_SPAN(declaration->name)
+                            );
+                            // Fallthrough
+
+                        case SCOPE_GENERIC:
+                            error_ctx_error(
+                                my errs,
+                                props.name,
+                                2300,
+                                "Duplicate identifier '%.*s'.",
+                                c_SPAN(props.name)
+                            );
+                            break;
+                    }
+                }
+            }
+        }
+        if ((declaration->tag & DECLARATION_HAS_VALUE) && (props.tag & DECLARATION_HAS_VALUE)) {
+            existing_invalid = true;
+            if (declaration->tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
                 error_ctx_error(
                     my errs,
-                    name_span,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(name_span)
+                    declaration->name,
+                    2567,
+                    "Enum declarations can only merge with namespace or other enum declarations."
                 );
                 error_ctx_error(
                     my errs,
-                    result.ref->second->name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(result.ref->second->name)
+                    props.name,
+                    2567,
+                    "Enum declarations can only merge with namespace or other enum declarations."
                 );
-                break;
+            } else {
+                switch (my tag) {
+                    case SCOPE_DEFAULT:
+                        error_ctx_error(
+                            my errs,
+                            props.name,
+                            2451,
+                            "Cannot redeclare block-scoped variable '%.*s'.",
+                            c_SPAN(props.name)
+                        );
+                        error_ctx_error(
+                            my errs,
+                            declaration->name,
+                            2451,
+                            "Cannot redeclare block-scoped variable '%.*s'.",
+                            c_SPAN(declaration->name)
+                        );
+                        break;
+
+                    case SCOPE_FUNCTION:
+                    case SCOPE_GENERIC:
+                        error_ctx_error(
+                            my errs,
+                            props.name,
+                            2300,
+                            "Duplicate identifier '%.*s'.",
+                            c_SPAN(props.name)
+                        );
+                        error_ctx_error(
+                            my errs,
+                            declaration->name,
+                            2300,
+                            "Duplicate identifier '%.*s'.",
+                            c_SPAN(declaration->name)
+                        );
+                        break;
+                }
+            }
         }
     }
-}
-
-void scope_add_type_s(Scope* me, cstr name_string, NamedType* type) {
-    ASSERT(!my current_name_stack);
-    Span name_span = type->name;
-    auto result = hmap_str_named_type_ptr_insert(&my types, name_string, type);
-    if (!result.inserted) {
-        switch (my tag) {
-            case SCOPE_DEFAULT:
-            case SCOPE_FUNCTION:
-                error_ctx_error(
-                    my errs,
-                    result.ref->second->name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(result.ref->second->name)
-                );
-                // Fallthrough
-
-            case SCOPE_GENERIC:
-                error_ctx_error(
-                    my errs,
-                    name_span,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(name_span)
-                );
-                break;
-        }
-    }
-}
-
-NamedType* scope_add_mergeable_type(
-    Scope* me,
-    Span name,
-    Span declaration_full,
-    Type type,
-    Generic const* generic,
-    bool is_class
-) {
-    ASSERT(!my current_name_stack);
-    if (generic_empty(generic)) {
-        generic = nullptr;
-    }
-    auto existing = hmap_str_named_type_ptr_get(&my types, name.sv);
-    if (!existing || !existing->second->is_mergeable || (is_class && existing->second->is_class)) {
-        // If there is no existing type by this name the normal add type process is fine
-        // Two classes can't be merged, so if we try fall back to normal duplicate name behavior
-        NamedType* ret = c_new(NamedType, {
-            .name = name,
-            .declarations = vec_span_single(declaration_full),
-            .type = type,
-            .generic = generic,
-            .is_class = is_class,
-            .is_mergeable = true,
-        });
-        // This might error and not add ret to the name stack. Even if that happens we want to return ret (the caller
-        // will own it either way)
-        scope_add_type_s(me, cstr_from_span(name), ret);
-        return ret;
+    if (existing && !existing_invalid) {
+        *ret = arc_declaration_clone(existing->second);
     } else {
-        // Merge declarations
-        NamedType* merged = existing->second;
-        // TODO: check generics are equal
-        if (!merged->is_merged) {
-            // Previously this was not a merged declaration, so we have some setup to do
-            // 1. move the previous type into the merged vec
-            // 2. set up our lazy type
-            // 3. make our type refer to our lazy type
-            // Resolving our type later (in the typecheck phase) will then result in named_type_evaluate_type() being
-            // called, which will do the actual merging
-            vec_type_push(&merged->merged_types, merged->type);
-            merged->lazy_type.tag = LAZY_TYPE_NAMED_TYPE;
-            merged->type = type_lazy(&merged->lazy_type);
-            merged->is_merged = true;
+        *ret = arc_declaration_make((Declaration){ .tag = props.tag, .name = props.name });
+        if (!existing) {
+            hmap_str_arc_declaration_insert(&my declarations, cstr_from_span(props.name), arc_declaration_clone(*ret));
         }
-        vec_span_push(&merged->declarations, declaration_full);
-        vec_type_push(&merged->merged_types, type);
-        merged->ref_count_minus_1++;
-        return merged;
     }
+    declaration_init(ret->get, props);
 }
 
 void scope_add_namespace(Scope* me, Span name, Scope const* scope) {
@@ -282,15 +233,22 @@ static void add_import(Scope* me, Span decl_name, NamedImport* import) {
 
     bool found = false;
     {
-        auto result = hmap_str_named_variable_ptr_get(&source_scope->variables, source_name);
+        auto result = hmap_str_arc_declaration_get(&source_scope->declarations, source_name);
         if (result) {
-            scope_add_variable_s(me, cstr_from_span(decl_name), result->second);
-            found = true;
-        }
-    }{
-        auto result = hmap_str_named_type_ptr_get(&source_scope->types, source_name);
-        if (result) {
-            scope_add_type_s(me, cstr_from_span(decl_name), result->second);
+            // TODO: this probably isn't the most elegant way to do this
+            if (!hmap_str_arc_declaration_insert(
+                &my declarations,
+                cstr_from_sv(import->decl_name.sv),
+                arc_declaration_clone(result->second)
+            ).inserted) {
+                error_ctx_error(
+                    my errs,
+                    import->decl_name,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SPAN(import->decl_name)
+                );
+            }
             found = true;
         }
     }{
@@ -337,17 +295,23 @@ static void add_import(Scope* me, Span decl_name, NamedImport* import) {
 
 Type scope_make_interface_from(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_str_named_variable_ptr, my variables) {
-        vec_interface_member_push(&members, interface_member_make(
-            i.ref->second->full,
-            span_null, // Interface name
-            false, // readonly
-            false, // optional
-            cstr_from_span(i.ref->second->name),
-            i.ref->second->name,
-            false, // name is value
-            type_clone(i.ref->second->type)
-        ));
+    c_foreach(i, hmap_str_arc_declaration, my declarations) {
+        if (i.ref->second.get->has_value) {
+            InterfaceMember member = interface_member_make(
+                span_null, // Declaration
+                span_null, // Interface name
+                false, // readonly
+                false, // optional
+                cstr_from_span(i.ref->second.get->value.name),
+                i.ref->second.get->value.name,
+                false, // name is value
+                type_clone(i.ref->second.get->value.type)
+            );
+            // TODO: make this less stupid (probably by refactoring interface_member_make() to take a props struct)
+            vec_span_drop(&member.declarations);
+            member.declarations = vec_span_clone(i.ref->second.get->declarations);
+            vec_interface_member_push(&members, member);
+        }
     }
     return type_interface((Interface){
         members

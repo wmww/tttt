@@ -13,7 +13,7 @@
 #include "function_impl.h"
 #include "callable_type.h"
 
-static inline VecSpan named_type_declarations(NamedType const* me) {
+static inline VecSpan declaration_get_spans(Declaration const* me) {
     return me ? vec_span_clone(my declarations) : vec_span_init();
 }
 
@@ -38,7 +38,7 @@ void binding_content_compile_test_info(Binding const* me, Span full, BaselineTes
                 .declarations = vec_span_single(full),
                 .span = my content_span,
             });
-            if (my identifier) {
+            if (my declaration.get) {
                 baseline_test_case_add_type(ctx, my content_span, binding_get_effective_type(me));
             }
             break;
@@ -131,7 +131,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 break;
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = named_type_declarations(my identifier->named_type),
+                .declarations = declaration_get_spans(my identifier->decl_ref),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
             });
@@ -142,7 +142,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
         case TYPE_INFERRED:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = named_type_declarations(my inferred.get->named_type),
+                .declarations = declaration_get_spans(my inferred.get->declaration.get),
                 .allow_declaration_empty = true,
                 .span = my inferred.get->name,
             });
@@ -246,7 +246,9 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         .declarations = vec_span_single(my full_span),
         .span = my name,
     });
-    baseline_test_case_add_type(ctx, my name, &my named_type->type);
+    if (my declaration.get) {
+        baseline_test_case_add_type(ctx, my name, &my declaration.get->type.type);
+    }
     c_foreach(i, vec_enum_case, my cases) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_single(i.ref->name),
@@ -311,11 +313,11 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = named_type_declarations(my instance_named_type),
+            .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
         });
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my class_identifier_type);
+            baseline_test_case_add_type(ctx, my name, &my declaration.get->value.type);
         } else {
             Type t = type_identifier(c_new(IdentifierType, {
                 .name = my name,
@@ -335,13 +337,13 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         Type const* unresolved = expr_get_type(&my extends);
         Type const* resolved = type_resolve_until_identifier(unresolved);
         if (resolved->tag == TYPE_IDENTIFIER &&
-            resolved->identifier->named_type &&
-            resolved->identifier->named_type->is_typeof_class
+            resolved->identifier->decl_ref &&
+            resolved->identifier->decl_ref->type.is_typeof_class
         ) {
             // Extremely hacky but whatever. No idea why tsc does this.
-            resolved->identifier->named_type->is_typeof_class = false;
+            *(bool*)(&resolved->identifier->decl_ref->type.is_typeof_class) = false;
             baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, resolved);
-            resolved->identifier->named_type->is_typeof_class = true;
+            *(bool*)(&resolved->identifier->decl_ref->type.is_typeof_class) = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
             expr_compile_test_info(&my extends, ctx);
@@ -357,7 +359,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = named_type_declarations(my named_type),
+        .declarations = declaration_get_spans(my declaration.get),
         .span = my name,
     });
     Type to_drop = {0};
@@ -365,8 +367,8 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     Type const* resolved = my_type;
     if (generic_empty(&my generic)) { // If the type is not generic
         if (my_type->tag == TYPE_IDENTIFIER &&
-            my_type->identifier->named_type &&
-            my_type->identifier->named_type->is_class
+            my_type->identifier->decl_ref &&
+            my_type->identifier->decl_ref->tag == DECLARATION_CLASS
         ) {
         } else {
             resolved = type_resolve(my_type);
@@ -416,7 +418,7 @@ type Beep<T> = {beep: 7}
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = named_type_declarations(my named_type),
+            .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
         });
     }
@@ -430,18 +432,18 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = named_type_declarations(my value_named_type),
+            .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
         });
-        baseline_test_case_add_type(ctx, my name, &my value_named_var->type);
+        baseline_test_case_add_type(ctx, my name, &my declaration.get->value.type);
     }
     block_compile_test_info(&my contents, ctx);
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
-    if (my var && (!span_equals(my name, "this") || span_valid(my var->name))) {
+    if (my decl_ref && (!span_equals(my name, "this") || my decl_ref->value.name.source)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = vec_span_single(my var->full),
+            .declarations = declaration_get_spans(my decl_ref),
             .span = my name,
         });
     }
@@ -590,13 +592,13 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    if (my tag == EXPR_IDENTIFIER && my identifier.var) {
+    if (my tag == EXPR_IDENTIFIER && my identifier.decl_ref) {
         // Do NOT degenericize
         baseline_test_case_add_type_recursive(
             ctx,
             my outer_span,
             my inner_span,
-            &my identifier.var->type
+            &my identifier.decl_ref->value.type
         );
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
         Type t = type_array((Type*)&type_undefined, false);
@@ -692,7 +694,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_compile_test_info(&my decl.function, span_null, ctx);
+            function_impl_compile_test_info(my decl.function.impl, span_null, ctx);
             break;
 
         case STATEMENT_DECL_ENUM:

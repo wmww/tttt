@@ -28,13 +28,15 @@ extern const char* color_type;
 
 extern const csview indent_string;
 
-typedef struct NamedType NamedType;
-typedef NamedType const* NamedTypeCPtr;
-wrap_forward_hset(NamedTypeCPtr, named_type_cptr);
+typedef struct Declaration Declaration;
+typedef Declaration const* DeclarationCPtr;
+
+#define i_key_names DeclarationCPtr, declaration_cptr
+#include "wrap_stc/hset.h"
 
 typedef struct HashKeyTarget {
     cstr target;
-    HsetNamedTypeCPtr named_types;
+    HsetDeclarationCPtr declarations;
 } HashKeyTarget;
 
 typedef struct Display {

@@ -509,11 +509,11 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_DECL_FUNCTION: {
-            if (!span_valid(statement->decl.function.name)) {
+            if (!span_valid(statement->decl.function.impl->name)) {
                 return result_ok_undefined;
             }
-            cstr name = cstr_from_span(statement->decl.function.name);
-            Value value = value_js_func(&statement->decl.function);
+            cstr name = cstr_from_span(statement->decl.function.impl->name);
+            Value value = value_js_func(statement->decl.function.impl);
             JsObject* locals = engine_get_locals(me);
             js_object_set(locals, name, value);
             return result_ok_undefined;

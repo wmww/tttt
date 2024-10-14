@@ -2031,7 +2031,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypesEnum2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2051,7 +2051,7 @@ const baselines = {
         types: false,
     },
     'augmentedTypesInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3991,7 +3991,7 @@ const baselines = {
         types: false,
     },
     'collectionPatternNoError': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -7726,7 +7726,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLocalClassDeclarationMixin': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -7797,7 +7797,7 @@ const baselines = {
     },
     'declarationEmitNamespaceMergedWithInterfaceNestedFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitNestedAnonymousMappedType': {
@@ -8617,7 +8617,7 @@ const baselines = {
     },
     'defaultNamedExportWithType1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultNamedExportWithType2': {
@@ -8627,7 +8627,7 @@ const baselines = {
     },
     'defaultNamedExportWithType3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultNamedExportWithType4': {
@@ -10186,7 +10186,7 @@ const baselines = {
         types: false,
     },
     'enumGenericTypeClash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10508,7 +10508,7 @@ const baselines = {
     'errorsOnUnionsOfOverlappingObjects01': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorsWithInvokablesInUnions01': {
         errors: false,
@@ -12116,7 +12116,7 @@ const baselines = {
         types: false,
     },
     'exportRedeclarationTypeAliases': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12768,7 +12768,7 @@ const baselines = {
     'forOfStringConstituents': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'forOfTransformsExpression': {
         errors: true,
@@ -13706,7 +13706,7 @@ const baselines = {
         types: false,
     },
     'genericCapturingFunctionNarrowing': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -13823,7 +13823,7 @@ const baselines = {
     'genericConstraint2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'genericConstraint3': {
         errors: true,
@@ -15306,7 +15306,7 @@ const baselines = {
         types: false,
     },
     'inKeywordAndIntersection': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -15561,7 +15561,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessNormalization': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -20491,7 +20491,7 @@ const baselines = {
         types: false,
     },
     'narrowByParenthesizedSwitchExpression': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -20818,7 +20818,7 @@ const baselines = {
     'nestedRecursiveArraysOrObjectsError01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nestedRecursiveLambda': {
         errors: false,
@@ -21396,13 +21396,13 @@ const baselines = {
         types: false,
     },
     'noSubtypeReduction': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'noSymbolForMergeCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noTypeArgumentOnReturnType1': {
@@ -22136,7 +22136,7 @@ const baselines = {
         types: false,
     },
     'observableInferenceCanBeMade': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -26956,7 +26956,7 @@ const baselines = {
         types: false,
     },
     'symbolMergeValueAndImportedType': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28341,7 +28341,7 @@ const baselines = {
         types: false,
     },
     'typeParameterExtendingUnion1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -29698,7 +29698,7 @@ const baselines = {
     'unusedParametersThis': {
         errors: true,
         symbols: false,
-        types: true,
+        types: false,
     },
     'unusedParametersWithUnderscore': {
         errors: false,
@@ -33931,7 +33931,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccessNoCrash1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -42311,7 +42311,7 @@ const baselines = {
         types: false,
     },
     'conditionalOperatorWithIdenticalBCT': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -42413,7 +42413,7 @@ const baselines = {
     'stringEnumInElementAccess01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callOverload': {
         errors: false,
@@ -42991,7 +42991,7 @@ const baselines = {
         types: false,
     },
     'typeGuardFunction': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -43061,22 +43061,22 @@ const baselines = {
         types: false,
     },
     'typeGuardOfFormInstanceOf': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'typeGuardOfFormInstanceOfOnInterface': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'typeGuardOfFormIsType': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'typeGuardOfFormIsTypeOnInterfaces': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -44526,7 +44526,7 @@ const baselines = {
         types: false,
     },
     'mergedWithLocalValue': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -45028,7 +45028,7 @@ const baselines = {
     'mergedInheritedMembersSatisfyAbstractBase': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'mergedInterfacesWithConflictingPropertyNames': {
         errors: false,
@@ -47136,7 +47136,7 @@ const baselines = {
         types: false,
     },
     'typeParameterExtendsUnionConstraintDistributed': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -54698,7 +54698,7 @@ const baselines = {
     'recursiveIntersectionTypes': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'circularIndexedAccessErrors': {
         errors: false,
@@ -56412,7 +56412,7 @@ const baselines = {
     },
     'thisTypeAccessibility': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thisTypeAndConstraints': {
@@ -56446,7 +56446,7 @@ const baselines = {
         types: true,
     },
     'thisTypeInClasses': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -57351,7 +57351,7 @@ const baselines = {
         types: false,
     },
     'bestCommonTypeOfConditionalExpressions': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -58341,7 +58341,7 @@ const baselines = {
         types: false,
     },
     'unionTypeCallSignatures2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -58353,12 +58353,12 @@ const baselines = {
     'unionTypeCallSignatures4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeCallSignatures5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeCallSignatures6': {
         errors: false,
@@ -58408,7 +58408,7 @@ const baselines = {
     'unionTypeReduction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeReduction2': {
         errors: false,

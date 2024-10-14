@@ -4,7 +4,6 @@
 #include "error.h"
 #include "name_stack.h"
 #include "function_impl.h"
-#include "several_types.h"
 #include "generic.h"
 #include "class_decl.h"
 #include "interface_member.h"
@@ -19,8 +18,8 @@ void identifier_expr_drop(IdentifierExpr* me) {
 }
 
 void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx* errs) {
-    my var = name_stack_get_variable(names, my name.sv);
-    if (my var) {
+    my decl_ref = name_stack_get_value(names, my name.sv);
+    if (my decl_ref) {
     } else if (name_stack_get_type(names, my name.sv)) {
         error_ctx_error(
             errs, my name, 2693,
@@ -42,29 +41,29 @@ void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx
 }
 
 Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
-    if (my var) {
+    if (my decl_ref) {
         if (vec_spanned_type_size(&my generic_params) &&
-            !generic_empty(my var->generic)
+            !generic_empty(my decl_ref->value.generic)
         ) {
             return generic_degenericize_type(
-                my var->generic,
-                type_ref(&my var->type),
+                my decl_ref->value.generic,
+                type_ref(&my decl_ref->value.type),
                 &my generic_params
             );
         } else {
-            return type_ref(&my var->type);
+            return type_ref(&my decl_ref->value.type);
         }
     } else {
         return type_any;
     }
 }
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
-    if (my var) {
+    if (my decl_ref) {
         if (vec_spanned_type_size(&my generic_params)) {
             c_foreach(i, vec_spanned_type, my generic_params) {
                 type_typecheck(&i.ref->type, errs);
             }
-            if (generic_empty(my var->generic)) {
+            if (generic_empty(my decl_ref->value.generic)) {
                 error_ctx_error(
                     errs,
                     span_between(
@@ -380,10 +379,10 @@ static void binary_op_typecheck(
         case BINARY_OP_EQUAL:
             switch (expr->binary_op->left.tag) {
                 case EXPR_IDENTIFIER:
-                    if (expr->binary_op->left.identifier.var) {
+                    if (expr->binary_op->left.identifier.decl_ref) {
                         type_error_if_not_assignable(
                             right,
-                            &expr->binary_op->left.identifier.var->type,
+                            &expr->binary_op->left.identifier.decl_ref->value.type,
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -569,7 +568,7 @@ Type expr_evaluate_type(Expr const* me) {
         }
 
         case EXPR_CLASS_DECL:
-            return type_ref(&my class_decl->class_identifier_type);
+            return type_ref(&my class_decl->declaration.get->value.type);
     }
     UNREACHABLE;
 }

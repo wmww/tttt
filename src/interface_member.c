@@ -12,7 +12,7 @@ void interface_member_drop(InterfaceMember* me) {
         case INTERFACE_KEY_MAPPED:
             type_drop(&my key.mapped.in_type);
             type_drop(&my key.mapped.as_type);
-            named_type_destroy(my key.mapped.named_type);
+            arc_declaration_drop(&my key.mapped.declaration);
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -28,7 +28,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
         case INTERFACE_KEY_MAPPED:
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
             me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
-            me.key.mapped.named_type = nullptr;
+            me.key.mapped.declaration = arc_declaration_clone(me.key.mapped.declaration);
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -49,15 +49,12 @@ void interface_member_lookup_names(InterfaceMember* me, NameStack* names, ErrorC
             type_lookup_names(&my key.mapped.in_type, names, errs);
             type_lookup_names(&my key.mapped.as_type, names, errs);
             scope = scope_init(errs);
-            if (!my key.mapped.named_type) {
-                my key.mapped.named_type = make_named_type(
-                    my key.mapped.type_name,
-                    my key.mapped.type_name,
-                    type_any,
-                    nullptr
-                );
-            }
-            scope_add_type(&scope, my key.mapped.named_type);
+            scope_init_declaration(&scope, &my key.mapped.declaration, (DeclProps){
+                .name = my key.mapped.type_name,
+                .full = my key.mapped.type_name,
+                .tag = DECLARATION_TYPE,
+                .declared_type = type_any,
+            });
             scope_push_to_stack(&scope, names);
             scope_initialized = true;
             break;
