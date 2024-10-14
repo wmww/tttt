@@ -19436,12 +19436,12 @@ const baselines = {
         types: false,
     },
     'moduleAugmentationGlobal1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleAugmentationGlobal2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

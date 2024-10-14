@@ -3646,6 +3646,21 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     return parse_success(&p);
 }
 
+static bool parse_global_block(Parser* parent, Block* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_start_if_ends_on_word_break(&p, "global")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!parse_block(&p, false, ret)) {
+        return parse_fail(&p);
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -3658,6 +3673,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         TypeDecl type_decl;
         InterfaceDecl interface_decl;
         Expr expr;
+        Block block;
     } parsed;
 
     ModifierList modifiers;
@@ -3738,6 +3754,12 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .declared = modifiers.includes[MODIFIER_DECLARE],
                 .enum_ = c_new(EnumDecl, parsed.enum_decl),
             },
+        };
+    } else if (parse_global_block(&p, &parsed.block)) {
+        // TODO
+        *ret = (Statement){
+            .tag = STATEMENT_BLOCK,
+            .block = parsed.block,
         };
     } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
         *ret = (Statement){
