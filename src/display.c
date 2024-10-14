@@ -48,7 +48,16 @@ void display_value(Display d, Value const* me) {
     switch (my tag) {
         case VALUE_STRING:
             display_lit(d, "\"");
-            display_s(d, my string);
+            const char* buf = cstr_str(&my string);
+            intptr_t len = cstr_size(&my string);
+            for (intptr_t i = 0; i < len; i++) {
+                switch (buf[i]) {
+                    case '\n': display_lit(d, "\\n"); break;
+                    case '\r': display_lit(d, "\\r"); break;
+                    case '"': display_lit(d, "\\\""); break;
+                    default: display_sv(d, csview_from_n(buf + i, 1)); break;
+                }
+            }
             display_lit(d, "\"");
             break;
 

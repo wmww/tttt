@@ -2475,20 +2475,32 @@ static bool parse_string(Parser* parent, cstr* ret) {
     Parser p = parser(parent);
 
     char quote = *p.pos;
-    if (quote != '"' && quote != '\'') {
-        return parse_fail(&p);
+    switch (quote) {
+        case '"': case '\'': case '`': break;
+        default: return parse_fail(&p);
     }
     p.pos++;
-    const char* start = p.pos;
-    // TODO: remotely correct string parsing
-    while (*p.pos && *p.pos != '\n' && *p.pos != quote) {
-        if (*p.pos == '\\' && *(p.pos + 1)) {
-            p.pos += 2;
-        } else {
+    cstr str = cstr_null;
+    while (true) {
+        if (!*p.pos || *p.pos == quote) {
+            break;
+        } else if (*p.pos == '\n' && quote != '`') {
+            break;
+        } else if (*p.pos == '\\' && *(p.pos + 1)) {
             p.pos++;
+            switch (*p.pos) {
+                case 'n': cstr_append_lit(&str, "\n"); break;
+                case 'r': cstr_append_lit(&str, "\r"); break;
+                default: break; // TODO
+            }
+        } else if (*p.pos == '\r') {
+            // Ignore?
+        } else {
+            cstr_append_n(&str, p.pos, 1);
         }
+        p.pos++;
     }
-    *ret = cstr_from_n(start, p.pos - start);
+    *ret = str;
     if (*p.pos == quote) {
         p.pos++;
     } else {
