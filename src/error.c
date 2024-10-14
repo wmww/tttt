@@ -117,7 +117,7 @@ void print_error_ctx(ErrorCtx const* me) {
     const intptr_t max_display = 5000;
     intptr_t displayed = 0;
     c_foreach(i, vec_error, my errors) {
-        if (i.ref->phase == ERROR_PHASE_PARSE || !my has_parse_errors) {
+        if (i.ref->phase == ERROR_PHASE_PARSE || my parse_error_count == 0) {
             display_error(debug_display(&str), i.ref);
             printf("%s\n\n", cstr_str(&str));
             cstr_clear(&str);
@@ -177,7 +177,7 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error) {
         NONFATAL("Error added with unkown phase: %s", cstr_str(&error.message));
     }
     if (error.phase == ERROR_PHASE_PARSE) {
-        my has_parse_errors = true;
+        my parse_error_count++;
     }
     intptr_t insertion_index = insertion_index_for_span(me, &error);
     if (insertion_index >= 0) {

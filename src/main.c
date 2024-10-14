@@ -26,10 +26,15 @@ int main(int argc, const char** argv) {
     error_config_enable_strict(&errs.config);
     Program* program = program_new(&errs, &real_fs_quiet);
     int ret = 0;
+    intptr_t parse_errors = 0;
+    intptr_t name_errors = 0;
+    intptr_t type_errors = 0;
 
     SourceFile const* source = program_load(program, argv[1]);
 
     if (!error_ctx_empty(&errs)) {
+        parse_errors = errs.parse_error_count;
+        name_errors = vec_error_size(&errs.errors) - errs.parse_error_count;
         print_error_ctx(&errs);
         error_ctx_drop(&errs);
         errs = error_ctx_init();
@@ -51,13 +56,30 @@ int main(int argc, const char** argv) {
     cstr_drop(&parsed_str);
 
     if (!error_ctx_empty(&errs)) {
+        type_errors = vec_error_size(&errs.errors);
         print_error_ctx(&errs);
         error_ctx_drop(&errs);
         errs = error_ctx_init();
         ret = 1;
     }
 
-    printf("%sChecked %zd files%s\n", color_good, program_get_file_count(program), color_normal);
+    if (parse_errors || name_errors || type_errors) {
+        printf(
+            "Checked %zd files, found %s%zd parse errors%s, %s%zd name errors%s and %s%zd type errors%s.\n",
+            program_get_file_count(program),
+            parse_errors ? color_error : "",
+            parse_errors,
+            color_normal,
+            name_errors ? color_error : "",
+            name_errors,
+            color_normal,
+            type_errors ? color_error : "",
+            type_errors,
+            color_normal
+        );
+    } else {
+        printf("%sChecked %zd files, no errors found!%s\n", color_good, program_get_file_count(program), color_normal);
+    }
 
     //printf("%sRunning...%s\n", color_good, color_normal);
     //run_in_engine(source, arc_js_object_init());
