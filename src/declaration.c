@@ -29,6 +29,12 @@ void declaration_drop(Declaration* me) {
 
 void declaration_init(Declaration* me, DeclProps props) {
     PANIC_IF(props.tag == DECLARATION_UNINITIALIZED, "props.tag not set");
+    if (!span_valid(my name)) {
+        my name = props.name;
+    }
+    if (my tag == DECLARATION_UNINITIALIZED) {
+        my tag = props.tag;
+    }
     vec_span_push(&my declarations, props.full);
     if (props.tag & DECLARATION_HAS_VALUE) {
         if (!my has_value) {

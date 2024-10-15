@@ -7,6 +7,7 @@
 #include "generic.h"
 #include "class_decl.h"
 #include "interface_member.h"
+#include "several_types.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -465,7 +466,19 @@ static void binary_op_typecheck(
 Type expr_evaluate_type(Expr const* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: return type_any;
-        case EXPR_THIS: return my this_or_super ? type_ref(&my this_or_super->value.type) : type_undefined;
+        case EXPR_THIS:
+            if (my this_or_super) {
+                if (my this_or_super->tag == DECLARATION_CLASS) {
+                    return type_identifier(c_new(IdentifierType, {
+                        .name = my this_or_super->name,
+                        .decl_ref = my this_or_super,
+                    }));
+                } else {
+                    return type_ref(&my this_or_super->type.type);
+                }
+            } else {
+                return type_undefined;
+            }
         case EXPR_SUPER: return my this_or_super ? type_ref(&my this_or_super->value.type) : type_any;
         case EXPR_LITERAL: return type_value(value_clone(my literal));
         case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);

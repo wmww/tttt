@@ -1475,7 +1475,6 @@ static void index_type_typecheck_internal(
 
     switch (my tag) {
         case TYPE_ANY: break;
-
         case TYPE_VALUE:
             switch (my value.tag) {
                 case VALUE_NULL:

@@ -71,10 +71,9 @@ typedef struct ClassDecl {
     VecClassItem items;
     LazyType instance_type;
     LazyType class_type;
+    Declaration typeof_declaration;
     ArcDeclaration declaration;
     Type instance_identifier_type;
-    Declaration instance_type_declaration; // Not Arc because not added to scope directly
-    Declaration class_typeof_declaration; // Not Arc because not added to scope directly
     Declaration instance_this_declaration;
     Declaration class_this_declaration;
 } ClassDecl;

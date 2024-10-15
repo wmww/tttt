@@ -229,7 +229,13 @@ static void display_identifier_type(Display d, IdentifierType* me) {
             display_colored_span(d, color_type, *i.ref);
             display_lit(d, ".");
         }
-        display_colored_span(d, color_type, my name);
+        if (my decl_ref && span_valid(my decl_ref->name)) {
+            display_colored_span(d, color_type, my decl_ref->name);
+        } else if (span_valid(my name)) {
+            display_colored_span(d, color_type, my name);
+        } else {
+            display_colored(d, color_type, "(empty)");
+        }
     }
 
     if (d.hash_key) {

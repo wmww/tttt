@@ -465,6 +465,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(my this_or_super),
                     .span = my inner_span,
+                    .name = my this_or_super ? my this_or_super->name : span_null,
                 });
             }
             break;

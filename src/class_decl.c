@@ -68,10 +68,9 @@ void class_decl_drop(ClassDecl* me) {
     vec_class_item_drop(&my items);
     lazy_type_drop(&my instance_type);
     lazy_type_drop(&my class_type);
+    declaration_drop(&my typeof_declaration);
     arc_declaration_drop(&my declaration);
     type_drop(&my instance_identifier_type);
-    declaration_drop(&my instance_type_declaration);
-    declaration_drop(&my class_typeof_declaration);
     declaration_drop(&my instance_this_declaration);
     declaration_drop(&my class_this_declaration);
 }
@@ -102,21 +101,12 @@ void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
 }
 
 void class_decl_add_names(ClassDecl* me, Scope* scope) {
-    declaration_init(&my instance_type_declaration, (DeclProps){
+    declaration_init(&my typeof_declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
         .tag = DECLARATION_CLASS,
-        .generic = &my generic,
-        .declared_type = type_lazy(&my instance_type),
-    });
-
-    declaration_init(&my class_typeof_declaration, (DeclProps){
-        .name = my name,
-        .full = my full_span,
-        .tag = DECLARATION_CLASS,
-        .generic = nullptr,
         .declared_type = type_lazy(&my class_type),
-        .is_typeof = true,
+        .is_typeof = true, // TODO: this info should probably be moved into the tag
     });
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
@@ -126,9 +116,9 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
         .generic = &my generic,
         .value_type = type_identifier(c_new(IdentifierType, {
             .name = my name,
-            .decl_ref = &my class_typeof_declaration,
+            .decl_ref = &my typeof_declaration,
         })),
-        .declared_type = type_ref(&my instance_identifier_type),
+        .declared_type = type_lazy(&my instance_type),
     });
 }
 
@@ -136,12 +126,15 @@ static void class_members_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx
     Scope this_scope = scope_init(errs);
 
     Declaration* this_declaration = static_members ? &my class_this_declaration : &my instance_this_declaration;
-    Type const* this_value_type = static_members ? &my declaration.get->value.type : &my declaration.get->type.type;
-    Type const* this_type_type = static_members ? &my class_typeof_declaration.type.type : &my declaration.get->value.type;
+    Type const* this_value_type = static_members ? &my typeof_declaration.type.type : &my declaration.get->value.type;
+    Type const* this_type_type = static_members ? &my typeof_declaration.type.type : &my declaration.get->type.type;
     declaration_init(this_declaration, (DeclProps){
+        .name = my name,
+        .full = my full_span,
         .tag = DECLARATION_CLASS,
         .value_type = type_ref(this_value_type),
         .declared_type = type_ref(this_type_type),
+        .is_typeof = static_members,
     });
     this_scope.this_declaration = this_declaration;
 
@@ -172,7 +165,7 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
     }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
-        .decl_ref = &my instance_type_declaration,
+        .decl_ref = my declaration.get,
         .generic_params = generic_params,
     }));
 
@@ -189,7 +182,7 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             }
             ASSERT(i.ref->constructor.func.ret.tag == TYPE_ANY);
             i.ref->constructor.func.ret_explicit = true;
-            i.ref->constructor.func.ret = type_ref(&my declaration.get->type.type);
+            i.ref->constructor.func.ret = type_ref(&my instance_identifier_type);
         }
     }
 
@@ -208,7 +201,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
 
     if (!resolve_instance) {
-        Type prototype_type = type_clone(my declaration.get->type.type);
+        Type prototype_type = type_clone(my instance_identifier_type);
         VecSpannedType params = {0};
         prototype_type = generic_degenericize_type(&my generic, prototype_type, &params);
         vec_interface_member_push(&interface.members, interface_member_make(
@@ -311,7 +304,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
 
     if (!resolve_instance && !has_constructor) {
         FunctionImpl constructor = {
-            .ret = type_ref(&my declaration.get->type.type),
+            .ret = type_ref(&my instance_identifier_type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
             .generic = generic_clone(my generic),
