@@ -32601,7 +32601,7 @@ const baselines = {
         types: false,
     },
     'typeOfThisInInstanceMember2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

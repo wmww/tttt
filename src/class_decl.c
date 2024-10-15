@@ -71,8 +71,6 @@ void class_decl_drop(ClassDecl* me) {
     declaration_drop(&my typeof_declaration);
     arc_declaration_drop(&my declaration);
     type_drop(&my instance_identifier_type);
-    declaration_drop(&my instance_this_declaration);
-    declaration_drop(&my class_this_declaration);
 }
 
 void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
@@ -124,19 +122,7 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
 
 static void class_members_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs, bool static_members) {
     Scope this_scope = scope_init(errs);
-
-    Declaration* this_declaration = static_members ? &my class_this_declaration : &my instance_this_declaration;
-    Type const* this_value_type = static_members ? &my typeof_declaration.type.type : &my declaration.get->value.type;
-    Type const* this_type_type = static_members ? &my typeof_declaration.type.type : &my declaration.get->type.type;
-    declaration_init(this_declaration, (DeclProps){
-        .name = my name,
-        .full = my full_span,
-        .tag = DECLARATION_CLASS,
-        .value_type = type_ref(this_value_type),
-        .declared_type = type_ref(this_type_type),
-        .is_typeof = static_members,
-    });
-    this_scope.this_declaration = this_declaration;
+    this_scope.this_declaration = static_members ? &my typeof_declaration : my declaration.get;
 
     scope_push_to_stack(&this_scope, names);
     c_foreach(i, vec_class_item, my items) {
