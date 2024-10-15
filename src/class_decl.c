@@ -103,8 +103,9 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
         .name = my name,
         .full = my full_span,
         .tag = DECLARATION_CLASS,
+        .value_type = type_lazy(&my class_type),
         .declared_type = type_lazy(&my class_type),
-        .is_typeof = true, // TODO: this info should probably be moved into the tag
+        .is_typeof = true,
     });
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
