@@ -121,7 +121,13 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 
 void inferred_type_drop(InferredType* me) {
     type_drop(&my extends);
-    arc_declaration_drop(&my declaration);
+    arc_declaration_drop(&my owned_declaration);
+}
+
+InferredType inferred_type_clone(InferredType me) {
+    me.extends = type_clone(me.extends);
+    me.owned_declaration = arc_declaration_init();
+    return me;
 }
 
 // Indexed

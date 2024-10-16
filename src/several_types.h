@@ -38,15 +38,12 @@ typedef struct InferredType {
     Span name;
     Span full_span;
     Type extends;
-    ArcDeclaration declaration;
+    ArcDeclaration owned_declaration;
+    Declaration const* declaration_ref;
 } InferredType;
 
 void inferred_type_drop(InferredType* me);
-
-#define i_key_class_names InferredType, inferred_type
-#define i_opt c_no_atomic
-#define i_is_forward
-#include "wrap_stc/arc.h"
+InferredType inferred_type_clone(InferredType me);
 
 // Tuple
 

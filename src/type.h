@@ -25,7 +25,6 @@ typedef struct Declaration Declaration;
 wrap_forward_arc(Expr, expr);
 wrap_forward_arc(Declaration, declaration);
 wrap_forward_vec(TupleElement, tuple_element);
-wrap_forward_arc(InferredType, inferred_type);
 
 typedef struct Type {
     enum {
@@ -59,7 +58,7 @@ typedef struct Type {
         } any;
         Value value;
         IdentifierType* identifier;
-        ArcInferredType inferred; // TODO: does this still need to be an Arc?
+        InferredType* inferred;
         CallableType* callable;
         Interface interface;
         struct {
@@ -103,7 +102,7 @@ static inline Type type_value(Value value) {
 
 // type_identifier declared in several_types.h
 
-static inline Type type_inferred(ArcInferredType inferred) {
+static inline Type type_inferred(InferredType* inferred) {
     return (Type){
         .tag = TYPE_INFERRED,
         .inferred = inferred,

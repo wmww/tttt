@@ -1003,7 +1003,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (parse_function_args(&p, true, true, true, &parsed.func)) {
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
-        *ret = type_inferred(arc_inferred_type_make(parsed.inferred));
+        *ret = type_inferred(c_new(InferredType, parsed.inferred));
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){

@@ -145,9 +145,9 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
         case TYPE_INFERRED:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = declaration_get_spans(my inferred.get->declaration.get),
+                .declarations = declaration_get_spans(my inferred->declaration_ref),
                 .allow_declaration_empty = true,
-                .span = my inferred.get->name,
+                .span = my inferred->name,
             });
             break;
 

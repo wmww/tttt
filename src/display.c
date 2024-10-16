@@ -267,11 +267,11 @@ static void display_inferred_type(Display d, InferredType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my declaration.get);
+        display_fmt(d, "@%p", (void*)my declaration_ref);
     }
 
     if (d.debug) {
-        if (!my declaration.get) {
+        if (!my declaration_ref) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -473,7 +473,7 @@ void display_type(Display d, Type const* me) {
             break;
 
         case TYPE_IDENTIFIER: display_identifier_type(d, my identifier); break;
-        case TYPE_INFERRED: display_inferred_type(d, my inferred.get); break;
+        case TYPE_INFERRED: display_inferred_type(d, my inferred); break;
         case TYPE_CALLABLE: display_callable(d, my callable, false); break;
         case TYPE_INTERFACE: display_interface(d, &my interface); break;
 

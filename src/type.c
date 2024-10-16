@@ -157,7 +157,8 @@ void type_drop(Type* me) {
             break;
 
         case TYPE_INFERRED:
-            arc_inferred_type_drop(&my inferred);
+            inferred_type_drop(my inferred);
+            free(my inferred);
             break;
 
         case TYPE_CALLABLE:
@@ -224,7 +225,7 @@ Type type_clone(Type me) {
         case TYPE_REF: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
-        case TYPE_INFERRED: return type_inferred(arc_inferred_type_clone(me.inferred));
+        case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
         case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array.element)), me.array.readonly);
@@ -262,12 +263,13 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             break;
 
         case TYPE_INFERRED:
-            scope_init_declaration(scope, &my inferred.get->declaration, (DeclProps){
-                .name = my inferred.get->name,
-                .full = my inferred.get->name,
+            scope_init_declaration(scope, &my inferred->owned_declaration, (DeclProps){
+                .name = my inferred->name,
+                .full = my inferred->name,
                 .tag = DECLARATION_TYPE,
-                .declared_type = type_refcopy(&my inferred.get->extends),
+                .declared_type = type_refcopy(&my inferred->extends),
             });
+            my inferred->declaration_ref = my inferred->owned_declaration.get;
             break;
 
         case TYPE_CALLABLE:
@@ -546,7 +548,7 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
             return nullptr;
 
         case TYPE_IDENTIFIER: return lazy_type_get(&my identifier->type);
-        case TYPE_INFERRED: return &my inferred.get->extends;
+        case TYPE_INFERRED: return &my inferred->extends;
         case TYPE_INDEXED: return type_resolve_indexed_type(ctx, my indexed);
 
         case TYPE_KEYOF:
@@ -820,9 +822,9 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 
         case TYPE_INFERRED:
             if (refinements) {
-                if (type_extends_internal(ctx, sub, &super->inferred.get->extends, nullptr)) {
+                if (type_extends_internal(ctx, sub, &super->inferred->extends, nullptr)) {
                     vec_type_refinement_push(refinements, (TypeRefinement){
-                        .target = super->inferred.get->declaration.get,
+                        .target = super->inferred->declaration_ref,
                         .refined = sub,
                     });
                     return true;
