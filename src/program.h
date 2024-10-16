@@ -13,7 +13,9 @@ void program_destroy(Program* me);
 
 // Parses and resolves names into the global scope, used for adding standard library type declarations. Preloaded files
 // are not added to the import database
-void program_preload(Program* me, const char* path);
+void program_preload_file(Program* me, const char* path);
+void program_preload_es5(Program* me);
+void program_preload_builtins_deprecated(Program* me);
 
 // Parses and resolves names of the given file and all imports. Can be called multiple times, but can not be called
 // indirectly by itself (this is not how imports are handled)

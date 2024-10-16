@@ -30,6 +30,7 @@ int main(int argc, const char** argv) {
     intptr_t name_errors = 0;
     intptr_t type_errors = 0;
 
+    program_preload_builtins_deprecated(program);
     SourceFile const* source = program_load(program, argv[1]);
 
     if (!error_ctx_empty(&errs)) {

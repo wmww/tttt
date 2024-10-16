@@ -32,12 +32,43 @@ typedef struct Program {
     SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
 
-static Scope make_global_scope(ErrorCtx* errs) {
-    Scope ret = scope_init(errs);
+Program* program_new(ErrorCtx* errs, Fs const* fs) {
+    ASSERT(errs);
+    ASSERT(fs);
+    return c_new(Program, {
+        .errs = errs,
+        .fs = fs,
+        .global_scope = scope_init(errs),
+        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
+    });
+}
 
+static void program_drop(Program* me) {
+    scope_drop(&my global_scope);
+    hmap_str_box_source_file_drop(&my source_files);
+    vec_source_file_ptr_drop(&my pending_source_files);
+    source_file_drop(&my not_found_file);
+}
+
+void program_destroy(Program* me) {
+    program_drop(me);
+    free(me);
+}
+
+void program_preload_file(Program* me, const char* path) {
+    ignore me;
+    ignore path;
+    NONFATAL("Preloading files not yet implemented");
+}
+
+void program_preload_es5(Program* me) {
+    program_preload_file(me, "lib/es5.d.ts");
+}
+
+void program_preload_builtins_deprecated(Program* me) {
 #define GLOBAL_VALUE(global_name, global_value) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&ret, &declaration, (DeclProps) { \
+    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_VARIABLE, \
         .value_type = global_value, \
@@ -47,7 +78,7 @@ static Scope make_global_scope(ErrorCtx* errs) {
 
 #define GLOBAL_TYPE(global_name, global_type) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&ret, &declaration, (DeclProps) { \
+    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_TYPE, \
         .declared_type = global_type, \
@@ -57,7 +88,7 @@ static Scope make_global_scope(ErrorCtx* errs) {
 
 #define GLOBAL_CLASS(global_name, global_value, global_type) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&ret, &declaration, (DeclProps) { \
+    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_CLASS, \
         .value_type = global_value, \
@@ -93,37 +124,6 @@ static Scope make_global_scope(ErrorCtx* errs) {
     GLOBAL_CLASS("String", type_any, type_string);
     GLOBAL_CLASS("Number", type_any, type_number);
     GLOBAL_CLASS("Boolean", type_any, type_boolean);
-
-    return ret;
-}
-
-Program* program_new(ErrorCtx* errs, Fs const* fs) {
-    ASSERT(errs);
-    ASSERT(fs);
-    return c_new(Program, {
-        .errs = errs,
-        .fs = fs,
-        .global_scope = make_global_scope(errs),
-        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
-    });
-}
-
-static void program_drop(Program* me) {
-    scope_drop(&my global_scope);
-    hmap_str_box_source_file_drop(&my source_files);
-    vec_source_file_ptr_drop(&my pending_source_files);
-    source_file_drop(&my not_found_file);
-}
-
-void program_destroy(Program* me) {
-    program_drop(me);
-    free(me);
-}
-
-void program_preload(Program* me, const char* path) {
-    ignore me;
-    ignore path;
-    NONFATAL("Preloading not yet implemented");
 }
 
 // Returns null if path can't be loaded

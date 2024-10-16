@@ -213,6 +213,7 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
+    program_preload_builtins_deprecated(program);
 
     BaselineTestCase ret = {
         .source_path = source_path,
