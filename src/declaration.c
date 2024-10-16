@@ -32,13 +32,10 @@ void declaration_init(Declaration* me, DeclProps props) {
     if (!span_valid(my name)) {
         my name = props.name;
     }
-    if (my tag == DECLARATION_NONE) {
-        my tag = props.tag;
-    }
     vec_span_push(&my declarations, props.full);
     if (declaration_tag_has_value(props.tag)) {
-        if (!my has_value) {
-            my has_value = true;
+        if (!my value_tag) {
+            my value_tag = props.tag;
             my value.name = props.name;
             my value.type = props.value_type;
             my value.generic = (props.generic && !generic_empty(props.generic)) ? props.generic : nullptr;
@@ -48,8 +45,8 @@ void declaration_init(Declaration* me, DeclProps props) {
         }
     }
     if (declaration_tag_has_type(props.tag)) {
-        if (!my has_type) {
-            my has_type = true;
+        if (!my type_tag) {
+            my type_tag = props.tag;
             my type.name = props.name;
             my type.type = props.declared_type;
             my type.generic = (props.generic && !generic_empty(props.generic)) ? props.generic : nullptr;

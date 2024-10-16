@@ -26,7 +26,7 @@ typedef enum DeclarationTag {
     DECLARATION_NONE = 0,
     DECLARATION_NAMESPACE,
     DECLARATION_FUNCTION,
-    DECLARATION_VALUE,
+    DECLARATION_VARIABLE,
     DECLARATION_INTERFACE,
     DECLARATION_TYPE,
     DECLARATION_CLASS,
@@ -38,7 +38,7 @@ static inline bool declaration_tag_has_value(DeclarationTag tag) {
     static const bool ret[DECLARATION_ENUM + 1] = {
         [DECLARATION_NAMESPACE] = true,
         [DECLARATION_FUNCTION] = true,
-        [DECLARATION_VALUE] = true,
+        [DECLARATION_VARIABLE] = true,
         [DECLARATION_CLASS] = true,
         [DECLARATION_ENUM] = true,
     };
@@ -57,11 +57,10 @@ static inline bool declaration_tag_has_type(DeclarationTag tag) {
 
 typedef struct Declaration {
     Span name;
-    DeclarationTag tag;
     VecSpan declarations;
-    bool has_value;
+    DeclarationTag value_tag;
     NamedVariable value;
-    bool has_type;
+    DeclarationTag type_tag;
     NamedType type;
 } Declaration;
 

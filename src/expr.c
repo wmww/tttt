@@ -468,7 +468,7 @@ Type expr_evaluate_type(Expr const* me) {
         case EXPR_IMPLICIT_ANY: return type_any;
         case EXPR_THIS:
             if (my this_or_super) {
-                if (my this_or_super->tag == DECLARATION_CLASS) {
+                if (my this_or_super->type_tag == DECLARATION_CLASS) {
                     return type_identifier(c_new(IdentifierType, {
                         .name = my this_or_super->name,
                         .decl_ref = my this_or_super,

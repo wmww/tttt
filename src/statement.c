@@ -468,7 +468,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
         case STATEMENT_DECL_FUNCTION: {
             Scope this_scope = scope_init(errs);
             declaration_init(&my decl.function.this_declaration, (DeclProps){
-                .tag = DECLARATION_VALUE,
+                .tag = DECLARATION_VARIABLE,
                 .value_type = type_any,
             });
             this_scope.this_declaration = &my decl.function.this_declaration;

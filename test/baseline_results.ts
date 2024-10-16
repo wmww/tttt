@@ -12116,7 +12116,7 @@ const baselines = {
         types: false,
     },
     'exportRedeclarationTypeAliases': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

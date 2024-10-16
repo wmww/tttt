@@ -363,7 +363,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     if (generic_empty(&my generic)) { // If the type is not generic
         if (my_type->tag == TYPE_IDENTIFIER &&
             my_type->identifier->decl_ref &&
-            my_type->identifier->decl_ref->tag == DECLARATION_CLASS
+            my_type->identifier->decl_ref->type_tag == DECLARATION_CLASS
         ) {
         } else {
             resolved = type_resolve(my_type);

@@ -22,7 +22,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope) {
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .tag = DECLARATION_VALUE,
+        .tag = DECLARATION_FUNCTION,
         .generic = &my generic,
         .value_type = type_lazy(&my lazy_type),
     });

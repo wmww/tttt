@@ -39,7 +39,7 @@ static Scope make_global_scope(ErrorCtx* errs) {
     ArcDeclaration declaration = {0}; \
     scope_init_declaration(&ret, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
-        .tag = DECLARATION_VALUE, \
+        .tag = DECLARATION_VARIABLE, \
         .value_type = global_value, \
     } ); \
     arc_declaration_drop(&declaration); \

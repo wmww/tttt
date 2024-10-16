@@ -81,7 +81,7 @@ bool name_stack_has_function(NameStack* me) {
 Declaration const* name_stack_get_value(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         auto result = hmap_str_arc_declaration_get(&i.ref->scope->declarations, name);
-        if (result && result->second.get->has_value) {
+        if (result && result->second.get->value_tag) {
             return result->second.get;
         }
     }
@@ -91,7 +91,7 @@ Declaration const* name_stack_get_value(NameStack const* me, csview name) {
 Declaration const* name_stack_get_type(NameStack const* me, csview name) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
         auto result = hmap_str_arc_declaration_get(&i.ref->scope->declarations, name);
-        if (result && result->second.get->has_type) {
+        if (result && result->second.get->type_tag) {
             return result->second.get;
         }
     }

@@ -58,13 +58,20 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     bool existing_invalid = false;
     if (existing) {
         Declaration* declaration = existing->second.get;
-        if (declaration_tag_has_type(declaration->tag) && declaration_tag_has_type(props.tag)) {
+        if (declaration_tag_has_type(props.tag)) {
             bool can_merge = false;
-            switch (declaration->tag) {
+            switch (declaration->type_tag) {
+                case DECLARATION_NONE:
+                    can_merge = true;
+                    break;
+
                 case DECLARATION_INTERFACE:
                     switch (props.tag) {
                         case DECLARATION_INTERFACE:
-                        case DECLARATION_CLASS: can_merge = true;
+                        case DECLARATION_CLASS:
+                            can_merge = true;
+                            break;
+
                         default: break;
                     }
                     break;
@@ -85,7 +92,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
             }
             if (!can_merge) {
                 existing_invalid = true;
-                if (declaration->tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
+                if (declaration->type_tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
                     error_ctx_error(
                         my errs,
                         declaration->name,
@@ -124,9 +131,9 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
                 }
             }
         }
-        if (declaration_tag_has_value(declaration->tag) && declaration_tag_has_value(props.tag)) {
+        if (declaration->value_tag && declaration_tag_has_value(props.tag)) {
             existing_invalid = true;
-            if (declaration->tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
+            if (declaration->value_tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
                 error_ctx_error(
                     my errs,
                     declaration->name,
@@ -182,7 +189,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     if (existing && !existing_invalid) {
         *ret = arc_declaration_clone(existing->second);
     } else {
-        *ret = arc_declaration_make((Declaration){ .tag = props.tag, .name = props.name });
+        *ret = arc_declaration_make((Declaration){ .name = props.name });
         if (!existing) {
             hmap_str_arc_declaration_insert(&my declarations, cstr_from_span(props.name), arc_declaration_clone(*ret));
         }
@@ -296,7 +303,7 @@ static void add_import(Scope* me, Span decl_name, NamedImport* import) {
 Type scope_make_interface_from(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, hmap_str_arc_declaration, my declarations) {
-        if (i.ref->second.get->has_value) {
+        if (i.ref->second.get->value_tag) {
             InterfaceMember member = interface_member_make(
                 span_null, // Declaration
                 span_null, // Interface name

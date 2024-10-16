@@ -25,7 +25,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
             scope_init_declaration(scope, &my declaration, (DeclProps){
                 .name = my content_span,
                 .full = my content_span,
-                .tag = DECLARATION_VALUE,
+                .tag = DECLARATION_VARIABLE,
                 .value_type = type_ref(binding_get_effective_type(me)),
             });
             break;
