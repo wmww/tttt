@@ -953,6 +953,10 @@ bool type_overlaps(Type const* a, Type const* b) {
     a = type_resolve(a);
     b = type_resolve(b);
 
+    if (a == b) {
+        return a->tag != TYPE_NEVER;
+    }
+
     if (b->tag == TYPE_UNION || b->tag == TYPE_INTERSECTION) {
         return composite_type_overlaps(b, a);
     }
