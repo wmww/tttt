@@ -298,6 +298,7 @@ typedef struct CallExpr {
 // Object
 
 typedef struct ObjectExprItem {
+    bool is_spread;
     cstr name_string;
     Span name_span;
     Expr value;

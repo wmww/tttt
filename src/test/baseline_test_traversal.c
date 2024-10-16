@@ -568,15 +568,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name_span });
-                Type t = type_clone(*expr_get_type(&i.ref->value));
-                type_abstract_literals(&t);
-                baseline_test_case_add_type(
-                    ctx,
-                    i.ref->name_span,
-                    &t
-                );
-                type_drop(&t);
+                if (!i.ref->is_spread) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name_span });
+                    Type t = type_clone(*expr_get_type(&i.ref->value));
+                    type_abstract_literals(&t);
+                    baseline_test_case_add_type(ctx, i.ref->name_span, &t);
+                    type_drop(&t);
+                }
 
                 expr_compile_test_info(&i.ref->value, ctx);
             }

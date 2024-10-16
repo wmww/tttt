@@ -567,21 +567,30 @@ Type expr_evaluate_type(Expr const* me) {
         case EXPR_OBJECT: {
             Interface interface = {0};
             c_foreach(i, vec_object_expr_item, my object) {
-                Type type = type_clone(*expr_get_type(&i.ref->value));
-                type_abstract_literals(&type);
-                vec_interface_member_push(
-                    &interface.members,
-                    interface_member_make(
-                        span_between(i.ref->name_span, i.ref->value.outer_span),
-                        span_null,
-                        false,
-                        false,
-                        cstr_clone(i.ref->name_string),
-                        i.ref->name_span,
-                        false,
-                        type
-                    )
-                );
+                if (i.ref->is_spread) {
+                    Type const* type = type_resolve(expr_get_type(&i.ref->value));
+                    if (type->tag == TYPE_INTERFACE) {
+                        c_foreach(i, vec_interface_member, type->interface.members) {
+                            vec_interface_member_push(&interface.members, interface_member_clone(*i.ref));
+                        }
+                    }
+                } else {
+                    Type type = type_clone(*expr_get_type(&i.ref->value));
+                    type_abstract_literals(&type);
+                    vec_interface_member_push(
+                        &interface.members,
+                        interface_member_make(
+                            span_between(i.ref->name_span, i.ref->value.outer_span),
+                            span_null,
+                            false,
+                            false,
+                            cstr_clone(i.ref->name_string),
+                            i.ref->name_span,
+                            false,
+                            type
+                        )
+                    );
+                }
             }
             return type_interface(interface);
         }

@@ -1671,7 +1671,17 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     bool name_is_value;
 
     if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
-        return parse_fail(&p);
+        if (hop_start(&p, "...")) {
+            Expr expr;
+            expect_expr(&p, expr_ctx_null, &expr);
+            *ret = (ObjectExprItem){
+                .is_spread = true,
+                .value = expr,
+            };
+            return parse_success(&p);
+        } else {
+            return parse_fail(&p);
+        }
     }
     hop_whitespace(&p);
 

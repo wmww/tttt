@@ -891,7 +891,7 @@ const baselines = {
         types: true,
     },
     'anyAndUnknownHaveFalsyComponents': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5882,7 +5882,7 @@ const baselines = {
     },
     'contextualTypeObjectSpreadExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeOfIndexedAccessParameter': {
@@ -8873,7 +8873,7 @@ const baselines = {
     'destructuringAssignmentWithStrictNullChecks': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringAssignment_private': {
         errors: false,
@@ -11646,7 +11646,7 @@ const baselines = {
         types: false,
     },
     'explicitAnyAfterSpreadNoImplicitAnyError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -16977,7 +16977,7 @@ const baselines = {
     },
     'intersectionPropertyCheck': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionSatisfiesConstraint': {
@@ -21926,7 +21926,7 @@ const baselines = {
         types: false,
     },
     'objectInstantiationFromUnionSpread': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21997,7 +21997,7 @@ const baselines = {
     },
     'objectLiteralFreshnessWithSpread': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralFunctionArgContextualTyping': {
@@ -26056,13 +26056,13 @@ const baselines = {
         types: false,
     },
     'spreadExpressionContainingObjectExpressionContextualType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'spreadExpressionContextualType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadExpressionContextualTypeWithNamespace': {
@@ -26071,8 +26071,8 @@ const baselines = {
         types: false,
     },
     'spreadIdenticalTypesRemoved': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'spreadIntersection': {
@@ -26082,7 +26082,7 @@ const baselines = {
     },
     'spreadInvalidArgumentType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadObjectPermutations': {
@@ -26116,7 +26116,7 @@ const baselines = {
         types: false,
     },
     'spreadTypeRemovesReadonly': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27727,12 +27727,12 @@ const baselines = {
     },
     'trivialSubtypeReductionNoStructuralCheck': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'trivialSubtypeReductionNoStructuralCheck2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'truthinessCallExpressionCoercion': {
@@ -29032,7 +29032,7 @@ const baselines = {
     },
     'unionExcessPropsWithPartialMember': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unionOfArraysFilterCall': {
@@ -37437,7 +37437,7 @@ const baselines = {
     },
     'destructuringSpread': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringTypeAssertionsES5_1': {
@@ -42832,7 +42832,7 @@ const baselines = {
     },
     'propertyAccessChain.3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyAccessChain': {
@@ -56102,7 +56102,7 @@ const baselines = {
     },
     'objectSpreadIndexSignature': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectSpreadNegative': {
@@ -56112,7 +56112,7 @@ const baselines = {
     },
     'objectSpreadNegativeParse': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectSpreadNoTransform': {
@@ -56121,7 +56121,7 @@ const baselines = {
         types: false,
     },
     'objectSpreadRepeatedComplexity': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56137,11 +56137,11 @@ const baselines = {
     },
     'objectSpreadStrictNull': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadContextualTypedBindingPattern': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -56156,9 +56156,9 @@ const baselines = {
         types: false,
     },
     'spreadExcessProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadMethods': {
         errors: false,
@@ -56166,8 +56166,8 @@ const baselines = {
         types: false,
     },
     'spreadNonPrimitive': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'spreadObjectOrFalsy': {
@@ -56176,13 +56176,13 @@ const baselines = {
         types: false,
     },
     'spreadOverwritesProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'spreadOverwritesPropertyStrict': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadTypeVariable': {
@@ -56206,7 +56206,7 @@ const baselines = {
         types: false,
     },
     'spreadUnion4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

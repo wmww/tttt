@@ -70,6 +70,10 @@ void display_error(Display d, Error const* me) {
 }
 
 void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
+    if (!me) {
+        cstr_drop(&message);
+        return;
+    }
     vec_error_push(&my related_errors, (Error){
         .message = message,
         .span = span,
