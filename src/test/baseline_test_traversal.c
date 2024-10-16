@@ -238,6 +238,12 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
     block_compile_test_info(&my body, ctx);
 }
 
+void import_statement_compile_test_info(ImportStatement const* me, BaselineTestCase* ctx) {
+    ignore me;
+    ignore ctx;
+    // TODO: implement once we're storing a declaration on the import statement
+}
+
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         initialized_binding_compile_test_info(i.ref, span_null, ctx);
@@ -693,7 +699,10 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_BREAK: break;
-        case STATEMENT_IMPORT: break;
+
+        case STATEMENT_IMPORT:
+            import_statement_compile_test_info(my import, ctx);
+            break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_compile_test_info(&my decl.variable, ctx);
