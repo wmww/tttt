@@ -44,15 +44,15 @@ void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx
 Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
     if (my decl_ref) {
         if (vec_spanned_type_size(&my generic_params) &&
-            !generic_empty(my decl_ref->value.generic)
+            my decl_ref->value_generic
         ) {
             return generic_degenericize_type(
-                my decl_ref->value.generic,
-                type_ref(&my decl_ref->value.type),
+                my decl_ref->value_generic,
+                type_ref(&my decl_ref->value_type),
                 &my generic_params
             );
         } else {
-            return type_ref(&my decl_ref->value.type);
+            return type_ref(&my decl_ref->value_type);
         }
     } else {
         return type_any;
@@ -64,7 +64,7 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
             c_foreach(i, vec_spanned_type, my generic_params) {
                 type_typecheck(&i.ref->type, errs);
             }
-            if (generic_empty(my decl_ref->value.generic)) {
+            if (!my decl_ref->value_generic) {
                 error_ctx_error(
                     errs,
                     span_between(
@@ -386,7 +386,7 @@ static void binary_op_typecheck(
                     if (expr->binary_op->left.identifier.decl_ref) {
                         type_error_if_not_assignable(
                             right,
-                            &expr->binary_op->left.identifier.decl_ref->value.type,
+                            &expr->binary_op->left.identifier.decl_ref->value_type,
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -479,7 +479,7 @@ Type expr_evaluate_type(Expr const* me) {
             } else {
                 return type_undefined;
             }
-        case EXPR_SUPER: return my this_or_super ? type_ref(&my this_or_super->value.type) : type_any;
+        case EXPR_SUPER: return my this_or_super ? type_ref(&my this_or_super->value_type) : type_any;
         case EXPR_LITERAL: return type_value(value_clone(my literal));
         case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);
 
@@ -586,7 +586,7 @@ Type expr_evaluate_type(Expr const* me) {
         }
 
         case EXPR_CLASS_DECL:
-            return type_ref(&my class_decl->declaration.get->value.type);
+            return type_ref(&my class_decl->declaration.get->value_type);
     }
     UNREACHABLE;
 }

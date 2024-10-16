@@ -2,12 +2,6 @@
 
 #include "lazy_type.h"
 
-typedef struct NamedVariable {
-    Span name;
-    Type type;
-    Generic const* generic;
-} NamedVariable;
-
 typedef struct NamedType {
     Span name;
     Type type;
@@ -59,7 +53,8 @@ typedef struct Declaration {
     Span name;
     VecSpan declarations;
     DeclarationTag value_tag;
-    NamedVariable value;
+    Generic const* value_generic; // Null if generic empty
+    Type value_type;
     DeclarationTag type_tag;
     NamedType type;
 } Declaration;

@@ -1,10 +1,6 @@
 #include "declaration.h"
 #include "generic.h"
 
-static void named_variable_drop(NamedVariable* me) {
-    type_drop(&my type);
-}
-
 static void named_type_drop(NamedType* me) {
     type_drop(&my type);
     vec_type_drop(&my merged_types);
@@ -23,8 +19,12 @@ Type named_type_evaluate_type(NamedType* me) {
 
 void declaration_drop(Declaration* me) {
     vec_span_drop(&my declarations);
-    named_variable_drop(&my value);
+    type_drop(&my value_type);
     named_type_drop(&my type);
+}
+
+static inline Generic const* generic_or_null(Generic const* generic) {
+    return (generic && !generic_empty(generic)) ? generic : nullptr;
 }
 
 void declaration_init(Declaration* me, DeclProps props) {
@@ -36,9 +36,8 @@ void declaration_init(Declaration* me, DeclProps props) {
     if (declaration_tag_has_value(props.tag)) {
         if (!my value_tag) {
             my value_tag = props.tag;
-            my value.name = props.name;
-            my value.type = props.value_type;
-            my value.generic = (props.generic && !generic_empty(props.generic)) ? props.generic : nullptr;
+            my value_type = props.value_type;
+            my value_generic = generic_or_null(props.generic);
         } else {
             NONFATAL("Tried to add multiple values to declaration %.*s", c_SPAN(my name));
             type_drop(&props.value_type);
@@ -49,7 +48,7 @@ void declaration_init(Declaration* me, DeclProps props) {
             my type_tag = props.tag;
             my type.name = props.name;
             my type.type = props.declared_type;
-            my type.generic = (props.generic && !generic_empty(props.generic)) ? props.generic : nullptr;
+            my type.generic = generic_or_null(props.generic);
             my type.is_typeof_class = props.is_typeof;
         } else {
             // Merge declarations

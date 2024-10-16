@@ -309,10 +309,10 @@ Type scope_make_interface_from(Scope const* me) {
                 span_null, // Interface name
                 false, // readonly
                 false, // optional
-                cstr_from_span(i.ref->second.get->value.name),
-                i.ref->second.get->value.name,
+                cstr_from_span(i.ref->second.get->name),
+                i.ref->second.get->name,
                 false, // name is value
-                type_clone(i.ref->second.get->value.type)
+                type_clone(i.ref->second.get->value_type)
             );
             // TODO: make this less stupid (probably by refactoring interface_member_make() to take a props struct)
             vec_span_drop(&member.declarations);

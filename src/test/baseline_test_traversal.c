@@ -322,7 +322,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             .span = my name,
         });
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my declaration.get->value.type);
+            baseline_test_case_add_type(ctx, my name, &my declaration.get->value_type);
         } else {
             baseline_test_case_add_type(ctx, my name, &my instance_identifier_type);
         }
@@ -615,7 +615,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             ctx,
             my outer_span,
             my inner_span,
-            &my identifier.decl_ref->value.type
+            &my identifier.decl_ref->value_type
         );
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
         Type t = type_array((Type*)&type_undefined, false);
