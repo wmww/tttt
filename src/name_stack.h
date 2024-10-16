@@ -1,13 +1,14 @@
 #pragma once
 
-#include "scope.h"
+#include "type.h"
 
 typedef struct NameStack NameStack;
+typedef struct Declaration Declaration;
 
 NameStack* name_stack_new();
 void name_stack_destroy(NameStack* me);
 bool name_stack_has_function(NameStack* me);
 Declaration const* name_stack_get_value(NameStack const* me, csview name);
 Declaration const* name_stack_get_type(NameStack const* me, csview name);
-Scope const* name_stack_get_namespace(NameStack const* me, csview name);
+Declaration const* name_stack_get_namespace(NameStack const* me, csview name);
 Declaration const* name_stack_get_keyword(NameStack const* me, KeywordIdentifier keyword);

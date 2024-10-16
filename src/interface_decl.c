@@ -4,6 +4,7 @@
 #include "interface.h"
 #include "type.h"
 #include "name_stack.h"
+#include "scope.h"
 
 void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);

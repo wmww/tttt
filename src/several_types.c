@@ -1,5 +1,7 @@
 #include "several_types.h"
 #include "name_stack.h"
+#include "declaration.h"
+#include "scope.h"
 #include "generic.h"
 #include "error.h"
 
@@ -26,8 +28,8 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
             Span prev_span = span_null;
             c_foreach(i, vec_span, my namespaces) {
                 if (scope) {
-                    auto result = hmap_str_scope_cptr_get(&scope->namespaces, i.ref->sv);
-                    scope = result ? result->second : nullptr;
+                    auto result = hmap_str_arc_declaration_get(&scope->declarations, i.ref->sv);
+                    scope = result ? result->second.get->namespace : nullptr;
                     if (!scope) {
                         error_ctx_error(
                             errs,
@@ -40,8 +42,10 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
                         break;
                     }
                 } else {
-                    scope = name_stack_get_namespace(names, i.ref->sv);
-                    if (!scope) {
+                    Declaration const* namespace = name_stack_get_namespace(names, i.ref->sv);
+                    if (namespace) {
+                        scope = namespace->namespace;
+                    } else {
                         error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
                         break;
                     }

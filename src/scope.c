@@ -13,13 +13,11 @@ void scope_drop(Scope* me) {
         name_stack_pop_scope(my current_name_stack, me);
     }
     hmap_str_arc_declaration_drop(&my declarations);
-    hmap_str_scope_cptr_drop(&my namespaces);
     hmap_str_named_import_drop(&my imports);
 }
 
 Scope scope_clone(Scope me) {
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
-    me.namespaces = hmap_str_scope_cptr_clone(me.namespaces);
     me.imports = hmap_str_named_import_clone(me.imports);
     me.current_name_stack = nullptr;
     return me;
@@ -50,6 +48,7 @@ void scope_pop_from_stack(Scope* me) {
 }
 
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
+    ASSERT(!my current_name_stack);
     if (ret->get) {
         NONFATAL("Declaration %.*s acquired multiple times", c_SPAN(ret->get->name));
         arc_declaration_drop(ret);
@@ -197,24 +196,6 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     declaration_init(ret->get, props);
 }
 
-void scope_add_namespace(Scope* me, Span name, Scope const* scope) {
-    ASSERT(!my current_name_stack);
-    // PERF: I don't think cloning into a box is needed? The reference we get should simply live long enough
-    // NameStacks may not need to be clonable if that's the case
-    cstr name_string = cstr_from_span(name);
-    auto result = hmap_str_scope_cptr_insert(&my namespaces, name_string, scope);
-    if (!result.inserted) {
-        // TODO: declaration merging
-        error_ctx_error(
-            my errs,
-            name,
-            TS_CODE_NONE,
-            "Duplicate namespace '%.*s'.",
-            c_SPAN(name)
-        );
-    }
-}
-
 void scope_add_import(Scope* me, NamedImport import) {
     ASSERT(!my current_name_stack);
     auto result = hmap_str_named_import_insert(
@@ -239,31 +220,24 @@ static void add_import(Scope* me, Span decl_name, NamedImport* import) {
     if (import->error_reported) return;
 
     bool found = false;
-    {
-        auto result = hmap_str_arc_declaration_get(&source_scope->declarations, source_name);
-        if (result) {
-            // TODO: this probably isn't the most elegant way to do this
-            if (!hmap_str_arc_declaration_insert(
-                &my declarations,
-                cstr_from_sv(import->decl_name.sv),
-                arc_declaration_clone(result->second)
-            ).inserted) {
-                error_ctx_error(
-                    my errs,
-                    import->decl_name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(import->decl_name)
-                );
-            }
-            found = true;
+
+    auto result = hmap_str_arc_declaration_get(&source_scope->declarations, source_name);
+    if (result) {
+        // TODO: this probably isn't the most elegant way to do this
+        if (!hmap_str_arc_declaration_insert(
+            &my declarations,
+            cstr_from_sv(import->decl_name.sv),
+            arc_declaration_clone(result->second)
+        ).inserted) {
+            error_ctx_error(
+                my errs,
+                import->decl_name,
+                2300,
+                "Duplicate identifier '%.*s'.",
+                c_SPAN(import->decl_name)
+            );
         }
-    }{
-        auto result = hmap_str_scope_cptr_get(&source_scope->namespaces, source_name);
-        if (result) {
-            scope_add_namespace(me, decl_name, result->second);
-            found = true;
-        }
+        found = true;
     }
 
     if (!found) {

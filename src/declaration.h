@@ -35,6 +35,10 @@ static inline bool declaration_tag_has_type(DeclarationTag tag) {
     return ret[tag];
 }
 
+static inline bool declaration_tag_has_namespace(DeclarationTag tag) {
+    return tag == DECLARATION_NAMESPACE;
+}
+
 typedef struct Declaration {
     Span name;
     VecSpan declarations;
@@ -47,6 +51,7 @@ typedef struct Declaration {
     bool is_typeof;
     VecType declared_type_list;
     LazyType declared_type_lazy;
+    Scope const* namespace;
 } Declaration;
 
 typedef struct DeclProps {
@@ -57,6 +62,7 @@ typedef struct DeclProps {
     Type value_type;
     Type declared_type;
     bool is_typeof;
+    Scope const* namespace;
 } DeclProps;
 
 void declaration_drop(Declaration* me);

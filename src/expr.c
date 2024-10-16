@@ -3,6 +3,7 @@
 #include "type.h"
 #include "error.h"
 #include "name_stack.h"
+#include "scope.h"
 #include "function_impl.h"
 #include "generic.h"
 #include "class_decl.h"

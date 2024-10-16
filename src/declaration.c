@@ -23,6 +23,7 @@ void declaration_init(Declaration* me, DeclProps props) {
         my name = props.name;
     }
     vec_span_push(&my declarations, props.full);
+
     if (declaration_tag_has_value(props.tag)) {
         if (!my value_tag) {
             my value_tag = props.tag;
@@ -32,7 +33,10 @@ void declaration_init(Declaration* me, DeclProps props) {
             NONFATAL("Tried to add multiple values to declaration %.*s", c_SPAN(my name));
             type_drop(&props.value_type);
         }
+    } else if (props.value_type.tag) {
+        PANIC("declaration_init() called with tag %d and non-empty value type", props.tag);
     }
+
     if (declaration_tag_has_type(props.tag)) {
         if (!my type_tag) {
             my type_tag = props.tag;
@@ -44,5 +48,18 @@ void declaration_init(Declaration* me, DeclProps props) {
         PANIC_IF(my declared_type_lazy.tag != LAZY_TYPE_DECLARATION,
             "Type added to declaration after LazyType already evaluated");
         vec_type_push(&my declared_type_list, props.declared_type);
+    } else if (props.declared_type.tag) {
+        PANIC("declaration_init() called with tag %d and non-empty declared type", props.tag);
+    }
+
+    if (declaration_tag_has_namespace(props.tag)) {
+        ASSERT(props.namespace);
+        if (!my namespace) {
+            my namespace = props.namespace;
+        } else {
+            NONFATAL("Tried to add multiple namespaces to declaration %.*s", c_SPAN(my name));
+        }
+    } else if (props.namespace) {
+        PANIC("declaration_init() called with tag %d and non-null namespace", props.tag);
     }
 }

@@ -4,20 +4,12 @@
 #include "expr.h"
 #include "declaration.h"
 
-typedef Scope const* ScopeCPtr;
-wrap_forward_hmap_str(ScopeCPtr, scope_cptr);
-
 #define i_key_ssv
 #define i_val_class_names ArcDeclaration, arc_declaration
 #include "wrap_stc/hmap.h"
 
 #define i_key_ssv
 #define i_val_names NamedImport, named_import
-#include "wrap_stc/hmap.h"
-
-#define i_key_ssv
-#define i_val_names ScopeCPtr, scope_cptr
-#define i_is_forward
 #include "wrap_stc/hmap.h"
 
 typedef struct Scope {
@@ -31,7 +23,6 @@ typedef struct Scope {
     bool currently_adding_import; // If the current add_import() call stack has already seen this stack frame
                                   // Threadsafety: may have to change this system
     HmapStrArcDeclaration declarations;
-    HmapStrScopeCPtr namespaces;
     HmapStrNamedImport imports;
     Declaration const* this_declaration;
     Declaration const* super_declaration;
@@ -62,8 +53,6 @@ void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dro
 
 // Checks that ret was previously null, creates a new declaration if needed
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props);
-
-void scope_add_namespace(Scope* me, Span name, Scope const* scope); // scope is owned externally
 void scope_add_import(Scope* me, NamedImport import);
 
 void scope_process_imports(Scope* me);

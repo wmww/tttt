@@ -2,6 +2,7 @@
 #include "import_statement.h"
 #include "error.h"
 #include "name_stack.h"
+#include "scope.h"
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "function_impl.h"
@@ -79,8 +80,6 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
         statement_add_names(i.ref, &my inner_scope);
     }
 
-    scope_add_namespace(scope, my name, &my inner_scope);
-
     ASSERT(my value_type.tag == 0);
     my value_type = scope_make_interface_from(&my inner_scope);
 
@@ -89,6 +88,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
         .full = my full_span,
         .tag = DECLARATION_NAMESPACE,
         .value_type = type_ref_always(&my value_type),
+        .namespace = &my inner_scope,
     });
 }
 

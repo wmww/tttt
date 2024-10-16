@@ -1,5 +1,6 @@
 #include "binding.h"
 #include "name_stack.h"
+#include "scope.h"
 #include "several_types.h"
 #include "display.h"
 #include "error.h"

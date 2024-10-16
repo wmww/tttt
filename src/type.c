@@ -8,6 +8,7 @@
 #include "generic.h"
 #include "value.h"
 #include "name_stack.h"
+#include "scope.h"
 #include "display.h"
 #include "error.h"
 #include "math_helpers.h"

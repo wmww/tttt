@@ -1,5 +1,6 @@
 #include "generic.h"
 #include "name_stack.h"
+#include "scope.h"
 #include "several_types.h"
 #include "callable_type.h"
 #include "interface.h"

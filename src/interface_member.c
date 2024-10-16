@@ -1,7 +1,7 @@
 #include "interface_member.h"
 #include "type.h"
 #include "expr.h"
-#include "name_stack.h"
+#include "scope.h"
 
 void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
