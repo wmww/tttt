@@ -137,7 +137,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
         case BINDING_IDENTIFIER:
             if (my declaration.get) {
                 Type const* type = type_resolve(binding_get_effective_type(me));
-                if (type_is_self_referential(type)) {
+                if (type_is_self_referential(type) && get_error_config()->no_implicit_any) {
                     cstr msg = cstr_lit("'");
                     cstr_append_span(&msg, my content_span);
                     cstr_append_lit(&msg, "' implicitly has type '");

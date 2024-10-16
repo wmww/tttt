@@ -24401,7 +24401,7 @@ const baselines = {
         types: false,
     },
     'recursiveObjectLiteral': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -32601,7 +32601,7 @@ const baselines = {
         types: false,
     },
     'typeOfThisInInstanceMember2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -50946,12 +50946,12 @@ const baselines = {
         types: false,
     },
     'parserES5ForOfStatement18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserES5ForOfStatement19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50961,7 +50961,7 @@ const baselines = {
         types: false,
     },
     'parserES5ForOfStatement20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52006,12 +52006,12 @@ const baselines = {
         types: false,
     },
     'parserForOfStatement18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserForOfStatement19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52021,7 +52021,7 @@ const baselines = {
         types: false,
     },
     'parserForOfStatement20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53416,7 +53416,7 @@ const baselines = {
         types: false,
     },
     'recursiveInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
