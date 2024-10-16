@@ -5,7 +5,6 @@
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "function_impl.h"
-#include "several_types.h"
 
 // Variable initialization
 
@@ -71,7 +70,6 @@ void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
     scope_drop(&my inner_scope);
     type_drop(&my value_type);
-    declaration_drop(&my value_type_declaration);
     arc_declaration_drop(&my declaration);
 }
 
@@ -86,22 +84,11 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
     ASSERT(my value_type.tag == 0);
     my value_type = scope_make_interface_from(&my inner_scope);
 
-    declaration_init(&my value_type_declaration, (DeclProps){
-        .name = my name,
-        .full = my full_span,
-        .tag = DECLARATION_TYPE,
-        .declared_type = type_ref(&my value_type),
-        .is_typeof = true,
-    });
-
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
         .tag = DECLARATION_NAMESPACE,
-        .value_type = type_identifier(c_new(IdentifierType, {
-            .name = my name,
-            .decl_ref = &my value_type_declaration,
-        })),
+        .value_type = type_ref(&my value_type),
     });
 }
 

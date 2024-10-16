@@ -54,7 +54,6 @@ typedef struct NamespaceDecl {
     Block contents;
     Scope inner_scope;
     Type value_type;
-    Declaration value_type_declaration;
     ArcDeclaration declaration;
 } NamespaceDecl;
 
