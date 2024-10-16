@@ -967,12 +967,12 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
-            .is_this = true,
+            .keyword = KEYWORD_IDENTIFIER_THIS,
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
-            .is_super = true,
+            .keyword = KEYWORD_IDENTIFIER_THIS,
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "readonly")) {
         *ret = type_string;
@@ -2775,9 +2775,15 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_function_keyword_function(&p, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
-        *ret = expr_this(span_from(a));
+        *ret = expr_identifier((IdentifierExpr){
+            .name = span_from(a),
+            .keyword = KEYWORD_IDENTIFIER_THIS,
+        });
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
-        *ret = expr_super(span_from(a));
+        *ret = expr_identifier((IdentifierExpr){
+            .name = span_from(a),
+            .keyword = KEYWORD_IDENTIFIER_SUPER,
+        });
     } else if (parse_identifier_expr(&p, ctx, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;

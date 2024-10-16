@@ -226,7 +226,6 @@ void statement_drop(Statement* me) {
         case STATEMENT_DECL_FUNCTION:
             function_impl_drop(my decl.function.impl);
             free(my decl.function.impl);
-            declaration_drop(&my decl.function.this_declaration);
             break;
 
         case STATEMENT_DECL_ENUM:
@@ -465,19 +464,9 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             variable_statement_resolve_names(&my decl.variable, names, errs);
             break;
 
-        case STATEMENT_DECL_FUNCTION: {
-            Scope this_scope = scope_init(errs);
-            declaration_init(&my decl.function.this_declaration, (DeclProps){
-                .tag = DECLARATION_VARIABLE,
-                .value_type = type_any,
-            });
-            this_scope.this_declaration = &my decl.function.this_declaration;
-
-            scope_push_to_stack(&this_scope, names);
-            function_impl_lookup_names(my decl.function.impl, names, errs);
-
-            scope_drop(&this_scope);
-        }   break;
+        case STATEMENT_DECL_FUNCTION:
+            function_impl_lookup_names(my decl.function.impl, true, names, errs);
+            break;
 
         case STATEMENT_DECL_ENUM:
             enum_decl_lookup_names(my decl.enum_, names, errs);

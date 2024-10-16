@@ -117,7 +117,6 @@ typedef struct Statement {
             union {
                 VariableStatement variable;
                 struct {
-                    Declaration this_declaration;
                     FunctionImpl* impl;
                 } function;
                 EnumDecl* enum_;

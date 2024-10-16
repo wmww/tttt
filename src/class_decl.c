@@ -76,11 +76,11 @@ void class_decl_drop(ClassDecl* me) {
 void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
-            function_impl_lookup_names(&my constructor.func, names, errs);
+            function_impl_lookup_names(&my constructor.func, false, names, errs);
             break;
 
         case CLASS_ITEM_METHOD:
-            function_impl_lookup_names(&my method.func, names, errs);
+            function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 
         case CLASS_ITEM_FIELD:

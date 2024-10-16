@@ -15,6 +15,7 @@ void function_impl_drop(FunctionImpl* me) {
     type_drop(&my ret);
     lazy_type_drop(&my lazy_type);
     arc_declaration_drop(&my declaration);
+    declaration_drop(&my this_declaration);
     block_drop(&my body);
 }
 
@@ -28,7 +29,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope) {
     });
 }
 
-void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* errs) {
+void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, NameStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_FUNCTION;
 
     // Handle generics (includes adding names)
@@ -37,6 +38,15 @@ void function_impl_lookup_names(FunctionImpl* me, NameStack* names, ErrorCtx* er
 
 
     Scope function_scope = scope_init_function(errs);
+
+    if (this_is_any) {
+        declaration_init(&my this_declaration, (DeclProps){
+            .tag = DECLARATION_VARIABLE,
+            .value_type = type_any,
+        });
+        function_scope.this_declaration = &my this_declaration;
+    }
+
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_function_arg, my args) {
         initialized_binding_add_names(&i.ref->initializer, true, &function_scope);

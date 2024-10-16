@@ -34,7 +34,7 @@ CallableType callable_type_clone(CallableType me) {
 
 void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs) {
     if (my owned_function_impl) {
-        function_impl_lookup_names(my owned_function_impl, names, errs);
+        function_impl_lookup_names(my owned_function_impl, false, names, errs);
 
         generic_drop(&my generic);
         my generic = generic_clone(my owned_function_impl->generic);

@@ -508,7 +508,7 @@ const baselines = {
     'allowJsClassThisTypeCrash': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'allowJsCrossMonorepoPackage': {
         errors: false,
@@ -2408,7 +2408,7 @@ const baselines = {
     'blockScopedBindingCaptureThisInFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedBindingUsedBeforeDef': {
         errors: false,
@@ -4778,7 +4778,7 @@ const baselines = {
     'commentsOnObjectLiteral2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsOnObjectLiteral3': {
         errors: false,
@@ -6436,7 +6436,7 @@ const baselines = {
         types: false,
     },
     'controlFlowAnalysisOnBareThisKeyword': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -15727,7 +15727,7 @@ const baselines = {
     },
     'inferParameterWithMethodCallInitializer': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferPropertyWithContextSensitiveReturnStatement': {
@@ -27457,7 +27457,7 @@ const baselines = {
     },
     'thisInClassBodyStaticESNext': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thisInConstructorParameter1': {
@@ -30106,7 +30106,7 @@ const baselines = {
         types: false,
     },
     'varArgParamTypeCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52483,7 +52483,7 @@ const baselines = {
     'inferringClassMembersFromAssignments8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferringClassStaticMembersFromAssignments': {
         errors: false,
@@ -56412,8 +56412,8 @@ const baselines = {
     },
     'thisTypeAccessibility': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'thisTypeAndConstraints': {
         errors: true,

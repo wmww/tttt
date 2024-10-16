@@ -741,8 +741,6 @@ void display_expr(Display d, Expr const* me) {
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: display_lit(d, "/* implicit any */"); break;
-        case EXPR_THIS: display_lit(d, "this"); break;
-        case EXPR_SUPER: display_lit(d, "super"); break;
         case EXPR_LITERAL: display_value(d, &my literal); break;
         case EXPR_IDENTIFIER: display_identifier_expr(d, &my identifier); break;
 

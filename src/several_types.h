@@ -10,11 +10,10 @@
 typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
+    KeywordIdentifier keyword;
     Declaration const* decl_ref;
     VecSpannedType generic_params;
     LazyType type; // May contain a copy of the type with the generic parameters swapped in or a reference
-    bool is_this;
-    bool is_super;
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);

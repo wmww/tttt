@@ -293,3 +293,9 @@ static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedTy
 static inline Type const* generic_param_at(VecSpannedType const* params, intptr_t i) {
     return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_any;
 }
+
+typedef enum KeywordIdentifier {
+    KEYWORD_IDENTIFIER_NONE = 0,
+    KEYWORD_IDENTIFIER_THIS,
+    KEYWORD_IDENTIFIER_SUPER,
+} KeywordIdentifier;

@@ -23,6 +23,7 @@ wrap_forward_vec(Expr, expr);
 
 typedef struct IdentifierExpr {
     Span name;
+    KeywordIdentifier keyword;
     Declaration const* decl_ref;
     VecSpannedType generic_params;
 } IdentifierExpr;
@@ -38,8 +39,6 @@ typedef struct Expr {
     bool* currently_getting_type;
     enum {
         EXPR_IMPLICIT_ANY = 0,
-        EXPR_THIS,
-        EXPR_SUPER,
         EXPR_LITERAL,
         EXPR_IDENTIFIER,
         EXPR_BINARY_OP,
@@ -130,22 +129,6 @@ static inline Expr expr_implicit_any(Span span) {
         .inner_span = span,
         .outer_span = span,
         .lazy_type.tag = LAZY_TYPE_EVALUATED
-    };
-}
-
-static inline Expr expr_this(Span span) {
-    return (Expr){
-        .tag = EXPR_THIS,
-        .inner_span = span,
-        .outer_span = span,
-    };
-}
-
-static inline Expr expr_super(Span span) {
-    return (Expr){
-        .tag = EXPR_SUPER,
-        .inner_span = span,
-        .outer_span = span,
     };
 }
 

@@ -19,6 +19,10 @@ void identifier_expr_drop(IdentifierExpr* me) {
 }
 
 void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx* errs) {
+    if (my keyword) {
+        my decl_ref = name_stack_get_keyword(names, my keyword);
+        return;
+    }
     my decl_ref = name_stack_get_value(names, my name.sv);
     if (my decl_ref) {
     } else if (name_stack_get_type(names, my name.sv)) {
@@ -43,21 +47,35 @@ void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx
 
 Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
     if (my decl_ref) {
+        Type ret;
+        if (my keyword && my decl_ref->value_tag == DECLARATION_CLASS) {
+            ret = type_identifier(c_new(IdentifierType, {
+                .name = my decl_ref->name,
+                .decl_ref = my decl_ref,
+            }));
+        } else {
+            ret = type_refcopy(&my decl_ref->value_type);
+        }
         if (vec_spanned_type_size(&my generic_params) &&
             my decl_ref->value_generic
         ) {
-            return generic_degenericize_type(
+            ret = generic_degenericize_type(
                 my decl_ref->value_generic,
-                type_refcopy(&my decl_ref->value_type),
+                ret,
                 &my generic_params
             );
-        } else {
-            return type_refcopy(&my decl_ref->value_type);
         }
+        return ret;
     } else {
+        switch (my keyword) {
+            case KEYWORD_IDENTIFIER_THIS:
+                return type_undefined;
+            default: break;
+        }
         return type_any;
     }
 }
+
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     if (my decl_ref) {
         if (vec_spanned_type_size(&my generic_params)) {
@@ -84,8 +102,6 @@ void expr_drop(Expr* me) {
     free(my currently_getting_type);
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
-        case EXPR_THIS:
-        case EXPR_SUPER:
             break;
 
         case EXPR_LITERAL:
@@ -159,8 +175,6 @@ void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL: break;
-        case EXPR_THIS: my this_or_super = name_stack_get_this(names); break;
-        case EXPR_SUPER: my this_or_super = name_stack_get_super(names); break;
 
         case EXPR_IDENTIFIER:
             identifier_expr_lookup_names(&my identifier, names, errs);
@@ -199,7 +213,7 @@ void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_FUNCTION:
-            function_impl_lookup_names(my function, names, errs);
+            function_impl_lookup_names(my function, !span_valid(my function->arrow_span), names, errs);
             break;
 
         case EXPR_OBJECT:
@@ -466,20 +480,6 @@ static void binary_op_typecheck(
 Type expr_evaluate_type(Expr const* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: return type_any;
-        case EXPR_THIS:
-            if (my this_or_super) {
-                if (my this_or_super->type_tag == DECLARATION_CLASS) {
-                    return type_identifier(c_new(IdentifierType, {
-                        .name = my this_or_super->name,
-                        .decl_ref = my this_or_super,
-                    }));
-                } else {
-                    return type_refcopy(&my this_or_super->type.type);
-                }
-            } else {
-                return type_undefined;
-            }
-        case EXPR_SUPER: return my this_or_super ? type_refcopy(&my this_or_super->value_type) : type_any;
         case EXPR_LITERAL: return type_value(value_clone(my literal));
         case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);
 
@@ -594,8 +594,6 @@ Type expr_evaluate_type(Expr const* me) {
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
-        case EXPR_THIS:
-        case EXPR_SUPER:
         case EXPR_LITERAL:
             break;
 

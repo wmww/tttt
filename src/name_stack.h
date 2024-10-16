@@ -10,5 +10,4 @@ bool name_stack_has_function(NameStack* me);
 Declaration const* name_stack_get_value(NameStack const* me, csview name);
 Declaration const* name_stack_get_type(NameStack const* me, csview name);
 Scope const* name_stack_get_namespace(NameStack const* me, csview name);
-Declaration const* name_stack_get_this(NameStack const* me);
-Declaration const* name_stack_get_super(NameStack const* me);
+Declaration const* name_stack_get_keyword(NameStack const* me, KeywordIdentifier keyword);

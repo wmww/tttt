@@ -108,20 +108,15 @@ Scope const* name_stack_get_namespace(NameStack const* me, csview name) {
     return nullptr;
 }
 
-Declaration const* name_stack_get_this(NameStack const* me) {
+Declaration const* name_stack_get_keyword(NameStack const* me, KeywordIdentifier keyword) {
     c_foreach_rev(i, vec_stack_frame, my stack) {
-        if (i.ref->scope->this_declaration) {
-            return i.ref->scope->this_declaration;
+        Declaration const* decl = nullptr;
+        switch (keyword) {
+            case KEYWORD_IDENTIFIER_THIS: decl = i.ref->scope->this_declaration; break;
+            case KEYWORD_IDENTIFIER_SUPER: decl = i.ref->scope->super_declaration; break;
+            case KEYWORD_IDENTIFIER_NONE: break;
         }
-    }
-    return nullptr;
-}
-
-Declaration const* name_stack_get_super(NameStack const* me) {
-    c_foreach_rev(i, vec_stack_frame, my stack) {
-        if (i.ref->scope->super_declaration) {
-            return i.ref->scope->super_declaration;
-        }
+        if (decl) return decl;
     }
     return nullptr;
 }

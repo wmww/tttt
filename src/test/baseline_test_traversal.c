@@ -447,10 +447,11 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
-    if (my decl_ref) {
+    if (my decl_ref && span_valid(my decl_ref->name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my decl_ref),
             .span = my name,
+            .name = my decl_ref->name,
         });
     }
     c_foreach(i, vec_spanned_type, my generic_params) {
@@ -461,18 +462,6 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
-
-        case EXPR_THIS:
-        case EXPR_SUPER:
-            if (my this_or_super && span_valid(my this_or_super->name)) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = declaration_get_spans(my this_or_super),
-                    .span = my inner_span,
-                    .name = my this_or_super ? my this_or_super->name : span_null,
-                });
-            }
-            break;
-
         case EXPR_LITERAL:
             if (my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined")) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -609,7 +598,7 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    if (my tag == EXPR_IDENTIFIER && my identifier.decl_ref) {
+    if (my tag == EXPR_IDENTIFIER && my identifier.decl_ref && !my identifier.keyword) {
         // Do NOT degenericize
         baseline_test_case_add_type_recursive(
             ctx,
