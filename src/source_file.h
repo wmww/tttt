@@ -8,6 +8,7 @@ typedef struct SourceFile {
     cstr contents;
     Block ast;
     Scope scope;
+    cstr decl_override; // Used for the tests
 } SourceFile;
 
 SourceFile source_file_make(cstr absolute_path, cstr contents, ErrorCtx* errs);

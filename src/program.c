@@ -25,50 +25,18 @@ typedef SourceFile* SourceFilePtr;
 typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs;
-    Scope global_scope; // Global values and types
+    Scope builtins_scope;
+    VecScopeCPtr global_scopes;
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
                                        // Keys are absolute paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
     SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
 
-Program* program_new(ErrorCtx* errs, Fs const* fs) {
-    ASSERT(errs);
-    ASSERT(fs);
-    return c_new(Program, {
-        .errs = errs,
-        .fs = fs,
-        .global_scope = scope_init(errs),
-        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
-    });
-}
-
-static void program_drop(Program* me) {
-    scope_drop(&my global_scope);
-    hmap_str_box_source_file_drop(&my source_files);
-    vec_source_file_ptr_drop(&my pending_source_files);
-    source_file_drop(&my not_found_file);
-}
-
-void program_destroy(Program* me) {
-    program_drop(me);
-    free(me);
-}
-
-void program_preload_file(Program* me, const char* path) {
-    ignore me;
-    ignore path;
-    NONFATAL("Preloading files not yet implemented");
-}
-
-void program_preload_es5(Program* me) {
-    program_preload_file(me, "lib/es5.d.ts");
-}
-
-void program_preload_builtins_deprecated(Program* me) {
+static void program_add_builtins(Program* me) {
 #define GLOBAL_VALUE(global_name, global_value) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
+    scope_init_declaration(&my builtins_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_VARIABLE, \
         .value_type = global_value, \
@@ -78,7 +46,7 @@ void program_preload_builtins_deprecated(Program* me) {
 
 #define GLOBAL_TYPE(global_name, global_type) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
+    scope_init_declaration(&my builtins_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_TYPE, \
         .declared_type = global_type, \
@@ -86,20 +54,7 @@ void program_preload_builtins_deprecated(Program* me) {
     arc_declaration_drop(&declaration); \
 }
 
-#define GLOBAL_CLASS(global_name, global_value, global_type) {\
-    ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
-        .name = sv_make_span(c_sv(global_name)), \
-        .tag = DECLARATION_CLASS, \
-        .value_type = global_value, \
-        .declared_type = global_type, \
-    } ); \
-    arc_declaration_drop(&declaration); \
-}
-
     GLOBAL_VALUE("console", type_any);
-
-    GLOBAL_VALUE("NaN", type_any);
 
     GLOBAL_TYPE("any", type_any);
     GLOBAL_TYPE("unknown", type_unknown);
@@ -112,18 +67,37 @@ void program_preload_builtins_deprecated(Program* me) {
     GLOBAL_TYPE("bigint", type_any);
     GLOBAL_TYPE("symbol", type_any);
     GLOBAL_TYPE("intrinsic", type_any);
-    GLOBAL_TYPE("BooleanConstructor", type_any);
-    GLOBAL_TYPE("NumberConstructor", type_any);
-    GLOBAL_TYPE("StringConstructor", type_any);
 
-    GLOBAL_CLASS("Object", type_any, type_any);
-    GLOBAL_CLASS("Array", type_any, type_any);
-    GLOBAL_CLASS("Error", type_any, type_any);
-    GLOBAL_CLASS("Set", type_any, type_any);
-    GLOBAL_CLASS("Date", type_any, type_any);
-    GLOBAL_CLASS("String", type_any, type_string);
-    GLOBAL_CLASS("Number", type_any, type_number);
-    GLOBAL_CLASS("Boolean", type_any, type_boolean);
+    vec_scope_cptr_push(&my global_scopes, &my builtins_scope);
+}
+
+Program* program_new(ErrorCtx* errs, Fs const* fs) {
+    ASSERT(errs);
+    ASSERT(fs);
+    Program* ret = c_new(Program, {
+        .errs = errs,
+        .fs = fs,
+        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
+    });
+    program_add_builtins(ret);
+    return ret;
+}
+
+static void program_drop(Program* me) {
+    scope_drop(&my builtins_scope);
+    vec_scope_cptr_drop(&my global_scopes);
+    hmap_str_box_source_file_drop(&my source_files);
+    vec_source_file_ptr_drop(&my pending_source_files);
+    source_file_drop(&my not_found_file);
+}
+
+void program_destroy(Program* me) {
+    program_drop(me);
+    free(me);
+}
+
+void program_add_globals(Program* me, Scope const* scope) {
+    vec_scope_cptr_push(&my global_scopes, scope);
 }
 
 // Returns null if path can't be loaded
@@ -190,6 +164,7 @@ SourceFile const* program_load(Program* me, const char* path) {
     if (!main_source) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
         my errs->phase = ERROR_PHASE_UNKOWN;
+        clear_error_config();
         return &my not_found_file;
     }
 
@@ -223,7 +198,9 @@ SourceFile const* program_load(Program* me, const char* path) {
     }
 
     ScopeStack* names = scope_stack_new();
-    scope_push_to_stack(&my global_scope, names);
+    c_foreach(i, vec_scope_cptr, my global_scopes) {
+        scope_stack_push_scope(names, *i.ref);
+    }
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
@@ -232,13 +209,19 @@ SourceFile const* program_load(Program* me, const char* path) {
         scope_pop_from_stack(&source->scope);
     }
 
-    scope_pop_from_stack(&my global_scope);
+    c_foreach_rev(i, vec_scope_cptr, my global_scopes) {
+        scope_stack_pop_scope(names, *i.ref);
+    }
     scope_stack_destroy(names);
 
     clear_error_config();
     vec_source_file_ptr_drop(&in_flight_source_files);
     my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
+}
+
+SourceFile const* program_load_es5(Program* me) {
+    return program_load(me, "thirdparty/tsc/lib/es5.d.ts");
 }
 
 void program_typecheck(Program* me) {

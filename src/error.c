@@ -209,11 +209,11 @@ Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fm
 ErrorConfig const* global_error_config_private = nullptr;
 void set_error_config(ErrorConfig const* conf) {
     // Threadsafety: this will need to be thread-local or refactored entirely
-    ASSERT(!global_error_config_private);
+    PANIC_IF(global_error_config_private, "Global error config set multiple times without being cleared");
     global_error_config_private = conf;
 }
 
 void clear_error_config() {
-    ASSERT(global_error_config_private);
+    PANIC_IF(!global_error_config_private, "Global error config cleared when unset");
     global_error_config_private = nullptr;
 }

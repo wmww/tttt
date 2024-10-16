@@ -20,6 +20,7 @@ typedef struct BaselineTestSuite {
     cstr typescript_commit;
     ArcJsObject prev_results;
     VecBaselineTestResult results;
+    BaselineTestCache cache;
 } BaselineTestSuite;
 
 void baseline_test_suite_drop(BaselineTestSuite* me);

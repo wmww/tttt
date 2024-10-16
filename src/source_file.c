@@ -13,4 +13,5 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my contents);
     block_drop(&my ast);
     scope_drop(&my scope);
+    cstr_drop(&my decl_override);
 }

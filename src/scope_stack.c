@@ -29,7 +29,7 @@ void scope_stack_destroy(ScopeStack* me) {
 }
 
 // Declared and used exclusivly by scope.c
-void scope_stack_push_scope(ScopeStack* me, Scope* scope) {
+void scope_stack_push_scope(ScopeStack* me, Scope const* scope) {
     scope_stack_push_frame_private(me, scope);
 }
 

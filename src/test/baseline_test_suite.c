@@ -82,6 +82,7 @@ void baseline_test_suite_drop(BaselineTestSuite* me) {
     cstr_drop(&my prev_typescript_commit);
     cstr_drop(&my typescript_commit);
     vec_baseline_test_result_drop(&my results);
+    baseline_test_cache_drop(&my cache);
 }
 
 static const char* color_for_state(bool is_pass, bool highlight) {
@@ -326,6 +327,7 @@ BoxBaselineTestSuite load_baseline_test_suite(
         .tests_dir = tests_dir,
         .has_filter = filter_re != nullptr,
         .filter = filter_re ? cregex_from(filter_re, CREG_ICASE) : cregex_init(),
+        .cache = baseline_test_cache_init(),
     });
     ASSERT(!ret.get->filter.error);
 

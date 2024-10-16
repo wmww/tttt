@@ -58,7 +58,7 @@ static bool compare_outputs(
 
 void baseline_test_result_run(
     BaselineTestResult* me,
-    BaselineTestSuite const* suite,
+    BaselineTestSuite* suite,
     JsObject const* previous,
     bool show_errs,
     bool show_syms,
@@ -114,7 +114,7 @@ void baseline_test_result_run(
         goto cleanup;
     }
 
-    BaselineTestCase test_case = run_baseline_test_case(cstr_str(&my source_path), noisy);
+    BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_str(&my source_path), noisy);
     my did_run = test_case.did_run;
 
     if (my did_run) {

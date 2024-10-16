@@ -5,9 +5,6 @@
 #include "interface_member.h"
 #include "generic.h"
 
-void scope_stack_push_scope(ScopeStack* me, Scope* scope);
-void scope_stack_pop_scope(ScopeStack* me, Scope* scope);
-
 void scope_drop(Scope* me) {
     if (my current_scope_stack) {
         scope_stack_pop_scope(my current_scope_stack, me);

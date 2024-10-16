@@ -8,7 +8,8 @@ int main(int argc, const char** argv) {
         PANIC("%s is not a file", test_path);
     }
 
-    BaselineTestCase test_case = run_baseline_test_case(test_path, true);
+    BaselineTestCache cache = baseline_test_cache_init();
+    BaselineTestCase test_case = run_baseline_test_case(&cache, test_path, true);
     cstr results = cstr_null;
 
     baseline_test_case_render_errors(&results, &test_case);
@@ -25,6 +26,7 @@ int main(int argc, const char** argv) {
 
     cstr_drop(&results);
     baseline_test_case_drop(&test_case);
+    baseline_test_cache_drop(&cache);
 
     return 0;
 }

@@ -21,7 +21,7 @@ BaselineTestResult make_baseline_test_result(cstr source_path);
 void baseline_test_result_drop(BaselineTestResult* me);
 void baseline_test_result_run(
     BaselineTestResult* me,
-    BaselineTestSuite const* suite,
+    BaselineTestSuite* suite,
     JsObject const* previous,
     bool show_errs,
     bool show_syms,

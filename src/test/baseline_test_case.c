@@ -5,7 +5,6 @@
 #include "source_file.h"
 #include "string_helpers.h"
 #include "error.h"
-#include "several_types.h"
 #include "value.h"
 
 typedef struct LineNumberedStr {
@@ -21,6 +20,20 @@ static void line_numbered_str_drop(LineNumberedStr* me) {
 #define i_no_clone
 #define i_is_forward
 #include "wrap_stc/vec.h"
+
+BaselineTestCache baseline_test_cache_init() {
+    ErrorCtx* errors = c_new(ErrorCtx, error_ctx_init());
+    return (BaselineTestCache){
+        .errors = errors,
+        .loader = program_new(errors, &real_fs_noisy),
+    };
+}
+
+void baseline_test_cache_drop(BaselineTestCache* me) {
+    program_destroy(my loader);
+    error_ctx_drop(my errors);
+    free(my errors);
+}
 
 csview test_name_from_path(const char* path) {
     csview name = csview_from(basename_of(path));
@@ -205,7 +218,7 @@ static void process_errors(BaselineTestCase* me) {
     }
 }
 
-BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
+BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* source_path, bool noisy) {
     if (!noisy) {
         inhibit_nonfatals();
     }
@@ -213,7 +226,12 @@ BaselineTestCase run_baseline_test_case(const char* source_path, bool noisy) {
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
-    program_preload_builtins_deprecated(program);
+
+    if (!cache->es5) {
+        cache->es5 = program_load_es5(cache->loader);
+        cstr_take(c_const_cast(cstr*, &cache->es5->decl_override), cstr_lit("lib.es5.d.ts, --, --"));
+    }
+    program_add_globals(program, &cache->es5->scope);
 
     BaselineTestCase ret = {
         .source_path = source_path,
@@ -421,6 +439,12 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
 
 static void append_decl(cstr* target, Span span) {
     if (!span_valid(span) || !span.source) {
+        return;
+    }
+    if (cstr_size(&span.source->decl_override)) {
+        cstr_append_lit(target, ", Decl(");
+        cstr_append_s(target, span.source->decl_override);
+        cstr_append_lit(target, ")");
         return;
     }
     const char* file_start = source_file_start(span.source);
