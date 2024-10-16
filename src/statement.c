@@ -55,7 +55,7 @@ void type_decl_add_names(TypeDecl* me, Scope* scope) {
         .full = my full_span,
         .tag = DECLARATION_TYPE,
         .generic = &my generic,
-        .declared_type = type_ref(&my type),
+        .declared_type = type_refcopy(&my type),
     });
 }
 
@@ -88,7 +88,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
         .name = my name,
         .full = my full_span,
         .tag = DECLARATION_NAMESPACE,
-        .value_type = type_ref(&my value_type),
+        .value_type = type_ref_always(&my value_type),
     });
 }
 

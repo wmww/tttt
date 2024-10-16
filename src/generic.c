@@ -36,7 +36,7 @@ void generic_add_names(Generic const* me, Scope* scope) {
             .name = i.ref->name,
             .full = i.ref->name,
             .tag = DECLARATION_TYPE,
-            .declared_type = type_ref(&i.ref->extends),
+            .declared_type = type_refcopy(&i.ref->extends),
         });
     }
 }
@@ -284,7 +284,7 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
     }
     VecType arg_types = {0};
     c_foreach(i, vec_expr, *args) {
-        vec_type_push(&arg_types, type_ref(expr_get_type(i.ref)));
+        vec_type_push(&arg_types, type_refcopy(expr_get_type(i.ref)));
     }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         collect_generic_candidates(

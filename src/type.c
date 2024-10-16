@@ -266,7 +266,7 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
                 .name = my inferred.get->name,
                 .full = my inferred.get->name,
                 .tag = DECLARATION_TYPE,
-                .declared_type = type_ref(&my inferred.get->extends),
+                .declared_type = type_refcopy(&my inferred.get->extends),
             });
             break;
 
@@ -1839,7 +1839,7 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 } else if (last_arg_rest) {
                     rest_span = span_between(rest_span, i.ref->outer_span);
                     vec_tuple_element_push(&rest_tuple, (TupleElement){
-                        .type = type_ref(expr_get_type(i.ref)),
+                        .type = type_refcopy(expr_get_type(i.ref)),
                     });
                 }
             }

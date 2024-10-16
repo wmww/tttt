@@ -94,7 +94,7 @@ Type identifier_type_evaluate_type(IdentifierType* me) {
             );
             return ret;
         } else {
-            return type_ref(&my decl_ref->type.type);
+            return type_refcopy(&my decl_ref->type.type);
         }
     } else {
         return type_any;

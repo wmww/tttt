@@ -40,7 +40,7 @@ void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* e
         my generic = generic_clone(my owned_function_impl->generic);
         c_foreach(i, vec_callable_arg, my args) {
             type_drop(&i.ref->type);
-            i.ref->type = type_ref(binding_get_effective_type(&i.ref->source->initializer.binding));
+            i.ref->type = type_refcopy(binding_get_effective_type(&i.ref->source->initializer.binding));
             type_lookup_names(&i.ref->type, names, errs);
         }
         // If me owns a FunctionImpl, that means the type was parsed as a type (not generated from an implementaiton)
@@ -133,7 +133,7 @@ Type callable_type_get_arg_type(CallableType const* me, intptr_t i) {
         return type_never;
     } else {
         CallableArg const* arg = vec_callable_arg_at(&my args, i);
-        Type ret = type_ref(&arg->type);
+        Type ret = type_refcopy(&arg->type);
         if (arg->optional) {
             ret = type_composite(TYPE_UNION, ret, type_undefined);
         }

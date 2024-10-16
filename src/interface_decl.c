@@ -77,7 +77,7 @@ Type interface_decl_evaluate_type(InterfaceDecl* me) {
     }
 
     if (vec_interface_member_empty(&members)) {
-        return type_ref(&my type);
+        return type_refcopy(&my type);
     } else {
         return type_interface((Interface){ .members = members });
     }

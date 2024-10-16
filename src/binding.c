@@ -26,7 +26,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
                 .name = my content_span,
                 .full = my content_span,
                 .tag = DECLARATION_VARIABLE,
-                .value_type = type_ref(binding_get_effective_type(me)),
+                .value_type = type_refcopy(binding_get_effective_type(me)),
             });
             break;
 
@@ -36,7 +36,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
                 binding_add_names(
                     i.ref,
                     type_indexed(c_new(IndexedType, {
-                        .interface = type_ref(binding_get_effective_type(me)),
+                        .interface = type_refcopy(binding_get_effective_type(me)),
                         .index = type_value(value_number(index)),
                         .is_from_binding = true,
                         .array_only = true,
@@ -51,7 +51,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
                 binding_add_names(
                     &i.ref->target,
                     type_indexed(c_new(IndexedType, {
-                        .interface = type_ref(binding_get_effective_type(me)),
+                        .interface = type_refcopy(binding_get_effective_type(me)),
                         .index = type_value(value_clone(i.ref->source)),
                         .is_from_binding = true,
                     })),

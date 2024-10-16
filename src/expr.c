@@ -48,11 +48,11 @@ Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
         ) {
             return generic_degenericize_type(
                 my decl_ref->value_generic,
-                type_ref(&my decl_ref->value_type),
+                type_refcopy(&my decl_ref->value_type),
                 &my generic_params
             );
         } else {
-            return type_ref(&my decl_ref->value_type);
+            return type_refcopy(&my decl_ref->value_type);
         }
     } else {
         return type_any;
@@ -474,12 +474,12 @@ Type expr_evaluate_type(Expr const* me) {
                         .decl_ref = my this_or_super,
                     }));
                 } else {
-                    return type_ref(&my this_or_super->type.type);
+                    return type_refcopy(&my this_or_super->type.type);
                 }
             } else {
                 return type_undefined;
             }
-        case EXPR_SUPER: return my this_or_super ? type_ref(&my this_or_super->value_type) : type_any;
+        case EXPR_SUPER: return my this_or_super ? type_refcopy(&my this_or_super->value_type) : type_any;
         case EXPR_LITERAL: return type_value(value_clone(my literal));
         case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);
 
@@ -531,13 +531,13 @@ Type expr_evaluate_type(Expr const* me) {
                 expr_get_type(&my property->prop)
             );
 
-        case EXPR_AS_TYPE: return type_ref(&my as_type->type);
+        case EXPR_AS_TYPE: return type_refcopy(&my as_type->type);
 
         case EXPR_TERNARY:
             return type_composite(
                 TYPE_UNION,
-                type_ref(expr_get_type(&my ternary->yes)),
-                type_ref(expr_get_type(&my ternary->no))
+                type_refcopy(expr_get_type(&my ternary->yes)),
+                type_refcopy(expr_get_type(&my ternary->no))
             );
 
         case EXPR_CALL:
@@ -586,7 +586,7 @@ Type expr_evaluate_type(Expr const* me) {
         }
 
         case EXPR_CLASS_DECL:
-            return type_ref(&my class_decl->declaration.get->value_type);
+            return type_refcopy(&my class_decl->declaration.get->value_type);
     }
     UNREACHABLE;
 }

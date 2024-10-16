@@ -189,13 +189,44 @@ static inline Type type_lazy(LazyType* lazy) {
     };
 }
 
-// PERF: split into type_always_ref() and type_refclone(), the latter of which may create a value type if the given type
-// can be returned by value without needing to be dropped
-static inline Type type_ref(Type const* ref) {
+static inline Type type_ref_always(Type const* ref) {
     return (Type){
         .tag = TYPE_REF,
         .ref = ref,
     };
+}
+
+// Either clones or refs, whichevers cheaper (result never needs to be dropped)
+static inline Type type_refcopy(Type const* ref) {
+    switch (ref->tag) {
+        case TYPE_ANY:
+        case TYPE_UNKNOWN:
+        case TYPE_NEVER:
+        case TYPE_VOID:
+        case TYPE_BOOLEAN:
+        case TYPE_NUMBER:
+        case TYPE_STRING:
+        case TYPE_LAZY:
+        case TYPE_REF:
+            return *ref;
+
+        case TYPE_VALUE:
+        case TYPE_IDENTIFIER:
+        case TYPE_INFERRED:
+        case TYPE_CALLABLE:
+        case TYPE_INTERFACE:
+        case TYPE_ARRAY:
+        case TYPE_TUPLE:
+        case TYPE_INDEXED:
+        case TYPE_KEYOF:
+        case TYPE_TYPEOF:
+        case TYPE_TERNARY:
+        case TYPE_ABSTRACTED:
+        case TYPE_INTERSECTION:
+        case TYPE_UNION:
+            break;
+    }
+    return type_ref_always(ref);
 }
 
 static inline bool type_is_self_referential(Type const* me) {

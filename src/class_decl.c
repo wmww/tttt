@@ -51,11 +51,11 @@ Type class_item_get_type(ClassItem* me) {
         case CLASS_ITEM_FIELD:
             return make_type_abstracted(
                 my field.has_explicit_type ?
-                    type_ref(&my field.explicit_type) :
+                    type_refcopy(&my field.explicit_type) :
                     type_lazy(&my field.value.lazy_type),
                 true /* maybe should be !my field.is_readonly ? */
             );
-        case CLASS_ITEM_INTERFACE_MEMBER: return type_ref(&my interface_memeber.type);
+        case CLASS_ITEM_INTERFACE_MEMBER: return type_refcopy(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return type_never;
     }
     UNREACHABLE;
@@ -169,7 +169,7 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
             }
             ASSERT(i.ref->constructor.func.ret.tag == TYPE_ANY);
             i.ref->constructor.func.ret_explicit = true;
-            i.ref->constructor.func.ret = type_ref(&my instance_identifier_type);
+            i.ref->constructor.func.ret = type_ref_always(&my instance_identifier_type);
         }
     }
 
@@ -291,7 +291,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
 
     if (!resolve_instance && !has_constructor) {
         FunctionImpl constructor = {
-            .ret = type_ref(&my instance_identifier_type),
+            .ret = type_ref_always(&my instance_identifier_type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
             .generic = generic_clone(my generic),

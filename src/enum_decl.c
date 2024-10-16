@@ -77,7 +77,7 @@ Type enum_decl_evaluate_interface_type(EnumDecl* me) {
             cstr_from_span(i.ref->name),
             i.ref->name,
             false,
-            type_ref(&i.ref->identifier_type)
+            type_refcopy(&i.ref->identifier_type)
         ));
     }
     return type_interface((Interface){

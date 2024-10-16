@@ -79,14 +79,14 @@ static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me
     c_foreach(i, vec_function_arg, my args) {
         vec_callable_arg_push(&args, (CallableArg){
             .optional = i.ref->explicit_optional || i.ref->initializer.value.tag != EXPR_IMPLICIT_ANY,
-            .type = type_ref(binding_get_effective_type(&i.ref->initializer.binding)),
+            .type = type_refcopy(binding_get_effective_type(&i.ref->initializer.binding)),
             .source = i.ref, // Safe because FunctionImpls are always owned by the AST, and more args will not be added
         });
     }
     return type_callable(c_new(CallableType, {
         .generic = generic_clone(my generic),
         .args = args,
-        .ret = type_ref(&my ret),
+        .ret = type_ref_always(&my ret),
         .is_constructor = my is_constructor,
         .is_abstract_constructor = my is_abstract_constructor
     }));
