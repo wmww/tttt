@@ -2,7 +2,7 @@
 #include "stc/types.h"
 #include "type.h"
 #include "error.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "scope.h"
 #include "function_impl.h"
 #include "generic.h"
@@ -19,14 +19,14 @@ void identifier_expr_drop(IdentifierExpr* me) {
     vec_spanned_type_drop(&my generic_params);
 }
 
-void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx* errs) {
+void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs) {
     if (my keyword) {
-        my decl_ref = name_stack_get_keyword(names, my keyword);
+        my decl_ref = scope_stack_get_keyword(names, my keyword);
         return;
     }
-    my decl_ref = name_stack_get_value(names, my name.sv);
+    my decl_ref = scope_stack_get_value(names, my name.sv);
     if (my decl_ref) {
-    } else if (name_stack_get_type(names, my name.sv)) {
+    } else if (scope_stack_get_type(names, my name.sv)) {
         error_ctx_error(
             errs, my name, 2693,
             "'%.*s' only refers to a type, but is being used as a value here.",
@@ -170,7 +170,7 @@ void expr_drop(Expr* me) {
     lazy_type_drop(&my lazy_type);
 }
 
-void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs) {
+void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_EXPR;
 
     switch (my tag) {

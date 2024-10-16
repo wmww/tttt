@@ -26,7 +26,7 @@ typedef struct Scope {
     HmapStrNamedImport imports;
     Declaration const* this_declaration;
     Declaration const* super_declaration;
-    NameStack* current_name_stack; // The NameStack this scope is in, or null if none
+    ScopeStack* current_scope_stack; // The ScopeStack this scope is in, or null if none
 } Scope;
 
 void scope_drop(Scope* me);
@@ -46,9 +46,9 @@ static inline Scope scope_init_function(ErrorCtx* errs) {
     };
 }
 
-void scope_push_to_stack(Scope* me, NameStack* stack);
+void scope_push_to_stack(Scope* me, ScopeStack* stack);
 // Cannot be a scope_init_* function because me needs to be stable
-void scope_push_generic_to_stack(Scope* me, Generic* generic, NameStack* stack);
+void scope_push_generic_to_stack(Scope* me, Generic* generic, ScopeStack* stack);
 void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dropped while on stack
 
 // Checks that ret was previously null, creates a new declaration if needed
@@ -57,3 +57,7 @@ void scope_add_import(Scope* me, NamedImport import);
 
 void scope_process_imports(Scope* me);
 Type scope_make_interface_from(Scope const* me);
+
+typedef Scope const* ScopeCPtr;
+#define i_key_names ScopeCPtr, scope_cptr
+#include "wrap_stc/vec.h"

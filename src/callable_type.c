@@ -1,6 +1,6 @@
 #include "callable_type.h"
 #include "generic.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "function_impl.h"
 #include "error.h"
 #include "several_types.h"
@@ -32,7 +32,7 @@ CallableType callable_type_clone(CallableType me) {
     return me;
 }
 
-void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs) {
+void callable_type_resolve_names(CallableType* me, ScopeStack* names, ErrorCtx* errs) {
     if (my owned_function_impl) {
         function_impl_lookup_names(my owned_function_impl, false, names, errs);
 

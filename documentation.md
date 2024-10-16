@@ -53,7 +53,7 @@ The `Program` struct owns the source code buffers and ASTs of all loaded files, 
 ### Scope
 A lexical scope, maps identifier names to `Declaration`s.
 
-### NameStack
+### ScopeStack
 Used for looking up identifier names, scopes can be pushed and popped.
 
 ### LazyType
@@ -83,7 +83,7 @@ The `Filesystem` abstraction allows tests to mock the filesystem, so the `Progra
 The parser creates an AST from the source code string, see below.
 
 ### Resolve names
-Identifier names (of both values and types) are added to a `Scope`, the `Scope` is pushed to the `NameStack`, and then names are looked up wherever they are used. Scopes are not preserved after this phase is complete (with the exception of those owned by namespaces, and other special cases).
+Identifier names (of both values and types) are added to a `Scope`, the `Scope` is pushed to the `ScopeStack`, and then names are looked up wherever they are used. Scopes are not preserved after this phase is complete (with the exception of those owned by namespaces, and other special cases).
 
 During this process additional imported source files may be added to the program. When resolving names is done for the current file(s) they are parsed and their names are resolved. This is repeated until no new files are added (see `program_load()`).
 

@@ -1,16 +1,16 @@
 #include "scope.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "error.h"
 #include "source_file.h"
 #include "interface_member.h"
 #include "generic.h"
 
-void name_stack_push_scope(NameStack* me, Scope* scope);
-void name_stack_pop_scope(NameStack* me, Scope* scope);
+void scope_stack_push_scope(ScopeStack* me, Scope* scope);
+void scope_stack_pop_scope(ScopeStack* me, Scope* scope);
 
 void scope_drop(Scope* me) {
-    if (my current_name_stack) {
-        name_stack_pop_scope(my current_name_stack, me);
+    if (my current_scope_stack) {
+        scope_stack_pop_scope(my current_scope_stack, me);
     }
     hmap_str_arc_declaration_drop(&my declarations);
     hmap_str_named_import_drop(&my imports);
@@ -19,36 +19,36 @@ void scope_drop(Scope* me) {
 Scope scope_clone(Scope me) {
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
     me.imports = hmap_str_named_import_clone(me.imports);
-    me.current_name_stack = nullptr;
+    me.current_scope_stack = nullptr;
     return me;
 }
 
-void scope_push_to_stack(Scope* me, NameStack* stack) {
-    ASSERT(!my current_name_stack);
-    my current_name_stack = stack;
-    name_stack_push_scope(stack, me);
+void scope_push_to_stack(Scope* me, ScopeStack* stack) {
+    ASSERT(!my current_scope_stack);
+    my current_scope_stack = stack;
+    scope_stack_push_scope(stack, me);
 }
 
-void scope_push_generic_to_stack(Scope* me, Generic* generic, NameStack* stack) {
+void scope_push_generic_to_stack(Scope* me, Generic* generic, ScopeStack* stack) {
     ASSERT(my tag == SCOPE_DEFAULT);
     my tag = SCOPE_GENERIC;
-    ASSERT(!my current_name_stack);
+    ASSERT(!my current_scope_stack);
     if (!generic_empty(generic)) {
         generic_add_names(generic, me);
-        my current_name_stack = stack;
-        name_stack_push_scope(stack, me);
+        my current_scope_stack = stack;
+        scope_stack_push_scope(stack, me);
         generic_lookup_names(generic, stack, my errs);
     }
 }
 
 void scope_pop_from_stack(Scope* me) {
-    ASSERT(my current_name_stack);
-    name_stack_pop_scope(my current_name_stack, me);
-    my current_name_stack = nullptr;
+    ASSERT(my current_scope_stack);
+    scope_stack_pop_scope(my current_scope_stack, me);
+    my current_scope_stack = nullptr;
 }
 
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
-    ASSERT(!my current_name_stack);
+    ASSERT(!my current_scope_stack);
     if (ret->get) {
         NONFATAL("Declaration %.*s acquired multiple times", c_SPAN(ret->get->name));
         arc_declaration_drop(ret);
@@ -197,7 +197,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 }
 
 void scope_add_import(Scope* me, NamedImport import) {
-    ASSERT(!my current_name_stack);
+    ASSERT(!my current_scope_stack);
     auto result = hmap_str_named_import_insert(
         &my imports,
         cstr_from_span(import.decl_name),

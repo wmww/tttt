@@ -1,5 +1,5 @@
 #include "class_decl.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "statement.h"
 #include "interface_member.h"
 #include "callable_type.h"
@@ -73,7 +73,7 @@ void class_decl_drop(ClassDecl* me) {
     type_drop(&my instance_identifier_type);
 }
 
-void class_item_lookup_names(ClassItem* me, NameStack* names, ErrorCtx* errs) {
+void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_lookup_names(&my constructor.func, false, names, errs);
@@ -121,7 +121,7 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
     });
 }
 
-static void class_members_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs, bool static_members) {
+static void class_members_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs, bool static_members) {
     Scope this_scope = scope_init(errs);
     this_scope.this_declaration = static_members ? &my typeof_declaration : my declaration.get;
 
@@ -135,7 +135,7 @@ static void class_members_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx
     scope_drop(&this_scope);
 }
 
-void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
+void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
     my class_type.tag = LAZY_TYPE_CLASS_CLASS;
 

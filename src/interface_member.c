@@ -36,7 +36,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
     return me;
 }
 
-void interface_member_lookup_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs) {
+void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, ErrorCtx* errs) {
     Scope scope;
     bool scope_initialized = false;
 

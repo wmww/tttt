@@ -1,5 +1,5 @@
 #include "binding.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "scope.h"
 #include "several_types.h"
 #include "display.h"
@@ -63,7 +63,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
     }
 }
 
-void binding_lookup_names(Binding* me, NameStack* names, ErrorCtx* errs) {
+void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case BINDING_NOOP:
         case BINDING_IDENTIFIER: break;
@@ -189,7 +189,7 @@ void initialized_binding_add_names(InitializedBinding* me, bool abstract_literal
     );
 }
 
-void initialized_binding_lookup_names(InitializedBinding* me, NameStack* names, ErrorCtx* errs) {
+void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names, ErrorCtx* errs) {
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names(&my value, names, errs);
 }

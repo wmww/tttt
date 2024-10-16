@@ -31,7 +31,7 @@ typedef struct CallableType {
 
 void callable_type_drop(CallableType* me);
 CallableType callable_type_clone(CallableType me);
-void callable_type_resolve_names(CallableType* me, NameStack* names, ErrorCtx* errs);
+void callable_type_resolve_names(CallableType* me, ScopeStack* names, ErrorCtx* errs);
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs);
 
 // Returned type should be dropped before me is dropped or moved

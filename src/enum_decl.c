@@ -38,7 +38,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope) {
     });
 }
 
-void enum_decl_lookup_names(EnumDecl* me, NameStack* names, ErrorCtx* errs) {
+void enum_decl_lookup_names(EnumDecl* me, ScopeStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_ENUM_INSTANCE;
     my interface_type.tag = LAZY_TYPE_ENUM_INTERFACE;
 

@@ -1,5 +1,5 @@
 #include "several_types.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "declaration.h"
 #include "scope.h"
 #include "generic.h"
@@ -21,7 +21,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
     return me;
 }
 
-void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx* errs) {
+void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs) {
     if (!my decl_ref) {
         if (vec_span_size(&my namespaces)) {
             Scope const* scope = nullptr;
@@ -42,7 +42,7 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
                         break;
                     }
                 } else {
-                    Declaration const* namespace = name_stack_get_namespace(names, i.ref->sv);
+                    Declaration const* namespace = scope_stack_get_namespace(names, i.ref->sv);
                     if (namespace) {
                         scope = namespace->namespace;
                     } else {
@@ -67,9 +67,9 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
                 prev_span = *i.ref;
             }
         } else if (my keyword) {
-            my decl_ref = name_stack_get_keyword(names, my keyword);
+            my decl_ref = scope_stack_get_keyword(names, my keyword);
         } else {
-            my decl_ref = name_stack_get_type(names, my name.sv);
+            my decl_ref = scope_stack_get_type(names, my name.sv);
             if (!my decl_ref) {
                 error_ctx_error(
                     errs,
@@ -150,7 +150,7 @@ IndexedType indexed_type_clone(IndexedType me) {
     };
 }
 
-void indexed_type_lookup_names(IndexedType* me, NameStack* names, ErrorCtx* errs) {
+void indexed_type_lookup_names(IndexedType* me, ScopeStack* names, ErrorCtx* errs) {
     type_lookup_names(&my interface, names, errs);
     type_lookup_names(&my index, names, errs);
 }
@@ -175,7 +175,7 @@ KeyofType keyof_type_clone(KeyofType me) {
     };
 }
 
-void keyof_type_lookup_names(KeyofType* me, NameStack* names, ErrorCtx* errs) {
+void keyof_type_lookup_names(KeyofType* me, ScopeStack* names, ErrorCtx* errs) {
     type_lookup_names(&my interface, names, errs);
 }
 
@@ -197,7 +197,7 @@ TypeofType typeof_type_clone(TypeofType me) {
     return me;
 }
 
-void typeof_type_lookup_names(TypeofType* me, NameStack* names, ErrorCtx* errs) {
+void typeof_type_lookup_names(TypeofType* me, ScopeStack* names, ErrorCtx* errs) {
     expr_lookup_names(my expr, names, errs);
 }
 

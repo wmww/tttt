@@ -1,7 +1,7 @@
 #include "statement.h"
 #include "import_statement.h"
 #include "error.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "scope.h"
 #include "class_decl.h"
 #include "enum_decl.h"
@@ -30,7 +30,7 @@ void variable_statement_add_names(VariableStatement* me, bool declared, Scope* s
     }
 }
 
-void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs) {
+void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
         initialized_binding_lookup_names(i.ref, names, errs);
     }
@@ -92,7 +92,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
     });
 }
 
-void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs) {
+void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs) {
     scope_push_to_stack(&my inner_scope, names);
     c_foreach(i, vec_statement, my contents.statements) {
         statement_resolve_names(i.ref, names, errs);
@@ -303,7 +303,7 @@ void statement_add_names(Statement* me, Scope* scope) {
     }
 }
 
-void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
+void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case STATEMENT_BLOCK:
             block_resolve_names(&my block, names, errs);
@@ -447,7 +447,7 @@ void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_RETURN_EXPR:
-            if (!name_stack_has_function(names)) {
+            if (!scope_stack_has_function(names)) {
                 error_ctx_error(
                     errs,
                     my expr.outer_span,

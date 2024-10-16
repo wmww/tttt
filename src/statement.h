@@ -29,7 +29,7 @@ typedef struct VariableStatement {
 
 void variable_statement_drop(VariableStatement* me);
 void variable_statement_add_names(VariableStatement* me, bool declared, Scope* scope);
-void variable_statement_resolve_names(VariableStatement* me, NameStack* names, ErrorCtx* errs);
+void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 
 // Type declaration
@@ -59,7 +59,7 @@ typedef struct NamespaceDecl {
 
 void namespace_decl_drop(NamespaceDecl* me);
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope);
-void namespace_decl_resolve_names(NamespaceDecl* me, NameStack* names, ErrorCtx* errs);
+void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs);
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs);
 
 // If statements
@@ -154,7 +154,7 @@ static inline DeclExported statement_get_exported(Statement const* me) {
 
 void statement_drop(Statement* me);
 void statement_add_names(Statement* me, Scope* scope);
-void statement_resolve_names(Statement* me, NameStack* names, ErrorCtx* errs);
+void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs);
 Type statement_evaluate_return_type(Statement* me);
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 

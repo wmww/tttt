@@ -14,7 +14,7 @@ typedef struct AbstractedType AbstractedType;
 typedef struct CallableType CallableType;
 typedef struct TupleElement TupleElement;
 typedef struct ErrorCtx ErrorCtx;
-typedef struct NameStack NameStack;
+typedef struct ScopeStack ScopeStack;
 typedef struct Scope Scope;
 typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
@@ -248,7 +248,7 @@ static inline Type type_move(Type* me) {
     return ret;
 }
 
-void type_lookup_names(Type* me, NameStack* names, ErrorCtx* errs);
+void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs);
 void type_typecheck(Type const* me, ErrorCtx* errs);
 Type const* type_resolve(Type const* me);
 Type const* type_resolve_one_layer(Type const* me); // Returns nullptr if nothing to resolve

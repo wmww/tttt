@@ -1,5 +1,5 @@
 #include "generic.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "scope.h"
 #include "several_types.h"
 #include "callable_type.h"
@@ -43,7 +43,7 @@ void generic_add_names(Generic const* me, Scope* scope) {
     }
 }
 
-void generic_lookup_names(Generic const* me, NameStack* names, ErrorCtx* errs) {
+void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_generic_item, my items) {
         type_lookup_names(&i.ref->extends, names, errs);
         type_lookup_names(&i.ref->fallback, names, errs);

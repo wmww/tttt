@@ -1,6 +1,6 @@
 #include "block.h"
 #include "statement.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "error.h"
 
 void block_drop(Block* me) {
@@ -13,13 +13,13 @@ void block_add_names(Block const* me, Scope* scope) {
     }
 }
 
-void block_lookup_names(Block const* me, NameStack* names, ErrorCtx* errs) {
+void block_lookup_names(Block const* me, ScopeStack* names, ErrorCtx* errs) {
     c_foreach(i, vec_statement, my statements) {
         statement_resolve_names(i.ref, names, errs);
     }
 }
 
-void block_resolve_names(Block const* me, NameStack* names, ErrorCtx* errs) {
+void block_resolve_names(Block const* me, ScopeStack* names, ErrorCtx* errs) {
     Scope scope = scope_init(errs);
     block_add_names(me, &scope);
     scope_push_to_stack(&scope, names);

@@ -1,5 +1,5 @@
 #include "function_impl.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "callable_type.h"
 #include "generic.h"
 #include "statement.h"
@@ -29,7 +29,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope) {
     });
 }
 
-void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, NameStack* names, ErrorCtx* errs) {
+void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_FUNCTION;
 
     // Handle generics (includes adding names)

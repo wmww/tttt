@@ -66,7 +66,7 @@ static inline InterfaceMember interface_member_make(
 
 void interface_member_drop(InterfaceMember* me);
 InterfaceMember interface_member_clone(InterfaceMember me);
-void interface_member_lookup_names(InterfaceMember* me, NameStack* names, ErrorCtx* errs);
+void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, ErrorCtx* errs);
 void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs);
 
 bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index);

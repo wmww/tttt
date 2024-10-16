@@ -6,7 +6,7 @@
 #include "statement.h"
 #include "source_file.h"
 #include "import_statement.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 
 #define i_key_class_names SourceFile, source_file
 #define i_no_clone
@@ -222,7 +222,7 @@ SourceFile const* program_load(Program* me, const char* path) {
         scope_process_imports(&source->scope);
     }
 
-    NameStack* names = name_stack_new();
+    ScopeStack* names = scope_stack_new();
     scope_push_to_stack(&my global_scope, names);
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
@@ -233,7 +233,7 @@ SourceFile const* program_load(Program* me, const char* path) {
     }
 
     scope_pop_from_stack(&my global_scope);
-    name_stack_destroy(names);
+    scope_stack_destroy(names);
 
     clear_error_config();
     vec_source_file_ptr_drop(&in_flight_source_files);

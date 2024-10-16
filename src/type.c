@@ -7,7 +7,7 @@
 #include "function_impl.h"
 #include "generic.h"
 #include "value.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "scope.h"
 #include "display.h"
 #include "error.h"
@@ -333,7 +333,7 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
     }
 }
 
-void type_lookup_names(Type* me, NameStack* names, ErrorCtx* errs) {
+void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:

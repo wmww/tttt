@@ -3,7 +3,7 @@
 #include "interface_member.h"
 #include "interface.h"
 #include "type.h"
-#include "name_stack.h"
+#include "scope_stack.h"
 #include "scope.h"
 
 void interface_decl_drop(InterfaceDecl* me) {
@@ -24,7 +24,7 @@ void interface_decl_add_names(InterfaceDecl* me, Scope* scope) {
     });
 }
 
-void interface_decl_lookup_names(InterfaceDecl* me, NameStack* names, ErrorCtx* errs) {
+void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_INTERFACE_DECL;
     Scope generic_scope = scope_init(errs);
     scope_push_generic_to_stack(&generic_scope, &my generic, names);

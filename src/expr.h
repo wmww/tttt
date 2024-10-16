@@ -15,7 +15,7 @@ typedef struct vec_object_expr_item ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ClassDecl ClassDecl;
 typedef struct ErrorCtx ErrorCtx;
-typedef struct NameStack NameStack;
+typedef struct ScopeStack ScopeStack;
 typedef struct Expr Expr;
 
 wrap_forward_vec(ObjectExprItem, object_expr_item);
@@ -29,7 +29,7 @@ typedef struct IdentifierExpr {
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);
-void identifier_expr_lookup_names(IdentifierExpr* me, NameStack* names, ErrorCtx* errs);
+void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs);
 Type identifier_expr_evaluate_type(IdentifierExpr const* me);
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
 
@@ -149,7 +149,7 @@ extern const int ternary_precedence;
 extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
-void expr_lookup_names(Expr* me, NameStack* names, ErrorCtx* errs);
+void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs);
 Type expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 
