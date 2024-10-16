@@ -868,7 +868,6 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Parser p = parser(parent);
     VecSpannedType generic_params = {0};
-    Anchor a = anchor(&p);
 
     Span name;
     VecSpan namespaces = vec_span_init();
@@ -898,7 +897,6 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     *ret = (IdentifierType){
         .namespaces = namespaces,
         .name = name,
-        .full_span = span_from(a),
         .generic_params = generic_params,
     };
     return parse_success(&p);
@@ -969,13 +967,11 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
-            .full_span = span_from(a),
             .is_this = true,
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
-            .full_span = span_from(a),
             .is_super = true,
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "readonly")) {

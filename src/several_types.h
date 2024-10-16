@@ -5,10 +5,11 @@
 
 // Identifier
 
+// PERF: maybe split this into a simple version that fits in a type by value and a complex version with namespaces/
+// generic params/etc
 typedef struct IdentifierType {
     VecSpan namespaces;
     Span name;
-    Span full_span;
     Declaration const* decl_ref;
     VecSpannedType generic_params;
     LazyType type; // May contain a copy of the type with the generic parameters swapped in or a reference
