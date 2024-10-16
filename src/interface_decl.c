@@ -11,7 +11,6 @@ void interface_decl_drop(InterfaceDecl* me) {
     type_drop(&my type);
     lazy_type_drop(&my lazy_type);
     arc_declaration_drop(&my declaration);
-    declaration_drop(&my this_declaration);
 }
 
 void interface_decl_add_names(InterfaceDecl* me, Scope* scope) {
@@ -32,11 +31,6 @@ void interface_decl_lookup_names(InterfaceDecl* me, NameStack* names, ErrorCtx* 
         type_lookup_names(&i.ref->type, names, errs);
     }
     Scope block_scope = scope_init(errs);
-
-    declaration_init(&my this_declaration, (DeclProps){
-        .tag = DECLARATION_TYPE,
-        .value_type = type_any,
-    });
 
     scope_push_to_stack(&block_scope, names);
     type_lookup_names(&my type, names, errs);

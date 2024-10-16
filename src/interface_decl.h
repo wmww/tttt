@@ -13,7 +13,6 @@ typedef struct InterfaceDecl {
     Type type;
     LazyType lazy_type;
     ArcDeclaration declaration;
-    Declaration this_declaration;
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);
