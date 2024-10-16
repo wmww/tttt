@@ -84,15 +84,15 @@ void identifier_type_lookup_names(IdentifierType* me, NameStack* names, ErrorCtx
 
 Type identifier_type_evaluate_type(IdentifierType* me) {
     if (my decl_ref) {
-        if (my decl_ref->type.generic) {
+        if (my decl_ref->type_generic) {
             Type ret = generic_degenericize_type(
-                my decl_ref->type.generic,
-                type_clone(my decl_ref->type.type),
+                my decl_ref->type_generic,
+                type_clone(my decl_ref->declared_type),
                 &my generic_params
             );
             return ret;
         } else {
-            return type_refcopy(&my decl_ref->type.type);
+            return type_refcopy(&my decl_ref->declared_type);
         }
     } else {
         return type_any;

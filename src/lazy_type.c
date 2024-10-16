@@ -58,8 +58,8 @@ void lazy_type_evaluate(LazyType* me) {
             result = identifier_type_evaluate_type(c_container_of(me, IdentifierType, type));
             break;
 
-        case LAZY_TYPE_NAMED_TYPE:
-            result = named_type_evaluate_type(c_container_of(me, NamedType, lazy_type));
+        case LAZY_TYPE_DECLARATION:
+            result = declaration_evaluate_declared_type(c_container_of(me, Declaration, declared_type_lazy));
             break;
     }
 

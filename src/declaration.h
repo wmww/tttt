@@ -2,16 +2,6 @@
 
 #include "lazy_type.h"
 
-typedef struct NamedType {
-    Type type;
-    Generic const* generic;
-    bool is_typeof_class;
-    VecType merged_types;
-    LazyType lazy_type;
-} NamedType;
-
-Type named_type_evaluate_type(NamedType* me);
-
 typedef enum DeclarationTag {
     DECLARATION_NONE = 0,
     DECLARATION_NAMESPACE,
@@ -52,7 +42,11 @@ typedef struct Declaration {
     Generic const* value_generic; // Null if generic empty
     Type value_type;
     DeclarationTag type_tag;
-    NamedType type;
+    Type declared_type;
+    Generic const* type_generic;
+    bool is_typeof;
+    VecType declared_type_list;
+    LazyType declared_type_lazy;
 } Declaration;
 
 typedef struct DeclProps {
@@ -66,6 +60,7 @@ typedef struct DeclProps {
 } DeclProps;
 
 void declaration_drop(Declaration* me);
+Type declaration_evaluate_declared_type(Declaration const* me);
 
 // If called multiple times attempts to merge declarations, does not check if merging is allowed, scope.c does that
 void declaration_init(Declaration* me, DeclProps props);

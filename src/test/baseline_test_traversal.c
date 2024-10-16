@@ -333,12 +333,12 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         Type const* resolved = type_resolve_until_identifier(unresolved);
         if (resolved->tag == TYPE_IDENTIFIER &&
             resolved->identifier->decl_ref &&
-            resolved->identifier->decl_ref->type.is_typeof_class
+            resolved->identifier->decl_ref->is_typeof
         ) {
             // Extremely hacky but whatever. No idea why tsc does this.
-            *(bool*)(&resolved->identifier->decl_ref->type.is_typeof_class) = false;
+            *(bool*)(&resolved->identifier->decl_ref->is_typeof) = false;
             baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, resolved);
-            *(bool*)(&resolved->identifier->decl_ref->type.is_typeof_class) = true;
+            *(bool*)(&resolved->identifier->decl_ref->is_typeof) = true;
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
             expr_compile_test_info(&my extends, ctx);

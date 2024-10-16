@@ -23,7 +23,7 @@ typedef struct LazyType {
         LAZY_TYPE_ENUM_INTERFACE,
         LAZY_TYPE_INTERFACE_DECL,
         LAZY_TYPE_IDENTIFIER_TYPE,
-        LAZY_TYPE_NAMED_TYPE,
+        LAZY_TYPE_DECLARATION,
     } tag;
     Type evaluated; // Should be {0} when tag is not LAZY_TYPE_EVALUATED
 } LazyType;
