@@ -1119,6 +1119,15 @@ intptr_t type_max_numeric_index(Type const* me) {
     return type_get_numeric_index_bound(me, true);
 }
 
+signed char type_is_trivially_truthy(Type const* me) {
+    me = type_resolve(me);
+    switch (my tag) {
+        case TYPE_VALUE: return value_to_boolean(&my value);
+        default: break;
+    }
+    return -1;
+}
+
 void type_abstract_literals(Type* me) {
     switch (my tag) {
         case TYPE_ANY:

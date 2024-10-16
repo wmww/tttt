@@ -50,7 +50,7 @@ bool value_to_boolean(Value const* me) {
         case VALUE_UNDEFINED: return false;
         case VALUE_NULL: return false;
         case VALUE_BOOLEAN: return my boolean;
-        case VALUE_NUMBER: return my number != 0;
+        case VALUE_NUMBER: return !isnan(my number) && my number != 0;
         case VALUE_STRING: return !cstr_empty(&my string);
         case VALUE_OBJECT: return true;
         case VALUE_ARRAY: return true;

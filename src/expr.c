@@ -487,6 +487,45 @@ static void binary_op_typecheck(
     }
 }
 
+static Type unary_op_evaluate_type(
+    UnaryOp op,
+    Expr* expr
+) {
+    switch (op) {
+        case UNARY_OP_LEFT_BANG:
+            switch (type_is_trivially_truthy(expr_get_type(expr))) {
+                case 1: return type_value(value_boolean(false));
+                case 0: return type_value(value_boolean(true));
+                default: return type_boolean;
+            }
+            break;
+
+        case UNARY_OP_TYPEOF: return type_string;
+        case UNARY_OP_VOID: return type_undefined;
+        case UNARY_OP_TILDE: return type_number;
+
+        case UNARY_OP_PLUS:
+        case UNARY_OP_MINUS:
+            if (!expr_is_perenthisized(expr) && expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_NUMBER) {
+                return type_value(value_number(op == UNARY_OP_PLUS ? expr->literal.number : -expr->literal.number));
+            } else {
+                return type_number;
+            }
+
+        case UNARY_OP_LEFT_PLUS_PLUS:
+        case UNARY_OP_LEFT_MINUS_MINUS:
+        case UNARY_OP_RIGHT_PLUS_PLUS:
+        case UNARY_OP_RIGHT_MINUS_MINUS: return type_number;
+
+        case UNARY_OP_RIGHT_BANG: {
+            Type ret = type_clone(*expr_get_type(expr));
+            type_remove_null_and_undefined(&ret);
+            return ret;
+        }
+    }
+    UNREACHABLE;
+}
+
 Type expr_evaluate_type(Expr const* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: return type_any;
@@ -502,39 +541,7 @@ Type expr_evaluate_type(Expr const* me) {
             );
 
         case EXPR_UNARY_OP:
-            switch (my unary_op->op) {
-                case UNARY_OP_LEFT_BANG: return type_boolean;
-                case UNARY_OP_TYPEOF: return type_string;
-                case UNARY_OP_VOID: return type_undefined;
-                case UNARY_OP_TILDE: return type_number;
-
-                case UNARY_OP_PLUS:
-                case UNARY_OP_MINUS:
-                    if (!expr_is_perenthisized(&my unary_op->expr) &&
-                        my unary_op->expr.tag == EXPR_LITERAL &&
-                        my unary_op->expr.literal.tag == VALUE_NUMBER
-                    ) {
-                        return type_value(value_number(
-                            my unary_op->op == UNARY_OP_PLUS ?
-                                my unary_op->expr.literal.number :
-                                -my unary_op->expr.literal.number
-                        ));
-                    } else {
-                        return type_number;
-                    }
-
-                case UNARY_OP_LEFT_PLUS_PLUS:
-                case UNARY_OP_LEFT_MINUS_MINUS:
-                case UNARY_OP_RIGHT_PLUS_PLUS:
-                case UNARY_OP_RIGHT_MINUS_MINUS: return type_number;
-
-                case UNARY_OP_RIGHT_BANG: {
-                    Type ret = type_clone(*expr_get_type(&my unary_op->expr));
-                    type_remove_null_and_undefined(&ret);
-                    return ret;
-                }
-            }
-            UNREACHABLE;
+            return unary_op_evaluate_type(my unary_op->op, &my unary_op->expr);
 
         case EXPR_PROPERTY:
             return index_type_evaluate_type(

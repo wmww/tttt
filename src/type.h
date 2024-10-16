@@ -258,6 +258,7 @@ bool type_overlaps(Type const* a, Type const* b);
 bool type_extends_array(Type const* sub);
 intptr_t type_min_numeric_index(Type const* me); // returns 0 if numeric indexes unsupported on this type
 intptr_t type_max_numeric_index(Type const* me); // returns INTPTR_MAX if unbounded, -1 if unsupported
+signed char type_is_trivially_truthy(Type const* me); // returns 1 if always truthy, 0 if always falsey and -1 both
 void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
 void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
 

@@ -30258,7 +30258,7 @@ const baselines = {
     'voidAsOperator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'voidConstructor': {
         errors: true,
