@@ -51,7 +51,7 @@ See dedicated section below for details.
 The `Program` struct owns the source code buffers and ASTs of all loaded files, manages imports, etc.
 
 ### Scope
-A lexical scope, keeps track of identifier names.
+A lexical scope, maps identifier names to `Declaration`s.
 
 ### NameStack
 Used for looking up identifier names, scopes can be pushed and popped.
@@ -98,10 +98,10 @@ Sometimes types are owned by the AST and sometimes they are not. Types will not 
 
 One easy way to tell if a struct may not always be owned by the AST is if it's clonable. Types are clonable, but the AST is not. If something has a `*_clone()` function it's likely not always owned by the AST.
 
-Since types are *sometimes* part of the AST (generally when they are explicitly specified by the programmer) they sometimes need to own other AST things (such as how `infer`ed types own a `NamedType`). In these cases clones of the AST types will generally pick up either counted references or non-owning references of these things, but this can get a bit messy and possibly should be improved.
+Since types are *sometimes* part of the AST (generally when they are explicitly specified in the source code) they sometimes need to own other AST things (such as how `infer`ed types own an `ArcDeclaration`). In these cases they will generally have both an owned value and a non-owning reference. Clones will only pick up the non-owning reference, with the assumption the copy of the type with the owned value will outlive them (because it should be part of the AST). We don't trust arcs (shared references) because retain cycles.
 
-### NamedType/NamedValue
-The `NameStack` is used to look these up, but they are owned by the AST struct that declares them. They live as long as the AST, and are not created or destroyed in the typecheck phase. It's generally a better ides to use a `Named*` pointer to disambiguate names rather than the name string itself. Let the `NameStack` code handle scopes and shadowing so nowhere else has to.
+### Declarations
+In TypeScript multiple declarations in the source code can contribute to a single logical declaration (this is known as declaration merging). For this reason declarations are generally stored as arcs. When initializing a declaration from a Scope you don't know if you're getting a fresh one or an existing one. Sometimes there's an existing one, but it's invalid to merge with it so you get a fresh one and an error is produced. The Scope figures this all out.
 
 ## Parsing
 As mentioned above the parsing framework is custom, but it should be fairly straightforward.
