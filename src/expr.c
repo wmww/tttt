@@ -270,14 +270,23 @@ static Type binary_op_evaluate_type(
     Expr const* expr
 ) {
     switch (op) {
-        case BINARY_OP_PLUS:
-            if (type_extends(left, &type_string) || type_extends(right, &type_string)) {
-                return type_string;
+        case BINARY_OP_PLUS: {
+            const bool left_extends_string = type_extends(left, &type_string);
+            const bool right_extends_string = type_extends(right, &type_string);
+            if (left_extends_string || right_extends_string) {
+                if ((left_extends_string && type_resolve(left)->tag != TYPE_ANY) ||
+                    (right_extends_string && type_resolve(right)->tag != TYPE_ANY)
+                ) {
+                    return type_string;
+                } else {
+                    return type_any;
+                }
             } else if (type_extends(left, &type_number) && type_extends(right, &type_number)) {
                 return type_number;
             } else {
                 return type_any;
             }
+        }
 
         case BINARY_OP_STAR_STAR:
         case BINARY_OP_STAR:

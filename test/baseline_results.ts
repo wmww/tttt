@@ -938,7 +938,7 @@ const baselines = {
     'anyPlusAny1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argsInScope': {
         errors: false,
@@ -1113,7 +1113,7 @@ const baselines = {
     'arithmeticOnInvalidTypes2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arityErrorRelatedSpanBindingPattern': {
         errors: false,
@@ -2351,7 +2351,7 @@ const baselines = {
         types: true,
     },
     'binaryArithmeticControlFlowGraphNotTooLarge': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2966,7 +2966,7 @@ const baselines = {
         types: true,
     },
     'castTest': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -4678,7 +4678,7 @@ const baselines = {
     'commentsArgumentsOfCallExpression2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentsAtEndOfFile1': {
         errors: false,
@@ -8523,7 +8523,7 @@ const baselines = {
     'deeplyDependentLargeArrayMutation2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyNestedAssignabilityErrorsCombined': {
         errors: false,
@@ -12578,7 +12578,7 @@ const baselines = {
     'fatarrowfunctionsOptionalArgsErrors2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fatarrowfunctionsOptionalArgsErrors3': {
         errors: false,
@@ -15731,7 +15731,7 @@ const baselines = {
         types: false,
     },
     'inferPropertyWithContextSensitiveReturnStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24358,7 +24358,7 @@ const baselines = {
     'recursiveInference1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveInferenceBug': {
         errors: false,
@@ -41808,7 +41808,7 @@ const baselines = {
     'asOpEmitParens': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asOperator1': {
         errors: true,
@@ -41883,7 +41883,7 @@ const baselines = {
     'compoundAdditionAssignmentWithInvalidOperands': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compoundArithmeticAssignmentLHSCanBeAssigned': {
         errors: false,
@@ -41896,9 +41896,9 @@ const baselines = {
         types: true,
     },
     'compoundAssignmentLHSIsReference': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'compoundAssignmentLHSIsValue': {
         errors: false,
@@ -41928,7 +41928,7 @@ const baselines = {
     'additionOperatorWithNullValueAndValidOperator': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'additionOperatorWithNumberAndEnum': {
         errors: true,
@@ -41948,7 +41948,7 @@ const baselines = {
     'additionOperatorWithTypeParameter': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'additionOperatorWithUndefinedValueAndInvalidOperands': {
         errors: false,
@@ -41958,7 +41958,7 @@ const baselines = {
     'additionOperatorWithUndefinedValueAndValidOperator': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arithmeticOperatorWithAnyAndNumber': {
         errors: true,
@@ -43568,7 +43568,7 @@ const baselines = {
     'plusOperatorInvalidOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'plusOperatorWithAnyOtherType': {
         errors: false,
@@ -49423,22 +49423,22 @@ const baselines = {
     'parserAmbiguityWithBinaryOperator1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserAmbiguityWithBinaryOperator2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserAmbiguityWithBinaryOperator3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserAmbiguityWithBinaryOperator4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserCastVersusArrowFunction1': {
         errors: false,
@@ -50428,7 +50428,7 @@ const baselines = {
     'parser512325': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser519458': {
         errors: false,
@@ -51233,7 +51233,7 @@ const baselines = {
     'parserStrictMode5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserStrictMode6-negative': {
         errors: false,
@@ -51488,7 +51488,7 @@ const baselines = {
     'parserAdditiveExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArgumentList1': {
         errors: false,
@@ -53263,7 +53263,7 @@ const baselines = {
     'scannerAdditiveExpression1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerClass2': {
         errors: false,
