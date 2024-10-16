@@ -50,13 +50,6 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_function_arg, my args) {
         initialized_binding_add_names(&i.ref->initializer, true, &function_scope);
-        if (!i.ref->initializer.binding.has_explicit_type &&
-            i.ref->initializer.value.tag == EXPR_IMPLICIT_ANY
-        ) {
-            if (get_error_config()->no_implicit_any) {
-                binding_add_implicit_any_type_errors(&i.ref->initializer.binding, true, errs);
-            }
-        }
         if (i.ref->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i.ref->initializer.binding.content_span, "this")
         ) {
@@ -140,6 +133,13 @@ Type function_impl_evaluate_type(FunctionImpl* me) {
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     c_foreach(i, vec_function_arg, my args) {
+        if (!i.ref->initializer.binding.has_explicit_type &&
+            i.ref->initializer.value.tag == EXPR_IMPLICIT_ANY
+        ) {
+            if (get_error_config()->no_implicit_any) {
+                binding_add_implicit_any_type_errors(&i.ref->initializer.binding, true, errs);
+            }
+        }
         initialized_binding_typecheck(&i.ref->initializer, errs);
     }
 
