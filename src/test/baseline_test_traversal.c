@@ -249,9 +249,11 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         .declarations = vec_span_single(my full_span),
         .span = my name,
     });
-    if (my declaration.get) {
-        baseline_test_case_add_type(ctx, my name, &my declaration.get->type.type);
-    }
+    Type t = type_identifier(c_new(IdentifierType, {
+        .name = my name,
+    }));
+    baseline_test_case_add_type(ctx, my name, &t);
+    type_drop(&t);
     c_foreach(i, vec_enum_case, my cases) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_single(i.ref->name),
@@ -322,17 +324,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         if (is_expr) {
             baseline_test_case_add_type(ctx, my name, &my declaration.get->value.type);
         } else {
-            Type t = type_identifier(c_new(IdentifierType, {
-                .name = my name,
-            }));
-            c_foreach(i, vec_generic_item, my generic.items) {
-                vec_spanned_type_push(&t.identifier->generic_params, spanned_type(
-                    i.ref->name,
-                    type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
-                ));
-            }
-            baseline_test_case_add_type(ctx, my name, &t);
-            type_drop(&t);
+            baseline_test_case_add_type(ctx, my name, &my instance_identifier_type);
         }
     }
     generic_compile_test_info(&my generic, ctx);

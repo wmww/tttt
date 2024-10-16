@@ -21,9 +21,8 @@ typedef struct EnumDecl {
     VecEnumCase cases;
     LazyType instance_type;
     LazyType interface_type;
-    ArcDeclaration declaration; // Types are identifiers that refer to interface_declaration and instance_declaration
-    Declaration interface_declaration; // Not Arc because not added to scope directly
-    Declaration instance_declaration; // Not Arc because not added to scope directly
+    Declaration typeof_declaration; // Not Arc because not added to scope directly
+    ArcDeclaration declaration;
 } EnumDecl;
 
 void enum_decl_drop(EnumDecl* me);

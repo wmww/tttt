@@ -13,25 +13,17 @@ void enum_decl_drop(EnumDecl* me) {
     vec_enum_case_drop(&my cases);
     lazy_type_drop(&my instance_type);
     lazy_type_drop(&my interface_type);
+    declaration_drop(&my typeof_declaration);
     arc_declaration_drop(&my declaration);
-    declaration_drop(&my interface_declaration);
-    declaration_drop(&my instance_declaration);
 }
 
 void enum_decl_add_names(EnumDecl* me, Scope* scope) {
-    declaration_init(&my interface_declaration, (DeclProps){
+    declaration_init(&my typeof_declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
         .tag = DECLARATION_TYPE,
         .declared_type = type_lazy(&my interface_type),
         .is_typeof = true,
-    });
-
-    declaration_init(&my instance_declaration, (DeclProps){
-        .name = my name,
-        .full = my full_span,
-        .tag = DECLARATION_TYPE,
-        .declared_type = type_lazy(&my instance_type),
     });
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
@@ -40,12 +32,9 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope) {
         .tag = DECLARATION_ENUM,
         .value_type = type_identifier(c_new(IdentifierType, {
             .name = my name,
-            .decl_ref = &my interface_declaration,
+            .decl_ref = &my typeof_declaration,
         })),
-        .declared_type = type_identifier(c_new(IdentifierType, {
-            .name = my name,
-            .decl_ref = &my instance_declaration,
-        })),
+        .declared_type = type_lazy(&my instance_type),
     });
 }
 
