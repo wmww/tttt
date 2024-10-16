@@ -2430,6 +2430,8 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
         *op = UNARY_OP_LEFT_BANG;
     } else if (hop_start_if_ends_on_word_break(parent, "typeof")) {
         *op = UNARY_OP_TYPEOF;
+    } else if (hop_start_if_ends_on_word_break(parent, "void")) {
+        *op = UNARY_OP_VOID;
     } else if (hop_start(parent, "~")) {
         *op = UNARY_OP_TILDE;
     } else if (hop_start(parent, "++")) {

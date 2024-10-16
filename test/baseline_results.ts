@@ -6043,7 +6043,7 @@ const baselines = {
     'contextualTyping32': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTyping33': {
         errors: false,
@@ -7141,13 +7141,13 @@ const baselines = {
         types: false,
     },
     'declInput': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declInput3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declInput4': {
@@ -7171,7 +7171,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitAmdModuleNameDirective': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12756,9 +12756,9 @@ const baselines = {
         types: false,
     },
     'forLoopEndingMultilineComments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forLoopWithDestructuringDoesNotElideFollowingStatement': {
         errors: false,
@@ -20821,9 +20821,9 @@ const baselines = {
         types: true,
     },
     'nestedRecursiveLambda': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedRedeclarationInES6AMD': {
         errors: true,
@@ -23236,7 +23236,7 @@ const baselines = {
         types: true,
     },
     'prefixUnaryOperatorsOnExportedVariables': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27641,7 +27641,7 @@ const baselines = {
         types: false,
     },
     'topLevelExports': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27711,9 +27711,9 @@ const baselines = {
         types: false,
     },
     'tripleSlashInCommentNotParsed': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tripleSlashReferenceAbsoluteWindowsPath': {
         errors: false,
@@ -28918,7 +28918,7 @@ const baselines = {
     'undefinedSymbolReferencedInArrayLiteral1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'undefinedTypeArgument1': {
         errors: false,
@@ -30256,7 +30256,7 @@ const baselines = {
         types: false,
     },
     'voidAsOperator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30276,7 +30276,7 @@ const baselines = {
         types: false,
     },
     'voidOperator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31743,7 +31743,7 @@ const baselines = {
     'classExtendingPrimitive2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExtendsEveryObjectType': {
         errors: false,
@@ -45726,7 +45726,7 @@ const baselines = {
         types: false,
     },
     'callbackTag1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -51736,9 +51736,9 @@ const baselines = {
         types: false,
     },
     'parserVoidExpression1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parservoidInQualifiedName0': {
         errors: true,
@@ -58286,7 +58286,7 @@ const baselines = {
         types: false,
     },
     'initializersWidened': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -58296,7 +58296,7 @@ const baselines = {
         types: false,
     },
     'strictNullChecksNoWidening': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

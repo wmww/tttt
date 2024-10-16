@@ -192,6 +192,7 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
     switch (op_expr->op) {
         case UNARY_OP_LEFT_BANG: res.value = value_boolean(!value_to_boolean(&value)); break;
         case UNARY_OP_TYPEOF: res = engine_eval_typeof(me, &value); break;
+        case UNARY_OP_VOID: break;
         case UNARY_OP_TILDE: res.value = value_number(~(long)value_to_number(&value)); break;
         case UNARY_OP_PLUS: res.value = value_number(value_to_number(&value)); break;
         case UNARY_OP_MINUS: res.value = value_number(-value_to_number(&value)); break;

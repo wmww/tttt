@@ -505,6 +505,7 @@ Type expr_evaluate_type(Expr const* me) {
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG: return type_boolean;
                 case UNARY_OP_TYPEOF: return type_string;
+                case UNARY_OP_VOID: return type_undefined;
                 case UNARY_OP_TILDE: return type_number;
 
                 case UNARY_OP_PLUS:
@@ -628,6 +629,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG:
                 case UNARY_OP_TYPEOF:
+                case UNARY_OP_VOID:
                 case UNARY_OP_TILDE:
                 case UNARY_OP_PLUS:
                 case UNARY_OP_MINUS:
@@ -836,6 +838,7 @@ int unary_op_get_precedence(UnaryOp op) {
     switch (op) {
         case UNARY_OP_LEFT_BANG:
         case UNARY_OP_TYPEOF:
+        case UNARY_OP_VOID:
         case UNARY_OP_TILDE:
         case UNARY_OP_PLUS:
         case UNARY_OP_MINUS:
@@ -855,6 +858,7 @@ czview unary_op_get_zv(UnaryOp op) {
     switch (op) {
         case UNARY_OP_LEFT_BANG: return c_zv("!");
         case UNARY_OP_TYPEOF: return c_zv("typeof ");
+        case UNARY_OP_VOID: return c_zv("void ");
         case UNARY_OP_TILDE: return c_zv("~");
         case UNARY_OP_PLUS: return c_zv("+");
         case UNARY_OP_MINUS: return c_zv("-");

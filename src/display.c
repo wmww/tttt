@@ -478,7 +478,13 @@ void display_type(Display d, Type const* me) {
         case TYPE_INTERFACE: display_interface(d, &my interface); break;
 
         case TYPE_ARRAY: {
-            bool needs_peren = my array.element->tag == TYPE_UNION || my array.element->tag == TYPE_INTERSECTION;
+            bool needs_peren = false;
+            switch (my array.element->tag) {
+                case TYPE_CALLABLE:
+                case TYPE_UNION:
+                case TYPE_INTERSECTION: needs_peren = true;
+                default: break;
+            }
             if (needs_peren) {
                 display_colored(d, color_implicit, "(");
             }

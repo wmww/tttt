@@ -134,7 +134,7 @@ static inline Expr expr_implicit_any(Span span) {
 
 #undef EXPR_DEFAULT
 
-static inline bool expr_is_perenthisized(Expr* me) {
+static inline bool expr_is_perenthisized(Expr const* me) {
     return span_start_ptr(my inner_span) != span_start_ptr(my outer_span);
 }
 
@@ -238,6 +238,7 @@ typedef struct BinaryOpExpr {
 typedef enum UnaryOp {
     UNARY_OP_LEFT_BANG,
     UNARY_OP_TYPEOF,
+    UNARY_OP_VOID,
     UNARY_OP_TILDE,
     UNARY_OP_PLUS,
     UNARY_OP_MINUS,
