@@ -22,20 +22,38 @@ typedef struct NamedType {
 
 Type named_type_evaluate_type(NamedType* me);
 
-#define DECLARATION_HAS_VALUE 8
-#define DECLARATION_HAS_TYPE 16
+typedef enum DeclarationTag {
+    DECLARATION_NONE = 0,
+    DECLARATION_NAMESPACE,
+    DECLARATION_FUNCTION,
+    DECLARATION_VALUE,
+    DECLARATION_INTERFACE,
+    DECLARATION_TYPE,
+    DECLARATION_CLASS,
+    DECLARATION_ENUM,
+} DeclarationTag;
 
 // See https://www.typescriptlang.org/docs/handbook/declaration-merging.html
-typedef enum DeclarationTag {
-    DECLARATION_UNINITIALIZED = 0,
-    DECLARATION_NAMESPACE   = DECLARATION_HAS_VALUE | 1,
-    DECLARATION_FUNCTION    = DECLARATION_HAS_VALUE | 2,
-    DECLARATION_VALUE       = DECLARATION_HAS_VALUE | 3,
-    DECLARATION_INTERFACE   = DECLARATION_HAS_TYPE | 1,
-    DECLARATION_TYPE        = DECLARATION_HAS_TYPE | 2,
-    DECLARATION_CLASS       = DECLARATION_HAS_VALUE | DECLARATION_HAS_TYPE | 1,
-    DECLARATION_ENUM        = DECLARATION_HAS_VALUE | DECLARATION_HAS_TYPE | 2,
-} DeclarationTag;
+static inline bool declaration_tag_has_value(DeclarationTag tag) {
+    static const bool ret[DECLARATION_ENUM + 1] = {
+        [DECLARATION_NAMESPACE] = true,
+        [DECLARATION_FUNCTION] = true,
+        [DECLARATION_VALUE] = true,
+        [DECLARATION_CLASS] = true,
+        [DECLARATION_ENUM] = true,
+    };
+    return ret[tag];
+}
+
+static inline bool declaration_tag_has_type(DeclarationTag tag) {
+    static const bool ret[DECLARATION_ENUM + 1] = {
+        [DECLARATION_INTERFACE] = true,
+        [DECLARATION_TYPE] = true,
+        [DECLARATION_CLASS] = true,
+        [DECLARATION_ENUM] = true,
+    };
+    return ret[tag];
+}
 
 typedef struct Declaration {
     Span name;

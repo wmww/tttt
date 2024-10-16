@@ -58,7 +58,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     bool existing_invalid = false;
     if (existing) {
         Declaration* declaration = existing->second.get;
-        if ((declaration->tag & DECLARATION_HAS_TYPE) && (props.tag & DECLARATION_HAS_TYPE)) {
+        if (declaration_tag_has_type(declaration->tag) && declaration_tag_has_type(props.tag)) {
             bool can_merge = false;
             switch (declaration->tag) {
                 case DECLARATION_INTERFACE:
@@ -124,7 +124,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
                 }
             }
         }
-        if ((declaration->tag & DECLARATION_HAS_VALUE) && (props.tag & DECLARATION_HAS_VALUE)) {
+        if (declaration_tag_has_value(declaration->tag) && declaration_tag_has_value(props.tag)) {
             existing_invalid = true;
             if (declaration->tag == DECLARATION_ENUM || props.tag == DECLARATION_ENUM) {
                 error_ctx_error(
