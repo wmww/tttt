@@ -1341,7 +1341,7 @@ const baselines = {
         types: false,
     },
     'arrowFunctionJSDocAnnotation': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -4991,7 +4991,7 @@ const baselines = {
         types: false,
     },
     'complicatedIndexesOfIntersectionsAreInferencable': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -5186,7 +5186,7 @@ const baselines = {
         types: true,
     },
     'conditionalTypeContextualTypeSimplificationsSuceeds': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -5786,12 +5786,12 @@ const baselines = {
         types: false,
     },
     'contextualSignatureInArrayElementLibEs2015': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'contextualSignatureInArrayElementLibEs5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -5886,7 +5886,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeOfIndexedAccessParameter': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -6281,7 +6281,7 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedParametersWithInitializers4': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -6411,7 +6411,7 @@ const baselines = {
         types: false,
     },
     'contravariantOnlyInferenceFromAnnotatedFunctionJs': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -6421,7 +6421,7 @@ const baselines = {
         types: false,
     },
     'contravariantOnlyInferenceWithAnnotatedOptionalParameterJs': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -12511,12 +12511,12 @@ const baselines = {
         types: false,
     },
     'fakeInfinity2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'fakeInfinity3': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -13951,7 +13951,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsNotContextSensitive': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -14006,7 +14006,7 @@ const baselines = {
         types: true,
     },
     'genericIndexedAccessMethodIntersectionCanBeAccessed': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -14026,7 +14026,7 @@ const baselines = {
         types: false,
     },
     'genericInferenceDefaultTypeParameter': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -15731,7 +15731,7 @@ const baselines = {
         types: false,
     },
     'inferPropertyWithContextSensitiveReturnStatement': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -15776,7 +15776,7 @@ const baselines = {
         types: true,
     },
     'inferTypeParameterConstraints': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -15856,7 +15856,7 @@ const baselines = {
         types: false,
     },
     'inferenceUnionOfObjectsMappedContextualType': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -17951,7 +17951,7 @@ const baselines = {
         types: false,
     },
     'jsdocFunctionClassPropertiesDeclaration': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -18021,7 +18021,7 @@ const baselines = {
         types: false,
     },
     'jsdocRestParameter_es6': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -18676,7 +18676,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeContextualTypesApplied': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -21621,7 +21621,7 @@ const baselines = {
         types: false,
     },
     'nonInferrableTypePropagation1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -21681,7 +21681,7 @@ const baselines = {
         types: false,
     },
     'nonNullableTypes1': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -27326,7 +27326,7 @@ const baselines = {
         types: false,
     },
     'templateExpressionAsPossiblyDiscriminantValue': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28476,7 +28476,7 @@ const baselines = {
         types: false,
     },
     'typePredicateTopLevelTypeParameter': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -28651,7 +28651,7 @@ const baselines = {
         types: false,
     },
     'typeVariableConstraintIntersections': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -29016,7 +29016,7 @@ const baselines = {
         types: false,
     },
     'unionCallMixedTypeParameterPresence': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -45741,7 +45741,7 @@ const baselines = {
         types: false,
     },
     'callbackTag4': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46276,7 +46276,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsOptionalTypeLiteralProps2': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -46736,22 +46736,22 @@ const baselines = {
         types: false,
     },
     'jsdocParseHigherOrderFunction': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
     'jsdocParseMatchingBackticks': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
     'jsdocParseParenthesizedJSDocParameter': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'jsdocParseStarEquals': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -46841,7 +46841,7 @@ const baselines = {
         types: false,
     },
     'jsdocTemplateTag6': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46996,7 +46996,7 @@ const baselines = {
         types: false,
     },
     'overloadTag3': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -47166,7 +47166,7 @@ const baselines = {
         types: false,
     },
     'typeTagWithGenericSignature': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -58226,7 +58226,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionParameters': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

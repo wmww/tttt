@@ -97,6 +97,7 @@ void error_config_enable_strict(ErrorConfig* me) {
     my no_implicit_override = true;
     my no_implicit_returns = true;
     my no_implicit_this = true;
+    my no_implicit_any = true;
     my no_property_access_from_index_signature = true;
     my no_unchecked_indexed_access = true;
     my no_unused_locals = true;
