@@ -39,6 +39,11 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
 }
 
 Type interface_from_merged(VecType const* types) {
+    switch (vec_type_size(types)) {
+        case 0: return type_never;
+        case 1: return type_clone(*type_resolve(vec_type_at(types, 0)));
+        default: break;
+    }
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(type_i, vec_type, *types) {
         Type const* type = type_resolve(type_i.ref);
@@ -85,14 +90,14 @@ void interface_typecheck(Interface const* me, ErrorCtx* errs) {
 }
 
 void interface_typecheck_members_against(Interface* me, Declaration const* declaration, ErrorCtx* errs) {
-    if (!declaration || !declaration->type.is_merged) {
+    if (!declaration) {
         return;
     }
     Type const* from_named = type_resolve(&declaration->type.type);
     if (from_named->tag != TYPE_INTERFACE) {
         NONFATAL(
             "Tried to typecheck against %.*s, which isn't interface. type tag: %d",
-            c_SPAN(declaration->type.name),
+            c_SPAN(declaration->name),
             from_named->tag
         );
         return;

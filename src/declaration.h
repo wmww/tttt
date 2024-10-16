@@ -3,15 +3,11 @@
 #include "lazy_type.h"
 
 typedef struct NamedType {
-    Span name;
     Type type;
     Generic const* generic;
     bool is_typeof_class;
-    bool is_merged;
-    VecType merged_types;   // All the interface types that will be merged together to make our type, not used if this
-                            // is not a merged declaration and cleared once the merge happens
-    LazyType lazy_type; // Only used if this is a merged declaration. In that case, `type` is set to be a lazy that
-                        // points to this LazyType.
+    VecType merged_types;
+    LazyType lazy_type;
 } NamedType;
 
 Type named_type_evaluate_type(NamedType* me);

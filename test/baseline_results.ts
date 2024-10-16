@@ -22136,7 +22136,7 @@ const baselines = {
         types: false,
     },
     'observableInferenceCanBeMade': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24241,7 +24241,7 @@ const baselines = {
         types: false,
     },
     'recursiveConditionalEvaluationNonInfinite': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
