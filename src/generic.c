@@ -10,13 +10,13 @@
 void generic_item_drop(GenericItem* me) {
     type_drop(&my extends);
     type_drop(&my fallback);
-    arc_declaration_drop(&my declaration);
+    arc_declaration_drop(&my owned_declaration);
 }
 
 GenericItem generic_item_clone(GenericItem me) {
     me.extends = type_clone(me.extends);
     me.fallback = type_clone(me.fallback);
-    me.declaration = arc_declaration_clone(me.declaration);
+    me.owned_declaration = arc_declaration_init();
     return me;
 }
 
@@ -32,12 +32,13 @@ Generic generic_clone(Generic me) {
 
 void generic_add_names(Generic const* me, Scope* scope) {
     c_foreach(i, vec_generic_item, my items) {
-        scope_init_declaration(scope, &i.ref->declaration, (DeclProps){
+        scope_init_declaration(scope, &i.ref->owned_declaration, (DeclProps){
             .name = i.ref->name,
             .full = i.ref->name,
             .tag = DECLARATION_TYPE,
             .declared_type = type_refcopy(&i.ref->extends),
         });
+        i.ref->declaration_ref = i.ref->owned_declaration.get;
     }
 }
 
@@ -254,9 +255,9 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
     VecTypeRefinement refinements = vec_type_refinement_with_capacity(vec_generic_item_size(&my items));
     c_foreach(i, vec_generic_item, my items) {
         intptr_t index = i.ref - my items.data;
-        if (i.ref->declaration.get) {
+        if (i.ref->declaration_ref) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->declaration.get,
+                .target = i.ref->declaration_ref,
                 .refined = generic_param_at(generic_params, index),
             });
         } else {
@@ -273,9 +274,9 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
     int callable_arg_count = vec_callable_arg_size(&callable->args);
     VecTypeRefinement refinements = {0};
     c_foreach(i, vec_generic_item, my items) {
-        if (i.ref->declaration.get) {
+        if (i.ref->declaration_ref) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->declaration.get,
+                .target = i.ref->declaration_ref,
                 .refined = nullptr,
             });
         } else {

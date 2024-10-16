@@ -147,7 +147,7 @@ void class_decl_lookup_names(ClassDecl* me, NameStack* names, ErrorCtx* errs) {
         // Is it the fallback type, always any or something else? unclear.
         vec_spanned_type_push(&generic_params, spanned_type(i.ref->name, type_identifier(c_new(IdentifierType, {
             .name = i.ref->name,
-            .decl_ref = i.ref->declaration.get,
+            .decl_ref = i.ref->declaration_ref,
         }))));
     }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {

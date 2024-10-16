@@ -31,7 +31,8 @@ typedef struct InterfaceMember {
                 bool has_as_type;
                 signed char readonly; // -1 for remove, +1 for add
                 signed char optional; // -1 for remove, +1 for add
-                ArcDeclaration declaration;
+                ArcDeclaration owned_declaration;
+                Declaration const* declaration_ref;
             } mapped;
         };
     } key;
