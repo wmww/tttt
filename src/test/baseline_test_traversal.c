@@ -88,12 +88,20 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_INDEX:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.span });
-            baseline_test_case_add_type(ctx, my key.span, &my key.index);
-            type_compile_test_info(&my key.index, ctx);
+            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.index.name });
+            baseline_test_case_add_type(ctx, my key.index.name, &my key.index.type);
+            type_compile_test_info(&my key.index.type, ctx);
             break;
 
         case INTERFACE_KEY_EXPR:
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_single(my key.span),
+                .namespaces = vec_span_single(scope),
+                .span = my key.span,
+                .name = my key.expr.get->outer_span,
+                .name_is_value = true,
+            });
+            baseline_test_case_add_type(ctx, my key.span, &my type);
             expr_compile_test_info(my key.expr.get, ctx);
             break;
 

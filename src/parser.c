@@ -1846,8 +1846,10 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     return parse_success(&p);
 }
 
-static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, InterfaceMember* ret) {
+static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, bool is_index, InterfaceMember* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
     *ret = (InterfaceMember){
         .key.tag = is_index ? INTERFACE_KEY_INDEX : INTERFACE_KEY_EXPR,
     };
@@ -1858,14 +1860,12 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
     hop_whitespace(&p);
 
     bool show_errors = true;
-    Anchor a = anchor(&p);
     if (is_index) {
         bool fail_if_no_colon = true;
 
-        if (!parse_identifier(&p, nullptr)) {
+        if (!parse_identifier(&p, &ret->key.index.name)) {
             return parse_fail(&p);
         }
-        ret->key.span = span_from(a);
         hop_whitespace(&p);
         if (hop_char(&p, '?')) {
             parse_error(
@@ -1886,24 +1886,35 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_index, 
         }
         hop_whitespace(&p);
 
-        (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index);
+        (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index.type);
     } else {
         Expr expr;
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
             return parse_fail(&p);
         }
         ret->key.expr = arc_expr_make(expr);
-        ret->key.span = span_from(a);
     }
     hop_whitespace(&p);
 
     (show_errors ? expect_char : hop_char)(&p, ']');
+    ret->key.span = span_from(a);
     hop_whitespace(&p);
 
-    (show_errors ? expect_char : hop_char)(&p, ':');
-    hop_whitespace(&p);
+    if (hop_char(&p, '?')) {
+        ret->optional = true;
+        hop_whitespace(&p);
+    }
 
-    (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+    bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
+        is_type ? parse_function_header : parse_non_arrow_function;
+
+    FunctionImpl func;
+    if (parse_function_fn(&p, &func)) {
+        ret->type = function_impl_into_type(func);
+    } else if (hop_char(&p, ':')) {
+        hop_whitespace(&p);
+        (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+    }
 
     return parse_success(&p);
 }
@@ -2074,8 +2085,8 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     } else {
         FunctionImpl func;
         if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
-            parse_index_or_expr_interface_member(&p, true, &ret->interface_memeber) ||
-            parse_index_or_expr_interface_member(&p, false, &ret->interface_memeber)
+            parse_index_or_expr_interface_member(&p, is_type, true, &ret->interface_memeber) ||
+            parse_index_or_expr_interface_member(&p, is_type, false, &ret->interface_memeber)
         ) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER | MODIFIER_VALIDATION_FLAG_FIELD);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;

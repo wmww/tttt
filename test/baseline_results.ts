@@ -9493,7 +9493,7 @@ const baselines = {
     'duplicateIdentifierComputedName': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateIdentifierDifferentModifiers': {
         errors: false,
@@ -15457,8 +15457,8 @@ const baselines = {
     },
     'indexSignatureMustHaveTypeAnnotation': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'indexSignatureOfTypeUnknownStillRequiresIndexSignature': {
         errors: false,
@@ -15482,8 +15482,8 @@ const baselines = {
     },
     'indexSignatureWithInitializer': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'indexSignatureWithInitializer1': {
         errors: false,
@@ -15537,8 +15537,8 @@ const baselines = {
     },
     'indexWithoutParamType2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'indexedAccessCanBeHighOrder': {
         errors: true,
@@ -28417,7 +28417,7 @@ const baselines = {
     },
     'typeParametersAndParametersInComputedNames': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParametersInStaticAccessors': {
@@ -30452,7 +30452,7 @@ const baselines = {
     },
     'ES5SymbolProperty6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5SymbolProperty7': {
@@ -33542,13 +33542,13 @@ const baselines = {
     },
     'instanceMemberWithComputedPropertyName': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceMemberWithComputedPropertyName2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'accessorWithES3': {
         errors: false,
@@ -36271,7 +36271,7 @@ const baselines = {
         types: true,
     },
     'emitClassDeclarationWithMethodInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36447,12 +36447,12 @@ const baselines = {
     },
     'computedPropertyNames15_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames15_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames16_ES5': {
@@ -36517,12 +36517,12 @@ const baselines = {
     },
     'computedPropertyNames21_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames21_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames22_ES5': {
@@ -36547,12 +36547,12 @@ const baselines = {
     },
     'computedPropertyNames24_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames24_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames25_ES5': {
@@ -36577,12 +36577,12 @@ const baselines = {
     },
     'computedPropertyNames27_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames27_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames28_ES5': {
@@ -36668,12 +36668,12 @@ const baselines = {
     'computedPropertyNames35_ES5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames35_ES6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames36_ES5': {
         errors: false,
@@ -36736,24 +36736,24 @@ const baselines = {
         types: false,
     },
     'computedPropertyNames41_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames41_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames42_ES5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames42_ES6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames43_ES5': {
         errors: false,
@@ -37031,14 +37031,14 @@ const baselines = {
         types: false,
     },
     'computedPropertyNamesDeclarationEmit3_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit3_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit4_ES5': {
         errors: false,
@@ -37072,12 +37072,12 @@ const baselines = {
     },
     'computedPropertyNamesOnOverloads_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNamesOnOverloads_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNamesSourceMap1_ES5': {
@@ -48567,18 +48567,18 @@ const baselines = {
     },
     'parserES5ComputedPropertyName1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5ComputedPropertyName10': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserES5ComputedPropertyName11': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5ComputedPropertyName2': {
         errors: false,
@@ -48596,9 +48596,9 @@ const baselines = {
         types: false,
     },
     'parserES5ComputedPropertyName5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserES5ComputedPropertyName6': {
         errors: false,
@@ -48607,8 +48607,8 @@ const baselines = {
     },
     'parserES5ComputedPropertyName7': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5ComputedPropertyName8': {
         errors: false,
@@ -48617,8 +48617,8 @@ const baselines = {
     },
     'parserES5ComputedPropertyName9': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserConstructorDeclaration1': {
         errors: true,
@@ -49708,7 +49708,7 @@ const baselines = {
     'parserIndexSignature11': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserIndexSignature2': {
         errors: false,
@@ -49722,13 +49722,13 @@ const baselines = {
     },
     'parserIndexSignature4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserIndexSignature5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserIndexSignature6': {
         errors: false,
@@ -51297,38 +51297,38 @@ const baselines = {
     },
     'parserES5SymbolProperty1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty6': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty7': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserES5SymbolProperty8': {
         errors: false,
@@ -51762,17 +51762,17 @@ const baselines = {
     },
     'parserComputedPropertyName10': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName11': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName12': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName13': {
@@ -51816,19 +51816,19 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName20': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName21': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName22': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName23': {
         errors: false,
@@ -51842,7 +51842,7 @@ const baselines = {
     },
     'parserComputedPropertyName25': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName26': {
@@ -51853,7 +51853,7 @@ const baselines = {
     'parserComputedPropertyName27': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName28': {
         errors: false,
@@ -51877,18 +51877,18 @@ const baselines = {
     },
     'parserComputedPropertyName31': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName32': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName33': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName34': {
         errors: false,
@@ -51903,7 +51903,7 @@ const baselines = {
     'parserComputedPropertyName36': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName37': {
         errors: false,
@@ -51912,12 +51912,12 @@ const baselines = {
     },
     'parserComputedPropertyName38': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName39': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserComputedPropertyName4': {
@@ -51947,18 +51947,18 @@ const baselines = {
     },
     'parserComputedPropertyName7': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName8': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName9': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserForOfStatement1.d': {
         errors: false,
@@ -55667,7 +55667,7 @@ const baselines = {
     },
     'stringNamedPropertyAccess': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'stringNamedPropertyDuplicates': {

@@ -7,6 +7,7 @@ typedef struct InterfaceMember {
     Span origin_interface_name; // The original interface this member came from, used in tests
     bool readonly; // NOT used for mapped types
     bool optional; // NOT used for mapped types
+    bool is_method;
     struct {
         Span span;
         enum {
@@ -22,7 +23,10 @@ typedef struct InterfaceMember {
                 bool name_is_value;
                 bool name_is_member_function;
             };
-            Type index;
+            struct {
+                Span name;
+                Type type;
+            } index;
             ArcExpr expr;
             struct {
                 Span type_name;
@@ -67,7 +71,7 @@ static inline InterfaceMember interface_member_make(
 void interface_member_drop(InterfaceMember* me);
 InterfaceMember interface_member_clone(InterfaceMember me);
 void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, ErrorCtx* errs);
-void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs);
+void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs);
 
 bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index);
 bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super);

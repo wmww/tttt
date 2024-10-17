@@ -325,9 +325,9 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
 
         case INTERFACE_KEY_INDEX:
             display_lit(d, "[");
-            display_colored_span(d, color_type, my key.span);
+            display_colored_span(d, color_type, my key.index.name);
             display_lit(d, ": ");
-            display_type(d, &my key.index);
+            display_type(d, &my key.index.type);
             display_lit(d, "]");
             break;
 

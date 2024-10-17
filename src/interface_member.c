@@ -2,12 +2,13 @@
 #include "type.h"
 #include "expr.h"
 #include "scope.h"
+#include "error.h"
 
 void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
-        case INTERFACE_KEY_INDEX: type_drop(&my key.index); break;
+        case INTERFACE_KEY_INDEX: type_drop(&my key.index.type); break;
         case INTERFACE_KEY_EXPR: arc_expr_drop(&my key.expr); break;
         case INTERFACE_KEY_MAPPED:
             type_drop(&my key.mapped.in_type);
@@ -23,7 +24,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
     me.declarations = vec_span_clone(me.declarations);
     switch (me.key.tag) {
         case INTERFACE_KEY_NAME: me.key.name_string = cstr_clone(me.key.name_string); break;
-        case INTERFACE_KEY_INDEX: me.key.index = type_clone(me.key.index); break;
+        case INTERFACE_KEY_INDEX: me.key.index.type = type_clone(me.key.index.type); break;
         case INTERFACE_KEY_EXPR: me.key.expr = arc_expr_clone(me.key.expr); break;
         case INTERFACE_KEY_MAPPED:
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
@@ -42,7 +43,7 @@ void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, Error
 
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
-        case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index, names, errs); break;
+        case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index.type, names, errs); break;
         case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.get, names, errs); break;
 
         case INTERFACE_KEY_MAPPED:
@@ -70,15 +71,30 @@ void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, Error
     }
 }
 
-void interface_member_typecheck(InterfaceMember* me, ErrorCtx* errs) {
+void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
 
         case INTERFACE_KEY_INDEX:
-            type_typecheck(&my key.index, errs);
+            type_typecheck(&my key.index.type, errs);
             break;
 
         case INTERFACE_KEY_EXPR:
+            Type const* key_type = type_resolve(expr_get_type(my key.expr.get));
+            if (key_type->tag != TYPE_VALUE) {
+                if (is_in_class) {
+                    if (my is_method) {
+                        error_ctx_error(errs, my key.span, 1168,
+                            "A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.");
+                    } else {
+                        error_ctx_error(errs, my key.span, 1166,
+                            "A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.");
+                    }
+                } else {
+                    error_ctx_error(errs, my key.span, 1169,
+                        "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
+                }
+            }
             expr_typecheck(my key.expr.get, errs);
             break;
 
@@ -101,7 +117,7 @@ bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index)
         }
 
         case INTERFACE_KEY_INDEX:
-            return type_overlaps(&my key.index, index);
+            return type_overlaps(&my key.index.type, index);
 
         case INTERFACE_KEY_EXPR:
         case INTERFACE_KEY_MAPPED:
@@ -121,7 +137,7 @@ bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* su
     ) {
         return true;
     } else if (sub->key.tag == INTERFACE_KEY_INDEX && super->key.tag == INTERFACE_KEY_INDEX) {
-        return type_extends(&sub->key.index, &super->key.index);
+        return type_extends(&sub->key.index.type, &super->key.index.type);
     } else {
         // TODO
         return false;

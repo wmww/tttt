@@ -92,7 +92,7 @@ Type interface_from_merged(VecType const* types) {
 
 void interface_typecheck(Interface const* me, ErrorCtx* errs) {
     c_foreach(i, vec_interface_member, my members) {
-        interface_member_typecheck(i.ref, errs);
+        interface_member_typecheck(i.ref, false, errs);
     }
 }
 

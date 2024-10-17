@@ -525,7 +525,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
 
     if (data.name_is_value) {
         if (has_namespace) cstr_append_lit(&text, "[");
-        cstr_append_span(&text, data.span);
+        cstr_append_span(&text, span_valid(data.name) ? data.name : data.span);
         if (has_namespace) cstr_append_lit(&text, "]");
     } else {
         if (has_namespace) {
