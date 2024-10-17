@@ -1911,6 +1911,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, b
     FunctionImpl func;
     if (parse_function_fn(&p, &func)) {
         ret->type = function_impl_into_type(func);
+        ret->is_method = true;
     } else if (hop_char(&p, ':')) {
         hop_whitespace(&p);
         (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->type);

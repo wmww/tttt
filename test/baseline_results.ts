@@ -15536,7 +15536,7 @@ const baselines = {
         types: true,
     },
     'indexWithoutParamType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48566,7 +48566,7 @@ const baselines = {
         types: true,
     },
     'parserES5ComputedPropertyName1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48576,7 +48576,7 @@ const baselines = {
         types: false,
     },
     'parserES5ComputedPropertyName11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48606,7 +48606,7 @@ const baselines = {
         types: false,
     },
     'parserES5ComputedPropertyName7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48616,7 +48616,7 @@ const baselines = {
         types: false,
     },
     'parserES5ComputedPropertyName9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51766,7 +51766,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51826,7 +51826,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName22': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51876,7 +51876,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName31': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51946,7 +51946,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51956,7 +51956,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

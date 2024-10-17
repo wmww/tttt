@@ -314,8 +314,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     my has_typechecked = true;
 
     generic_typecheck(&my generic, errs);
-    type_typecheck(lazy_type_get(&my instance_type), errs);
-    type_typecheck(lazy_type_get(&my class_type), errs);
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_typecheck(&my extends, errs);
@@ -356,7 +354,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 }
             }   break;
 
-            case CLASS_ITEM_INTERFACE_MEMBER: break;
+            case CLASS_ITEM_INTERFACE_MEMBER:
+                interface_member_typecheck(&i.ref->interface_memeber, true, errs);
+                break;
 
             case CLASS_ITEM_STATIC_BLOCK:
                 block_typecheck(&i.ref->static_block, (BlockTypecheckCtx){0}, errs);
@@ -383,6 +383,5 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // TODO: check that we do, in fact, implement each type
     }
 
-    ASSERT(my instance_type.tag == LAZY_TYPE_EVALUATED && my instance_type.evaluated.tag == TYPE_INTERFACE);
     interface_typecheck_members_against(&my instance_type.evaluated.interface, my declaration.get, errs);
 }
