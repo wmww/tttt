@@ -228,8 +228,8 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* so
     Program* program = program_new(errs, mock_fs_get_fs(fs));
 
     if (!cache->es5) {
-        cache->es5 = program_load_es5(cache->loader);
-        cstr_take(c_const_cast(cstr*, &cache->es5->decl_override), cstr_lit("lib.es5.d.ts, --, --"));
+        cache->es5 = program_preload_es5(cache->loader);
+        cstr_take(&cache->es5->decl_override, cstr_lit("lib.es5.d.ts, --, --"));
     }
     program_add_globals(program, &cache->es5->scope);
 

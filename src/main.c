@@ -30,9 +30,30 @@ int main(int argc, const char** argv) {
     intptr_t name_errors = 0;
     intptr_t type_errors = 0;
 
-    SourceFile const* es5 = program_load_es5(program);
-    program_add_globals(program, &es5->scope);
+    printf("%sLoading libraries...%s\n", color_good, color_normal);
+    program_preload(program, "lib/es5.d.ts");
+    program_preload(program, "lib/es2015.collection.d.ts");
+    program_preload(program, "lib/es2015.iterable.d.ts");
+    program_preload(program, "lib/dom.generated.d.ts");
 
+    if (!error_ctx_empty(&errs)) {
+        const intptr_t lib_parse_errors = errs.parse_error_count;
+        const intptr_t lib_name_errors = vec_error_size(&errs.errors) - errs.parse_error_count;
+        printf(
+            "Encountered %s%zd parse errors%s, %s%zd name errors%s loading libraries.\n",
+            lib_parse_errors ? color_error : "",
+            lib_parse_errors,
+            color_normal,
+            lib_name_errors ? color_error : "",
+            lib_name_errors,
+            color_normal
+        );
+        //print_error_ctx(&errs);
+        error_ctx_drop(&errs);
+        errs = error_ctx_init();
+    }
+
+    printf("%sLoading %s...%s\n", color_good, argv[1], color_normal);
     SourceFile const* source = program_load(program, argv[1]);
 
     if (!error_ctx_empty(&errs)) {

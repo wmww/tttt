@@ -5,6 +5,7 @@ SourceFile source_file_make(cstr absolute_path, cstr contents, ErrorCtx* errs) {
         .absolute_path = absolute_path,
         .contents = contents,
         .scope = scope_init(errs),
+        .typecheck = true,
     };
 }
 

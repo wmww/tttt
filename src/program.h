@@ -18,9 +18,9 @@ void program_add_globals(Program* me, Scope const* scope);
 
 // Parses and resolves names of the given file and all imports. Can be called multiple times, but can not be called
 // indirectly by itself (this is not how imports are handled)
-SourceFile const* program_load(Program* me, const char* path);
-SourceFile const* program_load_builtins(Program* me);
-SourceFile const* program_load_es5(Program* me);
+SourceFile* program_load(Program* me, const char* path);
+SourceFile* program_preload(Program* me, const char* path);
+SourceFile* program_preload_es5(Program* me);
 
 // Typechecks the loaded file and all imports, does not typecheck preloaded files
 // TODO: Typechecking shouldn't be required at all if show_errors is false, so remove this arg

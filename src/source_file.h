@@ -8,6 +8,7 @@ typedef struct SourceFile {
     cstr contents;
     Block ast;
     Scope scope;
+    bool typecheck;
     cstr decl_override; // Used for the tests
 } SourceFile;
 

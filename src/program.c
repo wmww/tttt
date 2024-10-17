@@ -152,14 +152,14 @@ static void program_handle_import(Program* me, ImportStatement* import) {
     }
 }
 
-SourceFile const* program_load(Program* me, const char* path) {
+SourceFile* program_load(Program* me, const char* path) {
     // This function should only be called by our owner, not indirectly by ourselves
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_LOAD;
     set_error_config(&my errs->config);
 
     // Add the source file to the program
-    SourceFile const* main_source = program_add_source(me, path);
+    SourceFile* main_source = program_add_source(me, path);
     if (!main_source) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
         my errs->phase = ERROR_PHASE_UNKOWN;
@@ -219,8 +219,15 @@ SourceFile const* program_load(Program* me, const char* path) {
     return main_source;
 }
 
-SourceFile const* program_load_es5(Program* me) {
-    return program_load(me, "thirdparty/tsc/lib/es5.d.ts");
+SourceFile* program_preload(Program* me, const char* path) {
+    SourceFile* source = program_load(me, path);
+    source->typecheck = false;
+    program_add_globals(me, &source->scope);
+    return source;
+}
+
+SourceFile* program_preload_es5(Program* me) {
+    return program_preload(me, "thirdparty/tsc/lib/es5.d.ts");
 }
 
 void program_typecheck(Program* me) {
@@ -230,7 +237,9 @@ void program_typecheck(Program* me) {
 
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
-        block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
+        if (source->typecheck) {
+            block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
+        }
     }
 
     clear_error_config();
