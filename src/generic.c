@@ -282,7 +282,7 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
         if (i.ref->declaration_ref) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
                 .target = i.ref->declaration_ref,
-                .refined = nullptr,
+                .refined = &type_unknown,
             });
         } else {
             NONFATAL("Generic %.*s type is null", c_SPAN(i.ref->name));
