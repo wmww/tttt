@@ -102,6 +102,8 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
                 case VALUE_BOOLEAN:
                 case VALUE_NUMBER:
                 case VALUE_STRING:
+                case VALUE_SYMBOL:
+                case VALUE_BIGINT:
                     // Return the value, but do not assign it to anything (that's what browsers seem to do)
                     value_drop(&target_value);
                     return result_ok(value);
@@ -217,6 +219,8 @@ static Result MUST_USE engine_eval_property(Engine* me, PropertyExpr const* prop
         case VALUE_BOOLEAN:
         case VALUE_NUMBER:
         case VALUE_STRING:
+        case VALUE_SYMBOL:
+        case VALUE_BIGINT:
         case VALUE_JS_FUNC:
         case VALUE_NATIVE_FUNC: ret.value = value_undefined; break;
 

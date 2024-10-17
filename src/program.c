@@ -65,8 +65,6 @@ static void program_add_builtins(Program* me) {
     GLOBAL_TYPE("boolean", type_boolean);
     GLOBAL_TYPE("number", type_number);
     GLOBAL_TYPE("string", type_string);
-    GLOBAL_TYPE("bigint", type_any);
-    GLOBAL_TYPE("symbol", type_any);
     GLOBAL_TYPE("intrinsic", type_any);
 
     vec_scope_cptr_push(&my global_scopes, &my builtins_scope);

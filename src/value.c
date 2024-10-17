@@ -12,6 +12,8 @@ void value_drop_internal(Value* me) {
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: cstr_drop(&my string); break;
+        case VALUE_SYMBOL: arc_symbol_value_drop(&my symbol);
+        case VALUE_BIGINT: break;
         case VALUE_OBJECT: arc_js_object_drop(&my object); break;
         case VALUE_ARRAY: arc_js_array_drop(&my array); break;
         case VALUE_JS_FUNC: arc_js_func_value_drop(&my js_func); break;
@@ -26,6 +28,8 @@ Value value_clone(Value me) {
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: me.string = cstr_clone(me.string); break;
+        case VALUE_SYMBOL: me.symbol = arc_symbol_value_clone(me.symbol); break;
+        case VALUE_BIGINT: break;
         case VALUE_OBJECT: me.object = arc_js_object_clone(me.object); break;
         case VALUE_ARRAY: me.array = arc_js_array_clone(me.array); break;
         case VALUE_JS_FUNC: me.js_func = arc_js_func_value_clone(me.js_func); break;
@@ -52,6 +56,8 @@ bool value_to_boolean(Value const* me) {
         case VALUE_BOOLEAN: return my boolean;
         case VALUE_NUMBER: return !isnan(my number) && my number != 0;
         case VALUE_STRING: return !cstr_empty(&my string);
+        case VALUE_SYMBOL: return true;
+        case VALUE_BIGINT: return my number != 0;
         case VALUE_OBJECT: return true;
         case VALUE_ARRAY: return true;
         case VALUE_JS_FUNC: return true;
@@ -72,6 +78,8 @@ double value_to_number(Value const* me) {
         case VALUE_BOOLEAN: return my boolean ? 1 : 0;
         case VALUE_NUMBER: return my number;
         case VALUE_STRING: return string_to_num(cstr_sv(&my string));
+        case VALUE_SYMBOL: return 0;
+        case VALUE_BIGINT: return my bigint;
 
         case VALUE_ARRAY: {
             int len = vec_value_size(&my array.get->vec);
@@ -114,6 +122,16 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             } else {
                 cstr_append_fmt(target, "%.21g", my number);
             }
+            break;
+
+        case VALUE_SYMBOL:
+            cstr_append_lit(target, "Symbol(");
+            cstr_append_s(target, my symbol.get->str);
+            cstr_append_lit(target, ")");
+            break;
+
+        case VALUE_BIGINT:
+            cstr_append_fmt(target, "%zd", (long int)my bigint);
             break;
 
         case VALUE_ARRAY:
@@ -173,6 +191,8 @@ bool value_strict_eq(Value const* a, Value const* b) {
         case VALUE_BOOLEAN: return a->boolean == b->boolean;
         case VALUE_NUMBER: return a->number == b->number;
         case VALUE_STRING: return cstr_eq(&a->string, &b->string);
+        case VALUE_SYMBOL: return a->symbol.get == b->symbol.get;
+        case VALUE_BIGINT: return a->bigint == b->bigint;
         case VALUE_OBJECT: return a->object.get == b->object.get;
         case VALUE_ARRAY: return a->array.get == b->array.get;
         case VALUE_JS_FUNC: return a->js_func.get == b->js_func.get;

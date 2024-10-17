@@ -2772,7 +2772,7 @@ const baselines = {
     },
     'cannotIndexGenericWritingError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'cannotInvokeNewOnErrorExpression': {
@@ -5052,7 +5052,7 @@ const baselines = {
     },
     'computedPropertyNameAndTypeParameterConflict': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNameWithImportedKey': {
@@ -8252,7 +8252,7 @@ const baselines = {
     },
     'declarationTypecheckNoUseBeforeReferenceCheck': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationsForFileShadowingGlobalNoError': {
@@ -18262,7 +18262,7 @@ const baselines = {
     },
     'lateBoundConstraintTypeChecksCorrectly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'lateBoundDestructuringImplicitAnyError': {
@@ -20647,7 +20647,7 @@ const baselines = {
     },
     'nativeToBoxedTypes': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nearbyIdenticalGenericLambdasAssignable': {
@@ -21257,7 +21257,7 @@ const baselines = {
     },
     'noImplicitAnyStringIndexerOnObject': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noImplicitAnyWithOverloads': {
@@ -22797,7 +22797,7 @@ const baselines = {
     },
     'parenthesisDoesNotBlockAliasSymbolCreation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parenthesizedArrowExpressionASI': {
@@ -25957,7 +25957,7 @@ const baselines = {
     },
     'specedNoStackBlown': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'specialIntersectionsInMappedTypes': {
@@ -35332,17 +35332,17 @@ const baselines = {
     },
     'bigintMissingES2019': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'bigintMissingES2020': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'bigintMissingESNext': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructBigint': {
@@ -35902,17 +35902,17 @@ const baselines = {
     },
     'symbolType17': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType18': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType19': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType2': {
@@ -42157,7 +42157,7 @@ const baselines = {
     },
     'inOperatorWithValidOperands': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'instanceofOperatorWithAny': {
@@ -51282,17 +51282,17 @@ const baselines = {
     },
     'parserES5SymbolIndexer1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserES5SymbolIndexer2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserES5SymbolIndexer3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserES5SymbolProperty1': {
@@ -52112,22 +52112,22 @@ const baselines = {
     },
     'parserSymbolIndexer1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserSymbolIndexer2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserSymbolIndexer3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserSymbolIndexer4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserSymbolIndexer5': {
@@ -54222,12 +54222,12 @@ const baselines = {
     },
     'ES5For-ofTypeCheck8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ES5For-ofTypeCheck9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5for-of32': {

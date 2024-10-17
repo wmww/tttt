@@ -72,6 +72,7 @@ Type declaration_evaluate_declared_type(Declaration const* me);
 void declaration_init(Declaration* me, DeclProps props);
 
 #define i_key_class_names Declaration, declaration
+#define i_opt c_no_atomic
 #define i_is_forward
 #include "wrap_stc/arc.h"
 

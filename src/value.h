@@ -16,6 +16,16 @@ typedef struct NativeFuncValue NativeFuncValue;
 typedef struct Binding Binding;
 typedef struct InitializedBinding InitializedBinding;
 
+typedef struct SymbolValue {
+    cstr str;
+} SymbolValue;
+static inline void symbol_value_drop(SymbolValue* me) {
+    cstr_drop(&my str);
+}
+#define i_key_class_names SymbolValue, symbol_value
+#define i_opt c_no_atomic
+#include "wrap_stc/arc.h"
+
 wrap_forward_hmap_str(ObjectItem, object_item);
 wrap_forward_arc(JsObject, js_object);
 wrap_forward_arc(JsArray, js_array);
@@ -31,6 +41,8 @@ typedef struct Value {
         VALUE_BOOLEAN,
         VALUE_NUMBER,
         VALUE_STRING,
+        VALUE_SYMBOL,
+        VALUE_BIGINT,
         VALUE_OBJECT,
         VALUE_ARRAY,
         VALUE_JS_FUNC,
@@ -40,8 +52,9 @@ typedef struct Value {
         bool boolean;
         double number;
         cstr string;
-        // TODO: const non-ref variant of object for perf during type checking
-        ArcJsObject object;
+        ArcSymbolValue symbol;
+        double bigint; // Cant be bothered
+        ArcJsObject object; // PERF: const non-ref variant of object for perf during type checking
         ArcJsArray array;
         ArcJsFuncValue js_func;
         ArcNativeFuncValue native_func;
@@ -58,6 +71,8 @@ static inline void value_drop(Value* me) {
             break;
 
         case VALUE_STRING:
+        case VALUE_SYMBOL:
+        case VALUE_BIGINT:
         case VALUE_OBJECT:
         case VALUE_ARRAY:
         case VALUE_JS_FUNC:

@@ -933,6 +933,21 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     return parse_success(&p);
 }
 
+static bool parse_unique_symbol_type(Parser* parent) {
+    Parser p = parser(parent);
+
+    if (!hop_start_if_ends_on_word_break(&p, "unique")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "symbol")) {
+        return parse_fail(&p);
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -965,6 +980,10 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_number;
     } else if (hop_start_if_ends_on_word_break(&p, "string")) {
         *ret = type_string;
+    } else if (hop_start_if_ends_on_word_break(&p, "symbol")) {
+        *ret = type_symbol;
+    } else if (hop_start_if_ends_on_word_break(&p, "bigint")) {
+        *ret = type_bigint;
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
@@ -1014,6 +1033,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
         *ret = type_inferred(c_new(InferredType, parsed.inferred));
+    } else if (parse_unique_symbol_type(&p)) {
+        *ret = type_symbol;
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){

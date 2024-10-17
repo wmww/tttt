@@ -307,6 +307,7 @@ typedef struct ObjectExprItem {
 void object_expr_item_drop(ObjectExprItem* me);
 
 #define i_key_class_names ObjectExprItem, object_expr_item
+#define i_opt c_no_atomic
 #define i_no_clone
 #define i_is_forward
 #include "wrap_stc/vec.h"

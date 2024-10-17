@@ -22,6 +22,8 @@ const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
 const Type type_boolean = { .tag = TYPE_BOOLEAN };
 const Type type_number = { .tag = TYPE_NUMBER };
 const Type type_string = { .tag = TYPE_STRING };
+const Type type_symbol = { .tag = TYPE_SYMBOL };
+const Type type_bigint = { .tag = TYPE_BIGINT };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
@@ -144,6 +146,8 @@ void type_drop(Type* me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_LAZY:
         case TYPE_REF:
             break;
@@ -222,6 +226,8 @@ Type type_clone(Type me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_LAZY:
         case TYPE_REF: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
@@ -254,6 +260,8 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_VALUE:
             break;
 
@@ -342,6 +350,8 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_VALUE:
         case TYPE_INFERRED:
             break;
@@ -407,6 +417,8 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_VALUE:
         case TYPE_INFERRED:
             break;
@@ -541,6 +553,8 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_VALUE:
         case TYPE_CALLABLE:
         case TYPE_INTERFACE:
@@ -698,6 +712,12 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 
         case TYPE_STRING:
             return sub->tag == TYPE_STRING || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_STRING);
+
+        case TYPE_SYMBOL:
+            return sub->tag == TYPE_SYMBOL || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_SYMBOL);
+
+        case TYPE_BIGINT:
+            return sub->tag == TYPE_BIGINT || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_BIGINT);
 
         case TYPE_VALUE:
             if (sub->tag != TYPE_VALUE) {
@@ -969,6 +989,8 @@ bool type_overlaps(Type const* a, Type const* b) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
             return type_extends(b, a);
 
         case TYPE_VALUE:
@@ -1141,6 +1163,8 @@ void type_abstract_literals(Type* me) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_IDENTIFIER:
         case TYPE_INFERRED:
         case TYPE_CALLABLE:
@@ -1171,6 +1195,16 @@ void type_abstract_literals(Type* me) {
                 case VALUE_STRING:
                     type_drop(me);
                     *me = type_string;
+                    break;
+
+                case VALUE_SYMBOL:
+                    type_drop(me);
+                    *me = type_symbol;
+                    break;
+
+                case VALUE_BIGINT:
+                    type_drop(me);
+                    *me = type_bigint;
                     break;
 
                 case VALUE_OBJECT: /*{
@@ -1333,6 +1367,8 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
         case TYPE_ANY:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_CALLABLE:
             return false;
 
@@ -1342,6 +1378,8 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
                 case VALUE_NULL:
                 case VALUE_BOOLEAN:
                 case VALUE_NUMBER:
+                case VALUE_SYMBOL:
+                case VALUE_BIGINT:
                 case VALUE_OBJECT:
                 case VALUE_ARRAY:
                 case VALUE_JS_FUNC:
@@ -1529,8 +1567,10 @@ static void index_type_typecheck_internal(
         case TYPE_UNKNOWN:
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
-        case TYPE_CALLABLE:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
+        case TYPE_CALLABLE:
             if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
                 cstr msg = cstr_lit("Property '");
                 if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {

@@ -63,6 +63,8 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_VALUE:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
             return;
 
         case TYPE_IDENTIFIER:
@@ -135,6 +137,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_VALUE:
             return;
 

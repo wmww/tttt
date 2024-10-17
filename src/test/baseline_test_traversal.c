@@ -131,6 +131,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_VALUE:
             break;
 

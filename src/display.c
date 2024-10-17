@@ -465,6 +465,8 @@ void display_type(Display d, Type const* me) {
         case TYPE_BOOLEAN: display_colored(d, color_type, "boolean"); break;
         case TYPE_NUMBER: display_colored(d, color_type, "number"); break;
         case TYPE_STRING: display_colored(d, color_type, "string"); break;
+        case TYPE_SYMBOL: display_colored(d, color_type, "symbol"); break;
+        case TYPE_BIGINT: display_colored(d, color_type, "bigint"); break;
 
         case TYPE_VALUE:
             display_color(d, color_type);

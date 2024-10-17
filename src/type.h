@@ -35,6 +35,8 @@ typedef struct Type {
         TYPE_BOOLEAN,
         TYPE_NUMBER,
         TYPE_STRING,
+        TYPE_SYMBOL,
+        TYPE_BIGINT,
         TYPE_VALUE,
         TYPE_IDENTIFIER,
         TYPE_INFERRED,
@@ -89,6 +91,8 @@ extern const Type type_object;
 extern const Type type_boolean;
 extern const Type type_number;
 extern const Type type_string;
+extern const Type type_symbol;
+extern const Type type_bigint;
 extern const Type type_null;
 extern const Type type_undefined;
 #undef TYPE_NEW_DECL
@@ -205,6 +209,8 @@ static inline Type type_refcopy(Type const* ref) {
         case TYPE_BOOLEAN:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
+        case TYPE_BIGINT:
         case TYPE_LAZY:
         case TYPE_REF:
             return *ref;
