@@ -35301,7 +35301,7 @@ const baselines = {
         types: false,
     },
     'globalThisTypeIndexAccess': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

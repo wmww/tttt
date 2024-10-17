@@ -55,6 +55,7 @@ static void program_add_builtins(Program* me) {
 }
 
     GLOBAL_VALUE("console", type_any);
+    GLOBAL_VALUE("globalThis", type_any);
 
     GLOBAL_TYPE("any", type_any);
     GLOBAL_TYPE("unknown", type_unknown);
