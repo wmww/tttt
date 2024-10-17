@@ -8676,7 +8676,7 @@ const baselines = {
         types: false,
     },
     'deferredConditionalTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -23241,7 +23241,7 @@ const baselines = {
         types: false,
     },
     'prefixedNumberLiteralAssignToNumberLiteralType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -99,6 +99,7 @@ static bool parse_function_args(
     bool parse_function_args,
     FunctionImpl* ret
 );
+static bool parse_number(Parser* parent, double* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -1000,6 +1001,15 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
+    } else if (hop_start(&p, "-")) {
+        hop_whitespace(&p);
+        if (parse_number(&p, &ret->value.number)) {
+            ret->tag = TYPE_VALUE;
+            ret->value.tag = VALUE_NUMBER;
+            ret->value.number = -ret->value.number;
+        } else {
+            return parse_fail(&p);
+        }
     } else if (parse_function_args(&p, true, true, true, &parsed.func)) {
         *ret = function_impl_into_type(parsed.func);
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
