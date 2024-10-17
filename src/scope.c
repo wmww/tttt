@@ -142,6 +142,8 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
                     2567,
                     "Enum declarations can only merge with namespace or other enum declarations."
                 );
+            } else if (declaration->value_tag == DECLARATION_FUNCTION && props.tag == DECLARATION_FUNCTION) {
+                // TODO: allow function overloads
             } else {
                 switch (my tag) {
                     case SCOPE_DEFAULT:

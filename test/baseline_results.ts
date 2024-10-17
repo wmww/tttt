@@ -791,12 +791,12 @@ const baselines = {
         types: false,
     },
     'ambiguousOverload': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'ambiguousOverloadResolution': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -2761,7 +2761,7 @@ const baselines = {
         types: true,
     },
     'callbackArgsDifferByOptionality': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3051,7 +3051,7 @@ const baselines = {
         types: true,
     },
     'checkInfiniteExpansionTermination2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4706,7 +4706,7 @@ const baselines = {
         types: false,
     },
     'commentsCommentParsing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5236,7 +5236,7 @@ const baselines = {
         types: false,
     },
     'conditionallyDuplicateOverloadsCausedByOverloadResolution': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5526,12 +5526,12 @@ const baselines = {
         types: false,
     },
     'constantOverloadFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'constantOverloadFunctionNoSubtypeError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6891,7 +6891,7 @@ const baselines = {
         types: true,
     },
     'declFileFunctions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7011,7 +7011,7 @@ const baselines = {
         types: false,
     },
     'declFileTypeAnnotationStringLiteral': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7086,7 +7086,7 @@ const baselines = {
         types: false,
     },
     'declFileTypeofFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7416,7 +7416,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitDestructuringOptionalBindingParametersInOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7571,7 +7571,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitFunctionDuplicateNamespace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11886,7 +11886,7 @@ const baselines = {
         types: false,
     },
     'exportDefaultInterfaceAndFunctionOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12116,7 +12116,7 @@ const baselines = {
         types: false,
     },
     'exportRedeclarationTypeAliases': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13071,7 +13071,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13086,22 +13086,22 @@ const baselines = {
         types: false,
     },
     'functionOverloads13': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionOverloads14': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionOverloads15': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionOverloads16': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13131,7 +13131,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads21': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13141,7 +13141,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads23': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13151,7 +13151,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads25': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13181,7 +13181,7 @@ const baselines = {
         types: true,
     },
     'functionOverloads30': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13206,7 +13206,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads35': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13221,7 +13221,7 @@ const baselines = {
         types: false,
     },
     'functionOverloads38': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13281,12 +13281,12 @@ const baselines = {
         types: false,
     },
     'functionOverloads8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionOverloads9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13306,7 +13306,7 @@ const baselines = {
         types: false,
     },
     'functionOverloadsRecursiveGenericReturnType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13916,7 +13916,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionSpecializations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13941,7 +13941,7 @@ const baselines = {
         types: false,
     },
     'genericFunctions3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14131,7 +14131,7 @@ const baselines = {
         types: false,
     },
     'genericOverloadSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16026,7 +16026,7 @@ const baselines = {
         types: true,
     },
     'infinitelyExpandingTypes5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16366,7 +16366,7 @@ const baselines = {
         types: false,
     },
     'innerOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20256,7 +20256,7 @@ const baselines = {
         types: false,
     },
     'multiSignatureTypeInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22421,7 +22421,7 @@ const baselines = {
         types: false,
     },
     'overload2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22451,7 +22451,7 @@ const baselines = {
         types: false,
     },
     'overloadCrash': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22466,7 +22466,7 @@ const baselines = {
         types: false,
     },
     'overloadGenericFunctionWithRestArgs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22486,22 +22486,22 @@ const baselines = {
         types: false,
     },
     'overloadOnConstConstraintChecks2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'overloadOnConstConstraintChecks3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'overloadOnConstConstraintChecks4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'overloadOnConstDuplicateOverloads1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22616,7 +22616,7 @@ const baselines = {
         types: false,
     },
     'overloadReturnTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22646,7 +22646,7 @@ const baselines = {
         types: false,
     },
     'overloadingOnConstantsInImplementation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22681,7 +22681,7 @@ const baselines = {
         types: false,
     },
     'overloadsWithConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25996,7 +25996,7 @@ const baselines = {
         types: false,
     },
     'specializedOverloadWithRestParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27911,7 +27911,7 @@ const baselines = {
         types: false,
     },
     'typeArgumentConstraintResolution1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38461,7 +38461,7 @@ const baselines = {
         types: false,
     },
     'defaultExportWithOverloads01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44781,12 +44781,12 @@ const baselines = {
         types: false,
     },
     'functionOverloadCompatibilityWithVoid02': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'functionOverloadCompatibilityWithVoid03': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -44796,7 +44796,7 @@ const baselines = {
         types: false,
     },
     'functionOverloadErrorsSyntax': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49376,7 +49376,7 @@ const baselines = {
         types: true,
     },
     'parserFunctionDeclaration5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55506,12 +55506,12 @@ const baselines = {
         types: false,
     },
     'specializedSignatureIsSubtypeOfNonSpecializedSignature': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'specializedSignatureWithOptional': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55796,7 +55796,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56306,17 +56306,17 @@ const baselines = {
         types: true,
     },
     'stringLiteralTypesOverloadAssignability03': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'stringLiteralTypesOverloadAssignability04': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
     'stringLiteralTypesOverloadAssignability05': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57521,7 +57521,7 @@ const baselines = {
         types: false,
     },
     'recursiveTypesUsedAsFunctionParameters': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57536,7 +57536,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypeIsSubtypeOfString': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57596,7 +57596,7 @@ const baselines = {
         types: false,
     },
     'subtypingWithCallSignatures4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57786,12 +57786,12 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentity': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentity2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57806,7 +57806,7 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithCallSignatures3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57816,7 +57816,7 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithCallSignaturesDifferingParamCounts2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57826,12 +57826,12 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithComplexConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithConstructSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57886,7 +57886,7 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithGenericCallSignaturesDifferingTypeParameterCounts2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57961,27 +57961,27 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithNumericIndexers1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithNumericIndexers2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithNumericIndexers3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithOptionality': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithPrivates': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57996,27 +57996,27 @@ const baselines = {
         types: false,
     },
     'objectTypesIdentityWithPublics': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithStringIndexers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'objectTypesIdentityWithStringIndexers2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'primtiveTypesAreIdentical': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeParametersAreIdenticalToThemselves': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
