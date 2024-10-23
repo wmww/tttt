@@ -56,7 +56,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props);
 void scope_add_import(Scope* me, NamedImport import);
 
 void scope_process_imports(Scope* me);
-Type scope_make_interface_from(Scope const* me);
+Type scope_make_value_interface(Scope const* me);
 
 typedef Scope const* ScopeCPtr;
 #define i_key_names ScopeCPtr, scope_cptr

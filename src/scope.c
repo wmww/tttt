@@ -197,6 +197,9 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 
 void scope_add_import(Scope* me, NamedImport import) {
     ASSERT(!my current_scope_stack);
+    if (import.source == IMPORT_SOURCE_WILDCARD) {
+        return;
+    }
     auto result = hmap_str_named_import_insert(
         &my imports,
         cstr_from_span(import.decl_name),
@@ -213,7 +216,7 @@ void scope_add_import(Scope* me, NamedImport import) {
     }
 }
 
-static void add_import(Scope* me, Span decl_name, NamedImport* import) {
+static void process_import(Scope* me, Span decl_name, NamedImport* import) {
     Scope* source_scope = &import->source_file->scope;
     csview source_name = span_valid(import->source_name) ? import->source_name.sv : source_scope->default_export;
     if (import->error_reported) return;
@@ -253,7 +256,7 @@ static void add_import(Scope* me, Span decl_name, NamedImport* import) {
                 );
                 import->error_reported = true;
             } else {
-                add_import(me, decl_name, &result->second);
+                process_import(me, decl_name, &result->second);
             }
             found = true;
             source_scope->currently_adding_import = false;
@@ -273,7 +276,7 @@ static void add_import(Scope* me, Span decl_name, NamedImport* import) {
     }
 }
 
-Type scope_make_interface_from(Scope const* me) {
+Type scope_make_value_interface(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, hmap_str_arc_declaration, my declarations) {
         if (i.ref->second.get->value_tag) {
@@ -300,6 +303,6 @@ Type scope_make_interface_from(Scope const* me) {
 
 void scope_process_imports(Scope* me) {
     c_foreach(i, hmap_str_named_import, my imports) {
-        add_import(me, i.ref->second.decl_name, &i.ref->second);
+        process_import(me, i.ref->second.decl_name, &i.ref->second);
     }
 }

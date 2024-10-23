@@ -900,34 +900,34 @@ void display_expr(Display d, Expr const* me) {
 }
 
 static void display_import_statement(Display d, ImportStatement const* me) {
-    display_lit(d, "import ");
+    if (my is_export) {
+        display_lit(d, "export ");
+    } else {
+        display_lit(d, "import ");
+    }
     if (my type_only) {
         display_lit(d, "type ");
     }
-    bool force_brace_list = true;
-    if (span_valid(my default_name)) {
-        display_colored_span(d, color_name, my default_name);
-        force_brace_list = false;
-    }
-    if (span_valid(my module_name)) {
-        display_colored(d, color_value, "*");
-        display_lit(d, " as ");
+    if (my source != IMPORT_SOURCE_NONE) {
+        if (my source == IMPORT_SOURCE_WILDCARD) {
+            display_colored(d, color_value, "*");
+            display_lit(d, " as ");
+        }
         display_colored_span(d, color_name, my module_name);
-        force_brace_list = false;
-    }
-    if (force_brace_list || !vec_import_item_empty(&my items)) {
-        if (!force_brace_list) {
+        if (vec_import_item_size(&my items)) {
             display_lit(d, ", ");
         }
+    }
+    if (vec_import_item_size(&my items)) {
         display_lit(d, "{");
         c_foreach(i, vec_import_item, my items) {
             if (i.ref->type_only) {
                 display_lit(d, "type ");
             }
-            display_colored_span(d, color_name, i.ref->source);
-            if (span_cmp(i.ref->name, i.ref->source) != 0) {
+            display_colored_span(d, color_name, i.ref->source_name);
+            if (span_cmp(i.ref->decl_name, i.ref->source_name) != 0) {
                 display_lit(d, " as ");
-                display_colored_span(d, color_name, i.ref->name);
+                display_colored_span(d, color_name, i.ref->decl_name);
             }
             if (i.ref != i.end - 1) {
                 display_lit(d, ", ");

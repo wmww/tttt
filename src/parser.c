@@ -2916,14 +2916,14 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
             item.type_only = true;
         }
 
-        if (expect_identifier(&p, &item.source)) {
+        if (expect_identifier(&p, &item.source_name)) {
             hop_whitespace(&p);
 
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-                expect_identifier(&p, &item.name);
+                expect_identifier(&p, &item.decl_name);
             } else {
-                item.name = item.source;
+                item.decl_name = item.source_name;
             }
 
             vec_import_item_push(ret, item);
@@ -2961,12 +2961,12 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 
     if (hop_char(&p, '*')) {
         hop_whitespace(&p);
+        import.source = IMPORT_SOURCE_WILDCARD;
 
         if (import.is_export) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
                 expect_identifier(&p, &import.module_name);
-                hop_whitespace(&p);
             }
         } else {
             if (!hop_start_if_ends_on_word_break(&p, "as")) {
@@ -2975,25 +2975,25 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
             hop_whitespace(&p);
 
             expect_identifier(&p, &import.module_name);
-            hop_whitespace(&p);
         }
-    } else {
-        if (parse_identifier(&p, &import.default_name)) {
-            hop_whitespace(&p);
-
-            if (hop_char(&p, ',')) {
-                hop_whitespace(&p);
-
-                if (!parse_import_item_list(&p, &import.items)) {
-                    import.items = vec_import_item_init();
-                    expected_token_error(&p, "{");
-                }
-            }
-        } else if (!parse_import_item_list(&p, &import.items)) {
-            return parse_fail(&p);
-        }
+    } else if (!import.is_export && parse_identifier(&p, &import.module_name)) {
         hop_whitespace(&p);
+        import.source = IMPORT_SOURCE_DEFAULT;
+
+        if (hop_char(&p, ',')) {
+            hop_whitespace(&p);
+
+            if (!parse_import_item_list(&p, &import.items)) {
+                import.items = vec_import_item_init();
+                expected_token_error(&p, "{");
+            }
+        }
+    } else if (parse_import_item_list(&p, &import.items)) {
+        import.source = IMPORT_SOURCE_NONE; // Only the item list is imported, no main import
+    } else {
+        return parse_fail(&p);
     }
+    hop_whitespace(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
         if (import.is_export) {

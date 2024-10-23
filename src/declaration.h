@@ -76,9 +76,17 @@ void declaration_init(Declaration* me, DeclProps props);
 #define i_is_forward
 #include "wrap_stc/arc.h"
 
+typedef enum {
+    IMPORT_SOURCE_NONE = 0, // Nothing is imported
+    IMPORT_SOURCE_DEFAULT, // Import the default exported item
+    IMPORT_SOURCE_WILDCARD, // Collect all exported items into a single namespace
+    IMPORT_SOURCE_SPECIFIC, // Import an item with a specific name
+} ImportSource;
+
 typedef struct NamedImport {
     Span decl_name;
-    Span source_name;
+    ImportSource source; // Never IMPORT_SOURCE_NONE
+    Span source_name; // Only used for IMPORT_SOURCE_SPECIFIC
     SourceFile* source_file;
     bool error_reported;
 } NamedImport;

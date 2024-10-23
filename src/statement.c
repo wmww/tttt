@@ -81,7 +81,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
     }
 
     ASSERT(my value_type.tag == 0);
-    my value_type = scope_make_interface_from(&my inner_scope);
+    my value_type = scope_make_value_interface(&my inner_scope);
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
