@@ -65,13 +65,6 @@ int main(int argc, const char** argv) {
         ret = 1;
     }
 
-    program_typecheck(program);
-
-    if (error_ctx_empty(&errs)) {
-        printf("%sTypecheck passed%s\n", color_good, color_normal);
-    } else {
-        printf("%sTypecheck failed%s\n", color_error, color_normal);
-    }
 
     cstr parsed_str = cstr_null;
     display_block(debug_display(&parsed_str), &source->ast);
@@ -79,12 +72,22 @@ int main(int argc, const char** argv) {
     printf("%s\n\n", cstr_str(&parsed_str));
     cstr_drop(&parsed_str);
 
-    if (!error_ctx_empty(&errs)) {
-        type_errors = vec_error_size(&errs.errors);
-        print_error_ctx(&errs);
-        error_ctx_drop(&errs);
-        errs = error_ctx_init();
-        ret = 1;
+    if (ret == 0) {
+        program_typecheck(program);
+
+        if (error_ctx_empty(&errs)) {
+            printf("%sTypecheck passed%s\n", color_good, color_normal);
+        } else {
+            printf("%sTypecheck failed%s\n", color_error, color_normal);
+        }
+
+        if (!error_ctx_empty(&errs)) {
+            type_errors = vec_error_size(&errs.errors);
+            print_error_ctx(&errs);
+            error_ctx_drop(&errs);
+            errs = error_ctx_init();
+            ret = 1;
+        }
     }
 
     if (parse_errors || name_errors || type_errors) {
