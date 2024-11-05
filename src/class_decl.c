@@ -71,6 +71,7 @@ void class_decl_drop(ClassDecl* me) {
     declaration_drop(&my typeof_declaration);
     arc_declaration_drop(&my declaration);
     type_drop(&my instance_identifier_type);
+    vec_type_drop(&my miscellaneous_owned_types);
 }
 
 void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
@@ -222,8 +223,9 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             cstr_lit("hasOwnProperty"),
             span_null,
             false,
-            has_own_property_type
+            type_clone(has_own_property_type)
         ));
+        vec_type_push(&my miscellaneous_owned_types, has_own_property_type);
     }
 
     bool has_constructor = false;
@@ -290,17 +292,18 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
     }
 
     if (!resolve_instance && !has_constructor) {
-        FunctionImpl constructor = {
+        Type constructor = function_impl_into_type((FunctionImpl){
             .ret = type_ref_always(&my instance_identifier_type),
             .is_constructor = true,
             .is_abstract_constructor = my is_abstract,
             .generic = generic_clone(my generic),
-        };
+        });
         InterfaceMember member = {
             .origin_interface_name = my name,
             .key.tag = INTERFACE_KEY_CALLABLE,
-            .type = function_impl_into_type(constructor),
+            .type = type_clone(constructor),
         };
+        vec_type_push(&my miscellaneous_owned_types, constructor);
         vec_interface_member_push(&interface.members, member);
     }
 

@@ -74,6 +74,7 @@ typedef struct ClassDecl {
     Declaration typeof_declaration;
     ArcDeclaration declaration;
     Type instance_identifier_type;
+    VecType miscellaneous_owned_types;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
