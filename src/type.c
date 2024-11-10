@@ -524,6 +524,10 @@ static inline Type const* type_resolve_indexed_type(TypeCtx* ctx, IndexedType* m
 static inline Type const* type_resolve_ternary_type(TypeCtx* ctx, TernaryType* me) {
     if (my has_cache) {
         return &my cached;
+    } else if (my maybe_sub.tag == TYPE_ANY) {
+        my cached = type_composite_internal(ctx, TYPE_UNION, type_clone(my if_true), type_clone(my if_false));
+        my has_cache = true;
+        return &my cached;
     } else {
         VecTypeRefinement refinements = {0};
         Type const* ret;
