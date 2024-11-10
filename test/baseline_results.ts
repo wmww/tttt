@@ -28308,22 +28308,22 @@ const baselines = {
     'typeParameterDiamond1': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'typeParameterDiamond2': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'typeParameterDiamond3': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'typeParameterDiamond4': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'typeParameterDoesntBlockParameterLookup': {
         errors: false,
@@ -44828,7 +44828,7 @@ const baselines = {
     'parameterInitializersForwardReferencing': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterInitializersForwardReferencing1': {
         errors: false,

@@ -10,17 +10,24 @@
 void lazy_type_evaluate(LazyType* me) {
     // THREADSAFETY: this will probably need to be rewritten to be threadsafe
 
-    typeof(my tag) initial_tag = my tag;
-    my tag = LAZY_TYPE_IN_FLIGHT;
+    if (my evaluation_started) {
+        // We've already hit this LazyType once, therefore it's self-referential
+        if (my is_self_referential) {
+            // We have hit this LazyType 3 times, which means we've hit every other LazyType in this cycle twice, which
+            // means we have hit every other LazyType at least twice, which means we've marked them all self-referential
+            // and so we can now safely bail.
+            my tag = LAZY_TYPE_EVALUATED;
+            my evaluated = type_self_referential_error;
+            return;
+        }
+        my is_self_referential = true;
+    }
+    my evaluation_started = true;
 
     Type result = {0};
-    switch (initial_tag) {
+    switch (my tag) {
         case LAZY_TYPE_UNINITIALIZED: PANIC("LazyType is uninitialized");
         case LAZY_TYPE_EVALUATED: PANIC("lazy_type_evaluate() called when already evaluated");
-
-        case LAZY_TYPE_IN_FLIGHT:
-            result = type_self_referential_error;
-            break;
 
         case LAZY_TYPE_EXPR:
             result = expr_evaluate_type(c_container_of(me, Expr, lazy_type));
@@ -63,28 +70,18 @@ void lazy_type_evaluate(LazyType* me) {
             break;
     }
 
-    if (initial_tag != LAZY_TYPE_IDENTIFIER_TYPE) {
-        // TODO: this seems wrong, is it needed once chains of multiple self-referential LazyTypes are handled correctly?
-        type_resolve(&result); // Ignore return value, do this so we'll pick up on self-referential types
-    }
-
-    switch (my tag) {
-        case LAZY_TYPE_IN_FLIGHT:
-            // Our tag wasn't touched by the call this function made, result is valid
+    if (my tag == LAZY_TYPE_EVALUATED) {
+        // A sub-call already evaluated us, do nothing
+        type_drop(&result);
+    } else {
+        // Our tag wasn't touched by the call this function made, result is valid
+        Type const* resolved = type_resolve_until_identifier(&result);
+        if (resolved == &result) {
             my evaluated = result;
-            my tag = LAZY_TYPE_EVALUATED;
-            break;
-
-        case LAZY_TYPE_EVALUATED:
-            // A subcall set our evaluated type, don't mess with it
-            if (initial_tag == LAZY_TYPE_FUNCTION) {
-                type_drop(&my evaluated);
-                my evaluated = result;
-            } else {
-                type_drop(&result);
-            }
-            break;
-
-        default: PANIC("LazyType tag changed to something other than LAZY_TYPE_EVALUATED during evaluation");\
+        } else {
+            my evaluated = type_clone(*resolved);
+            type_drop(&result);
+        }
+        my tag = LAZY_TYPE_EVALUATED;
     }
 }

@@ -525,14 +525,16 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         }
                         expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
-                        baseline_test_case_add_symbol(ctx, (BaselineSym){
-                            .declarations = vec_span_clone(i.ref->declarations),
-                            .allow_declaration_empty = true,
-                            .namespaces = vec_span_single(i.ref->origin_interface_name),
-                            .span = my property->prop.outer_span,
-                            .name = i.ref->key.span,
-                            .name_is_value = i.ref->key.name_is_value,
-                        });
+                        if (my property->prop.tag == EXPR_LITERAL) {
+                            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                                .declarations = vec_span_clone(i.ref->declarations),
+                                .allow_declaration_empty = true,
+                                .namespaces = vec_span_single(i.ref->origin_interface_name),
+                                .span = my property->prop.outer_span,
+                                .name = i.ref->key.span,
+                                .name_is_value = i.ref->key.name_is_value,
+                            });
+                        }
                         break;
                     }
                 }

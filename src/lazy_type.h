@@ -10,9 +10,6 @@ typedef struct LazyType {
         // The final type is already cached
         LAZY_TYPE_EVALUATED,
 
-        // We are currently evaluating this type, if we hit this it means the type references itself
-        LAZY_TYPE_IN_FLIGHT,
-
         // The rest means this LazyType is part of one of the following structs
         LAZY_TYPE_EXPR,
         LAZY_TYPE_FOR_EACH_LOOP_VAR,
@@ -25,6 +22,8 @@ typedef struct LazyType {
         LAZY_TYPE_IDENTIFIER_TYPE,
         LAZY_TYPE_DECLARATION,
     } tag;
+    bool evaluation_started;
+    bool is_self_referential;
     Type evaluated; // Should be {0} when tag is not LAZY_TYPE_EVALUATED
 } LazyType;
 
