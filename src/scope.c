@@ -197,9 +197,6 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 
 void scope_add_import(Scope* me, NamedImport import) {
     ASSERT(!my current_scope_stack);
-    if (import.source == IMPORT_SOURCE_WILDCARD) {
-        return;
-    }
     auto result = hmap_str_named_import_insert(
         &my imports,
         cstr_from_span(import.decl_name),
@@ -216,10 +213,55 @@ void scope_add_import(Scope* me, NamedImport import) {
     }
 }
 
+static void add_placeholder_for_failed_import(Scope* me, Span decl_name, NamedImport* import) {
+    ASSERT(!import->declaration->get);
+    *import->declaration = arc_declaration_make((Declaration){
+        .name = decl_name,
+        .declarations = vec_span_single(import->decl_span),
+        .value_tag = DECLARATION_VARIABLE,
+        .type_tag = DECLARATION_TYPE,
+    });
+    if (!hmap_str_arc_declaration_insert(
+        &my declarations,
+        cstr_from_sv(decl_name.sv),
+        arc_declaration_clone(*import->declaration)
+    ).inserted) {
+        error_ctx_error(
+            my errs,
+            decl_name,
+            2300,
+            "Duplicate identifier '%.*s'.",
+            c_SPAN(decl_name)
+        );
+    }
+}
+
 static void process_import(Scope* me, Span decl_name, NamedImport* import) {
+    if (!import->source_file->is_real) {
+        import->error_reported = true;
+        add_placeholder_for_failed_import(me, decl_name, import);
+    }
+
     Scope* source_scope = &import->source_file->scope;
-    csview source_name = span_valid(import->source_name) ? import->source_name.sv : source_scope->default_export;
     if (import->error_reported) return;
+
+    csview source_name;
+    switch (import->source) {
+        case IMPORT_SOURCE_DEFAULT:
+            // TODO: error if there is no default export
+            source_name = source_scope->default_export;
+            break;
+
+        case IMPORT_SOURCE_WILDCARD:
+            add_placeholder_for_failed_import(me, decl_name, import);
+            return;
+
+        case IMPORT_SOURCE_SPECIFIC:
+            source_name = import->source_name.sv;
+            break;
+
+        default: PANIC("Invalid import source %d", import->source);
+    }
 
     bool found = false;
 
@@ -228,15 +270,15 @@ static void process_import(Scope* me, Span decl_name, NamedImport* import) {
         // TODO: this probably isn't the most elegant way to do this
         if (!hmap_str_arc_declaration_insert(
             &my declarations,
-            cstr_from_sv(import->decl_name.sv),
+            cstr_from_sv(decl_name.sv),
             arc_declaration_clone(result->second)
         ).inserted) {
             error_ctx_error(
                 my errs,
-                import->decl_name,
+                decl_name,
                 2300,
                 "Duplicate identifier '%.*s'.",
-                c_SPAN(import->decl_name)
+                c_SPAN(decl_name)
             );
         }
         found = true;
@@ -273,6 +315,7 @@ static void process_import(Scope* me, Span decl_name, NamedImport* import) {
             c_SPAN(import->source_name)
         );
         import->error_reported = true;
+        add_placeholder_for_failed_import(me, decl_name, import);
     }
 }
 

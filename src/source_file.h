@@ -9,6 +9,7 @@ typedef struct SourceFile {
     Block ast;
     Scope scope;
     bool typecheck;
+    bool is_real; // False if this is a placeholder as is returned when a source file isn't found
     cstr decl_override; // Used for the tests
 } SourceFile;
 

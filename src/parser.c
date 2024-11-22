@@ -2910,6 +2910,7 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
 
     while (*p.pos && *p.pos != '}') {
         ImportItem item = {0};
+        Anchor a = anchor(&p);
 
         if (hop_start_if_ends_on_word_break(&p, "type")) {
             hop_whitespace(&p);
@@ -2926,6 +2927,7 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
                 item.decl_name = item.source_name;
             }
 
+            item.decl_span = span_from(a);
             vec_import_item_push(ret, item);
         } else {
             hop_token(&p);
@@ -2954,6 +2956,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     import.import_keyword_span = span_from(a);
     hop_whitespace(&p);
 
+    a = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "type")) {
         import.type_only = true;
         hop_whitespace(&p);
@@ -3015,6 +3018,8 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
         }
         expr_drop(&path_expr);
     }
+
+    import.decl_span = span_from(a);
 
     *ret = (Statement){
         .tag = STATEMENT_IMPORT,

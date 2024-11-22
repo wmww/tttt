@@ -85,8 +85,10 @@ typedef enum {
 
 typedef struct NamedImport {
     Span decl_name;
+    Span decl_span;
     ImportSource source; // Never IMPORT_SOURCE_NONE
     Span source_name; // Only used for IMPORT_SOURCE_SPECIFIC
     SourceFile* source_file;
     bool error_reported;
+    ArcDeclaration* declaration;
 } NamedImport;

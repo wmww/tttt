@@ -6,6 +6,7 @@
 #include "expr.h"
 #include "several_types.h"
 #include "function_impl.h"
+#include "import_statement.h"
 #include "statement.h"
 #include "block.h"
 #include "class_decl.h"
@@ -249,9 +250,25 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 }
 
 void import_statement_compile_test_info(ImportStatement const* me, BaselineTestCase* ctx) {
-    ignore me;
-    ignore ctx;
-    // TODO: implement once we're storing a declaration on the import statement
+    if (my declaration.get) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_clone(my declaration.get->declarations),
+            .span = my declaration.get->name,
+        });
+        baseline_test_case_add_type(ctx, my declaration.get->name, &my declaration.get->value_type);
+    }
+    c_foreach(i, vec_import_item, my items) {
+        if (i.ref->declaration.get) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_clone(i.ref->declaration.get->declarations),
+                .span = i.ref->declaration.get->name,
+            });
+            if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
+                baseline_test_case_add_type(ctx, i.ref->source_name, &i.ref->declaration.get->value_type);
+            }
+            baseline_test_case_add_type(ctx, i.ref->declaration.get->name, &i.ref->declaration.get->value_type);
+        }
+    }
 }
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {

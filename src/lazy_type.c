@@ -70,18 +70,11 @@ void lazy_type_evaluate(LazyType* me) {
             break;
     }
 
-    if (my tag == LAZY_TYPE_EVALUATED) {
-        // A sub-call already evaluated us, do nothing
-        type_drop(&result);
-    } else {
+    if (my tag != LAZY_TYPE_EVALUATED) {
         // Our tag wasn't touched by the call this function made, result is valid
-        Type const* resolved = type_resolve_until_identifier(&result);
-        if (resolved == &result) {
-            my evaluated = result;
-        } else {
-            my evaluated = type_clone(*resolved);
-            type_drop(&result);
-        }
+        my evaluated = type_clone(*type_resolve_until_identifier(&result));
         my tag = LAZY_TYPE_EVALUATED;
     }
+
+    type_drop(&result);
 }

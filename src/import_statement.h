@@ -23,9 +23,11 @@ typedef struct SourceFile SourceFile;
 
 typedef struct ImportItem {
     bool type_only;
+    Span decl_span; // Span of declaration
     // No source enum, as it's alway IMPORT_SOURCE_SPECIFIC
     Span source_name;
     Span decl_name; // may be same as source
+    ArcDeclaration declaration; // set up by the scope
 } ImportItem;
 
 void import_item_drop(ImportItem* me);
@@ -36,6 +38,7 @@ void import_item_drop(ImportItem* me);
 
 typedef struct ImportStatement {
     Span import_keyword_span; // Span of "import" or "export"
+    Span decl_span; // Span of main declaration
     bool type_only; // Has the "type" keyword for the main import
     bool is_export; // Is a re-export (uses "export" keyword)
     ImportSource source; // What to pull from the imported file (never IMPORT_SOURCE_SPECIFIC)
@@ -43,6 +46,7 @@ typedef struct ImportStatement {
     VecImportItem items; // List of curly brace-enclosed imported items
     cstr path; // Path of the module to import from
     Span path_span; // Span of the path string
+    ArcDeclaration declaration; // Declaration if any, set up by the scope
     SourceFile* source_file; // Populated by Program
 } ImportStatement;
 
