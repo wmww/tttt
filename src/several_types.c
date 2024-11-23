@@ -35,7 +35,7 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
                             errs,
                             my name,
                             2694,
-                            "Scope '%.*s' has no exported member '%.*s'.",
+                            "Namespace '%.*s' has no exported member '%.*s'.",
                             c_SPAN(prev_span),
                             c_SPAN(my name)
                         );
@@ -50,21 +50,21 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
                         break;
                     }
                 }
-                if (scope) {
-                    auto result = hmap_str_arc_declaration_get(&scope->declarations, my name.sv);
-                    my decl_ref = result ? result->second.get : nullptr;
-                    if (!my decl_ref) {
-                        error_ctx_error(
-                            errs,
-                            my name,
-                            2694,
-                            "Scope '%.*s' has no exported member '%.*s'.",
-                            c_SPAN(*vec_span_back(&my namespaces)),
-                            c_SPAN(my name)
-                        );
-                    }
-                }
                 prev_span = *i.ref;
+            }
+            if (scope) {
+                auto result = hmap_str_arc_declaration_get(&scope->declarations, my name.sv);
+                my decl_ref = result ? result->second.get : nullptr;
+                if (!my decl_ref) {
+                    error_ctx_error(
+                        errs,
+                        my name,
+                        2694,
+                        "Namespace '%.*s' has no exported member '%.*s'.",
+                        c_SPAN(*vec_span_back(&my namespaces)),
+                        c_SPAN(my name)
+                    );
+                }
             }
         } else if (my keyword) {
             my decl_ref = scope_stack_get_keyword(names, my keyword);

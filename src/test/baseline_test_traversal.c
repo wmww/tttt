@@ -463,18 +463,20 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
         });
-        Declaration d = {0};
-        declaration_init(&d, (DeclProps){
-            .tag = DECLARATION_TYPE,
-            .is_typeof = true,
-        });
-        Type t = type_identifier(c_new(IdentifierType, {
-            .name = my name,
-            .decl_ref = &d,
-        }));
-        baseline_test_case_add_type(ctx, my name, &t);
-        type_drop(&t);
-        declaration_drop(&d);
+        if (my declaration.get->value_tag) {
+            Declaration d = {0};
+            declaration_init(&d, (DeclProps){
+                .tag = DECLARATION_TYPE,
+                .is_typeof = true,
+            });
+            Type t = type_identifier(c_new(IdentifierType, {
+                .name = my name,
+                .decl_ref = &d,
+            }));
+            baseline_test_case_add_type(ctx, my name, &t);
+            type_drop(&t);
+            declaration_drop(&d);
+        }
     }
     block_compile_test_info(&my contents, ctx);
 }

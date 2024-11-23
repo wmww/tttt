@@ -76,18 +76,31 @@ void namespace_decl_drop(NamespaceDecl* me) {
 
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope) {
     my inner_scope = scope_init(scope->errs);
+    bool has_value = false;
     c_foreach(i, vec_statement, my contents.statements) {
         statement_add_names(i.ref, &my inner_scope);
+        switch (i.ref->tag) {
+            case STATEMENT_NOOP:
+            case STATEMENT_DECL_TYPE:
+            case STATEMENT_DECL_INTERFACE:
+                break;
+
+            default:
+                has_value = true;
+                break;
+        }
     }
 
-    ASSERT(my value_type.tag == 0);
-    my value_type = scope_make_value_interface(&my inner_scope);
+    if (has_value) {
+        ASSERT(my value_type.tag == 0);
+        my value_type = scope_make_value_interface(&my inner_scope);
+    }
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .tag = DECLARATION_NAMESPACE,
-        .value_type = type_ref_always(&my value_type),
+        .tag = has_value ? DECLARATION_NAMESPACE_WITH_VALUE : DECLARATION_NAMESPACE_TYPE_ONLY,
+        .value_type = has_value ? type_ref_always(&my value_type) : type_any,
         .namespace = &my inner_scope,
     });
 }

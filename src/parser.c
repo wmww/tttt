@@ -3852,6 +3852,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .expr = parsed.expr,
         };
     } else if (exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
+        ret->decl.namespace.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {

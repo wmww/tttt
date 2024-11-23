@@ -4,7 +4,8 @@
 
 typedef enum DeclarationTag {
     DECLARATION_NONE = 0,
-    DECLARATION_NAMESPACE,
+    DECLARATION_NAMESPACE_TYPE_ONLY,
+    DECLARATION_NAMESPACE_WITH_VALUE,
     DECLARATION_FUNCTION,
     DECLARATION_VARIABLE,
     DECLARATION_INTERFACE,
@@ -12,11 +13,12 @@ typedef enum DeclarationTag {
     DECLARATION_CLASS,
     DECLARATION_ENUM,
 } DeclarationTag;
+#define DECLARATION_TAG_COUNT (DECLARATION_ENUM + 1)
 
 // See https://www.typescriptlang.org/docs/handbook/declaration-merging.html
 static inline bool declaration_tag_has_value(DeclarationTag tag) {
-    static const bool ret[DECLARATION_ENUM + 1] = {
-        [DECLARATION_NAMESPACE] = true,
+    static const bool ret[DECLARATION_TAG_COUNT] = {
+        [DECLARATION_NAMESPACE_WITH_VALUE] = true,
         [DECLARATION_FUNCTION] = true,
         [DECLARATION_VARIABLE] = true,
         [DECLARATION_CLASS] = true,
@@ -26,7 +28,7 @@ static inline bool declaration_tag_has_value(DeclarationTag tag) {
 }
 
 static inline bool declaration_tag_has_type(DeclarationTag tag) {
-    static const bool ret[DECLARATION_ENUM + 1] = {
+    static const bool ret[DECLARATION_TAG_COUNT] = {
         [DECLARATION_INTERFACE] = true,
         [DECLARATION_TYPE] = true,
         [DECLARATION_CLASS] = true,
@@ -36,7 +38,11 @@ static inline bool declaration_tag_has_type(DeclarationTag tag) {
 }
 
 static inline bool declaration_tag_has_namespace(DeclarationTag tag) {
-    return tag == DECLARATION_NAMESPACE;
+    static const bool ret[DECLARATION_TAG_COUNT] = {
+        [DECLARATION_NAMESPACE_TYPE_ONLY] = true,
+        [DECLARATION_NAMESPACE_WITH_VALUE] = true,
+    };
+    return ret[tag];
 }
 
 typedef struct Declaration {

@@ -632,7 +632,7 @@ const baselines = {
     },
     'ambientClassDeclaredBeforeBase': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientClassMergesOverloadsWithInterface': {
@@ -757,7 +757,7 @@ const baselines = {
     },
     'ambientNameRestrictions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientPropertyDeclarationInJs': {
@@ -7836,7 +7836,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitOfFuncspace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -11687,7 +11687,7 @@ const baselines = {
     },
     'exportAssignedNamespaceIsVisibleInDeclarationEmit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAssignedTypeAsTypeAnnotation': {
@@ -12102,7 +12102,7 @@ const baselines = {
     },
     'exportNamespaceDeclarationRetainsVisibility': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'exportObjectRest': {
@@ -14548,7 +14548,7 @@ const baselines = {
     'globalIsContextualKeyword': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'globalThis': {
         errors: true,
@@ -21403,7 +21403,7 @@ const baselines = {
     'noSymbolForMergeCrash': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noTypeArgumentOnReturnType1': {
         errors: false,
@@ -29468,17 +29468,17 @@ const baselines = {
     'unusedInterfaceinNamespace1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedInterfaceinNamespace2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedInterfaceinNamespace3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedInterfaceinNamespace4': {
         errors: true,
@@ -29662,7 +29662,7 @@ const baselines = {
     },
     'unusedNamespaceInNamespace': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unusedParameterInCatchClause': {
@@ -43772,8 +43772,8 @@ const baselines = {
     },
     'es6modulekindWithES5Target7': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'es6modulekindWithES5Target8': {
         errors: true,
@@ -43842,8 +43842,8 @@ const baselines = {
     },
     'esnextmodulekindWithES5Target7': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esnextmodulekindWithES5Target8': {
         errors: true,
@@ -47068,7 +47068,7 @@ const baselines = {
     'seeTag1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'seeTag2': {
         errors: true,
