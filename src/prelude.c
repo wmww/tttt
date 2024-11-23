@@ -1,6 +1,10 @@
 #include "prelude.h"
 #include "display.h"
 
+#ifdef DEBUG_ALLOCATOR
+intptr_t debug_allocation_count = 0;
+#endif // DEBUG_ALLOCATOR
+
 int nonfatal_inhibit_count = 0;
 
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) {

@@ -130,6 +130,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
     cstr display = cstr_null;
     VecBaselineTestResultCPtr newly_failed = vec_baseline_test_result_c_ptr_init();
     VecBaselineTestResultCPtr newly_passed = vec_baseline_test_result_c_ptr_init();
+    VecBaselineTestResultCPtr memory_issues = vec_baseline_test_result_c_ptr_init();
 
     printf("%sRunning tests...%s\n\n", color_status, color_normal);
     c_foreach(i, vec_baseline_test_result, my results) {
@@ -149,7 +150,28 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
         }
         Result prev_result = js_object_get(my prev_results.get, name);
         JsObject* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
+
+
+#ifdef DEBUG_ALLOCATOR
+        debug_allocation_count = 0;
+#endif
+
         baseline_test_result_run(i.ref, me, prev_obj, show_errs, show_syms, show_typs);
+
+#ifdef DEBUG_ALLOCATOR
+        if (debug_allocation_count != 0) {
+            // Run again in case the "leaked" memory was actually added to the cache. This lowers the chance we'll catch
+            // flaky tests but those don't seem too much of a problem
+            debug_allocation_count = 0;
+            baseline_test_result_run(i.ref, me, prev_obj, false, false, false);
+            if (debug_allocation_count != 0) {
+                printf(" %s %zd net allocations! %s\n",
+                    color_highlighted_error, debug_allocation_count, color_normal);
+                vec_baseline_test_result_c_ptr_push(&memory_issues, i.ref);
+            }
+        }
+#endif
+
         result_drop(&prev_result);
 
         bool is_pass = baseline_test_result_is_pass(i.ref);
@@ -216,6 +238,21 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
         printf("\n");
     }
 
+    intptr_t memory_issues_size = vec_baseline_test_result_c_ptr_size(&memory_issues);
+    if (memory_issues_size) {
+        printf(
+            "%s%ld test%s have memory-related issues:%s\n",
+            color_highlighted_error, memory_issues_size, memory_issues_size == 1 ? "" : "s", color_normal
+        );
+
+        c_foreach(i, vec_baseline_test_result_c_ptr, memory_issues) {
+            cstr_clear(&display);
+            append_test_result_to_cstr(&display, *i.ref, false);
+            printf("%s\n", cstr_str(&display));
+        }
+        printf("\n");
+    }
+
     if (new_passed || new_failed) {
         printf(
             "  %s%d%s new passed, %s%d%s new failed\n\n",
@@ -234,6 +271,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
 
     vec_baseline_test_result_c_ptr_drop(&newly_failed);
     vec_baseline_test_result_c_ptr_drop(&newly_passed);
+    vec_baseline_test_result_c_ptr_drop(&memory_issues);
     cstr_drop(&display);
 }
 

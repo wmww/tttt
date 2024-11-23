@@ -28,6 +28,10 @@ void uninhibit_nonfatals();
 
 #define MUST_USE __attribute__((warn_unused_result))
 
+#if defined DEBUG_BUILD || defined DEBUG_ALLOCATOR
+#include "debug_allocator.h"
+#endif
+
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
 #define PANIC_DBG PANIC("AAaaa");
 #define PANIC_AFTER_DBG(count, ...) do { \
