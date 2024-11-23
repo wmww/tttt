@@ -28,6 +28,10 @@ void uninhibit_nonfatals();
 
 #define MUST_USE __attribute__((warn_unused_result))
 
+// PERF: make this optional (it's always on in debug mode, but it hardly slows us down so it's nice to have in release
+// mode sometimes. At time of writing it's only useful for identifying which test of many has a leak)
+#define DEBUG_ALLOCATOR
+
 #if defined DEBUG_BUILD || defined DEBUG_ALLOCATOR
 #include "debug_allocator.h"
 #endif
