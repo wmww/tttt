@@ -70,9 +70,12 @@ void lazy_type_evaluate(LazyType* me) {
             break;
     }
 
+    // This MUST be before the tag == LAZY_TYPE_EVALUATED check
+    Type const* resolved = type_resolve_until_identifier(&result);
+
     if (my tag != LAZY_TYPE_EVALUATED) {
         // Our tag wasn't touched by the call this function made, result is valid
-        my evaluated = type_clone(*type_resolve_until_identifier(&result));
+        my evaluated = type_clone(*resolved);
         my tag = LAZY_TYPE_EVALUATED;
     }
 
