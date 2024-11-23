@@ -99,11 +99,11 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .declarations = vec_span_single(my key.span),
                 .namespaces = vec_span_single(scope),
                 .span = my key.span,
-                .name = my key.expr.get->outer_span,
+                .name = my key.expr.ref->outer_span,
                 .name_is_value = true,
             });
             baseline_test_case_add_type(ctx, my key.span, &my type);
-            expr_compile_test_info(my key.expr.get, ctx);
+            expr_compile_test_info(my key.expr.ref, ctx);
             break;
 
         case INTERFACE_KEY_MAPPED:

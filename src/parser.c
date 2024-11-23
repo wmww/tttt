@@ -1923,7 +1923,8 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, b
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
             return parse_fail(&p);
         }
-        ret->key.expr = arc_expr_make(expr);
+        ret->key.expr.owned = c_new(Expr, expr);
+        ret->key.expr.ref = ret->key.expr.owned;
     }
     hop_whitespace(&p);
 

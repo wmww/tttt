@@ -9,7 +9,12 @@ void interface_member_drop(InterfaceMember* me) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
         case INTERFACE_KEY_INDEX: type_drop(&my key.index.type); break;
-        case INTERFACE_KEY_EXPR: arc_expr_drop(&my key.expr); break;
+        case INTERFACE_KEY_EXPR:
+            if (my key.expr.owned) {
+                expr_drop(my key.expr.owned);
+                free(my key.expr.owned);
+            }
+            break;
         case INTERFACE_KEY_MAPPED:
             type_drop(&my key.mapped.in_type);
             type_drop(&my key.mapped.as_type);
@@ -25,7 +30,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
     switch (me.key.tag) {
         case INTERFACE_KEY_NAME: me.key.name_string = cstr_clone(me.key.name_string); break;
         case INTERFACE_KEY_INDEX: me.key.index.type = type_clone(me.key.index.type); break;
-        case INTERFACE_KEY_EXPR: me.key.expr = arc_expr_clone(me.key.expr); break;
+        case INTERFACE_KEY_EXPR: me.key.expr.owned = nullptr; break;
         case INTERFACE_KEY_MAPPED:
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
             me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
@@ -44,7 +49,7 @@ void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, Error
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
         case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index.type, names, errs); break;
-        case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.get, names, errs); break;
+        case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.ref, names, errs); break;
 
         case INTERFACE_KEY_MAPPED:
             type_lookup_names(&my key.mapped.in_type, names, errs);
@@ -80,7 +85,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
 
         case INTERFACE_KEY_EXPR:
-            Type const* key_type = type_resolve(expr_get_type(my key.expr.get));
+            Type const* key_type = type_resolve(expr_get_type(my key.expr.ref));
             if (key_type->tag != TYPE_VALUE) {
                 if (is_in_class) {
                     if (my is_method) {
@@ -95,7 +100,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 }
             }
-            expr_typecheck(my key.expr.get, errs);
+            expr_typecheck(my key.expr.ref, errs);
             break;
 
         case INTERFACE_KEY_MAPPED:

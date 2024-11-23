@@ -333,7 +333,7 @@ static void display_interface_member(Display d, InterfaceMember const* me) {
 
         case INTERFACE_KEY_EXPR:
             display_lit(d, "[");
-            display_colored_span(d, color_type, my key.expr.get->outer_span);
+            display_colored_span(d, color_type, my key.expr.ref->outer_span);
             display_lit(d, "]");
             break;
 

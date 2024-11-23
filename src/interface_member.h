@@ -27,7 +27,11 @@ typedef struct InterfaceMember {
                 Span name;
                 Type type;
             } index;
-            ArcExpr expr;
+            struct {
+                Expr* ref;
+                // Only the initial interface parsed into the AST will own an expr
+                Expr* owned;
+            } expr;
             struct {
                 Span type_name;
                 Type in_type;
