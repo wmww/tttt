@@ -88,11 +88,11 @@ function updateErrorCounts(errsA, errsB) {
       return null;
     }
   }
-  const errorCountA = getErrorCount(errsA);
-  const errorCountB = getErrorCount(errsB);
+  const errorCountA = getErrorCount(errsA) ?? '?';
+  const errorCountB = getErrorCount(errsB) ?? '?';
   const errorsButton = document.getElementById('channel-button-err');
   errorsButton.textContent = 'Errors';
-  if (errorCountA != errorCountB) {
+  if (errorCountA !== errorCountB) {
     errorsButton.textContent += ' [' + errorCountA + '/' + errorCountB + ']';
   } else if (errorCountA) {
     errorsButton.textContent += ' [' + errorCountA + ']';
