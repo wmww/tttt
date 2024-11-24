@@ -21,6 +21,33 @@ IdentifierType identifier_type_clone(IdentifierType me) {
     return me;
 }
 
+static Declaration const* get_declaration_from_namespace(
+    Scope const* namespace,
+    Span namespace_name,
+    Span item_name,
+    bool namespace_only,
+    ErrorCtx* errs
+) {
+    auto result = hmap_str_arc_declaration_get(&namespace->declarations, item_name.sv);
+    if (!result || (namespace_only && !result->second.get->namespace)) {
+        error_ctx_error(errs, item_name, 2694,
+            "Namespace '%.*s' has no exported member '%.*s'.",
+            c_SPAN(namespace_name), c_SPAN(item_name));
+        result = nullptr;
+    }
+    return result ? result->second.get : nullptr;
+}
+
+static cstr identifier_type_make_name_str(IdentifierType const* me) {
+    cstr ret = cstr_null;
+    c_foreach(i, vec_span, my namespaces) {
+        cstr_append_span(&ret, *i.ref);
+        cstr_append_lit(&ret, ".");
+    }
+    cstr_append_span(&ret, my name);
+    return ret;
+}
+
 void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs) {
     if (!my decl_ref) {
         if (vec_span_size(&my namespaces)) {
@@ -28,17 +55,9 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
             Span prev_span = span_null;
             c_foreach(i, vec_span, my namespaces) {
                 if (scope) {
-                    auto result = hmap_str_arc_declaration_get(&scope->declarations, i.ref->sv);
-                    scope = result ? result->second.get->namespace : nullptr;
+                    Declaration const* decl = get_declaration_from_namespace(scope, prev_span, *i.ref, true, errs);
+                    scope = decl ? decl->namespace : nullptr;
                     if (!scope) {
-                        error_ctx_error(
-                            errs,
-                            my name,
-                            2694,
-                            "Namespace '%.*s' has no exported member '%.*s'.",
-                            c_SPAN(prev_span),
-                            c_SPAN(my name)
-                        );
                         break;
                     }
                 } else {
@@ -53,18 +72,7 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
                 prev_span = *i.ref;
             }
             if (scope) {
-                auto result = hmap_str_arc_declaration_get(&scope->declarations, my name.sv);
-                my decl_ref = result ? result->second.get : nullptr;
-                if (!my decl_ref) {
-                    error_ctx_error(
-                        errs,
-                        my name,
-                        2694,
-                        "Namespace '%.*s' has no exported member '%.*s'.",
-                        c_SPAN(*vec_span_back(&my namespaces)),
-                        c_SPAN(my name)
-                    );
-                }
+                my decl_ref = get_declaration_from_namespace(scope, prev_span, my name, false, errs);
             }
         } else if (my keyword) {
             my decl_ref = scope_stack_get_keyword(names, my keyword);
@@ -80,6 +88,15 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
                 );
             }
         }
+    }
+    if (my decl_ref && !my decl_ref->type_tag) {
+        cstr name_str = identifier_type_make_name_str(me);
+        Span error_span = span_between(vec_span_size(&my namespaces) ? *my namespaces.data : my name, my name);
+        error_ctx_error(errs, error_span, 2749,
+            "'%s' refers to a value, but is being used as a type here. Did you mean 'typeof %s'?",
+            cstr_str(&name_str), cstr_str(&name_str)
+        );
+        cstr_drop(&name_str);
     }
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_lookup_names(&i.ref->type, names, errs);
