@@ -75,7 +75,7 @@ Declaration const* scope_stack_get_type(ScopeStack const* me, csview name) {
 Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name) {
     c_foreach_rev(i, vec_scope_cptr, my stack) {
         auto result = hmap_str_arc_declaration_get(&(*i.ref)->declarations, name);
-        if (result && result->second.get->namespace) {
+        if (result && result->second.get->namespace_tag) {
             return result->second.get;
         }
     }

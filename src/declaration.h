@@ -57,6 +57,10 @@ typedef struct Declaration {
     bool is_typeof;
     VecType declared_type_list;
     LazyType declared_type_lazy;
+    DeclarationTag namespace_tag;
+    // This is allowed to be null when declaration_tag_has_namespace() returns true. In this case every declaration
+    // looked up should be an "any" declaration.
+    // TODO: document better
     Scope const* namespace;
 } Declaration;
 

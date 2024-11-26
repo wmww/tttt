@@ -218,8 +218,9 @@ static void add_placeholder_for_failed_import(Scope* me, Span decl_name, NamedIm
     *import->declaration = arc_declaration_make((Declaration){
         .name = decl_name,
         .declarations = vec_span_single(import->decl_span),
-        .value_tag = DECLARATION_VARIABLE,
-        .type_tag = DECLARATION_TYPE,
+        .value_tag = DECLARATION_NAMESPACE_WITH_VALUE,
+        .type_tag = DECLARATION_NAMESPACE_WITH_VALUE,
+        .namespace_tag = DECLARATION_NAMESPACE_WITH_VALUE,
     });
     if (!hmap_str_arc_declaration_insert(
         &my declarations,

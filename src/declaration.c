@@ -53,8 +53,9 @@ void declaration_init(Declaration* me, DeclProps props) {
     }
 
     if (declaration_tag_has_namespace(props.tag)) {
-        ASSERT(props.namespace);
+        ASSERT(props.namespace); // This may not be correct
         if (!my namespace) {
+            my namespace_tag = props.tag;
             my namespace = props.namespace;
         } else {
             NONFATAL("Tried to add multiple namespaces to declaration %.*s", c_SPAN(my name));

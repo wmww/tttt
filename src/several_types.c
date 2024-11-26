@@ -28,6 +28,7 @@ static Declaration const* get_declaration_from_namespace(
     bool namespace_only,
     ErrorCtx* errs
 ) {
+    if (!namespace) return nullptr;
     auto result = hmap_str_arc_declaration_get(&namespace->declarations, item_name.sv);
     if (!result || (namespace_only && !result->second.get->namespace)) {
         error_ctx_error(errs, item_name, 2694,
@@ -49,46 +50,44 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
 }
 
 void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs) {
-    if (!my decl_ref) {
-        if (vec_span_size(&my namespaces)) {
-            Scope const* scope = nullptr;
-            Span prev_span = span_null;
-            c_foreach(i, vec_span, my namespaces) {
-                if (scope) {
-                    Declaration const* decl = get_declaration_from_namespace(scope, prev_span, *i.ref, true, errs);
-                    scope = decl ? decl->namespace : nullptr;
-                    if (!scope) {
-                        break;
-                    }
+    ASSERT(!my decl_ref);
+
+    if (vec_span_size(&my namespaces)) {
+        Scope const* namespace = nullptr;
+        Span prev_name = span_null;
+        c_foreach(i, vec_span, my namespaces) {
+            if (i.ref == my namespaces.data /* First namespaces */) {
+                Declaration const* decl = scope_stack_get_namespace(names, i.ref->sv);
+                if (decl) {
+                    namespace = decl->namespace;
                 } else {
-                    Declaration const* namespace = scope_stack_get_namespace(names, i.ref->sv);
-                    if (namespace) {
-                        scope = namespace->namespace;
-                    } else {
-                        error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
-                        break;
-                    }
+                    error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
+                    break;
                 }
-                prev_span = *i.ref;
+            } else /* Subsequent namespaces */ {
+                Declaration const* decl = get_declaration_from_namespace(namespace, prev_name, *i.ref, true, errs);
+                namespace = decl ? decl->namespace : nullptr;
             }
-            if (scope) {
-                my decl_ref = get_declaration_from_namespace(scope, prev_span, my name, false, errs);
-            }
-        } else if (my keyword) {
-            my decl_ref = scope_stack_get_keyword(names, my keyword);
-        } else {
-            my decl_ref = scope_stack_get_type(names, my name.sv);
-            if (!my decl_ref) {
-                error_ctx_error(
-                    errs,
-                    my name,
-                    2304,
-                    "Cannot find name '%.*s'.",
-                    c_SPAN(my name)
-                );
-            }
+            prev_name = *i.ref;
+        }
+        if (namespace) {
+            my decl_ref = get_declaration_from_namespace(namespace, prev_name, my name, false, errs);
+        }
+    } else if (my keyword) {
+        my decl_ref = scope_stack_get_keyword(names, my keyword);
+    } else {
+        my decl_ref = scope_stack_get_type(names, my name.sv);
+        if (!my decl_ref) {
+            error_ctx_error(
+                errs,
+                my name,
+                2304,
+                "Cannot find name '%.*s'.",
+                c_SPAN(my name)
+            );
         }
     }
+
     if (my decl_ref && !my decl_ref->type_tag) {
         cstr name_str = identifier_type_make_name_str(me);
         Span error_span = span_between(vec_span_size(&my namespaces) ? *my namespaces.data : my name, my name);
@@ -98,6 +97,7 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
         );
         cstr_drop(&name_str);
     }
+
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_lookup_names(&i.ref->type, names, errs);
     }

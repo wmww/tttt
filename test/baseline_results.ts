@@ -7156,7 +7156,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitAliasExportStar': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24591,7 +24591,7 @@ const baselines = {
         types: false,
     },
     'reexportWrittenCorrectlyInDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44556,7 +44556,7 @@ const baselines = {
         types: false,
     },
     'nestedNamespace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
