@@ -22,26 +22,24 @@ void import_statement_add_names(ImportStatement* me, Scope* scope) {
         return;
     }
 
-    if (!my is_export) {
-        if (my source != IMPORT_SOURCE_NONE) {
-            scope_add_import(scope, (NamedImport){
-                .decl_name = my module_name,
-                .decl_span = my decl_span,
-                .source = my source,
-                .source_file = my source_file,
-                .declaration = &my declaration,
-            });
-        }
+    if (my source != IMPORT_SOURCE_NONE && span_valid(my module_name)) {
+        scope_add_import(scope, (NamedImport){
+            .decl_name = my module_name,
+            .decl_span = my decl_span,
+            .source = my source,
+            .source_file = my source_file,
+            .declaration = &my declaration,
+        });
+    }
 
-        c_foreach(i, vec_import_item, my items) {
-            scope_add_import(scope, (NamedImport){
-                .decl_name = i.ref->decl_name,
-                .decl_span = i.ref->decl_span,
-                .source = IMPORT_SOURCE_SPECIFIC,
-                .source_name = i.ref->source_name,
-                .source_file = my source_file,
-                .declaration = &i.ref->declaration,
-            });
-        }
+    c_foreach(i, vec_import_item, my items) {
+        scope_add_import(scope, (NamedImport){
+            .decl_name = i.ref->decl_name,
+            .decl_span = i.ref->decl_span,
+            .source = IMPORT_SOURCE_SPECIFIC,
+            .source_name = i.ref->source_name,
+            .source_file = my source_file,
+            .declaration = &i.ref->declaration,
+        });
     }
 }
