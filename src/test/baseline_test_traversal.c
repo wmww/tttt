@@ -251,22 +251,14 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 
 void import_statement_compile_test_info(ImportStatement const* me, BaselineTestCase* ctx) {
     if (my main.declaration.get) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = vec_span_clone(my main.declaration.get->declarations),
-            .span = my main.declaration.get->name,
-        });
-        baseline_test_case_add_type(ctx, my main.declaration.get->name, &my main.declaration.get->value_type);
+        baseline_test_case_add_declaration(ctx, my main.declaration.get);
     }
     c_foreach(i, vec_import_item, my items) {
         if (i.ref->declaration.get) {
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = vec_span_clone(i.ref->declaration.get->declarations),
-                .span = i.ref->declaration.get->name,
-            });
             if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
                 baseline_test_case_add_type(ctx, i.ref->source_name, &i.ref->declaration.get->value_type);
             }
-            baseline_test_case_add_type(ctx, i.ref->declaration.get->name, &i.ref->declaration.get->value_type);
+            baseline_test_case_add_declaration(ctx, i.ref->declaration.get);
         }
     }
 }

@@ -76,3 +76,4 @@ typedef struct BaselineSym {
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data);
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type);
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Type const* type);
+void baseline_test_case_add_declaration(BaselineTestCase* me, Declaration const* declaration);

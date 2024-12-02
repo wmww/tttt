@@ -609,3 +609,15 @@ void baseline_test_case_add_type_recursive(
         baseline_test_case_add_type_recursive(me, outer_span, inner_span, type);
     }
 }
+
+void baseline_test_case_add_declaration(BaselineTestCase* me, Declaration const* declaration) {
+    baseline_test_case_add_symbol(me, (BaselineSym){
+        .declarations = vec_span_clone(declaration->declarations),
+        .span = declaration->name,
+    });
+    if (declaration->value_tag) {
+        baseline_test_case_add_type(me, declaration->name, &declaration->value_type);
+    } else if (declaration->type_tag) {
+        baseline_test_case_add_type(me, declaration->name, &declaration->declared_type);
+    }
+}
