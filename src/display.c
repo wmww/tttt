@@ -900,20 +900,20 @@ void display_expr(Display d, Expr const* me) {
 }
 
 static void display_import_statement(Display d, ImportStatement const* me) {
-    if (my is_export) {
+    if (my main.is_export) {
         display_lit(d, "export ");
     } else {
         display_lit(d, "import ");
     }
-    if (my type_only) {
+    if (my main.type_only) {
         display_lit(d, "type ");
     }
-    if (my source != IMPORT_SOURCE_NONE) {
-        if (my source == IMPORT_SOURCE_WILDCARD) {
+    if (my main.source_tag != IMPORT_SOURCE_NONE) {
+        if (my main.source_tag == IMPORT_SOURCE_WILDCARD) {
             display_colored(d, color_value, "*");
             display_lit(d, " as ");
         }
-        display_colored_span(d, color_name, my module_name);
+        display_colored_span(d, color_name, my main.decl_name);
         if (vec_import_item_size(&my items)) {
             display_lit(d, ", ");
         }
@@ -937,7 +937,7 @@ static void display_import_statement(Display d, ImportStatement const* me) {
     }
     display_lit(d, " from ");
     display_color(d, color_string);
-    display_s(d, my path);
+    display_s(d, my source_path);
     display_normal(d);
     display_lit(d, ";");
 }

@@ -17238,7 +17238,7 @@ const baselines = {
     'isolatedModulesImportExportElision': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'isolatedModulesNoEmitOnError': {
         errors: true,

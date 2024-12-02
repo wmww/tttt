@@ -6,13 +6,13 @@ void import_item_drop(ImportItem* me) {
 }
 
 void import_statement_drop(ImportStatement* me) {
+    import_item_drop(&my main);
     vec_import_item_drop(&my items);
-    cstr_drop(&my path);
-    arc_declaration_drop(&my declaration);
+    cstr_drop(&my source_path);
 }
 
 void import_statement_add_names(ImportStatement* me, Scope* scope) {
-    if (!my source_file) {
+    if (!my main.source_file) {
         error_ctx_error(
             scope->errs,
             my import_keyword_span,
@@ -22,24 +22,21 @@ void import_statement_add_names(ImportStatement* me, Scope* scope) {
         return;
     }
 
-    if (my source != IMPORT_SOURCE_NONE && span_valid(my module_name)) {
-        scope_add_import(scope, (NamedImport){
-            .decl_name = my module_name,
-            .decl_span = my decl_span,
-            .source = my source,
-            .source_file = my source_file,
-            .declaration = &my declaration,
-        });
+    if (my main.source_tag != IMPORT_SOURCE_NONE && span_valid(my main.decl_name)) {
+        scope_add_import(scope, &my main);
     }
 
     c_foreach(i, vec_import_item, my items) {
-        scope_add_import(scope, (NamedImport){
-            .decl_name = i.ref->decl_name,
-            .decl_span = i.ref->decl_span,
-            .source = IMPORT_SOURCE_SPECIFIC,
-            .source_name = i.ref->source_name,
-            .source_file = my source_file,
-            .declaration = &i.ref->declaration,
-        });
+        ASSERT(i.ref->source_tag == IMPORT_SOURCE_SPECIFIC);
+        scope_add_import(scope, i.ref);
+    }
+}
+
+void import_statement_set_source_file(ImportStatement* me, SourceFile* file) {
+    ASSERT(!my main.source_file);
+    my main.source_file = file;
+    c_foreach(i, vec_import_item, my items) {
+        ASSERT(!i.ref->source_file);
+        i.ref->source_file = file;
     }
 }

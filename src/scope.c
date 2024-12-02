@@ -4,18 +4,19 @@
 #include "source_file.h"
 #include "interface_member.h"
 #include "generic.h"
+#include "import_statement.h"
 
 void scope_drop(Scope* me) {
     if (my current_scope_stack) {
         scope_stack_pop_scope(my current_scope_stack, me);
     }
     hmap_str_arc_declaration_drop(&my declarations);
-    hmap_str_named_import_drop(&my imports);
+    hmap_str_import_item_ptr_drop(&my imports);
 }
 
 Scope scope_clone(Scope me) {
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
-    me.imports = hmap_str_named_import_clone(me.imports);
+    me.imports = hmap_str_import_item_ptr_clone(me.imports);
     me.current_scope_stack = nullptr;
     return me;
 }
@@ -195,29 +196,29 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     declaration_init(ret->get, props);
 }
 
-void scope_add_import(Scope* me, NamedImport import) {
+void scope_add_import(Scope* me, ImportItem* import) {
     ASSERT(!my current_scope_stack);
-    auto result = hmap_str_named_import_insert(
+    auto result = hmap_str_import_item_ptr_insert(
         &my imports,
-        cstr_from_span(import.decl_name),
+        cstr_from_span(import->decl_name),
         import
     );
     if (!result.inserted) {
         error_ctx_error(
             my errs,
-            import.decl_name,
+            import->decl_name,
             2300,
             "Duplicate identifier '%.*s'.",
-            c_SPAN(import.decl_name)
+            c_SPAN(import->decl_name)
         );
     }
 }
 
-static void add_placeholder_for_failed_import(Scope* me, Span decl_name, NamedImport* import) {
-    ASSERT(!import->declaration->get);
-    *import->declaration = arc_declaration_make((Declaration){
+static void add_placeholder_for_failed_import(Scope* me, Span decl_name, ImportItem* import) {
+    ASSERT(!import->declaration.get);
+    import->declaration = arc_declaration_make((Declaration){
         .name = decl_name,
-        .declarations = vec_span_single(import->decl_span),
+        .declarations = vec_span_single(import->full_span),
         .value_tag = DECLARATION_NAMESPACE_WITH_VALUE,
         .type_tag = DECLARATION_NAMESPACE_WITH_VALUE,
         .namespace_tag = DECLARATION_NAMESPACE_WITH_VALUE,
@@ -225,7 +226,7 @@ static void add_placeholder_for_failed_import(Scope* me, Span decl_name, NamedIm
     if (!hmap_str_arc_declaration_insert(
         &my declarations,
         cstr_from_sv(decl_name.sv),
-        arc_declaration_clone(*import->declaration)
+        arc_declaration_clone(import->declaration)
     ).inserted) {
         error_ctx_error(
             my errs,
@@ -237,7 +238,7 @@ static void add_placeholder_for_failed_import(Scope* me, Span decl_name, NamedIm
     }
 }
 
-static void process_import(Scope* me, Span decl_name, NamedImport* import) {
+static void process_import(Scope* me, Span decl_name, ImportItem* import) {
     if (!import->source_file->is_real) {
         import->error_reported = true;
         add_placeholder_for_failed_import(me, decl_name, import);
@@ -247,7 +248,7 @@ static void process_import(Scope* me, Span decl_name, NamedImport* import) {
     if (import->error_reported) return;
 
     csview source_name;
-    switch (import->source) {
+    switch (import->source_tag) {
         case IMPORT_SOURCE_DEFAULT:
             // TODO: error if there is no default export
             source_name = source_scope->default_export;
@@ -261,7 +262,7 @@ static void process_import(Scope* me, Span decl_name, NamedImport* import) {
             source_name = import->source_name.sv;
             break;
 
-        default: PANIC("Invalid import source %d", import->source);
+        default: PANIC("Invalid import source %d", import->source_tag);
     }
 
     bool found = false;
@@ -286,10 +287,10 @@ static void process_import(Scope* me, Span decl_name, NamedImport* import) {
     }
 
     if (!found) {
-        auto result = hmap_str_named_import_get_mut(&source_scope->imports, source_name);
+        auto result = hmap_str_import_item_ptr_get_mut(&source_scope->imports, source_name);
         if (result) {
             source_scope->currently_adding_import = true;
-            if (result->second.source_file->scope.currently_adding_import) {
+            if (result->second->source_file->scope.currently_adding_import) {
                 error_ctx_error(
                     my errs,
                     span_between(import->decl_name, import->source_name),
@@ -299,7 +300,7 @@ static void process_import(Scope* me, Span decl_name, NamedImport* import) {
                 );
                 import->error_reported = true;
             } else {
-                process_import(me, decl_name, &result->second);
+                process_import(me, decl_name, result->second);
             }
             found = true;
             source_scope->currently_adding_import = false;
@@ -346,7 +347,7 @@ Type scope_make_value_interface(Scope const* me) {
 }
 
 void scope_process_imports(Scope* me) {
-    c_foreach(i, hmap_str_named_import, my imports) {
-        process_import(me, i.ref->second.decl_name, &i.ref->second);
+    c_foreach(i, hmap_str_import_item_ptr, my imports) {
+        process_import(me, i.ref->second->decl_name, i.ref->second);
     }
 }

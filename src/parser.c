@@ -2900,9 +2900,9 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
 }
 
-static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
+static bool parse_import_item_list(Parser* parent, ImportStatement* ret) {
     Parser p = parser(parent);
-    *ret = vec_import_item_init();
+    ret->items = vec_import_item_init();
 
     if (!hop_char(&p, '{')) {
         return parse_fail(&p);
@@ -2910,7 +2910,11 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
     hop_whitespace(&p);
 
     while (*p.pos && *p.pos != '}') {
-        ImportItem item = {0};
+        ImportItem item = {
+            .type_only = ret->main.type_only,
+            .is_export = ret->main.is_export,
+            .source_tag = IMPORT_SOURCE_SPECIFIC,
+        };
         Anchor a = anchor(&p);
 
         if (hop_start_if_ends_on_word_break(&p, "type")) {
@@ -2928,8 +2932,8 @@ static bool parse_import_item_list(Parser* parent, VecImportItem* ret) {
                 item.decl_name = item.source_name;
             }
 
-            item.decl_span = span_from(a);
-            vec_import_item_push(ret, item);
+            item.full_span = span_from(a);
+            vec_import_item_push(&ret->items, item);
         } else {
             hop_token(&p);
         }
@@ -2950,7 +2954,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 
     if (hop_start_if_ends_on_word_break(&p, "import")) {
     } else if (hop_start_if_ends_on_word_break(&p, "export")) {
-        import.is_export = true;
+        import.main.is_export = true;
     } else {
         return parse_fail(&p);
     }
@@ -2959,18 +2963,18 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 
     a = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "type")) {
-        import.type_only = true;
+        import.main.type_only = true;
         hop_whitespace(&p);
     }
 
     if (hop_char(&p, '*')) {
         hop_whitespace(&p);
-        import.source = IMPORT_SOURCE_WILDCARD;
+        import.main.source_tag = IMPORT_SOURCE_WILDCARD;
 
-        if (import.is_export) {
+        if (import.main.is_export) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-                expect_identifier(&p, &import.module_name);
+                expect_identifier(&p, &import.main.decl_name);
             }
         } else {
             if (!hop_start_if_ends_on_word_break(&p, "as")) {
@@ -2978,29 +2982,29 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
             }
             hop_whitespace(&p);
 
-            expect_identifier(&p, &import.module_name);
+            expect_identifier(&p, &import.main.decl_name);
         }
-    } else if (!import.is_export && parse_identifier(&p, &import.module_name)) {
+    } else if (!import.main.is_export && parse_identifier(&p, &import.main.decl_name)) {
         hop_whitespace(&p);
-        import.source = IMPORT_SOURCE_DEFAULT;
+        import.main.source_tag = IMPORT_SOURCE_DEFAULT;
 
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
 
-            if (!parse_import_item_list(&p, &import.items)) {
+            if (!parse_import_item_list(&p, &import)) {
                 import.items = vec_import_item_init();
                 expected_token_error(&p, "{");
             }
         }
-    } else if (parse_import_item_list(&p, &import.items)) {
-        import.source = IMPORT_SOURCE_NONE; // Only the item list is imported, no main import
+    } else if (parse_import_item_list(&p, &import)) {
+        import.main.source_tag = IMPORT_SOURCE_NONE; // Only the item list is imported, no main import
     } else {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
-        if (import.is_export) {
+        if (import.main.is_export) {
             import_statement_drop(&import);
             return parse_fail(&p);
         } else {
@@ -3012,15 +3016,15 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     Expr path_expr;
     if (expect_expr(&p, expr_ctx_null, &path_expr)) {
         if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-            import.path = cstr_move(&path_expr.literal.string);
-            import.path_span = path_expr.inner_span;
+            import.source_path = cstr_move(&path_expr.literal.string);
+            import.source_path_span = path_expr.inner_span;
         } else {
             parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
         }
         expr_drop(&path_expr);
     }
 
-    import.decl_span = span_from(a);
+    import.main.full_span = span_from(a);
 
     *ret = (Statement){
         .tag = STATEMENT_IMPORT,

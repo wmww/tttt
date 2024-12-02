@@ -127,7 +127,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
 
 static void program_handle_import(Program* me, ImportStatement* import) {
     cstr start_path = cstr_from_sv(dirname_of(cstr_str(&import->import_keyword_span.source->absolute_path)));
-    cstr source_path = absolute_path_of(cstr_str(&start_path), cstr_str(&import->path));
+    cstr source_path = absolute_path_of(cstr_str(&start_path), cstr_str(&import->source_path));
     cstr_drop(&start_path);
     if (fs_is_directory(my fs, cstr_str(&source_path))) {
         cstr_append_lit(&source_path, "/index.ts");
@@ -139,16 +139,16 @@ static void program_handle_import(Program* me, ImportStatement* import) {
     cstr_drop(&source_path);
 
     if (source) {
-        import->source_file = source;
+        import_statement_set_source_file(import, source);
     } else {
         error_ctx_error(
             my errs,
-            import->path_span,
+            import->source_path_span,
             2307,
             "Cannot find module '%s' or its corresponding type declarations.",
-            cstr_str(&import->path)
+            cstr_str(&import->source_path)
         );
-        import->source_file = &my not_found_file;
+        import_statement_set_source_file(import, &my not_found_file);
     }
 }
 
