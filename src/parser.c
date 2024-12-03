@@ -2975,6 +2975,8 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
                 expect_identifier(&p, &import.main.decl_name);
+            } else {
+                import.main.is_export_wildcard = true;
             }
         } else {
             if (!hop_start_if_ends_on_word_break(&p, "as")) {

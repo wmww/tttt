@@ -26,6 +26,7 @@ typedef struct ImportItem {
     Span full_span; // Span of declaration
     bool type_only; // Has the "type" keyword for the main import
     bool is_export; // Is a re-export (uses "export" keyword)
+    bool is_export_wildcard; // If this is an "export * from '...'" statement
     enum {
         IMPORT_SOURCE_NONE = 0, // Nothing is imported
         IMPORT_SOURCE_DEFAULT, // Import the default exported item
