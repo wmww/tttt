@@ -266,6 +266,30 @@ static void add_placeholder_for_failed_import(Scope* me, ImportItem* import) {
     }
 }
 
+static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
+    ASSERT(my export_scope);
+
+    auto decl_result = hmap_str_arc_declaration_get(&my export_scope->declarations, name);
+    if (decl_result) {
+        return decl_result->second.get;
+    }
+
+    auto import_result = hmap_str_import_item_ptr_get_mut(&my imports, name);
+    if (import_result && import_result->second->is_export) {
+        Scope* next = &import_result->second->source_file->scope;
+        if (next->currently_adding_import) {
+            // TODO: Record this somewhere so 2303, "Circular definition of import alias '%.*s'.", can be raised
+            return nullptr;
+        }
+        next->currently_adding_import = true;
+        Declaration const* ret = ret = find_declaration_in_exports(next, import_result->second->source_name.sv);
+        next->currently_adding_import = false;
+        return ret;
+    }
+
+    return nullptr;
+}
+
 // This function sets the import's declaration and adds it to the scope. source_import starts the same as import, but if
 // the imported item is a re-export in a file that has not yet had its imports processed, this function is called
 // recursively with source_import being the re-exported which we are importing through.
@@ -285,7 +309,7 @@ static void process_import(Scope* me, ImportItem* import, ImportItem const* sour
     switch (import->source_tag) {
         case IMPORT_SOURCE_DEFAULT:
             // TODO: error if there is no default export
-            source_name = source_scope->default_export;
+            source_name = my default_export;
             break;
 
         case IMPORT_SOURCE_WILDCARD:
@@ -299,11 +323,10 @@ static void process_import(Scope* me, ImportItem* import, ImportItem const* sour
         default: PANIC("Invalid import source %d", import->source_tag);
     }
 
-    bool found = false;
+    Declaration const* source_decl = find_declaration_in_exports(&source_import->source_file->scope, source_name);
 
-    auto result = hmap_str_arc_declaration_get(&source_scope->declarations, source_name);
-    if (result) {
-        import->declaration = arc_declaration_make(*result->second.get);
+    if (source_decl) {
+        import->declaration = arc_declaration_make(*source_decl);
         declaration_clone_in_place(import->declaration.get);
         vec_span_drop(&import->declaration.get->declarations);
         import->declaration.get->declarations = vec_span_single(import->full_span);
@@ -323,32 +346,7 @@ static void process_import(Scope* me, ImportItem* import, ImportItem const* sour
                 c_SPAN(import->decl_name)
             );
         }
-        found = true;
-    }
-
-    if (!found) {
-        auto result = hmap_str_import_item_ptr_get_mut(&source_scope->imports, source_name);
-        if (result && result->second->is_export) {
-            source_scope->currently_adding_import = true;
-            if (result->second->source_file->scope.currently_adding_import) {
-                error_ctx_error(
-                    my errs,
-                    span_between(import->decl_name, import->source_name),
-                    2303,
-                    "Circular definition of import alias '%.*s'.",
-                    c_SPAN(import->decl_name)
-                );
-                add_placeholder_for_failed_import(me, import);
-                import->error_reported = true;
-            } else {
-                process_import(me, import, result->second);
-            }
-            found = true;
-            source_scope->currently_adding_import = false;
-        }
-    }
-
-    if (!found) {
+    } else {
         error_ctx_error(
             my errs,
             import->source_name,
