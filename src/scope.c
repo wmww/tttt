@@ -268,7 +268,10 @@ static void process_import(Scope* me, Span decl_name, ImportItem* import) {
         add_placeholder_for_failed_import(me, decl_name, import);
     }
 
-    Scope* source_scope = &import->source_file->scope;
+    Scope* source_scope_private = &import->source_file->scope;
+    Scope* source_scope = source_scope_private->export_scope;
+    ASSERT(source_scope);
+
     if (import->error_reported) return;
 
     csview source_name;
