@@ -231,7 +231,7 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL: {
             Scope class_name_scope = scope_init(errs);
-            class_decl_add_names(my class_decl, &class_name_scope);
+            class_decl_add_names(my class_decl, &class_name_scope, false);
             scope_push_to_stack(&class_name_scope, names);
             scope_drop(&class_name_scope);
             class_decl_lookup_names(my class_decl, names, errs);

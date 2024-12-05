@@ -3330,7 +3330,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     bool keyword_is_in = false;
 
     if (parse_variable_statement(&p, (ExprCtx){.reject_in_operator = true}, &statement.decl.variable)) {
-        statement.decl.exported = DECL_EXPORTED_NO;
+        statement.decl.props.exported = DECL_EXPORTED_NO;
         statement.tag = STATEMENT_DECL_VARIABLE;
     } else if (parse_expr(&p, (ExprCtx){.reject_in_operator = true}, &statement.expr)) {
         parse_comma_ops_right_side(&p, &statement.expr);
@@ -3772,9 +3772,15 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         return parse_fail(&p);
     }
     hop_whitespace(&p);
-    DeclExported exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
-        DECL_EXPORTED_YES_DEFAULT :
-        (modifiers.includes[MODIFIER_EXPORT] ? DECL_EXPORTED_YES : DECL_EXPORTED_NO);
+    DeclStatementProps decl_props = {
+        .exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
+            DECL_EXPORTED_YES_DEFAULT :
+            (modifiers.includes[MODIFIER_EXPORT] ?
+                DECL_EXPORTED_YES :
+                DECL_EXPORTED_NO
+            ),
+        .declared = modifiers.includes[MODIFIER_DECLARE],
+    };
 
     modifier_list_validate_during_parse(
         &p,
@@ -3783,14 +3789,13 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         toplevel ? MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT : MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED
     );
 
-    if (exported != DECL_EXPORTED_YES_DEFAULT &&
+    if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
         parse_variable_statement(&p, expr_ctx_null, &parsed.variable)
     ) {
         *ret = (Statement) {
             .tag = STATEMENT_DECL_VARIABLE,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .variable = parsed.variable,
             },
         };
@@ -3799,8 +3804,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         *ret = (Statement){
             .tag = STATEMENT_DECL_FUNCTION,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .function = {
                     .impl = c_new(FunctionImpl, parsed.function),
                 },
@@ -3811,8 +3815,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         *ret = (Statement){
             .tag = STATEMENT_DECL_CLASS,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .class = c_new(ClassDecl, parsed.class),
             },
         };
@@ -3821,8 +3824,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         *ret = (Statement){
             .tag = STATEMENT_DECL_TYPE,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .type = parsed.type_decl,
             },
         };
@@ -3831,8 +3833,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         *ret = (Statement){
             .tag = STATEMENT_DECL_INTERFACE,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .interface = c_new(InterfaceDecl, parsed.interface_decl),
             },
         };
@@ -3841,8 +3842,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         *ret = (Statement){
             .tag = STATEMENT_DECL_ENUM,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .enum_ = c_new(EnumDecl, parsed.enum_decl),
             },
         };
@@ -3852,18 +3852,17 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_BLOCK,
             .block = parsed.block,
         };
-    } else if (exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
+    } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
         *ret = (Statement){
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
         };
-    } else if (exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
+    } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
         ret->decl.namespace.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
-                .exported = exported,
-                .declared = modifiers.includes[MODIFIER_DECLARE],
+                .props = decl_props,
                 .namespace = ret->decl.namespace,
             },
         };

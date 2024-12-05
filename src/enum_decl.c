@@ -17,10 +17,11 @@ void enum_decl_drop(EnumDecl* me) {
     arc_declaration_drop(&my declaration);
 }
 
-void enum_decl_add_names(EnumDecl* me, Scope* scope) {
+void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
     declaration_init(&my typeof_declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
+        .exported = exported,
         .tag = DECLARATION_TYPE,
         .declared_type = type_lazy(&my interface_type),
         .is_typeof = true,
@@ -29,6 +30,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope) {
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
+        .exported = exported,
         .tag = DECLARATION_ENUM,
         .value_type = type_identifier(c_new(IdentifierType, {
             .name = my name,

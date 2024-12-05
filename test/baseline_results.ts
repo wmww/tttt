@@ -8617,7 +8617,7 @@ const baselines = {
     },
     'defaultNamedExportWithType1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultNamedExportWithType2': {
@@ -8627,7 +8627,7 @@ const baselines = {
     },
     'defaultNamedExportWithType3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultNamedExportWithType4': {
@@ -18887,7 +18887,7 @@ const baselines = {
     },
     'mergedDeclarationExports': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mergedDeclarations1': {

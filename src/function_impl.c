@@ -19,10 +19,11 @@ void function_impl_drop(FunctionImpl* me) {
     block_drop(&my body);
 }
 
-void function_impl_add_names(FunctionImpl* me, Scope* scope) {
+void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
+        .exported = exported,
         .tag = DECLARATION_FUNCTION,
         .generic = &my generic,
         .value_type = type_lazy(&my lazy_type),
@@ -48,7 +49,10 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
 
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_add_names(&i.ref->initializer, true, i.ref->span, &function_scope);
+        initialized_binding_add_names(&i.ref->initializer, &function_scope, (BindingAddNamesProps){
+            .abstract_literals = true,
+            .full = i.ref->span,
+        });
         if (i.ref->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i.ref->initializer.binding.content_span, "this")
         ) {

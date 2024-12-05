@@ -14,10 +14,11 @@ void interface_decl_drop(InterfaceDecl* me) {
     arc_declaration_drop(&my declaration);
 }
 
-void interface_decl_add_names(InterfaceDecl* me, Scope* scope) {
+void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported) {
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
+        .exported = exported,
         .tag = DECLARATION_INTERFACE,
         .generic = &my generic,
         .declared_type = type_lazy(&my lazy_type),

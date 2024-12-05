@@ -48,6 +48,7 @@ static inline bool declaration_tag_has_namespace(DeclarationTag tag) {
 typedef struct Declaration {
     Span name;
     VecSpan declarations;
+    bool exported;
     DeclarationTag value_tag;
     Generic const* value_generic; // Null if generic empty
     Type value_type;
@@ -64,9 +65,13 @@ typedef struct Declaration {
     Scope const* namespace;
 } Declaration;
 
+void declaration_drop(Declaration* me);
+Type declaration_evaluate_declared_type(Declaration const* me);
+
 typedef struct DeclProps {
     Span name;
     Span full;
+    bool exported;
     DeclarationTag tag;
     Generic const* generic;
     Type value_type;
@@ -75,8 +80,7 @@ typedef struct DeclProps {
     Scope const* namespace;
 } DeclProps;
 
-void declaration_drop(Declaration* me);
-Type declaration_evaluate_declared_type(Declaration const* me);
+DeclProps decl_props_clone(DeclProps me);
 
 // If called multiple times attempts to merge declarations, does not check if merging is allowed, scope.c does that
 void declaration_init(Declaration* me, DeclProps props);

@@ -12,12 +12,19 @@ void scope_drop(Scope* me) {
     }
     hmap_str_arc_declaration_drop(&my declarations);
     hmap_str_import_item_ptr_drop(&my imports);
+    if (my export_scope) {
+        scope_drop(my export_scope);
+        free(my export_scope);
+    }
 }
 
 Scope scope_clone(Scope me) {
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
     me.imports = hmap_str_import_item_ptr_clone(me.imports);
     me.current_scope_stack = nullptr;
+    if (me.export_scope) {
+        me.export_scope = c_new(Scope, scope_clone(*me.export_scope));
+    }
     return me;
 }
 
@@ -105,6 +112,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
                 } else {
                     switch (my tag) {
                         case SCOPE_DEFAULT:
+                        case SCOPE_EXPORT:
                         case SCOPE_FUNCTION:
                             error_ctx_error(
                                 my errs,
@@ -148,6 +156,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
             } else {
                 switch (my tag) {
                     case SCOPE_DEFAULT:
+                    case SCOPE_EXPORT:
                         error_ctx_error(
                             my errs,
                             props.name,
@@ -190,10 +199,25 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     } else {
         *ret = arc_declaration_make((Declaration){ .name = props.name });
         if (!existing) {
-            hmap_str_arc_declaration_insert(&my declarations, cstr_from_span(props.name), arc_declaration_clone(*ret));
+            hmap_str_arc_declaration_insert(
+                &my declarations,
+                cstr_from_span(props.name),
+                arc_declaration_clone(*ret)
+            );
         }
     }
-    declaration_init(ret->get, props);
+    ArcDeclaration non_exported = arc_declaration_clone(*ret);
+    if (props.exported && my tag != SCOPE_EXPORT) {
+        if (my export_scope) {
+            arc_declaration_drop(ret);
+            *ret = arc_declaration_init();
+            scope_init_declaration(my export_scope, ret, decl_props_clone(props));
+        } else {
+            NONFATAL("Tried to add exported declaration to non-toplevel scope");
+        }
+    }
+    declaration_init(non_exported.get, props);
+    arc_declaration_drop(&non_exported);
 }
 
 void scope_add_import(Scope* me, ImportItem* import) {

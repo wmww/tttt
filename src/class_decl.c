@@ -99,10 +99,11 @@ void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
     }
 }
 
-void class_decl_add_names(ClassDecl* me, Scope* scope) {
+void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
     declaration_init(&my typeof_declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
+        .exported = exported,
         .tag = DECLARATION_CLASS,
         .value_type = type_lazy(&my class_type),
         .declared_type = type_lazy(&my class_type),
@@ -112,6 +113,7 @@ void class_decl_add_names(ClassDecl* me, Scope* scope) {
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,
+        .exported = exported,
         .tag = DECLARATION_CLASS,
         .generic = &my generic,
         .value_type = type_identifier(c_new(IdentifierType, {

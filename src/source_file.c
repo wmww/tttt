@@ -4,7 +4,7 @@ SourceFile source_file_make(cstr absolute_path, cstr contents, ErrorCtx* errs) {
     return (SourceFile){
         .absolute_path = absolute_path,
         .contents = contents,
-        .scope = scope_init(errs),
+        .scope = scope_init_toplevel(errs),
         .is_real = cstr_size(&absolute_path),
         .typecheck = true,
     };

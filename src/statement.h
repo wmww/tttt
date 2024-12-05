@@ -16,6 +16,15 @@ typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct SwitchStatement SwitchStatement;
 typedef struct ImportStatement ImportStatement;
 
+typedef struct DeclStatementProps {
+    enum {
+        DECL_EXPORTED_NO = 0,
+        DECL_EXPORTED_YES,
+        DECL_EXPORTED_YES_DEFAULT,
+    } exported;
+    bool declared;
+} DeclStatementProps;
+
 // Variable initialization
 
 typedef struct VariableStatement {
@@ -28,7 +37,7 @@ typedef struct VariableStatement {
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
-void variable_statement_add_names(VariableStatement* me, bool declared, Scope* scope);
+void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclStatementProps props);
 void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
 
@@ -43,7 +52,7 @@ typedef struct TypeDecl {
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
-void type_decl_add_names(TypeDecl* me, Scope* scope);
+void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props);
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 
 // Scope declaration
@@ -58,7 +67,7 @@ typedef struct NamespaceDecl {
 } NamespaceDecl;
 
 void namespace_decl_drop(NamespaceDecl* me);
-void namespace_decl_add_names(NamespaceDecl* me, Scope* scope);
+void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props);
 void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs);
 void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs);
 
@@ -71,12 +80,6 @@ typedef struct IfStatement {
 } IfStatement;
 
 // Statements
-
-typedef enum DeclExported {
-    DECL_EXPORTED_NO = 0,
-    DECL_EXPORTED_YES,
-    DECL_EXPORTED_YES_DEFAULT,
-} DeclExported;
 
 typedef struct Statement {
     enum {
@@ -112,8 +115,7 @@ typedef struct Statement {
         Span break_span;
         ImportStatement* import;
         struct {
-            DeclExported exported;
-            bool declared;
+            DeclStatementProps props;
             union {
                 VariableStatement variable;
                 struct {
@@ -142,9 +144,9 @@ static inline bool statement_tag_is_decl(typeof((Statement){}.tag) tag) {
     }
 }
 
-static inline DeclExported statement_get_exported(Statement const* me) {
+static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(Statement const* me) {
     if (statement_tag_is_decl(my tag)) {
-        return my decl.exported;
+        return my decl.props.exported;
     } else if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR) {
         return DECL_EXPORTED_YES_DEFAULT;
     } else {

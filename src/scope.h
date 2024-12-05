@@ -17,8 +17,9 @@ typedef ImportItem* ImportItemPtr;
 typedef struct Scope {
     enum {
         SCOPE_DEFAULT,
+        SCOPE_EXPORT,
         SCOPE_FUNCTION,
-        SCOPE_GENERIC
+        SCOPE_GENERIC,
     } tag;
     ErrorCtx* errs;
     csview default_export;
@@ -29,6 +30,7 @@ typedef struct Scope {
     Declaration const* this_declaration;
     Declaration const* super_declaration;
     ScopeStack* current_scope_stack; // The ScopeStack this scope is in, or null if none
+    Scope* export_scope; // Owning pointer if this scope is file's toplevel scope, else null
 } Scope;
 
 void scope_drop(Scope* me);
@@ -38,6 +40,17 @@ static inline Scope scope_init(ErrorCtx* errs) {
     return (Scope){
         .tag = SCOPE_DEFAULT,
         .errs = errs,
+    };
+}
+
+static inline Scope scope_init_toplevel(ErrorCtx* errs) {
+    return (Scope){
+        .tag = SCOPE_DEFAULT,
+        .errs = errs,
+        .export_scope = c_new(Scope, {
+            .tag = SCOPE_EXPORT,
+            .errs = errs,
+        }),
     };
 }
 

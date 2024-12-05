@@ -22,7 +22,7 @@ void panic_internal(const char* error_type, const char* file, int line, const ch
     fprintf(stderr, "\n");
 #ifdef DEBUG_BUILD
     // gives us a stack trace in valgrind, there's probably a better way to do it
-    fprintf(stderr, "%p\n", *(void**)nullptr);
+    fprintf(stderr, "%p\n", *(void**)(0xabc));
 #endif
     exit(1);
 }

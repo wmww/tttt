@@ -17,6 +17,12 @@ static inline Generic const* generic_or_null(Generic const* generic) {
     return (generic && !generic_empty(generic)) ? generic : nullptr;
 }
 
+DeclProps decl_props_clone(DeclProps me) {
+    me.value_type = type_clone(me.value_type);
+    me.declared_type = type_clone(me.declared_type);
+    return me;
+}
+
 void declaration_init(Declaration* me, DeclProps props) {
     PANIC_IF(props.tag == DECLARATION_NONE, "props.tag not set");
     if (!span_valid(my name)) {

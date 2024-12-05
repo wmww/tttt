@@ -1007,7 +1007,7 @@ void display_statement(Display d, Statement const* me) {
         case DECL_EXPORTED_YES_DEFAULT: display_lit(d, "export default "); break;
     }
 
-    if (statement_tag_is_decl(my tag) && my decl.declared) {
+    if (statement_tag_is_decl(my tag) && my decl.props.declared) {
         display_lit(d, "declare ");
     }
 
