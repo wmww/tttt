@@ -222,6 +222,10 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 
 void scope_add_import(Scope* me, ImportItem* import) {
     ASSERT(!my current_scope_stack);
+    if (import->is_export_wildcard) {
+        NONFATAL("Wildcard re-exports not yet supported");
+        return;
+    }
     auto result = hmap_str_import_item_ptr_insert(
         &my imports,
         cstr_from_span(import->decl_name),
@@ -303,8 +307,11 @@ static void process_import(Scope* me, ImportItem* import, ImportItem const* sour
         declaration_clone_in_place(import->declaration.get);
         vec_span_drop(&import->declaration.get->declarations);
         import->declaration.get->declarations = vec_span_single(import->full_span);
+        import->declaration.get->exported = import->is_export;
+        ASSERT(my export_scope);
+        HmapStrArcDeclaration* declarations = import->is_export ? &my export_scope->declarations : &my declarations;
         if (!hmap_str_arc_declaration_insert(
-            &my declarations,
+            declarations,
             cstr_from_sv(import->decl_name.sv),
             arc_declaration_clone(import->declaration)
         ).inserted) {

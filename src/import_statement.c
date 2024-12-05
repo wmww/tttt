@@ -22,7 +22,7 @@ void import_statement_add_names(ImportStatement* me, Scope* scope) {
         return;
     }
 
-    if (my main.source_tag != IMPORT_SOURCE_NONE && span_valid(my main.decl_name)) {
+    if (my main.source_tag != IMPORT_SOURCE_NONE) {
         scope_add_import(scope, &my main);
     }
 
