@@ -42,23 +42,25 @@ void display_fmt(Display d, const char* fmt, ...) {
     va_end(args);
 }
 
+static void display_string_literal(Display d, csview sv) {
+    display_lit(d, "\"");
+    for (intptr_t i = 0; i < sv.size; i++) {
+        switch (sv.buf[i]) {
+            case '\n': display_lit(d, "\\n"); break;
+            case '\r': display_lit(d, "\\r"); break;
+            case '"': display_lit(d, "\\\""); break;
+            default: display_sv(d, csview_from_n(sv.buf + i, 1)); break;
+        }
+    }
+    display_lit(d, "\"");
+}
+
 void display_value(Display d, Value const* me) {
     display_color(d, color_value);
 
     switch (my tag) {
         case VALUE_STRING:
-            display_lit(d, "\"");
-            const char* buf = cstr_str(&my string);
-            intptr_t len = cstr_size(&my string);
-            for (intptr_t i = 0; i < len; i++) {
-                switch (buf[i]) {
-                    case '\n': display_lit(d, "\\n"); break;
-                    case '\r': display_lit(d, "\\r"); break;
-                    case '"': display_lit(d, "\\\""); break;
-                    default: display_sv(d, csview_from_n(buf + i, 1)); break;
-                }
-            }
-            display_lit(d, "\"");
+            display_string_literal(d, cstr_sv(&my string));
             break;
 
         case VALUE_OBJECT: if (d.debug) {
@@ -911,7 +913,9 @@ static void display_import_statement(Display d, ImportStatement const* me) {
     if (my main.source_tag != IMPORT_SOURCE_NONE) {
         if (my main.source_tag == IMPORT_SOURCE_WILDCARD) {
             display_colored(d, color_value, "*");
-            display_lit(d, " as ");
+            if (!my main.is_export_wildcard) {
+                display_lit(d, " as ");
+            }
         }
         display_colored_span(d, color_name, my main.decl_name);
         if (vec_import_item_size(&my items)) {
@@ -937,7 +941,7 @@ static void display_import_statement(Display d, ImportStatement const* me) {
     }
     display_lit(d, " from ");
     display_color(d, color_string);
-    display_s(d, my source_path);
+    display_string_literal(d, cstr_sv(&my source_path));
     display_normal(d);
     display_lit(d, ";");
 }
