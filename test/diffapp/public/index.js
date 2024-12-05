@@ -75,15 +75,20 @@ channelButtons.forEach(button => {
   }
 });
 
-const errorCountRegex = /customTest\.ts \((\d+) errors\) ===/;
+const errorCountRegex = /=== .* \((?<count>\d+) errors\) ===/g;
 function updateErrorCounts(errsA, errsB) {
   function getErrorCount(result) {
     if (!result) {
       return 0;
     }
-    const match = result.match(errorCountRegex);
-    if (match) {
-      return parseInt(match[1]);
+    const matches = result.matchAll(errorCountRegex);
+    if (matches) {
+      return matches
+        .map(x => x.groups.count)
+        // DO NOT CHANGE THIS TO .map(parseInt)!!!!!
+        // https://twitter.com/xsphi/status/1864568484497375335
+        .map(x => parseInt(x))
+        .reduce((a, b) => a + b, 0);
     } else {
       return null;
     }
