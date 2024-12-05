@@ -1907,7 +1907,7 @@ const baselines = {
     },
     'asyncFunctionsAcrossFiles': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionsAndStrictNullChecks': {
@@ -2932,7 +2932,7 @@ const baselines = {
     },
     'caseInsensitiveFileSystemWithCapsImportTypeDeclarations': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'castExpressionParentheses': {
@@ -3517,8 +3517,8 @@ const baselines = {
     },
     'classExtendsAcrossFiles': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classExtendsClauseClassMergedWithModuleNotReferingConstructor': {
         errors: false,
@@ -7208,7 +7208,7 @@ const baselines = {
     'declarationEmitBundlePreservesHasNoDefaultLibDirective': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitBundleWithAmbientReferences': {
         errors: false,
@@ -7567,7 +7567,7 @@ const baselines = {
     },
     'declarationEmitForTypesWhichNeedImportTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitFunctionDuplicateNamespace': {
@@ -9528,12 +9528,12 @@ const baselines = {
     'duplicateIdentifierRelatedSpans3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateIdentifierRelatedSpans4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateIdentifierRelatedSpans5': {
         errors: false,
@@ -11947,7 +11947,7 @@ const baselines = {
     },
     'exportDefaultStripsFreshness': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportDefaultTypeAndClass': {
@@ -14922,8 +14922,8 @@ const baselines = {
     },
     'importDeclTypes': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importDeclWithClassModifiers': {
         errors: false,
@@ -16653,7 +16653,7 @@ const baselines = {
     'interfaceMergedUnconstrainedNoErrorIrrespectiveOfOrder': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'interfaceNameAsIdentifier': {
         errors: false,
@@ -18152,22 +18152,22 @@ const baselines = {
     },
     'keepImportsInDts1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keepImportsInDts2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keepImportsInDts3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keepImportsInDts4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'keyRemappingKeyofResult': {
@@ -18488,7 +18488,7 @@ const baselines = {
     'libTypeScriptSubfileResolving': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'libTypeScriptSubfileResolvingConfig': {
         errors: false,
@@ -19697,7 +19697,7 @@ const baselines = {
     },
     'moduleMemberMissingErrorIsRelative': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleMemberWithoutTypeAnnotation1': {
@@ -27217,7 +27217,7 @@ const baselines = {
     },
     'taggedTemplatesInModuleAndGlobal': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'taggedTemplatesWithIncompleteNoSubstitutionTemplate1': {
@@ -45967,7 +45967,7 @@ const baselines = {
     },
     'jsDeclarationsClassImplementsGenericsSerialization': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsClassLeadingOptional': {
@@ -46582,13 +46582,13 @@ const baselines = {
     },
     'jsdocImplements_interface': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocImplements_interface_multiple': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocImplements_missingType': {
         errors: false,
@@ -46597,8 +46597,8 @@ const baselines = {
     },
     'jsdocImplements_namespacedInterface': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocImplements_properties': {
         errors: false,
@@ -46607,8 +46607,8 @@ const baselines = {
     },
     'jsdocImplements_signatures': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocImportType': {
         errors: false,
@@ -46877,7 +46877,7 @@ const baselines = {
     },
     'jsdocTypeDefAtStartOfFile': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocTypeFromChainedAssignment': {
@@ -46962,7 +46962,7 @@ const baselines = {
     },
     'linkTagEmit1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportsElementAccessAssignment': {

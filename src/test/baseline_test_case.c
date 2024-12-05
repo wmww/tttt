@@ -361,8 +361,10 @@ static void render_lines_woven_with_file(
         else if (*p != '\r') newlines_at_end_of_source = 0;
     }
 
-    if (newlines_at_end_of_source == 1 ||
-        (is_last_file && newlines_at_end_of_source > 0) ||
+    // Yes this is a very silly if condition. You can make it more compact but I haven't figurued out how to make it
+    // make more sense.
+    if ((newlines_at_end_of_source > 0 && newline_if_next_line_non_empty) ||
+        (newlines_at_end_of_source > 0 && is_last_file) ||
         (is_last_file && !is_errors && newline_if_next_line_non_empty)
     ) {
         cstr_append_fmt(target, "\r\n%s", line_indent);
