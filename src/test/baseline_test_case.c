@@ -446,6 +446,13 @@ static void append_decl(cstr* target, Span span) {
         cstr_append_s(target, span.source->decl_override);
         cstr_append_lit(target, ")");
         return;
+    } else if (cstr_ends_with_sv(&span.source->display_path, c_sv("tslib.d.ts"))) {
+        cstr_append_fmt(
+            target,
+            ", Decl(%s, --, --)",
+            basename_of(cstr_str(&span.source->display_path))
+        );
+        return;
     }
     const char* file_start = source_file_start(span.source);
     const char* start = span_start_ptr(span);

@@ -10727,7 +10727,7 @@ const baselines = {
     },
     'es5-importHelpersAsyncFunctions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-oldStyleOctalLiteralInEnums': {
@@ -15007,7 +15007,7 @@ const baselines = {
     },
     'importHelpersAmd': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersDeclarations': {
@@ -15052,12 +15052,12 @@ const baselines = {
     },
     'importHelpersOutFile': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersSystem': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importHelpersWithExportStarAs': {
