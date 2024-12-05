@@ -9,6 +9,14 @@ void declaration_drop(Declaration* me) {
     lazy_type_drop(&my declared_type_lazy);
 }
 
+void declaration_clone_in_place(Declaration* me) {
+    my declarations = vec_span_clone(my declarations);
+    my value_type = type_clone(my value_type);
+    my declared_type_list = vec_type_clone(my declared_type_list);
+    my declared_type_lazy.tag = LAZY_TYPE_DECLARATION;
+    my declared_type = type_lazy(&my declared_type_lazy);
+}
+
 Type declaration_evaluate_declared_type(Declaration const* me) {
     return interface_from_merged(&my declared_type_list);
 }

@@ -66,6 +66,10 @@ typedef struct Declaration {
 } Declaration;
 
 void declaration_drop(Declaration* me);
+// This function can be called on a declaration after copying it's memory from another declaration to make this one take
+// ownership of it's resources. This isn't a normal clone function because setting up declared_type correctly requires
+// address stability, which would be broken by returning a Declaration by value.
+void declaration_clone_in_place(Declaration* me);
 Type declaration_evaluate_declared_type(Declaration const* me);
 
 typedef struct DeclProps {

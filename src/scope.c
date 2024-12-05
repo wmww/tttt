@@ -299,11 +299,14 @@ static void process_import(Scope* me, ImportItem* import, ImportItem const* sour
 
     auto result = hmap_str_arc_declaration_get(&source_scope->declarations, source_name);
     if (result) {
-        // TODO: this probably isn't the most elegant way to do this
+        import->declaration = arc_declaration_make(*result->second.get);
+        declaration_clone_in_place(import->declaration.get);
+        vec_span_drop(&import->declaration.get->declarations);
+        import->declaration.get->declarations = vec_span_single(import->full_span);
         if (!hmap_str_arc_declaration_insert(
             &my declarations,
             cstr_from_sv(import->decl_name.sv),
-            arc_declaration_clone(result->second)
+            arc_declaration_clone(import->declaration)
         ).inserted) {
             error_ctx_error(
                 my errs,
