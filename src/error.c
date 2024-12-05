@@ -24,7 +24,7 @@ void display_error(Display d, Error const* me) {
 
     display_s(d, prefix);
     display_color(d, color_path);
-    display_str(d, my span.source ? cstr_str(&my span.source->absolute_path) : "[unkown file]");
+    display_str(d, my span.source ? cstr_str(&my span.source->display_path) : "[unkown file]");
     display_color(d, color_line_number);
     display_fmt(d, ":%u", line);
     display_color(d, color_implicit);

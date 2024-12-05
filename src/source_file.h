@@ -4,6 +4,7 @@
 #include "scope.h"
 
 typedef struct SourceFile {
+    cstr display_path; // The path this file was found with or imported as
     cstr absolute_path;
     cstr contents;
     Block ast;
@@ -13,7 +14,7 @@ typedef struct SourceFile {
     cstr decl_override; // Used for the tests
 } SourceFile;
 
-SourceFile source_file_make(cstr absolute_path, cstr contents, ErrorCtx* errs);
+SourceFile source_file_make(cstr display_path, cstr absolute_path, cstr contents, ErrorCtx* errs);
 void source_file_drop(SourceFile* me);
 
 static inline const char* source_file_start(SourceFile const* me) {

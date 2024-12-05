@@ -206,7 +206,7 @@ static void process_errors(BaselineTestCase* me) {
                 &item.str,
                 "\r\n!!! related TS%d %s:%u:%u: %s",
                 related.ref->ts_code,
-                basename_of(cstr_str(&current_source->absolute_path)),
+                basename_of(cstr_str(&current_source->display_path)),
                 related_line + 1,
                 related_col + 1,
                 cstr_str(&related.ref->message)
@@ -378,7 +378,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         unsigned line = span_line_index(error.ref->span);
         unsigned col = span_col_index(error.ref->span);
         const char* basename = error.ref->span.source ?
-            basename_of(cstr_str(&error.ref->span.source->absolute_path)) :
+            cstr_str(&error.ref->span.source->display_path) :
             "(nil)";
 
         cstr_append_fmt(
@@ -501,7 +501,7 @@ static void append_decl(cstr* target, Span span) {
     cstr_append_fmt(
         target,
         ", Decl(%s, %u, %u)",
-        basename_of(cstr_str(&span.source->absolute_path)),
+        basename_of(cstr_str(&span.source->display_path)),
         format_line,
         format_col
     );

@@ -15236,7 +15236,7 @@ const baselines = {
         types: false,
     },
     'importWithTrailingSlash_noResolve': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -44091,7 +44091,7 @@ const baselines = {
         types: false,
     },
     'moduleResolutionWithoutExtension6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46521,7 +46521,7 @@ const baselines = {
         types: false,
     },
     'jsdocAugments_errorInExtendsExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

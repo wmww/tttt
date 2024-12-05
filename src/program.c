@@ -76,7 +76,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
-        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
+        .not_found_file = source_file_make(cstr_null, cstr_null, cstr_null, errs),
     });
     program_add_builtins(ret);
     return ret;
@@ -117,7 +117,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
         }
         SourceFile* source_file = c_new(
             SourceFile,
-            source_file_make(cstr_clone(absolute_path), contents, my errs)
+            source_file_make(cstr_from(path), cstr_clone(absolute_path), contents, my errs)
         );
         hmap_str_box_source_file_insert(&my source_files, absolute_path, box_source_file_from_ptr(source_file));
         vec_source_file_ptr_push(&my pending_source_files, source_file);
