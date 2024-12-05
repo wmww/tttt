@@ -238,10 +238,10 @@ void scope_add_import(Scope* me, ImportItem* import) {
     }
 }
 
-static void add_placeholder_for_failed_import(Scope* me, Span decl_name, ImportItem* import) {
+static void add_placeholder_for_failed_import(Scope* me, ImportItem* import) {
     ASSERT(!import->declaration.get);
     import->declaration = arc_declaration_make((Declaration){
-        .name = decl_name,
+        .name = import->decl_name,
         .declarations = vec_span_single(import->full_span),
         .value_tag = DECLARATION_NAMESPACE_WITH_VALUE,
         .type_tag = DECLARATION_NAMESPACE_WITH_VALUE,
@@ -249,26 +249,29 @@ static void add_placeholder_for_failed_import(Scope* me, Span decl_name, ImportI
     });
     if (!hmap_str_arc_declaration_insert(
         &my declarations,
-        cstr_from_sv(decl_name.sv),
+        cstr_from_sv(import->decl_name.sv),
         arc_declaration_clone(import->declaration)
     ).inserted) {
         error_ctx_error(
             my errs,
-            decl_name,
+            import->decl_name,
             2300,
             "Duplicate identifier '%.*s'.",
-            c_SPAN(decl_name)
+            c_SPAN(import->decl_name)
         );
     }
 }
 
-static void process_import(Scope* me, Span decl_name, ImportItem* import) {
+// This function sets the import's declaration and adds it to the scope. source_import starts the same as import, but if
+// the imported item is a re-export in a file that has not yet had its imports processed, this function is called
+// recursively with source_import being the re-exported which we are importing through.
+static void process_import(Scope* me, ImportItem* import, ImportItem const* source_import) {
     if (!import->source_file->is_real) {
         import->error_reported = true;
-        add_placeholder_for_failed_import(me, decl_name, import);
+        add_placeholder_for_failed_import(me, import);
     }
 
-    Scope* source_scope_private = &import->source_file->scope;
+    Scope* source_scope_private = &source_import->source_file->scope;
     Scope* source_scope = source_scope_private->export_scope;
     ASSERT(source_scope);
 
@@ -282,7 +285,7 @@ static void process_import(Scope* me, Span decl_name, ImportItem* import) {
             break;
 
         case IMPORT_SOURCE_WILDCARD:
-            add_placeholder_for_failed_import(me, decl_name, import);
+            add_placeholder_for_failed_import(me, import);
             return;
 
         case IMPORT_SOURCE_SPECIFIC:
@@ -299,15 +302,15 @@ static void process_import(Scope* me, Span decl_name, ImportItem* import) {
         // TODO: this probably isn't the most elegant way to do this
         if (!hmap_str_arc_declaration_insert(
             &my declarations,
-            cstr_from_sv(decl_name.sv),
+            cstr_from_sv(import->decl_name.sv),
             arc_declaration_clone(result->second)
         ).inserted) {
             error_ctx_error(
                 my errs,
-                decl_name,
-                2300,
-                "Duplicate identifier '%.*s'.",
-                c_SPAN(decl_name)
+                import->decl_name,
+                2440,
+                "Import declaration conflicts with local declaration of '%.*s'.",
+                c_SPAN(import->decl_name)
             );
         }
         found = true;
@@ -315,7 +318,7 @@ static void process_import(Scope* me, Span decl_name, ImportItem* import) {
 
     if (!found) {
         auto result = hmap_str_import_item_ptr_get_mut(&source_scope->imports, source_name);
-        if (result) {
+        if (result && result->second->is_export) {
             source_scope->currently_adding_import = true;
             if (result->second->source_file->scope.currently_adding_import) {
                 error_ctx_error(
@@ -325,9 +328,10 @@ static void process_import(Scope* me, Span decl_name, ImportItem* import) {
                     "Circular definition of import alias '%.*s'.",
                     c_SPAN(import->decl_name)
                 );
+                add_placeholder_for_failed_import(me, import);
                 import->error_reported = true;
             } else {
-                process_import(me, decl_name, result->second);
+                process_import(me, import, result->second);
             }
             found = true;
             source_scope->currently_adding_import = false;
@@ -344,7 +348,7 @@ static void process_import(Scope* me, Span decl_name, ImportItem* import) {
             c_SPAN(import->source_name)
         );
         import->error_reported = true;
-        add_placeholder_for_failed_import(me, decl_name, import);
+        add_placeholder_for_failed_import(me, import);
     }
 }
 
@@ -375,6 +379,8 @@ Type scope_make_value_interface(Scope const* me) {
 
 void scope_process_imports(Scope* me) {
     c_foreach(i, hmap_str_import_item_ptr, my imports) {
-        process_import(me, i.ref->second->decl_name, i.ref->second);
+        process_import(me, i.ref->second, i.ref->second);
     }
+    hmap_str_import_item_ptr_drop(&my imports);
+    my imports = hmap_str_import_item_ptr_init();
 }
