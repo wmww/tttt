@@ -5842,7 +5842,7 @@ const baselines = {
     },
     'contextualTupleTypeParameterReadonly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeAny': {
@@ -6312,7 +6312,7 @@ const baselines = {
     },
     'contextuallyTypingRestParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'continueInIterationStatement1': {
@@ -6877,7 +6877,7 @@ const baselines = {
     },
     'declFileForInterfaceWithRestParams': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declFileForTypeParameters': {
@@ -8617,22 +8617,22 @@ const baselines = {
     },
     'defaultNamedExportWithType1': {
         errors: true,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'defaultNamedExportWithType2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultNamedExportWithType3': {
         errors: true,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'defaultNamedExportWithType4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultOfAnyInStrictNullChecks': {
@@ -12092,7 +12092,7 @@ const baselines = {
     },
     'exportInterfaceClassAndValue': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportInterfaceClassAndValueWithDuplicatesInImportList': {
@@ -14177,7 +14177,7 @@ const baselines = {
     },
     'genericRestArgs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericRestTypes': {
@@ -18062,7 +18062,7 @@ const baselines = {
     },
     'jsdocTypedefNoCrash2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsdocTypedef_propertyWithNoType': {
@@ -21592,7 +21592,7 @@ const baselines = {
     },
     'nonArrayRestArgs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonConflictingRecursiveBaseTypeMembers': {
@@ -24922,12 +24922,12 @@ const baselines = {
     },
     'resolveInterfaceNameWithSameLetDeclarationName1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'resolveInterfaceNameWithSameLetDeclarationName2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'resolveModuleNameWithSameLetDeclarationName1': {
@@ -24947,7 +24947,7 @@ const baselines = {
     },
     'resolveTypeAliasWithSameLetDeclarationName1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'resolvingClassDeclarationWhenInBaseTypeResolution': {
@@ -25012,7 +25012,7 @@ const baselines = {
     },
     'restParameterNoTypeAnnotation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restParameterNotLast': {
@@ -28637,7 +28637,7 @@ const baselines = {
     },
     'typeVal': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeValueConflict1': {
@@ -28737,7 +28737,7 @@ const baselines = {
     },
     'typeofInterface': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeofInternalModules': {
@@ -42472,7 +42472,7 @@ const baselines = {
     },
     'grammarAmbiguities': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'newWithSpread': {
@@ -56372,7 +56372,7 @@ const baselines = {
     },
     'typeArgumentsWithStringLiteralTypes01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualThisType': {

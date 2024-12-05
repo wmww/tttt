@@ -16,7 +16,7 @@ void binding_drop(Binding* me) {
     type_drop(&my assigned_type);
 }
 
-void binding_add_names(Binding* me, Type assigned, Scope* scope) {
+void binding_add_names(Binding* me, Type assigned, Span full, Scope* scope) {
     my assigned_type = assigned;
 
     switch (my tag) {
@@ -25,7 +25,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
         case BINDING_IDENTIFIER:
             scope_init_declaration(scope, &my declaration, (DeclProps){
                 .name = my content_span,
-                .full = my content_span,
+                .full = full,
                 .tag = DECLARATION_VARIABLE,
                 .value_type = type_refcopy(binding_get_effective_type(me)),
             });
@@ -42,6 +42,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
                         .is_from_binding = true,
                         .array_only = true,
                     })),
+                    i.ref->content_span,
                     scope
                 );
             }
@@ -56,6 +57,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope) {
                         .index = type_value(value_clone(i.ref->source)),
                         .is_from_binding = true,
                     })),
+                    i.ref->target.content_span,
                     scope
                 );
             }
@@ -178,13 +180,14 @@ void initialized_binding_drop(InitializedBinding* me) {
     expr_drop(&my value);
 }
 
-void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, Scope* scope) {
+void initialized_binding_add_names(InitializedBinding* me, bool abstract_literals, Span full, Scope* scope) {
     binding_add_names(
         &my binding,
         make_type_abstracted(
             type_lazy(&my value.lazy_type),
             !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && abstract_literals
         ),
+        full,
         scope
     );
 }

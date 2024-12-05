@@ -610,14 +610,20 @@ void baseline_test_case_add_type_recursive(
     }
 }
 
-void baseline_test_case_add_declaration(BaselineTestCase* me, Declaration const* declaration) {
+void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
+    ASSERT(span.source);
+    if (!declaration) {
+        NONFATAL("baseline_test_case_add_declaration() callled with null declaration");
+        return;
+    }
     baseline_test_case_add_symbol(me, (BaselineSym){
         .declarations = vec_span_clone(declaration->declarations),
-        .span = declaration->name,
+        .span = span,
+        .name = declaration->name,
     });
     if (declaration->value_tag) {
-        baseline_test_case_add_type(me, declaration->name, &declaration->value_type);
+        baseline_test_case_add_type(me, span, &declaration->value_type);
     } else if (declaration->type_tag) {
-        baseline_test_case_add_type(me, declaration->name, &declaration->declared_type);
+        baseline_test_case_add_type(me, span, &declaration->declared_type);
     }
 }

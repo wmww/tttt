@@ -22,7 +22,7 @@
 typedef struct SourceFile SourceFile;
 
 typedef struct ImportItem {
-    Span decl_name; // May be same as source_name
+    Span decl_name; // May be same as source_name, empty only if is_export_wildcard is true
     Span full_span; // Span of declaration
     bool type_only; // Has the "type" keyword for the main import
     bool is_export; // Is a re-export (uses "export" keyword)

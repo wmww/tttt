@@ -36,7 +36,6 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
     Scope generic_scope = scope_init(errs);
     scope_push_generic_to_stack(&generic_scope, &my generic, names);
 
-
     Scope function_scope = scope_init_function(errs);
 
     if (this_is_any) {
@@ -49,7 +48,7 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
 
     // Loop through all arguments and add them to the namespace
     c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_add_names(&i.ref->initializer, true, &function_scope);
+        initialized_binding_add_names(&i.ref->initializer, true, i.ref->span, &function_scope);
         if (i.ref->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i.ref->initializer.binding.content_span, "this")
         ) {

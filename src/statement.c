@@ -26,7 +26,7 @@ void variable_statement_add_names(VariableStatement* me, bool declared, Scope* s
                 "'const' declarations must be initialized."
             );
         }
-        initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, scope);
+        initialized_binding_add_names(i.ref, my keyword != VAR_INIT_CONST, i.ref->binding.content_span, scope);
     }
 }
 
@@ -394,7 +394,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
                         // up in test AST traversial (as required), but will not be typechecked (as required). This
                         // is dumb but it works.
                         i.ref->binding.has_explicit_type = false;
-                        binding_add_names(&i.ref->binding, type_lazy(&my for_each_loop->var_type), &loop_scope);
+                        binding_add_names(&i.ref->binding, type_lazy(&my for_each_loop->var_type), i.ref->binding.content_span, &loop_scope);
                     }
                     scope_push_to_stack(&loop_scope, names);
                     c_foreach(i, vec_initialized_binding, *initializers) {
@@ -444,7 +444,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
             Scope catch_scope = scope_init(errs);
-            binding_add_names(&my try_catch->catch_var, type_any, &catch_scope);
+            binding_add_names(&my try_catch->catch_var, type_any, my try_catch->catch_var.content_span, &catch_scope);
             scope_push_to_stack(&catch_scope, names);
             binding_lookup_names(&my try_catch->catch_var, names, errs);
             block_resolve_names(&my try_catch->catch_block, names, errs);

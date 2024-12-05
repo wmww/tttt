@@ -28,38 +28,32 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     }
 }
 
-void binding_content_compile_test_info(Binding const* me, Span full, BaselineTestCase* ctx) {
+void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
             baseline_test_case_add_type(ctx, my content_span, &type_undefined);
             break;
 
         case BINDING_IDENTIFIER:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = vec_span_single(full),
-                .span = my content_span,
-            });
-            if (my declaration.get) {
-                baseline_test_case_add_type(ctx, my content_span, binding_get_effective_type(me));
-            }
+            baseline_test_case_add_declaration(ctx, my content_span, my declaration.get);
             break;
 
         case BINDING_ARRAY:
             c_foreach(i, vec_binding, my array) {
-                binding_content_compile_test_info(i.ref, i.ref->content_span, ctx);
+                binding_content_compile_test_info(i.ref, ctx);
             }
             break;
 
         case BINDING_OBJECT:
             c_foreach(i, vec_object_binding_item, my object) {
-                binding_content_compile_test_info(&i.ref->target, i.ref->target.content_span, ctx);
+                binding_content_compile_test_info(&i.ref->target, ctx);
             }
             break;
     }
 }
 
-void binding_compile_test_info(Binding const* me, Span full, BaselineTestCase* ctx) {
-    binding_content_compile_test_info(me, full, ctx);
+void binding_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
+    binding_content_compile_test_info(me, ctx);
     if (my has_explicit_type) {
         type_compile_test_info(&my explicit_type, ctx);
     }
@@ -67,10 +61,9 @@ void binding_compile_test_info(Binding const* me, Span full, BaselineTestCase* c
 
 void initialized_binding_compile_test_info(
     InitializedBinding* me,
-    Span full,
     BaselineTestCase* ctx
 ) {
-    binding_compile_test_info(&my binding, full, ctx);
+    binding_compile_test_info(&my binding, ctx);
     if (my value.tag != EXPR_IMPLICIT_ANY) {
         expr_compile_test_info(&my value, ctx);
     }
@@ -165,11 +158,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_CALLABLE:
             generic_compile_test_info(&my callable->generic, ctx);
             c_foreach(i, vec_callable_arg, my callable->args) {
-                binding_content_compile_test_info(
-                    &i.ref->source->initializer.binding,
-                    i.ref->source->span,
-                    ctx
-                );
+                binding_content_compile_test_info(&i.ref->source->initializer.binding, ctx);
                 if (i.ref->source->initializer.binding.has_explicit_type) {
                     type_compile_test_info(&i.ref->type, ctx);
                 }
@@ -241,7 +230,7 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
     }
     generic_compile_test_info(&my generic, ctx);
     c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_compile_test_info(&i.ref->initializer, i.ref->span, ctx);
+        initialized_binding_compile_test_info(&i.ref->initializer, ctx);
     }
     if (my ret_explicit && !my is_constructor) {
         type_compile_test_info(&my ret, ctx);
@@ -250,22 +239,22 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 }
 
 void import_statement_compile_test_info(ImportStatement const* me, BaselineTestCase* ctx) {
-    if (my main.declaration.get) {
-        baseline_test_case_add_declaration(ctx, my main.declaration.get);
+    if (my main.source_tag != IMPORT_SOURCE_NONE && !my main.is_export_wildcard) {
+        baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
     }
     c_foreach(i, vec_import_item, my items) {
         if (i.ref->declaration.get) {
             if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
                 baseline_test_case_add_type(ctx, i.ref->source_name, &i.ref->declaration.get->value_type);
             }
-            baseline_test_case_add_declaration(ctx, i.ref->declaration.get);
+            baseline_test_case_add_declaration(ctx, i.ref->decl_name, i.ref->declaration.get);
         }
     }
 }
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_compile_test_info(i.ref, span_null, ctx);
+        initialized_binding_compile_test_info(i.ref, ctx);
     }
 }
 
@@ -713,7 +702,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
             if (my try_catch->catch_var.tag != BINDING_NOOP) {
-                binding_compile_test_info(&my try_catch->catch_var, span_null, ctx);
+                binding_compile_test_info(&my try_catch->catch_var, ctx);
                 block_compile_test_info(&my try_catch->catch_block, ctx);
             }
             block_compile_test_info(&my try_catch->finally_block, ctx);
