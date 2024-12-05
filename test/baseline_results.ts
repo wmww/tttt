@@ -2666,12 +2666,12 @@ const baselines = {
         types: false,
     },
     'cachedModuleResolution6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'cachedModuleResolution7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

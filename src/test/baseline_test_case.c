@@ -379,23 +379,25 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     c_foreach(error, vec_error, my error_ctx->errors) {
         unsigned line = span_line_index(error.ref->span);
         unsigned col = span_col_index(error.ref->span);
-        const char* basename = error.ref->span.source ?
+        const char* filename = error.ref->span.source ?
             cstr_str(&error.ref->span.source->display_path) :
             "(nil)";
 
         cstr_append_fmt(
             target,
             "%s(%u,%u): error TS%d: %s\r\n",
-            basename, line + 1, col + 1,
+            filename, line + 1, col + 1,
             error.ref->ts_code,
             cstr_str(&error.ref->message)
         );
     }
 
+    cstr_append_lit(target, "\r\n");
+
     c_foreach(i, vec_baseline_test_file, my files) {
         cstr_append_fmt(
             target,
-            "\r\n\r\n==== %s (%ld errors) ====\r\n",
+            "\r\n==== %s (%ld errors) ====\r\n",
             cstr_str(&i.ref->path),
             i.ref->error_count
         );

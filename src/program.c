@@ -100,9 +100,9 @@ void program_add_globals(Program* me, Scope const* scope) {
 }
 
 // Returns null if path can't be loaded
-static SourceFile* program_add_source(Program* me, const char* path) {
+static SourceFile* program_add_source(Program* me, const char* display_path, const char* effective_path) {
     cstr absolute_path;
-    absolute_path = fs_absolute_path_of(my fs, path);
+    absolute_path = fs_absolute_path_of(my fs, effective_path);
     auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&absolute_path));
     if (value) {
         // A source file is already created for this path
@@ -117,7 +117,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
         }
         SourceFile* source_file = c_new(
             SourceFile,
-            source_file_make(cstr_from(path), cstr_clone(absolute_path), contents, my errs)
+            source_file_make(cstr_from(display_path), cstr_clone(absolute_path), contents, my errs)
         );
         hmap_str_box_source_file_insert(&my source_files, absolute_path, box_source_file_from_ptr(source_file));
         vec_source_file_ptr_push(&my pending_source_files, source_file);
@@ -135,7 +135,7 @@ static void program_handle_import(Program* me, ImportStatement* import) {
         cstr_append_lit(&source_path, ".ts");
     }
     // TODO: handle js
-    SourceFile* source = program_add_source(me, cstr_str(&source_path));
+    SourceFile* source = program_add_source(me, cstr_str(&import->source_path), cstr_str(&source_path));
     cstr_drop(&source_path);
 
     if (source) {
@@ -159,13 +159,17 @@ SourceFile* program_load(Program* me, const char* path) {
     set_error_config(&my errs->config);
 
     // Add the source file to the program
-    SourceFile* main_source = program_add_source(me, path);
+    SourceFile* main_source = program_add_source(me, path, path);
     if (!main_source) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
         my errs->phase = ERROR_PHASE_UNKOWN;
         clear_error_config();
         return &my not_found_file;
     }
+
+    // If the source file was previously imported but is now being added explicitly, it's display path should reflect
+    // the explicitly added path
+    cstr_take(&main_source->display_path, cstr_from(path));
 
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     VecSourceFilePtr in_flight_source_files = vec_source_file_ptr_init();
