@@ -10,9 +10,13 @@
 
 typedef struct ImportItem ImportItem;
 typedef ImportItem* ImportItemPtr;
+
 #define i_key_ssv
 #define i_val_names ImportItemPtr, import_item_ptr
 #include "wrap_stc/hmap.h"
+
+#define i_key_names ImportItemPtr, import_item_ptr
+#include "wrap_stc/vec.h"
 
 typedef struct Scope {
     enum {
@@ -27,6 +31,7 @@ typedef struct Scope {
                                   // Threadsafety: may have to change this system
     HmapStrArcDeclaration declarations;
     HmapStrImportItemPtr imports;
+    VecImportItemPtr wildcard_reexports;
     Declaration const* this_declaration;
     Declaration const* super_declaration;
     ScopeStack* current_scope_stack; // The ScopeStack this scope is in, or null if none

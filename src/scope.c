@@ -12,6 +12,7 @@ void scope_drop(Scope* me) {
     }
     hmap_str_arc_declaration_drop(&my declarations);
     hmap_str_import_item_ptr_drop(&my imports);
+    vec_import_item_ptr_drop(&my wildcard_reexports);
     if (my export_scope) {
         scope_drop(my export_scope);
         free(my export_scope);
@@ -21,6 +22,7 @@ void scope_drop(Scope* me) {
 Scope scope_clone(Scope me) {
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
     me.imports = hmap_str_import_item_ptr_clone(me.imports);
+    me.wildcard_reexports = vec_import_item_ptr_clone(me.wildcard_reexports);
     me.current_scope_stack = nullptr;
     if (me.export_scope) {
         me.export_scope = c_new(Scope, scope_clone(*me.export_scope));
@@ -223,22 +225,22 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 void scope_add_import(Scope* me, ImportItem* import) {
     ASSERT(!my current_scope_stack);
     if (import->is_export_wildcard) {
-        NONFATAL("Wildcard re-exports not yet supported");
-        return;
-    }
-    auto result = hmap_str_import_item_ptr_insert(
-        &my imports,
-        cstr_from_span(import->decl_name),
-        import
-    );
-    if (!result.inserted) {
-        error_ctx_error(
-            my errs,
-            import->decl_name,
-            2300,
-            "Duplicate identifier '%.*s'.",
-            c_SPAN(import->decl_name)
+        vec_import_item_ptr_push(&my wildcard_reexports, import);
+    } else {
+        auto result = hmap_str_import_item_ptr_insert(
+            &my imports,
+            cstr_from_span(import->decl_name),
+            import
         );
+        if (!result.inserted) {
+            error_ctx_error(
+                my errs,
+                import->decl_name,
+                2300,
+                "Duplicate identifier '%.*s'.",
+                c_SPAN(import->decl_name)
+            );
+        }
     }
 }
 
@@ -283,6 +285,18 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
         }
         next->currently_adding_import = true;
         Declaration const* ret = ret = find_declaration_in_exports(next, import_result->second->source_name.sv);
+        next->currently_adding_import = false;
+        return ret;
+    }
+
+    c_foreach(i, vec_import_item_ptr, my wildcard_reexports) {
+        Scope* next = &(*i.ref)->source_file->scope;
+        if (next->currently_adding_import) {
+            // We don't want to raise an error here
+            return nullptr;
+        }
+        next->currently_adding_import = true;
+        Declaration const* ret = find_declaration_in_exports(next, name);
         next->currently_adding_import = false;
         return ret;
     }

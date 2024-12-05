@@ -12221,7 +12221,7 @@ const baselines = {
         types: false,
     },
     'exportStarNotElided': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44403,12 +44403,12 @@ const baselines = {
     'exportNamespace6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportNamespace7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportNamespace8': {
         errors: false,
