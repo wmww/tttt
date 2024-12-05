@@ -108,7 +108,7 @@ static bool load_test_source(BaselineTestCase* me) {
     );
 
     bool has_line = false;
-    cstr current_filename = cstr_from(my source_path);
+    cstr current_filename = cstr_from(basename_of(my source_path));
     c_foreach(i, lines_sv, contents_sv) {
         csview tag_key, tag_value;
         if (parse_tag(i.line, &tag_key, &tag_value)) {
@@ -315,7 +315,7 @@ static void render_lines_woven_with_file(
     bool newline_if_next_line_non_empty = false;
 
     if (!is_errors) {
-        cstr_append_fmt(target, "=== %s ===\r\n", basename_of(source_path));
+        cstr_append_fmt(target, "=== %s ===\r\n", source_path);
         newline_if_next_line_non_empty = vec_size == 0;
     }
 
@@ -394,7 +394,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         cstr_append_fmt(
             target,
             "\r\n\r\n==== %s (%ld errors) ====\r\n",
-            basename_of(cstr_str(&i.ref->path)),
+            cstr_str(&i.ref->path),
             i.ref->error_count
         );
 
