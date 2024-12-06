@@ -224,6 +224,7 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_BREAK: break;
+        case STATEMENT_CONTINUE: break;
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -313,6 +314,7 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_SWITCH:
         case STATEMENT_TRY_CATCH:
         case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
@@ -516,6 +518,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
 
         case STATEMENT_NOOP:
         case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
             break;
     }
 }
@@ -567,6 +570,7 @@ Type statement_evaluate_return_type(Statement* me) {
 
         case STATEMENT_NOOP:
         case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_THROW_EXPR:
@@ -611,6 +615,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             expr_typecheck(&my for_loop->condition, errs);
             expr_typecheck(&my for_loop->afterthought, errs);
             ctx.break_allowed = true;
+            ctx.continue_allowed = true;
             statement_typecheck(&my for_loop->body, ctx, errs);
             break;
         }
@@ -694,6 +699,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             }
 
             ctx.break_allowed = true;
+            ctx.continue_allowed = true;
             statement_typecheck(&my for_each_loop->body, ctx, errs);
         }   break;
 
@@ -741,12 +747,15 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
         case STATEMENT_BREAK:
             if (!ctx.break_allowed) {
-                error_ctx_error(
-                    errs,
-                    my break_span,
-                    1105,
-                    "A 'break' statement can only be used within an enclosing iteration or switch statement."
-                );
+                error_ctx_error(errs, my keyword_span, 1105,
+                    "A 'break' statement can only be used within an enclosing iteration or switch statement.");
+            }
+            break;
+
+        case STATEMENT_CONTINUE:
+            if (!ctx.continue_allowed) {
+                error_ctx_error(errs, my keyword_span, 1104,
+                    "A 'continue' statement can only be used within an enclosing iteration statement.");
             }
             break;
 

@@ -1416,9 +1416,9 @@ const baselines = {
         types: true,
     },
     'asiContinue': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asiInES6Classes': {
         errors: true,
@@ -2428,12 +2428,12 @@ const baselines = {
     'blockScopedBindingsReassignedInLoop2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedBindingsReassignedInLoop3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'blockScopedBindingsReassignedInLoop4': {
         errors: true,
@@ -6316,9 +6316,9 @@ const baselines = {
         types: false,
     },
     'continueInIterationStatement1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueInIterationStatement2': {
         errors: false,
@@ -6326,44 +6326,44 @@ const baselines = {
         types: false,
     },
     'continueInIterationStatement3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'continueInIterationStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueInLoopsWithCapturedBlockScopedBindings1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueLabel': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueNotInIterationStatement1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueNotInIterationStatement2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueNotInIterationStatement3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueNotInIterationStatement4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueStatementInternalComments': {
         errors: false,
@@ -6373,32 +6373,32 @@ const baselines = {
     'continueTarget1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueTarget2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueTarget3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueTarget4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueTarget5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'continueTarget6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contravariantInferenceAndTypeGuard': {
         errors: false,
@@ -32073,7 +32073,7 @@ const baselines = {
     'classStaticBlock8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock9': {
         errors: undefined,
@@ -43191,7 +43191,7 @@ const baselines = {
         types: false,
     },
     'typeGuardsInForStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -43236,7 +43236,7 @@ const baselines = {
         types: false,
     },
     'typeGuardsInWhileStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50756,9 +50756,9 @@ const baselines = {
         types: true,
     },
     'parser_continueInIterationStatement1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueInIterationStatement2': {
         errors: false,
@@ -50766,69 +50766,69 @@ const baselines = {
         types: false,
     },
     'parser_continueInIterationStatement3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parser_continueInIterationStatement4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueLabel': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueNotInIterationStatement1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueNotInIterationStatement2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueNotInIterationStatement3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueNotInIterationStatement4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueTarget1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueTarget2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueTarget3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueTarget4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueTarget5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_continueTarget6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser_duplicateLabel1': {
         errors: false,
@@ -50883,7 +50883,7 @@ const baselines = {
     'parserContinueStatement1.d': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserDebuggerStatement1.d': {
         errors: false,
@@ -53873,7 +53873,7 @@ const baselines = {
     'forInContinueStatements': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'invalidDoWhileContinueStatements': {
         errors: false,
@@ -53888,22 +53888,22 @@ const baselines = {
     'invalidForInContinueStatements': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'invalidSwitchContinueStatement': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidWhileContinueStatements': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'whileContinueStatements': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitter.forAwait': {
         errors: undefined,

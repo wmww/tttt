@@ -709,6 +709,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_BREAK: break;
+        case STATEMENT_CONTINUE: break;
 
         case STATEMENT_IMPORT:
             import_statement_compile_test_info(my import, ctx);

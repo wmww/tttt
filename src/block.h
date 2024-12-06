@@ -12,6 +12,7 @@ wrap_forward_vec(Statement, statement);
 typedef struct BlockTypecheckCtx {
     Type const* specified_return;
     bool break_allowed;
+    bool continue_allowed;
 } BlockTypecheckCtx;
 
 typedef struct Block {

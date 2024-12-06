@@ -3893,7 +3893,10 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     } else if (parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
-        ret->break_span = span_from(a);
+        ret->keyword_span = span_from(a);
+    } else if (hop_start_if_ends_on_word_break(&p, "continue")) {
+        ret->tag = STATEMENT_CONTINUE;
+        ret->keyword_span = span_from(a);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
     } else if (parse_throw(&p, &ret->expr)) {

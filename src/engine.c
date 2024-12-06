@@ -484,6 +484,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return result_ok_undefined;
 
         case STATEMENT_BREAK: return result_break();
+        case STATEMENT_CONTINUE: return result_err(value_string(cstr_lit("Continue statements not yet implemented")));
 
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:

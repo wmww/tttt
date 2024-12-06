@@ -154,7 +154,6 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     BlockTypecheckCtx ctx = {
         .specified_return = my ret_explicit ? &my ret : &type_any,
-        .break_allowed = false,
     };
     block_typecheck(&my body, ctx, errs);
 }

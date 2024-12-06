@@ -91,6 +91,7 @@ typedef struct Statement {
         STATEMENT_SWITCH,
         STATEMENT_TRY_CATCH,
         STATEMENT_BREAK,
+        STATEMENT_CONTINUE,
         STATEMENT_EXPR,
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
         STATEMENT_RETURN_EXPR, // also uses expr union member
@@ -112,7 +113,7 @@ typedef struct Statement {
         ForEachLoopStatement* for_each_loop;
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
-        Span break_span;
+        Span keyword_span; // Used for continue and break
         ImportStatement* import;
         struct {
             DeclStatementProps props;
