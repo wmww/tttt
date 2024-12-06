@@ -551,6 +551,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             }
         }   break;
 
+        case EXPR_GENERIC_PARAMS:
+            expr_compile_test_info(&my generic_params->expr, ctx);
+            c_foreach(i, vec_spanned_type, my generic_params->params) {
+                type_compile_test_info(&i.ref->type, ctx);
+            }
+            break;
+
         case EXPR_AS_TYPE:
             if (my as_type->angle_bracket_syntax) {
                 type_compile_test_info(&my as_type->type, ctx);
@@ -627,6 +634,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
         // Don't drop, since we didn't allocate
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
+    } else if (my tag == EXPR_GENERIC_PARAMS) {
     } else {
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, expr_get_type(me));
     }

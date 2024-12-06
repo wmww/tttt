@@ -2766,7 +2766,7 @@ const baselines = {
         types: false,
     },
     'callbacksDontShareTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6686,7 +6686,7 @@ const baselines = {
         types: false,
     },
     'crashIntypeCheckObjectCreationExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -7501,19 +7501,19 @@ const baselines = {
         types: false,
     },
     'declarationEmitExpressionInExtends2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitExpressionInExtends3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'declarationEmitExpressionInExtends4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpressionInExtends5': {
         errors: true,
@@ -13866,7 +13866,7 @@ const baselines = {
         types: false,
     },
     'genericContextualTypingSpecialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14236,8 +14236,8 @@ const baselines = {
         types: true,
     },
     'genericStaticAnyTypeFunction': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'genericTemplateOverloadResolution': {
@@ -14372,7 +14372,7 @@ const baselines = {
     },
     'genericWithOpenTypeParameters1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generics0': {
@@ -26581,7 +26581,7 @@ const baselines = {
         types: false,
     },
     'subclassWithPolymorphicThisIsAssignable': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27481,8 +27481,8 @@ const baselines = {
         types: false,
     },
     'thisInGenericStaticMembers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'thisInInnerFunctions': {
@@ -29186,8 +29186,8 @@ const baselines = {
         types: false,
     },
     'unknownTypeArgOnCall': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'unknownTypeErrors': {
@@ -33536,7 +33536,7 @@ const baselines = {
         types: false,
     },
     'instanceMemberInitialization': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49632,7 +49632,7 @@ const baselines = {
     },
     'parserMemberAccessExpression1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserMemberAccessOffOfGenericType1': {
@@ -51267,12 +51267,12 @@ const baselines = {
     },
     'parserSuperExpression2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserSuperExpression3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserSuperExpression4': {
@@ -54951,7 +54951,7 @@ const baselines = {
         types: false,
     },
     'localTypes5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56767,7 +56767,7 @@ const baselines = {
     },
     'callGenericFunctionWithIncorrectNumberOfTypeArguments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callGenericFunctionWithZeroTypeArguments': {

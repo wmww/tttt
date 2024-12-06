@@ -625,6 +625,19 @@ static void modifier_list_validate_during_parse(Parser* parent, ModifierList con
     error_ctx_drop(&errs);
 }
 
+static inline bool expect_binary_op(Parser* parent, BinaryOp expected) {
+    Parser p = parser(parent);
+    BinaryOp actual;
+    if (parse_binary_op(&p, &actual) && actual == expected) {
+        parse_success(&p);
+        return true;
+    } else {
+        parse_fail(&p);
+        expected_token_error(parent, binary_op_get_zv(expected).str);
+        return false;
+    }
+}
+
 static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -2630,6 +2643,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             BinaryOp op;
         } binary;
         FunctionImpl function;
+        VecSpannedType generic_params;
     } parsed;
 
     if (new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
@@ -2693,6 +2707,47 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         } else {
             parse_fail(&sub_p);
         }
+    }
+
+    Parser generic_p = parser(&p);
+    if (parse_generic_params(&generic_p, &parsed.generic_params)) {
+        bool success = false;
+        if (ctx.reject_operators) {
+            success = true;
+        } else if (*generic_p.pos == '>' || *generic_p.pos == '=') {
+            // Fail
+        } else if (generic_p.error_count == 0) {
+            Expr expr;
+            Parser next_expr_p = parser(&generic_p);
+            hop_whitespace(&next_expr_p);
+            ExprCtx next_expr_ctx = ctx;
+            next_expr_ctx.min_precedence = imax(ctx.min_precedence, binary_op_get_precedence(BINARY_OP_GREATER));
+            if (next_expr_p.whitespace != WHITESPACE_NEWLINE &&
+                *next_expr_p.pos != '(' &&
+                parse_expr(&next_expr_p, next_expr_ctx, &expr)
+            ) {
+                expr_drop(&expr);
+            } else {
+                success = true;
+            }
+            parse_fail(&next_expr_p);
+        }
+        if (success) {
+            parse_success(&generic_p);
+            *left_and_ret = expr_generic_params(
+                span_from(a),
+                c_new(GenericParamsExpr, {
+                    .expr = *left_and_ret,
+                    .params = parsed.generic_params,
+                })
+            );
+            return parse_success(&p);
+        } else {
+            parse_fail(&generic_p);
+            vec_spanned_type_drop(&parsed.generic_params);
+        }
+    } else {
+        parse_fail(&generic_p);
     }
 
     if (!ctx.reject_operators && !hit_newline) {

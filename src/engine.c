@@ -377,6 +377,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_BINARY_OP: return engine_eval_binary_op(me, expr->binary_op);
         case EXPR_UNARY_OP: return engine_eval_unary_op(me, expr->unary_op);
         case EXPR_PROPERTY: return engine_eval_property(me, expr->property);
+        case EXPR_GENERIC_PARAMS: return engine_eval_expr(me, &expr->generic_params->expr);
         case EXPR_AS_TYPE: return engine_eval_expr(me, &expr->as_type->expr);
         case EXPR_TERNARY: return engine_eval_ternary(me, expr->ternary);
         case EXPR_CALL: return engine_eval_call(me, expr->call);

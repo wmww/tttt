@@ -7,6 +7,7 @@
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
 typedef struct PropertyExpr PropertyExpr;
+typedef struct GenericParamsExpr GenericParamsExpr;
 typedef struct AsTypeExpr AsTypeExpr;
 typedef struct TernaryExpr TernaryExpr;
 typedef struct CallExpr CallExpr;
@@ -44,6 +45,7 @@ typedef struct Expr {
         EXPR_BINARY_OP,
         EXPR_UNARY_OP,
         EXPR_PROPERTY,
+        EXPR_GENERIC_PARAMS,
         EXPR_AS_TYPE,
         EXPR_TERNARY,
         EXPR_CALL,
@@ -59,6 +61,7 @@ typedef struct Expr {
         BinaryOpExpr* binary_op;
         UnaryOpExpr* unary_op;
         PropertyExpr* property;
+        GenericParamsExpr* generic_params;
         AsTypeExpr* as_type;
         TernaryExpr* ternary;
         CallExpr* call;
@@ -93,6 +96,10 @@ static inline Expr expr_unary_op(Span span, UnaryOpExpr* op) {
 
 static inline Expr expr_property(Span span, PropertyExpr* property) {
     return (Expr){ .tag = EXPR_PROPERTY, .property = property, EXPR_DEFAULT(span) };
+}
+
+static inline Expr expr_generic_params(Span span, GenericParamsExpr* generic_params) {
+    return (Expr){ .tag = EXPR_GENERIC_PARAMS, .generic_params = generic_params, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_as_type(Span span, AsTypeExpr* as_type) {
@@ -268,6 +275,13 @@ typedef struct PropertyExpr {
     } form;
     bool optional_chain;
 } PropertyExpr;
+
+// Generic params
+
+typedef struct GenericParamsExpr {
+    Expr expr;
+    VecSpannedType params;
+} GenericParamsExpr;
 
 // As type
 

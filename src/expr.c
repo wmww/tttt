@@ -99,6 +99,16 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
 }
 
+Type generic_params_expr_evaluate_type(GenericParamsExpr const* me) {
+    ignore me;
+    return type_any;
+}
+
+void generic_params_expr_typecheck(GenericParamsExpr const* me, ErrorCtx* errs) {
+    ignore me;
+    ignore errs;
+}
+
 void expr_drop(Expr* me) {
     free(my currently_getting_type);
     switch (my tag) {
@@ -128,6 +138,12 @@ void expr_drop(Expr* me) {
             expr_drop(&my property->expr);
             expr_drop(&my property->prop);
             free(my property);
+            break;
+
+        case EXPR_GENERIC_PARAMS:
+            expr_drop(&my generic_params->expr);
+            vec_spanned_type_drop(&my generic_params->params);
+            free(my generic_params);
             break;
 
         case EXPR_AS_TYPE:
@@ -193,6 +209,13 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
         case EXPR_PROPERTY:
             expr_lookup_names(&my property->expr, names, errs);
             expr_lookup_names(&my property->prop, names, errs);
+            break;
+
+        case EXPR_GENERIC_PARAMS:
+            expr_lookup_names(&my generic_params->expr, names, errs);
+            c_foreach(i, vec_spanned_type, my generic_params->params) {
+                type_lookup_names(&i.ref->type, names, errs);
+            }
             break;
 
         case EXPR_AS_TYPE:
@@ -549,6 +572,8 @@ Type expr_evaluate_type(Expr const* me) {
                 expr_get_type(&my property->prop)
             );
 
+        case EXPR_GENERIC_PARAMS: return generic_params_expr_evaluate_type(my generic_params);
+
         case EXPR_AS_TYPE: return type_refcopy(&my as_type->type);
 
         case EXPR_TERNARY:
@@ -620,13 +645,10 @@ Type expr_evaluate_type(Expr const* me) {
 
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
-        case EXPR_IMPLICIT_ANY:
-        case EXPR_LITERAL:
-            break;
+        case EXPR_IMPLICIT_ANY: break;
+        case EXPR_LITERAL: break;
 
-        case EXPR_IDENTIFIER:
-            identifier_expr_typecheck(&my identifier, errs);
-            break;
+        case EXPR_IDENTIFIER: identifier_expr_typecheck(&my identifier, errs); break;
 
         case EXPR_BINARY_OP:
             expr_typecheck(&my binary_op->left, errs);
@@ -682,6 +704,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             );
             type_drop(&to_drop);
         }   break;
+
+        case EXPR_GENERIC_PARAMS: generic_params_expr_typecheck(my generic_params, errs); break;
 
         case EXPR_AS_TYPE:
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface

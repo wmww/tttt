@@ -813,6 +813,18 @@ void display_expr(Display d, Expr const* me) {
             }
         }   break;
 
+        case EXPR_GENERIC_PARAMS:
+            display_expr(d, &my generic_params->expr);
+            display_lit(d, "<");
+            c_foreach(i, vec_spanned_type, my generic_params->params) {
+                display_type(d, &i.ref->type);
+                if (i.ref != i.end - 1) {
+                    display_lit(d, ", ");
+                }
+            }
+            display_lit(d, ">");
+            break;
+
         case EXPR_AS_TYPE: {
             if (!paren_depth) {
                 display_colored(d, color_implicit, "(");
