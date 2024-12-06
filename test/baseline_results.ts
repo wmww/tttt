@@ -44413,7 +44413,7 @@ const baselines = {
     'exportNamespace8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportNamespace9': {
         errors: false,

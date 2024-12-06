@@ -284,7 +284,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
             return nullptr;
         }
         next->currently_adding_import = true;
-        Declaration const* ret = ret = find_declaration_in_exports(next, import_result->second->source_name.sv);
+        Declaration const* ret = find_declaration_in_exports(next, import_result->second->source_name.sv);
         next->currently_adding_import = false;
         return ret;
     }
@@ -298,7 +298,9 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
         next->currently_adding_import = true;
         Declaration const* ret = find_declaration_in_exports(next, name);
         next->currently_adding_import = false;
-        return ret;
+        if (ret) {
+            return ret;
+        }
     }
 
     return nullptr;
