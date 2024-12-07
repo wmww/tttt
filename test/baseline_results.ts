@@ -2691,9 +2691,9 @@ const baselines = {
         types: false,
     },
     'callExpressionWithMissingTypeArgument1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'callExpressionWithTypeParameterConstrainedToOuterTypeParameter': {
         errors: true,
@@ -10096,12 +10096,12 @@ const baselines = {
         types: true,
     },
     'emptyTypeArgumentList': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emptyTypeArgumentListWithNew': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

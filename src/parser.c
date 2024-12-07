@@ -713,8 +713,9 @@ static bool parse_generic_decl(Parser* parent, Generic* ret) {
     return parse_success(&p);
 }
 
-static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
+static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedType* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
     *ret = vec_spanned_type_init();
 
     if (!hop_char(&p, '<')) {
@@ -731,6 +732,7 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
             vec_spanned_type_push(ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
+            vec_spanned_type_push(ret, spanned_type(span_from_pos(&p), type_unknown));
             parse_error(&p, span_from_token(&p), 1110, "Type expected.");
         } else {
             break;
@@ -740,6 +742,7 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
             if (expect_char(&p, ',')) {
                 trailing_comma_span = span_from_previous_char(&p);
             } else {
+                if (fail_on_error) { goto fail; }
                 hop_token(&p);
             }
         }
@@ -750,9 +753,19 @@ static bool parse_generic_params(Parser* parent, VecSpannedType* ret) {
         parse_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
-    expect_char(&p, '>');
+    if (!expect_char(&p, '>')) {
+        if (fail_on_error) { goto fail; }
+    }
+
+    if (vec_spanned_type_empty(ret)) {
+        parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
+    }
 
     return parse_success(&p);
+
+fail:
+    vec_spanned_type_drop(ret);
+    return parse_fail(&p);
 }
 
 static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
@@ -900,7 +913,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     }
 
     if (p.whitespace != WHITESPACE_NEWLINE) {
-        if (parse_generic_params(&p, &generic_params)) {
+        if (parse_generic_params(&p, false, &generic_params)) {
             end = p.pos;
         } else {
             generic_params = vec_spanned_type_init();
@@ -2710,13 +2723,13 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     Parser generic_p = parser(&p);
-    if (parse_generic_params(&generic_p, &parsed.generic_params)) {
+    if (parse_generic_params(&generic_p, true, &parsed.generic_params)) {
         bool success = false;
         if (ctx.reject_operators) {
             success = true;
         } else if (*generic_p.pos == '>' || *generic_p.pos == '=') {
             // Fail
-        } else if (generic_p.error_count == 0) {
+        } else if (true) {
             Expr expr;
             Parser next_expr_p = parser(&generic_p);
             hop_whitespace(&next_expr_p);
@@ -2812,7 +2825,7 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }
 
-static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, IdentifierExpr* ret) {
+static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
     Parser p = parser(parent);
 
     Span name;
@@ -2867,7 +2880,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .name = span_from(a),
             .keyword = KEYWORD_IDENTIFIER_SUPER,
         });
-    } else if (parse_identifier_expr(&p, ctx, &ret->identifier)) {
+    } else if (parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
     } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
