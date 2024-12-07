@@ -708,6 +708,12 @@ static void display_identifier_expr(Display d, IdentifierExpr const* me) {
 }
 
 void display_expr(Display d, Expr const* me) {
+    intptr_t paren_depth = 0;
+    bool display_implicit_peren = false;
+    for (const char* c = span_start_ptr(my outer_span); c < span_start_ptr(my inner_span); c++) {
+        if (*c == '(') paren_depth++;
+    }
+
     if (d.debug) {
         switch (my tag) {
             case EXPR_IMPLICIT_ANY:
@@ -719,6 +725,9 @@ void display_expr(Display d, Expr const* me) {
                 break;
 
             default:
+                if (!paren_depth) {
+                    display_implicit_peren = true;
+                }
                 display_colored(d, color_implicit, "<");
                 if (my lazy_type.tag == LAZY_TYPE_EVALUATED) {
                     display_type(d, &my lazy_type.evaluated);
@@ -732,13 +741,12 @@ void display_expr(Display d, Expr const* me) {
         }
     }
 
-    intptr_t paren_depth = 0;
-    for (const char* c = span_start_ptr(my outer_span); c < span_start_ptr(my inner_span); c++) {
-        if (*c == '(') paren_depth++;
-    }
-
     for (int i = 0; i < paren_depth; i++) {
         display_lit(d, "(");
+    }
+
+    if (display_implicit_peren) {
+        display_colored(d, color_implicit, "(");
     }
 
     switch (my tag) {
@@ -747,23 +755,14 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_IDENTIFIER: display_identifier_expr(d, &my identifier); break;
 
         case EXPR_BINARY_OP: {
-            if (!paren_depth) {
-                display_colored(d, color_implicit, "(");
-            }
             display_expr(d, &my binary_op->left);
             display_lit(d, " ");
             display_sv(d, czview_sv(binary_op_get_zv(my binary_op->op)));
             display_lit(d, " ");
             display_expr(d, &my binary_op->right);
-            if (!paren_depth) {
-                display_colored(d, color_implicit, ")");
-            }
         }   break;
 
         case EXPR_UNARY_OP: {
-            if (!paren_depth) {
-                display_colored(d, color_implicit, "(");
-            }
             UnaryOp op = my unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
                 display_sv(d, czview_sv(unary_op_get_zv(op)));
@@ -772,16 +771,9 @@ void display_expr(Display d, Expr const* me) {
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
                 display_sv(d, czview_sv(unary_op_get_zv(op)));
             }
-            if (!paren_depth) {
-                display_colored(d, color_implicit, ")");
-            }
         }   break;
 
         case EXPR_PROPERTY: {
-            if (!paren_depth) {
-                display_colored(d, color_implicit, "(");
-            }
-
             display_expr(d, &my property->expr);
             if (my property->optional_chain) {
                 display_lit(d, "?");
@@ -799,10 +791,6 @@ void display_expr(Display d, Expr const* me) {
                     display_expr(d, &my property->prop);
                     display_lit(d, "]");
             }
-
-            if (!paren_depth) {
-                display_colored(d, color_implicit, ")");
-            }
         }   break;
 
         case EXPR_GENERIC_PARAMS:
@@ -818,29 +806,17 @@ void display_expr(Display d, Expr const* me) {
             break;
 
         case EXPR_AS_TYPE: {
-            if (!paren_depth) {
-                display_colored(d, color_implicit, "(");
-            }
             display_expr(d, &my as_type->expr);
             display_lit(d, " as ");
             display_type(d, &my as_type->type);
-            if (!paren_depth) {
-                display_colored(d, color_implicit, ")");
-            }
         }   break;
 
         case EXPR_TERNARY: {
-            if (!paren_depth) {
-                display_colored(d, color_implicit, "(");
-            }
             display_expr(d, &my ternary->condition);
             display_lit(d, " ? ");
             display_expr(d, &my ternary->yes);
             display_lit(d, " : ");
             display_expr(d, &my ternary->no);
-            if (!paren_depth) {
-                display_colored(d, color_implicit, ")");
-            }
         }   break;
 
         case EXPR_CALL: {
@@ -900,8 +876,13 @@ void display_expr(Display d, Expr const* me) {
             display_class_decl(d, my class_decl);
             break;
     }
+
     for (int i = 0; i < paren_depth; i++) {
         display_lit(d, ")");
+    }
+
+    if (display_implicit_peren) {
+        display_colored(d, color_implicit, ")");
     }
 }
 
