@@ -3452,8 +3452,8 @@ const baselines = {
     },
     'classExpressionWithResolutionOfNamespaceOfSameName01': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classExpressionWithStaticProperties1': {
         errors: false,
@@ -5022,7 +5022,7 @@ const baselines = {
     },
     'computedEnumTypeWidening': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertiesInDestructuring1': {
@@ -7462,8 +7462,8 @@ const baselines = {
     },
     'declarationEmitEnumReadonlyProperty': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitExpandoPropertyPrivateName': {
         errors: false,
@@ -10132,8 +10132,8 @@ const baselines = {
     },
     'enumAssignmentCompat5': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumAssignmentCompat6': {
         errors: false,
@@ -10217,7 +10217,7 @@ const baselines = {
     },
     'enumLiteralUnionNotWidened': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumLiteralsSubtypeReduction': {
@@ -10377,12 +10377,12 @@ const baselines = {
     },
     'errorForUsingPropertyOfTypeAsType02': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'errorForUsingPropertyOfTypeAsType03': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorForwardReferenceForwadingConstructor': {
@@ -11478,7 +11478,7 @@ const baselines = {
     'esnext.bigintIncludesNumberFormatPartTypes': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'evalAfter0': {
         errors: false,
@@ -17122,8 +17122,8 @@ const baselines = {
     },
     'invalidUseOfTypeAsNamespace': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'invariantGenericErrorElaboration': {
         errors: false,
@@ -18742,7 +18742,7 @@ const baselines = {
     },
     'mappedTypeNotMistakenlyHomomorphic': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeOverArrayWithBareAnyRestCanBeUsedAsRestParam1': {
@@ -20377,7 +20377,7 @@ const baselines = {
     },
     'namespaceDisambiguationInUnion': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'namespaceMergedWithFunctionWithOverloadsUsage': {
@@ -21411,8 +21411,8 @@ const baselines = {
         types: false,
     },
     'noUncheckedIndexAccess': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'noUnusedLocals_destructuringAssignment': {
@@ -22866,8 +22866,8 @@ const baselines = {
         types: true,
     },
     'parseEntityNameWithReservedWord': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parseErrorDoubleCommaInCall': {
@@ -23982,7 +23982,7 @@ const baselines = {
     },
     'ramdaToolsNoInfinite': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ramdaToolsNoInfinite2': {
@@ -24238,7 +24238,7 @@ const baselines = {
     'recursiveConditionalCrash4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'recursiveConditionalEvaluationNonInfinite': {
         errors: false,
@@ -25816,7 +25816,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationEnums': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26361,8 +26361,8 @@ const baselines = {
         types: false,
     },
     'strictModeEnumMemberNameReserved': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'strictModeInConstructor': {
@@ -26372,8 +26372,8 @@ const baselines = {
     },
     'strictModeReservedWord': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'strictModeReservedWord2': {
         errors: false,
@@ -27666,7 +27666,7 @@ const baselines = {
         types: true,
     },
     'trackedSymbolsNoCrash': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29046,9 +29046,9 @@ const baselines = {
         types: false,
     },
     'unionOfEnumInference': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unionOfFunctionAndSignatureIsCallable': {
         errors: false,
@@ -38468,7 +38468,7 @@ const baselines = {
     'defaultExportsCannotMerge01': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'defaultExportsCannotMerge02': {
         errors: false,
@@ -38477,7 +38477,7 @@ const baselines = {
     },
     'defaultExportsCannotMerge03': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultExportsCannotMerge04': {
@@ -44312,7 +44312,7 @@ const baselines = {
     },
     'circular4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'cjsImportInES2015': {
@@ -51437,8 +51437,8 @@ const baselines = {
     },
     'parserVariableDeclaration3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserVariableDeclaration4.d': {
         errors: true,
@@ -51752,8 +51752,8 @@ const baselines = {
     },
     'parservoidInQualifiedName2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'parserComputedPropertyName1': {
         errors: false,
@@ -55007,7 +55007,7 @@ const baselines = {
     },
     'mappedTypeOverlappingStringEnumKeys': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeProperties': {

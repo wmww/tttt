@@ -12,8 +12,10 @@ typedef enum DeclarationTag {
     DECLARATION_TYPE,
     DECLARATION_CLASS,
     DECLARATION_ENUM,
+    DECLARATION_ENUM_CASE,
+    // Be sure to update DECLARATION_TAG_COUNT when adding to the end
 } DeclarationTag;
-#define DECLARATION_TAG_COUNT (DECLARATION_ENUM + 1)
+#define DECLARATION_TAG_COUNT (DECLARATION_ENUM_CASE + 1)
 
 // See https://www.typescriptlang.org/docs/handbook/declaration-merging.html
 static inline bool declaration_tag_has_value(DeclarationTag tag) {
@@ -23,6 +25,7 @@ static inline bool declaration_tag_has_value(DeclarationTag tag) {
         [DECLARATION_VARIABLE] = true,
         [DECLARATION_CLASS] = true,
         [DECLARATION_ENUM] = true,
+        [DECLARATION_ENUM_CASE] = true,
     };
     return ret[tag];
 }
@@ -33,6 +36,7 @@ static inline bool declaration_tag_has_type(DeclarationTag tag) {
         [DECLARATION_TYPE] = true,
         [DECLARATION_CLASS] = true,
         [DECLARATION_ENUM] = true,
+        [DECLARATION_ENUM_CASE] = true,
     };
     return ret[tag];
 }
@@ -41,6 +45,7 @@ static inline bool declaration_tag_has_namespace(DeclarationTag tag) {
     static const bool ret[DECLARATION_TAG_COUNT] = {
         [DECLARATION_NAMESPACE_TYPE_ONLY] = true,
         [DECLARATION_NAMESPACE_WITH_VALUE] = true,
+        [DECLARATION_ENUM] = true,
     };
     return ret[tag];
 }
@@ -93,3 +98,7 @@ void declaration_init(Declaration* me, DeclProps props);
 #define i_opt c_no_atomic
 #define i_is_forward
 #include "wrap_stc/arc.h"
+
+#define i_key_names DeclarationCPtr, declaration_cptr
+#define i_is_forward
+#include "wrap_stc/vec.h"

@@ -1,13 +1,14 @@
 #pragma once
 
 #include "expr.h"
+#include "scope.h"
 #include "declaration.h"
 
 typedef struct EnumCase {
     Span name;
     Expr value;
-    Declaration declaration;
-    Type identifier_type;
+    Declaration typeof_declaration;
+    ArcDeclaration declaration;
 } EnumCase;
 
 void enum_case_drop(EnumCase* me);
@@ -21,7 +22,8 @@ typedef struct EnumDecl {
     VecEnumCase cases;
     LazyType instance_type;
     LazyType interface_type;
-    Declaration typeof_declaration; // Not Arc because not added to scope directly
+    Scope namespace;
+    Declaration typeof_declaration;
     ArcDeclaration declaration;
 } EnumDecl;
 

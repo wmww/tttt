@@ -9,6 +9,7 @@
 // generic params/etc
 typedef struct IdentifierType {
     VecSpan namespaces;
+    VecDeclarationCPtr namespace_decls;
     Span name;
     KeywordIdentifier keyword;
     Declaration const* decl_ref;

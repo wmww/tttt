@@ -21,9 +21,11 @@ typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
 typedef struct LazyType LazyType;
 typedef struct Declaration Declaration;
+typedef Declaration const* DeclarationCPtr;
 
 wrap_forward_arc(Expr, expr);
 wrap_forward_arc(Declaration, declaration);
+wrap_forward_vec(DeclarationCPtr, declaration_cptr);
 wrap_forward_vec(TupleElement, tuple_element);
 
 typedef struct Type {

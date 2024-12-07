@@ -146,7 +146,24 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             if (my identifier->decl_ref && !span_valid(my identifier->decl_ref->name)) {
                 break;
             }
+            VecSpan so_far = vec_span_init();
+            c_foreach(i, vec_span, my identifier->namespaces) {
+                intptr_t index = i.ref - my identifier->namespaces.data;
+                Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
+                    *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
+                    nullptr;
+                baseline_test_case_add_type(ctx, *i.ref, &type_any);
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = declaration_get_spans(decl),
+                    .allow_declaration_empty = true,
+                    .namespaces = vec_span_clone(so_far),
+                    .span = *i.ref,
+                });
+                vec_span_push(&so_far, *i.ref);
+            }
+            vec_span_drop(&so_far);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .namespaces = vec_span_clone(my identifier->namespaces),
                 .declarations = declaration_get_spans(my identifier->decl_ref),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
@@ -278,12 +295,18 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_type(ctx, my name, &t);
     type_drop(&t);
     c_foreach(i, vec_enum_case, my cases) {
+        //baseline_test_case_add_declaration(ctx, i.ref->name, i.ref->declaration.get);
+        Span span = i.ref->name;
+        Declaration const* declaration = i.ref->declaration.get;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = vec_span_single(i.ref->name),
             .namespaces = vec_span_single(my name),
-            .span = i.ref->name,
+            .declarations = vec_span_clone(declaration->declarations),
+            .span = span,
+            .name = declaration->name,
         });
-        baseline_test_case_add_type(ctx, i.ref->name, &i.ref->identifier_type);
+        if (declaration->value_tag) {
+            baseline_test_case_add_type(ctx, span, &declaration->value_type);
+        }
         if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(&i.ref->value, ctx);
         }

@@ -9,12 +9,14 @@
 
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
+    vec_declaration_cptr_drop(&my namespace_decls);
     vec_spanned_type_drop(&my generic_params);
     lazy_type_drop(&my type);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     me.namespaces = vec_span_clone(me.namespaces);
+    me.namespace_decls = vec_declaration_cptr_clone(me.namespace_decls);
     me.generic_params = vec_spanned_type_clone(me.generic_params);
     // PERF: perhaps this should clone the type if already evaluated?
     me.type = (LazyType){ .tag = LAZY_TYPE_IDENTIFIER_TYPE };
@@ -56,19 +58,21 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
         Scope const* namespace = nullptr;
         Span prev_name = span_null;
         c_foreach(i, vec_span, my namespaces) {
+            Declaration const* decl;
             if (i.ref == my namespaces.data /* First namespaces */) {
-                Declaration const* decl = scope_stack_get_namespace(names, i.ref->sv);
-                if (decl) {
-                    namespace = decl->namespace;
-                } else {
+                decl = scope_stack_get_namespace(names, i.ref->sv);
+                if (!decl) {
                     error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
-                    break;
                 }
             } else /* Subsequent namespaces */ {
-                Declaration const* decl = get_declaration_from_namespace(namespace, prev_name, *i.ref, true, errs);
-                namespace = decl ? decl->namespace : nullptr;
+                decl = get_declaration_from_namespace(namespace, prev_name, *i.ref, true, errs);
             }
+            namespace = decl ? decl->namespace :nullptr;
             prev_name = *i.ref;
+            if (!decl) {
+                break;
+            }
+            vec_declaration_cptr_push(&my namespace_decls, decl);
         }
         if (namespace) {
             my decl_ref = get_declaration_from_namespace(namespace, prev_name, my name, false, errs);
