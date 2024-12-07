@@ -700,16 +700,6 @@ static void display_class_decl(Display d, ClassDecl const* me) {
 
 static void display_identifier_expr(Display d, IdentifierExpr const* me) {
     display_colored_span(d, color_name, my name);
-    if (!vec_spanned_type_empty(&my generic_params)) {
-        display_lit(d, "<");
-        c_foreach(i, vec_spanned_type, my generic_params) {
-            display_type(d, &i.ref->type);
-            if (i.ref != i.end - 1) {
-                display_lit(d, ", ");
-            }
-        }
-        display_lit(d, ">");
-    }
     if (d.debug) {
         if (!my decl_ref) {
             display_colored(d, color_error, " /* unresolved */");

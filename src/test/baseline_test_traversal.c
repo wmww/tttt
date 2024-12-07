@@ -472,9 +472,6 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
             .name = my decl_ref->name,
         });
     }
-    c_foreach(i, vec_spanned_type, my generic_params) {
-        type_compile_test_info(&i.ref->type, ctx);
-    }
 }
 
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {

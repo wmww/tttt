@@ -17,7 +17,7 @@ const int ternary_precedence = 20;
 const int new_keyword_precedence = 170;
 
 void identifier_expr_drop(IdentifierExpr* me) {
-    vec_spanned_type_drop(&my generic_params);
+    ignore me;
 }
 
 void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs) {
@@ -42,9 +42,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCt
             c_SPAN(my name)
         );
     }
-    c_foreach(i, vec_spanned_type, my generic_params) {
-        type_lookup_names(&i.ref->type, names, errs);
-    }
 }
 
 Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
@@ -58,15 +55,6 @@ Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
         } else {
             ret = type_refcopy(&my decl_ref->value_type);
         }
-        if (vec_spanned_type_size(&my generic_params) &&
-            my decl_ref->value_generic
-        ) {
-            ret = generic_degenericize_type(
-                my decl_ref->value_generic,
-                ret,
-                &my generic_params
-            );
-        }
         return ret;
     } else {
         switch (my keyword) {
@@ -79,25 +67,8 @@ Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
 }
 
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
-    if (my decl_ref) {
-        if (vec_spanned_type_size(&my generic_params)) {
-            c_foreach(i, vec_spanned_type, my generic_params) {
-                type_typecheck(&i.ref->type, errs);
-            }
-            if (!my decl_ref->value_generic) {
-                error_ctx_error(
-                    errs,
-                    span_between(
-                        vec_spanned_type_at(&my generic_params, 0)->span,
-                        (vec_spanned_type_end(&my generic_params).end - 1)->span
-                    ),
-                    2558,
-                    "Expected 0 type arguments, but got %zd.",
-                    vec_spanned_type_size(&my generic_params)
-                );
-            }
-        }
-    }
+    ignore me;
+    ignore errs;
 }
 
 static Generic const* generic_params_get_generic(GenericParamsExpr* me) {

@@ -26,7 +26,6 @@ typedef struct IdentifierExpr {
     Span name;
     KeywordIdentifier keyword;
     Declaration const* decl_ref;
-    VecSpannedType generic_params;
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);
