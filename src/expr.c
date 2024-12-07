@@ -9,6 +9,7 @@
 #include "class_decl.h"
 #include "interface_member.h"
 #include "several_types.h"
+#include "callable_type.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -99,14 +100,49 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
 }
 
-Type generic_params_expr_evaluate_type(GenericParamsExpr const* me) {
-    ignore me;
-    return type_any;
+static Generic const* generic_params_get_generic(GenericParamsExpr* me) {
+    Type const* expr_type = type_resolve(expr_get_type(&my expr));
+    if (expr_type->tag == TYPE_CALLABLE) {
+        return &expr_type->callable->generic;
+    } else if (expr_type->tag == TYPE_INTERFACE) {
+        c_foreach(i, vec_interface_member, expr_type->interface.members) {
+            if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                ASSERT(i.ref->type.tag == TYPE_CALLABLE);
+                return &i.ref->type.callable->generic;
+            }
+        }
+    }
+    return nullptr;
 }
 
-void generic_params_expr_typecheck(GenericParamsExpr const* me, ErrorCtx* errs) {
-    ignore me;
-    ignore errs;
+Type generic_params_expr_evaluate_type(GenericParamsExpr* me) {
+    Type const* expr_type = expr_get_type(&my expr);
+    Generic const* generic = generic_params_get_generic(me);
+    if (!generic_empty(generic)) {
+        return generic_degenericize_type(generic, type_clone(*expr_type), &my params);
+    } else {
+        return type_clone(*expr_type);
+    }
+}
+
+void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
+    c_foreach(i, vec_spanned_type, my params) {
+        type_typecheck(&i.ref->type, errs);
+    }
+    Generic const* generic = generic_params_get_generic(me);
+    if (type_resolve(expr_get_type(&my expr))->tag == TYPE_ANY) {
+    } else if (generic_empty(generic)) {
+        error_ctx_error(
+            errs,
+            span_between(
+                vec_spanned_type_at(&my params, 0)->span,
+                (vec_spanned_type_end(&my params).end - 1)->span
+            ),
+            2558,
+            "Expected 0 type arguments, but got %zd.",
+            vec_spanned_type_size(&my params)
+        );
+    }
 }
 
 void expr_drop(Expr* me) {

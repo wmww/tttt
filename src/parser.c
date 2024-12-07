@@ -2734,13 +2734,15 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
         if (success) {
             parse_success(&generic_p);
-            *left_and_ret = expr_generic_params(
-                span_from(a),
-                c_new(GenericParamsExpr, {
-                    .expr = *left_and_ret,
-                    .params = parsed.generic_params,
-                })
-            );
+            if (vec_spanned_type_size(&parsed.generic_params)) {
+                *left_and_ret = expr_generic_params(
+                    span_from(a),
+                    c_new(GenericParamsExpr, {
+                        .expr = *left_and_ret,
+                        .params = parsed.generic_params,
+                    })
+                );
+            }
             return parse_success(&p);
         } else {
             parse_fail(&generic_p);
@@ -2818,36 +2820,6 @@ static bool parse_identifier_expr(Parser* parent, ExprCtx ctx, IdentifierExpr* r
         return parse_fail(&p);
     }
     *ret = (IdentifierExpr){ .name = name };
-
-    Parser generic_p = parser(&p);
-    hop_whitespace(&generic_p);
-    if (parse_generic_params(&generic_p, &ret->generic_params)) {
-        if (ctx.reject_operators) {
-            parse_success(&generic_p);
-        } else if (generic_p.error_count == 0) {
-            Parser next_p = parser(&generic_p);
-            Expr expr;
-            hop_whitespace(&next_p);
-            ctx.min_precedence = imax(ctx.min_precedence, binary_op_get_precedence(BINARY_OP_GREATER));
-            if (next_p.whitespace != WHITESPACE_NEWLINE && *next_p.pos != '(' && parse_expr(&next_p, ctx, &expr)) {
-                expr_drop(&expr);
-                vec_spanned_type_drop(&ret->generic_params);
-                ret->generic_params = vec_spanned_type_init();
-                parse_fail(&next_p);
-                parse_fail(&generic_p);
-            } else {
-                parse_fail(&next_p);
-                parse_success(&generic_p);
-            }
-        } else {
-            vec_spanned_type_drop(&ret->generic_params);
-            ret->generic_params = vec_spanned_type_init();
-            parse_fail(&generic_p);
-        }
-    } else {
-        ret->generic_params = vec_spanned_type_init();
-        parse_fail(&generic_p);
-    }
 
     return parse_success(&p);
 }

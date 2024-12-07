@@ -4983,7 +4983,7 @@ const baselines = {
     'complicatedGenericRecursiveBaseClassReference': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound': {
         errors: false,
@@ -14373,7 +14373,7 @@ const baselines = {
     'genericWithOpenTypeParameters1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generics0': {
         errors: true,
@@ -15678,7 +15678,7 @@ const baselines = {
     'indirectSelfReferenceGeneric': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indirectTypeParameterReferences': {
         errors: false,
@@ -24163,12 +24163,12 @@ const baselines = {
     'recursiveBaseCheck3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveBaseCheck4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveBaseCheck5': {
         errors: false,
@@ -24178,7 +24178,7 @@ const baselines = {
     'recursiveBaseCheck6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveBaseConstructorCreation1': {
         errors: true,
@@ -56768,7 +56768,7 @@ const baselines = {
     'callGenericFunctionWithIncorrectNumberOfTypeArguments': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callGenericFunctionWithZeroTypeArguments': {
         errors: true,
@@ -56891,7 +56891,7 @@ const baselines = {
         types: true,
     },
     'propertyAccessOnTypeParameterWithConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
