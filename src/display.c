@@ -723,7 +723,9 @@ void display_expr(Display d, Expr const* me) {
                 if (my lazy_type.tag == LAZY_TYPE_EVALUATED) {
                     display_type(d, &my lazy_type.evaluated);
                 } else {
-                    display_colored(d, color_error, "/* unevaluated */");
+                    Type t = expr_evaluate_type(me);
+                    display_type(d, &t);
+                    type_drop(&t);
                 }
                 display_colored(d, color_implicit, ">");
                 break;
