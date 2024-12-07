@@ -57,6 +57,7 @@ typedef struct Type {
     union {
         struct {
             bool self_referential_error;
+            Span unkown_symbol_span; // Used by tests
         } any;
         Value value;
         IdentifierType* identifier;
@@ -83,8 +84,8 @@ typedef struct Type {
 } Type;
 
 extern const Type type_any;
-extern const Type type_unknown;
 extern const Type type_self_referential_error;
+extern const Type type_unknown;
 extern const Type type_never;
 extern const Type type_void;
 extern const Type type_object;

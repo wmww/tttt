@@ -732,7 +732,10 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
             vec_spanned_type_push(ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
-            vec_spanned_type_push(ret, spanned_type(span_from_pos(&p), type_unknown));
+            vec_spanned_type_push(ret, spanned_type(span_from_pos(&p), (Type){
+                .tag = TYPE_ANY,
+                .any.unkown_symbol_span = span_from_pos(&p),
+            }));
             parse_error(&p, span_from_token(&p), 1110, "Type expected.");
         } else {
             break;
@@ -1113,7 +1116,10 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
         return true;
     } else {
         parse_error(parent, span_from_token(parent), 1110, "Type expected.");
-        *ret = (Type){0};
+        *ret = (Type){
+            .tag = TYPE_ANY,
+            .any.unkown_symbol_span = span_from_pos(parent),
+        };
         return false;
     }
 }

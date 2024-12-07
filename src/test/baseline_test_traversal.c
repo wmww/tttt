@@ -118,7 +118,6 @@ void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCa
 
 void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
     switch (my tag) {
-        case TYPE_ANY:
         case TYPE_UNKNOWN:
         case TYPE_NEVER:
         case TYPE_VOID:
@@ -128,6 +127,16 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
+            break;
+
+        case TYPE_ANY:
+            if (span_valid(my any.unkown_symbol_span)) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .allow_declaration_empty = true,
+                    .name = sv_make_span(c_sv("unknown")),
+                    .span = my any.unkown_symbol_span,
+                });
+            }
             break;
 
         case TYPE_IDENTIFIER:

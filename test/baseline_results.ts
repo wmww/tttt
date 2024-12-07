@@ -932,7 +932,7 @@ const baselines = {
     },
     'anyMappedTypesError': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'anyPlusAny1': {
@@ -2692,7 +2692,7 @@ const baselines = {
     },
     'callExpressionWithMissingTypeArgument1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callExpressionWithTypeParameterConstrainedToOuterTypeParameter': {
@@ -18737,7 +18737,7 @@ const baselines = {
     },
     'mappedTypeNoTypeNoCrash': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: true,
     },
     'mappedTypeNotMistakenlyHomomorphic': {
@@ -22912,12 +22912,12 @@ const baselines = {
     },
     'parseJsxElementInUnaryExpressionNoCrash1': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'parseJsxElementInUnaryExpressionNoCrash2': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'parseJsxElementInUnaryExpressionNoCrash3': {
@@ -48857,7 +48857,7 @@ const baselines = {
     },
     'ArrowFunction1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ArrowFunction3': {
@@ -48872,7 +48872,7 @@ const baselines = {
     },
     'parserX_ArrowFunction1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserX_ArrowFunction3': {
@@ -51367,7 +51367,7 @@ const baselines = {
     },
     'TupleType6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parserTypeQuery1': {

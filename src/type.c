@@ -14,8 +14,8 @@
 #include "math_helpers.h"
 
 const Type type_any = { .tag = TYPE_ANY };
+const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
-const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true, };
 const Type type_never = { .tag = TYPE_NEVER };
 const Type type_void = { .tag = TYPE_VOID };
 const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
