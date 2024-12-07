@@ -13,6 +13,9 @@ csview dirname_of(const char* path);
 // Converts relative paths to absolute paths and eliminates . and .., does not resolve symlinks or ~. cwd (current
 // working directory) must be an absolute path.
 cstr absolute_path_of(const char* cwd, const char* path);
+// Converts relative or absolute path into a simplified relative path from cwd. cwd (current working directory) must be
+// an absolute path.
+cstr relative_path_of(const char* cwd, const char* path);
 
 // Allows for virtual filesystems for tests
 typedef struct Fs Fs;

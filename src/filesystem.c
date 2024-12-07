@@ -1,5 +1,4 @@
 #define _XOPEN_SOURCE 700
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -41,18 +40,27 @@ csview dirname_of(const char* path) {
     return c_sv(path, basename_of(path) - path);
 }
 
+// Returns the left-most path segment, or an empty csview if the path sarts with a separator. sets path to point to the
+// start of the next segment, or sets path to null if there are no more segments
+static csview path_next_segment(const char** path) {
+    const char* start = *path;
+    const char* end = strchr(start, path_sep);
+    if (!end) {
+        end = start + strlen(start);
+    }
+    *path = end;
+    while (**path == path_sep) {
+        (*path)++;
+    }
+    if (**path == '\0') {
+        *path = nullptr;
+    }
+    return csview_from_range(start, end);
+}
+
 static void push_path_to_absolute(cstr* absolute, const char* path) {
-    while (*path) {
-        const char* end = strchr(path, path_sep);
-        csview segment;
-        if (end) {
-            segment = csview_from_range(path, end);
-            path = end + 1;
-        } else {
-            end = path + strlen(path);
-            segment = csview_from_range(path, end);
-            path = end;
-        }
+    while (path) {
+        csview segment = path_next_segment(&path);
         if (!csview_size(segment) || csview_equals_sv(segment, c_sv("."))) {
         } else if (csview_equals_sv(segment, c_sv(".."))) {
             intptr_t i = cstr_size(absolute);
@@ -74,12 +82,37 @@ static void push_path_to_absolute(cstr* absolute, const char* path) {
 }
 
 cstr absolute_path_of(const char* cwd, const char* path) {
-    if (*cwd != path_sep) PANIC("cwd must be absolute path, is '%s'", cwd);
+    PANIC_IF(*cwd != path_sep, "cwd must be absolute path, is '%s'", cwd);
     cstr ret = cstr_from_n(&path_sep, 1);
     if (*path != path_sep) {
         push_path_to_absolute(&ret, cwd);
     }
     push_path_to_absolute(&ret, path);
+    return ret;
+}
+
+cstr relative_path_of(const char* cwd, const char* path) {
+    cstr absolute = absolute_path_of(cwd, path);
+    path = cstr_str(&absolute);
+    while (cwd && path) {
+        const char* cwd_next = cwd;
+        const char* path_next = path;
+        csview cwd_segment = path_next_segment(&cwd_next);
+        csview path_segment = path_next_segment(&path_next);
+        if (!csview_equals_sv(cwd_segment, path_segment)) {
+            break;
+        }
+        cwd = cwd_next;
+        path = path_next;
+    }
+    cstr ret = cstr_null;
+    while (cwd) {
+        cstr_append_lit(&ret, "..");
+        cstr_append_n(&ret, &path_sep, 1);
+        path_next_segment(&cwd);
+    }
+    cstr_append(&ret, path);
+    cstr_drop(&absolute);
     return ret;
 }
 
@@ -161,6 +194,7 @@ static cstr real_fs_get_cwd_internal(Fs const* me) {
 }
 
 const char* real_fs_get_cwd(Fs const* me) {
+    // Threadsafety: make threadsafe
     static cstr cached_cwd = {0};
     if (!cstr_size(&cached_cwd)) {
         cached_cwd = real_fs_get_cwd_internal(me);
