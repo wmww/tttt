@@ -37,7 +37,12 @@ const char* basename_of(const char* path) {
 }
 
 csview dirname_of(const char* path) {
-    return c_sv(path, basename_of(path) - path);
+    const char* end = basename_of(path);
+    if (end == path) {
+        return c_sv(".");
+    } else {
+        return csview_from_range(path, end);
+    }
 }
 
 // Returns the left-most path segment, or an empty csview if the path sarts with a separator. sets path to point to the

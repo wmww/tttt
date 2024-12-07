@@ -368,7 +368,7 @@ static void process_import(Scope* me, ImportItem* import, ImportItem const* sour
             import->source_name,
             2305,
             "Module '%s' has no exported member '%.*s'.",
-            cstr_str(&import->source_file->absolute_path),
+            cstr_str(&import->source_file->canonical_path),
             c_SPAN(import->source_name)
         );
         import->error_reported = true;

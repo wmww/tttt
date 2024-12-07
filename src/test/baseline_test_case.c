@@ -149,7 +149,7 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
             return i.ref;
         }
     }
-    PANIC("failed to find test for source file %s", cstr_str(&source->absolute_path));
+    PANIC("failed to find test for source file %s", cstr_str(&source->canonical_path));
 }
 
 static void process_errors(BaselineTestCase* me) {
@@ -206,7 +206,7 @@ static void process_errors(BaselineTestCase* me) {
                 &item.str,
                 "\r\n!!! related TS%d %s:%u:%u: %s",
                 related.ref->ts_code,
-                basename_of(cstr_str(&current_source->display_path)),
+                basename_of(cstr_str(&current_source->canonical_path)),
                 related_line + 1,
                 related_col + 1,
                 cstr_str(&related.ref->message)
@@ -244,7 +244,9 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* so
     ret.did_run = load_test_source(&ret);
 
     c_foreach(i, vec_baseline_test_file, ret.files) {
-        i.ref->source = program_load(program, cstr_str(&i.ref->path));
+        SourceFile* source = program_load(program, cstr_str(&i.ref->path));
+        source->display_path_override = cstr_str(&i.ref->path);
+        i.ref->source = source;
     }
 
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
@@ -379,9 +381,11 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     c_foreach(error, vec_error, my error_ctx->errors) {
         unsigned line = span_line_index(error.ref->span);
         unsigned col = span_col_index(error.ref->span);
-        const char* filename = error.ref->span.source ?
-            cstr_str(&error.ref->span.source->display_path) :
-            "(nil)";
+        const char* filename = error.ref->span.source ? (
+            error.ref->span.source->display_path_override ?
+                error.ref->span.source->display_path_override :
+                cstr_str(&error.ref->span.source->canonical_path)
+        ) : "(nil)";
 
         cstr_append_fmt(
             target,
@@ -450,11 +454,11 @@ static void append_decl(cstr* target, Span span) {
         cstr_append_s(target, span.source->decl_override);
         cstr_append_lit(target, ")");
         return;
-    } else if (cstr_ends_with_sv(&span.source->display_path, c_sv("tslib.d.ts"))) {
+    } else if (cstr_ends_with_sv(&span.source->canonical_path, c_sv("tslib.d.ts"))) {
         cstr_append_fmt(
             target,
             ", Decl(%s, --, --)",
-            basename_of(cstr_str(&span.source->display_path))
+            basename_of(cstr_str(&span.source->canonical_path))
         );
         return;
     }
@@ -512,7 +516,7 @@ static void append_decl(cstr* target, Span span) {
     cstr_append_fmt(
         target,
         ", Decl(%s, %u, %u)",
-        basename_of(cstr_str(&span.source->display_path)),
+        basename_of(cstr_str(&span.source->canonical_path)),
         format_line,
         format_col
     );

@@ -1,6 +1,6 @@
 #include "mock_fs.h"
 
-static const char* mock_cwd = "/home/mockfs";
+static const char* mock_cwd = "/";
 
 typedef struct MockFsNode MockFsNode;
 

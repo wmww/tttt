@@ -76,7 +76,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
-        .not_found_file = source_file_make(cstr_null, cstr_null, cstr_null, errs),
+        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
     });
     program_add_builtins(ret);
     return ret;
@@ -100,35 +100,34 @@ void program_add_globals(Program* me, Scope const* scope) {
 }
 
 // Returns null if path can't be loaded
-static SourceFile* program_add_source(Program* me, const char* effective_path) {
-    cstr absolute_path = fs_absolute_path_of(my fs, effective_path);
-    auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&absolute_path));
+static SourceFile* program_add_source(Program* me, const char* path) {
+    cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
+    auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
     if (value) {
         // A source file is already created for this path
-        cstr_drop(&absolute_path);
+        cstr_drop(&canonical_path);
         return value->second.get;
     } else {
         // No source file is created for this path, load it
         cstr contents;
-        if (!fs_read_entire_file(my fs, cstr_str(&absolute_path), &contents)) {
-            cstr_drop(&absolute_path);
+        if (!fs_read_entire_file(my fs, cstr_str(&canonical_path), &contents)) {
+            cstr_drop(&canonical_path);
             return nullptr;
         }
-        cstr display_path = relative_path_of(fs_get_cwd(my fs), cstr_str(&absolute_path));
         SourceFile* source_file = c_new(
             SourceFile,
-            source_file_make(display_path, cstr_clone(absolute_path), contents, my errs)
+            source_file_make(cstr_clone(canonical_path), contents, my errs)
         );
-        hmap_str_box_source_file_insert(&my source_files, absolute_path, box_source_file_from_ptr(source_file));
+        hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
         vec_source_file_ptr_push(&my pending_source_files, source_file);
         return source_file;
     }
 }
 
 static void program_handle_import(Program* me, ImportStatement* import) {
-    cstr start_path = cstr_from_sv(dirname_of(cstr_str(&import->import_keyword_span.source->absolute_path)));
-    cstr source_path = absolute_path_of(cstr_str(&start_path), cstr_str(&import->source_path));
-    cstr_drop(&start_path);
+    cstr source_path = cstr_from_sv(dirname_of(cstr_str(&import->import_keyword_span.source->canonical_path)));
+    cstr_append_n(&source_path, &path_sep, 1);
+    cstr_append_s(&source_path, import->source_path);
     if (fs_is_directory(my fs, cstr_str(&source_path))) {
         cstr_append_lit(&source_path, "/index.ts");
     } else {
@@ -166,10 +165,6 @@ SourceFile* program_load(Program* me, const char* path) {
         clear_error_config();
         return &my not_found_file;
     }
-
-    // If the source file was previously imported but is now being added explicitly, it's display path should reflect
-    // the explicitly added path
-    cstr_take(&main_source->display_path, cstr_from(path));
 
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     VecSourceFilePtr in_flight_source_files = vec_source_file_ptr_init();

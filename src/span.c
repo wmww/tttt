@@ -85,8 +85,8 @@ int span_cmp(Span a, Span b) {
             break;
     }
     if (a.source != b.source) {
-        int cmp = cstr_cmp(&a.source->absolute_path, &b.source->absolute_path);
-        if (!cmp) PANIC("Two different source files both have path %s", cstr_str(&a.source->absolute_path));
+        int cmp = cstr_cmp(&a.source->canonical_path, &b.source->canonical_path);
+        PANIC_IF(!cmp, "Two different source files both have path %s", cstr_str(&a.source->canonical_path));
         return cmp;
     } else if (a.sv.buf != b.sv.buf) {
         return a.sv.buf > b.sv.buf ? 1 : -1;
