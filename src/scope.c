@@ -10,6 +10,7 @@ void scope_drop(Scope* me) {
     if (my current_scope_stack) {
         scope_stack_pop_scope(my current_scope_stack, me);
     }
+    vec_span_drop(&my namespaces);
     hmap_str_arc_declaration_drop(&my declarations);
     hmap_str_import_item_ptr_drop(&my imports);
     vec_import_item_ptr_drop(&my wildcard_reexports);
@@ -20,6 +21,7 @@ void scope_drop(Scope* me) {
 }
 
 Scope scope_clone(Scope me) {
+    me.namespaces = vec_span_clone(me.namespaces);
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
     me.imports = hmap_str_import_item_ptr_clone(me.imports);
     me.wildcard_reexports = vec_import_item_ptr_clone(me.wildcard_reexports);
@@ -199,7 +201,10 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     if (existing && !existing_invalid) {
         *ret = arc_declaration_clone(existing->second);
     } else {
-        *ret = arc_declaration_make((Declaration){ .name = props.name });
+        *ret = arc_declaration_make((Declaration){
+            .name = props.name,
+            .namespaces = vec_span_clone(my namespaces),
+        });
         if (!existing) {
             hmap_str_arc_declaration_insert(
                 &my declarations,

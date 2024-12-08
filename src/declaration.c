@@ -3,6 +3,7 @@
 
 void declaration_drop(Declaration* me) {
     vec_span_drop(&my declarations);
+    vec_span_drop(&my namespaces);
     type_drop(&my value_type);
     type_drop(&my declared_type);
     vec_type_drop(&my declared_type_list);
@@ -11,6 +12,7 @@ void declaration_drop(Declaration* me) {
 
 void declaration_clone_in_place(Declaration* me) {
     my declarations = vec_span_clone(my declarations);
+    my namespaces = vec_span_clone(my namespaces);
     my value_type = type_clone(my value_type);
     my declared_type_list = vec_type_clone(my declared_type_list);
     my declared_type_lazy.tag = LAZY_TYPE_DECLARATION;

@@ -27,6 +27,7 @@ typedef struct Scope {
     } tag;
     ErrorCtx* errs;
     csview default_export;
+    VecSpan namespaces;
     bool currently_adding_import; // If the current add_import() call stack has already seen this scope
                                   // Threadsafety: may have to change this system
     HmapStrArcDeclaration declarations;
@@ -45,6 +46,16 @@ static inline Scope scope_init(ErrorCtx* errs) {
     return (Scope){
         .tag = SCOPE_DEFAULT,
         .errs = errs,
+    };
+}
+
+static inline Scope scope_init_namespace(Span name, Scope const* parent, ErrorCtx* errs) {
+    VecSpan namespaces = vec_span_clone(parent->namespaces);
+    vec_span_push(&namespaces, name);
+    return (Scope){
+        .tag = SCOPE_DEFAULT,
+        .errs = errs,
+        .namespaces = namespaces,
     };
 }
 

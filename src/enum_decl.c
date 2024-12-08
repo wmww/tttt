@@ -19,7 +19,7 @@ void enum_decl_drop(EnumDecl* me) {
 }
 
 void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
-    my namespace.errs = scope->errs;
+    my namespace = scope_init_namespace(my name, scope, scope->errs);
 
     c_foreach(i, vec_enum_case, my cases) {
         declaration_init(&i.ref->typeof_declaration, (DeclProps){

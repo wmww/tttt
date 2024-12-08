@@ -544,13 +544,16 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     if (i.ref->key.tag == INTERFACE_KEY_NAME &&
                         cstr_eq(&i.ref->key.name_string, &prop_t->value.string)
                     ) {
+                        VecSpan namespaces = vec_span_init();
+                        if (i.ref->origin_interface) {
+                            namespaces = vec_span_clone(i.ref->origin_interface->namespaces);
+                            vec_span_push(&namespaces, i.ref->origin_interface->name);
+                        }
                         if (my property->form == PROPERTY_EXPR_DOT) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
                                 .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
-                                .namespaces = i.ref->origin_interface ?
-                                    vec_span_single(i.ref->origin_interface->name) :
-                                    vec_span_init(),
+                                .namespaces = vec_span_clone(namespaces),
                                 .span = my outer_span,
                                 .name = span_valid(i.ref->key.span) ? i.ref->key.span : my property->prop.outer_span,
                                 .name_is_value = i.ref->key.name_is_value,
@@ -562,14 +565,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
                                 .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
-                                .namespaces = i.ref->origin_interface ?
-                                    vec_span_single(i.ref->origin_interface->name) :
-                                    vec_span_init(),
+                                .namespaces = vec_span_clone(namespaces),
                                 .span = my property->prop.outer_span,
                                 .name = i.ref->key.span,
                                 .name_is_value = i.ref->key.name_is_value,
                             });
                         }
+                        vec_span_drop(&namespaces);
                         break;
                     }
                 }

@@ -53,6 +53,7 @@ static inline bool declaration_tag_has_namespace(DeclarationTag tag) {
 typedef struct Declaration {
     Span name;
     VecSpan declarations;
+    VecSpan namespaces;
     bool exported;
     DeclarationTag value_tag;
     Generic const* value_generic; // Null if generic empty

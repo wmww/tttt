@@ -79,7 +79,7 @@ void namespace_decl_drop(NamespaceDecl* me) {
 }
 
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
-    my inner_scope = scope_init(scope->errs);
+    my inner_scope = scope_init_namespace(my name, scope, scope->errs);
     bool has_value = false;
     c_foreach(i, vec_statement, my contents.statements) {
         statement_add_names(i.ref, &my inner_scope);
