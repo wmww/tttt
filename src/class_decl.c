@@ -196,7 +196,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
         prototype_type = generic_degenericize_type(&my generic, prototype_type, &params);
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
-            my name,
+            my declaration.get,
             true,
             false,
             cstr_lit("prototype"),
@@ -219,7 +219,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
         });
         vec_interface_member_push(&interface.members, interface_member_make(
             span_null,
-            span_null,
+            nullptr,
             true,
             false,
             cstr_lit("hasOwnProperty"),
@@ -242,7 +242,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                     type.callable->generic = generic_clone(my generic);
                     InterfaceMember member = {
                         .declarations = vec_span_single(i.ref->constructor.func.full_span),
-                        .origin_interface_name = my name,
+                        .origin_interface = my declaration.get,
                         .key.span = i.ref->constructor.name_span,
                         .key.tag = INTERFACE_KEY_CALLABLE,
                         .type = type,
@@ -255,7 +255,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                 if (i.ref->method.is_static != resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i.ref->span,
-                        my name,
+                        my declaration.get,
                         false,
                         i.ref->method.is_optional,
                         cstr_clone(i.ref->method.name_string),
@@ -271,7 +271,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                 if (i.ref->field.is_static != resolve_instance) {
                     InterfaceMember field = interface_member_make(
                         i.ref->span,
-                        my name,
+                        my declaration.get,
                         i.ref->field.is_readonly,
                         i.ref->field.is_optional,
                         cstr_clone(i.ref->field.name_string),
@@ -301,7 +301,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
             .generic = generic_clone(my generic),
         });
         InterfaceMember member = {
-            .origin_interface_name = my name,
+            .origin_interface = my declaration.get,
             .key.tag = INTERFACE_KEY_CALLABLE,
             .type = type_clone(constructor),
         };

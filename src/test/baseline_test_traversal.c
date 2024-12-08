@@ -548,7 +548,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
                                 .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
-                                .namespaces = vec_span_single(i.ref->origin_interface_name),
+                                .namespaces = i.ref->origin_interface ?
+                                    vec_span_single(i.ref->origin_interface->name) :
+                                    vec_span_init(),
                                 .span = my outer_span,
                                 .name = span_valid(i.ref->key.span) ? i.ref->key.span : my property->prop.outer_span,
                                 .name_is_value = i.ref->key.name_is_value,
@@ -560,7 +562,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
                                 .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
-                                .namespaces = vec_span_single(i.ref->origin_interface_name),
+                                .namespaces = i.ref->origin_interface ?
+                                    vec_span_single(i.ref->origin_interface->name) :
+                                    vec_span_init(),
                                 .span = my property->prop.outer_span,
                                 .name = i.ref->key.span,
                                 .name_is_value = i.ref->key.name_is_value,

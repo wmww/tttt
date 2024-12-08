@@ -1145,7 +1145,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                 case CLASS_ITEM_METHOD: {
                     InterfaceMember member = interface_member_make(
                         item.span,
-                        span_null,
+                        nullptr,
                         false,
                         item.method.is_optional,
                         cstr_move(&item.method.name_string),
@@ -1162,7 +1162,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                 case CLASS_ITEM_FIELD:
                     vec_interface_member_push(&members, interface_member_make(
                         item.span,
-                        span_null,
+                        nullptr,
                         item.field.is_readonly,
                         item.field.is_optional,
                         cstr_move(&item.field.name_string),
@@ -1328,9 +1328,6 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
             interface = (Interface){0};
             expected_token_error(&p, "{");
             hop_token(&p);
-        }
-        c_foreach(i, vec_interface_member, interface.members) {
-            i.ref->origin_interface_name = name;
         }
     }
 

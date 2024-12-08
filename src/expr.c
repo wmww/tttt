@@ -613,7 +613,7 @@ Type expr_evaluate_type(Expr const* me) {
                         &interface.members,
                         interface_member_make(
                             span_between(i.ref->name_span, i.ref->value.outer_span),
-                            span_null,
+                            nullptr,
                             false,
                             false,
                             cstr_clone(i.ref->name_string),

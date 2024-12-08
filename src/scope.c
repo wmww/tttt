@@ -382,7 +382,7 @@ Type scope_make_value_interface(Scope const* me) {
         if (i.ref->second.get->value_tag) {
             InterfaceMember member = interface_member_make(
                 span_null, // Declaration
-                span_null, // Interface name
+                nullptr, // Interface
                 false, // readonly
                 false, // optional
                 cstr_from_span(i.ref->second.get->name),

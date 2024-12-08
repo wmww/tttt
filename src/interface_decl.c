@@ -44,6 +44,10 @@ void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx*
 Type interface_decl_evaluate_type(InterfaceDecl* me) {
     ASSERT(my type.tag == TYPE_INTERFACE);
 
+    c_foreach(i, vec_interface_member, my type.interface.members) {
+        i.ref->origin_interface = my declaration.get;
+    }
+
     VecInterfaceMember members = {0};
 
     c_foreach(extends, vec_spanned_type, my extends) {

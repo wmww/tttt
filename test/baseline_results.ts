@@ -14322,12 +14322,12 @@ const baselines = {
     },
     'genericTypeWithMultipleBases1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericTypeWithMultipleBases2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericTypeWithMultipleBases3': {
@@ -20222,7 +20222,7 @@ const baselines = {
     },
     'multiExtendsSplitInterfaces2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'multiImportExport': {
@@ -25982,7 +25982,7 @@ const baselines = {
     },
     'specializeVarArgs1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'specializedInheritedConstructors1': {
@@ -45307,22 +45307,22 @@ const baselines = {
     },
     'interfaceExtendingClassWithPrivates': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceExtendingClassWithPrivates2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceExtendingClassWithProtecteds': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceExtendingClassWithProtecteds2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'AmbientModuleAndAmbientFunctionWithTheSameNameAndCommonRoot': {
@@ -56722,7 +56722,7 @@ const baselines = {
     },
     'genericTypeAliases': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'interfaceDoesNotDependOnBaseTypes': {

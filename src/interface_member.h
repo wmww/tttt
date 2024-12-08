@@ -4,7 +4,8 @@
 
 typedef struct InterfaceMember {
     VecSpan declarations;
-    Span origin_interface_name; // The original interface this member came from, used in tests
+    // The original declared interface this member came from, used by the tests. Can be null.
+    Declaration const* origin_interface;
     bool readonly; // NOT used for mapped types
     bool optional; // NOT used for mapped types
     bool is_method;
@@ -49,7 +50,7 @@ typedef struct InterfaceMember {
 
 static inline InterfaceMember interface_member_make(
     Span declaration,
-    Span origin_interface_name,
+    Declaration const* origin_interface,
     bool readonly,
     bool optional,
     cstr name_string,
@@ -59,7 +60,7 @@ static inline InterfaceMember interface_member_make(
 ) {
     return (InterfaceMember) {
         .declarations = vec_span_single(declaration),
-        .origin_interface_name = origin_interface_name,
+        .origin_interface = origin_interface,
         .readonly = readonly,
         .optional = optional,
         .key = {

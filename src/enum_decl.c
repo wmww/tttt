@@ -91,7 +91,7 @@ Type enum_decl_evaluate_interface_type(EnumDecl* me) {
     c_foreach(i, vec_enum_case, my cases) {
         vec_interface_member_push(&members, interface_member_make(
             i.ref->name,
-            my name,
+            my declaration.get,
             true,
             false,
             cstr_from_span(i.ref->name),
