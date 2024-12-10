@@ -265,7 +265,10 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 }
 
 void import_statement_compile_test_info(ImportStatement const* me, BaselineTestCase* ctx) {
-    if (my main.source_tag != IMPORT_SOURCE_NONE && !my main.is_export_wildcard) {
+    if (my main.source_tag != IMPORT_SOURCE_NONE &&
+        my main.source_tag != IMPORT_SOURCE_LOCAL &&
+        !my main.is_export_wildcard
+    ) {
         baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
     }
     c_foreach(i, vec_import_item, my items) {

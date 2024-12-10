@@ -32,6 +32,7 @@ typedef struct ImportItem {
         IMPORT_SOURCE_DEFAULT, // Import the default exported item
         IMPORT_SOURCE_WILDCARD, // Collect all exported items into a single namespace
         IMPORT_SOURCE_SPECIFIC, // Import an item with a specific name
+        IMPORT_SOURCE_LOCAL, // Used when exporting local items by name
     } source_tag;
     Span source_name; // Only used for IMPORT_SOURCE_SPECIFIC
     SourceFile* source_file; // File to import from, set by import_statement_set_source_file()

@@ -229,6 +229,10 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 
 void scope_add_import(Scope* me, ImportItem* import) {
     ASSERT(!my current_scope_stack);
+    if (!import->source_file) {
+        NONFATAL("Tried to add import item without source file");
+        return;
+    }
     if (import->is_export_wildcard) {
         vec_import_item_ptr_push(&my wildcard_reexports, import);
     } else {

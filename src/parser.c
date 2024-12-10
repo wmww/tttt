@@ -3048,25 +3048,29 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
+    bool parse_path = true;
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
         if (import.main.is_export) {
-            import_statement_drop(&import);
-            return parse_fail(&p);
+            parse_path = false;
         } else {
             expected_token_error(&p, "from");
         }
     }
     hop_whitespace(&p);
 
-    Expr path_expr;
-    if (expect_expr(&p, expr_ctx_null, &path_expr)) {
-        if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-            import.source_path = cstr_move(&path_expr.literal.string);
-            import.source_path_span = path_expr.inner_span;
-        } else {
-            parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
+    if (parse_path) {
+        Expr path_expr;
+        if (expect_expr(&p, expr_ctx_null, &path_expr)) {
+            if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
+                import.source_path = cstr_move(&path_expr.literal.string);
+                import.source_path_span = path_expr.inner_span;
+            } else {
+                parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
+            }
+            expr_drop(&path_expr);
         }
-        expr_drop(&path_expr);
+    } else {
+        import.main.source_tag = IMPORT_SOURCE_LOCAL;
     }
 
     import.main.full_span = span_from(a);

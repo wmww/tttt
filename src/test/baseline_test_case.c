@@ -626,11 +626,11 @@ void baseline_test_case_add_type_recursive(
 }
 
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
-    ASSERT(span.source);
     if (!declaration) {
         NONFATAL("baseline_test_case_add_declaration() callled with null declaration");
         return;
     }
+    ASSERT(span.source);
     baseline_test_case_add_symbol(me, (BaselineSym){
         .declarations = vec_span_clone(declaration->declarations),
         .span = span,

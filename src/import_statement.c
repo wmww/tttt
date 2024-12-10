@@ -12,7 +12,7 @@ void import_statement_drop(ImportStatement* me) {
 }
 
 void import_statement_add_names(ImportStatement* me, Scope* scope) {
-    if (!my main.source_file) {
+    if (span_valid(my source_path_span) && !my main.source_file) {
         error_ctx_error(
             scope->errs,
             my import_keyword_span,
@@ -22,8 +22,18 @@ void import_statement_add_names(ImportStatement* me, Scope* scope) {
         return;
     }
 
-    if (my main.source_tag != IMPORT_SOURCE_NONE) {
-        scope_add_import(scope, &my main);
+    switch (my main.source_tag) {
+        case IMPORT_SOURCE_NONE:
+        case IMPORT_SOURCE_LOCAL:
+            break;
+
+        case IMPORT_SOURCE_DEFAULT:
+        case IMPORT_SOURCE_WILDCARD:
+            scope_add_import(scope, &my main);
+            break;
+
+        case IMPORT_SOURCE_SPECIFIC:
+            PANIC("Invalid main %.*s tag %d", c_SPAN(my import_keyword_span), my main.source_tag);
     }
 
     c_foreach(i, vec_import_item, my items) {
