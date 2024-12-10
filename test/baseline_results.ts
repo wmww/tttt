@@ -26357,7 +26357,7 @@ const baselines = {
     },
     'strictFunctionTypesErrors': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'strictModeEnumMemberNameReserved': {
@@ -42947,7 +42947,7 @@ const baselines = {
     },
     'constAssertionOnEnum': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'constAssertions': {
