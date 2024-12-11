@@ -97,7 +97,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
 
     if (has_value) {
         ASSERT(my value_type.tag == 0);
-        my value_type = scope_make_value_interface(&my inner_scope);
+        my value_type = type_lazy(&my inner_scope.value_interface);
     }
 
     scope_init_declaration(scope, &my declaration, (DeclProps){

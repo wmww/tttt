@@ -36,6 +36,7 @@ typedef struct Scope {
     VecPortItemPtr wildcard_reexports;
     Declaration const* this_declaration;
     Declaration const* super_declaration;
+    LazyType value_interface;
     ScopeStack* current_scope_stack; // The ScopeStack this scope is in, or null if none
     Scope* export_scope; // Owning pointer if this scope is file's toplevel scope, else null
 } Scope;
@@ -43,10 +44,14 @@ typedef struct Scope {
 void scope_drop(Scope* me);
 Scope scope_clone(Scope me);
 
+#define SCOPE_INIT_DEFAULT \
+    .errs = errs, \
+    .value_interface.tag = LAZY_TYPE_SCOPE_VALUE_INTERFACE
+
 static inline Scope scope_init(ErrorCtx* errs) {
     return (Scope){
         .tag = SCOPE_DEFAULT,
-        .errs = errs,
+        SCOPE_INIT_DEFAULT,
     };
 }
 
@@ -55,26 +60,26 @@ static inline Scope scope_init_namespace(Span name, Scope const* parent, ErrorCt
     vec_span_push(&namespaces, name);
     return (Scope){
         .tag = SCOPE_DEFAULT,
-        .errs = errs,
         .namespaces = namespaces,
+        SCOPE_INIT_DEFAULT,
     };
 }
 
 static inline Scope scope_init_toplevel(ErrorCtx* errs) {
     return (Scope){
         .tag = SCOPE_DEFAULT,
-        .errs = errs,
         .export_scope = c_new(Scope, {
             .tag = SCOPE_EXPORT,
             .errs = errs,
         }),
+        SCOPE_INIT_DEFAULT,
     };
 }
 
 static inline Scope scope_init_function(ErrorCtx* errs) {
     return (Scope){
         .tag = SCOPE_FUNCTION,
-        .errs = errs,
+        SCOPE_INIT_DEFAULT,
     };
 }
 
@@ -87,7 +92,7 @@ void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dro
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 void scope_process_imports(Scope* me);
-Type scope_make_value_interface(Scope const* me);
+Type scope_evaluate_value_interface(Scope const* me);
 
 typedef Scope const* ScopeCPtr;
 #define i_key_names ScopeCPtr, scope_cptr

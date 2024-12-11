@@ -6,6 +6,7 @@
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "interface_decl.h"
+#include "scope.h"
 
 void lazy_type_evaluate(LazyType* me) {
     // THREADSAFETY: this will probably need to be rewritten to be threadsafe
@@ -67,6 +68,10 @@ void lazy_type_evaluate(LazyType* me) {
 
         case LAZY_TYPE_DECLARATION:
             result = declaration_evaluate_declared_type(c_container_of(me, Declaration, declared_type_lazy));
+            break;
+
+        case LAZY_TYPE_SCOPE_VALUE_INTERFACE:
+            result = scope_evaluate_value_interface(c_container_of(me, Scope, value_interface));
             break;
     }
 

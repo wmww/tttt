@@ -15,6 +15,7 @@ void scope_drop(Scope* me) {
     hmap_str_arc_declaration_drop(&my declarations);
     hmap_str_port_item_ptr_drop(&my ports);
     vec_port_item_ptr_drop(&my wildcard_reexports);
+    lazy_type_drop(&my value_interface);
     if (my export_scope) {
         scope_drop(my export_scope);
         free(my export_scope);
@@ -400,7 +401,7 @@ static void process_port(Scope* me, PortItem* item) {
     }
 }
 
-Type scope_make_value_interface(Scope const* me) {
+Type scope_evaluate_value_interface(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, hmap_str_arc_declaration, my declarations) {
         if (i.ref->second.get->value_tag) {
