@@ -3,6 +3,8 @@
 #include "statement.h"
 #include "declaration.h"
 
+// Covers both import and export statements
+
 /*
  *     decl_name           source_path
  *             \            /
@@ -16,12 +18,12 @@
  * items[0].source/decl_name   items[1].decl_name
  *         |items[1].source_name|    source_path
  *         |      /      .------'     /
- * import {foo, bar as baz} from './file'
+ * export {foo, bar as baz} from './file'
  */
 
 typedef struct SourceFile SourceFile;
 
-typedef struct ImportItem {
+typedef struct PortItem {
     Span decl_name; // May be same as source_name, empty only if is_export_wildcard is true
     Span full_span; // Span of declaration
     bool type_only; // Has the "type" keyword for the main import
@@ -38,22 +40,22 @@ typedef struct ImportItem {
     SourceFile* source_file; // File to import from, set by import_statement_set_source_file()
     bool error_reported; // Set and used by Scope
     ArcDeclaration declaration; // Set by Scope
-} ImportItem;
+} PortItem;
 
-void import_item_drop(ImportItem* me);
+void port_item_drop(PortItem* me);
 
-#define i_key_class_names ImportItem, import_item
+#define i_key_class_names PortItem, port_item
 #define i_no_clone
 #include "wrap_stc/vec.h"
 
-typedef struct ImportStatement {
+typedef struct PortStatement {
     Span import_keyword_span; // Span of "import" or "export"
-    ImportItem main; // The main import item (not in {}s)
-    VecImportItem items; // List of curly brace-enclosed imported items
+    PortItem main; // The main import item (not in {}s)
+    VecPortItem items; // List of curly brace-enclosed imported items
     cstr source_path; // Path of the module to import from
     Span source_path_span; // Span of the path string
-} ImportStatement;
+} PortStatement;
 
-void import_statement_drop(ImportStatement* me);
-void import_statement_add_names(ImportStatement* me, Scope* scope);
-void import_statement_set_source_file(ImportStatement* me, SourceFile* file);
+void port_statement_drop(PortStatement* me);
+void port_statement_add_names(PortStatement* me, Scope* scope);
+void port_statement_set_source_file(PortStatement* me, SourceFile* file);

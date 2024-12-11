@@ -5,7 +5,6 @@
 #include "error.h"
 #include "statement.h"
 #include "source_file.h"
-#include "import_statement.h"
 #include "scope_stack.h"
 
 #define i_key_class_names SourceFile, source_file

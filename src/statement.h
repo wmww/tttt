@@ -14,7 +14,7 @@ typedef struct ForLoopStatement ForLoopStatement;
 typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 typedef struct SwitchStatement SwitchStatement;
-typedef struct ImportStatement ImportStatement;
+typedef struct PortStatement PortStatement;
 
 typedef struct DeclStatementProps {
     enum {
@@ -114,7 +114,7 @@ typedef struct Statement {
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
         Span keyword_span; // Used for continue and break
-        ImportStatement* import;
+        PortStatement* import;
         struct {
             DeclStatementProps props;
             union {

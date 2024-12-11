@@ -5,7 +5,7 @@
 #include "span.h"
 #include "modifier_list.h"
 #include "statement.h"
-#include "import_statement.h"
+#include "port_statement.h"
 #include "several_types.h"
 #include "generic.h"
 #include "class_decl.h"
@@ -2943,9 +2943,9 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
 }
 
-static bool parse_import_item_list(Parser* parent, ImportStatement* ret) {
+static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
     Parser p = parser(parent);
-    ret->items = vec_import_item_init();
+    ret->items = vec_port_item_init();
 
     if (!hop_char(&p, '{')) {
         return parse_fail(&p);
@@ -2953,7 +2953,7 @@ static bool parse_import_item_list(Parser* parent, ImportStatement* ret) {
     hop_whitespace(&p);
 
     while (*p.pos && *p.pos != '}') {
-        ImportItem item = {
+        PortItem item = {
             .type_only = ret->main.type_only,
             .is_export = ret->main.is_export,
             .source_tag = IMPORT_SOURCE_SPECIFIC,
@@ -2976,7 +2976,7 @@ static bool parse_import_item_list(Parser* parent, ImportStatement* ret) {
             }
 
             item.full_span = span_from(a);
-            vec_import_item_push(&ret->items, item);
+            vec_port_item_push(&ret->items, item);
         } else {
             hop_token(&p);
         }
@@ -2990,10 +2990,10 @@ static bool parse_import_item_list(Parser* parent, ImportStatement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_import_statement(Parser* parent, Statement* ret) {
+static bool parse_port_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    ImportStatement import = {0};
+    PortStatement import = {0};
 
     if (hop_start_if_ends_on_word_break(&p, "import")) {
     } else if (hop_start_if_ends_on_word_break(&p, "export")) {
@@ -3037,7 +3037,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
             hop_whitespace(&p);
 
             if (!parse_import_item_list(&p, &import)) {
-                import.items = vec_import_item_init();
+                import.items = vec_port_item_init();
                 expected_token_error(&p, "{");
             }
         }
@@ -3077,7 +3077,7 @@ static bool parse_import_statement(Parser* parent, Statement* ret) {
 
     *ret = (Statement){
         .tag = STATEMENT_IMPORT,
-        .import = c_new(ImportStatement, import),
+        .import = c_new(PortStatement, import),
     };
     return parse_success(&p);
 }
@@ -3928,7 +3928,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
     if (*p.pos == ';') {
         *ret = statement_noop;
-    } else if (parse_import_statement(&p, ret)) {
+    } else if (parse_port_statement(&p, ret)) {
     } else if (parse_decl_statement(&p, toplevel, ret)) {
     } else if (parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;

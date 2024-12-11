@@ -5,7 +5,7 @@
 #include "interface_member.h"
 #include "generic.h"
 #include "program.h"
-#include "import_statement.h"
+#include "port_statement.h"
 
 void scope_drop(Scope* me) {
     if (my current_scope_stack) {
@@ -13,8 +13,8 @@ void scope_drop(Scope* me) {
     }
     vec_span_drop(&my namespaces);
     hmap_str_arc_declaration_drop(&my declarations);
-    hmap_str_import_item_ptr_drop(&my imports);
-    vec_import_item_ptr_drop(&my wildcard_reexports);
+    hmap_str_port_item_ptr_drop(&my ports);
+    vec_port_item_ptr_drop(&my wildcard_reexports);
     if (my export_scope) {
         scope_drop(my export_scope);
         free(my export_scope);
@@ -24,8 +24,8 @@ void scope_drop(Scope* me) {
 Scope scope_clone(Scope me) {
     me.namespaces = vec_span_clone(me.namespaces);
     me.declarations = hmap_str_arc_declaration_clone(me.declarations);
-    me.imports = hmap_str_import_item_ptr_clone(me.imports);
-    me.wildcard_reexports = vec_import_item_ptr_clone(me.wildcard_reexports);
+    me.ports = hmap_str_port_item_ptr_clone(me.ports);
+    me.wildcard_reexports = vec_port_item_ptr_clone(me.wildcard_reexports);
     me.current_scope_stack = nullptr;
     if (me.export_scope) {
         me.export_scope = c_new(Scope, scope_clone(*me.export_scope));
@@ -228,52 +228,52 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     arc_declaration_drop(&non_exported);
 }
 
-void scope_add_import(Scope* me, ImportItem* import) {
+void scope_add_port(Scope* me, PortItem* item) {
     ASSERT(!my current_scope_stack);
-    if (!import->source_file) {
+    if (!item->source_file) {
         NONFATAL("Tried to add import item without source file");
         return;
     }
-    if (import->is_export_wildcard) {
-        vec_import_item_ptr_push(&my wildcard_reexports, import);
+    if (item->is_export_wildcard) {
+        vec_port_item_ptr_push(&my wildcard_reexports, item);
     } else {
-        auto result = hmap_str_import_item_ptr_insert(
-            &my imports,
-            cstr_from_span(import->decl_name),
-            import
+        auto result = hmap_str_port_item_ptr_insert(
+            &my ports,
+            cstr_from_span(item->decl_name),
+            item
         );
         if (!result.inserted) {
             error_ctx_error(
                 my errs,
-                import->decl_name,
+                item->decl_name,
                 2300,
                 "Duplicate identifier '%.*s'.",
-                c_SPAN(import->decl_name)
+                c_SPAN(item->decl_name)
             );
         }
     }
 }
 
-static void add_placeholder_for_failed_import(Scope* me, ImportItem* import) {
-    ASSERT(!import->declaration.get);
-    import->declaration = arc_declaration_make((Declaration){
-        .name = import->decl_name,
-        .declarations = vec_span_single(import->full_span),
+static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
+    ASSERT(!item->declaration.get);
+    item->declaration = arc_declaration_make((Declaration){
+        .name = item->decl_name,
+        .declarations = vec_span_single(item->full_span),
         .value_tag = DECLARATION_NAMESPACE_WITH_VALUE,
         .type_tag = DECLARATION_NAMESPACE_WITH_VALUE,
         .namespace_tag = DECLARATION_NAMESPACE_WITH_VALUE,
     });
     if (!hmap_str_arc_declaration_insert(
         &my declarations,
-        cstr_from_sv(import->decl_name.sv),
-        arc_declaration_clone(import->declaration)
+        cstr_from_sv(item->decl_name.sv),
+        arc_declaration_clone(item->declaration)
     ).inserted) {
         error_ctx_error(
             my errs,
-            import->decl_name,
+            item->decl_name,
             2300,
             "Duplicate identifier '%.*s'.",
-            c_SPAN(import->decl_name)
+            c_SPAN(item->decl_name)
         );
     }
 }
@@ -286,7 +286,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
         return decl_result->second.get;
     }
 
-    auto import_result = hmap_str_import_item_ptr_get_mut(&my imports, name);
+    auto import_result = hmap_str_port_item_ptr_get_mut(&my ports, name);
     if (import_result && import_result->second->is_export) {
         Scope* next = &import_result->second->source_file->scope;
         if (next->currently_adding_import) {
@@ -299,7 +299,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
         return ret;
     }
 
-    c_foreach(i, vec_import_item_ptr, my wildcard_reexports) {
+    c_foreach(i, vec_port_item_ptr, my wildcard_reexports) {
         Scope* next = &(*i.ref)->source_file->scope;
         if (next->currently_adding_import) {
             // We don't want to raise an error here
@@ -316,73 +316,73 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
     return nullptr;
 }
 
-// This function sets the import's declaration and adds it to the scope. source_import starts the same as import, but if
+// This function sets the import's declaration and adds it to the scope. source_item starts the same as item, but if
 // the imported item is a re-export in a file that has not yet had its imports processed, this function is called
-// recursively with source_import being the re-exported which we are importing through.
-static void process_import(Scope* me, ImportItem* import, ImportItem const* source_import) {
-    if (!import->source_file->is_real) {
-        import->error_reported = true;
-        add_placeholder_for_failed_import(me, import);
+// recursively with source_item being the re-exported which we are importing through.
+static void process_port(Scope* me, PortItem* item, PortItem const* source_item) {
+    if (!item->source_file->is_real) {
+        item->error_reported = true;
+        add_placeholder_for_failed_import(me, item);
     }
 
-    Scope* source_scope_private = &source_import->source_file->scope;
+    Scope* source_scope_private = &source_item->source_file->scope;
     Scope* source_scope = source_scope_private->export_scope;
     ASSERT(source_scope);
 
-    if (import->error_reported) return;
+    if (item->error_reported) return;
 
     csview source_name;
-    switch (import->source_tag) {
+    switch (item->source_tag) {
         case IMPORT_SOURCE_DEFAULT:
             // TODO: error if there is no default export
             source_name = my default_export;
             break;
 
         case IMPORT_SOURCE_WILDCARD:
-            add_placeholder_for_failed_import(me, import);
+            add_placeholder_for_failed_import(me, item);
             return;
 
         case IMPORT_SOURCE_SPECIFIC:
-            source_name = import->source_name.sv;
+            source_name = item->source_name.sv;
             break;
 
-        default: PANIC("Invalid import source %d", import->source_tag);
+        default: PANIC("Invalid import/export tag %d", item->source_tag);
     }
 
-    Declaration const* source_decl = find_declaration_in_exports(&source_import->source_file->scope, source_name);
+    Declaration const* source_decl = find_declaration_in_exports(&source_item->source_file->scope, source_name);
 
     if (source_decl) {
-        import->declaration = arc_declaration_make(*source_decl);
-        declaration_clone_in_place(import->declaration.get);
-        vec_span_drop(&import->declaration.get->declarations);
-        import->declaration.get->declarations = vec_span_single(import->full_span);
-        import->declaration.get->exported = import->is_export;
+        item->declaration = arc_declaration_make(*source_decl);
+        declaration_clone_in_place(item->declaration.get);
+        vec_span_drop(&item->declaration.get->declarations);
+        item->declaration.get->declarations = vec_span_single(item->full_span);
+        item->declaration.get->exported = item->is_export;
         ASSERT(my export_scope);
-        HmapStrArcDeclaration* declarations = import->is_export ? &my export_scope->declarations : &my declarations;
+        HmapStrArcDeclaration* declarations = item->is_export ? &my export_scope->declarations : &my declarations;
         if (!hmap_str_arc_declaration_insert(
             declarations,
-            cstr_from_sv(import->decl_name.sv),
-            arc_declaration_clone(import->declaration)
+            cstr_from_sv(item->decl_name.sv),
+            arc_declaration_clone(item->declaration)
         ).inserted) {
             error_ctx_error(
                 my errs,
-                import->decl_name,
+                item->decl_name,
                 2440,
                 "Import declaration conflicts with local declaration of '%.*s'.",
-                c_SPAN(import->decl_name)
+                c_SPAN(item->decl_name)
             );
         }
     } else {
         error_ctx_error(
             my errs,
-            import->source_name,
+            item->source_name,
             2305,
             "Module '%s' has no exported member '%.*s'.",
-            cstr_str(&import->source_file->canonical_path),
-            c_SPAN(import->source_name)
+            cstr_str(&item->source_file->canonical_path),
+            c_SPAN(item->source_name)
         );
-        import->error_reported = true;
-        add_placeholder_for_failed_import(me, import);
+        item->error_reported = true;
+        add_placeholder_for_failed_import(me, item);
     }
 }
 
@@ -412,7 +412,7 @@ Type scope_make_value_interface(Scope const* me) {
 }
 
 void scope_process_imports(Scope* me) {
-    c_foreach(i, hmap_str_import_item_ptr, my imports) {
-        process_import(me, i.ref->second, i.ref->second);
+    c_foreach(i, hmap_str_port_item_ptr, my ports) {
+        process_port(me, i.ref->second, i.ref->second);
     }
 }

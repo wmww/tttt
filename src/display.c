@@ -10,7 +10,7 @@
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "function_impl.h"
-#include "import_statement.h"
+#include "port_statement.h"
 #include "string_helpers.h"
 
 #define has_underline(d) (d.flags & DISPLAY_FLAGS_UNDERLINE_TYPES)
@@ -886,7 +886,7 @@ void display_expr(Display d, Expr const* me) {
     }
 }
 
-static void display_import_statement(Display d, ImportStatement const* me) {
+static void display_port_statement(Display d, PortStatement const* me) {
     if (my main.is_export) {
         display_lit(d, "export ");
     } else {
@@ -903,13 +903,13 @@ static void display_import_statement(Display d, ImportStatement const* me) {
             }
         }
         display_colored_span(d, color_name, my main.decl_name);
-        if (vec_import_item_size(&my items)) {
+        if (vec_port_item_size(&my items)) {
             display_lit(d, ", ");
         }
     }
-    if (vec_import_item_size(&my items)) {
+    if (vec_port_item_size(&my items)) {
         display_lit(d, "{");
-        c_foreach(i, vec_import_item, my items) {
+        c_foreach(i, vec_port_item, my items) {
             if (i.ref->type_only) {
                 display_lit(d, "type ");
             }
@@ -1121,7 +1121,7 @@ void display_statement(Display d, Statement const* me) {
             break;
 
         case STATEMENT_IMPORT:
-            display_import_statement(d, my import);
+            display_port_statement(d, my import);
             break;
 
         case STATEMENT_DECL_VARIABLE:

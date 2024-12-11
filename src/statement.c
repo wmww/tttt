@@ -1,5 +1,5 @@
 #include "statement.h"
-#include "import_statement.h"
+#include "port_statement.h"
 #include "error.h"
 #include "scope_stack.h"
 #include "scope.h"
@@ -234,7 +234,7 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_IMPORT:
-            import_statement_drop(my import);
+            port_statement_drop(my import);
             free(my import);
             break;
 
@@ -275,7 +275,7 @@ void statement_drop(Statement* me) {
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_IMPORT:
-            import_statement_add_names(my import, scope);
+            port_statement_add_names(my import, scope);
             break;
 
         case STATEMENT_DECL_VARIABLE:

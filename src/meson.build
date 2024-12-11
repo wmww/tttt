@@ -16,7 +16,7 @@ core_files = files(
     'value.c',
     'modifier_list.c',
     'statement.c',
-    'import_statement.c',
+    'port_statement.c',
     'binding.c',
     'function_impl.c',
     'display.c',

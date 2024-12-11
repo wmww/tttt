@@ -6,7 +6,7 @@
 #include "expr.h"
 #include "several_types.h"
 #include "function_impl.h"
-#include "import_statement.h"
+#include "port_statement.h"
 #include "statement.h"
 #include "block.h"
 #include "class_decl.h"
@@ -264,14 +264,14 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
     block_compile_test_info(&my body, ctx);
 }
 
-void import_statement_compile_test_info(ImportStatement const* me, BaselineTestCase* ctx) {
+void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
     if (my main.source_tag != IMPORT_SOURCE_NONE &&
         my main.source_tag != IMPORT_SOURCE_LOCAL &&
         !my main.is_export_wildcard
     ) {
         baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
     }
-    c_foreach(i, vec_import_item, my items) {
+    c_foreach(i, vec_port_item, my items) {
         if (i.ref->declaration.get) {
             if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
                 baseline_test_case_add_type(ctx, i.ref->source_name, &i.ref->declaration.get->value_type);
@@ -760,7 +760,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_CONTINUE: break;
 
         case STATEMENT_IMPORT:
-            import_statement_compile_test_info(my import, ctx);
+            port_statement_compile_test_info(my import, ctx);
             break;
 
         case STATEMENT_DECL_VARIABLE:
