@@ -230,27 +230,36 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 
 void scope_add_port(Scope* me, PortItem* item) {
     ASSERT(!my current_scope_stack);
-    if (!item->source_file) {
-        NONFATAL("Tried to add import item without source file");
-        return;
-    }
-    if (item->is_export_wildcard) {
-        vec_port_item_ptr_push(&my wildcard_reexports, item);
-    } else {
-        auto result = hmap_str_port_item_ptr_insert(
-            &my ports,
-            cstr_from_span(item->decl_name),
-            item
-        );
-        if (!result.inserted) {
-            error_ctx_error(
-                my errs,
-                item->decl_name,
-                2300,
-                "Duplicate identifier '%.*s'.",
-                c_SPAN(item->decl_name)
+    ASSERT(item->source_file);
+    switch (item->tag) {
+        case PORT_NOOP: break;
+
+        case PORT_IMPORT_DEFAULT:
+        case PORT_IMPORT_GATHER:
+        case PORT_IMPORT_SPECIFIC:
+        case PORT_EXPORT_DEFAULT:
+        case PORT_EXPORT_SPECIFIC:
+        case PORT_REEXPORT_GATHER:
+        case PORT_REEXPORT_SPECIFIC: {
+            auto result = hmap_str_port_item_ptr_insert(
+                &my ports,
+                cstr_from_span(item->decl_name),
+                item
             );
-        }
+            if (!result.inserted) {
+                error_ctx_error(
+                    my errs,
+                    item->decl_name,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SPAN(item->decl_name)
+                );
+            }
+        }   break;
+
+        case PORT_REEXPORT_SPLAT:
+            vec_port_item_ptr_push(&my wildcard_reexports, item);
+            break;
     }
 }
 
@@ -287,7 +296,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
     }
 
     auto import_result = hmap_str_port_item_ptr_get_mut(&my ports, name);
-    if (import_result && import_result->second->is_export) {
+    if (import_result && port_item_is_export(import_result->second)) {
         Scope* next = &import_result->second->source_file->scope;
         if (next->currently_adding_import) {
             // TODO: Record this somewhere so 2303, "Circular definition of import alias '%.*s'.", can be raised
@@ -332,21 +341,25 @@ static void process_port(Scope* me, PortItem* item, PortItem const* source_item)
     if (item->error_reported) return;
 
     csview source_name;
-    switch (item->source_tag) {
-        case IMPORT_SOURCE_DEFAULT:
+    switch (item->tag) {
+        case PORT_NOOP:
+        case PORT_IMPORT_GATHER:
+        case PORT_EXPORT_DEFAULT:
+        case PORT_EXPORT_SPECIFIC:
+        case PORT_REEXPORT_GATHER:
+        case PORT_REEXPORT_SPLAT:
+            add_placeholder_for_failed_import(me, item);
+            return;
+
+        case PORT_IMPORT_DEFAULT:
             // TODO: error if there is no default export
             source_name = my default_export;
             break;
 
-        case IMPORT_SOURCE_WILDCARD:
-            add_placeholder_for_failed_import(me, item);
-            return;
-
-        case IMPORT_SOURCE_SPECIFIC:
+        case PORT_IMPORT_SPECIFIC:
+        case PORT_REEXPORT_SPECIFIC:
             source_name = item->source_name.sv;
             break;
-
-        default: PANIC("Invalid import/export tag %d", item->source_tag);
     }
 
     Declaration const* source_decl = find_declaration_in_exports(&source_item->source_file->scope, source_name);
@@ -356,9 +369,10 @@ static void process_port(Scope* me, PortItem* item, PortItem const* source_item)
         declaration_clone_in_place(item->declaration.get);
         vec_span_drop(&item->declaration.get->declarations);
         item->declaration.get->declarations = vec_span_single(item->full_span);
-        item->declaration.get->exported = item->is_export;
+        bool is_export = port_item_is_export(item);
+        item->declaration.get->exported = is_export;
         ASSERT(my export_scope);
-        HmapStrArcDeclaration* declarations = item->is_export ? &my export_scope->declarations : &my declarations;
+        HmapStrArcDeclaration* declarations = is_export ? &my export_scope->declarations : &my declarations;
         if (!hmap_str_arc_declaration_insert(
             declarations,
             cstr_from_sv(item->decl_name.sv),

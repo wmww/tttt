@@ -887,26 +887,43 @@ void display_expr(Display d, Expr const* me) {
 }
 
 static void display_port_statement(Display d, PortStatement const* me) {
-    if (my main.is_export) {
-        display_lit(d, "export ");
-    } else {
-        display_lit(d, "import ");
-    }
+    display_span(d, my keyword_span);
+    display_lit(d, " ");
+
     if (my main.type_only) {
         display_lit(d, "type ");
     }
-    if (my main.source_tag != IMPORT_SOURCE_NONE) {
-        if (my main.source_tag == IMPORT_SOURCE_WILDCARD) {
+
+    switch (my main.tag) {
+        case PORT_NOOP: break;
+
+        case PORT_IMPORT_DEFAULT:
+            display_colored_span(d, color_name, my main.decl_name);
+            break;
+
+        case PORT_IMPORT_GATHER:
+        case PORT_REEXPORT_GATHER:
             display_colored(d, color_value, "*");
-            if (!my main.is_export_wildcard) {
-                display_lit(d, " as ");
-            }
-        }
-        display_colored_span(d, color_name, my main.decl_name);
-        if (vec_port_item_size(&my items)) {
-            display_lit(d, ", ");
-        }
+            display_lit(d, " as ");
+            display_colored_span(d, color_name, my main.decl_name);
+            break;
+
+        case PORT_REEXPORT_SPLAT:
+            display_colored(d, color_value, "*");
+            break;
+
+        case PORT_IMPORT_SPECIFIC:
+        case PORT_EXPORT_DEFAULT:
+        case PORT_EXPORT_SPECIFIC:
+        case PORT_REEXPORT_SPECIFIC:
+            NONFATAL("Unexpected main tag for port statement: %d", my main.tag);
+            break;
     }
+
+    if (my main.tag != PORT_NOOP && vec_port_item_size(&my items)) {
+        display_lit(d, ", ");
+    }
+
     if (vec_port_item_size(&my items)) {
         display_lit(d, "{");
         c_foreach(i, vec_port_item, my items) {
@@ -924,10 +941,14 @@ static void display_port_statement(Display d, PortStatement const* me) {
         }
         display_lit(d, "}");
     }
-    display_lit(d, " from ");
-    display_color(d, color_string);
-    display_string_literal(d, cstr_sv(&my source_path));
-    display_normal(d);
+
+    if (span_valid(my source_path_span)) {
+        display_lit(d, " from ");
+        display_color(d, color_string);
+        display_string_literal(d, cstr_sv(&my source_path));
+        display_normal(d);
+    }
+
     display_lit(d, ";");
 }
 

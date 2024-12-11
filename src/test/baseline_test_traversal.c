@@ -265,11 +265,14 @@ void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestC
 }
 
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
-    if (my main.source_tag != IMPORT_SOURCE_NONE &&
-        my main.source_tag != IMPORT_SOURCE_LOCAL &&
-        !my main.is_export_wildcard
-    ) {
-        baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
+    switch (my main.tag) {
+        case PORT_IMPORT_DEFAULT:
+        case PORT_IMPORT_GATHER:
+        case PORT_REEXPORT_GATHER:
+            baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
+            break;
+
+        default: break;
     }
     c_foreach(i, vec_port_item, my items) {
         if (i.ref->declaration.get) {

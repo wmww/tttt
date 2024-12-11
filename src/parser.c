@@ -2954,9 +2954,8 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
 
     while (*p.pos && *p.pos != '}') {
         PortItem item = {
+            .tag = port_item_is_export(&ret->main) ? PORT_EXPORT_SPECIFIC : PORT_IMPORT_SPECIFIC,
             .type_only = ret->main.type_only,
-            .is_export = ret->main.is_export,
-            .source_tag = IMPORT_SOURCE_SPECIFIC,
         };
         Anchor a = anchor(&p);
 
@@ -2995,13 +2994,14 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
     Anchor a = anchor(&p);
     PortStatement import = {0};
 
+    bool is_export = false;
     if (hop_start_if_ends_on_word_break(&p, "import")) {
     } else if (hop_start_if_ends_on_word_break(&p, "export")) {
-        import.main.is_export = true;
+        is_export = true;
     } else {
         return parse_fail(&p);
     }
-    import.import_keyword_span = span_from(a);
+    import.keyword_span = span_from(a);
     hop_whitespace(&p);
 
     a = anchor(&p);
@@ -3012,14 +3012,14 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
 
     if (hop_char(&p, '*')) {
         hop_whitespace(&p);
-        import.main.source_tag = IMPORT_SOURCE_WILDCARD;
+        import.main.tag = is_export ? PORT_REEXPORT_GATHER : PORT_IMPORT_GATHER;
 
-        if (import.main.is_export) {
+        if (is_export) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
                 expect_identifier(&p, &import.main.decl_name);
             } else {
-                import.main.is_export_wildcard = true;
+                import.main.tag = PORT_REEXPORT_SPLAT;
             }
         } else {
             if (!hop_start_if_ends_on_word_break(&p, "as")) {
@@ -3029,9 +3029,9 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
 
             expect_identifier(&p, &import.main.decl_name);
         }
-    } else if (!import.main.is_export && parse_identifier(&p, &import.main.decl_name)) {
+    } else if (!is_export && parse_identifier(&p, &import.main.decl_name)) {
         hop_whitespace(&p);
-        import.main.source_tag = IMPORT_SOURCE_DEFAULT;
+        import.main.tag = PORT_IMPORT_DEFAULT;
 
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
@@ -3042,7 +3042,7 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
             }
         }
     } else if (parse_import_item_list(&p, &import)) {
-        import.main.source_tag = IMPORT_SOURCE_NONE; // Only the item list is imported, no main import
+        import.main.tag = PORT_NOOP; // Only the item list is imported, no main import
     } else {
         return parse_fail(&p);
     }
@@ -3050,7 +3050,7 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
 
     bool parse_path = true;
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
-        if (import.main.is_export) {
+        if (is_export) {
             parse_path = false;
         } else {
             expected_token_error(&p, "from");
@@ -3069,8 +3069,6 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
             }
             expr_drop(&path_expr);
         }
-    } else {
-        import.main.source_tag = IMPORT_SOURCE_LOCAL;
     }
 
     import.main.full_span = span_from(a);

@@ -17,32 +17,23 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         if (!scope->export_scope) {
             error_ctx_error(
                 scope->errs,
-                my import_keyword_span,
+                my keyword_span,
                 1232,
                 "An import declaration can only be used at the top level of a namespace or module."
             );
             return;
         }
-
         my main.source_file = program_load_import(scope->errs->program, my source_path_span, cstr_sv(&my source_path));
     } else {
-        my main.source_file = c_const_cast(SourceFile*, my import_keyword_span.source);
+        my main.source_file = c_const_cast(SourceFile*, my keyword_span.source);
     }
+
     c_foreach(i, vec_port_item, my items) {
         i.ref->source_file = my main.source_file;
     }
 
-    switch (my main.source_tag) {
-        case IMPORT_SOURCE_DEFAULT:
-        case IMPORT_SOURCE_WILDCARD:
-            scope_add_port(scope, &my main);
-            break;
-
-        default: break;
-    }
-
+    scope_add_port(scope, &my main);
     c_foreach(i, vec_port_item, my items) {
-        ASSERT(i.ref->source_tag == IMPORT_SOURCE_SPECIFIC);
         scope_add_port(scope, i.ref);
     }
 }
