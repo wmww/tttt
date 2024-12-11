@@ -912,6 +912,11 @@ static void display_port_statement(Display d, PortStatement const* me) {
             display_colored(d, color_value, "*");
             break;
 
+        case PORT_EXPORT_AS_NAMESPACE:
+            display_lit(d, "as namespace ");
+            display_colored_span(d, color_name, my main.decl_name);
+            break;
+
         case PORT_IMPORT_SPECIFIC:
         case PORT_EXPORT_DEFAULT:
         case PORT_EXPORT_SPECIFIC:

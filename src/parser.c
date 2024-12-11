@@ -3028,6 +3028,14 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
 
             expect_identifier(&p, &statement.main.decl_name);
         }
+    } else if (is_export && hop_start_if_ends_on_word_break(&p, "as")) {
+        hop_whitespace(&p);
+        if (!hop_start_if_ends_on_word_break(&p, "namespace")) {
+            expected_token_error(&p, "namespace");
+        }
+        hop_whitespace(&p);
+        expect_identifier(&p, &statement.main.decl_name);
+        statement.main.tag = PORT_EXPORT_AS_NAMESPACE;
     } else if (!is_export && parse_identifier(&p, &statement.main.decl_name)) {
         hop_whitespace(&p);
         statement.main.tag = PORT_IMPORT_DEFAULT;

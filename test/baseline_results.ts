@@ -11661,7 +11661,7 @@ const baselines = {
         types: false,
     },
     'exportAsNamespace.d': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21036,7 +21036,7 @@ const baselines = {
         types: false,
     },
     'noCrashUMDMergedWithGlobalValue': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52876,7 +52876,7 @@ const baselines = {
         types: false,
     },
     'sourceFileMergeWithFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
