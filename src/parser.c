@@ -2954,7 +2954,6 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
 
     while (*p.pos && *p.pos != '}') {
         PortItem item = {
-            .tag = port_item_is_export(&ret->main) ? PORT_EXPORT_SPECIFIC : PORT_IMPORT_SPECIFIC,
             .type_only = ret->main.type_only,
         };
         Anchor a = anchor(&p);
@@ -2992,7 +2991,7 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
 static bool parse_port_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    PortStatement import = {0};
+    PortStatement statement = {0};
 
     bool is_export = false;
     if (hop_start_if_ends_on_word_break(&p, "import")) {
@@ -3001,25 +3000,25 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
     } else {
         return parse_fail(&p);
     }
-    import.keyword_span = span_from(a);
+    statement.keyword_span = span_from(a);
     hop_whitespace(&p);
 
     a = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "type")) {
-        import.main.type_only = true;
+        statement.main.type_only = true;
         hop_whitespace(&p);
     }
 
     if (hop_char(&p, '*')) {
         hop_whitespace(&p);
-        import.main.tag = is_export ? PORT_REEXPORT_GATHER : PORT_IMPORT_GATHER;
+        statement.main.tag = is_export ? PORT_REEXPORT_GATHER : PORT_IMPORT_GATHER;
 
         if (is_export) {
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-                expect_identifier(&p, &import.main.decl_name);
+                expect_identifier(&p, &statement.main.decl_name);
             } else {
-                import.main.tag = PORT_REEXPORT_SPLAT;
+                statement.main.tag = PORT_REEXPORT_SPLAT;
             }
         } else {
             if (!hop_start_if_ends_on_word_break(&p, "as")) {
@@ -3027,22 +3026,22 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
             }
             hop_whitespace(&p);
 
-            expect_identifier(&p, &import.main.decl_name);
+            expect_identifier(&p, &statement.main.decl_name);
         }
-    } else if (!is_export && parse_identifier(&p, &import.main.decl_name)) {
+    } else if (!is_export && parse_identifier(&p, &statement.main.decl_name)) {
         hop_whitespace(&p);
-        import.main.tag = PORT_IMPORT_DEFAULT;
+        statement.main.tag = PORT_IMPORT_DEFAULT;
 
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
 
-            if (!parse_import_item_list(&p, &import)) {
-                import.items = vec_port_item_init();
+            if (!parse_import_item_list(&p, &statement)) {
+                statement.items = vec_port_item_init();
                 expected_token_error(&p, "{");
             }
         }
-    } else if (parse_import_item_list(&p, &import)) {
-        import.main.tag = PORT_NOOP; // Only the item list is imported, no main import
+    } else if (parse_import_item_list(&p, &statement)) {
+        statement.main.tag = PORT_NOOP; // Only the item list is imported, no main import
     } else {
         return parse_fail(&p);
     }
@@ -3062,8 +3061,8 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
         Expr path_expr;
         if (expect_expr(&p, expr_ctx_null, &path_expr)) {
             if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-                import.source_path = cstr_move(&path_expr.literal.string);
-                import.source_path_span = path_expr.inner_span;
+                statement.source_path = cstr_move(&path_expr.literal.string);
+                statement.source_path_span = path_expr.inner_span;
             } else {
                 parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
             }
@@ -3071,11 +3070,18 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
         }
     }
 
-    import.main.full_span = span_from(a);
+    auto item_tag = is_export ? (
+        parse_path ? PORT_REEXPORT_SPECIFIC : PORT_EXPORT_SPECIFIC
+    ) : PORT_IMPORT_SPECIFIC;
+    c_foreach(i, vec_port_item, statement.items) {
+        i.ref->tag = item_tag;
+    }
+
+    statement.main.full_span = span_from(a);
 
     *ret = (Statement){
         .tag = STATEMENT_IMPORT,
-        .import = c_new(PortStatement, import),
+        .import = c_new(PortStatement, statement),
     };
     return parse_success(&p);
 }

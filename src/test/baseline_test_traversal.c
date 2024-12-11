@@ -275,12 +275,22 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         default: break;
     }
     c_foreach(i, vec_port_item, my items) {
-        if (i.ref->declaration.get) {
-            if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
-                baseline_test_case_add_type(ctx, i.ref->source_name, &i.ref->declaration.get->value_type);
+        Declaration const* declaration = i.ref->declaration.get;
+        if (!declaration) continue;
+        if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
+            if (i.ref->source_decl) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = vec_span_clone(i.ref->source_decl->declarations),
+                    .span = i.ref->source_name,
+                });
             }
-            baseline_test_case_add_declaration(ctx, i.ref->decl_name, i.ref->declaration.get);
+            baseline_test_case_add_type(ctx, i.ref->source_name, &declaration->value_type);
         }
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = vec_span_clone(declaration->declarations),
+            .span = i.ref->decl_name,
+        });
+        baseline_test_case_add_type(ctx, i.ref->decl_name, &declaration->value_type);
     }
 }
 

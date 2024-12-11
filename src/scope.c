@@ -287,10 +287,11 @@ static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
     }
 }
 
-static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
-    ASSERT(my export_scope);
+static Declaration const* find_declaration_in_exports(Scope* me, csview name, bool search_exports) {
+    Scope const* search_scope = search_exports ? my export_scope : me;
+    ASSERT(search_scope);
 
-    auto decl_result = hmap_str_arc_declaration_get(&my export_scope->declarations, name);
+    auto decl_result = hmap_str_arc_declaration_get(&search_scope->declarations, name);
     if (decl_result) {
         return decl_result->second.get;
     }
@@ -303,7 +304,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
             return nullptr;
         }
         next->currently_adding_import = true;
-        Declaration const* ret = find_declaration_in_exports(next, import_result->second->source_name.sv);
+        Declaration const* ret = find_declaration_in_exports(next, import_result->second->source_name.sv, true);
         next->currently_adding_import = false;
         return ret;
     }
@@ -315,7 +316,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
             return nullptr;
         }
         next->currently_adding_import = true;
-        Declaration const* ret = find_declaration_in_exports(next, name);
+        Declaration const* ret = find_declaration_in_exports(next, name, true);
         next->currently_adding_import = false;
         if (ret) {
             return ret;
@@ -331,18 +332,14 @@ static void process_port(Scope* me, PortItem* item) {
         add_placeholder_for_failed_import(me, item);
     }
 
-    Scope* source_scope_private = &item->source_file->scope;
-    Scope* source_scope = source_scope_private->export_scope;
-    ASSERT(source_scope);
-
     if (item->error_reported) return;
 
-    csview source_name;
+    csview source_name = {0};
+    bool search_exports = true;
     switch (item->tag) {
         case PORT_NOOP:
         case PORT_IMPORT_GATHER:
         case PORT_EXPORT_DEFAULT:
-        case PORT_EXPORT_SPECIFIC:
         case PORT_REEXPORT_GATHER:
         case PORT_REEXPORT_SPLAT:
             add_placeholder_for_failed_import(me, item);
@@ -357,12 +354,17 @@ static void process_port(Scope* me, PortItem* item) {
         case PORT_REEXPORT_SPECIFIC:
             source_name = item->source_name.sv;
             break;
+
+        case PORT_EXPORT_SPECIFIC:
+            source_name = item->source_name.sv;
+            search_exports = false;
+            break;
     }
 
-    Declaration const* source_decl = find_declaration_in_exports(&item->source_file->scope, source_name);
+    item->source_decl = find_declaration_in_exports(&item->source_file->scope, source_name, search_exports);
 
-    if (source_decl) {
-        item->declaration = arc_declaration_make(*source_decl);
+    if (item->source_decl) {
+        item->declaration = arc_declaration_make(*item->source_decl);
         declaration_clone_in_place(item->declaration.get);
         vec_span_drop(&item->declaration.get->declarations);
         item->declaration.get->declarations = vec_span_single(item->full_span);

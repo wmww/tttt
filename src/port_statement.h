@@ -42,6 +42,7 @@ typedef struct PortItem {
     SourceFile* source_file; // File to import from, set by import_statement_set_source_file()
     bool error_reported; // Set and used by Scope
     ArcDeclaration declaration; // Set by Scope
+    Declaration const* source_decl; // Set by Scope, used by the tests
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
