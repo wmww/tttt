@@ -3796,15 +3796,21 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     return parse_success(&p);
 }
 
-static bool parse_global_block(Parser* parent, Block* ret) {
+static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "global")) {
         return parse_fail(&p);
     }
-    hop_whitespace(&p);
 
-    if (!parse_block(&p, false, ret)) {
+    *ret = (NamespaceDecl) {
+        .name = span_from(a),
+        .is_global = true,
+    };
+
+    hop_whitespace(&p);
+    if (!parse_block(&p, false, &ret->contents)) {
         return parse_fail(&p);
     }
 
@@ -3905,11 +3911,15 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .enum_ = c_new(EnumDecl, parsed.enum_decl),
             },
         };
-    } else if (parse_global_block(&p, &parsed.block)) {
+    } else if (parse_global_block(&p, &ret->decl.namespace)) {
         // TODO
+        ret->decl.namespace.full_span = span_from(a);
         *ret = (Statement){
-            .tag = STATEMENT_BLOCK,
-            .block = parsed.block,
+            .tag = STATEMENT_DECL_NAMESPACE,
+            .decl = {
+                .props = decl_props,
+                .namespace = ret->decl.namespace,
+            },
         };
     } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && parse_expr(&p, expr_ctx_null, &parsed.expr)) {
         *ret = (Statement){

@@ -24,6 +24,8 @@ typedef SourceFile* SourceFilePtr;
 typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs;
+    // Threadsafety: this will likely need to be changed to a real mutex
+    bool locked; // source files and other mutable state are locked (for example if currently iterating through them)
     Scope builtins_scope;
     VecScopeCPtr global_scopes;
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
@@ -98,11 +100,20 @@ void program_destroy(Program* me) {
 }
 
 void program_add_globals(Program* me, Scope const* scope) {
+    if (my locked) {
+        NONFATAL("Could not add globals because program is locked");
+        return;
+    }
     vec_scope_cptr_push(&my global_scopes, scope);
 }
 
 // Returns null if path can't be loaded
 static SourceFile* program_add_source(Program* me, const char* path) {
+    if (my locked) {
+        NONFATAL("Could not add '%s' because program is locked", path);
+        return &my not_found_file;
+    }
+
     cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
     auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
     if (value) {
@@ -127,6 +138,11 @@ static SourceFile* program_add_source(Program* me, const char* path) {
 }
 
 SourceFile* program_load(Program* me, const char* path) {
+    if (my locked) {
+        NONFATAL("Could not load '%s' because program is locked", path);
+        return &my not_found_file;
+    }
+
     // This function should only be called by our owner, not indirectly by ourselves
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_LOAD;
@@ -158,6 +174,8 @@ SourceFile* program_load(Program* me, const char* path) {
         vec_source_file_ptr_push(&in_flight_source_files, source);
     }
 
+    my locked = true;
+
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
         scope_process_imports(&source->scope);
@@ -180,6 +198,7 @@ SourceFile* program_load(Program* me, const char* path) {
     }
     scope_stack_destroy(names);
 
+    my locked = false;
     clear_error_config();
     vec_source_file_ptr_drop(&in_flight_source_files);
     my errs->phase = ERROR_PHASE_UNKOWN;
@@ -227,6 +246,8 @@ void program_typecheck(Program* me) {
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_error_config(&my errs->config);
+    ASSERT(!my locked);
+    my locked = true;
 
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
@@ -235,6 +256,7 @@ void program_typecheck(Program* me) {
         }
     }
 
+    my locked = false;
     clear_error_config();
     my errs->phase = ERROR_PHASE_UNKOWN;
 }

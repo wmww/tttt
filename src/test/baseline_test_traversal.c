@@ -489,7 +489,7 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
-    if (span_valid(my name)) {
+    if (span_valid(my name) && my declaration.get) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my declaration.get),
             .span = my name,

@@ -19462,32 +19462,32 @@ const baselines = {
     },
     'moduleAugmentationGlobal6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationGlobal6_1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationGlobal7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationGlobal7_1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationGlobal8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationGlobal8_1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationImportsAndExports1': {
@@ -44012,8 +44012,8 @@ const baselines = {
     },
     'globalAugmentationModuleResolution': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importImportOnlyModule': {
         errors: false,

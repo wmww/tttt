@@ -37,9 +37,9 @@ typedef struct VariableStatement {
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
-void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclStatementProps props);
+void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported);
 void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs);
-void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs);
+void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs);
 
 // Type declaration
 
@@ -60,6 +60,7 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs);
 typedef struct NamespaceDecl {
     Span name;
     Span full_span;
+    bool is_global;
     Block contents;
     Scope inner_scope;
     Type value_type;

@@ -6,6 +6,7 @@
 #include "class_decl.h"
 #include "enum_decl.h"
 #include "function_impl.h"
+#include "program.h"
 
 // Variable initialization
 
@@ -13,22 +14,11 @@ void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }
 
-void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclStatementProps props) {
+void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported) {
     c_foreach(i, vec_initialized_binding, my initializers) {
-        if (my keyword == VAR_INIT_CONST &&
-            i.ref->value.tag == EXPR_IMPLICIT_ANY &&
-            !props.declared
-        ) {
-            error_ctx_error(
-                scope->errs,
-                i.ref->binding.content_span,
-                1155,
-                "'const' declarations must be initialized."
-            );
-        }
         initialized_binding_add_names(i.ref, scope, (BindingAddNamesProps){
             .abstract_literals = my keyword != VAR_INIT_CONST,
-            .exported = props.exported,
+            .exported = exported,
         });
     }
 }
@@ -39,8 +29,19 @@ void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, 
     }
 }
 
-void variable_statement_typecheck(VariableStatement* me, ErrorCtx* errs) {
+void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
     c_foreach(i, vec_initialized_binding, my initializers) {
+        if (my keyword == VAR_INIT_CONST &&
+            i.ref->value.tag == EXPR_IMPLICIT_ANY &&
+            !declared
+        ) {
+            error_ctx_error(
+                errs,
+                i.ref->binding.content_span,
+                1155,
+                "'const' declarations must be initialized."
+            );
+        }
         initialized_binding_typecheck(i.ref, errs);
     }
 }
@@ -80,6 +81,15 @@ void namespace_decl_drop(NamespaceDecl* me) {
 
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
     my inner_scope = scope_init_namespace(my name, scope, scope->errs);
+    if (my is_global) {
+        program_add_globals(scope->errs->program, &my inner_scope);
+    }
+
+    if (my is_global && !props.declared) {
+        error_ctx_error(scope->errs, my name, 2670,
+            "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");
+    }
+
     bool has_value = false;
     c_foreach(i, vec_statement, my contents.statements) {
         statement_add_names(i.ref, &my inner_scope);
@@ -94,6 +104,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 break;
         }
     }
+
+    has_value |= my is_global;
 
     if (has_value) {
         ASSERT(my value_type.tag == 0);
@@ -279,7 +291,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_VARIABLE:
-            variable_statement_add_names(&my decl.variable, scope, my decl.props);
+            variable_statement_add_names(&my decl.variable, scope, my decl.props.exported);
             break;
 
         case STATEMENT_DECL_FUNCTION:
@@ -780,7 +792,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         case STATEMENT_IMPORT_EXPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
-            variable_statement_typecheck(&my decl.variable, errs);
+            variable_statement_typecheck(&my decl.variable, my decl.props.declared, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:
