@@ -148,6 +148,12 @@ bool error_ctx_empty(ErrorCtx const* me) {
     return vec_error_empty(&my errors);
 }
 
+void error_ctx_clear(ErrorCtx* me) {
+    my phase = ERROR_PHASE_UNKOWN;
+    my parse_error_count = 0;
+    vec_error_clear(&my errors);
+}
+
 static int error_cmp(Error const* a, Error const* b) {
     // TODO: sort based on sorce file
     int ret = span_cmp(a->span, b->span);

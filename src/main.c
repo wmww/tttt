@@ -49,8 +49,7 @@ int main(int argc, const char** argv) {
             color_normal
         );
         //print_error_ctx(&errs);
-        error_ctx_drop(&errs);
-        errs = error_ctx_init();
+        error_ctx_clear(&errs);
     }
 
     printf("%sLoading %s...%s\n", color_good, argv[1], color_normal);
@@ -60,8 +59,7 @@ int main(int argc, const char** argv) {
         parse_errors = errs.parse_error_count;
         name_errors = vec_error_size(&errs.errors) - errs.parse_error_count;
         print_error_ctx(&errs);
-        error_ctx_drop(&errs);
-        errs = error_ctx_init();
+        error_ctx_clear(&errs);
         ret = 1;
     }
 
