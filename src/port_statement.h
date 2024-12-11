@@ -29,12 +29,12 @@ typedef struct PortItem {
         PORT_IMPORT_DEFAULT,    // import foo from './abc'
         PORT_IMPORT_GATHER,     // import * as foo from './abc'
         PORT_IMPORT_SPECIFIC,   // import {foo as bar} from './abc'
-        PORT_EXPORT_DEFAULT,    // export default foo (foo is expression)
         PORT_EXPORT_SPECIFIC,   // export {foo as bar}
         PORT_EXPORT_AS_NAMESPACE, // export as namespace foo (this doesn't seem to do anything??)
         PORT_REEXPORT_GATHER,   // export * as foo from './abc'
         PORT_REEXPORT_SPLAT,    // export * from './abc'
         PORT_REEXPORT_SPECIFIC, // export {foo as bar} from './abc'
+        // export default ... is handled by STATEMENT_EXPORT_DEFAULT_EXPR
     } tag;
     Span decl_name; // May be same as source_name, empty only if is_export_wildcard is true
     Span full_span; // Span of declaration
@@ -48,7 +48,6 @@ typedef struct PortItem {
 
 static inline bool port_item_is_export(PortItem const* me) {
     switch (my tag) {
-        case PORT_EXPORT_DEFAULT:
         case PORT_EXPORT_SPECIFIC:
         case PORT_EXPORT_AS_NAMESPACE:
         case PORT_REEXPORT_SPECIFIC:

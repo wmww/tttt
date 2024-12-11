@@ -239,7 +239,6 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
         case PORT_IMPORT_SPECIFIC:
-        case PORT_EXPORT_DEFAULT:
         case PORT_EXPORT_SPECIFIC:
         case PORT_REEXPORT_GATHER:
         case PORT_REEXPORT_SPECIFIC: {
@@ -341,7 +340,6 @@ static void process_port(Scope* me, PortItem* item) {
     switch (item->tag) {
         case PORT_NOOP:
         case PORT_IMPORT_GATHER:
-        case PORT_EXPORT_DEFAULT:
         case PORT_EXPORT_AS_NAMESPACE:
         case PORT_REEXPORT_GATHER:
         case PORT_REEXPORT_SPLAT:

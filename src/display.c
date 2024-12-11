@@ -918,7 +918,6 @@ static void display_port_statement(Display d, PortStatement const* me) {
             break;
 
         case PORT_IMPORT_SPECIFIC:
-        case PORT_EXPORT_DEFAULT:
         case PORT_EXPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC:
             NONFATAL("Unexpected main tag for port statement: %d", my main.tag);
