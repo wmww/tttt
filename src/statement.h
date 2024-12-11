@@ -96,7 +96,7 @@ typedef struct Statement {
         STATEMENT_EXPORT_DEFAULT_EXPR, // also uses expr union member
         STATEMENT_RETURN_EXPR, // also uses expr union member
         STATEMENT_THROW_EXPR, // also uses expr union member
-        STATEMENT_IMPORT,
+        STATEMENT_IMPORT_EXPORT,
         STATEMENT_DECL_VARIABLE,
         STATEMENT_DECL_FUNCTION,
         STATEMENT_DECL_ENUM,
@@ -114,7 +114,7 @@ typedef struct Statement {
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
         Span keyword_span; // Used for continue and break
-        PortStatement* import;
+        PortStatement* import_export;
         struct {
             DeclStatementProps props;
             union {

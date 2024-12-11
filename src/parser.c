@@ -2988,7 +2988,7 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
     return parse_success(&p);
 }
 
-static bool parse_port_statement(Parser* parent, Statement* ret) {
+static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     PortStatement statement = {0};
@@ -3088,8 +3088,8 @@ static bool parse_port_statement(Parser* parent, Statement* ret) {
     statement.main.full_span = span_from(a);
 
     *ret = (Statement){
-        .tag = STATEMENT_IMPORT,
-        .import = c_new(PortStatement, statement),
+        .tag = STATEMENT_IMPORT_EXPORT,
+        .import_export = c_new(PortStatement, statement),
     };
     return parse_success(&p);
 }
@@ -3940,7 +3940,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
     if (*p.pos == ';') {
         *ret = statement_noop;
-    } else if (parse_port_statement(&p, ret)) {
+    } else if (parse_import_export_statement(&p, ret)) {
     } else if (parse_decl_statement(&p, toplevel, ret)) {
     } else if (parse_block(&p, false, &ret->block)) {
         ret->tag = STATEMENT_BLOCK;

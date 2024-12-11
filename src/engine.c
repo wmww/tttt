@@ -502,7 +502,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
             return result_err(value);
         }
 
-        case STATEMENT_IMPORT:
+        case STATEMENT_IMPORT_EXPORT:
             NONFATAL("Importing not yet implemented");
             return result_ok_undefined;
 

@@ -772,8 +772,8 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_BREAK: break;
         case STATEMENT_CONTINUE: break;
 
-        case STATEMENT_IMPORT:
-            port_statement_compile_test_info(my import, ctx);
+        case STATEMENT_IMPORT_EXPORT:
+            port_statement_compile_test_info(my import_export, ctx);
             break;
 
         case STATEMENT_DECL_VARIABLE:

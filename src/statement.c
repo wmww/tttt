@@ -233,9 +233,9 @@ void statement_drop(Statement* me) {
             expr_drop(&my expr);
             break;
 
-        case STATEMENT_IMPORT:
-            port_statement_drop(my import);
-            free(my import);
+        case STATEMENT_IMPORT_EXPORT:
+            port_statement_drop(my import_export);
+            free(my import_export);
             break;
 
         case STATEMENT_DECL_VARIABLE:
@@ -274,8 +274,8 @@ void statement_drop(Statement* me) {
 
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
-        case STATEMENT_IMPORT:
-            port_statement_add_names(my import, scope);
+        case STATEMENT_IMPORT_EXPORT:
+            port_statement_add_names(my import_export, scope);
             break;
 
         case STATEMENT_DECL_VARIABLE:
@@ -483,7 +483,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             expr_lookup_names(&my expr, names, errs);
             break;
 
-        case STATEMENT_IMPORT: break;
+        case STATEMENT_IMPORT_EXPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_resolve_names(&my decl.variable, names, errs);
@@ -574,7 +574,7 @@ Type statement_evaluate_return_type(Statement* me) {
         case STATEMENT_EXPR:
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_THROW_EXPR:
-        case STATEMENT_IMPORT:
+        case STATEMENT_IMPORT_EXPORT:
         case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_FUNCTION:
         case STATEMENT_DECL_ENUM:
@@ -777,7 +777,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             }
             break;
 
-        case STATEMENT_IMPORT: break;
+        case STATEMENT_IMPORT_EXPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_typecheck(&my decl.variable, errs);

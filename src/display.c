@@ -1146,8 +1146,8 @@ void display_statement(Display d, Statement const* me) {
             display_lit(d, ";");
             break;
 
-        case STATEMENT_IMPORT:
-            display_port_statement(d, my import);
+        case STATEMENT_IMPORT_EXPORT:
+            display_port_statement(d, my import_export);
             break;
 
         case STATEMENT_DECL_VARIABLE:
