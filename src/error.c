@@ -114,6 +114,7 @@ void error_config_enable_strict(ErrorConfig* me) {
 }
 
 void error_ctx_drop(ErrorCtx* me) {
+    ASSERT(!my program);
     vec_error_drop(&my errors);
 }
 

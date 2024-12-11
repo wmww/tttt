@@ -4,6 +4,7 @@
 #include "source_file.h"
 #include "interface_member.h"
 #include "generic.h"
+#include "program.h"
 #include "import_statement.h"
 
 void scope_drop(Scope* me) {
@@ -414,6 +415,4 @@ void scope_process_imports(Scope* me) {
     c_foreach(i, hmap_str_import_item_ptr, my imports) {
         process_import(me, i.ref->second, i.ref->second);
     }
-    hmap_str_import_item_ptr_drop(&my imports);
-    my imports = hmap_str_import_item_ptr_init();
 }

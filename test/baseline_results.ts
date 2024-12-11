@@ -211,7 +211,7 @@ const baselines = {
         types: true,
     },
     'SystemModuleForStatementNoInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -4941,7 +4941,7 @@ const baselines = {
         types: true,
     },
     'comparisonOfPartialDeepAndIndexedAccessTerminatesWithoutError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7626,7 +7626,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitInferredTypeAlias3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8896,7 +8896,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8906,7 +8906,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8916,7 +8916,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8926,7 +8926,7 @@ const baselines = {
         types: false,
     },
     'destructuringInVariableDeclarations8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15666,7 +15666,7 @@ const baselines = {
         types: true,
     },
     'indirectGlobalSymbolPartOfObjectType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27506,7 +27506,7 @@ const baselines = {
         types: false,
     },
     'thisInObjectJs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44011,7 +44011,7 @@ const baselines = {
         types: false,
     },
     'globalAugmentationModuleResolution': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

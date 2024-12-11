@@ -10,6 +10,7 @@
 
 typedef struct ImportItem ImportItem;
 typedef ImportItem* ImportItemPtr;
+typedef struct Program Program;
 
 #define i_key_ssv
 #define i_val_names ImportItemPtr, import_item_ptr
@@ -85,7 +86,6 @@ void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dro
 // Checks that ret was previously null, creates a new declaration if needed
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props);
 void scope_add_import(Scope* me, ImportItem* import);
-
 void scope_process_imports(Scope* me);
 Type scope_make_value_interface(Scope const* me);
 

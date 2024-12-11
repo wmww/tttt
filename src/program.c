@@ -73,16 +73,19 @@ static void program_add_builtins(Program* me) {
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     ASSERT(errs);
     ASSERT(fs);
+    ASSERT(!errs->program);
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
         .not_found_file = source_file_make(cstr_null, cstr_null, errs),
     });
+    errs->program = ret;
     program_add_builtins(ret);
     return ret;
 }
 
 static void program_drop(Program* me) {
+    me->errs->program = nullptr;
     scope_drop(&my builtins_scope);
     vec_scope_cptr_drop(&my global_scopes);
     hmap_str_box_source_file_drop(&my source_files);
@@ -124,33 +127,6 @@ static SourceFile* program_add_source(Program* me, const char* path) {
     }
 }
 
-static void program_handle_import(Program* me, ImportStatement* import) {
-    cstr source_path = cstr_from_sv(dirname_of(cstr_str(&import->import_keyword_span.source->canonical_path)));
-    cstr_append_n(&source_path, &path_sep, 1);
-    cstr_append_s(&source_path, import->source_path);
-    if (fs_is_directory(my fs, cstr_str(&source_path))) {
-        cstr_append_lit(&source_path, "/index.ts");
-    } else {
-        cstr_append_lit(&source_path, ".ts");
-    }
-    // TODO: handle js
-    SourceFile* source = program_add_source(me, cstr_str(&source_path));
-    cstr_drop(&source_path);
-
-    if (source) {
-        import_statement_set_source_file(import, source);
-    } else {
-        error_ctx_error(
-            my errs,
-            import->source_path_span,
-            2307,
-            "Cannot find module '%s' or its corresponding type declarations.",
-            cstr_str(&import->source_path)
-        );
-        import_statement_set_source_file(import, &my not_found_file);
-    }
-}
-
 SourceFile* program_load(Program* me, const char* path) {
     // This function should only be called by our owner, not indirectly by ourselves
     ASSERT(my errs->phase == ERROR_PHASE_UNKOWN);
@@ -175,13 +151,6 @@ SourceFile* program_load(Program* me, const char* path) {
         // Remove the top source file from the pending list and parse it (order of processing shouldn't matter here)
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
         parse_file(source, my errs);
-
-        // Load imported files
-        c_foreach(i, vec_statement, source->ast.statements) {
-            if (i.ref->tag == STATEMENT_IMPORT) {
-                program_handle_import(me, i.ref->import);
-            }
-        }
 
         // Add the toplevel block's names to the file's scope
         block_add_names(&source->ast, &source->scope);
@@ -227,6 +196,32 @@ SourceFile* program_preload(Program* me, const char* path) {
 
 SourceFile* program_preload_es5(Program* me) {
     return program_preload(me, "thirdparty/tsc/lib/es5.d.ts");
+}
+
+SourceFile* program_load_import(Program* me, Span path_span, csview path) {
+    ASSERT(span_valid(path_span));
+    cstr source_path = cstr_from_sv(dirname_of(cstr_str(&path_span.source->canonical_path)));
+    cstr_append_n(&source_path, &path_sep, 1);
+    cstr_append_sv(&source_path, path);
+    if (fs_is_directory(my fs, cstr_str(&source_path))) {
+        cstr_append_lit(&source_path, "/index.ts");
+    } else {
+        cstr_append_lit(&source_path, ".ts");
+    }
+    // TODO: handle js
+    SourceFile* ret = program_add_source(me, cstr_str(&source_path));
+    cstr_drop(&source_path);
+    if (!ret) {
+        error_ctx_error(
+            my errs,
+            path_span,
+            2307,
+            "Cannot find module '%.*s' or its corresponding type declarations.",
+            c_SV(path)
+        );
+        ret = &my not_found_file;
+    }
+    return ret;
 }
 
 void program_typecheck(Program* me) {
