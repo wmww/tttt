@@ -44,6 +44,7 @@ typedef struct PortItem {
     bool error_reported; // Set and used by Scope
     ArcDeclaration declaration; // Set by Scope
     Declaration const* source_decl; // Set by Scope, used by the tests
+    Declaration wrapped_declaration; // Used for gather statements, just need someone to own it
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {

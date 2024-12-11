@@ -27,6 +27,7 @@ typedef struct Scope {
         SCOPE_GENERIC,
     } tag;
     ErrorCtx* errs;
+    bool is_placeholder; // If this is a placeholder scope for a not-found file. If so all names should resolve to any
     csview default_export;
     VecSpan namespaces;
     bool currently_adding_import; // If the current add_import() call stack has already seen this scope
@@ -72,6 +73,14 @@ static inline Scope scope_init_toplevel(ErrorCtx* errs) {
             .tag = SCOPE_EXPORT,
             .errs = errs,
         }),
+        SCOPE_INIT_DEFAULT,
+    };
+}
+
+static inline Scope scope_init_placeholder(ErrorCtx* errs) {
+    return (Scope){
+        .tag = SCOPE_DEFAULT,
+        .is_placeholder = true,
         SCOPE_INIT_DEFAULT,
     };
 }

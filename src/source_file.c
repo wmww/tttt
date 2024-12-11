@@ -4,8 +4,7 @@ SourceFile source_file_make(cstr canonical_path, cstr contents, ErrorCtx* errs) 
     return (SourceFile){
         .canonical_path = canonical_path,
         .contents = contents,
-        .scope = scope_init_toplevel(errs),
-        .is_real = cstr_size(&canonical_path),
+        .scope = cstr_size(&canonical_path) ? scope_init_toplevel(errs) : scope_init_placeholder(errs),
         .typecheck = true,
     };
 }

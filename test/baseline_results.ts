@@ -7156,7 +7156,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitAliasExportStar': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -7852,7 +7852,7 @@ const baselines = {
     },
     'declarationEmitOutFileBundlePaths': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitOverloadedPrivateInference': {
@@ -10023,7 +10023,7 @@ const baselines = {
     'emptyDeclarationEmitIsModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyEnum': {
         errors: true,
@@ -10482,8 +10482,8 @@ const baselines = {
     },
     'errorWithSameNameType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'errorWithTruncatedType': {
         errors: true,
@@ -15928,7 +15928,7 @@ const baselines = {
     'inferredIndexerOnNamespaceImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferredNonidentifierTypesGetQuotes': {
         errors: false,
@@ -17236,7 +17236,7 @@ const baselines = {
         types: false,
     },
     'isolatedModulesImportExportElision': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: true,
     },
@@ -18191,9 +18191,9 @@ const baselines = {
         types: false,
     },
     'keyofModuleObjectHasCorrectKeys': {
-        errors: true,
+        errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofObjectWithGlobalSymbolIncluded': {
         errors: false,
@@ -19621,7 +19621,7 @@ const baselines = {
         types: false,
     },
     'moduleDeclarationExportStarShadowingGlobalIsNameable': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -24591,7 +24591,7 @@ const baselines = {
         types: false,
     },
     'reexportWrittenCorrectlyInDeclaration': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -27042,8 +27042,8 @@ const baselines = {
     },
     'systemModule16': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'systemModule17': {
         errors: false,
@@ -27147,7 +27147,7 @@ const baselines = {
     },
     'systemObjectShorthandRename': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'taggedPrimitiveNarrowing': {
@@ -28096,7 +28096,7 @@ const baselines = {
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29448,7 +29448,7 @@ const baselines = {
     'unusedImports7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports8': {
         errors: false,
@@ -29593,7 +29593,7 @@ const baselines = {
     'unusedLocalsStartingWithUnderscore': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedLocalsinConstructor1': {
         errors: false,
@@ -43782,8 +43782,8 @@ const baselines = {
     },
     'es6modulekindWithES5Target9': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'esnextmodulekind': {
         errors: true,
@@ -43852,8 +43852,8 @@ const baselines = {
     },
     'esnextmodulekindWithES5Target9': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exnextmodulekindExportClassNameWithObject': {
         errors: true,
@@ -44006,7 +44006,7 @@ const baselines = {
         types: false,
     },
     'exportTypeMergedWithExportStarAsNamespace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44271,7 +44271,7 @@ const baselines = {
         types: false,
     },
     'typeAndNamespaceExportMerge': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44373,7 +44373,7 @@ const baselines = {
     'exportNamespace11': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportNamespace12': {
         errors: false,
@@ -44456,7 +44456,7 @@ const baselines = {
         types: undefined,
     },
     'implementsClause': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44552,7 +44552,7 @@ const baselines = {
     },
     'namespaceMemberAccess': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'nestedNamespace': {
@@ -46663,7 +46663,7 @@ const baselines = {
     'jsdocLinkTag4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocLinkTag5': {
         errors: true,

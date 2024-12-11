@@ -1,4 +1,5 @@
 #include "scope.h"
+#include "several_types.h"
 #include "scope_stack.h"
 #include "error.h"
 #include "source_file.h"
@@ -229,42 +230,6 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     arc_declaration_drop(&non_exported);
 }
 
-void scope_add_port(Scope* me, PortItem* item) {
-    ASSERT(!my current_scope_stack);
-    ASSERT(item->source_file);
-    switch (item->tag) {
-        case PORT_NOOP:
-        case PORT_EXPORT_AS_NAMESPACE:
-            break;
-
-        case PORT_IMPORT_DEFAULT:
-        case PORT_IMPORT_GATHER:
-        case PORT_IMPORT_SPECIFIC:
-        case PORT_EXPORT_SPECIFIC:
-        case PORT_REEXPORT_GATHER:
-        case PORT_REEXPORT_SPECIFIC: {
-            auto result = hmap_str_port_item_ptr_insert(
-                &my ports,
-                cstr_from_span(item->decl_name),
-                item
-            );
-            if (!result.inserted) {
-                error_ctx_error(
-                    my errs,
-                    item->decl_name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(item->decl_name)
-                );
-            }
-        }   break;
-
-        case PORT_REEXPORT_SPLAT:
-            vec_port_item_ptr_push(&my wildcard_reexports, item);
-            break;
-    }
-}
-
 static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
     ASSERT(!item->declaration.get);
     item->declaration = arc_declaration_make((Declaration){
@@ -289,7 +254,74 @@ static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
     }
 }
 
+void scope_add_port(Scope* me, PortItem* item) {
+    ASSERT(!my current_scope_stack);
+    ASSERT(item->source_file);
+
+    if (item->source_file->scope.is_placeholder) {
+        item->error_reported = true;
+        add_placeholder_for_failed_import(me, item);
+        return;
+    }
+
+    switch (item->tag) {
+        case PORT_NOOP:
+        case PORT_EXPORT_AS_NAMESPACE:
+            break;
+
+        case PORT_IMPORT_GATHER:
+        case PORT_REEXPORT_GATHER:
+            declaration_init(&item->wrapped_declaration, (DeclProps){
+                .name = item->decl_name,
+                .full = item->full_span,
+                .tag = DECLARATION_TYPE,
+                .declared_type = type_lazy(&item->source_file->scope.value_interface),
+                .is_typeof = true,
+            });
+            scope_init_declaration(me, &item->declaration, (DeclProps){
+                .name = item->decl_name,
+                .full = item->full_span,
+                .exported = port_item_is_export(item),
+                .tag = DECLARATION_NAMESPACE_WITH_VALUE,
+                .value_type = type_identifier(c_new(IdentifierType, {
+                    .name = item->decl_name,
+                    .decl_ref = &item->wrapped_declaration,
+                })),
+                .namespace = &item->source_file->scope,
+            });
+            break;
+
+        case PORT_IMPORT_DEFAULT:
+        case PORT_IMPORT_SPECIFIC:
+        case PORT_EXPORT_SPECIFIC:
+        case PORT_REEXPORT_SPECIFIC: {
+            auto result = hmap_str_port_item_ptr_insert(
+                &my ports,
+                cstr_from_span(item->decl_name),
+                item
+            );
+            if (!result.inserted) {
+                error_ctx_error(
+                    my errs,
+                    item->decl_name,
+                    2300,
+                    "Duplicate identifier '%.*s'.",
+                    c_SPAN(item->decl_name)
+                );
+            }
+        }   break;
+
+        case PORT_REEXPORT_SPLAT:
+            vec_port_item_ptr_push(&my wildcard_reexports, item);
+            break;
+    }
+}
+
 static Declaration const* find_declaration_in_exports(Scope* me, csview name, bool search_exports) {
+    if (my is_placeholder) {
+        return nullptr;
+    }
+
     Scope const* search_scope = search_exports ? my export_scope : me;
     ASSERT(search_scope);
 
@@ -329,11 +361,6 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name, bo
 }
 
 static void process_port(Scope* me, PortItem* item) {
-    if (!item->source_file->is_real) {
-        item->error_reported = true;
-        add_placeholder_for_failed_import(me, item);
-    }
-
     if (item->error_reported) return;
 
     csview source_name = {0};
@@ -402,6 +429,9 @@ static void process_port(Scope* me, PortItem* item) {
 }
 
 Type scope_evaluate_value_interface(Scope const* me) {
+    if (my is_placeholder) {
+        return type_any;
+    }
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, hmap_str_arc_declaration, my declarations) {
         if (i.ref->second.get->value_tag) {

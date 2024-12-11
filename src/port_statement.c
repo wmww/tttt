@@ -4,6 +4,7 @@
 
 void port_item_drop(PortItem* me) {
     arc_declaration_drop(&my declaration);
+    declaration_drop(&my wrapped_declaration);
 }
 
 void port_statement_drop(PortStatement* me) {
