@@ -116,7 +116,9 @@ cstr relative_path_of(const char* cwd, const char* path) {
         cstr_append_n(&ret, &path_sep, 1);
         path_next_segment(&cwd);
     }
-    cstr_append(&ret, path);
+    if (path) {
+        cstr_append(&ret, path);
+    }
     cstr_drop(&absolute);
     return ret;
 }
