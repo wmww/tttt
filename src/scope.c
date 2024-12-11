@@ -325,16 +325,13 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name) {
     return nullptr;
 }
 
-// This function sets the import's declaration and adds it to the scope. source_item starts the same as item, but if
-// the imported item is a re-export in a file that has not yet had its imports processed, this function is called
-// recursively with source_item being the re-exported which we are importing through.
-static void process_port(Scope* me, PortItem* item, PortItem const* source_item) {
+static void process_port(Scope* me, PortItem* item) {
     if (!item->source_file->is_real) {
         item->error_reported = true;
         add_placeholder_for_failed_import(me, item);
     }
 
-    Scope* source_scope_private = &source_item->source_file->scope;
+    Scope* source_scope_private = &item->source_file->scope;
     Scope* source_scope = source_scope_private->export_scope;
     ASSERT(source_scope);
 
@@ -362,7 +359,7 @@ static void process_port(Scope* me, PortItem* item, PortItem const* source_item)
             break;
     }
 
-    Declaration const* source_decl = find_declaration_in_exports(&source_item->source_file->scope, source_name);
+    Declaration const* source_decl = find_declaration_in_exports(&item->source_file->scope, source_name);
 
     if (source_decl) {
         item->declaration = arc_declaration_make(*source_decl);
@@ -427,6 +424,6 @@ Type scope_make_value_interface(Scope const* me) {
 
 void scope_process_imports(Scope* me) {
     c_foreach(i, hmap_str_port_item_ptr, my ports) {
-        process_port(me, i.ref->second, i.ref->second);
+        process_port(me, i.ref->second);
     }
 }
