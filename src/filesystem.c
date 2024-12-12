@@ -28,9 +28,11 @@ const char* file_extension_of(const char* path) {
 
 const char* basename_of(const char* path) {
     const char* ret = path;
+    const char* next_ret = ret;
     for (const char* i = path; *i; i++) {
+        ret = next_ret;
         if (*i == '/') {
-            ret = i + 1;
+            next_ret = i + 1;
         }
     }
     return ret;

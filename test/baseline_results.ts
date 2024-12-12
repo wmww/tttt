@@ -2641,14 +2641,14 @@ const baselines = {
         types: false,
     },
     'cachedModuleResolution1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cachedModuleResolution2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cachedModuleResolution3': {
         errors: false,
@@ -2661,9 +2661,9 @@ const baselines = {
         types: false,
     },
     'cachedModuleResolution5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cachedModuleResolution6': {
         errors: true,
@@ -7981,7 +7981,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitReusesLambdaParameterNodes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15191,7 +15191,7 @@ const baselines = {
         types: false,
     },
     'importShouldNotBeElidedInDeclarationEmit': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20946,7 +20946,7 @@ const baselines = {
         types: false,
     },
     'noBundledEmitFromNodeModules': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

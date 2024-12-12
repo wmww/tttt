@@ -216,7 +216,7 @@ SourceFile* program_preload_es5(Program* me) {
     return program_preload(me, "thirdparty/tsc/lib/es5.d.ts");
 }
 
-static bool get_import_path_inner(Fs const* fs, csview path, cstr* ret) {
+static bool get_import_path_final(Fs const* fs, csview path, cstr* ret) {
     *ret = cstr_from_sv(path);
     intptr_t base_len = cstr_size(ret);
 
@@ -256,21 +256,74 @@ static bool get_import_path_inner(Fs const* fs, csview path, cstr* ret) {
     return false;
 }
 
-static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
-    if (csview_starts_with(path, "/")) {
-        return get_import_path_inner(fs, path, ret);
-    }
-
+static bool get_import_path_relative(Fs const* fs, csview cwd, csview path, cstr* ret) {
     cstr str = cstr_from_sv(cwd);
     cstr_append_n(&str, &path_sep, 1);
     cstr_append_sv(&str, path);
 
-    if (get_import_path_inner(fs, cstr_sv(&str), ret)) {
+    if (get_import_path_final(fs, cstr_sv(&str), ret)) {
         cstr_drop(&str);
         return true;
     }
 
     cstr_drop(&str);
+    return false;
+}
+
+static bool get_node_modules_dir(Fs const* fs, csview path, cstr* ret) {
+    cstr str = cstr_from_sv(path);
+    while (true) {
+        intptr_t start_len = cstr_size(&str);
+        cstr_append_n(&str, &path_sep, 1);
+        cstr_append_lit(&str, "node_modules");
+        if (fs_is_directory(fs, cstr_str(&str))) {
+            *ret = str;
+            return true;
+        }
+        cstr_resize(&str, start_len, '_');
+        cstr_resize(&str, basename_of(cstr_str(&str)) - cstr_str(&str), '_');
+        if (cstr_size(&str) <= 2 && (
+                cstr_empty(&str) ||
+                cstr_equals(&str, ".") ||
+                cstr_equals(&str, "..") ||
+                (cstr_size(&str) == 1 && *cstr_str(&str) == path_sep)
+            )
+        ) {
+            cstr_drop(&str);
+            return false;
+        }
+    }
+}
+
+static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
+    if (csview_starts_with(path, "/")) {
+        return get_import_path_final(fs, path, ret);
+    }
+
+    if (get_import_path_relative(fs, cwd, path, ret)) {
+        return true;
+    }
+
+    cstr node_modules_path;
+    if (get_node_modules_dir(fs, cwd, &node_modules_path)) {
+        intptr_t base_len = cstr_size(&node_modules_path);
+
+        cstr_append_n(&node_modules_path, &path_sep, 1);
+        cstr_append_lit(&node_modules_path, "@types");
+        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
+            cstr_drop(&node_modules_path);
+            return true;
+        }
+        cstr_resize(&node_modules_path, base_len, '_');
+
+        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
+            cstr_drop(&node_modules_path);
+            return true;
+        }
+
+        cstr_drop(&node_modules_path);
+    }
+
     return false;
 }
 
