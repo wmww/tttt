@@ -53,6 +53,7 @@ typedef struct TupleElement {
     Type type;
     bool rest;
     bool readonly;
+    bool optional;
 } TupleElement;
 
 static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }

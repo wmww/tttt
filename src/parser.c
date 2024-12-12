@@ -838,6 +838,11 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             hop_whitespace(&p);
         }
 
+        if (hop_char(&p, '?')) {
+            elem.optional = true;
+            hop_whitespace(&p);
+        }
+
         vec_tuple_element_push(ret, elem);
 
         if (*p.pos != ']' && !expect_char(&p, ',')) {

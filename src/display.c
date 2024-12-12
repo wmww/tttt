@@ -523,6 +523,10 @@ void display_type(Display d, Type const* me) {
 
                 display_type(d, &i.ref->type);
 
+                if (i.ref->optional) {
+                    display_lit(d, "?");
+                }
+
                 if (i.ref != i.end - 1) {
                     display_lit(d, ", ");
                 }

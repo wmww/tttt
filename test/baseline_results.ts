@@ -6706,8 +6706,8 @@ const baselines = {
         types: false,
     },
     'curiousNestedConditionalEvaluationResult': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'customAsyncIterator': {
@@ -26441,7 +26441,7 @@ const baselines = {
         types: false,
     },
     'strictOptionalProperties2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -29036,7 +29036,7 @@ const baselines = {
         types: false,
     },
     'unionOfArraysFilterCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55066,8 +55066,8 @@ const baselines = {
         types: false,
     },
     'mappedTypesGenericTuples': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mappedTypesGenericTuples2': {
