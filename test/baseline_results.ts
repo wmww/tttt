@@ -3666,7 +3666,7 @@ const baselines = {
         types: false,
     },
     'classImplementsMethodWIthTupleArgs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10081,8 +10081,8 @@ const baselines = {
         types: false,
     },
     'emptyOptionalBindingPatternInDeclarationSignature': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'emptyThenWarning': {
@@ -14247,7 +14247,7 @@ const baselines = {
     },
     'genericTupleWithSimplifiableElements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericTypeArgumentInference1': {
@@ -15781,8 +15781,8 @@ const baselines = {
         types: false,
     },
     'inferTypesWithFixedTupleExtendsAtVariadicPosition': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'inferenceAndHKTs': {
@@ -21861,7 +21861,7 @@ const baselines = {
         types: undefined,
     },
     'objectAssignLikeNonUnionResult': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26106,8 +26106,8 @@ const baselines = {
         types: false,
     },
     'spreadParameterTupleType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'spreadTupleAccessedByTypeParameter': {
@@ -56572,7 +56572,7 @@ const baselines = {
     },
     'partiallyNamedTuples': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'partiallyNamedTuples2': {

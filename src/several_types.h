@@ -49,6 +49,7 @@ InferredType inferred_type_clone(InferredType me);
 // Tuple
 
 typedef struct TupleElement {
+    Span maybe_name;
     Type type;
     bool rest;
     bool readonly;

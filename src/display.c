@@ -516,6 +516,11 @@ void display_type(Display d, Type const* me) {
                     display_lit(d, "readonly ");
                 }
 
+                if (span_valid(i.ref->maybe_name)) {
+                    display_span(d, i.ref->maybe_name);
+                    display_lit(d, ": ");
+                }
+
                 display_type(d, &i.ref->type);
 
                 if (i.ref != i.end - 1) {

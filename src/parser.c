@@ -830,6 +830,14 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
         hop_whitespace(&p);
 
+        if (elem.type.tag == TYPE_IDENTIFIER && hop_char(&p, ':')) {
+            elem.maybe_name = elem.type.identifier->name;
+            type_drop(&elem.type);
+            hop_whitespace(&p);
+            expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
+            hop_whitespace(&p);
+        }
+
         vec_tuple_element_push(ret, elem);
 
         if (*p.pos != ']' && !expect_char(&p, ',')) {
