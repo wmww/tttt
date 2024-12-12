@@ -162,7 +162,7 @@ STC_INLINE const char* cstr_str(const cstr* self)
     { return SSO_CALL(self, data(self)); }
 
 STC_INLINE bool cstr_empty(const cstr* self)
-    { return cstr_s_size(self) == 0; }
+    { return SSO_CALL(self, size(self)) == 0; }
 
 STC_INLINE intptr_t cstr_size(const cstr* self)
     { return SSO_CALL(self, size(self)); }
