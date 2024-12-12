@@ -7161,7 +7161,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitAliasFromIndirectFile': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7946,7 +7946,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitRecursiveConditionalAliasPreserved': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15941,7 +15941,7 @@ const baselines = {
         types: false,
     },
     'inferrenceInfiniteLoopWithSubtyping': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17416,7 +17416,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsWithDefaultAsNamespaceLikeMerge': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19463,12 +19463,12 @@ const baselines = {
     'moduleAugmentationGlobal6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAugmentationGlobal6_1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAugmentationGlobal7': {
         errors: false,
@@ -27147,7 +27147,7 @@ const baselines = {
     },
     'systemObjectShorthandRename': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'taggedPrimitiveNarrowing': {
@@ -28546,7 +28546,7 @@ const baselines = {
         types: false,
     },
     'typeReferenceDirectives10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34191,7 +34191,7 @@ const baselines = {
         types: false,
     },
     'typeofImportTypeOnlyExport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -44578,7 +44578,7 @@ const baselines = {
     'preserveValueImports_mixedImports': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'preserveValueImports_module': {
         errors: undefined,
@@ -44656,12 +44656,12 @@ const baselines = {
         types: false,
     },
     'umd3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'umd4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44721,9 +44721,9 @@ const baselines = {
         types: false,
     },
     'verbatimModuleSyntaxConstEnumUsage': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'verbatimModuleSyntaxDeclarationFile': {
         errors: false,

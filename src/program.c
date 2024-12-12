@@ -216,20 +216,73 @@ SourceFile* program_preload_es5(Program* me) {
     return program_preload(me, "thirdparty/tsc/lib/es5.d.ts");
 }
 
+static bool get_import_path_inner(Fs const* fs, csview path, cstr* ret) {
+    *ret = cstr_from_sv(path);
+    intptr_t base_len = cstr_size(ret);
+
+    if (csview_ends_with(path, ".js")) {
+        base_len -= 3;
+        cstr_resize(ret, base_len, '_');
+    }
+
+    if (fs_is_directory(fs, cstr_str(ret))) {
+        cstr_append_n(ret, &path_sep, 1);
+        cstr_append_lit(ret, "index.d.ts");
+        if (fs_is_reg_file(fs, cstr_str(ret))) {
+            return true;
+        }
+        cstr_resize(ret, base_len, '_');
+
+        cstr_append_n(ret, &path_sep, 1);
+        cstr_append_lit(ret, "index.ts");
+        if (fs_is_reg_file(fs, cstr_str(ret))) {
+            return true;
+        }
+    }
+
+    cstr_append_lit(ret, ".d.ts");
+    if (fs_is_reg_file(fs, cstr_str(ret))) {
+        return true;
+    }
+    cstr_resize(ret, base_len, '_');
+
+    cstr_append_lit(ret, ".ts");
+    if (fs_is_reg_file(fs, cstr_str(ret))) {
+        return true;
+    }
+    cstr_resize(ret, base_len, '_');
+
+    cstr_drop(ret);
+    return false;
+}
+
+static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
+    if (csview_starts_with(path, "/")) {
+        return get_import_path_inner(fs, path, ret);
+    }
+
+    cstr str = cstr_from_sv(cwd);
+    cstr_append_n(&str, &path_sep, 1);
+    cstr_append_sv(&str, path);
+
+    if (get_import_path_inner(fs, cstr_sv(&str), ret)) {
+        cstr_drop(&str);
+        return true;
+    }
+
+    cstr_drop(&str);
+    return false;
+}
+
 SourceFile* program_load_import(Program* me, Span path_span, csview path) {
     ASSERT(span_valid(path_span));
-    cstr source_path = cstr_from_sv(dirname_of(cstr_str(&path_span.source->canonical_path)));
-    cstr_append_n(&source_path, &path_sep, 1);
-    cstr_append_sv(&source_path, path);
-    if (fs_is_directory(my fs, cstr_str(&source_path))) {
-        cstr_append_lit(&source_path, "/index.ts");
+    csview cwd = dirname_of(cstr_str(&path_span.source->canonical_path));
+    cstr source_path;
+    SourceFile* ret;
+    if (get_import_path(my fs, cwd, path, &source_path)) {
+        ret = program_add_source(me, cstr_str(&source_path));
+        cstr_drop(&source_path);
     } else {
-        cstr_append_lit(&source_path, ".ts");
-    }
-    // TODO: handle js
-    SourceFile* ret = program_add_source(me, cstr_str(&source_path));
-    cstr_drop(&source_path);
-    if (!ret) {
         error_ctx_error(
             my errs,
             path_span,
