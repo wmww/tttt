@@ -311,7 +311,7 @@ SourceFile* program_load(Program* me, const char* path) {
         parse_file(source, my errs);
 
         // If we've previously found an index.ts in the directory of the file, add it's names before adding names first
-        if (source->index_file) {
+        if (source->index_file && !source->index_file->scope.is_module) {
             scope_copy_declarations_from(&source->scope, &source->index_file->scope);
         }
 

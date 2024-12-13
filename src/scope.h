@@ -28,6 +28,7 @@ typedef struct Scope {
     } tag;
     ErrorCtx* errs;
     bool is_placeholder; // If this is a placeholder scope for a not-found file. If so all names should resolve to any
+    bool is_module;
     csview default_export;
     VecSpan namespaces;
     bool currently_adding_import; // If the current add_import() call stack has already seen this scope
