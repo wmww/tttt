@@ -11,6 +11,7 @@ typedef struct SourceFile {
     bool typecheck;
     cstr decl_override; // Used for the tests
     const char* display_path_override; // Used for the tests
+    SourceFile* index_file; // The index(.d).ts file in the same directory as this file
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents, ErrorCtx* errs);

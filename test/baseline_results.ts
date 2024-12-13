@@ -44456,7 +44456,7 @@ const baselines = {
         types: undefined,
     },
     'implementsClause': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

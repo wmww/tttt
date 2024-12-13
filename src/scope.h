@@ -96,6 +96,7 @@ void scope_push_to_stack(Scope* me, ScopeStack* stack);
 // Cannot be a scope_init_* function because me needs to be stable
 void scope_push_generic_to_stack(Scope* me, Generic* generic, ScopeStack* stack);
 void scope_pop_from_stack(Scope* me); // This call is not needed if scope is dropped while on stack
+void scope_copy_declarations_from(Scope* me, Scope const* source);
 
 // Checks that ret was previously null, creates a new declaration if needed
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props);

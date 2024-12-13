@@ -59,6 +59,12 @@ void scope_pop_from_stack(Scope* me) {
     my current_scope_stack = nullptr;
 }
 
+void scope_copy_declarations_from(Scope* me, Scope const* source) {
+    c_foreach(i, hmap_str_arc_declaration, source->declarations) {
+        hmap_str_arc_declaration_insert(&my declarations, cstr_clone(i.ref->first), arc_declaration_clone(i.ref->second));
+    }
+}
+
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
     ASSERT(!my current_scope_stack);
     if (ret->get) {

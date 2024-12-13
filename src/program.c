@@ -71,6 +71,132 @@ static void program_add_builtins(Program* me) {
     vec_scope_cptr_push(&my global_scopes, &my builtins_scope);
 }
 
+static bool get_import_path_of_index(Fs const* fs, csview path, cstr* ret) {
+    *ret = cstr_from_sv(path);
+    intptr_t base_len = cstr_size(ret);
+
+    cstr_append_n(ret, &path_sep, 1);
+    cstr_append_lit(ret, "index.d.ts");
+    if (fs_is_reg_file(fs, cstr_str(ret))) {
+        return true;
+    }
+    cstr_resize(ret, base_len, '_');
+
+    cstr_append_n(ret, &path_sep, 1);
+    cstr_append_lit(ret, "index.ts");
+    if (fs_is_reg_file(fs, cstr_str(ret))) {
+        return true;
+    }
+
+    cstr_drop(ret);
+    return false;
+}
+
+static bool get_import_path_find_extension(Fs const* fs, csview path, cstr* ret) {
+    *ret = cstr_from_sv(path);
+    intptr_t base_len = cstr_size(ret);
+
+    if (csview_ends_with(path, ".js")) {
+        base_len -= 3;
+        cstr_resize(ret, base_len, '_');
+    }
+
+    if (fs_is_directory(fs, cstr_str(ret))) {
+        cstr ret2;
+        if (get_import_path_of_index(fs, cstr_sv(ret), &ret2)) {
+            cstr_drop(ret);
+            *ret = ret2;
+            return true;
+        }
+    }
+
+    cstr_append_lit(ret, ".d.ts");
+    if (fs_is_reg_file(fs, cstr_str(ret))) {
+        return true;
+    }
+    cstr_resize(ret, base_len, '_');
+
+    cstr_append_lit(ret, ".ts");
+    if (fs_is_reg_file(fs, cstr_str(ret))) {
+        return true;
+    }
+    cstr_resize(ret, base_len, '_');
+
+    cstr_drop(ret);
+    return false;
+}
+
+static bool get_import_path_relative(Fs const* fs, csview cwd, csview path, cstr* ret) {
+    cstr str = cstr_from_sv(cwd);
+    cstr_append_n(&str, &path_sep, 1);
+    cstr_append_sv(&str, path);
+
+    if (get_import_path_find_extension(fs, cstr_sv(&str), ret)) {
+        cstr_drop(&str);
+        return true;
+    }
+
+    cstr_drop(&str);
+    return false;
+}
+
+static bool get_node_modules_dir(Fs const* fs, csview path, cstr* ret) {
+    cstr str = cstr_from_sv(path);
+    while (true) {
+        intptr_t start_len = cstr_size(&str);
+        cstr_append_n(&str, &path_sep, 1);
+        cstr_append_lit(&str, "node_modules");
+        if (fs_is_directory(fs, cstr_str(&str))) {
+            *ret = str;
+            return true;
+        }
+        cstr_resize(&str, start_len, '_');
+        cstr_resize(&str, basename_of(cstr_str(&str)) - cstr_str(&str), '_');
+        if (cstr_size(&str) <= 2 && (
+                cstr_empty(&str) ||
+                cstr_equals(&str, ".") ||
+                cstr_equals(&str, "..") ||
+                (cstr_size(&str) == 1 && *cstr_str(&str) == path_sep)
+            )
+        ) {
+            cstr_drop(&str);
+            return false;
+        }
+    }
+}
+
+static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
+    if (csview_starts_with(path, "/")) {
+        return get_import_path_find_extension(fs, path, ret);
+    }
+
+    if (get_import_path_relative(fs, cwd, path, ret)) {
+        return true;
+    }
+
+    cstr node_modules_path;
+    if (get_node_modules_dir(fs, cwd, &node_modules_path)) {
+        intptr_t base_len = cstr_size(&node_modules_path);
+
+        cstr_append_n(&node_modules_path, &path_sep, 1);
+        cstr_append_lit(&node_modules_path, "@types");
+        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
+            cstr_drop(&node_modules_path);
+            return true;
+        }
+        cstr_resize(&node_modules_path, base_len, '_');
+
+        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
+            cstr_drop(&node_modules_path);
+            return true;
+        }
+
+        cstr_drop(&node_modules_path);
+    }
+
+    return false;
+}
+
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     ASSERT(errs);
     ASSERT(fs);
@@ -132,7 +258,24 @@ static SourceFile* program_add_source(Program* me, const char* path) {
             source_file_make(cstr_clone(canonical_path), contents, my errs)
         );
         hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
+
+        cstr dir_path = cstr_from_sv(dirname_of(path));
+        cstr index_file_path;
+        if (get_import_path_of_index(my fs, cstr_sv(&dir_path), &index_file_path)) {
+            SourceFile* index_file = program_add_source(me, cstr_str(&index_file_path));
+            if (index_file && index_file != source_file) {
+                source_file->index_file = index_file;
+            }
+            cstr_drop(&index_file_path);
+        }
+        cstr_drop(&dir_path);
+
+        // Important: we add the source file to the hash map before calling program_add_source() on the index file (so
+        // getting the index file for an index file returns the already-loaded file instead of infinitely recursing),
+        // but we push to the pending files vec after (so we process the index file first and thus have already added
+        // it's names when we need to add them to this file)
         vec_source_file_ptr_push(&my pending_source_files, source_file);
+
         return source_file;
     }
 }
@@ -166,6 +309,11 @@ SourceFile* program_load(Program* me, const char* path) {
         // Remove the top source file from the pending list and parse it (order of processing shouldn't matter here)
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
         parse_file(source, my errs);
+
+        // If we've previously found an index.ts in the directory of the file, add it's names before adding names first
+        if (source->index_file) {
+            scope_copy_declarations_from(&source->scope, &source->index_file->scope);
+        }
 
         // Add the toplevel block's names to the file's scope
         block_add_names(&source->ast, &source->scope);
@@ -214,117 +362,6 @@ SourceFile* program_preload(Program* me, const char* path) {
 
 SourceFile* program_preload_es5(Program* me) {
     return program_preload(me, "thirdparty/tsc/lib/es5.d.ts");
-}
-
-static bool get_import_path_final(Fs const* fs, csview path, cstr* ret) {
-    *ret = cstr_from_sv(path);
-    intptr_t base_len = cstr_size(ret);
-
-    if (csview_ends_with(path, ".js")) {
-        base_len -= 3;
-        cstr_resize(ret, base_len, '_');
-    }
-
-    if (fs_is_directory(fs, cstr_str(ret))) {
-        cstr_append_n(ret, &path_sep, 1);
-        cstr_append_lit(ret, "index.d.ts");
-        if (fs_is_reg_file(fs, cstr_str(ret))) {
-            return true;
-        }
-        cstr_resize(ret, base_len, '_');
-
-        cstr_append_n(ret, &path_sep, 1);
-        cstr_append_lit(ret, "index.ts");
-        if (fs_is_reg_file(fs, cstr_str(ret))) {
-            return true;
-        }
-    }
-
-    cstr_append_lit(ret, ".d.ts");
-    if (fs_is_reg_file(fs, cstr_str(ret))) {
-        return true;
-    }
-    cstr_resize(ret, base_len, '_');
-
-    cstr_append_lit(ret, ".ts");
-    if (fs_is_reg_file(fs, cstr_str(ret))) {
-        return true;
-    }
-    cstr_resize(ret, base_len, '_');
-
-    cstr_drop(ret);
-    return false;
-}
-
-static bool get_import_path_relative(Fs const* fs, csview cwd, csview path, cstr* ret) {
-    cstr str = cstr_from_sv(cwd);
-    cstr_append_n(&str, &path_sep, 1);
-    cstr_append_sv(&str, path);
-
-    if (get_import_path_final(fs, cstr_sv(&str), ret)) {
-        cstr_drop(&str);
-        return true;
-    }
-
-    cstr_drop(&str);
-    return false;
-}
-
-static bool get_node_modules_dir(Fs const* fs, csview path, cstr* ret) {
-    cstr str = cstr_from_sv(path);
-    while (true) {
-        intptr_t start_len = cstr_size(&str);
-        cstr_append_n(&str, &path_sep, 1);
-        cstr_append_lit(&str, "node_modules");
-        if (fs_is_directory(fs, cstr_str(&str))) {
-            *ret = str;
-            return true;
-        }
-        cstr_resize(&str, start_len, '_');
-        cstr_resize(&str, basename_of(cstr_str(&str)) - cstr_str(&str), '_');
-        if (cstr_size(&str) <= 2 && (
-                cstr_empty(&str) ||
-                cstr_equals(&str, ".") ||
-                cstr_equals(&str, "..") ||
-                (cstr_size(&str) == 1 && *cstr_str(&str) == path_sep)
-            )
-        ) {
-            cstr_drop(&str);
-            return false;
-        }
-    }
-}
-
-static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
-    if (csview_starts_with(path, "/")) {
-        return get_import_path_final(fs, path, ret);
-    }
-
-    if (get_import_path_relative(fs, cwd, path, ret)) {
-        return true;
-    }
-
-    cstr node_modules_path;
-    if (get_node_modules_dir(fs, cwd, &node_modules_path)) {
-        intptr_t base_len = cstr_size(&node_modules_path);
-
-        cstr_append_n(&node_modules_path, &path_sep, 1);
-        cstr_append_lit(&node_modules_path, "@types");
-        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
-            cstr_drop(&node_modules_path);
-            return true;
-        }
-        cstr_resize(&node_modules_path, base_len, '_');
-
-        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
-            cstr_drop(&node_modules_path);
-            return true;
-        }
-
-        cstr_drop(&node_modules_path);
-    }
-
-    return false;
 }
 
 SourceFile* program_load_import(Program* me, Span path_span, csview path) {
