@@ -370,7 +370,7 @@ static inline bool hop_comment(Parser* parent) {
     return true;
 }
 
-static inline void hop_whitespace(Parser* parent) {
+static inline void hop_whitespace_full(Parser* parent, bool hop_comments, bool hop_newlines) {
     // TODO unicode and additional character support: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar
     if (parent->pos == parent->whitespace_end) {
         return;
@@ -385,12 +385,15 @@ static inline void hop_whitespace(Parser* parent) {
                 break;
 
             case '\n':
+                if (!hop_newlines) {
+                    goto ws_end;
+                }
                 parent->whitespace = WHITESPACE_NEWLINE;
                 parent->pos++;
                 break;
 
             case '/':
-                if (!hop_comment(parent)) {
+                if (!hop_comments || !hop_comment(parent)) {
                     goto ws_end;
                 }
                 break;
@@ -404,6 +407,10 @@ static inline void hop_whitespace(Parser* parent) {
 
 ws_end:
     parent->whitespace_end = parent->pos;
+}
+
+static inline void hop_whitespace(Parser* parent) {
+    hop_whitespace_full(parent, true, true);
 }
 
 static inline bool hop_start(Parser* parent, const char* prefix) {
@@ -2956,6 +2963,107 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
 }
 
+static bool parse_source_directive(Parser* parent, SourceDirective* ret) {
+    Parser p = parser(parent);
+    if (!hop_start(&p, "///")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace_full(&p, false, false);
+    if (!hop_char(&p, '<')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace_full(&p, false, false);
+    Span xml_tag;
+    if (!parse_identifier_or_keyword(&p, &xml_tag)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace_full(&p, false, false);
+    bool found_reference_attr = false;
+    typeof(ret->tag) reference_attr;
+    cstr reference_path = cstr_null;
+    Span reference_path_span;
+    bool reference_preserve = false;
+    while (true) {
+        if (hop_start(&p, "/>")) {
+            break;
+        }
+
+        Span attr;
+        if (!parse_identifier_or_keyword(&p, &attr)) {
+            cstr_drop(&reference_path);
+            return parse_fail(&p);
+        }
+        hop_whitespace_full(&p, false, false);
+
+        cstr value = cstr_null;
+        Anchor value_a = anchor(&p);
+        if (hop_char(&p, '=')) {
+            hop_whitespace_full(&p, false, false);
+            if (*p.pos == '\'' || *p.pos == '"') {
+                if (!parse_string(&p, &value)) {
+                    value = cstr_null;
+                }
+            } else {
+                Span value_span;
+                if (parse_identifier_or_keyword(&p, &value_span)) {
+                    value = cstr_from_span(value_span);
+                }
+            }
+        }
+
+        if (span_equals(xml_tag, "reference")) {
+            if (!found_reference_attr) {
+                if ((span_equals(attr, "path")  && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_PATH,  true)) ||
+                    (span_equals(attr, "lib")   && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_LIB,   true)) ||
+                    (span_equals(attr, "types") && (reference_attr = SOURCE_DIRECTIVE_REFERENCE_TYPES, true))
+                ) {
+                    found_reference_attr = true;
+                    reference_path = cstr_move(&value);
+                    reference_path_span = span_from(value_a);
+                }
+            }
+            if (span_equals(attr, "preserve") && cstr_equals(&value, "true")) {
+                reference_preserve = true;
+            }
+        }
+
+        cstr_drop(&value);
+        hop_whitespace_full(&p, false, false);
+    }
+
+    if (found_reference_attr) {
+        *ret = (SourceDirective){
+            .tag = reference_attr,
+            .path = reference_path,
+            .path_span = reference_path_span,
+            .preserve = reference_preserve,
+        };
+        return parse_success(&p);
+    } else {
+        return parse_fail(&p);
+    }
+}
+
+static void parse_source_directives(Parser* parent, SourceFile* source) {
+    while (true) {
+        hop_whitespace_full(parent, false, true);
+
+        Parser p = parser(parent);
+        if (!hop_comment(&p)) {
+            parse_fail(&p);
+            return;
+        }
+        const char* comment_end = p.pos;
+        parse_fail(&p);
+
+        SourceDirective directive;
+        if (parse_source_directive(parent, &directive)) {
+            vec_source_directive_push(&source->directives, directive);
+        }
+        parent->pos = comment_end;
+    }
+}
+
 static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
     Parser p = parser(parent);
     ret->items = vec_port_item_init();
@@ -4048,6 +4156,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     };
 
     p.pos = file_start_excluding_bom(p.pos);
+    parse_source_directives(&p, source);
     hop_whitespace(&p);
 
     while (true) {
