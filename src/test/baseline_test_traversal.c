@@ -445,18 +445,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
             }
         }
     } else { // If the type is generic
-
-        /* This logic is still fucky, use this to test:
-type Foo<T> = T | { x: Foo<T>}
-type Bar<T> = 1 extends T ? [T] : T
-type Baz<T> = 1 extends number ? [T] : T
-type Biz<T> = {notbiz: T} extends {biz: T} ? [T] : T
-type Buz<T> = {buz: 7} extends {buz: T} ? [T] : T
-type Buzz<T extends number> = {buzz: T} extends {buzz: number} ? [T] : T
-type Boop<T> = 7
-type Beep<T> = {beep: 7}
-        */
-
+        // This logic is still fucky, to test use ttttConditionalTypeResolving.ts
         to_drop = type_identifier(c_new(IdentifierType, {
             .name = my name,
         }));
