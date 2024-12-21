@@ -10,6 +10,7 @@ add_project_arguments([
     '-fno-strict-aliasing',
     '-Wno-missing-braces',
     '-Wno-unused-function',
+    '-Wno-format-zero-length',
     '-Wno-error=unused-variable',
     '-Wno-error=unused-parameter',
     '-Wno-error=unused-function',

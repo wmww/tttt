@@ -82,8 +82,7 @@ int main(int argc, const char** argv) {
         if (!error_ctx_empty(&errs)) {
             type_errors = vec_error_size(&errs.errors);
             print_error_ctx(&errs);
-            error_ctx_drop(&errs);
-            errs = error_ctx_init();
+            error_ctx_clear(&errs);
             ret = 1;
         }
     }
