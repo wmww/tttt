@@ -1,0 +1,10 @@
+type Foo<T> = T | { x: Foo<T>}
+type Bar<T> = 1 extends T ? [T] : T
+type Baz<T> = 1 extends number ? [T] : T
+type Biz<T> = {notbiz: T} extends {biz: T} ? [T] : T
+type Buz<T> = {buz: 7} extends {buz: T} ? [T] : T
+type Buzz<T extends number> = {buzz: T} extends {buzz: number} ? [T] : T
+type Boop<T> = 7
+type Beep<T> = {beep: 7}
+type Zeep<T> = 1 extends number ? (1 extends T ? 1 : 2) : 3
+type Zoop<T> = 1 extends number ? (1 extends T ? 1 : (2 extends number ? 4 : 5)) : 3
