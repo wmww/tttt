@@ -373,13 +373,6 @@ SourceFile* program_load_import(Program* me, Span path_span, csview path) {
         ret = program_add_source(me, cstr_str(&source_path));
         cstr_drop(&source_path);
     } else {
-        error_ctx_error(
-            my errs,
-            path_span,
-            2307,
-            "Cannot find module '%.*s' or its corresponding type declarations.",
-            c_SV(path)
-        );
         ret = &my not_found_file;
     }
     return ret;
