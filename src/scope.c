@@ -267,7 +267,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     ASSERT(!my current_scope_stack);
     ASSERT(item->source_file);
 
-    if (item->source_file->scope.is_placeholder) {
+    if (!source_file_is_valid(item->source_file)) {
         item->error_reported = true;
         add_placeholder_for_failed_import(me, item);
         return;

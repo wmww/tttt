@@ -5,11 +5,18 @@ void source_directive_drop(SourceDirective* me) {
 }
 
 SourceFile source_file_make(cstr canonical_path, cstr contents, ErrorCtx* errs) {
+    ASSERT(cstr_size(&canonical_path));
     return (SourceFile){
         .canonical_path = canonical_path,
         .contents = contents,
-        .scope = cstr_size(&canonical_path) ? scope_init_toplevel(errs) : scope_init_placeholder(errs),
+        .scope = scope_init_toplevel(errs),
         .typecheck = true,
+    };
+}
+
+SourceFile source_file_make_not_found_placeholder(ErrorCtx* errs) {
+    return (SourceFile){
+        .scope = scope_init_placeholder(errs),
     };
 }
 

@@ -204,7 +204,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
-        .not_found_file = source_file_make(cstr_null, cstr_null, errs),
+        .not_found_file = source_file_make_not_found_placeholder(errs),
     });
     errs->program = ret;
     program_add_builtins(ret);
