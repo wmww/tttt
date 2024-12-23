@@ -297,14 +297,11 @@ function renderTokensTo(parent, tokens) {
       } break;
 
       case Token.BUTTON: {
-        const div = document.createElement('div');
         const button = document.createElement('button');
         button.classList.add(token.type);
         button.textContent = token.text;
         applyTokenToElem(token, button);
-        applyTokenToElem(token, div);
-        div.appendChild(button)
-        pendingLine.appendChild(div);
+        pendingLine.appendChild(button);
       } break;
 
       case Token.NEWLINE: {
