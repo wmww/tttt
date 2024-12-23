@@ -46,6 +46,9 @@ void nonfatal_internal(const char* error_type, const char* file, int line, const
     vfprintf(stderr, fmt, va);
     va_end(va);
     fprintf(stderr, "\n");
+#ifdef INCLUDE_VALGRIND
+    VALGRIND_PRINTF_BACKTRACE("");
+#endif
 }
 
 void inhibit_nonfatals() {
