@@ -8166,7 +8166,7 @@ const baselines = {
         types: true,
     },
     'declarationFilesGeneratingTypeReferences': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -8181,7 +8181,7 @@ const baselines = {
         types: false,
     },
     'declarationFilesWithTypeReferences3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52231,7 +52231,7 @@ const baselines = {
         types: false,
     },
     'library-reference-3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52251,7 +52251,7 @@ const baselines = {
         types: false,
     },
     'library-reference-7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

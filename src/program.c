@@ -235,17 +235,16 @@ void program_add_globals(Program* me, Scope const* scope) {
 
 // Returns null if path can't be loaded
 static SourceFile* program_add_source(Program* me, const char* path) {
-    if (my locked) {
-        NONFATAL("Could not add '%s' because program is locked", path);
-        return &my not_found_file;
-    }
-
     cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
     auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
     if (value) {
         // A source file is already created for this path
         cstr_drop(&canonical_path);
         return value->second.get;
+    } else if (my locked) {
+        NONFATAL("Could not add '%s' because program is locked", path);
+        cstr_drop(&canonical_path);
+        return &my not_found_file;
     } else {
         // No source file is created for this path, load it
         cstr contents;
@@ -310,6 +309,16 @@ SourceFile* program_load(Program* me, const char* path) {
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
         parse_file(source, my errs);
 
+        c_foreach(j, vec_source_directive, source->directives) {
+            switch (j.ref->tag) {
+                case SOURCE_DIRECTIVE_REFERENCE_PATH:
+                case SOURCE_DIRECTIVE_REFERENCE_LIB:
+                case SOURCE_DIRECTIVE_REFERENCE_TYPES:
+                    program_load_import(me, j.ref->path_span, cstr_sv(&j.ref->path));
+                    break;
+            }
+        }
+
         // If we've previously found an index.ts in the directory of the file, add it's names before adding names first
         if (source->index_file && !source->index_file->scope.is_module) {
             scope_copy_declarations_from(&source->scope, &source->index_file->scope);
@@ -323,6 +332,24 @@ SourceFile* program_load(Program* me, const char* path) {
     }
 
     my locked = true;
+
+    c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
+        SourceFile* source = *i.ref;
+        c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
+            c_foreach(j, vec_source_directive, source->directives) {
+                switch (j.ref->tag) {
+                    case SOURCE_DIRECTIVE_REFERENCE_PATH:
+                    case SOURCE_DIRECTIVE_REFERENCE_LIB:
+                    case SOURCE_DIRECTIVE_REFERENCE_TYPES: {
+                        SourceFile const* import = program_load_import(me, j.ref->path_span, cstr_sv(&j.ref->path));
+                        if (import) {
+                            scope_copy_declarations_from(&source->scope, &import->scope);
+                        }
+                    }   break;
+                }
+            }
+        }
+    }
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
