@@ -1,6 +1,10 @@
 #include "prelude.h"
 #include "display.h"
 
+#ifdef INCLUDE_VALGRIND
+#include <valgrind/valgrind.h>
+#endif
+
 #ifdef DEBUG_ALLOCATOR
 intptr_t debug_allocation_count = 0;
 #endif // DEBUG_ALLOCATOR
@@ -20,9 +24,8 @@ void panic_internal(const char* error_type, const char* file, int line, const ch
     vfprintf(stderr, fmt, va);
     va_end(va);
     fprintf(stderr, "\n");
-#ifdef DEBUG_BUILD
-    // gives us a stack trace in valgrind, there's probably a better way to do it
-    fprintf(stderr, "%p\n", *(void**)(0xabc));
+#ifdef INCLUDE_VALGRIND
+    VALGRIND_PRINTF_BACKTRACE("");
 #endif
     exit(1);
 }

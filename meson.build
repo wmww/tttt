@@ -15,6 +15,7 @@ add_project_arguments([
     '-Wno-error=unused-parameter',
     '-Wno-error=unused-function',
     '-Wno-error=unused-but-set-variable',
+    '-Wno-error=format-zero-length',
     '-Winfinite-recursion',
     '-Werror=implicit-function-declaration',
     '-Werror=return-type',
@@ -23,6 +24,7 @@ add_project_arguments([
 
 if get_option('buildtype').startswith('debug')
   add_project_arguments('-DDEBUG_BUILD', language : 'c')
+  add_project_arguments('-DINCLUDE_VALGRIND', language : 'c')
 endif
 
 subdir('thirdparty')
