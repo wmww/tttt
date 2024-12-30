@@ -125,7 +125,9 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
         }
         InterfaceMember const* matching = vec_interface_member_at(reference, index);
         // TODO: put this back once it doesn't cause problems with function overloads in the standard library
-        ignore errs; /*
+        ignore errs;
+        ignore matching;
+        /*
         bool check_type = true;
         if (vec_span_size(&i.ref->declarations) &&
             vec_span_size(&matching->declarations) &&
@@ -158,7 +160,9 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
             //i.ref->type = type_clone(matching->type);
         }
         */
-        vec_span_drop(&i.ref->declarations);
-        i.ref->declarations = vec_span_clone(matching->declarations);
+
+        // what the fuck was this here for? I have no idea
+        //vec_span_drop(&i.ref->declarations);
+        //i.ref->declarations = vec_span_clone(matching->declarations);
     }
 }

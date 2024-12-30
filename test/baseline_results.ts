@@ -19037,7 +19037,7 @@ const baselines = {
     },
     'methodSignatureHandledDeclarationKindForSymbol': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'mismatchedClassConstructorVariable': {
@@ -22136,7 +22136,7 @@ const baselines = {
         types: false,
     },
     'observableInferenceCanBeMade': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -24241,7 +24241,7 @@ const baselines = {
         types: true,
     },
     'recursiveConditionalEvaluationNonInfinite': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

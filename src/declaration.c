@@ -4,17 +4,21 @@
 
 void merged_type_add(MergedType* me, Type t) {
     switch (my lazy.tag) {
-        case LAZY_TYPE_EVALUATED:
-            PANIC("Type added to merged type after evaluated");
-
         case LAZY_TYPE_UNINITIALIZED:
-            my lazy.tag = LAZY_TYPE_MERGED;
+            my lazy = lazy_type_preeval(t);
             break;
 
-        case LAZY_TYPE_MERGED: break;
+        case LAZY_TYPE_EVALUATED:
+            vec_type_push(&my merge_list, my lazy.evaluated);
+            my lazy.tag = LAZY_TYPE_MERGED;
+            // fallthrough
+
+        case LAZY_TYPE_MERGED:
+            vec_type_push(&my merge_list, t);
+            break;
+
         default: UNREACHABLE;
     }
-    vec_type_push(&my merge_list, t);
 }
 
 MergedType merged_type_clone(MergedType me) {
