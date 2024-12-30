@@ -99,6 +99,12 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             case STATEMENT_DECL_INTERFACE:
                 break;
 
+            case STATEMENT_DECL_NAMESPACE:
+                if (i.ref->decl.namespace.declaration.get && i.ref->decl.namespace.declaration.get->value_tag) {
+                    has_value = true;
+                }
+                break;
+
             default:
                 has_value = true;
                 break;
