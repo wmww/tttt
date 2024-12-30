@@ -34,78 +34,100 @@ DeclProps decl_props_clone(DeclProps me) {
     return me;
 }
 
-bool declaration_test_mergable(Declaration const* me, DeclProps const* props, ErrorCtx* errs) {
-    bool mergable = true;
+static bool declaration_types_test_mergable(
+    Span a_name, DeclarationTag a_tag,
+    Span b_name, DeclarationTag b_tag,
+    ErrorCtx* errs
+) {
+    if (!a_tag || !b_tag) return true;
 
-    if (declaration_tag_has_type(props->tag)) {
-        bool can_merge = false;
-        switch (my type_tag) {
-            case DECLARATION_NONE:
-                can_merge = true;
-                break;
+    bool mergable = false;
 
-            case DECLARATION_INTERFACE:
-                switch (props->tag) {
-                    case DECLARATION_INTERFACE:
-                    case DECLARATION_CLASS:
-                        can_merge = true;
-                        break;
+    switch (a_tag) {
+        case DECLARATION_INTERFACE:
+            switch (b_tag) {
+                case DECLARATION_INTERFACE:
+                case DECLARATION_CLASS:
+                    mergable = true;
+                    break;
 
-                    default: break;
-                }
-                break;
-
-            case DECLARATION_CLASS:
-                if (props->tag == DECLARATION_INTERFACE) {
-                    can_merge = true;
-                }
-                break;
-
-            case DECLARATION_ENUM:
-                if (props->tag == DECLARATION_ENUM) {
-                    can_merge = true;
-                }
-                break;
-
-            default: break;
-        }
-        if (!can_merge) {
-            mergable = false;
-            if (my type_tag == DECLARATION_ENUM || props->tag == DECLARATION_ENUM) {
-                error_ctx_error(errs, my name, 2567,
-                    "Enum declarations can only merge with namespace or other enum declarations.");
-                error_ctx_error(errs, props->name, 2567,
-                    "Enum declarations can only merge with namespace or other enum declarations.");
-            } else {
-                if (my type_tag != DECLARATION_GENERIC_TYPE) {
-                    error_ctx_error(errs, my name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(my name));
-                }
-                error_ctx_error(errs, props->name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(props->name));
+                default: break;
             }
-        }
+            break;
+
+        case DECLARATION_CLASS:
+            if (b_tag == DECLARATION_INTERFACE) {
+                mergable = true;
+            }
+            break;
+
+        case DECLARATION_ENUM:
+            if (b_tag == DECLARATION_ENUM) {
+                mergable = true;
+            }
+            break;
+
+        default: break;
     }
 
-    if (my value_tag && declaration_tag_has_value(props->tag)) {
-        mergable = false;
-        if (my value_tag == DECLARATION_ENUM || props->tag == DECLARATION_ENUM) {
-            error_ctx_error(errs, my name, 2567,
+    if (!mergable) {
+        if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
+            error_ctx_error(errs, a_name, 2567,
                 "Enum declarations can only merge with namespace or other enum declarations.");
-            error_ctx_error(errs, props->name, 2567,
+            error_ctx_error(errs, b_name, 2567,
                 "Enum declarations can only merge with namespace or other enum declarations.");
-        } else if (my value_tag == DECLARATION_FUNCTION && props->tag == DECLARATION_FUNCTION) {
-            // TODO: allow function overloads
-        } else if (my value_tag == DECLARATION_ARGUMENT) {
-            error_ctx_error(errs, props->name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(props->name));
-            error_ctx_error(errs, my name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(my name));
         } else {
-            error_ctx_error(errs, props->name, 2451,
-                "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(props->name));
-            error_ctx_error(errs, my name, 2451,
-                "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(my name));
+            if (a_tag != DECLARATION_GENERIC_TYPE) {
+                error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));
+            }
+            error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
         }
     }
 
     return mergable;
+}
+
+static bool declaration_values_test_mergable(
+    Span a_name, DeclarationTag a_tag,
+    Span b_name, DeclarationTag b_tag,
+    ErrorCtx* errs
+) {
+    if (!a_tag || !b_tag) return true;
+
+    if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
+        error_ctx_error(errs, a_name, 2567,
+            "Enum declarations can only merge with namespace or other enum declarations.");
+        error_ctx_error(errs, b_name, 2567,
+            "Enum declarations can only merge with namespace or other enum declarations.");
+    } else if (a_tag == DECLARATION_FUNCTION && b_tag == DECLARATION_FUNCTION) {
+        // TODO: allow function overloads
+    } else if (a_tag == DECLARATION_ARGUMENT) {
+        error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
+        error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));
+    } else {
+        error_ctx_error(errs, b_name, 2451,
+            "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(b_name));
+        error_ctx_error(errs, a_name, 2451,
+            "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(a_name));
+    }
+
+    return false;
+}
+
+bool declaration_test_mergable(Declaration const* me, DeclProps const* props, ErrorCtx* errs) {
+    bool types_mergable = declaration_types_test_mergable(
+        my name, my type_tag,
+        props->name, declaration_tag_has_type(props->tag) ? props->tag : DECLARATION_NONE,
+        errs
+    );
+
+    bool values_mergable = declaration_values_test_mergable(
+        my name, my value_tag,
+        props->name, declaration_tag_has_value(props->tag) ? props->tag : DECLARATION_NONE,
+        errs
+    );
+
+    return types_mergable && values_mergable;
 }
 
 void declaration_init(Declaration* me, DeclProps props) {
