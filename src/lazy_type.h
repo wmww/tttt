@@ -20,7 +20,7 @@ typedef struct LazyType {
         LAZY_TYPE_ENUM_INTERFACE,
         LAZY_TYPE_INTERFACE_DECL,
         LAZY_TYPE_IDENTIFIER_TYPE,
-        LAZY_TYPE_DECLARATION,
+        LAZY_TYPE_MERGED,
         LAZY_TYPE_SCOPE_VALUE_INTERFACE,
     } tag;
     bool evaluation_started;

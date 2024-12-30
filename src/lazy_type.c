@@ -66,8 +66,8 @@ void lazy_type_evaluate(LazyType* me) {
             result = identifier_type_evaluate_type(c_container_of(me, IdentifierType, type));
             break;
 
-        case LAZY_TYPE_DECLARATION:
-            result = declaration_evaluate_declared_type(c_container_of(me, Declaration, declared_type_lazy));
+        case LAZY_TYPE_MERGED:
+            result = merged_type_evaluate_type(c_container_of(me, MergedType, lazy));
             break;
 
         case LAZY_TYPE_SCOPE_VALUE_INTERFACE:

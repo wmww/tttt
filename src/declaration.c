@@ -2,26 +2,54 @@
 #include "generic.h"
 #include "error.h"
 
+void merged_type_add(MergedType* me, Type t) {
+    switch (my lazy.tag) {
+        case LAZY_TYPE_EVALUATED:
+            PANIC("Type added to merged type after evaluated");
+
+        case LAZY_TYPE_UNINITIALIZED:
+            my lazy.tag = LAZY_TYPE_MERGED;
+            break;
+
+        case LAZY_TYPE_MERGED: break;
+        default: UNREACHABLE;
+    }
+    vec_type_push(&my merge_list, t);
+}
+
+MergedType merged_type_clone(MergedType me) {
+    me.merge_list = vec_type_clone(me.merge_list);
+    if (me.lazy.tag == LAZY_TYPE_EVALUATED) {
+        me.lazy.evaluated = type_clone(me.lazy.evaluated);
+    }
+    return me;
+}
+
+Type merged_type_evaluate_type(MergedType const* me) {
+    return interface_from_merged(&my merge_list);
+}
+
+void merged_type_drop(MergedType* me) {
+    vec_type_drop(&my merge_list);
+    lazy_type_drop(&my lazy);
+}
+
 void declaration_drop(Declaration* me) {
     vec_span_drop(&my declarations);
     vec_span_drop(&my namespaces);
     type_drop(&my value_type);
     type_drop(&my declared_type);
-    vec_type_drop(&my declared_type_list);
-    lazy_type_drop(&my declared_type_lazy);
+    merged_type_drop(&my merged_declared_type);
 }
 
 void declaration_clone_in_place(Declaration* me) {
     my declarations = vec_span_clone(my declarations);
     my namespaces = vec_span_clone(my namespaces);
     my value_type = type_clone(my value_type);
-    my declared_type_list = vec_type_clone(my declared_type_list);
-    my declared_type_lazy.tag = LAZY_TYPE_DECLARATION;
-    my declared_type = type_lazy(&my declared_type_lazy);
-}
-
-Type declaration_evaluate_declared_type(Declaration const* me) {
-    return interface_from_merged(&my declared_type_list);
+    my merged_declared_type = merged_type_clone(my merged_declared_type);
+    if (my declared_type.tag) {
+        my declared_type = type_lazy(&my merged_declared_type.lazy);
+    }
 }
 
 static inline Generic const* generic_or_null(Generic const* generic) {
@@ -165,14 +193,13 @@ void declaration_init(Declaration* me, DeclProps props) {
     if (declaration_tag_has_type(props.tag)) {
         if (!my type_tag) {
             my type_tag = props.tag;
-            my type_generic = generic_or_null(props.generic);;
-            my declared_type_lazy.tag = LAZY_TYPE_DECLARATION;
-            my declared_type = type_lazy(&my declared_type_lazy);
+            my type_generic = generic_or_null(props.generic);
+            my declared_type = type_lazy(&my merged_declared_type.lazy);
             my is_typeof = props.is_typeof;
         }
-        PANIC_IF(my declared_type_lazy.tag != LAZY_TYPE_DECLARATION,
-            "Type added to declaration after LazyType already evaluated");
-        vec_type_push(&my declared_type_list, props.declared_type);
+        //lazy_type_drop(&my merged_declared_type.lazy);
+        //my merged_declared_type.lazy = lazy_type_preeval(props.declared_type);
+        merged_type_add(&my merged_declared_type, props.declared_type);
     } else if (props.declared_type.tag) {
         PANIC("declaration_init() called with tag %d and non-empty declared type", props.tag);
     }
