@@ -38,16 +38,22 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
     return -1;
 }
 
-Type interface_from_merged(VecType const* types) {
-    switch (vec_type_size(types)) {
+Type interface_from_merged(VecType types) {
+    switch (vec_type_size(&types)) {
         case 0:
             NONFATAL("Tried to merge type list with zero types");
+            vec_type_drop(&types);
             return type_never;
-        case 1: return type_clone(*type_resolve(vec_type_at(types, 0)));
+
+        case 1:
+            Type ret = vec_type_pull(&types);
+            vec_type_drop(&types);
+            return ret;
+
         default: break;
     }
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(type_i, vec_type, *types) {
+    c_foreach(type_i, vec_type, types) {
         Type const* type = type_resolve(type_i.ref);
         if (type->tag != TYPE_INTERFACE) {
             if (type->tag != TYPE_ANY) {
@@ -60,6 +66,7 @@ Type interface_from_merged(VecType const* types) {
                 cstr_drop(&type_s);
             }
             vec_interface_member_drop(&members);
+            vec_type_drop(&types);
             return type_any;
         }
         c_foreach(new_member_i, vec_interface_member, type->interface.members) {
@@ -85,6 +92,7 @@ Type interface_from_merged(VecType const* types) {
             }
         }
     }
+    vec_type_drop(&types);
     return type_interface((Interface){
         .members = members,
     });

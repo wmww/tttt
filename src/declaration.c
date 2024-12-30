@@ -25,8 +25,10 @@ MergedType merged_type_clone(MergedType me) {
     return me;
 }
 
-Type merged_type_evaluate_type(MergedType const* me) {
-    return interface_from_merged(&my merge_list);
+Type merged_type_evaluate_type(MergedType* me) {
+    Type ret = interface_from_merged(my merge_list);
+    my merge_list = vec_type_init();
+    return ret;
 }
 
 void merged_type_drop(MergedType* me) {
@@ -197,8 +199,6 @@ void declaration_init(Declaration* me, DeclProps props) {
             my declared_type = type_lazy(&my merged_declared_type.lazy);
             my is_typeof = props.is_typeof;
         }
-        //lazy_type_drop(&my merged_declared_type.lazy);
-        //my merged_declared_type.lazy = lazy_type_preeval(props.declared_type);
         merged_type_add(&my merged_declared_type, props.declared_type);
     } else if (props.declared_type.tag) {
         PANIC("declaration_init() called with tag %d and non-empty declared type", props.tag);
