@@ -45,6 +45,7 @@ void declaration_drop(Declaration* me) {
     vec_span_drop(&my namespaces);
     type_drop(&my value_type);
     type_drop(&my declared_type);
+    merged_type_drop(&my merged_value_type);
     merged_type_drop(&my merged_declared_type);
 }
 
@@ -52,6 +53,10 @@ void declaration_clone_in_place(Declaration* me) {
     my declarations = vec_span_clone(my declarations);
     my namespaces = vec_span_clone(my namespaces);
     my value_type = type_clone(my value_type);
+    my merged_value_type = merged_type_clone(my merged_value_type);
+    if (my value_type.tag) {
+        my value_type = type_lazy(&my merged_value_type.lazy);
+    }
     my merged_declared_type = merged_type_clone(my merged_declared_type);
     if (my declared_type.tag) {
         my declared_type = type_lazy(&my merged_declared_type.lazy);
@@ -146,7 +151,7 @@ static bool declaration_values_test_mergable(
         return true;
     } else if (a_tag == DECLARATION_FUNCTION && b_tag == DECLARATION_FUNCTION) {
         // TODO: allow function overloads
-        return true;
+        return false;
     } else if (a_tag == DECLARATION_ARGUMENT) {
         error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
         error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));
@@ -186,12 +191,10 @@ void declaration_init(Declaration* me, DeclProps props) {
     if (declaration_tag_has_value(props.tag)) {
         if (!my value_tag) {
             my value_tag = props.tag;
-            my value_type = props.value_type;
             my value_generic = generic_or_null(props.generic);
-        } else {
-            NONFATAL("Tried to add multiple values to declaration %.*s", c_SPAN(my name));
-            type_drop(&props.value_type);
+            my value_type = type_lazy(&my merged_value_type.lazy);
         }
+        merged_type_add(&my merged_value_type, props.value_type);
     } else if (props.value_type.tag) {
         PANIC("declaration_init() called with tag %d and non-empty value type", props.tag);
     }

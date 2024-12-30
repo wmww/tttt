@@ -76,6 +76,7 @@ typedef struct Declaration {
     Type declared_type;
     Generic const* type_generic;
     bool is_typeof;
+    MergedType merged_value_type;
     MergedType merged_declared_type;
     DeclarationTag namespace_tag;
     // This is allowed to be null when declaration_tag_has_namespace() returns true. In this case every declaration

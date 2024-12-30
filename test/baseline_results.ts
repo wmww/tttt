@@ -41318,7 +41318,7 @@ const baselines = {
     'esDecorators-classDeclaration-commonjs-classNamespaceMerge': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'esDecorators-classDeclaration-commonjs': {
         errors: false,
