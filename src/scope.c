@@ -42,8 +42,6 @@ void scope_push_to_stack(Scope* me, ScopeStack* stack) {
 }
 
 void scope_push_generic_to_stack(Scope* me, Generic* generic, ScopeStack* stack) {
-    ASSERT(my tag == SCOPE_DEFAULT);
-    my tag = SCOPE_GENERIC;
     ASSERT(!my current_scope_stack);
     if (!generic_empty(generic)) {
         generic_add_names(generic, me);
@@ -95,14 +93,10 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
         }
     }
     ArcDeclaration non_exported = arc_declaration_clone(*ret);
-    if (props.exported && my tag != SCOPE_EXPORT) {
-        if (my export_scope) {
-            arc_declaration_drop(ret);
-            *ret = arc_declaration_init();
-            scope_init_declaration(my export_scope, ret, decl_props_clone(props));
-        } else {
-            NONFATAL("Tried to add exported declaration to non-toplevel scope");
-        }
+    if (props.exported && my export_scope) {
+        arc_declaration_drop(ret);
+        *ret = arc_declaration_init();
+        scope_init_declaration(my export_scope, ret, decl_props_clone(props));
     }
     declaration_init(non_exported.get, props);
     arc_declaration_drop(&non_exported);

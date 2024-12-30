@@ -45,7 +45,7 @@ void scope_stack_pop_scope(ScopeStack* me, Scope const* scope) {
 
 bool scope_stack_has_function(ScopeStack* me) {
     c_foreach_rev(i, vec_scope_cptr, my stack) {
-        if ((*i.ref)->tag == SCOPE_FUNCTION) {
+        if ((*i.ref)->is_function) {
             return true;
         }
     }

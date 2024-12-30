@@ -20,13 +20,8 @@ typedef struct Program Program;
 #include "wrap_stc/vec.h"
 
 typedef struct Scope {
-    enum {
-        SCOPE_DEFAULT,
-        SCOPE_EXPORT,
-        SCOPE_FUNCTION,
-        SCOPE_GENERIC,
-    } tag;
     ErrorCtx* errs;
+    bool is_function; // If this scope represents a function
     bool is_placeholder; // If this is a placeholder scope for a not-found file. If so all names should resolve to any
     bool is_module;
     csview default_export;
@@ -40,7 +35,9 @@ typedef struct Scope {
     Declaration const* super_declaration;
     LazyType value_interface;
     ScopeStack* current_scope_stack; // The ScopeStack this scope is in, or null if none
-    Scope* export_scope; // Owning pointer if this scope is file's toplevel scope, else null
+    // Owning pointer of the scope to put exported members into, or null if this scope cannot have exports or is itself
+    // an export scope
+    Scope* export_scope;
 } Scope;
 
 void scope_drop(Scope* me);
@@ -52,7 +49,6 @@ Scope scope_clone(Scope me);
 
 static inline Scope scope_init(ErrorCtx* errs) {
     return (Scope){
-        .tag = SCOPE_DEFAULT,
         SCOPE_INIT_DEFAULT,
     };
 }
@@ -61,7 +57,6 @@ static inline Scope scope_init_namespace(Span name, Scope const* parent, ErrorCt
     VecSpan namespaces = vec_span_clone(parent->namespaces);
     vec_span_push(&namespaces, name);
     return (Scope){
-        .tag = SCOPE_DEFAULT,
         .namespaces = namespaces,
         SCOPE_INIT_DEFAULT,
     };
@@ -69,9 +64,7 @@ static inline Scope scope_init_namespace(Span name, Scope const* parent, ErrorCt
 
 static inline Scope scope_init_toplevel(ErrorCtx* errs) {
     return (Scope){
-        .tag = SCOPE_DEFAULT,
         .export_scope = c_new(Scope, {
-            .tag = SCOPE_EXPORT,
             .errs = errs,
         }),
         SCOPE_INIT_DEFAULT,
@@ -80,7 +73,6 @@ static inline Scope scope_init_toplevel(ErrorCtx* errs) {
 
 static inline Scope scope_init_placeholder(ErrorCtx* errs) {
     return (Scope){
-        .tag = SCOPE_DEFAULT,
         .is_placeholder = true,
         SCOPE_INIT_DEFAULT,
     };
@@ -88,7 +80,7 @@ static inline Scope scope_init_placeholder(ErrorCtx* errs) {
 
 static inline Scope scope_init_function(ErrorCtx* errs) {
     return (Scope){
-        .tag = SCOPE_FUNCTION,
+        .is_function = true,
         SCOPE_INIT_DEFAULT,
     };
 }
