@@ -3911,7 +3911,7 @@ const baselines = {
         types: false,
     },
     'cloduleGenericOnSelfMember': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7731,7 +7731,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLocalClassHasRequiredDeclare': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29663,7 +29663,7 @@ const baselines = {
     'unusedNamespaceInNamespace': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedParameterInCatchClause': {
         errors: true,
@@ -44313,7 +44313,7 @@ const baselines = {
     'circular4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cjsImportInES2015': {
         errors: false,

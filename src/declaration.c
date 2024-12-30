@@ -92,26 +92,38 @@ static bool declaration_values_test_mergable(
     Span b_name, DeclarationTag b_tag,
     ErrorCtx* errs
 ) {
-    if (!a_tag || !b_tag) return true;
-
-    if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
+    if (!a_tag || !b_tag) {
+        return true;
+    } else if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
         error_ctx_error(errs, a_name, 2567,
             "Enum declarations can only merge with namespace or other enum declarations.");
         error_ctx_error(errs, b_name, 2567,
             "Enum declarations can only merge with namespace or other enum declarations.");
+        return false;
+    } else if (
+        (a_tag == DECLARATION_NAMESPACE_WITH_VALUE  && b_tag == DECLARATION_NAMESPACE_WITH_VALUE) ||
+        (a_tag == DECLARATION_NAMESPACE_WITH_VALUE  && b_tag == DECLARATION_CLASS) ||
+        (a_tag == DECLARATION_CLASS                 && b_tag == DECLARATION_NAMESPACE_WITH_VALUE)
+    ) {
+        if (a_tag == DECLARATION_NAMESPACE_WITH_VALUE && b_tag == DECLARATION_CLASS) {
+            error_ctx_error(errs, a_name, 2434,
+                "A namespace declaration cannot be located prior to a class or function with which it is merged.");
+        }
+        return true;
     } else if (a_tag == DECLARATION_FUNCTION && b_tag == DECLARATION_FUNCTION) {
         // TODO: allow function overloads
+        return true;
     } else if (a_tag == DECLARATION_ARGUMENT) {
         error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
         error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));
+        return false;
     } else {
         error_ctx_error(errs, b_name, 2451,
             "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(b_name));
         error_ctx_error(errs, a_name, 2451,
             "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(a_name));
+        return false;
     }
-
-    return false;
 }
 
 bool declaration_test_mergable(Declaration const* me, DeclProps const* props, ErrorCtx* errs) {
