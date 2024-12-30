@@ -47,10 +47,11 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
         function_scope.this_declaration = &my this_declaration;
     }
 
-    // Loop through all arguments and add them to the namespace
+    // Loop through all arguments and add them to the scope
     c_foreach(i, vec_function_arg, my args) {
         initialized_binding_add_names(&i.ref->initializer, &function_scope, (BindingAddNamesProps){
             .abstract_literals = true,
+            .is_function_arg = true,
             .full = i.ref->span,
         });
         if (i.ref->initializer.binding.tag == BINDING_IDENTIFIER &&

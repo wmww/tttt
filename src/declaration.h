@@ -8,8 +8,10 @@ typedef enum DeclarationTag {
     DECLARATION_NAMESPACE_WITH_VALUE,
     DECLARATION_FUNCTION,
     DECLARATION_VARIABLE,
+    DECLARATION_ARGUMENT,
     DECLARATION_INTERFACE,
     DECLARATION_TYPE,
+    DECLARATION_GENERIC_TYPE,
     DECLARATION_CLASS,
     DECLARATION_ENUM,
     DECLARATION_ENUM_CASE,
@@ -23,6 +25,7 @@ static inline bool declaration_tag_has_value(DeclarationTag tag) {
         [DECLARATION_NAMESPACE_WITH_VALUE] = true,
         [DECLARATION_FUNCTION] = true,
         [DECLARATION_VARIABLE] = true,
+        [DECLARATION_ARGUMENT] = true,
         [DECLARATION_CLASS] = true,
         [DECLARATION_ENUM] = true,
         [DECLARATION_ENUM_CASE] = true,
@@ -34,6 +37,7 @@ static inline bool declaration_tag_has_type(DeclarationTag tag) {
     static const bool ret[DECLARATION_TAG_COUNT] = {
         [DECLARATION_INTERFACE] = true,
         [DECLARATION_TYPE] = true,
+        [DECLARATION_GENERIC_TYPE] = true,
         [DECLARATION_CLASS] = true,
         [DECLARATION_ENUM] = true,
         [DECLARATION_ENUM_CASE] = true,
@@ -91,6 +95,9 @@ typedef struct DeclProps {
 } DeclProps;
 
 DeclProps decl_props_clone(DeclProps me);
+
+// Returns true if the two declarations can be merged
+bool declaration_test_mergable(Declaration const* me, DeclProps const* props, ErrorCtx* errs);
 
 // If called multiple times attempts to merge declarations, does not check if merging is allowed, scope.c does that
 void declaration_init(Declaration* me, DeclProps props);

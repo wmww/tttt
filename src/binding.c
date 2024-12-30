@@ -28,7 +28,7 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope, BindingAddNames
                 .name = my content_span,
                 .full = span_valid(props.full) ? props.full : my content_span,
                 .exported = props.exported,
-                .tag = DECLARATION_VARIABLE,
+                .tag = props.is_function_arg ? DECLARATION_ARGUMENT : DECLARATION_VARIABLE,
                 .value_type = type_refcopy(binding_get_effective_type(me)),
             });
             break;

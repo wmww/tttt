@@ -36,7 +36,7 @@ void generic_add_names(Generic const* me, Scope* scope) {
         scope_init_declaration(scope, &i.ref->owned_declaration, (DeclProps){
             .name = i.ref->name,
             .full = i.ref->name,
-            .tag = DECLARATION_TYPE,
+            .tag = DECLARATION_GENERIC_TYPE,
             .declared_type = type_refcopy(&i.ref->extends),
         });
         i.ref->declaration_ref = i.ref->owned_declaration.get;

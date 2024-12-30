@@ -36,6 +36,7 @@ typedef struct ObjectBindingItem {
 typedef struct BindingAddNamesProps {
     bool abstract_literals;
     bool exported;
+    bool is_function_arg;
     Span full;
 } BindingAddNamesProps;
 
