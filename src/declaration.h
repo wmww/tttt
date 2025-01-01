@@ -14,6 +14,8 @@ void merged_type_drop(MergedType* me);
 
 typedef enum DeclarationTag {
     DECLARATION_NONE = 0,
+    // The ordering of this enum matters! Declaration types lower in the list always take precedence over higher ones
+    // when merging declarations
     DECLARATION_NAMESPACE_TYPE_ONLY,
     DECLARATION_NAMESPACE_WITH_VALUE,
     DECLARATION_FUNCTION,

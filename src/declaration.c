@@ -190,10 +190,10 @@ void declaration_init(Declaration* me, DeclProps props) {
 
     if (declaration_tag_has_value(props.tag)) {
         if (!my value_tag) {
-            my value_tag = props.tag;
             my value_generic = generic_or_null(props.generic);
             my value_type = type_lazy(&my merged_value_type.lazy);
         }
+        if (props.tag > my value_tag) my value_tag = props.tag;
         merged_type_add(&my merged_value_type, props.value_type);
     } else if (props.value_type.tag) {
         PANIC("declaration_init() called with tag %d and non-empty value type", props.tag);
@@ -201,11 +201,11 @@ void declaration_init(Declaration* me, DeclProps props) {
 
     if (declaration_tag_has_type(props.tag)) {
         if (!my type_tag) {
-            my type_tag = props.tag;
             my type_generic = generic_or_null(props.generic);
             my declared_type = type_lazy(&my merged_declared_type.lazy);
             my is_typeof = props.is_typeof;
         }
+        if (props.tag > my type_tag) my type_tag = props.tag;
         merged_type_add(&my merged_declared_type, props.declared_type);
     } else if (props.declared_type.tag) {
         PANIC("declaration_init() called with tag %d and non-empty declared type", props.tag);
