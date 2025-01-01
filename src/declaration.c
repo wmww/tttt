@@ -196,8 +196,18 @@ void declaration_init(Declaration* me, DeclProps props) {
             my value_generic = generic_or_null(props.generic);
             my value_type = type_lazy(&my merged_value_type.lazy);
         }
+        bool add_type = true;
+        if ((my value_tag == DECLARATION_FUNCTION_SIGNATURE || my value_tag == DECLARATION_FUNCTION_IMPL) &&
+            props.tag == DECLARATION_FUNCTION_IMPL
+        ) {
+            add_type = false;
+        }
         if (props.tag > my value_tag) my value_tag = props.tag;
-        merged_type_add(&my merged_value_type, props.value_type);
+        if (add_type) {
+            merged_type_add(&my merged_value_type, props.value_type);
+        } else {
+            type_drop(&props.value_type);
+        }
     } else if (props.value_type.tag) {
         PANIC("declaration_init() called with tag %d and non-empty value type", props.tag);
     }

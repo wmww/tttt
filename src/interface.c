@@ -1,6 +1,5 @@
 #include "interface.h"
 #include "interface_member.h"
-#include "callable_type.h"
 #include "display.h"
 #include "error.h"
 #include "declaration.h"
