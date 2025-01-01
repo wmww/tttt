@@ -38,6 +38,31 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
     return -1;
 }
 
+static void push_interface_members_to(VecInterfaceMember* target, Interface const* source) {
+    c_foreach(new_member_i, vec_interface_member, source->members) {
+        InterfaceMember const* new_member = new_member_i.ref;
+        intptr_t matching_index = index_of_matching(target, new_member);
+        InterfaceMember* matching = matching_index < 0 ?
+            nullptr :
+            vec_interface_member_at_mut(target, matching_index);
+        if (matching) {
+            // Somewhere we want to compare types and show errors if they're different, but that can be done in the
+            // typecheck function of the interface declarations. For now just use the type of the first member we
+            // encounter with each name.
+
+            // Only safe because spans are POD (clone is a no-op)
+            vec_span_insert_n(
+                &matching->declarations,
+                vec_span_size(&matching->declarations),
+                new_member->declarations.data,
+                vec_span_size(&new_member->declarations)
+            );
+        } else {
+            vec_interface_member_push(target, interface_member_clone(*new_member));
+        }
+    }
+}
+
 Type interface_from_merged(VecType types) {
     switch (vec_type_size(&types)) {
         case 0:
@@ -55,8 +80,17 @@ Type interface_from_merged(VecType types) {
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(type_i, vec_type, types) {
         Type const* type = type_resolve(type_i.ref);
-        if (type->tag != TYPE_INTERFACE) {
-            if (type->tag != TYPE_ANY) {
+        switch (type->tag) {
+            case TYPE_ANY:
+                vec_interface_member_drop(&members);
+                vec_type_drop(&types);
+                return type_any;
+
+            case TYPE_INTERFACE:
+                push_interface_members_to(&members, &type->interface);
+                break;
+
+            default: {
                 cstr type_s = cstr_null;
                 display_type(debug_display(&type_s), type);
                 NONFATAL(
@@ -64,31 +98,9 @@ Type interface_from_merged(VecType types) {
                     cstr_str(&type_s)
                 );
                 cstr_drop(&type_s);
-            }
-            vec_interface_member_drop(&members);
-            vec_type_drop(&types);
-            return type_any;
-        }
-        c_foreach(new_member_i, vec_interface_member, type->interface.members) {
-            InterfaceMember const* new_member = new_member_i.ref;
-            intptr_t matching_index = index_of_matching(&members, new_member);
-            InterfaceMember* matching = matching_index < 0 ?
-                nullptr :
-                vec_interface_member_at_mut(&members, matching_index);
-            if (matching) {
-                // Somewhere we want to compare types and show errors if they're different, but that can be done in the
-                // typecheck function of the interface declarations. For now just use the type of the first member we
-                // encounter with each name.
-
-                // Only safe because spans are POD (clone is a no-op)
-                vec_span_insert_n(
-                    &matching->declarations,
-                    vec_span_size(&matching->declarations),
-                    new_member->declarations.data,
-                    vec_span_size(&new_member->declarations)
-                );
-            } else {
-                vec_interface_member_push(&members, interface_member_clone(*new_member));
+                vec_interface_member_drop(&members);
+                vec_type_drop(&types);
+                return type_any;
             }
         }
     }
