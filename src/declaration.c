@@ -150,10 +150,8 @@ static bool declaration_values_test_mergable(
         }
         return true;
     } else if (a_tag == DECLARATION_FUNCTION && b_tag == DECLARATION_FUNCTION) {
-        // TODO: allow function overloads
-        error_ctx_error(errs, a_name, TS_CODE_NONE, "Function overloads not yet supported.");
-        error_ctx_error(errs, b_name, TS_CODE_NONE, "Function overloads not yet supported.");
-        return false;
+        // TODO: make sure things are in the right order, there's only one implementation, etc
+        return true;
     } else if (a_tag == DECLARATION_ARGUMENT) {
         error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
         error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));

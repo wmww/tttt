@@ -1,5 +1,6 @@
 #include "interface.h"
 #include "interface_member.h"
+#include "callable_type.h"
 #include "display.h"
 #include "error.h"
 #include "declaration.h"
@@ -90,11 +91,20 @@ Type interface_from_merged(VecType types) {
                 push_interface_members_to(&members, &type->interface);
                 break;
 
+            case TYPE_CALLABLE:
+                vec_interface_member_push(&members, (InterfaceMember){
+                    .declarations = vec_span_init(), // TODO
+                    .key.span = span_null, // TODO
+                    .key.tag = INTERFACE_KEY_CALLABLE,
+                    .type = type_clone(*type),
+                });
+                break;
+
             default: {
                 cstr type_s = cstr_null;
                 display_type(debug_display(&type_s), type);
                 NONFATAL(
-                    "Only interfaces can be merged, but one of the types in the merge list was %s",
+                    "Only interfaces and callables can be merged, but one of the types in the merge list was %s",
                     cstr_str(&type_s)
                 );
                 cstr_drop(&type_s);
