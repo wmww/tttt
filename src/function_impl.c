@@ -24,7 +24,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
         .name = my name,
         .full = my full_span,
         .exported = exported,
-        .tag = DECLARATION_FUNCTION,
+        .tag = my has_body ? DECLARATION_FUNCTION_IMPL : DECLARATION_FUNCTION_SIGNATURE,
         .generic = &my generic,
         .value_type = type_lazy(&my lazy_type),
     });

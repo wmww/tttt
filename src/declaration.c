@@ -149,7 +149,10 @@ static bool declaration_values_test_mergable(
                 "A namespace declaration cannot be located prior to a class or function with which it is merged.");
         }
         return true;
-    } else if (a_tag == DECLARATION_FUNCTION && b_tag == DECLARATION_FUNCTION) {
+    } else if (
+        (a_tag == DECLARATION_FUNCTION_SIGNATURE || a_tag == DECLARATION_FUNCTION_IMPL) &&
+        (b_tag == DECLARATION_FUNCTION_SIGNATURE || b_tag == DECLARATION_FUNCTION_IMPL)
+    ) {
         // TODO: make sure things are in the right order, there's only one implementation, etc
         return true;
     } else if (a_tag == DECLARATION_ARGUMENT) {

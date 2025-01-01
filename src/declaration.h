@@ -18,7 +18,8 @@ typedef enum DeclarationTag {
     // when merging declarations
     DECLARATION_NAMESPACE_TYPE_ONLY,
     DECLARATION_NAMESPACE_WITH_VALUE,
-    DECLARATION_FUNCTION,
+    DECLARATION_FUNCTION_SIGNATURE,
+    DECLARATION_FUNCTION_IMPL,
     DECLARATION_VARIABLE,
     DECLARATION_ARGUMENT,
     DECLARATION_INTERFACE,
@@ -35,7 +36,8 @@ typedef enum DeclarationTag {
 static inline bool declaration_tag_has_value(DeclarationTag tag) {
     static const bool ret[DECLARATION_TAG_COUNT] = {
         [DECLARATION_NAMESPACE_WITH_VALUE] = true,
-        [DECLARATION_FUNCTION] = true,
+        [DECLARATION_FUNCTION_SIGNATURE] = true,
+        [DECLARATION_FUNCTION_IMPL] = true,
         [DECLARATION_VARIABLE] = true,
         [DECLARATION_ARGUMENT] = true,
         [DECLARATION_CLASS] = true,
