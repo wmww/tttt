@@ -243,9 +243,12 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
             }
             break;
 
-        case EXPR_FUNCTION:
+        case EXPR_FUNCTION: {
+            Scope tmp_scope = scope_init(errs);
+            function_impl_add_names(my function, &tmp_scope, false);
+            scope_drop(&tmp_scope);
             function_impl_lookup_names(my function, !span_valid(my function->arrow_span), names, errs);
-            break;
+        }   break;
 
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {

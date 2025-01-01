@@ -245,14 +245,9 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
     }
 }
 
-void function_impl_compile_test_info(FunctionImpl* me, Span scope, BaselineTestCase* ctx) {
+void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = vec_span_single(my full_span),
-            .namespaces = vec_span_single(scope),
-            .span = my name,
-        });
-        baseline_test_case_add_type(ctx, my name, lazy_type_get(&my lazy_type));
+        baseline_test_case_add_declaration(ctx, my name, my declaration.get);
     }
     generic_compile_test_info(&my generic, ctx);
     c_foreach(i, vec_function_arg, my args) {
@@ -332,7 +327,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
 void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCase* ctx) {
     switch(my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
-            function_impl_compile_test_info(&my constructor.func, class_name, ctx);
+            function_impl_compile_test_info(&my constructor.func, ctx);
             break;
 
         case CLASS_ITEM_METHOD:
@@ -345,7 +340,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             Type t = class_item_get_type(me);
             baseline_test_case_add_type(ctx, my method.name_span, &t);
             type_drop(&t);
-            function_impl_compile_test_info(&my method.func, class_name, ctx);
+            function_impl_compile_test_info(&my method.func, ctx);
             break;
 
         case CLASS_ITEM_FIELD: {
@@ -624,7 +619,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_FUNCTION:
-            function_impl_compile_test_info(my function, span_null, ctx);
+            function_impl_compile_test_info(my function, ctx);
             break;
 
         case EXPR_OBJECT:
@@ -770,7 +765,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_FUNCTION:
-            function_impl_compile_test_info(my decl.function.impl, span_null, ctx);
+            function_impl_compile_test_info(my decl.function.impl, ctx);
             break;
 
         case STATEMENT_DECL_ENUM:
