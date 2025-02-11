@@ -157,6 +157,7 @@ static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(S
 }
 
 void statement_drop(Statement* me);
+bool statement_is_import_or_export(Statement const* me);
 void statement_add_names(Statement* me, Scope* scope);
 void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs);
 Type statement_evaluate_return_type(Statement* me);

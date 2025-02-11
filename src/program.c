@@ -256,6 +256,9 @@ static SourceFile* program_add_source(Program* me, const char* path) {
             SourceFile,
             source_file_make(cstr_clone(canonical_path), contents, my errs)
         );
+
+        parse_file(source_file, my errs);
+
         hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
 
         cstr dir_path = cstr_from_sv(dirname_of(path));
@@ -307,7 +310,6 @@ SourceFile* program_load(Program* me, const char* path) {
     while (vec_source_file_ptr_size(&my pending_source_files)) {
         // Remove the top source file from the pending list and parse it (order of processing shouldn't matter here)
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
-        parse_file(source, my errs);
 
         c_foreach(j, vec_source_directive, source->directives) {
             switch (j.ref->tag) {

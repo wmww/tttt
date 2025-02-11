@@ -39,8 +39,6 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         my main.source_file = c_const_cast(SourceFile*, my keyword_span.source);
     }
 
-    scope->is_module = true;
-
     c_foreach(i, vec_port_item, my items) {
         i.ref->source_file = my main.source_file;
     }

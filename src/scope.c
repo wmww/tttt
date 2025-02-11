@@ -69,9 +69,6 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
         NONFATAL("Declaration %.*s acquired multiple times", c_SPAN(ret->get->name));
         arc_declaration_drop(ret);
     }
-    if (props.exported) {
-        my is_module = true;
-    }
     auto existing = hmap_str_arc_declaration_get(&my declarations, props.name.sv);
     bool mergable = false;
     if (existing) {
