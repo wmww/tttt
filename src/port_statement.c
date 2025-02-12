@@ -26,7 +26,7 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
             return;
         }
         my main.source_file = program_load_import(scope->errs->program, my source_path_span, cstr_sv(&my source_path));
-        if (!source_file_is_valid(my main.source_file)) {
+        if (!my main.source_file) {
             error_ctx_error(
                 scope->errs,
                 my source_path_span,

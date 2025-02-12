@@ -17,13 +17,13 @@ void program_destroy(Program* me);
 void program_add_globals(Program* me, Scope const* scope);
 
 // Parses and resolves names of the given file and all imports. Can be called multiple times, but can not be called
-// indirectly by itself (this is not how imports are handled)
+// indirectly by itself. Returns nullptr if path is not found
 SourceFile* program_load(Program* me, const char* path);
 SourceFile* program_preload(Program* me, const char* path);
 SourceFile* program_preload_es5(Program* me);
 
 // Finds the source file with the given path relative to the origin, adds it to the program and returns it, or returns
-// the not found file placeholder (never returns null)
+// nullptr if the import can't be loaded
 SourceFile* program_load_import(Program* me, Span path_span, csview path);
 
 // Typechecks the loaded file and all imports, does not typecheck preloaded files

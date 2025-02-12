@@ -627,7 +627,7 @@ void baseline_test_case_add_type_recursive(
 
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
     if (!declaration) {
-        NONFATAL("baseline_test_case_add_declaration() callled with null declaration");
+        NONFATAL("baseline_test_case_add_declaration() called with null declaration");
         return;
     }
     ASSERT(span.source);

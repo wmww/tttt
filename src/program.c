@@ -30,7 +30,6 @@ typedef struct Program {
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
                                        // Keys are absolute paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
-    SourceFile not_found_file; // used when a source file isn't found in the filesystem
 } Program;
 
 static void program_add_builtins(Program* me) {
@@ -201,7 +200,6 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
-        .not_found_file = source_file_make_not_found_placeholder(errs),
     });
     errs->program = ret;
     program_add_builtins(ret);
@@ -213,7 +211,6 @@ static void program_drop(Program* me) {
     scope_drop(&my global_scope);
     hmap_str_box_source_file_drop(&my source_files);
     vec_source_file_ptr_drop(&my pending_source_files);
-    source_file_drop(&my not_found_file);
 }
 
 void program_destroy(Program* me) {
@@ -240,7 +237,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
     } else if (my locked) {
         NONFATAL("Could not add '%s' because program is locked", path);
         cstr_drop(&canonical_path);
-        return &my not_found_file;
+        return nullptr;
     } else {
         // No source file is created for this path, load it
         cstr contents;
@@ -281,7 +278,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
 SourceFile* program_load(Program* me, const char* path) {
     if (my locked) {
         NONFATAL("Could not load '%s' because program is locked", path);
-        return &my not_found_file;
+        return nullptr;
     }
 
     // This function should only be called by our owner, not indirectly by ourselves
@@ -295,7 +292,7 @@ SourceFile* program_load(Program* me, const char* path) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
         my errs->phase = ERROR_PHASE_UNKOWN;
         clear_error_config();
-        return &my not_found_file;
+        return nullptr;
     }
 
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
@@ -376,8 +373,10 @@ SourceFile* program_load(Program* me, const char* path) {
 
 SourceFile* program_preload(Program* me, const char* path) {
     SourceFile* source = program_load(me, path);
-    source->typecheck = false;
-    program_add_globals(me, &source->scope);
+    if (source) {
+        source->typecheck = false;
+        program_add_globals(me, &source->scope);
+    }
     return source;
 }
 
@@ -389,14 +388,13 @@ SourceFile* program_load_import(Program* me, Span path_span, csview path) {
     ASSERT(span_valid(path_span));
     csview cwd = dirname_of(cstr_str(&path_span.source->canonical_path));
     cstr source_path;
-    SourceFile* ret;
     if (get_import_path(my fs, cwd, path, &source_path)) {
-        ret = program_add_source(me, cstr_str(&source_path));
+        SourceFile* ret = program_add_source(me, cstr_str(&source_path));
         cstr_drop(&source_path);
+        return ret;
     } else {
-        ret = &my not_found_file;
+        return nullptr;
     }
-    return ret;
 }
 
 void program_typecheck(Program* me) {
