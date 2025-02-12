@@ -26,8 +26,7 @@ typedef struct Program {
     Fs const* fs;
     // Threadsafety: this will likely need to be changed to a real mutex
     bool locked; // source files and other mutable state are locked (for example if currently iterating through them)
-    Scope builtins_scope;
-    VecScopeCPtr global_scopes;
+    Scope global_scope;
     HmapStrBoxSourceFile source_files; // All loaded source files. May or may not be parsed or have names resolved yet.
                                        // Keys are absolute paths.
     VecSourceFilePtr pending_source_files; // files that have not been parsed yet
@@ -37,7 +36,7 @@ typedef struct Program {
 static void program_add_builtins(Program* me) {
 #define GLOBAL_VALUE(global_name, global_value) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my builtins_scope, &declaration, (DeclProps) { \
+    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_VARIABLE, \
         .value_type = global_value, \
@@ -47,7 +46,7 @@ static void program_add_builtins(Program* me) {
 
 #define GLOBAL_TYPE(global_name, global_type) {\
     ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my builtins_scope, &declaration, (DeclProps) { \
+    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_TYPE, \
         .declared_type = global_type, \
@@ -67,8 +66,6 @@ static void program_add_builtins(Program* me) {
     GLOBAL_TYPE("number", type_number);
     GLOBAL_TYPE("string", type_string);
     GLOBAL_TYPE("intrinsic", type_any);
-
-    vec_scope_cptr_push(&my global_scopes, &my builtins_scope);
 }
 
 static bool get_import_path_of_index(Fs const* fs, csview path, cstr* ret) {
@@ -213,8 +210,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
 
 static void program_drop(Program* me) {
     me->errs->program = nullptr;
-    scope_drop(&my builtins_scope);
-    vec_scope_cptr_drop(&my global_scopes);
+    scope_drop(&my global_scope);
     hmap_str_box_source_file_drop(&my source_files);
     vec_source_file_ptr_drop(&my pending_source_files);
     source_file_drop(&my not_found_file);
@@ -230,7 +226,7 @@ void program_add_globals(Program* me, Scope const* scope) {
         NONFATAL("Could not add globals because program is locked");
         return;
     }
-    vec_scope_cptr_push(&my global_scopes, scope);
+    scope_copy_declarations_from(&my global_scope, scope);
 }
 
 // Returns null if path can't be loaded
@@ -359,9 +355,7 @@ SourceFile* program_load(Program* me, const char* path) {
     }
 
     ScopeStack* names = scope_stack_new();
-    c_foreach(i, vec_scope_cptr, my global_scopes) {
-        scope_stack_push_scope(names, *i.ref);
-    }
+    scope_stack_push_scope(names, &my global_scope);
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
@@ -370,9 +364,7 @@ SourceFile* program_load(Program* me, const char* path) {
         scope_pop_from_stack(&source->scope);
     }
 
-    c_foreach_rev(i, vec_scope_cptr, my global_scopes) {
-        scope_stack_pop_scope(names, *i.ref);
-    }
+    scope_stack_pop_scope(names, &my global_scope);
     scope_stack_destroy(names);
 
     my locked = false;
