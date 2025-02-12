@@ -33,7 +33,6 @@ typedef struct SourceFile {
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents, ErrorCtx* errs);
-SourceFile source_file_make_not_found_placeholder(ErrorCtx* errs);
 void source_file_drop(SourceFile* me);
 
 static inline const char* source_file_start(SourceFile const* me) {

@@ -22,7 +22,6 @@ typedef struct Program Program;
 typedef struct Scope {
     ErrorCtx* errs;
     bool is_function; // If this scope represents a function
-    bool is_placeholder; // If this is a placeholder scope for a not-found file. If so all names should resolve to any
     bool is_module;
     csview default_export;
     VecSpan namespaces;
@@ -67,13 +66,6 @@ static inline Scope scope_init_toplevel(ErrorCtx* errs) {
         .export_scope = c_new(Scope, {
             .errs = errs,
         }),
-        SCOPE_INIT_DEFAULT,
-    };
-}
-
-static inline Scope scope_init_placeholder(ErrorCtx* errs) {
-    return (Scope){
-        .is_placeholder = true,
         SCOPE_INIT_DEFAULT,
     };
 }

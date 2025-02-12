@@ -14,12 +14,6 @@ SourceFile source_file_make(cstr canonical_path, cstr contents, ErrorCtx* errs) 
     };
 }
 
-SourceFile source_file_make_not_found_placeholder(ErrorCtx* errs) {
-    return (SourceFile){
-        .scope = scope_init_placeholder(errs),
-    };
-}
-
 void source_file_drop(SourceFile* me) {
     cstr_drop(&my canonical_path);
     cstr_drop(&my contents);

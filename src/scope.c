@@ -186,10 +186,6 @@ void scope_add_port(Scope* me, PortItem* item) {
 }
 
 static Declaration const* find_declaration_in_exports(Scope* me, csview name, bool search_exports) {
-    if (my is_placeholder) {
-        return nullptr;
-    }
-
     Scope const* search_scope = search_exports ? my export_scope : me;
     ASSERT(search_scope);
 
@@ -297,9 +293,6 @@ static void process_port(Scope* me, PortItem* item) {
 }
 
 Type scope_evaluate_value_interface(Scope const* me) {
-    if (my is_placeholder) {
-        return type_any;
-    }
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, hmap_str_arc_declaration, my declarations) {
         if (i.ref->second.get->value_tag) {
