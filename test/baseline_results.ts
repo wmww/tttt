@@ -2006,7 +2006,7 @@ const baselines = {
         types: true,
     },
     'augmentedTypesClass2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9711,7 +9711,7 @@ const baselines = {
         types: true,
     },
     'duplicateTypeParameters3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10496,7 +10496,7 @@ const baselines = {
         types: false,
     },
     'errorsInGenericTypeReference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12841,7 +12841,7 @@ const baselines = {
         types: false,
     },
     'functionAndImportNameConflict': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -18866,12 +18866,12 @@ const baselines = {
         types: false,
     },
     'mergeWithImportedNamespace': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'mergeWithImportedType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20866,7 +20866,7 @@ const baselines = {
         types: true,
     },
     'newAbstractInstance2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21106,7 +21106,7 @@ const baselines = {
         types: false,
     },
     'noErrorsInCallback': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23866,7 +23866,7 @@ const baselines = {
         types: false,
     },
     'protoAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23976,7 +23976,7 @@ const baselines = {
         types: false,
     },
     'raiseErrorOnParameterProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -28751,7 +28751,7 @@ const baselines = {
         types: false,
     },
     'typeofProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -51671,7 +51671,7 @@ const baselines = {
         types: false,
     },
     'parserS12.11_A3_T4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54841,12 +54841,12 @@ const baselines = {
         types: false,
     },
     'stringLiteralsWithEqualityChecks01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'stringLiteralsWithEqualityChecks02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -322,23 +322,33 @@ static void render_lines_woven_with_file(
         newline_if_next_line_non_empty = vec_size == 0;
     }
 
-    csview source_without_ws = csview_trim_whitespace(source_contents);
+    intptr_t newlines_at_end_of_source = 0;
+    const char* end_of_content_lines = csview_end_ptr(source_contents);
+    while (end_of_content_lines > source_contents.buf) {
+        switch (*(end_of_content_lines - 1)) {
+            case '\n': newlines_at_end_of_source++; // fallthrough
+            case '\r': end_of_content_lines--; break;
+            default: goto found_content_end;
+        }
+    }
+    found_content_end:
 
     c_foreach(i, lines_sv, source_contents) {
-        csview line_without_ws = csview_trim_whitespace(i.line);
-        if (newline_if_next_line_non_empty && (
-                is_errors ||
-                !line_effectively_empty(line_without_ws)
-            )
-        ) {
-            cstr_append(target, "\r\n");
+        if (i.line.buf < end_of_content_lines) {
+            if (newline_if_next_line_non_empty && (
+                    is_errors ||
+                    !line_effectively_empty(i.line)
+                )
+            ) {
+                cstr_append(target, "\r\n");
+            }
+            cstr_append(target, line_indent);
         }
         newline_if_next_line_non_empty = false;
-        cstr_append(target, line_indent);
         cstr_append_sv(target, i.line);
         if (!is_errors ||
             index < vec_size ||
-            csview_end_ptr(line_without_ws) < csview_end_ptr(source_without_ws)
+            csview_end_ptr(i.line) < end_of_content_lines
         ) {
             cstr_append(target, "\r\n");
         }
@@ -358,18 +368,17 @@ static void render_lines_woven_with_file(
         line++;
     }
 
-    intptr_t newlines_at_end_of_source = 0;
-    for (const char* p = csview_end_ptr(source_without_ws); p < csview_end_ptr(source_contents); p++) {
-        if (*p == '\n') newlines_at_end_of_source++;
-        else if (*p != '\r') newlines_at_end_of_source = 0;
+    if (!is_errors) {
+        if (newlines_at_end_of_source || (newline_if_next_line_non_empty && is_last_file)) {
+            newlines_at_end_of_source = 1;
+        }
     }
 
-    // Yes this is a very silly if condition. You can make it more compact but I haven't figurued out how to make it
-    // make more sense.
-    if ((newlines_at_end_of_source > 0 && newline_if_next_line_non_empty) ||
-        (newlines_at_end_of_source > 0 && is_last_file) ||
-        (is_last_file && !is_errors && newline_if_next_line_non_empty)
-    ) {
+    if (!newline_if_next_line_non_empty && !is_last_file) {
+        newlines_at_end_of_source--;
+    }
+
+    for (intptr_t i = 0; i < newlines_at_end_of_source; i++) {
         cstr_append_fmt(target, "\r\n%s", line_indent);
     }
 }
