@@ -15,8 +15,7 @@ wrap_forward_vec(LineNumberedStr, line_numbered_str);
 
 typedef struct BaselineTestCache {
     ErrorCtx* errors;
-    Program* loader;
-    SourceFile* es5;
+    Program* es5;
 } BaselineTestCache;
 
 BaselineTestCache baseline_test_cache_init();

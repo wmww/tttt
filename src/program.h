@@ -14,7 +14,8 @@ void program_destroy(Program* me);
 
 // All all the declarations in the scope to the global namespace of the program. `scope` can come from another program,
 // but this program must not be used after that program is destroyed.
-void program_add_globals(Program* me, Scope const* scope);
+void program_add_globals_from_scope(Program* me, Scope const* scope);
+void program_add_globals_from_program(Program* me, Program const* other);
 
 // Parses and resolves names of the given file and all imports. Can be called multiple times, but can not be called
 // indirectly by itself. Returns nullptr if path is not found

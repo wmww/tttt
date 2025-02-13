@@ -22,7 +22,6 @@ typedef struct Program Program;
 typedef struct Scope {
     ErrorCtx* errs;
     bool is_function; // If this scope represents a function
-    bool is_module;
     csview default_export;
     VecSpan namespaces;
     bool currently_adding_import; // If the current add_import() call stack has already seen this scope

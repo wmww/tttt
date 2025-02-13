@@ -82,7 +82,7 @@ void namespace_decl_drop(NamespaceDecl* me) {
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
     my inner_scope = scope_init_namespace(my name, scope, scope->errs);
     if (my is_global) {
-        program_add_globals(scope->errs->program, &my inner_scope);
+        program_add_globals_from_scope(scope->errs->program, &my inner_scope);
     }
 
     if (my is_global && !props.declared) {

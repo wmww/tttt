@@ -132,6 +132,12 @@ void scope_add_port(Scope* me, PortItem* item) {
         return;
     }
 
+    Scope* source_scope = source_file_get_scope_if_module(item->source_file);
+    if (!source_scope) {
+        NONFATAL("Imported source file '%s' is not a module", cstr_str(&item->source_file->canonical_path));
+        return;
+    }
+
     switch (item->tag) {
         case PORT_NOOP:
         case PORT_EXPORT_AS_NAMESPACE:
@@ -143,7 +149,7 @@ void scope_add_port(Scope* me, PortItem* item) {
                 .name = item->decl_name,
                 .full = item->full_span,
                 .tag = DECLARATION_TYPE,
-                .declared_type = type_lazy(&item->source_file->scope.value_interface),
+                .declared_type = type_lazy(&source_scope->value_interface),
                 .is_typeof = true,
             });
             scope_init_declaration(me, &item->declaration, (DeclProps){
@@ -155,7 +161,7 @@ void scope_add_port(Scope* me, PortItem* item) {
                     .name = item->decl_name,
                     .decl_ref = &item->wrapped_declaration,
                 })),
-                .namespace = &item->source_file->scope,
+                .namespace = source_scope,
             });
             break;
 
@@ -196,7 +202,8 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name, bo
 
     auto import_result = hmap_str_port_item_ptr_get_mut(&my ports, name);
     if (import_result && port_item_is_export(import_result->second)) {
-        Scope* next = &import_result->second->source_file->scope;
+        Scope* next = source_file_get_scope_if_module(import_result->second->source_file);
+        ASSERT(next);
         if (next->currently_adding_import) {
             // TODO: Record this somewhere so 2303, "Circular definition of import alias '%.*s'.", can be raised
             return nullptr;
@@ -208,7 +215,8 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name, bo
     }
 
     c_foreach(i, vec_port_item_ptr, my wildcard_reexports) {
-        Scope* next = &(*i.ref)->source_file->scope;
+        Scope* next = source_file_get_scope_if_module((*i.ref)->source_file);
+        ASSERT(next);
         if (next->currently_adding_import) {
             // We don't want to raise an error here
             return nullptr;
@@ -254,7 +262,10 @@ static void process_port(Scope* me, PortItem* item) {
             break;
     }
 
-    item->source_decl = find_declaration_in_exports(&item->source_file->scope, source_name, search_exports);
+    Scope* source_scope = source_file_get_scope_if_module(item->source_file);
+    ASSERT(source_scope);
+    ASSERT(source_scope->export_scope);
+    item->source_decl = find_declaration_in_exports(source_scope, source_name, search_exports);
 
     if (item->source_decl) {
         item->declaration = arc_declaration_make(*item->source_decl);

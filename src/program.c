@@ -199,6 +199,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
+        .global_scope = scope_init(errs),
     });
     errs->program = ret;
     program_add_builtins(ret);
@@ -217,12 +218,16 @@ void program_destroy(Program* me) {
     free(me);
 }
 
-void program_add_globals(Program* me, Scope const* scope) {
+void program_add_globals_from_scope(Program* me, Scope const* scope) {
     if (my locked) {
         NONFATAL("Could not add globals because program is locked");
         return;
     }
     scope_copy_declarations_from(&my global_scope, scope);
+}
+
+void program_add_globals_from_program(Program* me, Program const* other) {
+    program_add_globals_from_scope(me, &other->global_scope);
 }
 
 // Returns null if path can't be loaded
@@ -246,7 +251,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
         }
         SourceFile* source_file = c_new(
             SourceFile,
-            source_file_make(cstr_clone(canonical_path), contents, my errs)
+            source_file_make(cstr_clone(canonical_path), contents)
         );
 
         parse_file(source_file, my errs);
@@ -313,13 +318,8 @@ SourceFile* program_load(Program* me, const char* path) {
             }
         }
 
-        // If we've previously found an index.ts in the directory of the file, add it's names before adding names first
-        if (source->index_file && !source->index_file->scope.is_module) {
-            scope_copy_declarations_from(&source->scope, &source->index_file->scope);
-        }
-
         // Add the toplevel block's names to the file's scope
-        block_add_names(&source->ast, &source->scope);
+        block_add_names(&source->ast, source_file_get_scope_or(source, &my global_scope));
 
         // Add it to the list to process below
         vec_source_file_ptr_push(&in_flight_source_files, source);
@@ -335,10 +335,7 @@ SourceFile* program_load(Program* me, const char* path) {
                     case SOURCE_DIRECTIVE_REFERENCE_PATH:
                     case SOURCE_DIRECTIVE_REFERENCE_LIB:
                     case SOURCE_DIRECTIVE_REFERENCE_TYPES: {
-                        SourceFile const* import = program_load_import(me, j.ref->path_span, cstr_sv(&j.ref->path));
-                        if (import) {
-                            scope_copy_declarations_from(&source->scope, &import->scope);
-                        }
+                        program_load_import(me, j.ref->path_span, cstr_sv(&j.ref->path));
                     }   break;
                 }
             }
@@ -347,7 +344,9 @@ SourceFile* program_load(Program* me, const char* path) {
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
-        scope_process_imports(&source->scope);
+        if (source->is_module) {
+            scope_process_imports(&source->module_scope);
+        }
     }
 
     ScopeStack* names = scope_stack_new();
@@ -355,9 +354,9 @@ SourceFile* program_load(Program* me, const char* path) {
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
-        scope_push_to_stack(&source->scope, names);
+        if (source->is_module) scope_push_to_stack(&source->module_scope, names);
         block_lookup_names(&source->ast, names, my errs);
-        scope_pop_from_stack(&source->scope);
+        if (source->is_module) scope_pop_from_stack(&source->module_scope);
     }
 
     scope_stack_pop_scope(names, &my global_scope);
@@ -373,8 +372,7 @@ SourceFile* program_load(Program* me, const char* path) {
 SourceFile* program_preload(Program* me, const char* path) {
     SourceFile* source = program_load(me, path);
     if (source) {
-        source->typecheck = false;
-        program_add_globals(me, &source->scope);
+        source->cant_have_errors = true;
     }
     return source;
 }
@@ -405,7 +403,7 @@ void program_typecheck(Program* me) {
 
     c_foreach(i, hmap_str_box_source_file, my source_files) {
         SourceFile* source = i.ref->second.get;
-        if (source->typecheck) {
+        if (!source->cant_have_errors) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
     }

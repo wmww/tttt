@@ -1,4 +1,5 @@
 #include "declaration.h"
+#include "source_file.h"
 #include "generic.h"
 #include "error.h"
 

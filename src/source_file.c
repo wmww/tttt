@@ -4,13 +4,11 @@ void source_directive_drop(SourceDirective* me) {
     cstr_drop(&my path);
 }
 
-SourceFile source_file_make(cstr canonical_path, cstr contents, ErrorCtx* errs) {
+SourceFile source_file_make(cstr canonical_path, cstr contents) {
     ASSERT(cstr_size(&canonical_path));
     return (SourceFile){
         .canonical_path = canonical_path,
         .contents = contents,
-        .scope = scope_init_toplevel(errs),
-        .typecheck = true,
     };
 }
 
@@ -19,6 +17,6 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my contents);
     vec_source_directive_drop(&my directives);
     block_drop(&my ast);
-    scope_drop(&my scope);
+    scope_drop(&my module_scope);
     cstr_drop(&my decl_override);
 }
