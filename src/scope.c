@@ -59,7 +59,9 @@ void scope_pop_from_stack(Scope* me) {
 
 void scope_copy_declarations_from(Scope* me, Scope const* source) {
     c_foreach(i, hmap_str_arc_declaration, source->declarations) {
-        hmap_str_arc_declaration_insert(&my declarations, cstr_clone(i.ref->first), arc_declaration_clone(i.ref->second));
+        ArcDeclaration declaration = arc_declaration_make(*i.ref->second.get);
+        declaration_clone_in_place(declaration.get);
+        hmap_str_arc_declaration_insert(&my declarations, cstr_clone(i.ref->first), declaration);
     }
 }
 

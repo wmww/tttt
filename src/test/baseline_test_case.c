@@ -226,13 +226,12 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* so
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
 
-    if (cache->es5) {
-        program_destroy(cache->es5);
+    if (!cache->es5) {
+        cache->es5 = program_new(cache->errors, &real_fs_noisy);
+        SourceFile* source = program_preload_es5(cache->es5);
+        cstr_take(&source->decl_override, cstr_lit("lib.es5.d.ts, --, --"));
     }
 
-    cache->es5 = program_new(cache->errors, &real_fs_noisy);
-    SourceFile* source = program_preload_es5(cache->es5);
-    cstr_take(&source->decl_override, cstr_lit("lib.es5.d.ts, --, --"));
     program_add_globals_from_program(program, cache->es5);
 
     BaselineTestCase ret = {

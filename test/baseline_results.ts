@@ -10346,7 +10346,7 @@ const baselines = {
         types: undefined,
     },
     'errorConstructorSubtypes': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -23868,7 +23868,7 @@ const baselines = {
     'protoAssignment': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'protoInIndexer': {
         errors: true,
