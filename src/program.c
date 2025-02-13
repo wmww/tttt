@@ -53,7 +53,6 @@ static void program_add_builtins(Program* me) {
     arc_declaration_drop(&declaration); \
 }
 
-    GLOBAL_VALUE("console", type_any);
     GLOBAL_VALUE("globalThis", type_any);
 
     GLOBAL_TYPE("any", type_any);
