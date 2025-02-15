@@ -378,7 +378,7 @@ SourceFile* program_preload(Program* me, const char* path) {
 }
 
 SourceFile* program_preload_es5(Program* me) {
-    return program_preload(me, "thirdparty/tsc/lib/es5.d.ts");
+    return program_preload(me, "thirdparty/lib/lib.es5.d.ts");
 }
 
 SourceFile* program_load_import(Program* me, Span path_span, csview path) {

@@ -31,10 +31,10 @@ int main(int argc, const char** argv) {
     intptr_t type_errors = 0;
 
     printf("%sLoading libraries...%s\n", color_good, color_normal);
-    program_preload(program, "lib/es5.d.ts");
-    program_preload(program, "lib/es2015.collection.d.ts");
-    program_preload(program, "lib/es2015.iterable.d.ts");
-    program_preload(program, "lib/dom.generated.d.ts");
+    program_preload(program, "thirdparty/lib/lib.es5.d.ts");
+    program_preload(program, "thirdparty/lib/lib.es2015.collection.d.ts");
+    program_preload(program, "thirdparty/lib/lib.es2015.iterable.d.ts");
+    program_preload(program, "thirdparty/lib/lib.dom.d.ts");
 
     if (!error_ctx_empty(&errs)) {
         const intptr_t lib_parse_errors = errs.parse_error_count;

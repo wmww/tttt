@@ -90,6 +90,18 @@ function download_javascript {
   wget "https://unpkg.com/${PACKAGE}@${VERSION}/${LICENSE_PATH}" -O "javascript/LICENSE-${PACKAGE}"
 }
 
+function copy_in_tsc_libs {
+  printf "${BLUE}Ensuring tsc is cloned into test directory...$EOL"
+  ../test/clone_typescript_if_needed.sh
+  printf "${BLUE}Copying tsc libs from test directory...$EOL"
+  rm -rf lib
+  mkdir lib
+  cp -r ../test/TypeScript/lib/*.d.ts lib
+  cp -r ../test/TypeScript/LICENSE.txt lib
+  TSC_COMMIT="$(git -C ../test/TypeScript rev-parse HEAD)"
+  echo "These libraries come from upstream TypeScript at commit $TSC_COMMIT" >lib/README.txt
+}
+
 function write_meson_build {
   printf "${BLUE}Writing meson.build for %s thirdparty libraries...$EOL" "${#SUBDIRS[@]}"
   local MESON_BUILD="./meson.build"
@@ -124,6 +136,7 @@ printf "${BLUE}Downloading thirdparty libraries into %s...$EOL" "$PWD"
 rm -rf javascript && mkdir -p javascript
 
 download_all
+copy_in_tsc_libs
 write_meson_build
 apply_patches
 
