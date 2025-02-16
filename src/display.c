@@ -1036,6 +1036,24 @@ void display_statement(Display d, Statement const* me) {
 
     switch (my tag) {
         case STATEMENT_NOOP: display_lit(d, ";"); break;
+
+        case STATEMENT_SOURCE_DIRECTIVE:
+            display_lit(d, "/// <");
+            switch (my source_directive->tag) {
+                case SOURCE_DIRECTIVE_REFERENCE_PATH:
+                case SOURCE_DIRECTIVE_REFERENCE_LIB:
+                case SOURCE_DIRECTIVE_REFERENCE_TYPES:
+                    display_lit(d, "reference ");
+                    break;
+            }
+            display_fmt(d, "path=");
+            display_string_literal(d, cstr_sv(&my source_directive->path));
+            if (my source_directive->preserve) {
+                display_lit(d, " preserve=\"true\"");
+            }
+            display_lit(d, " />");
+            break;
+
         case STATEMENT_BLOCK: display_block(d, &my block); break;
 
         case STATEMENT_IF_ELSE: {

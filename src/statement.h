@@ -10,6 +10,7 @@
 
 typedef struct ErrorCtx ErrorCtx;
 typedef struct EnumDecl EnumDecl;
+typedef struct SourceDirectiveStatement SourceDirectiveStatement;
 typedef struct ForLoopStatement ForLoopStatement;
 typedef struct TryCatchStatement TryCatchStatement;
 typedef struct ForEachLoopStatement ForEachLoopStatement;
@@ -85,6 +86,7 @@ typedef struct IfStatement {
 typedef struct Statement {
     enum {
         STATEMENT_NOOP,
+        STATEMENT_SOURCE_DIRECTIVE,
         STATEMENT_BLOCK,
         STATEMENT_IF_ELSE,
         STATEMENT_FOR_LOOP,
@@ -107,6 +109,7 @@ typedef struct Statement {
         STATEMENT_DECL_NAMESPACE,
     } tag;
     union {
+        SourceDirectiveStatement* source_directive;
         Block block;
         Expr expr; // also used for return and export default expressions
         IfStatement if_else;
@@ -166,6 +169,19 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 #define i_is_forward
 #define i_no_clone
 #include "wrap_stc/vec.h"
+
+// Source directive statement (the XML thingys defined at the top level)
+
+typedef struct SourceDirectiveStatement {
+    enum {
+        SOURCE_DIRECTIVE_REFERENCE_PATH,
+        SOURCE_DIRECTIVE_REFERENCE_LIB,
+        SOURCE_DIRECTIVE_REFERENCE_TYPES,
+    } tag;
+    cstr path;
+    Span path_span;
+    bool preserve;
+} SourceDirectiveStatement;
 
 // Loop statements
 

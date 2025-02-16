@@ -681,7 +681,9 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     switch (my tag) {
-        case STATEMENT_NOOP: break;
+        case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
+            break;
 
         case STATEMENT_BLOCK:
             block_compile_test_info(&my block, ctx);

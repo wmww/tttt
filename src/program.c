@@ -267,6 +267,20 @@ static SourceFile* program_load_import_idempotent(Program* me, Span path_span, c
 // Called for each toplevel statement of each loaded file
 static inline void program_handle_statement(Program* me, SourceFile* source, Statement* statement) {
     switch (statement->tag) {
+        case STATEMENT_SOURCE_DIRECTIVE:
+            switch (statement->source_directive->tag) {
+                case SOURCE_DIRECTIVE_REFERENCE_PATH:
+                case SOURCE_DIRECTIVE_REFERENCE_LIB:
+                case SOURCE_DIRECTIVE_REFERENCE_TYPES:
+                    program_load_import_idempotent(
+                        me,
+                        statement->source_directive->path_span,
+                        cstr_sv(&statement->source_directive->path)
+                    );
+                    break;
+            }
+            break;
+
         case STATEMENT_IMPORT_EXPORT: {
             source_file_set_module_true(source, my errs);
             PortStatement* port = statement->import_export;
@@ -346,16 +360,6 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     parse_file(source_file, my errs);
 
     hmap_str_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
-
-    c_foreach(j, vec_source_directive, source_file->directives) {
-        switch (j.ref->tag) {
-            case SOURCE_DIRECTIVE_REFERENCE_PATH:
-            case SOURCE_DIRECTIVE_REFERENCE_LIB:
-            case SOURCE_DIRECTIVE_REFERENCE_TYPES:
-                program_load_import_idempotent(me, j.ref->path_span, cstr_sv(&j.ref->path));
-                break;
-        }
-    }
 
     c_foreach(i, vec_statement, source_file->ast.statements) {
         program_handle_statement(me, source_file, i.ref);

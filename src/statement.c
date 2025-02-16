@@ -196,6 +196,11 @@ void statement_drop(Statement* me) {
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
+        case STATEMENT_SOURCE_DIRECTIVE:
+            cstr_drop(&my source_directive->path);
+            free(my source_directive);
+            break;
+
         case STATEMENT_BLOCK:
             block_drop(&my block);
             break;
@@ -322,6 +327,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
         case STATEMENT_BLOCK:
         case STATEMENT_IF_ELSE:
         case STATEMENT_FOR_LOOP:
@@ -532,6 +538,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE:
             break;
@@ -584,6 +591,7 @@ Type statement_evaluate_return_type(Statement* me) {
         case STATEMENT_RETURN_EXPR: return type_clone(*expr_get_type(&my expr));
 
         case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE:
         case STATEMENT_EXPR:
@@ -603,7 +611,9 @@ Type statement_evaluate_return_type(Statement* me) {
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     switch (my tag) {
-        case STATEMENT_NOOP: break;
+        case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
+            break;
 
         case STATEMENT_BLOCK:
             block_typecheck(&my block, ctx, errs);

@@ -457,7 +457,9 @@ static Result MUST_USE engine_run_binding(Engine* me, Binding const* binding, Va
 // Only return statements return ok with a value, caller has to check statement tag to notice undefined returns
 static Result MUST_USE engine_run_statement(Engine* me, Statement const* statement) {
     switch (statement->tag) {
-        case STATEMENT_NOOP: return result_ok_undefined;
+        case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
+            return result_ok_undefined;
 
         case STATEMENT_BLOCK:
             TRY_THROW_DROP(engine_run_block_in_stack_frame(me, &statement->block));

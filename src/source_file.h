@@ -3,27 +3,9 @@
 #include "block.h"
 #include "scope.h"
 
-typedef struct SourceDirective {
-    enum {
-        SOURCE_DIRECTIVE_REFERENCE_PATH,
-        SOURCE_DIRECTIVE_REFERENCE_LIB,
-        SOURCE_DIRECTIVE_REFERENCE_TYPES,
-    } tag;
-    cstr path;
-    Span path_span;
-    bool preserve;
-} SourceDirective;
-
-void source_directive_drop(SourceDirective* me);
-
-#define i_key_class_names SourceDirective, source_directive
-#define i_no_clone
-#include "wrap_stc/vec.h"
-
 typedef struct SourceFile {
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
-    VecSourceDirective directives;
     Block ast;
     // If no errors should be generated from inside this file (for example for standard library files). If true this
     // file is not typechecked and duplicate identifiers are blamed on the other file exclusively.

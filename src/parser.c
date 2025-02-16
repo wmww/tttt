@@ -2963,7 +2963,7 @@ static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     }
 }
 
-static bool parse_source_directive(Parser* parent, SourceDirective* ret) {
+static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret) {
     Parser p = parser(parent);
     if (!hop_start(&p, "///")) {
         return parse_fail(&p);
@@ -3032,7 +3032,7 @@ static bool parse_source_directive(Parser* parent, SourceDirective* ret) {
     }
 
     if (found_reference_attr) {
-        *ret = (SourceDirective){
+        *ret = (SourceDirectiveStatement){
             .tag = reference_attr,
             .path = reference_path,
             .path_span = reference_path_span,
@@ -3044,7 +3044,7 @@ static bool parse_source_directive(Parser* parent, SourceDirective* ret) {
     }
 }
 
-static void parse_source_directives(Parser* parent, SourceFile* source) {
+static void parse_source_directives(Parser* parent, VecStatement* ret) {
     while (true) {
         hop_whitespace_full(parent, false, true);
 
@@ -3056,9 +3056,12 @@ static void parse_source_directives(Parser* parent, SourceFile* source) {
         const char* comment_end = p.pos;
         parse_fail(&p);
 
-        SourceDirective directive;
+        SourceDirectiveStatement directive;
         if (parse_source_directive(parent, &directive)) {
-            vec_source_directive_push(&source->directives, directive);
+            vec_statement_push(ret, (Statement){
+                .tag = STATEMENT_SOURCE_DIRECTIVE,
+                .source_directive = c_new(SourceDirectiveStatement, directive),
+            });
         }
         parent->pos = comment_end;
     }
@@ -4156,7 +4159,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     };
 
     p.pos = file_start_excluding_bom(p.pos);
-    parse_source_directives(&p, source);
+    parse_source_directives(&p, &source->ast.statements);
     hop_whitespace(&p);
 
     while (true) {
