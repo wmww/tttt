@@ -3,9 +3,9 @@
 
 int main(int argc, const char** argv) {
     ASSERT(argc == 2);
-    const char* test_path = argv[1];
+    csview test_path = csview_from(argv[1]);
     if (!fs_is_reg_file(&real_fs_noisy, test_path)) {
-        PANIC("%s is not a file", test_path);
+        PANIC("%.*s is not a file", c_SV(test_path));
     }
 
     BaselineTestCache cache = baseline_test_cache_init();
