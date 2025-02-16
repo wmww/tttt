@@ -244,8 +244,10 @@ static void program_drop(Program* me) {
 }
 
 void program_destroy(Program* me) {
-    program_drop(me);
-    free(me);
+    if (me) {
+        program_drop(me);
+        free(me);
+    }
 }
 
 void program_add_globals_from_scope(Program* me, Scope const* scope) {
@@ -365,6 +367,12 @@ void program_resolve_names(Program* me) {
     c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
         SourceFile* source = *i.ref;
         block_add_names(&source->ast, source_file_get_scope_or(source, &my global_scope));
+
+        c_foreach(i, vec_statement, source->ast.statements) {
+            if (i.ref->tag == STATEMENT_DECL_NAMESPACE && i.ref->decl.namespace.is_global) {
+                program_add_globals_from_scope(me, &i.ref->decl.namespace.inner_scope);
+            }
+        }
     }
 
     c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
