@@ -231,7 +231,7 @@ void program_add_globals_from_program(Program* me, Program const* other) {
 }
 
 // Returns null if path can't be loaded
-static SourceFile* program_add_source(Program* me, const char* path) {
+static SourceFile* program_add_source_idempotent(Program* me, const char* path) {
     cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
     auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
     if (value) {
@@ -249,6 +249,7 @@ static SourceFile* program_add_source(Program* me, const char* path) {
             cstr_drop(&canonical_path);
             return nullptr;
         }
+
         SourceFile* source_file = c_new(
             SourceFile,
             source_file_make(cstr_clone(canonical_path), contents)
@@ -257,22 +258,6 @@ static SourceFile* program_add_source(Program* me, const char* path) {
         parse_file(source_file, my errs);
 
         hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
-
-        cstr dir_path = cstr_from_sv(dirname_of(path));
-        cstr index_file_path;
-        if (get_import_path_of_index(my fs, cstr_sv(&dir_path), &index_file_path)) {
-            SourceFile* index_file = program_add_source(me, cstr_str(&index_file_path));
-            if (index_file && index_file != source_file) {
-                source_file->index_file = index_file;
-            }
-            cstr_drop(&index_file_path);
-        }
-        cstr_drop(&dir_path);
-
-        // Important: we add the source file to the hash map before calling program_add_source() on the index file (so
-        // getting the index file for an index file returns the already-loaded file instead of infinitely recursing),
-        // but we push to the pending files vec after (so we process the index file first and thus have already added
-        // it's names when we need to add them to this file)
         vec_source_file_ptr_push(&my pending_source_files, source_file);
 
         return source_file;
@@ -291,7 +276,7 @@ SourceFile* program_load(Program* me, const char* path) {
     set_error_config(&my errs->config);
 
     // Add the source file to the program
-    SourceFile* main_source = program_add_source(me, path);
+    SourceFile* main_source = program_add_source_idempotent(me, path);
     if (!main_source) {
         error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
         my errs->phase = ERROR_PHASE_UNKOWN;
@@ -386,7 +371,7 @@ SourceFile* program_load_import(Program* me, Span path_span, csview path) {
     csview cwd = dirname_of(cstr_str(&path_span.source->canonical_path));
     cstr source_path;
     if (get_import_path(my fs, cwd, path, &source_path)) {
-        SourceFile* ret = program_add_source(me, cstr_str(&source_path));
+        SourceFile* ret = program_add_source_idempotent(me, cstr_str(&source_path));
         cstr_drop(&source_path);
         return ret;
     } else {
