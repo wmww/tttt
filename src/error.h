@@ -10,7 +10,6 @@ wrap_forward_vec(Error, error);
 
 typedef enum ErrorPhase {
     ERROR_PHASE_UNKOWN = 0,
-    ERROR_PHASE_LOAD,
     ERROR_PHASE_PARSE,
     ERROR_PHASE_RESOLVE_NAMES,
     ERROR_PHASE_TYPECHECK,
@@ -62,7 +61,6 @@ void error_config_enable_strict(ErrorConfig* me);
 
 typedef struct ErrorCtx {
     ErrorPhase phase;
-    intptr_t parse_error_count;
     VecError errors;
     ErrorConfig config;
 } ErrorCtx;

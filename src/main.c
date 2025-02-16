@@ -37,17 +37,10 @@ int main(int argc, const char** argv) {
     program_load_lib(program, c_sv("dom"));
 
     if (!error_ctx_empty(&errs)) {
-        const intptr_t lib_parse_errors = errs.parse_error_count;
-        const intptr_t lib_name_errors = vec_error_size(&errs.errors) - errs.parse_error_count;
+        const intptr_t lib_errors = vec_error_size(&errs.errors);
         printf(
-            "Encountered %s%zd parse errors%s, %s%zd name errors%s loading libraries.\n",
-            lib_parse_errors ? color_error : "",
-            lib_parse_errors,
-            color_normal,
-            lib_name_errors ? color_error : "",
-            lib_name_errors,
-            color_normal
-        );
+            "Encountered %s%zd errors%s loading libraries.\n",
+            color_error, lib_errors, color_normal);
         //print_error_ctx(&errs);
         error_ctx_clear(&errs);
     }

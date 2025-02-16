@@ -122,12 +122,10 @@ void print_error_ctx(ErrorCtx const* me) {
     const intptr_t max_display = 5000;
     intptr_t displayed = 0;
     c_foreach(i, vec_error, my errors) {
-        if (i.ref->phase == ERROR_PHASE_PARSE || my parse_error_count == 0) {
-            display_error(debug_display(&str), i.ref);
-            printf("%s\n\n", cstr_str(&str));
-            cstr_clear(&str);
-            displayed++;
-        }
+        display_error(debug_display(&str), i.ref);
+        printf("%s\n\n", cstr_str(&str));
+        cstr_clear(&str);
+        displayed++;
         if (displayed >= max_display) {
             break;
         }
@@ -149,7 +147,6 @@ bool error_ctx_empty(ErrorCtx const* me) {
 
 void error_ctx_clear(ErrorCtx* me) {
     my phase = ERROR_PHASE_UNKOWN;
-    my parse_error_count = 0;
     vec_error_clear(&my errors);
 }
 
@@ -184,9 +181,6 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
 }
 
 Error* error_ctx_append_error(ErrorCtx* me, Error error) {
-    if (error.phase == ERROR_PHASE_PARSE) {
-        my parse_error_count++;
-    }
     intptr_t insertion_index = insertion_index_for_span(me, &error);
     if (insertion_index >= 0) {
         return vec_error_insert_n(&my errors, insertion_index, &error, 1).ref;

@@ -375,7 +375,6 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
 SourceFile* program_load(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
-    my errs->phase = ERROR_PHASE_LOAD;
     set_error_config(&my errs->config);
 
     // Add the source file to the program

@@ -250,11 +250,13 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         i.ref->source = source;
     }
 
+    // Yes, the correct logic seems to be to only show type errors if there were no parse errors, but name errors are
+    // shown reguardless
+    bool typecheck = error_ctx_empty(errs);
+
     program_resolve_names(program);
 
-    // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
-    // but name errors are shown reguardless
-    if (errs->parse_error_count == 0) {
+    if (typecheck) {
         program_typecheck(program);
     }
 
