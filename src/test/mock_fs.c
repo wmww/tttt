@@ -150,6 +150,12 @@ static bool mock_fs_read_entire_file(Fs const* super, csview path, cstr* ret) {
     return true;
 }
 
+static bool mock_fs_write_entire_file(Fs const* super, csview path, csview contents) {
+    MockFs* me = c_container_of(super, MockFs, super);
+    mock_fs_create_file(me, path, cstr_from_sv(contents));
+    return true;
+}
+
 MockFs* mock_fs_new() {
     return c_new(MockFs, {
         .super = {
@@ -158,6 +164,7 @@ MockFs* mock_fs_new() {
             .for_each_item_in_dir = mock_fs_for_each_item_in_dir,
             .get_cwd = mock_fs_get_cwd,
             .read_entire_file = mock_fs_read_entire_file,
+            .write_entire_file = mock_fs_write_entire_file,
             .debug_on_fail = false,
         },
         .root = mock_fs_dir(),
@@ -170,15 +177,14 @@ void mock_fs_destroy(MockFs* me) {
 }
 
 void mock_fs_create_file(MockFs* me, csview path, cstr contents) {
-    cstr dir_path = cstr_from_sv(dirname_of(path));
+    csview dir_path = dirname_of(path);
     csview filename = basename_of(path);
-    MockFsNode* dir = lookup_node(me, cstr_sv(&dir_path), true);
+    MockFsNode* dir = lookup_node(me, dir_path, true);
     if (dir) {
         mock_fs_dir_add(dir, cstr_from_sv(filename), mock_fs_file(contents));
     } else {
         cstr_drop(&contents);
     }
-    cstr_drop(&dir_path);
 }
 
 Fs const* mock_fs_get_fs(MockFs const* me) {

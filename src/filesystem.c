@@ -297,12 +297,34 @@ err:
     return false;
 }
 
+static bool real_fs_write_entire_file(Fs const* me, csview path, csview contents) {
+    PATH_FROM_CSVIEW(path_str, path, {
+        fprintf(stderr, "%.*s: invalid path\n", c_SV(path));
+        return false;
+    });
+    FILE *f = fopen(path_str, "wb");
+    if (!f) {
+        if (my debug_on_fail) {
+            fprintf(stderr, "%.*s: failed to open: %s\n", c_SV(path), strerror(errno));
+        }
+        return false;
+    }
+    if (fwrite(contents.buf, 1, contents.size, f) != (size_t)contents.size) {
+        fprintf(stderr, "%.*s: writing file: %s\n", c_SV(path), strerror(errno));
+        fclose(f);
+        return false;
+    }
+    fclose(f);
+    return true;
+}
+
 Fs const real_fs_noisy = {
     .is_reg_file = real_fs_is_reg_file,
     .is_directory = real_fs_is_directory,
     .for_each_item_in_dir = real_fs_for_each_item_in_dir,
     .get_cwd = real_fs_get_cwd,
     .read_entire_file = real_fs_read_entire_file,
+    .write_entire_file = real_fs_write_entire_file,
     .debug_on_fail = true,
 };
 
@@ -312,5 +334,6 @@ Fs const real_fs_quiet = {
     .for_each_item_in_dir = real_fs_for_each_item_in_dir,
     .get_cwd = real_fs_get_cwd,
     .read_entire_file = real_fs_read_entire_file,
+    .write_entire_file = real_fs_write_entire_file,
     .debug_on_fail = false,
 };

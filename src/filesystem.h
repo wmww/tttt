@@ -35,6 +35,7 @@ typedef struct Fs {
         void* data);
     csview (*get_cwd)(Fs const* me);
     bool (*read_entire_file)(Fs const* me, csview path, cstr* ret);
+    bool (*write_entire_file)(Fs const* me, csview path, csview contents);
     bool debug_on_fail;
 } Fs;
 
@@ -69,6 +70,11 @@ static inline cstr fs_absolute_path_of(Fs const* me, csview path) {
 // Returns true on success
 static inline bool fs_read_entire_file(Fs const* me, csview path, cstr* ret) {
     return me->read_entire_file(me, path, ret);
+}
+
+// Returns true on success
+static inline bool fs_write_entire_file(Fs const* me, csview path, csview contents) {
+    return me->write_entire_file(me, path, contents);
 }
 
 extern const Fs real_fs_noisy;

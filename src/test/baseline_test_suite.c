@@ -284,28 +284,26 @@ static inline const char* result_element_to_str(bool did_run, bool passed) {
 
 void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path) {
     printf("%sSaving results...%s\n", color_status, color_normal);
-    PATH_FROM_CSVIEW(write_path, results_path, {
-        PANIC("Path '%.*s' too long", c_SV(results_path));
-    });
-    FILE *f = fopen(write_path, "w");
-    if (!f) {
-        PANIC("Failed to write to '%.*s': %s\n", c_SV(results_path), strerror(errno));
-    }
-    fprintf(f, "const tsCommit = \"%s\"\n", cstr_str(&my typescript_commit));
-    fprintf(f, "const baselines = {\n");
+
+    cstr results = cstr_null;
+    cstr_reserve(&results, vec_baseline_test_result_size(&my results) * 150);
+    cstr_append_fmt(&results, "const tsCommit = \"%s\"\n", cstr_str(&my typescript_commit));
+    cstr_append_fmt(&results, "const baselines = {\n");
 
     c_foreach(i, vec_baseline_test_result, my results) {
         csview name = test_name_from_path(cstr_sv(&i.ref->source_path));
         ASSERT(!csview_contains(name, "\\") && !csview_contains(name, "'"));
-        fprintf(f, "    '%.*s': {\n", c_SV(name));
-        fprintf(f, "        errors: %s,\n", result_element_to_str(i.ref->did_run, i.ref->errors_passed));
-        fprintf(f, "        symbols: %s,\n", result_element_to_str(i.ref->did_run, i.ref->symbols_passed));
-        fprintf(f, "        types: %s,\n", result_element_to_str(i.ref->did_run, i.ref->types_passed));
-        fprintf(f, "    },\n");
+        cstr_append_fmt(&results, "    '%.*s': {\n", c_SV(name));
+        cstr_append_fmt(&results, "        errors: %s,\n", result_element_to_str(i.ref->did_run, i.ref->errors_passed));
+        cstr_append_fmt(&results, "        symbols: %s,\n", result_element_to_str(i.ref->did_run, i.ref->symbols_passed));
+        cstr_append_fmt(&results, "        types: %s,\n", result_element_to_str(i.ref->did_run, i.ref->types_passed));
+        cstr_append_fmt(&results, "    },\n");
     }
 
-    fprintf(f, "}\n");
-    fclose(f);
+    cstr_append_fmt(&results, "}\n");
+
+    fs_write_entire_file(&real_fs_noisy, results_path, cstr_sv(&results));
+
     printf("%sSaving done%s\n", color_good, color_normal);
 }
 
