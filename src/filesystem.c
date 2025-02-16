@@ -17,7 +17,7 @@ const char path_sep = '/';
 csview file_extension_of(csview path) {
     // -2 because -1 would be the last char, but if the last char is . we don't want to return ""
     for (const char* i = csview_end_ptr(path) - 2; i >= path.buf; i--) {
-        if (*i == '/') {
+        if (*i == path_sep) {
             break;
         } else if (*i == '.') {
             return csview_from_range(i + 1, csview_end_ptr(path));
@@ -29,11 +29,11 @@ csview file_extension_of(csview path) {
 csview basename_of(csview path) {
     // -2 because -1 would be the last char, but if the last char is / we don't want to return ""
     for (const char* i = csview_end_ptr(path) - 2; i >= path.buf; i--) {
-        if (*i == '/') {
+        if (*i == path_sep) {
             return csview_from_range(i + 1, csview_end_ptr(path));
         }
     }
-    if (path.size && *(csview_end_ptr(path) - 1) == '/') {
+    if (path.size && *(csview_end_ptr(path) - 1) == path_sep) {
         path.size--;
     }
     return path;
@@ -207,7 +207,7 @@ static cstr real_fs_get_cwd_internal(Fs const* me) {
         if (my debug_on_fail) {
             fprintf(stderr, "Failed to determine current working directory\n");
         }
-        return cstr_lit("/");
+        return cstr_from_n(&path_sep, 1);
     }
 }
 
