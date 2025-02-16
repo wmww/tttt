@@ -225,19 +225,16 @@ static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     ASSERT(errs);
     ASSERT(fs);
-    ASSERT(!errs->program);
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
         .global_scope = scope_init(errs),
     });
-    errs->program = ret;
     program_add_builtins(ret);
     return ret;
 }
 
 static void program_drop(Program* me) {
-    me->errs->program = nullptr;
     scope_drop(&my global_scope);
     hmap_str_box_source_file_drop(&my source_files_map);
     vec_source_file_ptr_drop(&my source_files_ordered);
@@ -250,12 +247,8 @@ void program_destroy(Program* me) {
     }
 }
 
-void program_add_globals_from_scope(Program* me, Scope const* scope) {
-    scope_copy_declarations_from(&my global_scope, scope);
-}
-
 void program_add_globals_from_program(Program* me, Program const* other) {
-    program_add_globals_from_scope(me, &other->global_scope);
+    scope_copy_declarations_from(&my global_scope, &other->global_scope);
 }
 
 static SourceFile* program_load_import_idempotent(Program* me, Span path_span, csview path) {
@@ -268,6 +261,58 @@ static SourceFile* program_load_import_idempotent(Program* me, Span path_span, c
         return ret;
     } else {
         return nullptr;
+    }
+}
+
+// Called for each toplevel statement of each loaded file
+static inline void program_handle_statement(Program* me, SourceFile* source, Statement* statement) {
+    switch (statement->tag) {
+        case STATEMENT_IMPORT_EXPORT: {
+            source_file_set_module_true(source, my errs);
+            PortStatement* port = statement->import_export;
+            SourceFile* imported = nullptr;
+            if (!port->requires_target) {
+                imported = source;
+            } else if (span_valid(port->target_path_span)) {
+                imported = program_load_import_idempotent(me, port->target_path_span, cstr_sv(&port->target_path));
+            }
+            port_statement_assign_source(port, imported);
+        }   break;
+
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+            source_file_set_module_true(source, my errs);
+            break;
+
+        case STATEMENT_DECL_NAMESPACE:
+            if (statement->decl.namespace.is_global) {
+                scope_copy_declarations_from(&my global_scope, &statement->decl.namespace.inner_scope);
+            }
+            // Fallthrough
+
+        case STATEMENT_DECL_VARIABLE:
+        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_ENUM:
+        case STATEMENT_DECL_CLASS:
+        case STATEMENT_DECL_TYPE:
+        case STATEMENT_DECL_INTERFACE:
+            if (statement->decl.props.exported) {
+                source_file_set_module_true(source, my errs);
+            }
+            break;
+
+        case STATEMENT_NOOP:
+        case STATEMENT_BLOCK:
+        case STATEMENT_IF_ELSE:
+        case STATEMENT_FOR_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_SWITCH:
+        case STATEMENT_TRY_CATCH:
+        case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
+        case STATEMENT_EXPR:
+        case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
+            break;
     }
 }
 
@@ -313,16 +358,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
 
     c_foreach(i, vec_statement, source_file->ast.statements) {
-        if (i.ref->tag == STATEMENT_IMPORT_EXPORT) {
-            PortStatement* port = i.ref->import_export;
-            SourceFile* imported = nullptr;
-            if (!port->requires_target) {
-                imported = source_file;
-            } else if (span_valid(port->target_path_span)) {
-                imported = program_load_import_idempotent(me, port->target_path_span, cstr_sv(&port->target_path));
-            }
-            port_statement_assign_source(port, imported);
-        }
+        program_handle_statement(me, source_file, i.ref);
     }
 
     // Add here so imports come before importing file
@@ -367,11 +403,8 @@ void program_resolve_names(Program* me) {
     c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
         SourceFile* source = *i.ref;
         block_add_names(&source->ast, source_file_get_scope_or(source, &my global_scope));
-
-        c_foreach(i, vec_statement, source->ast.statements) {
-            if (i.ref->tag == STATEMENT_DECL_NAMESPACE && i.ref->decl.namespace.is_global) {
-                program_add_globals_from_scope(me, &i.ref->decl.namespace.inner_scope);
-            }
+        c_foreach(i, vec_scope_cptr, source->global_scopes) {
+            scope_copy_declarations_from(&my global_scope, *i.ref);
         }
     }
 

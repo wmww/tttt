@@ -18,5 +18,15 @@ void source_file_drop(SourceFile* me) {
     vec_source_directive_drop(&my directives);
     block_drop(&my ast);
     scope_drop(&my module_scope);
+    vec_scope_cptr_drop(&my global_scopes);
     cstr_drop(&my decl_override);
+}
+
+void source_file_set_module_true(SourceFile* me, ErrorCtx* errs) {
+    if (!my is_module) {
+        my is_module = true;
+        my module_scope = scope_init_toplevel(errs);
+    } else {
+        ASSERT(my module_scope.errs == errs);
+    }
 }

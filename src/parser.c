@@ -4169,14 +4169,6 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         }
     }
 
-    c_foreach(i, vec_statement, source->ast.statements) {
-        if (statement_is_import_or_export(i.ref)) {
-            source->is_module = true;
-            source->module_scope = scope_init_toplevel(errs);
-            break;
-        }
-    }
-
     c_foreach(i, vec_error, shared.errors) {
         error_ctx_append_error(errs, *i.ref);
         *i.ref = (Error){0};

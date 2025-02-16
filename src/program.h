@@ -12,9 +12,8 @@ typedef struct arc_js_object ArcObject;
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
-// All all the declarations in the scope to the global namespace of the program. `scope` can come from another program,
-// but this program must not be used after that program is destroyed.
-void program_add_globals_from_scope(Program* me, Scope const* scope);
+// Add all declarations from other program to this one. Must be called after resolving names on other and before
+// resolving names on me. me must not outlive other.
 void program_add_globals_from_program(Program* me, Program const* other);
 
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.

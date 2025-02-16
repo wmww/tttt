@@ -287,38 +287,6 @@ void statement_drop(Statement* me) {
     }
 }
 
-bool statement_is_import_or_export(Statement const* me) {
-    switch (my tag) {
-        case STATEMENT_IMPORT_EXPORT:
-        case STATEMENT_EXPORT_DEFAULT_EXPR:
-            return true;
-
-        case STATEMENT_DECL_VARIABLE:
-        case STATEMENT_DECL_FUNCTION:
-        case STATEMENT_DECL_ENUM:
-        case STATEMENT_DECL_CLASS:
-        case STATEMENT_DECL_TYPE:
-        case STATEMENT_DECL_INTERFACE:
-        case STATEMENT_DECL_NAMESPACE:
-            return my decl.props.exported;
-
-        case STATEMENT_NOOP:
-        case STATEMENT_BLOCK:
-        case STATEMENT_IF_ELSE:
-        case STATEMENT_FOR_LOOP:
-        case STATEMENT_FOR_EACH_LOOP:
-        case STATEMENT_SWITCH:
-        case STATEMENT_TRY_CATCH:
-        case STATEMENT_BREAK:
-        case STATEMENT_CONTINUE:
-        case STATEMENT_EXPR:
-        case STATEMENT_RETURN_EXPR:
-        case STATEMENT_THROW_EXPR:
-            break;
-    }
-    return false;
-}
-
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_IMPORT_EXPORT:
