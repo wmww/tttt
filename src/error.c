@@ -185,9 +185,6 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
 }
 
 Error* error_ctx_append_error(ErrorCtx* me, Error error) {
-    if (error.phase == ERROR_PHASE_UNKOWN) {
-        NONFATAL("Error added with unkown phase: %s", cstr_str(&error.message));
-    }
     if (error.phase == ERROR_PHASE_PARSE) {
         my parse_error_count++;
     }

@@ -229,6 +229,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         cache->es5 = program_new(cache->errors, &real_fs_noisy);
         SourceFile* source = program_preload_es5(cache->es5);
         cstr_take(&source->decl_override, cstr_lit("lib.es5.d.ts, --, --"));
+        program_resolve_names(cache->es5);
     }
 
     program_add_globals_from_program(program, cache->es5);
@@ -248,6 +249,8 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         source->display_path_override = cstr_str(&i.ref->path);
         i.ref->source = source;
     }
+
+    program_resolve_names(program);
 
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors,
     // but name errors are shown reguardless

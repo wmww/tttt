@@ -2451,9 +2451,9 @@ const baselines = {
         types: false,
     },
     'blockScopedClassDeclarationAcrossFiles': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'blockScopedEnumVariablesUseBeforeDef': {
         errors: false,
@@ -2506,7 +2506,7 @@ const baselines = {
         types: true,
     },
     'blockScopedNamespaceDifferentFile': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5382,8 +5382,8 @@ const baselines = {
     },
     'constDeclarations-useBeforeDefinition2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'constDeclarations-validContexts': {
         errors: false,
@@ -12596,9 +12596,9 @@ const baselines = {
         types: false,
     },
     'fileReferencesWithNoExtensions': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'fileWithNextLine1': {
         errors: true,
@@ -17662,13 +17662,13 @@ const baselines = {
     },
     'jsFileCompilationLetDeclarationOrder': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationLetDeclarationOrder2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationMethodOverloadSyntax': {
         errors: false,
@@ -18382,8 +18382,8 @@ const baselines = {
     },
     'letDeclarations-useBeforeDefinition2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'letDeclarations-validContexts': {
         errors: false,
@@ -22406,7 +22406,7 @@ const baselines = {
         types: true,
     },
     'outModuleTripleSlashRefs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31772,7 +31772,7 @@ const baselines = {
     },
     'classExtendsItselfIndirectly3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classExtendsShadowedConstructorFunction': {
@@ -53036,7 +53036,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment24': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53096,7 +53096,7 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment35': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

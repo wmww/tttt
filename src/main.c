@@ -56,13 +56,20 @@ int main(int argc, const char** argv) {
     SourceFile const* source = program_load(program, csview_from(argv[1]));
 
     if (!error_ctx_empty(&errs)) {
-        parse_errors = errs.parse_error_count;
-        name_errors = vec_error_size(&errs.errors) - errs.parse_error_count;
+        parse_errors = vec_error_size(&errs.errors);
         print_error_ctx(&errs);
         error_ctx_clear(&errs);
         ret = 1;
     }
 
+    program_resolve_names(program);
+
+    if (!error_ctx_empty(&errs)) {
+        name_errors = vec_error_size(&errs.errors);
+        print_error_ctx(&errs);
+        error_ctx_clear(&errs);
+        ret = 1;
+    }
 
     cstr parsed_str = cstr_null;
     display_block(debug_display(&parsed_str), &source->ast);
