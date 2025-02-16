@@ -7,9 +7,8 @@ typedef struct SourceFile {
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
     Block ast;
-    // If no errors should be generated from inside this file (for example for standard library files). If true this
-    // file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
-    bool cant_have_errors;
+    // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
+    bool is_standard_library;
     bool is_module;
     Scope module_scope; // Only used if is_module is true
     VecScopeCPtr global_scopes; // Toplevel global augmenttion scopes

@@ -19,13 +19,14 @@ void program_add_globals_from_program(Program* me, Program const* other);
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.
 // Can be called multiple times. Returns nullptr if path is not found
 SourceFile* program_load(Program* me, csview path);
-SourceFile* program_preload(Program* me, csview path);
-SourceFile* program_preload_es5(Program* me);
+
+// Loads the standard library file based on the name (such as es5 or es2015.collection)
+SourceFile* program_load_lib(Program* me, csview name);
 
 // Should be called once after loading all files is done. Should always be called before typechecking
 void program_resolve_names(Program* me);
 
-// Typechecks the loaded file and all imports, does not typecheck preloaded files
+// Typechecks the loaded file and all imports, does not typecheck libraries loaded with program_load_lib()
 void program_typecheck(Program* me);
 
 // Returns the number of source files loaded or imported

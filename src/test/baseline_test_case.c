@@ -227,7 +227,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
 
     if (!cache->es5) {
         cache->es5 = program_new(cache->errors, &real_fs_noisy);
-        SourceFile* source = program_preload_es5(cache->es5);
+        SourceFile* source = program_load_lib(cache->es5, c_sv("es5"));
         cstr_take(&source->decl_override, cstr_lit("lib.es5.d.ts, --, --"));
         program_resolve_names(cache->es5);
     }

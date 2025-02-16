@@ -22,6 +22,8 @@ typedef SourceFile* SourceFilePtr;
 #define i_key_names SourceFilePtr, source_file_ptr
 #include "wrap_stc/vec.h"
 
+static const csview lib_path = c_sv_const_init("thirdparty/lib");
+
 typedef enum {
     PROGRAM_PHASE_LOADING = 0, // Files may be loaded
     PROGRAM_PHASE_RESOLVING_NAMES, // Names currently being resolved
@@ -388,16 +390,12 @@ SourceFile* program_load(Program* me, csview path) {
     return main_source;
 }
 
-SourceFile* program_preload(Program* me, csview path) {
-    SourceFile* source = program_load(me, path);
-    if (source) {
-        source->cant_have_errors = true;
-    }
+SourceFile* program_load_lib(Program* me, csview name) {
+    cstr path = cstr_from_fmt("%.*s/lib.%.*s.d.ts", c_SV(lib_path), c_SV(name));
+    SourceFile* source = program_load(me, cstr_sv(&path));
+    if (source) source->is_standard_library = true;
+    cstr_drop(&path);
     return source;
-}
-
-SourceFile* program_preload_es5(Program* me) {
-    return program_preload(me, c_sv("thirdparty/lib/lib.es5.d.ts"));
 }
 
 void program_resolve_names(Program* me) {
@@ -443,7 +441,7 @@ void program_typecheck(Program* me) {
 
     c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
         SourceFile* source = *i.ref;
-        if (!source->cant_have_errors) {
+        if (!source->is_standard_library) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
     }
