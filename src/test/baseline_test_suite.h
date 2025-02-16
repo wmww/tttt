@@ -13,7 +13,7 @@
 #include "wrap_stc/quicksort.h"
 
 typedef struct BaselineTestSuite {
-    const char* tests_dir;
+    csview tests_dir;
     bool has_filter;
     cregex filter;
     cstr prev_typescript_commit;
@@ -25,7 +25,7 @@ typedef struct BaselineTestSuite {
 
 void baseline_test_suite_drop(BaselineTestSuite* me);
 void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_syms, bool show_typs);
-void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results_path);
+void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path);
 
 #define i_key_class_names BaselineTestSuite, baseline_test_suite
 #define i_no_clone
@@ -33,7 +33,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
 #include "wrap_stc/box.h"
 
 BoxBaselineTestSuite load_baseline_test_suite(
-    const char* tests_dir,
+    csview tests_dir,
     const char* filter_re,
-    const char* results_path
+    csview results_path
 );

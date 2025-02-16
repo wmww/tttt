@@ -72,14 +72,14 @@ static bool get_import_path_of_index(Fs const* fs, csview path, cstr* ret) {
 
     cstr_append_n(ret, &path_sep, 1);
     cstr_append_lit(ret, "index.d.ts");
-    if (fs_is_reg_file(fs, cstr_str(ret))) {
+    if (fs_is_reg_file(fs, cstr_sv(ret))) {
         return true;
     }
     cstr_resize(ret, base_len, '_');
 
     cstr_append_n(ret, &path_sep, 1);
     cstr_append_lit(ret, "index.ts");
-    if (fs_is_reg_file(fs, cstr_str(ret))) {
+    if (fs_is_reg_file(fs, cstr_sv(ret))) {
         return true;
     }
 
@@ -96,7 +96,7 @@ static bool get_import_path_find_extension(Fs const* fs, csview path, cstr* ret)
         cstr_resize(ret, base_len, '_');
     }
 
-    if (fs_is_directory(fs, cstr_str(ret))) {
+    if (fs_is_directory(fs, cstr_sv(ret))) {
         cstr ret2;
         if (get_import_path_of_index(fs, cstr_sv(ret), &ret2)) {
             cstr_drop(ret);
@@ -106,13 +106,13 @@ static bool get_import_path_find_extension(Fs const* fs, csview path, cstr* ret)
     }
 
     cstr_append_lit(ret, ".d.ts");
-    if (fs_is_reg_file(fs, cstr_str(ret))) {
+    if (fs_is_reg_file(fs, cstr_sv(ret))) {
         return true;
     }
     cstr_resize(ret, base_len, '_');
 
     cstr_append_lit(ret, ".ts");
-    if (fs_is_reg_file(fs, cstr_str(ret))) {
+    if (fs_is_reg_file(fs, cstr_sv(ret))) {
         return true;
     }
     cstr_resize(ret, base_len, '_');
@@ -141,12 +141,12 @@ static bool get_node_modules_dir(Fs const* fs, csview path, cstr* ret) {
         intptr_t start_len = cstr_size(&str);
         cstr_append_n(&str, &path_sep, 1);
         cstr_append_lit(&str, "node_modules");
-        if (fs_is_directory(fs, cstr_str(&str))) {
+        if (fs_is_directory(fs, cstr_sv(&str))) {
             *ret = str;
             return true;
         }
         cstr_resize(&str, start_len, '_');
-        cstr_resize(&str, basename_of(cstr_str(&str)) - cstr_str(&str), '_');
+        cstr_resize(&str, basename_of(cstr_sv(&str)).buf - cstr_str(&str), '_');
         if (cstr_size(&str) <= 2 && (
                 cstr_empty(&str) ||
                 cstr_equals(&str, ".") ||
@@ -231,7 +231,7 @@ void program_add_globals_from_program(Program* me, Program const* other) {
 }
 
 // Returns null if path can't be loaded
-static SourceFile* program_add_source_idempotent(Program* me, const char* path) {
+static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
     auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
     if (value) {
@@ -239,13 +239,13 @@ static SourceFile* program_add_source_idempotent(Program* me, const char* path) 
         cstr_drop(&canonical_path);
         return value->second.get;
     } else if (my locked) {
-        NONFATAL("Could not add '%s' because program is locked", path);
+        NONFATAL("Could not add '%.*s' because program is locked", c_SV(path));
         cstr_drop(&canonical_path);
         return nullptr;
     } else {
         // No source file is created for this path, load it
         cstr contents;
-        if (!fs_read_entire_file(my fs, cstr_str(&canonical_path), &contents)) {
+        if (!fs_read_entire_file(my fs, cstr_sv(&canonical_path), &contents)) {
             cstr_drop(&canonical_path);
             return nullptr;
         }
@@ -264,9 +264,9 @@ static SourceFile* program_add_source_idempotent(Program* me, const char* path) 
     }
 }
 
-SourceFile* program_load(Program* me, const char* path) {
+SourceFile* program_load(Program* me, csview path) {
     if (my locked) {
-        NONFATAL("Could not load '%s' because program is locked", path);
+        NONFATAL("Could not load '%.*s' because program is locked", c_SV(path));
         return nullptr;
     }
 
@@ -278,7 +278,7 @@ SourceFile* program_load(Program* me, const char* path) {
     // Add the source file to the program
     SourceFile* main_source = program_add_source_idempotent(me, path);
     if (!main_source) {
-        error_ctx_error(my errs, span_null, 6053, "File '%s' not found.", path);
+        error_ctx_error(my errs, span_null, 6053, "File '%.*s' not found.", c_SV(path));
         my errs->phase = ERROR_PHASE_UNKOWN;
         clear_error_config();
         return nullptr;
@@ -354,7 +354,7 @@ SourceFile* program_load(Program* me, const char* path) {
     return main_source;
 }
 
-SourceFile* program_preload(Program* me, const char* path) {
+SourceFile* program_preload(Program* me, csview path) {
     SourceFile* source = program_load(me, path);
     if (source) {
         source->cant_have_errors = true;
@@ -363,15 +363,15 @@ SourceFile* program_preload(Program* me, const char* path) {
 }
 
 SourceFile* program_preload_es5(Program* me) {
-    return program_preload(me, "thirdparty/lib/lib.es5.d.ts");
+    return program_preload(me, c_sv("thirdparty/lib/lib.es5.d.ts"));
 }
 
 SourceFile* program_load_import(Program* me, Span path_span, csview path) {
     ASSERT(span_valid(path_span));
-    csview cwd = dirname_of(cstr_str(&path_span.source->canonical_path));
+    csview cwd = dirname_of(cstr_sv(&path_span.source->canonical_path));
     cstr source_path;
     if (get_import_path(my fs, cwd, path, &source_path)) {
-        SourceFile* ret = program_add_source_idempotent(me, cstr_str(&source_path));
+        SourceFile* ret = program_add_source_idempotent(me, cstr_sv(&source_path));
         cstr_drop(&source_path);
         return ret;
     } else {

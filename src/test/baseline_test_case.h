@@ -22,7 +22,7 @@ BaselineTestCache baseline_test_cache_init();
 void baseline_test_cache_drop(BaselineTestCache* me);
 
 // Get the name of a test given it's path (just strips the dir and extension). output is only valid as long as input is.
-csview test_name_from_path(const char* path);
+csview test_name_from_path(csview path);
 
 // A virtual file within a test case
 typedef struct BaselineTestFile {
@@ -41,7 +41,7 @@ void baseline_test_file_drop(BaselineTestFile* me);
 #include "wrap_stc/vec.h"
 
 typedef struct BaselineTestCase {
-    const char* source_path; // Not owned, path to real file on disk that may describe several virtual files
+    csview source_path; // Not owned, path to real file on disk that may describe several virtual files
     bool did_run;
     ErrorCtx* error_ctx;
     bool noisy;
@@ -51,7 +51,7 @@ typedef struct BaselineTestCase {
 } BaselineTestCase;
 
 // Never prints to stdout, only prints to stderr if noisy is true, or if it panics
-BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* source_path, bool noisy);
+BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy);
 void baseline_test_case_drop(BaselineTestCase* me);
 
 // These are used to get the data into string form, so it can be compared with known correct results or serialized

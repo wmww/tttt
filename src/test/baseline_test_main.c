@@ -2,11 +2,11 @@
 #include "filesystem.h"
 #include "string_helpers.h"
 
-const char* const default_tests_dir = "test/TypeScript/tests";
-const char* tests_dir = default_tests_dir;
+csview const default_tests_dir = c_sv_const_init("test/TypeScript/tests");
+csview tests_dir = default_tests_dir;
 const char* test_filter = nullptr;
-const char* const default_results_path = "test/baseline_results.ts";
-const char* results_path = default_results_path;
+csview const default_results_path = c_sv_const_init("test/baseline_results.ts");
+csview results_path = default_results_path;
 bool show_errs = false;
 bool show_syms = false;
 bool show_typs = false;
@@ -16,16 +16,16 @@ static void show_help(FILE* target) {
     fprintf(target, "tttt test runner\n\n\
   -h, --help                show this help message\n\n\
   --dir [PATH]              path to TypeScript tests directory\n\
-                            (default = %s)\n\n\
+                            (default = %.*s)\n\n\
   -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n\
   -s, --save                save test results to results path\n\n\
   --results-path [PATH]     path to file where test results are loaded/saved\n\
-                            (default = %s)\n\n\
+                            (default = %.*s)\n\n\
   -d, --diffs               if to show all diffs for failing tests\n\n\
   --err                     show errors diffs for failing tests\n\n\
   --sym                     show symbols diffs for failing tests\n\n\
   --typ                     show types diffs for failing tests\n\n\
-", default_tests_dir, default_results_path);
+", c_SV(default_tests_dir), c_SV(default_results_path));
 }
 
 static bool parse_args(int argc, const char** argv) {
@@ -36,7 +36,7 @@ static bool parse_args(int argc, const char** argv) {
         } else if (streq(argv[i], "--dir")) {
             i++;
             if (i < argc && *argv[i] != '-') {
-                tests_dir = argv[i];
+                tests_dir = csview_from(argv[i]);
             } else {
                 fprintf(stderr, "%sExpected argument after %s%s\n\n", color_error, argv[i-1], color_normal);
                 show_help(stderr);
@@ -64,7 +64,7 @@ static bool parse_args(int argc, const char** argv) {
         } else if (streq(argv[i], "--results-path")) {
             i++;
             if (i < argc && *argv[i] != '-') {
-                results_path = argv[i];
+                results_path = csview_from(argv[i]);
             } else {
                 fprintf(stderr, "%sExpected argument after %s%s\n\n", color_error, argv[i-1], color_normal);
                 show_help(stderr);
@@ -80,11 +80,11 @@ static bool parse_args(int argc, const char** argv) {
     }
 
     if (!fs_is_directory(&real_fs_noisy, tests_dir)) {
-        fprintf(stderr, "%s%s is not a directory%s\n", color_error, tests_dir, color_normal);
+        fprintf(stderr, "%s%.*s is not a directory%s\n", color_error, c_SV(tests_dir), color_normal);
         return false;
     }
     if (!fs_is_reg_file(&real_fs_noisy,results_path)) {
-        fprintf(stderr, "%s%s is not a file%s\n", color_error, results_path, color_normal);
+        fprintf(stderr, "%s%.*s is not a file%s\n", color_error, c_SV(results_path), color_normal);
         return false;
     }
 

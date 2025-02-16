@@ -10,6 +10,7 @@
 
 #include "stc/cregex.h"
 #include <errno.h>
+#include <linux/limits.h>
 
 #define i_key BaselineTestResult const*
 #define i_type vec_baseline_test_result_c_ptr
@@ -45,14 +46,14 @@ static void show_collected_test_counts(BaselineTestSuite* me) {
     );
 }
 
-static void load_path(void* data, const char* dir_path, const char* name) {
+static void load_path(void* data, csview dir_path, csview name) {
     BaselineTestSuite* me = data;
-    cstr full_path = cstr_from_fmt("%s/%s", dir_path, name);
+    cstr full_path = cstr_from_fmt("%.*s/%.*s", c_SV(dir_path), c_SV(name));
 
-    if (fs_is_directory(&real_fs_quiet, cstr_str(&full_path))) {
-        fs_for_each_item_in_dir(&real_fs_quiet, cstr_str(&full_path), load_path, me);
+    if (fs_is_directory(&real_fs_quiet, cstr_sv(&full_path))) {
+        fs_for_each_item_in_dir(&real_fs_quiet, cstr_sv(&full_path), load_path, me);
         cstr_drop(&full_path);
-    } else if (fs_is_reg_file(&real_fs_quiet, cstr_str(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
+    } else if (fs_is_reg_file(&real_fs_quiet, cstr_sv(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
         vec_baseline_test_result_push(
             &my results,
             make_baseline_test_result(full_path)
@@ -66,10 +67,10 @@ static void load_path(void* data, const char* dir_path, const char* name) {
     }
 }
 
-static void load_subdir(BaselineTestSuite* me, const char* subdir) {
-    cstr full_dir = cstr_from_fmt("%s/cases/%s", my tests_dir, subdir);
-    if (fs_is_directory(&real_fs_quiet, cstr_str(&full_dir))) {
-        fs_for_each_item_in_dir(&real_fs_quiet, cstr_str(&full_dir), load_path, me);
+static void load_subdir(BaselineTestSuite* me, csview subdir) {
+    cstr full_dir = cstr_from_fmt("%.*s/cases/%.*s", c_SV(my tests_dir), c_SV(subdir));
+    if (fs_is_directory(&real_fs_quiet, cstr_sv(&full_dir))) {
+        fs_for_each_item_in_dir(&real_fs_quiet, cstr_sv(&full_dir), load_path, me);
     } else {
         fprintf(stderr, "%s%s is not a directory%s\n", color_error, cstr_str(&full_dir), color_normal);
     }
@@ -119,7 +120,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
         target,
         "%s %.*s %s",
         name_color,
-        c_SV(test_name_from_path(cstr_str(&test->source_path))),
+        c_SV(test_name_from_path(cstr_sv(&test->source_path))),
         color_normal
     );
 }
@@ -135,7 +136,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
     printf("%sRunning tests...%s\n\n", color_status, color_normal);
     c_foreach(i, vec_baseline_test_result, my results) {
         intptr_t index = i.ref - my results.data;
-        csview name = test_name_from_path(cstr_str(&i.ref->source_path));
+        csview name = test_name_from_path(cstr_sv(&i.ref->source_path));
         if (!test_passes_filter(me, name)) {
             continue;
         }
@@ -281,17 +282,20 @@ static inline const char* result_element_to_str(bool did_run, bool passed) {
         "undefined";
 }
 
-void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results_path) {
+void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path) {
     printf("%sSaving results...%s\n", color_status, color_normal);
-    FILE *f = fopen(results_path, "w");
+    PATH_FROM_CSVIEW(write_path, results_path, {
+        PANIC("Path '%.*s' too long", c_SV(results_path));
+    });
+    FILE *f = fopen(write_path, "w");
     if (!f) {
-        PANIC("Failed to write to %s: %s\n", results_path, strerror(errno));
+        PANIC("Failed to write to '%.*s': %s\n", c_SV(results_path), strerror(errno));
     }
     fprintf(f, "const tsCommit = \"%s\"\n", cstr_str(&my typescript_commit));
     fprintf(f, "const baselines = {\n");
 
     c_foreach(i, vec_baseline_test_result, my results) {
-        csview name = test_name_from_path(cstr_str(&i.ref->source_path));
+        csview name = test_name_from_path(cstr_sv(&i.ref->source_path));
         ASSERT(!csview_contains(name, "\\") && !csview_contains(name, "'"));
         fprintf(f, "    '%.*s': {\n", c_SV(name));
         fprintf(f, "        errors: %s,\n", result_element_to_str(i.ref->did_run, i.ref->errors_passed));
@@ -305,7 +309,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, const char* results
     printf("%sSaving done%s\n", color_good, color_normal);
 }
 
-static void load_saved_results(BaselineTestSuite* me, const char* results_path) {
+static void load_saved_results(BaselineTestSuite* me, csview results_path) {
     ErrorCtx errs = error_ctx_init();
     Program* program = program_new(&errs, &real_fs_quiet);
 
@@ -337,11 +341,14 @@ static void load_saved_results(BaselineTestSuite* me, const char* results_path) 
     error_ctx_drop(&errs);
 }
 
-static cstr get_git_hash_of_repo(const char* repo) {
+static cstr get_git_hash_of_repo(csview repo_path) {
+    PATH_FROM_CSVIEW(repo_str, repo_path, {
+        PANIC("Invalid repo path %.*s", c_SV(repo_path));
+    });
     const char* args[] = {
         "git",
         "-C",
-        repo,
+        repo_str,
         "rev-parse",
         "HEAD",
         nullptr,
@@ -357,9 +364,9 @@ static cstr get_git_hash_of_repo(const char* repo) {
 }
 
 BoxBaselineTestSuite load_baseline_test_suite(
-    const char* tests_dir,
+    csview tests_dir,
     const char* filter_re,
-    const char* results_path
+    csview results_path
 ) {
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
@@ -374,8 +381,8 @@ BoxBaselineTestSuite load_baseline_test_suite(
 
     printf("%sCollecting tests...%s\n", color_status, color_normal);
     ret.get->typescript_commit = get_git_hash_of_repo(tests_dir);
-    load_subdir(ret.get, "conformance");
-    load_subdir(ret.get, "compiler");
+    load_subdir(ret.get, c_sv("conformance"));
+    load_subdir(ret.get, c_sv("compiler"));
     show_collected_test_counts(ret.get);
     printf("\n");
     printf("%sSorting tests...%s\n", color_status, color_normal);

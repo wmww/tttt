@@ -34,8 +34,8 @@ void baseline_test_cache_drop(BaselineTestCache* me) {
     free(my errors);
 }
 
-csview test_name_from_path(const char* path) {
-    csview name = csview_from(basename_of(path));
+csview test_name_from_path(csview path) {
+    csview name = basename_of(path);
     ASSERT(csview_ends_with(name, ".ts"));
     name = csview_substr(name, 0, csview_size(name) - 3);
     return name;
@@ -81,10 +81,10 @@ static bool tag_equals(csview tag, const char* str) {
     return true;
 }
 
-static void add_virtual_source_file(BaselineTestCase* me, const char* virtual_path, cstr contents) {
+static void add_virtual_source_file(BaselineTestCase* me, csview virtual_path, cstr contents) {
     mock_fs_create_file(my fs, virtual_path, contents);
     vec_baseline_test_file_push(&my files, (BaselineTestFile){
-        .path = cstr_from(virtual_path),
+        .path = cstr_from_sv(virtual_path),
     });
 }
 
@@ -107,17 +107,17 @@ static bool load_test_source(BaselineTestCase* me) {
     );
 
     bool has_line = false;
-    cstr current_filename = cstr_from(basename_of(my source_path));
+    csview current_filename = basename_of(my source_path);
     c_foreach(i, lines_sv, contents_sv) {
         csview tag_key, tag_value;
         if (parse_tag(i.line, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
                 if (cstr_size(&source_contents)) {
-                    add_virtual_source_file(me, cstr_str(&current_filename), source_contents);
+                    add_virtual_source_file(me, current_filename, source_contents);
                     source_contents = cstr_null;
                 }
                 has_line = false;
-                cstr_take(&current_filename, cstr_from_sv(tag_value));
+                current_filename = tag_value;
             } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
                 error_config_enable_strict(&my error_ctx->config);
             } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
@@ -134,8 +134,7 @@ static bool load_test_source(BaselineTestCase* me) {
         }
     }
 
-    add_virtual_source_file(me, cstr_str(&current_filename), source_contents);
-    cstr_drop(&current_filename);
+    add_virtual_source_file(me, current_filename, source_contents);
     cstr_drop(&unparsed_contents);
 
     return true;
@@ -203,9 +202,9 @@ static void process_errors(BaselineTestCase* me) {
             unsigned related_col = span_col_index(related.ref->span);
             cstr_append_fmt(
                 &item.str,
-                "\r\n!!! related TS%d %s:%u:%u: %s",
+                "\r\n!!! related TS%d %.*s:%u:%u: %s",
                 related.ref->ts_code,
-                basename_of(cstr_str(&current_source->canonical_path)),
+                c_SV(basename_of(cstr_sv(&current_source->canonical_path))),
                 related_line + 1,
                 related_col + 1,
                 cstr_str(&related.ref->message)
@@ -217,7 +216,7 @@ static void process_errors(BaselineTestCase* me) {
     }
 }
 
-BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* source_path, bool noisy) {
+BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy) {
     if (!noisy) {
         inhibit_nonfatals();
     }
@@ -245,7 +244,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, const char* so
     ret.did_run = load_test_source(&ret);
 
     c_foreach(i, vec_baseline_test_file, ret.files) {
-        SourceFile* source = program_load(program, cstr_str(&i.ref->path));
+        SourceFile* source = program_load(program, cstr_sv(&i.ref->path));
         source->display_path_override = cstr_str(&i.ref->path);
         i.ref->source = source;
     }
@@ -280,14 +279,14 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     vec_baseline_test_file_drop(&my files);
 }
 
-static const char* relative_test_path(const char* test_path) {
-    const char* split = "/tests/cases/";
+static csview relative_test_path(csview test_path) {
+    const csview split = c_sv("/tests/cases/");
     while (true) {
-        const char* found = strstr(test_path, split);
-        if (!found) {
+        intptr_t found = csview_find_sv(test_path, split);
+        if (found == c_NPOS) {
             break;
         }
-        test_path = found + 1;
+        test_path = csview_slice(test_path, found + 1, INTPTR_MAX);
     }
     return test_path;
 }
@@ -428,7 +427,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
 }
 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
-    cstr_append_fmt(target, "//// [%s] ////\r\n\r\n", relative_test_path(my source_path));
+    cstr_append_fmt(target, "//// [%.*s] ////\r\n\r\n", c_SV(relative_test_path(my source_path)));
     c_foreach(i, vec_baseline_test_file, my files) {
         render_lines_woven_with_file(
             target,
@@ -442,7 +441,7 @@ void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me)
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
-    cstr_append_fmt(target, "//// [%s] ////\r\n\r\n", relative_test_path(my source_path));
+    cstr_append_fmt(target, "//// [%.*s] ////\r\n\r\n", c_SV(relative_test_path(my source_path)));
     c_foreach(i, vec_baseline_test_file, my files) {
         render_lines_woven_with_file(
             target,
@@ -467,8 +466,8 @@ static void append_decl(cstr* target, Span span) {
     } else if (cstr_ends_with_sv(&span.source->canonical_path, c_sv("tslib.d.ts"))) {
         cstr_append_fmt(
             target,
-            ", Decl(%s, --, --)",
-            basename_of(cstr_str(&span.source->canonical_path))
+            ", Decl(%.*s, --, --)",
+            c_SV(basename_of(cstr_sv(&span.source->canonical_path)))
         );
         return;
     }
@@ -525,8 +524,8 @@ static void append_decl(cstr* target, Span span) {
     unsigned format_col = span_col_index(span);
     cstr_append_fmt(
         target,
-        ", Decl(%s, %u, %u)",
-        basename_of(cstr_str(&span.source->canonical_path)),
+        ", Decl(%.*s, %u, %u)",
+        c_SV(basename_of(cstr_sv(&span.source->canonical_path))),
         format_line,
         format_col
     );

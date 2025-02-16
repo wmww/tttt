@@ -14,59 +14,58 @@
 static const long read_file_len_limit = 1024l * 1024l * 1024l; // 1GB
 const char path_sep = '/';
 
-const char* file_extension_of(const char* path) {
-    const char* ret = "";
-    for (const char* i = path; *i; i++) {
+csview file_extension_of(csview path) {
+    // -2 because -1 would be the last char, but if the last char is . we don't want to return ""
+    for (const char* i = csview_end_ptr(path) - 2; i >= path.buf; i--) {
         if (*i == '/') {
-            ret = "";
-        } else if (*i == '.' && *(i + 1)) {
-            ret = i + 1;
+            break;
+        } else if (*i == '.') {
+            return csview_from_range(i + 1, csview_end_ptr(path));
         }
     }
-    return ret;
+    return (csview){0};
 }
 
-const char* basename_of(const char* path) {
-    const char* ret = path;
-    const char* next_ret = ret;
-    for (const char* i = path; *i; i++) {
-        ret = next_ret;
+csview basename_of(csview path) {
+    // -2 because -1 would be the last char, but if the last char is / we don't want to return ""
+    for (const char* i = csview_end_ptr(path) - 2; i >= path.buf; i--) {
         if (*i == '/') {
-            next_ret = i + 1;
+            return csview_from_range(i + 1, csview_end_ptr(path));
         }
     }
-    return ret;
+    if (path.size && *(csview_end_ptr(path) - 1) == '/') {
+        path.size--;
+    }
+    return path;
 }
 
-csview dirname_of(const char* path) {
-    const char* end = basename_of(path);
-    if (end == path) {
+csview dirname_of(csview path) {
+    csview end = basename_of(path);
+    if (end.buf == path.buf) {
         return c_sv(".");
     } else {
-        return csview_from_range(path, end);
+        return csview_from_range(path.buf, end.buf);
     }
 }
 
-// Returns the left-most path segment, or an empty csview if the path sarts with a separator. sets path to point to the
-// start of the next segment, or sets path to null if there are no more segments
-static csview path_next_segment(const char** path) {
-    const char* start = *path;
-    const char* end = strchr(start, path_sep);
-    if (!end) {
-        end = start + strlen(start);
+// Returns the left-most path segment, or an empty csview if the path sarts with a separator. sets path start at the
+// start of the next segment, or sets path to empty if there are no more segments
+static csview path_next_segment(csview* path) {
+    csview segment = *path;
+    intptr_t segment_end = csview_find_sv(segment, csview_from_n(&path_sep, 1));
+    if (segment_end != c_NPOS) {
+        segment.size = segment_end;
     }
-    *path = end;
-    while (**path == path_sep) {
-        (*path)++;
+    const char* next_segment_start = csview_end_ptr(segment);
+    while (next_segment_start < csview_end_ptr(*path) && *next_segment_start == path_sep) {
+        next_segment_start++;
     }
-    if (**path == '\0') {
-        *path = nullptr;
-    }
-    return csview_from_range(start, end);
+    *path = csview_from_range(next_segment_start, csview_end_ptr(*path));
+    return segment;
 }
 
-static void push_path_to_absolute(cstr* absolute, const char* path) {
-    while (path) {
+static void push_path_to_absolute(cstr* absolute, csview path) {
+    while (path.size) {
         csview segment = path_next_segment(&path);
         if (!csview_size(segment) || csview_equals_sv(segment, c_sv("."))) {
         } else if (csview_equals_sv(segment, c_sv(".."))) {
@@ -88,22 +87,22 @@ static void push_path_to_absolute(cstr* absolute, const char* path) {
     }
 }
 
-cstr absolute_path_of(const char* cwd, const char* path) {
-    PANIC_IF(*cwd != path_sep, "cwd must be absolute path, is '%s'", cwd);
+cstr absolute_path_of(csview cwd, csview path) {
+    PANIC_IF(!cwd.size || *cwd.buf != path_sep, "cwd must be absolute path, is '%.*s'", c_SV(cwd));
     cstr ret = cstr_from_n(&path_sep, 1);
-    if (*path != path_sep) {
+    if (*path.buf != path_sep) {
         push_path_to_absolute(&ret, cwd);
     }
     push_path_to_absolute(&ret, path);
     return ret;
 }
 
-cstr relative_path_of(const char* cwd, const char* path) {
+cstr relative_path_of(csview cwd, csview path) {
     cstr absolute = absolute_path_of(cwd, path);
-    path = cstr_str(&absolute);
-    while (cwd && path) {
-        const char* cwd_next = cwd;
-        const char* path_next = path;
+    path = cstr_sv(&absolute);
+    while (cwd.size && path.size) {
+        csview cwd_next = cwd;
+        csview path_next = path;
         csview cwd_segment = path_next_segment(&cwd_next);
         csview path_segment = path_next_segment(&path_next);
         if (!csview_equals_sv(cwd_segment, path_segment)) {
@@ -113,46 +112,56 @@ cstr relative_path_of(const char* cwd, const char* path) {
         path = path_next;
     }
     cstr ret = cstr_null;
-    while (cwd) {
+    while (cwd.size) {
         cstr_append_lit(&ret, "..");
         cstr_append_n(&ret, &path_sep, 1);
         path_next_segment(&cwd);
     }
-    if (path) {
-        cstr_append(&ret, path);
+    if (path.size) {
+        cstr_append_sv(&ret, path);
     }
     cstr_drop(&absolute);
     return ret;
 }
 
-bool real_fs_is_reg_file(Fs const* me, const char* path) {
+static bool real_fs_is_reg_file(Fs const* me, csview path) {
     ignore me;
+    PATH_FROM_CSVIEW(path_str, path, {
+        return false;
+    });
     struct stat buf_stat;
-    if (!path || stat(path, &buf_stat) < 0) {
+    if (stat(path_str, &buf_stat) < 0) {
         return false;
     }
     return S_ISREG(buf_stat.st_mode);
 }
 
-bool real_fs_is_directory(Fs const* me, const char* path) {
+static bool real_fs_is_directory(Fs const* me, csview path) {
     ignore me;
+    PATH_FROM_CSVIEW(path_str, path, {
+        return false;
+    });
     struct stat buf_stat;
-    if (!path || stat(path, &buf_stat) < 0) {
+    if (stat(path_str, &buf_stat) < 0) {
         return false;
     }
     return S_ISDIR(buf_stat.st_mode);
 }
 
-bool real_fs_for_each_item_in_dir(
+static bool real_fs_for_each_item_in_dir(
     Fs const* me,
-    const char* dir_path,
-    void (*callback)(void* data, const char* dir_path, const char* name),
+    csview dir_path,
+    void (*callback)(void* data, csview dir_path, csview name),
     void* data
 ) {
     ignore me;
-    DIR* directory = opendir(dir_path);
+    PATH_FROM_CSVIEW(dir_str, dir_path, {
+        fprintf(stderr, "Invalid path '%.*s'\n", c_SV(dir_path));
+        return false;
+    });
+    DIR* directory = opendir(dir_str);
     if (!directory) {
-        fprintf(stderr, "Could not open %s\n", dir_path);
+        fprintf(stderr, "Could not open '%.*s'\n", c_SV(dir_path));
         return false;
     }
     struct dirent* item;
@@ -160,11 +169,11 @@ bool real_fs_for_each_item_in_dir(
         if (*item->d_name != '.' ||
             (strcmp(item->d_name, ".") != 0 && strcmp(item->d_name, ".."))
         ) {
-            callback(data, dir_path, item->d_name);
+            callback(data, dir_path, csview_from(item->d_name));
         }
     }
     if (closedir(directory) < 0) {
-        fprintf(stderr, "Could not close %s\n", dir_path);
+        fprintf(stderr, "Could not close '%.*s'\n", c_SV(dir_path));
         return false;
     }
     return true;
@@ -202,40 +211,44 @@ static cstr real_fs_get_cwd_internal(Fs const* me) {
     }
 }
 
-const char* real_fs_get_cwd(Fs const* me) {
+static csview real_fs_get_cwd(Fs const* me) {
     // Threadsafety: make threadsafe
     static cstr cached_cwd = {0};
     if (!cstr_size(&cached_cwd)) {
         cached_cwd = real_fs_get_cwd_internal(me);
     }
-    return cstr_str(&cached_cwd);
+    return cstr_sv(&cached_cwd);
 }
 
-static bool real_fs_read_entire_file(Fs const* me, const char* path, cstr* ret) {
+static bool real_fs_read_entire_file(Fs const* me, csview path, cstr* ret) {
     if (!fs_is_reg_file(me, path)) {
         if (my debug_on_fail) {
-            fprintf(stderr, "%s: not a file\n", path);
+            fprintf(stderr, "%.*s: not a file\n", c_SV(path));
         }
         return false;
     }
-    FILE* f = fopen(path, "rb");
+    PATH_FROM_CSVIEW(path_str, path, {
+        fprintf(stderr, "%.*s: invalid path\n", c_SV(path));
+        return false;
+    });
+    FILE* f = fopen(path_str, "rb");
     cstr target = cstr_null;
     if (!f) {
         if (my debug_on_fail) {
-            fprintf(stderr, "%s: failed to open: %s\n", path, strerror(errno));
+            fprintf(stderr, "%.*s: failed to open: %s\n", c_SV(path), strerror(errno));
         }
         goto err;
     }
     if (fseek(f, 0, SEEK_END) != 0) {
         if (my debug_on_fail) {
-            fprintf(stderr, "%s: seek failed\n", path);
+            fprintf(stderr, "%.*s: seek failed\n", c_SV(path));
         }
         goto err;
     };
     long len = ftell(f);
     if (len < 0) {
         if (my debug_on_fail) {
-            fprintf(stderr, "%s: ftell failed: %s\n", path, strerror(errno));
+            fprintf(stderr, "%.*s: ftell failed: %s\n", c_SV(path), strerror(errno));
         }
         goto err;
     }
@@ -243,8 +256,8 @@ static bool real_fs_read_entire_file(Fs const* me, const char* path, cstr* ret) 
         if (my debug_on_fail) {
             fprintf(
                 stderr,
-                "%s cannot be read because it is %.3fMB (max allowed is %.3fMB)\n",
-                path,
+                "%.*s cannot be read because it is %.3fMB (max allowed is %.3fMB)\n",
+                c_SV(path),
                 len / (1024.0 * 1024.0),
                 read_file_len_limit / (1024.0 * 1024.0));
         }
@@ -252,20 +265,20 @@ static bool real_fs_read_entire_file(Fs const* me, const char* path, cstr* ret) 
     } else if (len > 0) {
         if (fseek(f, 0, SEEK_SET) != 0) {
             if (my debug_on_fail) {
-                fprintf(stderr, "%s: seek failed\n", path);
+                fprintf(stderr, "%.*s: seek failed\n", c_SV(path));
             }
             goto err;
         };
         char* buf = cstr_resize(&target, len, 0);
         if (!buf) {
             if (my debug_on_fail) {
-                fprintf(stderr, "%s: failed to allocate %.3fMB to read into\n", path, len + 1.0);
+                fprintf(stderr, "%.*s: failed to allocate %.3fMB to read into\n", c_SV(path), len + 1.0);
             }
             goto err;
         }
         if (fread(buf, len, 1, f) != 1) {
             if (my debug_on_fail) {
-                fprintf(stderr, "%s: failed to read\n", path);
+                fprintf(stderr, "%.*s: failed to read\n", c_SV(path));
             }
             goto err;
         }

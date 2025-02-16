@@ -19,8 +19,8 @@ void program_add_globals_from_program(Program* me, Program const* other);
 
 // Parses and resolves names of the given file and all imports. Can be called multiple times, but can not be called
 // indirectly by itself. Returns nullptr if path is not found
-SourceFile* program_load(Program* me, const char* path);
-SourceFile* program_preload(Program* me, const char* path);
+SourceFile* program_load(Program* me, csview path);
+SourceFile* program_preload(Program* me, csview path);
 SourceFile* program_preload_es5(Program* me);
 
 // Finds the source file with the given path relative to the origin, adds it to the program and returns it, or returns

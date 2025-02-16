@@ -31,10 +31,10 @@ int main(int argc, const char** argv) {
     intptr_t type_errors = 0;
 
     printf("%sLoading libraries...%s\n", color_good, color_normal);
-    program_preload(program, "thirdparty/lib/lib.es5.d.ts");
-    program_preload(program, "thirdparty/lib/lib.es2015.collection.d.ts");
-    program_preload(program, "thirdparty/lib/lib.es2015.iterable.d.ts");
-    program_preload(program, "thirdparty/lib/lib.dom.d.ts");
+    program_preload(program, c_sv("thirdparty/lib/lib.es5.d.ts"));
+    program_preload(program, c_sv("thirdparty/lib/lib.es2015.collection.d.ts"));
+    program_preload(program, c_sv("thirdparty/lib/lib.es2015.iterable.d.ts"));
+    program_preload(program, c_sv("thirdparty/lib/lib.dom.d.ts"));
 
     if (!error_ctx_empty(&errs)) {
         const intptr_t lib_parse_errors = errs.parse_error_count;
@@ -53,7 +53,7 @@ int main(int argc, const char** argv) {
     }
 
     printf("%sLoading %s...%s\n", color_good, argv[1], color_normal);
-    SourceFile const* source = program_load(program, argv[1]);
+    SourceFile const* source = program_load(program, csview_from(argv[1]));
 
     if (!error_ctx_empty(&errs)) {
         parse_errors = errs.parse_error_count;

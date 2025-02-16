@@ -19,7 +19,7 @@ void baseline_test_result_drop(BaselineTestResult* me) {
 static bool compare_outputs(
     csview test_name,
     const char* output_name,
-    const char* path_of_expected,
+    csview path_of_expected,
     csview our_result,
     bool show_diff_on_error
 ) {
@@ -27,7 +27,7 @@ static bool compare_outputs(
     if (fs_is_reg_file(&real_fs_quiet, path_of_expected)) {
         if (!fs_read_entire_file(&real_fs_quiet, path_of_expected, &expected)) {
             if (show_diff_on_error) {
-                printf("%.*s: %s could not be read\n", c_SV(test_name), path_of_expected);
+                printf("%.*s: %.*s could not be read\n", c_SV(test_name), c_SV(path_of_expected));
             }
             return false;
         }
@@ -42,7 +42,7 @@ static bool compare_outputs(
         cstr_append_sv(&result_display, our_result);
         cstr_append_lit(&result_display, "\n");
 
-        cstr expected_display = cstr_from_fmt("%s:\n", path_of_expected);
+        cstr expected_display = cstr_from_fmt("%.*s:\n", c_SV(path_of_expected));
         cstr_append_sv(&expected_display, expected_sv);
         cstr_append_lit(&expected_display, "\n");
 
@@ -78,15 +78,14 @@ void baseline_test_result_run(
     result_drop(&types_prev);
 
     bool noisy = show_errs || show_syms || show_typs;
-    csview name = test_name_from_path(cstr_str(&my source_path));
-    const char* dir = suite->tests_dir;
-    cstr errors_path = cstr_from_fmt("%s/baselines/reference/%.*s.errors.txt", dir, c_SV(name));
-    cstr symbols_path = cstr_from_fmt("%s/baselines/reference/%.*s.symbols", dir, c_SV(name));
-    cstr types_path = cstr_from_fmt("%s/baselines/reference/%.*s.types", dir, c_SV(name));
+    csview name = test_name_from_path(cstr_sv(&my source_path));
+    cstr errors_path = cstr_from_fmt("%.*s/baselines/reference/%.*s.errors.txt", c_SV(suite->tests_dir), c_SV(name));
+    cstr symbols_path = cstr_from_fmt("%.*s/baselines/reference/%.*s.symbols", c_SV(suite->tests_dir), c_SV(name));
+    cstr types_path = cstr_from_fmt("%.*s/baselines/reference/%.*s.types", c_SV(suite->tests_dir), c_SV(name));
 
     // It's ok if errors file doesn't exist
 
-    if (!fs_is_reg_file(&real_fs_quiet, cstr_str(&symbols_path))) {
+    if (!fs_is_reg_file(&real_fs_quiet, cstr_sv(&symbols_path))) {
         if (noisy) {
             fprintf(
                 stderr,
@@ -100,7 +99,7 @@ void baseline_test_result_run(
         goto cleanup;
     }
 
-    if (!fs_is_reg_file(&real_fs_quiet, cstr_str(&types_path))) {
+    if (!fs_is_reg_file(&real_fs_quiet, cstr_sv(&types_path))) {
         if (noisy) {
             fprintf(
                 stderr,
@@ -114,7 +113,7 @@ void baseline_test_result_run(
         goto cleanup;
     }
 
-    BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_str(&my source_path), noisy);
+    BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_sv(&my source_path), noisy);
     my did_run = test_case.did_run;
 
     if (my did_run) {
@@ -124,7 +123,7 @@ void baseline_test_result_run(
         my errors_passed = compare_outputs(
             name,
             "errors",
-            cstr_str(&errors_path),
+            cstr_sv(&errors_path),
             cstr_sv(&our_result),
             show_errs
         );
@@ -134,7 +133,7 @@ void baseline_test_result_run(
         my symbols_passed = compare_outputs(
             name,
             "symbols",
-            cstr_str(&symbols_path),
+            cstr_sv(&symbols_path),
             cstr_sv(&our_result),
             show_syms
         );
@@ -144,7 +143,7 @@ void baseline_test_result_run(
         my types_passed = compare_outputs(
             name,
             "types",
-            cstr_str(&types_path),
+            cstr_sv(&types_path),
             cstr_sv(&our_result),
             show_typs
         );
