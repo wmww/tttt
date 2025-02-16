@@ -4,6 +4,7 @@
 #include "filesystem.h"
 #include "error.h"
 #include "statement.h"
+#include "port_statement.h"
 #include "source_file.h"
 #include "scope_stack.h"
 
@@ -65,6 +66,8 @@ static void program_add_builtins(Program* me) {
     GLOBAL_TYPE("string", type_string);
     GLOBAL_TYPE("intrinsic", type_any);
 }
+
+static SourceFile* program_add_source_idempotent(Program* me, csview path);
 
 static bool get_import_path_of_index(Fs const* fs, csview path, cstr* ret) {
     *ret = cstr_from_sv(path);
@@ -230,38 +233,77 @@ void program_add_globals_from_program(Program* me, Program const* other) {
     program_add_globals_from_scope(me, &other->global_scope);
 }
 
-// Returns null if path can't be loaded
+static SourceFile* program_load_import_idempotent(Program* me, Span path_span, csview path) {
+    ASSERT(span_valid(path_span));
+    csview cwd = dirname_of(cstr_sv(&path_span.source->canonical_path));
+    cstr source_path;
+    if (get_import_path(my fs, cwd, path, &source_path)) {
+        SourceFile* ret = program_add_source_idempotent(me, cstr_sv(&source_path));
+        cstr_drop(&source_path);
+        return ret;
+    } else {
+        return nullptr;
+    }
+}
+
+// Loads the file at the given path, adds it to the program, and returns a SourceFile for it. Returns nullptr on error.
+// Only loads each file once, even if paths aren't expressed identically. Calls itself recursively to load imports and
+// referenced files.
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
-    auto value = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
-    if (value) {
+
+    auto cached_source = hmap_str_box_source_file_get(&my source_files, cstr_sv(&canonical_path));
+    if (cached_source) {
         // A source file is already created for this path
         cstr_drop(&canonical_path);
-        return value->second.get;
+        return cached_source->second.get;
     } else if (my locked) {
         NONFATAL("Could not add '%.*s' because program is locked", c_SV(path));
         cstr_drop(&canonical_path);
         return nullptr;
-    } else {
-        // No source file is created for this path, load it
-        cstr contents;
-        if (!fs_read_entire_file(my fs, cstr_sv(&canonical_path), &contents)) {
-            cstr_drop(&canonical_path);
-            return nullptr;
-        }
-
-        SourceFile* source_file = c_new(
-            SourceFile,
-            source_file_make(cstr_clone(canonical_path), contents)
-        );
-
-        parse_file(source_file, my errs);
-
-        hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
-        vec_source_file_ptr_push(&my pending_source_files, source_file);
-
-        return source_file;
     }
+
+    // No source file is created for this path, load it
+    cstr contents;
+    if (!fs_read_entire_file(my fs, cstr_sv(&canonical_path), &contents)) {
+        cstr_drop(&canonical_path);
+        return nullptr;
+    }
+
+    SourceFile* source_file = c_new(
+        SourceFile,
+        source_file_make(cstr_clone(canonical_path), contents)
+    );
+
+    parse_file(source_file, my errs);
+
+    hmap_str_box_source_file_insert(&my source_files, canonical_path, box_source_file_from_ptr(source_file));
+    vec_source_file_ptr_push(&my pending_source_files, source_file);
+
+    c_foreach(j, vec_source_directive, source_file->directives) {
+        switch (j.ref->tag) {
+            case SOURCE_DIRECTIVE_REFERENCE_PATH:
+            case SOURCE_DIRECTIVE_REFERENCE_LIB:
+            case SOURCE_DIRECTIVE_REFERENCE_TYPES:
+                program_load_import_idempotent(me, j.ref->path_span, cstr_sv(&j.ref->path));
+                break;
+        }
+    }
+
+    c_foreach(i, vec_statement, source_file->ast.statements) {
+        if (i.ref->tag == STATEMENT_IMPORT_EXPORT) {
+            PortStatement* port = i.ref->import_export;
+            SourceFile* imported = nullptr;
+            if (!port->requires_target) {
+                imported = source_file;
+            } else if (span_valid(port->target_path_span)) {
+                imported = program_load_import_idempotent(me, port->target_path_span, cstr_sv(&port->target_path));
+            }
+            port_statement_assign_source(port, imported);
+        }
+    }
+
+    return source_file;
 }
 
 SourceFile* program_load(Program* me, csview path) {
@@ -293,16 +335,6 @@ SourceFile* program_load(Program* me, csview path) {
         // Remove the top source file from the pending list and parse it (order of processing shouldn't matter here)
         SourceFile* source = vec_source_file_ptr_pull(&my pending_source_files);
 
-        c_foreach(j, vec_source_directive, source->directives) {
-            switch (j.ref->tag) {
-                case SOURCE_DIRECTIVE_REFERENCE_PATH:
-                case SOURCE_DIRECTIVE_REFERENCE_LIB:
-                case SOURCE_DIRECTIVE_REFERENCE_TYPES:
-                    program_load_import(me, j.ref->path_span, cstr_sv(&j.ref->path));
-                    break;
-            }
-        }
-
         // Add the toplevel block's names to the file's scope
         block_add_names(&source->ast, source_file_get_scope_or(source, &my global_scope));
 
@@ -311,21 +343,6 @@ SourceFile* program_load(Program* me, csview path) {
     }
 
     my locked = true;
-
-    c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
-        SourceFile* source = *i.ref;
-        c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
-            c_foreach(j, vec_source_directive, source->directives) {
-                switch (j.ref->tag) {
-                    case SOURCE_DIRECTIVE_REFERENCE_PATH:
-                    case SOURCE_DIRECTIVE_REFERENCE_LIB:
-                    case SOURCE_DIRECTIVE_REFERENCE_TYPES: {
-                        program_load_import(me, j.ref->path_span, cstr_sv(&j.ref->path));
-                    }   break;
-                }
-            }
-        }
-    }
 
     c_foreach(i, vec_source_file_ptr, in_flight_source_files) {
         SourceFile* source = *i.ref;
@@ -364,19 +381,6 @@ SourceFile* program_preload(Program* me, csview path) {
 
 SourceFile* program_preload_es5(Program* me) {
     return program_preload(me, c_sv("thirdparty/lib/lib.es5.d.ts"));
-}
-
-SourceFile* program_load_import(Program* me, Span path_span, csview path) {
-    ASSERT(span_valid(path_span));
-    csview cwd = dirname_of(cstr_sv(&path_span.source->canonical_path));
-    cstr source_path;
-    if (get_import_path(my fs, cwd, path, &source_path)) {
-        SourceFile* ret = program_add_source_idempotent(me, cstr_sv(&source_path));
-        cstr_drop(&source_path);
-        return ret;
-    } else {
-        return nullptr;
-    }
 }
 
 void program_typecheck(Program* me) {

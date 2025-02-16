@@ -8103,7 +8103,7 @@ const baselines = {
     'declarationEmitUnknownImport': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitUnknownImport2': {
         errors: false,
@@ -20957,7 +20957,7 @@ const baselines = {
     },
     'noCircularDefinitionOnExportOfPrivateInMergedNamespace': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noCollisionThisExpressionAndClassInGlobal': {

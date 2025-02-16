@@ -75,10 +75,12 @@ typedef struct PortStatement {
     Span keyword_span; // Span of "import" or "export"
     PortItem main; // The main import item (not in {}s)
     VecPortItem items; // List of curly brace-enclosed imported items
-    cstr source_path; // Path of the module to import from
-    Span source_path_span; // Span of the path string
+    bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes
+        // a compile error
+    cstr target_path; // Path of the module to import from
+    Span target_path_span; // Span of the path string
 } PortStatement;
 
 void port_statement_drop(PortStatement* me);
+void port_statement_assign_source(PortStatement* me, SourceFile* source);
 void port_statement_add_names(PortStatement* me, Scope* scope);
-void port_statement_set_source_file(PortStatement* me, SourceFile* file);

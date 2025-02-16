@@ -3176,22 +3176,22 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     }
     hop_whitespace(&p);
 
-    bool parse_path = true;
+    statement.requires_target = true;
     if (!hop_start_if_ends_on_word_break(&p, "from")) {
         if (is_export) {
-            parse_path = false;
+            statement.requires_target = false;
         } else {
             expected_token_error(&p, "from");
         }
     }
     hop_whitespace(&p);
 
-    if (parse_path) {
+    if (statement.requires_target) {
         Expr path_expr;
         if (expect_expr(&p, expr_ctx_null, &path_expr)) {
             if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-                statement.source_path = cstr_move(&path_expr.literal.string);
-                statement.source_path_span = path_expr.inner_span;
+                statement.target_path = cstr_move(&path_expr.literal.string);
+                statement.target_path_span = path_expr.inner_span;
             } else {
                 parse_error(&p, path_expr.inner_span, 1141, "String literal expected.");
             }
@@ -3200,7 +3200,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     }
 
     auto item_tag = is_export ? (
-        parse_path ? PORT_REEXPORT_SPECIFIC : PORT_EXPORT_SPECIFIC
+        statement.requires_target ? PORT_REEXPORT_SPECIFIC : PORT_EXPORT_SPECIFIC
     ) : PORT_IMPORT_SPECIFIC;
     c_foreach(i, vec_port_item, statement.items) {
         i.ref->tag = item_tag;

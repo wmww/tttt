@@ -23,12 +23,7 @@ SourceFile* program_load(Program* me, csview path);
 SourceFile* program_preload(Program* me, csview path);
 SourceFile* program_preload_es5(Program* me);
 
-// Finds the source file with the given path relative to the origin, adds it to the program and returns it, or returns
-// nullptr if the import can't be loaded
-SourceFile* program_load_import(Program* me, Span path_span, csview path);
-
 // Typechecks the loaded file and all imports, does not typecheck preloaded files
-// TODO: Typechecking shouldn't be required at all if show_errors is false, so remove this arg
 void program_typecheck(Program* me);
 
 // Returns the number of source files loaded or imported

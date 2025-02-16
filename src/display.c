@@ -955,10 +955,10 @@ static void display_port_statement(Display d, PortStatement const* me) {
         display_lit(d, "}");
     }
 
-    if (span_valid(my source_path_span)) {
+    if (my requires_target) {
         display_lit(d, " from ");
         display_color(d, color_string);
-        display_string_literal(d, cstr_sv(&my source_path));
+        display_string_literal(d, cstr_sv(&my target_path));
         display_normal(d);
     }
 
