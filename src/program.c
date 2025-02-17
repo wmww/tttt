@@ -392,7 +392,10 @@ SourceFile* program_load(Program* me, csview path) {
 SourceFile* program_load_lib(Program* me, csview name) {
     cstr path = cstr_from_fmt("%.*s/lib.%.*s.d.ts", c_SV(lib_path), c_SV(name));
     SourceFile* source = program_load(me, cstr_sv(&path));
-    if (source) source->is_standard_library = true;
+    if (source) {
+        source->is_standard_library = true;
+        cstr_take(&source->decl_override, cstr_from_fmt("lib.%.*s.d.ts, --, --", c_SV(name)));
+    }
     cstr_drop(&path);
     return source;
 }

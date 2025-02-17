@@ -29,7 +29,7 @@ BaselineTestCache baseline_test_cache_init() {
 }
 
 void baseline_test_cache_drop(BaselineTestCache* me) {
-    program_destroy(my es5);
+    program_destroy(my default_libs);
     error_ctx_drop(my errors);
     free(my errors);
 }
@@ -88,8 +88,7 @@ static void add_virtual_source_file(BaselineTestCase* me, csview virtual_path, c
     });
 }
 
-// Returns true on success, on fail ret is set to cstr_null
-static bool load_test_source(BaselineTestCase* me) {
+static void load_test_source(BaselineTestCase* me) {
     cstr unparsed_contents = cstr_null;
     cstr source_contents = cstr_null;
 
@@ -98,13 +97,15 @@ static bool load_test_source(BaselineTestCase* me) {
         my source_path,
         &unparsed_contents
     )) {
-        return false;
+        return;
     }
 
     csview contents_sv = csview_from_range(
         file_start_excluding_bom(cstr_str(&unparsed_contents)),
         csview_end_ptr(cstr_sv(&unparsed_contents))
     );
+
+    csview libs_tag_value = {0};
 
     bool has_line = false;
     csview current_filename = basename_of(my source_path);
@@ -122,6 +123,8 @@ static bool load_test_source(BaselineTestCase* me) {
                 error_config_enable_strict(&my error_ctx->config);
             } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
                 my error_ctx->config.no_implicit_any = true;
+            } else if (tag_equals(tag_key, "lib")) {
+                libs_tag_value = tag_value;
             }
         } else {
             cstr_append_sv(&source_contents, i.line);
@@ -134,10 +137,28 @@ static bool load_test_source(BaselineTestCase* me) {
         }
     }
 
+    if (libs_tag_value.size) {
+        if (!my lib_loader) {
+            my lib_loader = program_new(my error_ctx, &real_fs_noisy);
+        }
+        while (libs_tag_value.size) {
+            intptr_t end = csview_find_sv(libs_tag_value, c_sv(","));
+            cstr lib_name = cstr_tolower_sv(csview_trim_whitespace(csview_slice(libs_tag_value, 0, end)));
+            libs_tag_value = end != c_NPOS ?
+                csview_slice(libs_tag_value, end + 1, INTPTR_MAX) :
+                (csview){0};
+            program_load_lib(my lib_loader, cstr_sv(&lib_name));
+            cstr_drop(&lib_name);
+        }
+        program_resolve_names(my lib_loader);
+        //program_add_globals_from_program(my program, my lib_loader);
+        //my use_default_libs = false;
+    }
+
     add_virtual_source_file(me, current_filename, source_contents);
     cstr_drop(&unparsed_contents);
 
-    return true;
+    my did_run = true;
 }
 
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
@@ -225,24 +246,26 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
 
-    if (!cache->es5) {
-        cache->es5 = program_new(cache->errors, &real_fs_noisy);
-        SourceFile* source = program_load_lib(cache->es5, c_sv("es5"));
-        cstr_take(&source->decl_override, cstr_lit("lib.es5.d.ts, --, --"));
-        program_resolve_names(cache->es5);
-    }
-
-    program_add_globals_from_program(program, cache->es5);
-
     BaselineTestCase ret = {
         .source_path = source_path,
         .error_ctx = errs,
         .fs = fs,
+        .use_default_libs = true,
         .program = program,
         .noisy = noisy,
     };
 
-    ret.did_run = load_test_source(&ret);
+    load_test_source(&ret);
+
+    if (ret.use_default_libs) {
+        if (!cache->default_libs) {
+            cache->default_libs = program_new(cache->errors, &real_fs_noisy);
+            program_load_lib(cache->default_libs, c_sv("es5"));
+            //program_load_lib(cache->default_libs, c_sv("dom"));
+            program_resolve_names(cache->default_libs);
+        }
+        program_add_globals_from_program(program, cache->default_libs);
+    }
 
     c_foreach(i, vec_baseline_test_file, ret.files) {
         SourceFile* source = program_load(program, cstr_sv(&i.ref->path));
@@ -278,6 +301,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
 
 void baseline_test_case_drop(BaselineTestCase* me) {
     program_destroy(my program);
+    program_destroy(my lib_loader);
     mock_fs_destroy(my fs);
     error_ctx_drop(my error_ctx);
     free(my error_ctx);

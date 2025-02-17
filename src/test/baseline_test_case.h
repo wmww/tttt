@@ -15,7 +15,7 @@ wrap_forward_vec(LineNumberedStr, line_numbered_str);
 
 typedef struct BaselineTestCache {
     ErrorCtx* errors;
-    Program* es5;
+    Program* default_libs;
 } BaselineTestCache;
 
 BaselineTestCache baseline_test_cache_init();
@@ -46,7 +46,9 @@ typedef struct BaselineTestCase {
     ErrorCtx* error_ctx;
     bool noisy;
     MockFs* fs;
+    bool use_default_libs;
     Program* program;
+    Program* lib_loader;
     VecBaselineTestFile files;
 } BaselineTestCase;
 
