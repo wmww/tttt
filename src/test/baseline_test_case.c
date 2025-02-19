@@ -239,7 +239,7 @@ static void process_errors(BaselineTestCase* me) {
 
 BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy) {
     if (!noisy) {
-        inhibit_nonfatals();
+        nonfatal_inhibit_count++;
     }
 
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
@@ -293,7 +293,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     process_errors(&ret);
 
     if (!noisy) {
-        uninhibit_nonfatals();
+        nonfatal_inhibit_count--;
     }
 
     return ret;

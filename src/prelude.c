@@ -97,15 +97,3 @@ void print_debug_internal(const char* file, int line, const char* fmt, ...) {
     fprintf(stderr, "\n");
     clear_debug_cstrs();
 }
-
-void inhibit_nonfatals() {
-    nonfatal_inhibit_count++;
-}
-
-void uninhibit_nonfatals() {
-    nonfatal_inhibit_count--;
-}
-
-bool nonfatals_inhibited() {
-    return nonfatal_inhibit_count > 0;
-}

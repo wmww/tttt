@@ -18,15 +18,14 @@ void panic_internal(const char* error_type, const char* file, int line, const ch
 #define ASSERT(cond) if (!(cond)) panic_internal("assertion failed", __FILE__, __LINE__, "%s", #cond)
 #define UNREACHABLE PANIC("unreachable reached \\x_x/")
 
+extern int nonfatal_inhibit_count;
 cstr* acquire_debug_cstr(); // Should only be used by FMT_DBG
 const char* get_latest_debug_str(); // Should only be used by FMT_DBG
 void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
 void print_debug_internal(const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 3, 4)));
-#define NONFATAL(...) do { if (!nonfatals_inhibited()) nonfatal_internal("nonfatal", __FILE__, __LINE__, __VA_ARGS__); } while (false)
-#define PRINT_DBG(...) { if (!nonfatals_inhibited()) print_debug_internal(__FILE__, __LINE__, __VA_ARGS__); } while (false)
-void inhibit_nonfatals();
-void uninhibit_nonfatals();
-bool nonfatals_inhibited();
+#define NONFATAL(...) do { if (nonfatal_inhibit_count == 0) nonfatal_internal("nonfatal", __FILE__, __LINE__, __VA_ARGS__); } while (false)
+#define PRINT_DBG(...) { if (nonfatal_inhibit_count == 0) print_debug_internal(__FILE__, __LINE__, __VA_ARGS__); } while (false)
+
 
 #define cstr_append_lit(str, lit) cstr_append_sv(str, c_sv(lit))
 #define c_sv_const_init(str) {str, c_litstrlen(str)}
