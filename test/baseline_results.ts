@@ -7288,7 +7288,7 @@ const baselines = {
     'declarationEmitConstantNoWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitCrossFileImportTypeOfAmbientModule': {
         errors: false,
@@ -7908,7 +7908,7 @@ const baselines = {
     'declarationEmitPrivateReadonlyLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPrivateSymbolCausesVarDeclarationEmit2': {
         errors: false,
@@ -11588,7 +11588,7 @@ const baselines = {
     'exhaustiveSwitchWithWideningLiteralTypes': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'expandoFunctionBlockShadowing': {
         errors: false,

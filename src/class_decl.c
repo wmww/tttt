@@ -47,12 +47,13 @@ bool class_item_is_static(ClassItem* me) {
 
 Type class_item_field_evaluate_type(ClassItem* me) {
     ASSERT(my tag == CLASS_ITEM_FIELD);
-    // Maybe only abstract if read-only?
     Type const* ref = my field.has_explicit_type ?
         &my field.explicit_type :
         lazy_type_get(&my field.value.lazy_type);
     Type ret = type_clone(*ref);
-    type_abstract_literals(&ret);
+    if (!my field.is_readonly) {
+        type_abstract_literals(&ret);
+    }
     return ret;
 }
 
