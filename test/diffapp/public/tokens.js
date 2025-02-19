@@ -7,6 +7,15 @@ const Token = Object.freeze({
   ENDLINE: 'token-endline',
 });
 
+const terminalTheme = new Map([
+  ['0',  {color: undefined}],
+  ['31', {color: '#ff3020'}],
+  ['32', {color: '#30e040'}],
+  ['37', {color: '#a0a0a0'}],
+  ['94', {color: '#20a0ff'}],
+  ['1',  {}],
+]);
+
 // Options sent to these functions may be mutated by the functions. They may contain:
 // - lineNumbers: bool, add line numbers to start of lines
 // - indent: string, start each line with given text
@@ -143,20 +152,20 @@ function tokenizeStringInto(text, tokens, options) {
 const stderrTokenRegex = /(?<beforeLink>[^\r\n\u001b]* )(?<valgrindLink>\w+ \((?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+)\))|(?<gccLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+):(?<charNum>\d+):)|(?<ttttLink>(?<filename>[\w\./]+\.[ch]):(?<lineNum>\d+))|(?<normalLine>[^\r\n\u001b]+)|(\u001b(\[(?<escapeCode>[\d;]+)m))|(?<newline>\r\n|\r|\n)/y;
 function tokenizeStderrInto(text, tokens) {
   let match;
-  let color = null;
+  let style = {};
   while (match = stderrTokenRegex.exec(text)) {
     if (match.groups.normalLine) {
       tokens.push({
         type: Token.TEXT,
         text: match.groups.normalLine,
-        color: color,
+        style: style,
       });
     } else if (match.groups.valgrindLink) {
       if (match.groups.beforeLink) {
         tokens.push({
           type: Token.TEXT,
           text: match.groups.beforeLink,
-          color: color,
+          style: style,
         });
       }
       const filename = match.groups.filename;
@@ -165,7 +174,7 @@ function tokenizeStderrInto(text, tokens) {
         type: Token.BUTTON,
         text: match.groups.valgrindLink,
         onclick: () => nativeEditorJumpTo(filename, lineNum, null),
-        color: color,
+        style: style,
       });
     } else if (match.groups.gccLink) {
       const filename = match.groups.filename;
@@ -175,7 +184,7 @@ function tokenizeStderrInto(text, tokens) {
         type: Token.BUTTON,
         text: match.groups.gccLink,
         onclick: () => nativeEditorJumpTo(filename, lineNum, charNum),
-        color: color,
+        style: style,
       });
     } else if (match.groups.ttttLink) {
       const filename = match.groups.filename;
@@ -184,20 +193,22 @@ function tokenizeStderrInto(text, tokens) {
         type: Token.BUTTON,
         text: match.groups.ttttLink,
         onclick: () => nativeEditorJumpTo(filename, lineNum, null),
-        color: color,
+        style: style,
       });
     } else if (match.groups.newline) {
       tokens.push({
         type: Token.NEWLINE,
       });
     } else if (match.groups.escapeCode) {
+      style = { ...style };
       for (const code of match.groups.escapeCode.split(';')) {
-        switch (code) {
-          case '0': color = null; break;
-          case '31': color = '#ff3020'; break;
-          case '94': color = '#20a0ff'; break;
-          case '1': break;
-          default: console.log('Unkown BASH color code ' + code);
+        const styleChange = terminalTheme.get(code);
+        if (styleChange !== undefined) {
+          for (prop in styleChange) {
+            style[prop] = styleChange[prop];
+          }
+        } else {
+          console.log('Unkown BASH escape code ' + code);
         }
       }
     }
@@ -228,8 +239,10 @@ function renderTokensTo(parent, tokens) {
     if (token.onclick) {
       elem.onclick = token.onclick;
     }
-    if (token.color) {
-      elem.style.color = token.color;
+    for (prop in token.style) {
+      if (token.style[prop] !== undefined) {
+        elem.style[prop] = token.style[prop];
+      }
     }
   }
 
