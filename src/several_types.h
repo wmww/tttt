@@ -117,27 +117,3 @@ typedef struct TernaryType {
 
 void ternary_type_drop(TernaryType* me);
 TernaryType ternary_type_clone(TernaryType me);
-
-// Abstracted
-
-typedef struct AbstractedType {
-    Type inner;
-    bool abstract_literals;
-    bool has_cache;
-    Type cached;
-} AbstractedType;
-
-void abstracted_type_drop(AbstractedType* me);
-AbstractedType abstracted_type_clone(AbstractedType me);
-Type const* abstracted_type_resolve(AbstractedType* me);
-
-static inline Type make_type_abstracted(Type inner, bool abstract_literals) {
-    if (abstract_literals) {
-        return type_abstracted(c_new(AbstractedType, {
-            .inner = inner,
-            .abstract_literals = abstract_literals,
-        }));
-    } else {
-        return inner;
-    }
-}

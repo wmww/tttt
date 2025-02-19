@@ -245,29 +245,3 @@ TernaryType ternary_type_clone(TernaryType me) {
         .cached = {0},
     };
 }
-
-// Abstracted
-
-void abstracted_type_drop(AbstractedType* me) {
-    type_drop(&my inner);
-    type_drop(&my cached);
-}
-
-AbstractedType abstracted_type_clone(AbstractedType me) {
-    me.inner = type_clone(me.inner);
-    me.has_cache = false;
-    me.cached = (Type){0};
-    return me;
-}
-
-Type const* abstracted_type_resolve(AbstractedType* me) {
-    if (!my has_cache) {
-        // PERF: figure out how to avoid cloning if no abstracting is needed
-        my cached = type_clone(my inner);
-        my has_cache = true;
-        if (my abstract_literals) {
-            type_abstract_literals(&my cached);
-        }
-    }
-    return &my cached;
-}

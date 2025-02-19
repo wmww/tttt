@@ -24403,7 +24403,7 @@ const baselines = {
     'recursiveObjectLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveProperties': {
         errors: true,

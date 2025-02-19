@@ -537,7 +537,6 @@ void display_type(Display d, Type const* me) {
         case TYPE_INDEXED: display_indexed_type(d, my indexed); break;
         case TYPE_KEYOF: display_keyof_type(d, my keyof); break;
         case TYPE_TERNARY: display_ternary_type(d, my ternary); break;
-        case TYPE_ABSTRACTED: display_type(d, abstracted_type_resolve(my abstracted)); break;
 
         case TYPE_TYPEOF:
             display_lit(d, "typeof ");

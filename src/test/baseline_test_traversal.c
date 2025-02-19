@@ -224,10 +224,6 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             type_compile_test_info(&my ternary->if_false, ctx);
             break;
 
-        case TYPE_ABSTRACTED:
-            type_compile_test_info(&my abstracted->inner, ctx);
-            break;
-
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {

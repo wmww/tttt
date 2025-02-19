@@ -12,10 +12,12 @@ typedef struct LazyType {
 
         // The rest means this LazyType is part of one of the following structs
         LAZY_TYPE_EXPR,
+        LAZY_TYPE_INITIALIZED_BINDING,
         LAZY_TYPE_FOR_EACH_LOOP_VAR,
         LAZY_TYPE_FUNCTION,
         LAZY_TYPE_CLASS_INSTANCE,
         LAZY_TYPE_CLASS_CLASS,
+        LAZY_TYPE_CLASS_ITEM_FIELD,
         LAZY_TYPE_ENUM_INSTANCE,
         LAZY_TYPE_ENUM_INTERFACE,
         LAZY_TYPE_INTERFACE_DECL,

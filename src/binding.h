@@ -62,11 +62,14 @@ void object_binding_item_drop(ObjectBindingItem* me);
 typedef struct InitializedBinding {
     Binding binding;
     Expr value;
+    bool abstract_literals;
+    LazyType lazy_type;
 } InitializedBinding;
 
 void initialized_binding_drop(InitializedBinding* me);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
 void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names, ErrorCtx* errs);
+Type initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 
 #define i_key_class_names InitializedBinding, initialized_binding

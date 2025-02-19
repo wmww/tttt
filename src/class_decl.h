@@ -46,6 +46,7 @@ typedef struct ClassItem {
             Span explicit_type_span;
             Type explicit_type;
             Expr value;
+            LazyType lazy_type;
         } field;
         InterfaceMember interface_memeber;
         Block static_block;
@@ -54,6 +55,7 @@ typedef struct ClassItem {
 
 void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
+Type class_item_field_evaluate_type(ClassItem* me);
 Type class_item_get_type(ClassItem* me);
 
 #define i_key_class_names ClassItem, class_item

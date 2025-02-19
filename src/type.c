@@ -204,11 +204,6 @@ void type_drop(Type* me) {
             free(my ternary);
             break;
 
-        case TYPE_ABSTRACTED:
-            abstracted_type_drop(my abstracted);
-            free(my abstracted);
-            break;
-
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             vec_type_drop(&my composite);
@@ -241,7 +236,6 @@ Type type_clone(Type me) {
         case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
         case TYPE_TYPEOF: return type_typeof(c_new(TypeofType, typeof_type_clone(*me.typeof_)));
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
-        case TYPE_ABSTRACTED: return type_abstracted(c_new(AbstractedType, abstracted_type_clone(*me.abstracted)));
         case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
     }
     UNREACHABLE;
@@ -322,10 +316,6 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             type_add_inferred_names(&my ternary->if_false, scope);
             break;
 
-        case TYPE_ABSTRACTED:
-            type_add_inferred_names(&my abstracted->inner, scope);
-            break;
-
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -392,10 +382,6 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
             type_lookup_names(&my ternary->if_false, names, errs);
         }   break;
 
-        case TYPE_ABSTRACTED:
-            type_lookup_names(&my abstracted->inner, names, errs);
-            break;
-
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, my composite) {
@@ -444,8 +430,6 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             type_typecheck(&my ternary->if_true, errs);
             type_typecheck(&my ternary->if_false, errs);
             break;
-
-        case TYPE_ABSTRACTED: type_typecheck(&my abstracted->inner, errs); break;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -579,7 +563,6 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
 
         case TYPE_TYPEOF: return &type_any;
         case TYPE_TERNARY: return type_resolve_ternary_type(ctx, my ternary);
-        case TYPE_ABSTRACTED: return abstracted_type_resolve(my abstracted);
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -674,7 +657,6 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF: {
             Type const* sub_resolved = type_resolve_one_layer_internal(ctx, sub);
@@ -864,7 +846,6 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF: {
             Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
@@ -1088,7 +1069,6 @@ bool type_overlaps(Type const* a, Type const* b) {
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF:
             UNREACHABLE; // Should have been resolved
@@ -1250,13 +1230,6 @@ void type_abstract_literals(Type* me) {
                 type_abstract_literals(&i.ref->type);
             }
         }   break;
-
-        case TYPE_ABSTRACTED:
-            type_drop(&my abstracted->cached);
-            my abstracted->cached = (Type){0};
-            my abstracted->has_cache = false;
-            type_abstract_literals(&my abstracted->inner);
-            break;
 
         case TYPE_LAZY:
             *me = type_clone(*lazy_type_get(my lazy));
@@ -1484,7 +1457,6 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);
@@ -1647,7 +1619,6 @@ static void index_type_typecheck_internal(
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);

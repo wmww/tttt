@@ -21,6 +21,7 @@ void class_item_drop(ClassItem* me) {
             cstr_drop(&my field.name_string);
             type_drop(&my field.explicit_type);
             expr_drop(&my field.value);
+            lazy_type_drop(&my field.lazy_type);
             break;
 
         case CLASS_ITEM_INTERFACE_MEMBER:
@@ -44,17 +45,22 @@ bool class_item_is_static(ClassItem* me) {
     UNREACHABLE;
 }
 
+Type class_item_field_evaluate_type(ClassItem* me) {
+    ASSERT(my tag == CLASS_ITEM_FIELD);
+    // Maybe only abstract if read-only?
+    Type const* ref = my field.has_explicit_type ?
+        &my field.explicit_type :
+        lazy_type_get(&my field.value.lazy_type);
+    Type ret = type_clone(*ref);
+    type_abstract_literals(&ret);
+    return ret;
+}
+
 Type class_item_get_type(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR: return type_lazy(&my constructor.func.lazy_type);
         case CLASS_ITEM_METHOD: return type_lazy(&my method.func.lazy_type);
-        case CLASS_ITEM_FIELD:
-            return make_type_abstracted(
-                my field.has_explicit_type ?
-                    type_refcopy(&my field.explicit_type) :
-                    type_lazy(&my field.value.lazy_type),
-                true /* maybe should be !my field.is_readonly ? */
-            );
+        case CLASS_ITEM_FIELD: return type_lazy(&my field.lazy_type);
         case CLASS_ITEM_INTERFACE_MEMBER: return type_refcopy(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return type_never;
     }
@@ -85,6 +91,7 @@ void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_FIELD:
+            my field.lazy_type.tag = LAZY_TYPE_CLASS_ITEM_FIELD;
             type_lookup_names(&my field.explicit_type, names, errs);
             expr_lookup_names(&my field.value, names, errs);
             break;

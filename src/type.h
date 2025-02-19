@@ -10,7 +10,6 @@ typedef struct TernaryType TernaryType;
 typedef struct IndexedType IndexedType;
 typedef struct KeyofType KeyofType;
 typedef struct TypeofType TypeofType;
-typedef struct AbstractedType AbstractedType;
 typedef struct CallableType CallableType;
 typedef struct TupleElement TupleElement;
 typedef struct ErrorCtx ErrorCtx;
@@ -50,7 +49,6 @@ typedef struct Type {
         TYPE_KEYOF,
         TYPE_TYPEOF,
         TYPE_TERNARY,
-        TYPE_ABSTRACTED,
         TYPE_UNION,
         TYPE_INTERSECTION,
         TYPE_LAZY,
@@ -78,7 +76,6 @@ typedef struct Type {
         KeyofType* keyof;
         TypeofType* typeof_;
         TernaryType* ternary;
-        AbstractedType* abstracted;
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         LazyType* lazy;
         Type const* ref;
@@ -178,14 +175,6 @@ static inline Type type_ternary(TernaryType* ternary) {
     };
 }
 
-// Often make_type_abstracted() should be used instead
-static inline Type type_abstracted(AbstractedType* abstracted) {
-    return (Type) {
-        .tag = TYPE_ABSTRACTED,
-        .abstracted = abstracted,
-    };
-}
-
 // type_composite() and type_composite_without_simplify() declared below
 
 static inline Type type_lazy(LazyType* lazy) {
@@ -229,7 +218,6 @@ static inline Type type_refcopy(Type const* ref) {
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_INTERSECTION:
         case TYPE_UNION:
             break;

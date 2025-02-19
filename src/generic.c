@@ -104,7 +104,6 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
-        case TYPE_ABSTRACTED:
         case TYPE_LAZY:
         case TYPE_REF:
             PANIC("Type with tag %d should have been resolved away", my tag);
@@ -224,15 +223,6 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                 type_drop(&my ternary->cached);
                 my ternary->cached = (Type){0};
                 my ternary->has_cache = false;
-            }
-            return;
-
-        case TYPE_ABSTRACTED:
-            replace_named_types_with(&my abstracted->inner, refinements);
-            if (my abstracted->has_cache) {
-                type_drop(&my abstracted->cached);
-                my abstracted->cached = (Type){0};
-                my abstracted->has_cache = false;
             }
             return;
 

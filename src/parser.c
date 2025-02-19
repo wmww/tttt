@@ -3365,7 +3365,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
     hop_whitespace(&p);
 
     Span comma_span = span_null;
-    InitializedBinding initializer;
+    InitializedBinding initializer = {0};
     ret->initializers = vec_initialized_binding_init();
 
     while (true) {

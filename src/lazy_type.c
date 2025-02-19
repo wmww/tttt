@@ -34,6 +34,10 @@ void lazy_type_evaluate(LazyType* me) {
             result = expr_evaluate_type(c_container_of(me, Expr, lazy_type));
             break;
 
+        case LAZY_TYPE_INITIALIZED_BINDING:
+            result = initialized_binding_evaluate_assigned_type(c_container_of(me, InitializedBinding, lazy_type));
+            break;
+
         case LAZY_TYPE_FOR_EACH_LOOP_VAR:
             result = for_each_loop_statement_evaluate_var_type(c_container_of(me, ForEachLoopStatement, var_type));
             break;
@@ -48,6 +52,10 @@ void lazy_type_evaluate(LazyType* me) {
 
         case LAZY_TYPE_CLASS_CLASS:
             result = class_decl_evaluate_type(c_container_of(me, ClassDecl, class_type), false);
+            break;
+
+        case LAZY_TYPE_CLASS_ITEM_FIELD:
+            result = class_item_field_evaluate_type(c_container_of(me, ClassItem, field.lazy_type));
             break;
 
         case LAZY_TYPE_ENUM_INSTANCE:

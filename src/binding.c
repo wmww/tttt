@@ -182,23 +182,26 @@ void object_binding_item_drop(ObjectBindingItem* me) {
 void initialized_binding_drop(InitializedBinding* me) {
     binding_drop(&my binding);
     expr_drop(&my value);
+    lazy_type_drop(&my lazy_type);
 }
 
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props) {
-    binding_add_names(
-        &my binding,
-        make_type_abstracted(
-            type_lazy(&my value.lazy_type),
-            !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && props.abstract_literals
-        ),
-        scope,
-        props
-    );
+    my lazy_type.tag = LAZY_TYPE_INITIALIZED_BINDING;
+    my abstract_literals = props.abstract_literals;
+    binding_add_names(&my binding, type_lazy(&my lazy_type), scope, props);
 }
 
 void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names, ErrorCtx* errs) {
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names(&my value, names, errs);
+}
+
+Type initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
+    Type ret = type_clone(*expr_get_type(&my value));
+    if (!my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && my abstract_literals) {
+        type_abstract_literals(&ret);
+    }
+    return ret;
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
