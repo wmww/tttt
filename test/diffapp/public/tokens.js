@@ -8,12 +8,13 @@ const Token = Object.freeze({
 });
 
 const terminalTheme = new Map([
-  ['0',  {color: undefined}],
+  ['0',  {'font-weight': undefined, color: undefined}],
   ['31', {color: '#ff3020'}],
   ['32', {color: '#30e040'}],
+  ['35', {color: '#f060e0'}],
   ['37', {color: '#a0a0a0'}],
   ['94', {color: '#20a0ff'}],
-  ['1',  {}],
+  ['1',  {'font-weight': 'bold'}],
 ]);
 
 // Options sent to these functions may be mutated by the functions. They may contain:

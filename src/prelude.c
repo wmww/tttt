@@ -65,9 +65,6 @@ static inline void clear_debug_cstrs() {
 }
 
 void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) {
-    if (nonfatal_inhibit_count > 0) {
-        return;
-    }
     fprintf(
         stderr,
         "%s%s:%d %s%s: %s",
@@ -87,9 +84,6 @@ void nonfatal_internal(const char* error_type, const char* file, int line, const
 }
 
 void print_debug_internal(const char* file, int line, const char* fmt, ...) {
-    if (nonfatal_inhibit_count > 0) {
-        return;
-    }
     fprintf(
         stderr,
         "%s%s:%d %sdebug: %s",
@@ -110,4 +104,8 @@ void inhibit_nonfatals() {
 
 void uninhibit_nonfatals() {
     nonfatal_inhibit_count--;
+}
+
+bool nonfatals_inhibited() {
+    return nonfatal_inhibit_count > 0;
 }
