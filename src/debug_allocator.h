@@ -45,3 +45,6 @@ static inline void debug_free(void *ptr, intptr_t size) {
 #undef c_new
 #define c_new(T, ...) ((T*)memcpy(debug_malloc(sizeof(T)), ((T[]){__VA_ARGS__}), sizeof(T)))
 #define free(ptr) debug_free(ptr, 0)
+#define calloc debug_calloc
+#define malloc debug_malloc
+#define realloc debug_realloc
