@@ -17,29 +17,31 @@ Interface interface_clone(Interface me) {
 static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceMember const* needle) {
     // PERF: do not merge interfaces this way, for obvious reasons
     c_foreach(i, vec_interface_member, *haystack) {
+        if (i.ref->key.tag != needle->key.tag) {
+            continue;
+        }
         switch (needle->key.tag) {
             case INTERFACE_KEY_NAME:
                 if (cstr_equals_s(&needle->key.name_string, i.ref->key.name_string)) {
                     return i.ref - haystack->data;
+                } else {
+                    break;
                 }
-                break;
 
             case INTERFACE_KEY_INDEX:
             case INTERFACE_KEY_EXPR:
             case INTERFACE_KEY_MAPPED:
+                return i.ref - haystack->data;
+
             case INTERFACE_KEY_CALLABLE:
-                // TODO
-                if (needle->key.tag == i.ref->key.tag) {
-                    return i.ref - haystack->data;
-                }
                 break;
         }
     }
     return -1;
 }
 
-static void push_interface_members_to(VecInterfaceMember* target, Interface const* source) {
-    c_foreach(new_member_i, vec_interface_member, source->members) {
+static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMember const* source) {
+    c_foreach(new_member_i, vec_interface_member, *source) {
         InterfaceMember const* new_member = new_member_i.ref;
         intptr_t matching_index = index_of_matching(target, new_member);
         InterfaceMember* matching = matching_index < 0 ?
@@ -86,16 +88,19 @@ Type interface_from_merged(VecType types) {
                 return type_any;
 
             case TYPE_INTERFACE:
-                push_interface_members_to(&members, &type->interface);
+                push_interface_members_to(&members, &type->interface.members);
                 break;
 
             case TYPE_CALLABLE:
-                vec_interface_member_push(&members, (InterfaceMember){
+                InterfaceMember callable = {
                     .declarations = vec_span_init(), // TODO
                     .key.span = span_null, // TODO
                     .key.tag = INTERFACE_KEY_CALLABLE,
                     .type = type_clone(*type),
-                });
+                };
+                VecInterfaceMember const single_member = {._len = 1, .data = &callable};
+                push_interface_members_to(&members, &single_member);
+                interface_member_drop(&callable);
                 break;
 
             default: {

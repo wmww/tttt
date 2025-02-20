@@ -758,11 +758,14 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                         if (index_type_evaluate_type_internal(ctx, sub, &key, &prop)) {
                             // TODO: pass in refinements, but first make refinements own it's types
                             // (will fix nondistributiveConditionalTypeInfer)
-                            if (!type_extends_internal(ctx, &prop, &i.ref->type, nullptr)) {
-                                type_drop(&prop);
-                                return false;
+                            Type member_type = type_refcopy(&i.ref->type);
+                            if (i.ref->optional) {
+                                member_type = type_composite(TYPE_UNION, member_type, type_undefined);
                             }
+                            bool extends = type_extends_internal(ctx, &prop, &member_type, nullptr);
+                            type_drop(&member_type);
                             type_drop(&prop);
+                            if (!extends) return false;
                         } else {
                             return false;
                         }

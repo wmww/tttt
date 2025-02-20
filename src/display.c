@@ -313,7 +313,7 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     display_type(d, &my ret);
 }
 
-static void display_interface_member(Display d, InterfaceMember const* me) {
+void display_interface_member(Display d, InterfaceMember const* me) {
     if (my readonly) {
         display_lit(d, "readonly ");
     }

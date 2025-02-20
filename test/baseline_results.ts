@@ -12666,7 +12666,7 @@ const baselines = {
         types: false,
     },
     'fixingTypeParametersRepeatedly3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14496,7 +14496,7 @@ const baselines = {
         types: false,
     },
     'getterSetterNonAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -21936,7 +21936,7 @@ const baselines = {
         types: false,
     },
     'objectLitGetterSetter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29031,7 +29031,7 @@ const baselines = {
         types: false,
     },
     'unionExcessPropsWithPartialMember': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

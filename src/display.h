@@ -4,6 +4,7 @@
 
 typedef struct Value Value;
 typedef struct Type Type;
+typedef struct InterfaceMember InterfaceMember;
 typedef struct Expr Expr;
 typedef struct Statement Statement;
 typedef struct Block Block;
@@ -108,6 +109,7 @@ static inline void display_colored_span(Display d, const char* code, Span s) {
 
 void display_fmt(Display d, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
 void display_value(Display d, Value const* me);
+void display_interface_member(Display d, InterfaceMember const* me);
 void display_type(Display d, Type const* me);
 void display_expr(Display d, Expr const* me);
 void display_statement(Display d, Statement const* me);

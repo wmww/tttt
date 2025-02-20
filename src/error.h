@@ -67,7 +67,6 @@ typedef struct ErrorCtx {
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 void error_ctx_drop(ErrorCtx* me);
-void error_ctx_sort(ErrorCtx* me);
 void print_error_ctx(ErrorCtx const* me);
 bool error_ctx_empty(ErrorCtx const* me);
 void error_ctx_clear(ErrorCtx* me);
