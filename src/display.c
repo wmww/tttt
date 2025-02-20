@@ -214,14 +214,6 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    if (d.hash_key && my decl_ref && vec_spanned_type_empty(&my generic_params)) {
-        if (hset_declaration_cptr_insert(&d.hash_key_target->declarations, my decl_ref).inserted) {
-            display_type(d, &my decl_ref->declared_type);
-            hset_declaration_cptr_erase(&d.hash_key_target->declarations, my decl_ref);
-            return;
-        }
-    }
-
     if (my decl_ref && my decl_ref->is_typeof) {
         display_lit(d, "typeof ");
     }
