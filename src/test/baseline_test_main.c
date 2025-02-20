@@ -2,7 +2,7 @@
 #include "filesystem.h"
 #include "string_helpers.h"
 
-csview const default_tests_dir = c_sv_const_init("test/TypeScript/tests");
+csview const default_tests_dir = c_sv_const_init("thirdparty/tsc/tests");
 csview tests_dir = default_tests_dir;
 const char* test_filter = nullptr;
 csview const default_results_path = c_sv_const_init("test/baseline_results.ts");

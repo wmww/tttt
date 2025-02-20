@@ -10,7 +10,8 @@ let triggerTestRerun; // Set by code we inject into the evaled code
   }
 
   const tmpDir = process.argv[2];
-  const tsDir = path.join(path.dirname(__dirname), 'TypeScript');
+  const ttttRoot = path.dirname(path.dirname(__dirname));
+  const tsDir = path.join(ttttRoot, 'thirdparty', 'tsc');
 
   fs.writeFileSync(path.join(tmpDir, 'mytest.config'), JSON.stringify({
     runUnitTests: false,

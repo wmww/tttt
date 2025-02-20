@@ -10,13 +10,13 @@ if test ! -e debug; then
 fi
 
 # We need a copy of the TypeScript repo to run tests
-test/clone_typescript_if_needed.sh
+thirdparty/ensure-tsc.sh
 
 # Build the TypeScript compiler and test infra if needed
-if test ! -e test/TypeScript/built/local/run.js; then
+if test ! -e thirdparty/tsc/built/local/run.js; then
     (
         printf "\x1b[1;33mInstalling Hereby with npm...\x1b[0m\n"
-        cd test/TypeScript
+        cd thirdparty/tsc
         npm install hereby
         printf "\x1b[1;33mBuilding compiler and tests...\x1b[0m\n"
         node ./node_modules/.bin/hereby tests
@@ -34,7 +34,7 @@ if test $# -gt 0; then
         TEST_PATH="$1"
     else
         # Argument is not a valid path, assume it's a test name and search for the test
-        TEST_PATH="$(find test/TypeScript/tests/cases/ -name "$1.ts" | head -n 1)"
+        TEST_PATH="$(find thirdparty/tsc/tests/cases/ -name "$1.ts" | head -n 1)"
         if test -z "$TEST_PATH"; then
             echo "Could not find test $1"
             exit 1
@@ -59,4 +59,4 @@ fi
 # This is how you can run the tsc test runner manually, useful for debugging it
 # mkdir -p /tmp/diffapp/tests/cases/conformance
 # touch /tmp/diffapp/tests/cases/conformance/customTest.ts
-# NODE_PATH="$PWD/test/TypeScript/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp
+# NODE_PATH="$PWD/thirdparty/tsc/node_modules" node test/diffapp/tsc_custom_baseline.js /tmp/diffapp

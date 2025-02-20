@@ -7,7 +7,7 @@ const port = 3030;
 // Earlier in the list takes precedence
 const ttttRoot = path.dirname(path.dirname(__dirname));
 const ttttBuildDir = path.join(ttttRoot, 'debug');
-const tscRoot = path.join(ttttRoot, 'test', 'TypeScript');
+const tscRoot = path.join(ttttRoot, 'thirdparty', 'tsc');
 const publicDirectories = [
   path.join(__dirname, 'public'),
   path.join(ttttRoot, 'thirdparty', 'javascript'),

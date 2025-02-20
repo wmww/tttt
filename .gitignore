@@ -3,4 +3,4 @@ release
 .cache
 scratchpad.ts
 vgcore.*
-test/TypeScript
+thirdparty/tsc

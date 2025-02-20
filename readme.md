@@ -23,4 +23,3 @@ Scripts useful for development:
 ./diffapp.sh castingTuple       # Start with web app with a specific test
 ```
 
-The test scripts will automatically clone the TypeScript repo at the right commit when needed. If that repo gets fucky then `rm -rf test/TypeScript` and re-run the scripts.

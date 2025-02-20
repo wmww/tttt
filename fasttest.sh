@@ -11,6 +11,6 @@ fi
 ninja -C release
 
 # We need a copy of the TypeScript repo to run tests
-test/clone_typescript_if_needed.sh
+thirdparty/ensure-tsc.sh
 
 ./release/baseline_tests "$@"

@@ -14,6 +14,6 @@ fi
 ninja -C debug
 
 # We need a copy of the TypeScript repo to run tests
-test/clone_typescript_if_needed.sh
+thirdparty/ensure-tsc.sh
 
 valgrind --leak-check=full --show-leak-kinds=all --exit-on-first-error=yes --error-exitcode=1 --quiet debug/baseline_tests "$@"

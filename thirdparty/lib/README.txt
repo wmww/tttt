@@ -1,1 +1,1 @@
-These libraries come from upstream TypeScript at commit 42bb138173e3b3869b6a6f68d277c7172387a4cf
+These libraries come from upstream TypeScript v5.4.2
