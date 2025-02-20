@@ -1221,7 +1221,7 @@ const baselines = {
         types: false,
     },
     'arrayFind': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -2297,7 +2297,7 @@ const baselines = {
     },
     'bigIntWithTargetES2016': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'bigIntWithTargetES3': {
@@ -2307,7 +2307,7 @@ const baselines = {
     },
     'bigIntWithTargetLessThanES2016': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'bigint64ArraySubarray': {
@@ -5047,7 +5047,7 @@ const baselines = {
     },
     'computedPropertiesTransformedInOtherwiseNonTSClasses': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNameAndTypeParameterConflict': {
@@ -5762,7 +5762,7 @@ const baselines = {
     },
     'contextualReturnTypeOfIIFE': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualReturnTypeOfIIFE2': {
@@ -5787,7 +5787,7 @@ const baselines = {
     },
     'contextualSignatureInArrayElementLibEs2015': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualSignatureInArrayElementLibEs5': {
@@ -5797,7 +5797,7 @@ const baselines = {
     },
     'contextualSignatureInObjectFreeze': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualSignatureInstantiation1': {
@@ -7446,8 +7446,8 @@ const baselines = {
         types: true,
     },
     'declarationEmitDistributiveConditionalWithInfer': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'declarationEmitDoesNotUseReexportedNamespaceAsLocal': {
@@ -10657,7 +10657,7 @@ const baselines = {
     },
     'es5-asyncFunctionReturnStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionSwitchStatements': {
@@ -10667,7 +10667,7 @@ const baselines = {
     },
     'es5-asyncFunctionTryStatements': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-asyncFunctionWhileStatements': {
@@ -15686,8 +15686,8 @@ const baselines = {
         types: false,
     },
     'indirectUniqueSymbolDeclarationEmit': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'inexistentPropertyInsideToStringType': {
@@ -16982,7 +16982,7 @@ const baselines = {
     },
     'intersectionSatisfiesConstraint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionTypeInference1': {
@@ -17517,7 +17517,7 @@ const baselines = {
     },
     'jsFileCompilationAwaitModifier': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsFileCompilationBindDeepExportsAssignment': {
@@ -17927,12 +17927,12 @@ const baselines = {
     },
     'jsdocArrayObjectPromiseImplicitAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocArrayObjectPromiseNoImplicitAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocCallbackAndType': {
@@ -19306,7 +19306,7 @@ const baselines = {
         types: false,
     },
     'modularizeLibrary_Worker.iterable': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20912,7 +20912,7 @@ const baselines = {
     },
     'newMap': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'newMissingIdentifier': {
@@ -25447,7 +25447,7 @@ const baselines = {
     },
     'simpleRecursionWithBaseCase2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'simplifyingConditionalWithInteriorConditionalIsRelated': {
@@ -26996,8 +26996,8 @@ const baselines = {
         types: false,
     },
     'systemJsForInNoException': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'systemModule1': {
@@ -28036,12 +28036,12 @@ const baselines = {
         types: false,
     },
     'typeGuardNarrowByMutableUntypedField': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardNarrowByUntypedField': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30152,7 +30152,7 @@ const baselines = {
     },
     'variableDeclarationDeclarationEmitUniqueSymbolPartialStatement': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'variableDeclarationInStrictMode1': {
@@ -30221,13 +30221,13 @@ const baselines = {
         types: false,
     },
     'verifyDefaultLib_dom': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'verifyDefaultLib_webworker': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'visSyntax': {
@@ -30857,7 +30857,7 @@ const baselines = {
     },
     'asyncAliasReturnType_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arrowFunctionWithParameterNameAsync_es5': {
@@ -30867,7 +30867,7 @@ const baselines = {
     },
     'asyncArrowFunction10_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction11_es5': {
@@ -30877,7 +30877,7 @@ const baselines = {
     },
     'asyncArrowFunction1_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction2_es5': {
@@ -30962,7 +30962,7 @@ const baselines = {
     },
     'asyncDeclare_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncEnum_es5': {
@@ -30977,7 +30977,7 @@ const baselines = {
     },
     'asyncImportedPromise_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncInterface_es5': {
@@ -31002,7 +31002,7 @@ const baselines = {
     },
     'asyncQualifiedReturnType_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncSetter_es5': {
@@ -31037,22 +31037,22 @@ const baselines = {
     },
     'awaitBinaryExpression5_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression1_es5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'awaitCallExpression2_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression3_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression4_es5': {
@@ -31062,17 +31062,17 @@ const baselines = {
     },
     'awaitCallExpression5_es5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'awaitCallExpression6_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression7_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression8_es5': {
@@ -31082,7 +31082,7 @@ const baselines = {
     },
     'awaitClassExpression_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitUnion_es5': {
@@ -31097,7 +31097,7 @@ const baselines = {
     },
     'asyncFunctionDeclaration11_es5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncFunctionDeclaration12_es5': {
@@ -31107,12 +31107,12 @@ const baselines = {
     },
     'asyncFunctionDeclaration13_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncFunctionDeclaration14_es5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncFunctionDeclaration15_es5': {
@@ -31127,7 +31127,7 @@ const baselines = {
     },
     'asyncFunctionDeclaration1_es5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncFunctionDeclaration2_es5': {
@@ -31147,17 +31147,17 @@ const baselines = {
     },
     'asyncFunctionDeclaration5_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'asyncFunctionDeclaration6_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration7_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration8_es5': {
@@ -35192,12 +35192,12 @@ const baselines = {
     },
     'es2017DateAPIs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'useObjectValuesAndEntries1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'useObjectValuesAndEntries2': {
@@ -35212,7 +35212,7 @@ const baselines = {
     },
     'useObjectValuesAndEntries4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'useSharedArrayBuffer1': {
@@ -35237,7 +35237,7 @@ const baselines = {
     },
     'useSharedArrayBuffer5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'useSharedArrayBuffer6': {
@@ -35347,7 +35347,7 @@ const baselines = {
     },
     'constructBigint': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es2020IntlAPIs': {
@@ -38097,7 +38097,7 @@ const baselines = {
     },
     'for-of39': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of4': {
@@ -46411,8 +46411,8 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsUniqueSymbolUsage': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'enumTag': {
@@ -46467,7 +46467,7 @@ const baselines = {
     },
     'extendsTag1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'extendsTag2': {
@@ -46817,7 +46817,7 @@ const baselines = {
     },
     'jsdocTemplateTag': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsdocTemplateTag2': {
@@ -53146,12 +53146,12 @@ const baselines = {
         types: false,
     },
     'typeFromPropertyAssignment8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeFromPropertyAssignment8_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54182,12 +54182,12 @@ const baselines = {
     },
     'ES5For-ofTypeCheck13': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-ofTypeCheck14': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ES5For-ofTypeCheck2': {
@@ -55282,7 +55282,7 @@ const baselines = {
     },
     'neverInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'neverIntersectionNotCallable': {
@@ -56577,7 +56577,7 @@ const baselines = {
     },
     'partiallyNamedTuples2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'partiallyNamedTuples3': {
@@ -58437,7 +58437,7 @@ const baselines = {
     },
     'uniqueSymbolsDeclarationsInJs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'uniqueSymbolsDeclarationsInJsErrors': {

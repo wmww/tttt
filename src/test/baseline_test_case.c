@@ -151,8 +151,8 @@ static void load_test_source(BaselineTestCase* me) {
             cstr_drop(&lib_name);
         }
         program_resolve_names(my lib_loader);
-        //program_add_globals_from_program(my program, my lib_loader);
-        //my use_default_libs = false;
+        program_add_globals_from_program(my program, my lib_loader);
+        my use_default_libs = false;
     }
 
     add_virtual_source_file(me, current_filename, source_contents);
