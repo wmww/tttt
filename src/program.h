@@ -21,7 +21,7 @@ void program_add_globals_from_program(Program* me, Program const* other);
 SourceFile* program_load(Program* me, csview path);
 
 // Loads the standard library file based on the name (such as es5 or es2015.collection)
-SourceFile* program_load_lib(Program* me, csview name);
+SourceFile* program_load_stdlib(Program* me, csview name);
 
 // Should be called once after loading all files is done. Should always be called before typechecking
 void program_resolve_names(Program* me);

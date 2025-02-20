@@ -8831,7 +8831,7 @@ const baselines = {
         types: false,
     },
     'destructureOptionalParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

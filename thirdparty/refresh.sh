@@ -95,9 +95,18 @@ function copy_in_tsc_libs {
   ../test/clone_typescript_if_needed.sh
   printf "${BLUE}Copying tsc libs from test directory...$EOL"
   rm -rf lib
-  mkdir lib
-  cp -r ../test/TypeScript/lib/*.d.ts lib
+  cp -r ../test/TypeScript/src/lib lib
   cp -r ../test/TypeScript/LICENSE.txt lib
+  cat lib/libs.json \
+    | grep -Pv '\w*//' \
+    | jq -c '.paths | to_entries[]' | \
+  while read MOVE; do
+    SRC="lib/$(jq -r .key <<<"$MOVE").d.ts"
+    DST="lib/$(jq -r .value <<<"$MOVE" | sed 's/^lib.//')"
+    mv "$SRC" "$DST"
+  done
+  mv 'lib/d.ts' 'lib/default.d.ts'
+  printf '/// <reference lib="es2016" />\n' >lib/es7.d.ts # Why???
   TSC_COMMIT="$(git -C ../test/TypeScript rev-parse HEAD)"
   echo "These libraries come from upstream TypeScript at commit $TSC_COMMIT" >lib/README.txt
 }

@@ -31,10 +31,10 @@ int main(int argc, const char** argv) {
     intptr_t type_errors = 0;
 
     printf("%sLoading libraries...%s\n", color_good, color_normal);
-    program_load_lib(program, c_sv("es5"));
-    program_load_lib(program, c_sv("es2015.collection"));
-    program_load_lib(program, c_sv("es2015.iterable"));
-    program_load_lib(program, c_sv("dom"));
+    program_load_stdlib(program, c_sv("es5"));
+    program_load_stdlib(program, c_sv("es2015.collection"));
+    program_load_stdlib(program, c_sv("es2015.iterable"));
+    program_load_stdlib(program, c_sv("dom"));
 
     if (!error_ctx_empty(&errs)) {
         const intptr_t lib_errors = vec_error_size(&errs.errors);

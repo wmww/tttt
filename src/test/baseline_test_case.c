@@ -147,7 +147,7 @@ static void load_test_source(BaselineTestCase* me) {
             libs_tag_value = end != c_NPOS ?
                 csview_slice(libs_tag_value, end + 1, INTPTR_MAX) :
                 (csview){0};
-            program_load_lib(my lib_loader, cstr_sv(&lib_name));
+            program_load_stdlib(my lib_loader, cstr_sv(&lib_name));
             cstr_drop(&lib_name);
         }
         program_resolve_names(my lib_loader);
@@ -260,7 +260,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     if (ret.use_default_libs) {
         if (!cache->default_libs) {
             cache->default_libs = program_new(cache->errors, &real_fs_noisy);
-            program_load_lib(cache->default_libs, c_sv("es5"));
+            program_load_stdlib(cache->default_libs, c_sv("es5"));
             //program_load_lib(cache->default_libs, c_sv("dom"));
             program_resolve_names(cache->default_libs);
         }

@@ -191,7 +191,7 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error) {
 }
 
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
-    if (!span_valid(span) || !span.source || span.source->is_standard_library) {
+    if (!span_valid(span) || !span.source || span.source->is_stdlib) {
         NONFATAL("Error added with invalid span: TS%d: %s", ts_code, cstr_str(&message));
         cstr_drop(&message);
         return nullptr;

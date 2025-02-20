@@ -55,6 +55,7 @@ static const char* program_phase_get_str(ProgramPhase phase) {
 
 typedef struct Program {
     ProgramPhase phase;
+    bool loading_stdlib; // If we're loading standard library files instead of normal files
     ErrorCtx* errs; // unowned
     Fs const* fs;
     Scope global_scope;
@@ -359,6 +360,12 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         source_file_make(cstr_clone(canonical_path), contents)
     );
 
+    if (my loading_stdlib) {
+        source_file->is_stdlib = true;
+        csview filename = basename_of(cstr_sv(&source_file->canonical_path));
+        cstr_take(&source_file->decl_override, cstr_from_fmt("lib.%.*s, --, --", c_SV(filename)));
+    }
+
     parse_file(source_file, my errs);
 
     hmap_str_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
@@ -380,22 +387,20 @@ SourceFile* program_load(Program* me, csview path) {
     // Add the source file to the program
     SourceFile* main_source = program_add_source_idempotent(me, path);
     if (!main_source) {
+        PANIC_IF(my loading_stdlib, "Failed to load standard library file %.*s", c_SV(path));
         error_ctx_error(my errs, span_null, 6053, "File '%.*s' not found.", c_SV(path));
         // Continue with null
     }
 
     clear_error_config();
-    my errs->phase = ERROR_PHASE_UNKOWN;
     return main_source;
 }
 
-SourceFile* program_load_lib(Program* me, csview name) {
-    cstr path = cstr_from_fmt("%.*s/lib.%.*s.d.ts", c_SV(lib_path), c_SV(name));
+SourceFile* program_load_stdlib(Program* me, csview name) {
+    my loading_stdlib = true;
+    cstr path = cstr_from_fmt("%.*s/%.*s.d.ts", c_SV(lib_path), c_SV(name));
     SourceFile* source = program_load(me, cstr_sv(&path));
-    if (source) {
-        source->is_standard_library = true;
-        cstr_take(&source->decl_override, cstr_from_fmt("lib.%.*s.d.ts, --, --", c_SV(name)));
-    }
+    my loading_stdlib = false;
     cstr_drop(&path);
     return source;
 }
@@ -443,7 +448,7 @@ void program_typecheck(Program* me) {
 
     c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
         SourceFile* source = *i.ref;
-        if (!source->is_standard_library) {
+        if (!source->is_stdlib) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
     }
