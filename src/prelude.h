@@ -12,7 +12,7 @@
 #define ignore (void)
 
 __attribute__((noreturn))
-void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 #define PANIC(...) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
 #define PANIC_IF(cond, ...) if (cond) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
 #define ASSERT(cond) if (!(cond)) panic_internal("assertion failed", __FILE__, __LINE__, "%s", #cond)
@@ -21,8 +21,8 @@ void panic_internal(const char* error_type, const char* file, int line, const ch
 extern int nonfatal_inhibit_count;
 cstr* acquire_debug_cstr(); // Should only be used by FMT_DBG
 const char* get_latest_debug_str(); // Should only be used by FMT_DBG
-void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
-void print_debug_internal(const char* file, int line, const char* fmt, ...) __attribute__ ((format (printf, 3, 4)));
+void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
+void print_debug_internal(const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 3, 4)));
 #define NONFATAL(...) do { if (nonfatal_inhibit_count == 0) nonfatal_internal("nonfatal", __FILE__, __LINE__, __VA_ARGS__); } while (false)
 #define PRINT_DBG(...) { if (nonfatal_inhibit_count == 0) print_debug_internal(__FILE__, __LINE__, __VA_ARGS__); } while (false)
 
@@ -51,6 +51,3 @@ void print_debug_internal(const char* file, int line, const char* fmt, ...) __at
 #define NONFATAL_DBG NONFATAL
 #define FMT_DBG(type, value) (display_##type(debug_display(acquire_debug_cstr()), &(value)), get_latest_debug_str())
 #define TYPE_DBG(value) FMT_DBG(type, value)
-
-// Used so we can easily find where null error contexts are being used to refactor them later
-#define null_error_ctx nullptr

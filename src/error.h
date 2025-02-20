@@ -30,7 +30,7 @@ void display_error(Display d, Error const* me);
 /// noop if me is null
 void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message);
 /// noop if me is null
-void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 
 #define i_key_class_names Error, error
 #define i_is_forward
@@ -76,7 +76,7 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error);
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
 /// noop and returns null if me is null. Returned Error can be used to add related errors, but is owned by the ErrorCtx.
 /// Additional calls into this ErrorCtx invalidate returned Error.
-Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 
 extern ErrorConfig const* global_error_config_private;
 void set_error_config(ErrorConfig const* conf);

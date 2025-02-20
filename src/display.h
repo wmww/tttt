@@ -107,7 +107,7 @@ static inline void display_colored_span(Display d, const char* code, Span s) {
     display_normal(d);
 }
 
-void display_fmt(Display d, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void display_fmt(Display d, const char* fmt, ...) __attribute__((format (printf, 2, 3)));
 void display_value(Display d, Value const* me);
 void display_interface_member(Display d, InterfaceMember const* me);
 void display_type(Display d, Type const* me);

@@ -198,7 +198,7 @@ static inline Error* add_error_to_parser(Parser* me, Error error) {
     return vec_error_push(&my shared->errors, error);
 }
 
-static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
+static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) {
     cstr message = cstr_null;
     if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
