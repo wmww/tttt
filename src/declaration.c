@@ -31,8 +31,9 @@ MergedType merged_type_clone(MergedType me) {
 }
 
 Type merged_type_evaluate_type(MergedType* me) {
-    Type ret = interface_from_merged(my merge_list);
+    VecType merge_list = my merge_list;
     my merge_list = vec_type_init();
+    Type ret = interface_from_merged(merge_list);
     return ret;
 }
 

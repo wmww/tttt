@@ -66,9 +66,8 @@ static void push_interface_members_to(VecInterfaceMember* target, Interface cons
 Type interface_from_merged(VecType types) {
     switch (vec_type_size(&types)) {
         case 0:
-            NONFATAL("Tried to merge type list with zero types");
             vec_type_drop(&types);
-            return type_never;
+            return type_any;
 
         case 1:
             Type ret = vec_type_pull(&types);
