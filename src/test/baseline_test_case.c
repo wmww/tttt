@@ -260,8 +260,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     if (ret.use_default_libs) {
         if (!cache->default_libs) {
             cache->default_libs = program_new(cache->errors, &real_fs_noisy);
-            program_load_stdlib(cache->default_libs, c_sv("es5"));
-            //program_load_lib(cache->default_libs, c_sv("dom"));
+            program_load_stdlib(cache->default_libs, c_sv("default"));
             program_resolve_names(cache->default_libs);
         }
         program_add_globals_from_program(program, cache->default_libs);
