@@ -82,12 +82,14 @@ static inline void display_s    (Display d, cstr        s)  { cstr_append_s (d.t
 static inline void display_sv   (Display d, csview      s)  { cstr_append_sv(d.target, s); }
 static inline void display_span (Display d, Span        s)  { cstr_append_span(d.target, s); }
 
+static inline void display_repeated(Display d, csview sv, intptr_t n) {
+    for (intptr_t i = 0; i < n; i++) display_sv(d, sv);
+}
+
 static inline void display_newline(Display d) {
     if (d.debug) {
         display_lit(d, "\n");
-        for (int i = 0; i < d.indent; i++) {
-            cstr_append_sv(d.target, indent_string);
-        }
+        display_repeated(d, indent_string, d.indent);
     } else {
         display_lit(d, " ");
     }
