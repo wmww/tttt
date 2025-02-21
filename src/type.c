@@ -53,11 +53,6 @@ static void type_ctx_drop(TypeCtx* me) {
     hmap_str_bool_drop(&my extends_results);
 }
 
-Type type_composite_base(typeof((Type){}.tag) tag) {
-    ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
-    return tag == TYPE_UNION ? type_never : type_any;
-}
-
 Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another

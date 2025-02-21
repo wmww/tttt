@@ -50,6 +50,7 @@ typedef struct Display {
     unsigned char indent;
     bool color : 1;
     bool debug : 1;
+    bool brief : 1;
     bool hash_key : 1;
 } Display;
 
@@ -71,6 +72,15 @@ static inline Display debug_display(cstr* target) {
         .target = target,
         .color = true,
         .debug = true,
+    };
+}
+
+static inline Display debug_brief_display(cstr* target) {
+    return (Display) {
+        .target = target,
+        .color = true,
+        .debug = true,
+        .brief = true,
     };
 }
 

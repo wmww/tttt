@@ -229,10 +229,16 @@ static inline bool type_is_self_referential(Type const* me) {
     return my tag == TYPE_ANY && my any.self_referential_error;
 }
 
-Type type_composite_base(typeof((Type){}.tag) tag);
 Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b);
 Type type_composite(typeof((Type){}.tag) tag, Type a, Type b);
 void composite_type_simplify(Type* me);
+static inline Type type_composite_base(typeof((Type){}.tag) tag) {
+    switch (tag) {
+        case TYPE_UNION:        return (Type){.tag = TYPE_NEVER};
+        case TYPE_INTERSECTION: return (Type){.tag = TYPE_ANY};
+        default:                PANIC("Invalid composite tag");
+    }
+}
 
 // PERF: should type_drop() be inlined?
 void type_drop(Type* me);

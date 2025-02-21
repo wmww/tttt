@@ -388,6 +388,15 @@ static void display_interface(Display d, Interface const* me) {
         return;
     }
 
+    if (d.brief) {
+        display_lit(d, "{ ");
+        display_color(d, color_value);
+        display_fmt(d, "%zd members", vec_interface_member_size(&my members));
+        display_color(d, color_normal);
+        display_lit(d, " }");
+        return;
+    }
+
     display_lit(d, "{");
     d.indent++;
     c_foreach(i, vec_interface_member, my members) {
@@ -540,22 +549,29 @@ void display_type(Display d, Type const* me) {
             if (d.debug) {
                 display_colored(d, color_implicit, "(");
             }
-            bool is_first = true;
-            c_foreach(i, vec_type, my composite) {
-                if (!d.debug && i.ref->tag == (my tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY)) continue;
 
-                if (is_first) {
-                    is_first = false;
-                } else if (my tag == TYPE_UNION) {
-                    display_lit(d, " | ");
-                } else {
-                    display_lit(d, " & ");
+            intptr_t count = 0;
+            c_foreach(i, vec_type, my composite) {
+                if (!d.debug && i.ref->tag == type_composite_base(my tag).tag) continue;
+
+                if (count > 0) {
+                    my tag == TYPE_UNION ?
+                        display_lit(d, " | ") :
+                        display_lit(d, " & ");
+                }
+
+                if (d.brief && count >= 2) {
+                    display_color(d, color_value);
+                    display_fmt(d, "...and %zd more", vec_type_size(&my composite) - count);
+                    display_color(d, color_normal);
+                    break;
                 }
 
                 bool display_peren = i.ref->tag == TYPE_CALLABLE;
                 if (display_peren) display_lit(d, "(");
                 display_type(d, i.ref);
                 if (display_peren) display_lit(d, ")");
+                count++;
             }
             if (d.debug) {
                 display_colored(d, color_implicit, ")");
