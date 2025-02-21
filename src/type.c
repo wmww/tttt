@@ -874,6 +874,18 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
     UNREACHABLE;
 }
 
+static inline bool cache_type_in_extends_check(Type const* me) {
+    switch (my tag) {
+        case TYPE_IDENTIFIER:
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
     if (ctx->recursion_level > 400) {
         NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
@@ -883,9 +895,9 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     static const bool default_result = true;
     HashKeyTarget key = {0};
     csview key_sv;
-    bool add_to_extends_results = sub->tag == TYPE_IDENTIFIER || super->tag == TYPE_IDENTIFIER;
+    bool cache_result = cache_type_in_extends_check(sub) || cache_type_in_extends_check(super);
 
-    if (add_to_extends_results) {
+    if (cache_result) {
         display_type(hash_key_display(&key), sub);
         intptr_t sub_end = cstr_size(&key.target);
         cstr_append_lit(&key.target, " # ");
@@ -911,7 +923,7 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     bool ret = type_extends_more_internal(ctx, sub, super, refinements);
     ctx->recursion_level--;
 
-    if (add_to_extends_results) {
+    if (cache_result) {
         if (ret != default_result) {
             auto result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
             ASSERT(result);
