@@ -636,6 +636,10 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
     }
 
     switch (super->tag) {
+        case TYPE_UNKNOWN:
+        case TYPE_ANY:
+            return true;
+
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
@@ -698,10 +702,6 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
     }
 
     switch (super->tag) {
-        case TYPE_UNKNOWN:
-        case TYPE_ANY:
-            return true;
-
         case TYPE_NEVER:
             return false;
 
@@ -874,6 +874,8 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
             }
             return true;
 
+        case TYPE_UNKNOWN:
+        case TYPE_ANY:
         case TYPE_IDENTIFIER:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
