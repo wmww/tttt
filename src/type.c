@@ -1401,29 +1401,16 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
             }
 
         case TYPE_INTERFACE: {
-            Type comp = type_composite_base(TYPE_INTERSECTION);
-            bool found = false;
             c_foreach(i, vec_interface_member, my interface.members) {
                 if (interface_member_key_overlaps(i.ref, index)) {
-                    found = true;
-                    comp = type_composite_internal(
-                        ctx,
-                        TYPE_INTERSECTION,
-                        comp,
-                        type_clone(i.ref->type)
-                    );
+                    *ret = type_clone(i.ref->type);
                     if (i.ref->optional) {
-                        comp = type_composite_internal(ctx, TYPE_INTERSECTION, comp, type_undefined);
+                        *ret = type_composite_internal(ctx, TYPE_INTERSECTION, *ret, type_undefined);
                     }
+                    return true;
                 }
             }
-            if (found) {
-                *ret = comp;
-                return true;
-            } else {
-                type_drop(&comp);
-                return false;
-            }
+            return false;
         }
 
         case TYPE_ARRAY:

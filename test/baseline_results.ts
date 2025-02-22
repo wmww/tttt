@@ -22046,7 +22046,7 @@ const baselines = {
         types: false,
     },
     'objectLiteralParameterResolution': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32321,7 +32321,7 @@ const baselines = {
         types: false,
     },
     'classPropertyIsPublicByDefault': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -45296,7 +45296,7 @@ const baselines = {
         types: true,
     },
     'interfaceExtendingClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
