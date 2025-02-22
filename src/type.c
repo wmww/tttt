@@ -634,10 +634,30 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
     if (sub == super) {
         return true;
     }
+
+    switch (super->tag) {
+        case TYPE_IDENTIFIER:
+        case TYPE_INDEXED:
+        case TYPE_KEYOF:
+        case TYPE_TYPEOF:
+        case TYPE_TERNARY:
+        case TYPE_LAZY:
+        case TYPE_REF: {
+            Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
+            return type_extends_internal(
+                ctx,
+                sub,
+                super_resolved,
+                super->tag == TYPE_IDENTIFIER ? nullptr : refinements
+            );
+        }
+
+        default: break;
+    }
+
     switch (sub->tag) {
         case TYPE_ANY:
             switch (super->tag) {
-                case TYPE_NEVER:
                 case TYPE_UNION:
                 case TYPE_INTERSECTION: break;
                 default: return true;
@@ -839,22 +859,6 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
             }
             return true;
 
-        case TYPE_IDENTIFIER:
-        case TYPE_INDEXED:
-        case TYPE_KEYOF:
-        case TYPE_TYPEOF:
-        case TYPE_TERNARY:
-        case TYPE_LAZY:
-        case TYPE_REF: {
-            Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
-            return type_extends_internal(
-                ctx,
-                sub,
-                super_resolved,
-                super->tag == TYPE_IDENTIFIER ? nullptr : refinements
-            );
-        }
-
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
                 if (type_extends_internal(ctx, sub, i.ref, refinements)) {
@@ -870,6 +874,16 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
                 }
             }
             return true;
+
+        case TYPE_IDENTIFIER:
+        case TYPE_INDEXED:
+        case TYPE_KEYOF:
+        case TYPE_TYPEOF:
+        case TYPE_TERNARY:
+        case TYPE_LAZY:
+        case TYPE_REF:
+            // Should have been handled above
+            UNREACHABLE;
     }
     UNREACHABLE;
 }

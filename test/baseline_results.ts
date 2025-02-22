@@ -1756,7 +1756,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatability46': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
