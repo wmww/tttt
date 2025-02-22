@@ -460,7 +460,8 @@ static void display_ternary_type(Display d, TernaryType* me) {
 void display_type(Display d, Type const* me) {
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
-        display_fmt(d, "(%d:", me->tag);
+        char c[] = {'(', my tag + 'A', ':'};
+        display_sv(d, csview_from_n(c, sizeof(c)));
     }
 
     switch (my tag) {
