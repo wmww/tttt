@@ -1182,7 +1182,7 @@ const baselines = {
     },
     'arrayConcat3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrayConcatMap': {
@@ -1502,7 +1502,7 @@ const baselines = {
     },
     'assigningFromObjectToAnythingElse': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assigningFunctionToTupleIssuesError': {
@@ -3562,7 +3562,7 @@ const baselines = {
     },
     'classExtendsNull': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classExtendsNull2': {
@@ -21877,7 +21877,7 @@ const baselines = {
     },
     'objectCreate-errors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectCreate': {
@@ -21907,7 +21907,7 @@ const baselines = {
     },
     'objectFreezeLiteralsDontWiden': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectFromEntries': {

@@ -121,17 +121,6 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
 }
 
 Type interface_from_merged_interfaces(VecType types) {
-    switch (vec_type_size(&types)) {
-        case 0:
-            return type_any;
-
-        case 1:
-            Type ret = vec_type_pull(&types);
-            vec_type_drop(&types);
-            return ret;
-
-        default: break;
-    }
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, vec_type, types) {
         ASSERT(i.ref->tag == TYPE_INTERFACE);
