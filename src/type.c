@@ -1697,10 +1697,6 @@ static bool check_assignable_or_error_internal(
 }
 
 void type_error_if_not_assignable(Type const* source, Type const* target, Span target_span, ErrorCtx* errs) {
-    if (!errs) {
-        // TODO: change to assertion and then remove entirely
-        return;
-    }
     check_assignable_or_error_internal("Type", source, "type", target, 2322, target_span, errs);
 }
 
@@ -1749,13 +1745,21 @@ Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
         }
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, my interface.members) {
-                // TODO: add to overload list instead of selecting first option
-                if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    return type_call_evaluate_type(&i.ref->type, call);
+            bool is_callable;
+            InterfaceMember const* overload = interface_select_callable_overload(&my interface, call, &is_callable);
+            if (overload) {
+                return type_call_evaluate_type(&overload->type, call);
+            } else if (is_callable) {
+                Type ret = type_composite_base(TYPE_INTERSECTION);
+                c_foreach(i, vec_interface_member, my interface.members) {
+                    if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i.ref->type.callable->ret));
+                    }
                 }
+                return ret;
+            } else {
+                return type_any;
             }
-            break;
 
         default: break;
     }
@@ -1886,14 +1890,17 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             return;
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, my interface.members) {
-                // TODO: add to overload list instead of selecting first option
-                if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                    type_typecheck_call(&i.ref->type, call, span, errs);
-                    return;
-                }
+            bool is_callable;
+            InterfaceMember const* overload = interface_select_callable_overload(&my interface, call, &is_callable);
+            if (overload) {
+                type_typecheck_call(&overload->type, call, span, errs);
+                return;
+            } else if (is_callable) {
+                error_ctx_error(errs, call->callable.outer_span, 2769, "No overload matches this call.");
+                return;
+            } else {
+                break;
             }
-            break;
 
         default: break;
     }
@@ -1904,6 +1911,12 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
         cstr_append_lit(&msg, "' is not a constructor function type.");
         error_ctx_error_s(errs, call->callable.outer_span, 2507, msg);
     } else {
-        error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
+        Error* e = error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
+        if (my tag == TYPE_INTERFACE) {
+            cstr msg = cstr_lit("Type '");
+            cstr_append_type_error_msg(&msg, me);
+            cstr_append_lit(&msg, "' has no call signatures.");
+            error_sub_error_s(e, span_null, TS_CODE_NONE, msg);
+        }
     }
 }

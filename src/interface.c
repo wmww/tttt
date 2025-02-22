@@ -3,6 +3,8 @@
 #include "display.h"
 #include "error.h"
 #include "declaration.h"
+#include "callable_type.h"
+#include "expr.h"
 
 void interface_drop(Interface* me) {
     vec_interface_member_drop(&my members);
@@ -190,4 +192,67 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
         //vec_span_drop(&i.ref->declarations);
         //i.ref->declarations = vec_span_clone(matching->declarations);
     }
+}
+
+InterfaceMember const* interface_select_callable_overload(
+    Interface const* me,
+    CallExpr const* call,
+    bool* is_callable_ret
+) {
+    InterfaceMember const* selection;
+    bool is_callable = false;
+
+    // Look for all callable members
+    selection = nullptr;
+    c_foreach(i, vec_interface_member, my members) {
+        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+            is_callable = true;
+            selection = selection ? nullptr : i.ref;
+            if (!selection) break;
+        }
+    }
+
+    if (is_callable_ret) {
+        *is_callable_ret = is_callable;
+    }
+
+    if (selection || !is_callable) {
+        return selection;
+    }
+
+    // Look for callable members with the correct number of args
+    selection = nullptr;
+    intptr_t call_args = vec_expr_size(&call->args);
+    c_foreach(i, vec_interface_member, my members) {
+        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+            intptr_t min_args = callable_type_min_arg_count(i.ref->type.callable);
+            intptr_t max_args = callable_type_max_arg_count(i.ref->type.callable);
+            if (min_args <= call_args && max_args >= call_args) {
+                selection = selection ? nullptr : i.ref;
+                if (!selection) break;
+            }
+        }
+    }
+
+    if (selection) {
+        return selection;
+    }
+
+    // Look for callable that typechecks without errors
+    selection = nullptr;
+    c_foreach(i, vec_interface_member, my members) {
+        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+            ErrorCtx sub_errs = error_ctx_init();
+            sub_errs.phase = ERROR_PHASE_TYPECHECK;
+            type_typecheck_call(&i.ref->type, call, span_null, &sub_errs);
+            bool no_errors = error_ctx_empty(&sub_errs);
+            error_ctx_drop(&sub_errs);
+            if (no_errors) {
+                selection = i.ref;
+                break;
+            }
+        }
+    }
+
+    return selection;
 }
