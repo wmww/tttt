@@ -16,6 +16,56 @@ Interface interface_clone(Interface me) {
     };
 }
 
+bool interface_try_from_type(Type const* me, Type* ret) {
+    me = type_resolve(me);
+    switch (my tag) {
+        case TYPE_CALLABLE: {
+            VecInterfaceMember members = vec_interface_member_with_capacity(1);
+            vec_interface_member_push(&members, (InterfaceMember) {
+               .key.tag = INTERFACE_KEY_CALLABLE,
+               .type = type_clone(*me),
+            });
+            *ret = type_interface((Interface) {
+                .members = members,
+            });
+            return true;
+        }
+
+        case TYPE_INTERFACE:
+            *ret = type_clone(*me);
+            return true;
+
+        case TYPE_ARRAY:
+        case TYPE_TUPLE:
+            // TODO
+            return false;
+
+        case TYPE_UNION:
+            if (vec_type_size(&my composite) == 1) {
+                return interface_try_from_type(my composite.data, ret);
+            } else {
+                return false;
+            }
+
+        case TYPE_INTERSECTION: {
+            VecType items = vec_type_init();
+            c_foreach(i, vec_type, my composite) {
+                Type t;
+                if (!interface_try_from_type(i.ref, &t)) {
+                    vec_type_drop(&items);
+                    return false;
+                }
+                vec_type_push(&items, t);
+            }
+            *ret = interface_from_merged(items);
+            return true;
+        }
+
+        default:
+            return false;
+    }
+}
+
 static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceMember const* needle) {
     // PERF: do not merge interfaces this way, for obvious reasons
     c_foreach(i, vec_interface_member, *haystack) {

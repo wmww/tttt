@@ -16,6 +16,7 @@ typedef struct Interface {
 
 void interface_drop(Interface* me);
 Interface interface_clone(Interface me);
+bool interface_try_from_type(Type const* me, Type* ret);
 Type interface_from_merged(VecType types);
 void interface_typecheck(Interface const* me, ErrorCtx* errs);
 void interface_typecheck_members_against(Interface* me, Declaration const* declaration, ErrorCtx* errs);
