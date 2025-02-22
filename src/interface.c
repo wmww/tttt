@@ -100,17 +100,18 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
             nullptr :
             vec_interface_member_at_mut(target, matching_index);
         if (matching) {
-            // Somewhere we want to compare types and show errors if they're different, but that can be done in the
-            // typecheck function of the interface declarations. For now just use the type of the first member we
-            // encounter with each name.
-
-            // Only safe because spans are POD (clone is a no-op)
-            vec_span_insert_n(
-                &matching->declarations,
-                vec_span_size(&matching->declarations),
-                new_member->declarations.data,
-                vec_span_size(&new_member->declarations)
-            );
+            c_foreach(i, vec_span, new_member->declarations) {
+                bool add = true;
+                c_foreach(j, vec_span, matching->declarations) {
+                    if (span_cmp(*i.ref, *j.ref) == 0) {
+                        add = false;
+                        break;
+                    }
+                }
+                if (add) {
+                    vec_span_push(&matching->declarations, *i.ref);
+                }
+            }
         } else {
             vec_interface_member_push(target, interface_member_clone(*new_member));
         }

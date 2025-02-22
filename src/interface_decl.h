@@ -9,7 +9,7 @@ typedef struct InterfaceDecl {
     Span name;
     Span full_span;
     Generic generic;
-    VecSpannedType extends; // Only used if is_interface is true
+    VecSpannedType extends;
     Type type;
     LazyType lazy_type;
     ArcDeclaration declaration;

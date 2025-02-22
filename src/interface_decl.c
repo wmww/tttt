@@ -48,45 +48,18 @@ Type interface_decl_evaluate_type(InterfaceDecl* me) {
         i.ref->origin_interface = my declaration.get;
     }
 
-    VecInterfaceMember members = {0};
+    VecType types = vec_type_init();
+
+    vec_type_push(&types, type_clone(my type));
 
     c_foreach(extends, vec_spanned_type, my extends) {
-        Type const* extends_resolved = type_resolve(&extends.ref->type);
-        if (extends_resolved->tag == TYPE_INTERFACE) {
-            c_foreach(extends_member, vec_interface_member, extends_resolved->interface.members) {
-                bool found_match = false;
-                c_foreach(previous_member, vec_interface_member, members) {
-                    if (interface_key_extends(extends_member.ref, previous_member.ref)) {
-                        found_match = true;
-                        break;
-                    }
-                }
-                if (!found_match) {
-                    c_foreach(type_member, vec_interface_member, my type.interface.members) {
-                        if (interface_key_extends(extends_member.ref, type_member.ref)) {
-                            found_match = true;
-                            break;
-                        }
-                    }
-                }
-                if (!found_match) {
-                    vec_interface_member_push(&members, interface_member_clone(*extends_member.ref));
-                }
-            }
+        Type t;
+        if (interface_try_from_type(&extends.ref->type, &t)) {
+            vec_type_push(&types, t);
         }
     }
 
-    if (!vec_interface_member_empty(&members)) {
-        c_foreach(i, vec_interface_member, my type.interface.members) {
-            vec_interface_member_push(&members, interface_member_clone(*i.ref));
-        }
-    }
-
-    if (vec_interface_member_empty(&members)) {
-        return type_refcopy(&my type);
-    } else {
-        return type_interface((Interface){ .members = members });
-    }
+    return interface_from_merged(types);
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {

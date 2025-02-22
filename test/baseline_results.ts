@@ -371,12 +371,12 @@ const baselines = {
         types: false,
     },
     'addMoreCallSignaturesToBaseSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'addMoreCallSignaturesToBaseSignature2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21722,7 +21722,7 @@ const baselines = {
     },
     'nonnullAssertionPropegatesContextualType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'nonstrictTemplateWithNotOctalPrintsAsIs': {
