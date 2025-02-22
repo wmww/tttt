@@ -13706,7 +13706,7 @@ const baselines = {
         types: false,
     },
     'genericCapturingFunctionNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14606,7 +14606,7 @@ const baselines = {
         types: false,
     },
     'homomorphicMappedTypeIntersectionAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33931,7 +33931,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccessNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -58266,7 +58266,7 @@ const baselines = {
         types: false,
     },
     'unionAndIntersectionInference2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

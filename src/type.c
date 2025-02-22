@@ -683,13 +683,16 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
         }
 
         case TYPE_UNION:
-        case TYPE_INTERSECTION: // It's actually correct to treat both the same here (I think)
             c_foreach(i, vec_type, sub->composite) {
-                if (!type_extends_internal(ctx, i.ref, super, refinements)) {
-                    return false;
-                }
+                if (!type_extends_internal(ctx, i.ref, super, refinements)) return false;
             }
             return true;
+
+        case TYPE_INTERSECTION:
+            c_foreach(i, vec_type, sub->composite) {
+                if (type_extends_internal(ctx, i.ref, super, refinements)) return true;
+            }
+            return false;
 
         default: break;
     }
@@ -861,17 +864,13 @@ static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const
 
         case TYPE_UNION:
             c_foreach(i, vec_type, super->composite) {
-                if (type_extends_internal(ctx, sub, i.ref, refinements)) {
-                    return true;
-                }
+                if (type_extends_internal(ctx, sub, i.ref, refinements)) return true;
             }
             return false;
 
         case TYPE_INTERSECTION:
             c_foreach(i, vec_type, super->composite) {
-                if (!type_extends_internal(ctx, sub, i.ref, refinements)) {
-                    return false;
-                }
+                if (!type_extends_internal(ctx, sub, i.ref, refinements)) return false;
             }
             return true;
 
