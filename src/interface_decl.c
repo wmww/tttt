@@ -59,7 +59,7 @@ Type interface_decl_evaluate_type(InterfaceDecl* me) {
         }
     }
 
-    return interface_from_merged(types);
+    return interface_from_merged_interfaces(types);
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {

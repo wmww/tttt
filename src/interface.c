@@ -48,16 +48,16 @@ bool interface_try_from_type(Type const* me, Type* ret) {
             }
 
         case TYPE_INTERSECTION: {
-            VecType items = vec_type_init();
+            VecType interfaces = vec_type_init();
             c_foreach(i, vec_type, my composite) {
                 Type t;
                 if (!interface_try_from_type(i.ref, &t)) {
-                    vec_type_drop(&items);
+                    vec_type_drop(&interfaces);
                     return false;
                 }
-                vec_type_push(&items, t);
+                vec_type_push(&interfaces, t);
             }
-            *ret = interface_from_merged(items);
+            *ret = interface_from_merged_interfaces(interfaces);
             return true;
         }
 
@@ -92,15 +92,14 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
     return -1;
 }
 
-static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMember const* source) {
-    c_foreach(new_member_i, vec_interface_member, *source) {
-        InterfaceMember const* new_member = new_member_i.ref;
-        intptr_t matching_index = index_of_matching(target, new_member);
+static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMember source) {
+    c_foreach(new_member, vec_interface_member, source) {
+        intptr_t matching_index = index_of_matching(target, new_member.ref);
         InterfaceMember* matching = matching_index < 0 ?
             nullptr :
             vec_interface_member_at_mut(target, matching_index);
         if (matching) {
-            c_foreach(i, vec_span, new_member->declarations) {
+            c_foreach(i, vec_span, new_member.ref->declarations) {
                 bool add = true;
                 c_foreach(j, vec_span, matching->declarations) {
                     if (span_cmp(*i.ref, *j.ref) == 0) {
@@ -112,16 +111,18 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
                     vec_span_push(&matching->declarations, *i.ref);
                 }
             }
+            interface_member_drop(new_member.ref);
         } else {
-            vec_interface_member_push(target, interface_member_clone(*new_member));
+            vec_interface_member_push(target, *new_member.ref);
         }
     }
+    source._len = 0;
+    vec_interface_member_drop(&source);
 }
 
-Type interface_from_merged(VecType types) {
+Type interface_from_merged_interfaces(VecType types) {
     switch (vec_type_size(&types)) {
         case 0:
-            vec_type_drop(&types);
             return type_any;
 
         case 1:
@@ -132,43 +133,10 @@ Type interface_from_merged(VecType types) {
         default: break;
     }
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(type_i, vec_type, types) {
-        Type const* type = type_resolve(type_i.ref);
-        switch (type->tag) {
-            case TYPE_ANY:
-                vec_interface_member_drop(&members);
-                vec_type_drop(&types);
-                return type_any;
-
-            case TYPE_INTERFACE:
-                push_interface_members_to(&members, &type->interface.members);
-                break;
-
-            case TYPE_CALLABLE:
-                InterfaceMember callable = {
-                    .declarations = vec_span_init(), // TODO
-                    .key.span = span_null, // TODO
-                    .key.tag = INTERFACE_KEY_CALLABLE,
-                    .type = type_clone(*type),
-                };
-                VecInterfaceMember const single_member = {._len = 1, .data = &callable};
-                push_interface_members_to(&members, &single_member);
-                interface_member_drop(&callable);
-                break;
-
-            default: {
-                cstr type_s = cstr_null;
-                display_type(debug_display(&type_s), type);
-                NONFATAL(
-                    "Only interfaces and callables can be merged, but one of the types in the merge list was %s",
-                    cstr_str(&type_s)
-                );
-                cstr_drop(&type_s);
-                vec_interface_member_drop(&members);
-                vec_type_drop(&types);
-                return type_any;
-            }
-        }
+    c_foreach(i, vec_type, types) {
+        ASSERT(i.ref->tag == TYPE_INTERFACE);
+        push_interface_members_to(&members, i.ref->interface.members);
+        i.ref->interface.members = vec_interface_member_init();
     }
     vec_type_drop(&types);
     return type_interface((Interface){

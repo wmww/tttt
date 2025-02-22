@@ -31,10 +31,16 @@ MergedType merged_type_clone(MergedType me) {
 }
 
 Type merged_type_evaluate_type(MergedType* me) {
-    VecType merge_list = my merge_list;
-    my merge_list = vec_type_init();
-    Type ret = interface_from_merged(merge_list);
-    return ret;
+    VecType interfaces = vec_type_init();
+    c_foreach(i, vec_type, my merge_list) {
+        Type interface;
+        if (interface_try_from_type(i.ref, &interface)) {
+            vec_type_push(&interfaces, interface);
+        } else {
+            NONFATAL("non-interface type in merge list");
+        }
+    }
+    return interface_from_merged_interfaces(interfaces);
 }
 
 void merged_type_drop(MergedType* me) {
