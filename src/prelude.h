@@ -49,6 +49,6 @@ void print_debug_internal(const char* file, int line, const char* fmt, ...) __at
         else NONFATAL(__VA_ARGS__); \
     } while (false)
 #define NONFATAL_DBG NONFATAL
-#define INDENT_DBG(size) (display_repeated(debug_brief_display(acquire_debug_cstr()), c_sv("  "), size), get_latest_debug_str())
+#define INDENT_DBG(size) (display_repeated(debug_brief_display(acquire_debug_cstr()), c_sv(" "), size), get_latest_debug_str())
 #define FMT_DBG(type, value) (display_##type(debug_brief_display(acquire_debug_cstr()), &(value)), get_latest_debug_str())
 #define TYPE_DBG(value) FMT_DBG(type, value)

@@ -11,7 +11,22 @@ intptr_t debug_allocation_count = 0;
 
 int nonfatal_inhibit_count = 0;
 
+static inline const char* remove_file_prefix(const char* file) {
+    const char* prefix = "../src/";
+    const char* trimmed = file;
+    while (*prefix && *prefix == *trimmed) {
+        prefix++;
+        trimmed++;
+    }
+    if (*prefix) {
+        return file;
+    } else {
+        return trimmed;
+    }
+}
+
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) {
+    file = remove_file_prefix(file);
     fprintf(
         stderr,
         "%s%s:%d %s%s: %s",
@@ -65,6 +80,7 @@ static inline void clear_debug_cstrs() {
 }
 
 void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) {
+    file = remove_file_prefix(file);
     fprintf(
         stderr,
         "%s%s:%d %s%s: %s",
@@ -84,6 +100,7 @@ void nonfatal_internal(const char* error_type, const char* file, int line, const
 }
 
 void print_debug_internal(const char* file, int line, const char* fmt, ...) {
+    file = remove_file_prefix(file);
     fprintf(
         stderr,
         "%s%s:%d %sdebug: %s",
