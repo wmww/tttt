@@ -13,8 +13,6 @@
 #include "port_statement.h"
 #include "string_helpers.h"
 
-#define has_underline(d) (d.flags & DISPLAY_FLAGS_UNDERLINE_TYPES)
-
 const char* color_normal = "\x1b[0m";
 const char* color_error = "\x1b[1;31m";
 const char* color_good = "\x1b[1;32m";
@@ -389,11 +387,18 @@ static void display_interface(Display d, Interface const* me) {
     }
 
     if (d.brief) {
-        display_lit(d, "{ ");
-        display_color(d, color_value);
-        display_fmt(d, "%zd members", vec_interface_member_size(&my members));
-        display_color(d, color_normal);
-        display_lit(d, " }");
+        display_lit(d, "{");
+        if (vec_interface_member_size(&my members) > 0) {
+            display_lit(d, " ");
+            display_interface_member(d, my members.data);
+            display_lit(d, "; ");
+            if (vec_interface_member_size(&my members) > 1) {
+                display_color(d, color_value);
+                display_fmt(d, "...and %zd more ", vec_interface_member_size(&my members) - 1);
+                display_color(d, color_normal);
+            }
+        }
+        display_lit(d, "}");
         return;
     }
 
