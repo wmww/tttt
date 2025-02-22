@@ -29071,7 +29071,7 @@ const baselines = {
         types: false,
     },
     'unionRelationshipCheckPasses': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55128,7 +55128,7 @@ const baselines = {
     'objectTypeHidingMembersOfExtendedObject': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypeHidingMembersOfObject': {
         errors: true,
