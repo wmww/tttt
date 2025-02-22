@@ -171,6 +171,69 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
     PANIC("failed to find test for source file %s", cstr_str(&source->canonical_path));
 }
 
+static void format_error_tree(
+    cstr* global_target,
+    cstr* file_target,
+    Error* toplevel,
+    Error* error,
+    SourceFile const* current_source,
+    int indent_level
+) {
+    // Add the prefix for toplevel errors, this "global" string will appear at the top of the output file
+    if (indent_level == 0) {
+        unsigned line = span_line_index(error->span);
+        unsigned col = span_col_index(error->span);
+        const char* filename = error->span.source ? (
+            error->span.source->display_path_override ?
+                error->span.source->display_path_override :
+                cstr_str(&error->span.source->canonical_path)
+        ) : "(nil)";
+
+        cstr_append_fmt(
+            global_target,
+            "%s(%u,%u): error TS%d: ",
+            filename, line + 1, col + 1,
+            error->ts_code
+        );
+    }
+
+    // Add toplevel errors and non-related errors (sub-errors that don't have a valid span) to the global string
+    if (indent_level == 0 || !span_valid(error->span)) {
+        display_repeated(error_display(global_target), c_sv("  "), indent_level);
+        cstr_append_s(global_target, error->message);
+        cstr_append_lit(global_target, "\r\n");
+    }
+
+    if (indent_level == 0 || !span_valid(error->span)) {
+        // Handle toplevel errors and non-related errors (sub-errors that don't have a valid span)
+        cstr_append_fmt(
+            file_target,
+            "\r\n!!! error TS%d: ",
+            toplevel->ts_code
+        );
+        display_repeated(error_display(file_target), c_sv("  "), indent_level);
+        cstr_append_s(file_target, error->message);
+    } else {
+        // Handle related errors (sub-errors that do have a valid span)
+        unsigned related_line = span_line_index(error->span);
+        unsigned related_col = span_col_index(error->span);
+        cstr_append_fmt(
+            file_target,
+            "\r\n!!! related TS%d %.*s:%u:%u: %s",
+            error->ts_code,
+            c_SV(basename_of(cstr_sv(&current_source->canonical_path))),
+            related_line + 1,
+            related_col + 1,
+            cstr_str(&error->message)
+        );
+    }
+
+    // Traverse down the tree handling sub-errors and related errors
+    c_foreach(related, vec_error, error->sub_errors) {
+        format_error_tree(global_target, file_target, toplevel, related.ref, current_source, indent_level + 1);
+    }
+}
+
 static void process_errors(BaselineTestCase* me) {
     if (error_ctx_empty(my error_ctx)) {
         return;
@@ -206,31 +269,11 @@ static void process_errors(BaselineTestCase* me) {
             for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
                 cstr_append_lit(&item.str, "~");
             }
-            cstr_append(&item.str, "\r\n");
         } else {
-            cstr_append(&item.str, "<NO SPAN>\r\n");
+            cstr_append(&item.str, "<NO SPAN>");
         }
 
-        cstr_append_fmt(
-            &item.str,
-            "!!! error TS%d: %s",
-            error.ref->ts_code,
-            cstr_str(&error.ref->message)
-        );
-
-        c_foreach(related, vec_error, error.ref->related_errors) {
-            unsigned related_line = span_line_index(related.ref->span);
-            unsigned related_col = span_col_index(related.ref->span);
-            cstr_append_fmt(
-                &item.str,
-                "\r\n!!! related TS%d %.*s:%u:%u: %s",
-                related.ref->ts_code,
-                c_SV(basename_of(cstr_sv(&current_source->canonical_path))),
-                related_line + 1,
-                related_col + 1,
-                cstr_str(&related.ref->message)
-            );
-        }
+        format_error_tree(&my formatted_errors, &item.str, error.ref, error.ref, current_source, 0);
 
         vec_line_numbered_str_push(&current_test_file->errors, item);
         current_test_file->error_count++;
@@ -304,6 +347,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     mock_fs_destroy(my fs);
     error_ctx_drop(my error_ctx);
     free(my error_ctx);
+    cstr_drop(&my formatted_errors);
     vec_baseline_test_file_drop(&my files);
 }
 
@@ -415,24 +459,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
         return;
     }
 
-    c_foreach(error, vec_error, my error_ctx->errors) {
-        unsigned line = span_line_index(error.ref->span);
-        unsigned col = span_col_index(error.ref->span);
-        const char* filename = error.ref->span.source ? (
-            error.ref->span.source->display_path_override ?
-                error.ref->span.source->display_path_override :
-                cstr_str(&error.ref->span.source->canonical_path)
-        ) : "(nil)";
-
-        cstr_append_fmt(
-            target,
-            "%s(%u,%u): error TS%d: %s\r\n",
-            filename, line + 1, col + 1,
-            error.ref->ts_code,
-            cstr_str(&error.ref->message)
-        );
-    }
-
+    cstr_append_s(target, my formatted_errors);
     cstr_append_lit(target, "\r\n");
 
     c_foreach(i, vec_baseline_test_file, my files) {

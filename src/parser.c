@@ -3452,7 +3452,7 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
 
     if (!hop_char(&p, ')')) {
         Error* error = expected_token_error(&p, ")");
-        error_related_error(error, open_token, 1007, "The parser expected to find a ')' to match the '(' token here.");
+        error_sub_error(error, open_token, 1007, "The parser expected to find a ')' to match the '(' token here.");
     }
     hop_whitespace(&p);
 

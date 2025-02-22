@@ -49,6 +49,7 @@ typedef struct BaselineTestCase {
     bool use_default_libs;
     Program* program;
     Program* lib_loader;
+    cstr formatted_errors;
     VecBaselineTestFile files;
 } BaselineTestCase;
 

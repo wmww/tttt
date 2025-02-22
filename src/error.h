@@ -12,8 +12,7 @@ typedef enum ErrorPhase {
     ERROR_PHASE_UNKOWN = 0,
     ERROR_PHASE_PARSE,
     ERROR_PHASE_RESOLVE_NAMES,
-    ERROR_PHASE_TYPECHECK,
-    ERROR_PHASE_RELATED, // Only used for sub-errors in another Error's related_errors vec
+    ERROR_PHASE_TYPECHECK
 } ErrorPhase;
 
 typedef struct Error {
@@ -21,16 +20,16 @@ typedef struct Error {
     Span span;
     unsigned ts_code;
     ErrorPhase phase;
-    VecError related_errors;
+    VecError sub_errors;
 } Error;
 
 void error_drop(Error* me);
 Error error_clone(Error me);
 void display_error(Display d, Error const* me);
 /// noop if me is null
-void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message);
+void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message);
 /// noop if me is null
-void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
+void error_sub_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 
 #define i_key_class_names Error, error
 #define i_is_forward

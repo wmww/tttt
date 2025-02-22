@@ -4,7 +4,7 @@
 
 void error_drop(Error* me) {
     cstr_drop(&my message);
-    vec_error_drop(&my related_errors);
+    vec_error_drop(&my sub_errors);
 }
 
 Error error_clone(Error me) {
@@ -16,10 +16,12 @@ void display_error(Display d, Error const* me) {
     unsigned line = span_line_index(my span) + 1;
     cstr prefix = cstr_null;
 
-    if (my phase == ERROR_PHASE_RELATED) {
+    {
         Display prefix_d = d;
         prefix_d.target = &prefix;
-        display_colored(prefix_d, color_implicit, " |  ");
+        for (int i = 0; i < d.indent; i++) {
+            display_colored(prefix_d, color_implicit, " |  ");
+        }
     }
 
     display_s(d, prefix);
@@ -61,7 +63,8 @@ void display_error(Display d, Error const* me) {
         display_color(d, color_normal);
     }
 
-    c_foreach(i, vec_error, my related_errors) {
+    d.indent++;
+    c_foreach(i, vec_error, my sub_errors) {
         display_lit(d, "\n");
         display_error(d, i.ref);
     }
@@ -69,26 +72,25 @@ void display_error(Display d, Error const* me) {
     cstr_drop(&prefix);
 }
 
-void error_related_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
+void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
     if (!me) {
         cstr_drop(&message);
         return;
     }
-    vec_error_push(&my related_errors, (Error){
+    vec_error_push(&my sub_errors, (Error){
         .message = message,
         .span = span,
-        .ts_code = ts_code,
-        .phase = ERROR_PHASE_RELATED,
+        .ts_code = ts_code
     });
 }
 
-void error_related_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) {
+void error_sub_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) {
     cstr message = cstr_null;
     va_list args;
     va_start(args, fmt);
     cstr_vfmt(&message, 0, fmt, args);
     va_end(args);
-    error_related_error_s(me, span, ts_code, message);
+    error_sub_error_s(me, span, ts_code, message);
 }
 
 void error_config_enable_strict(ErrorConfig* me) {

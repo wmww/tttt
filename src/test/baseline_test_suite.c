@@ -152,7 +152,6 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
         Result prev_result = js_object_get(my prev_results.get, name);
         JsObject* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
 
-
 #ifdef DEBUG_ALLOCATOR
         debug_allocation_count = 0;
 #endif
