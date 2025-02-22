@@ -1780,24 +1780,16 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             } else if (call->uses_new) {
                 if (!callable->is_constructor) {
                     if (get_error_config()->no_implicit_any) {
-                        error_ctx_error(
-                            errs,
-                            span,
-                            7009,
-                            "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type."
-                        );
+                        error_ctx_error(errs, span, 7009,
+                            "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
                     }
                 } else if (callable->is_abstract_constructor) {
                     error_ctx_error(errs, span, 2511, "Cannot create an instance of an abstract class.");
                 }
             } else {
                 if (callable->is_constructor) {
-                    error_ctx_error(
-                        errs,
-                        span,
-                        2348,
-                        "Value of type 'typeof Foo' is not callable. Did you mean to include 'new'?"
-                    );
+                    error_ctx_error(errs, span, 2348,
+                        "Value of type 'typeof Foo' is not callable. Did you mean to include 'new'?");
                 }
             }
 
@@ -1824,33 +1816,14 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 }
 
                 if (max_args == INTPTR_MAX) {
-                    error_ctx_error(
-                        errs,
-                        span,
-                        2555,
-                        "Expected at least %ld arguments, but got %ld.",
-                        min_args,
-                        call_arg_count
-                    );
+                    error_ctx_error(errs, span, 2555,
+                        "Expected at least %ld arguments, but got %ld.", min_args, call_arg_count);
                 } else if (min_args == max_args) {
-                    error_ctx_error(
-                        errs,
-                        span,
-                        2554,
-                        "Expected %ld arguments, but got %ld.",
-                        min_args,
-                        call_arg_count
-                    );
+                    error_ctx_error(errs, span, 2554,
+                        "Expected %ld arguments, but got %ld.", min_args, call_arg_count);
                 } else {
-                    error_ctx_error(
-                        errs,
-                        span,
-                        2554,
-                        "Expected %ld-%ld arguments, but got %ld.",
-                        min_args,
-                        max_args,
-                        call_arg_count
-                    );
+                    error_ctx_error(errs, span, 2554,
+                        "Expected %ld-%ld arguments, but got %ld.", min_args, max_args, call_arg_count);
                 }
             }
 
