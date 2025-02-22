@@ -22681,7 +22681,7 @@ const baselines = {
         types: false,
     },
     'overloadsWithConstraints': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -56896,12 +56896,12 @@ const baselines = {
         types: false,
     },
     'propertyAccessOnTypeParameterWithConstraints2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'propertyAccessOnTypeParameterWithConstraints3': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

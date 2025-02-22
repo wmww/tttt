@@ -101,6 +101,23 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         type_typecheck(&i.ref->type, errs);
     }
     Generic const* generic = generic_params_get_generic(me);
+    for (intptr_t i = 0; i < vec_spanned_type_size(&my params); i++) {
+        if (generic && i < vec_generic_item_size(&generic->items)) {
+            SpannedType const* arg = vec_spanned_type_at(&my params, i);
+            GenericItem const* item = vec_generic_item_at(&generic->items, i);
+            if (item->extends_explicit && !type_extends(&arg->type, &item->extends)) {
+                Type abstracted = type_clone(arg->type);
+                type_abstract_literals(&abstracted);
+                cstr msg = cstr_lit("Type '");
+                cstr_append_type_error_msg(&msg, &abstracted);
+                cstr_append_lit(&msg, "' does not satisfy the constraint '");
+                cstr_append_type_error_msg(&msg, &item->extends);
+                cstr_append_lit(&msg, "'.");
+                error_ctx_error_s(errs, vec_spanned_type_at(&my params, i)->span, 2344, msg);
+                type_drop(&abstracted);
+            }
+        }
+    }
     if (type_resolve(expr_get_type(&my expr))->tag == TYPE_ANY) {
     } else if (generic_empty(generic)) {
         error_ctx_error(
