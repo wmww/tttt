@@ -69,6 +69,7 @@ void declaration_clone_in_place(Declaration* me) {
     if (my declared_type.tag) {
         my declared_type = type_lazy(&my merged_declared_type.lazy);
     }
+    my shared_between_scopes = false;
 }
 
 static inline Generic const* generic_or_null(Generic const* generic) {

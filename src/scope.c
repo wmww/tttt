@@ -59,9 +59,12 @@ void scope_pop_from_stack(Scope* me) {
 
 void scope_copy_declarations_from(Scope* me, Scope const* source) {
     c_foreach(i, hmap_str_arc_declaration, source->declarations) {
-        ArcDeclaration declaration = arc_declaration_make(*i.ref->second.get);
-        declaration_clone_in_place(declaration.get);
-        hmap_str_arc_declaration_insert(&my declarations, cstr_clone(i.ref->first), declaration);
+        i.ref->second.get->shared_between_scopes = true;
+        hmap_str_arc_declaration_insert(
+            &my declarations,
+            cstr_clone(i.ref->first),
+            arc_declaration_clone(i.ref->second)
+        );
     }
 }
 
@@ -77,7 +80,17 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
         mergable = declaration_test_mergable(existing->second.get, &props, my errs);
     }
     if (mergable) {
-        *ret = arc_declaration_clone(existing->second);
+        if (existing->second.get->shared_between_scopes) {
+            *ret = arc_declaration_make(*existing->second.get);
+            declaration_clone_in_place(ret->get); // clears shared_between_scopes
+            hmap_str_arc_declaration_insert_or_assign(
+                &my declarations,
+                cstr_clone(existing->first),
+                arc_declaration_clone(*ret)
+            );
+        } else {
+            *ret = arc_declaration_clone(existing->second);
+        }
     } else {
         *ret = arc_declaration_make((Declaration){
             .name = props.name,

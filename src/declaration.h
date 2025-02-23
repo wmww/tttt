@@ -87,6 +87,10 @@ typedef struct Declaration {
     // looked up should be an "any" declaration.
     // TODO: document better
     Scope const* namespace;
+    // Used when copying the same declarations between many programs that should remain isolated (such as loading the
+    // standard library for the tests). Allows declarations to be "copy-on-write". A declaration shared between scopes
+    // should be replaced by a deep copy before being modified.
+    bool shared_between_scopes;
 } Declaration;
 
 void declaration_drop(Declaration* me);
