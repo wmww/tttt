@@ -35,8 +35,6 @@ const properties = new Map();
 const sessions = new Map();
 // A map of session tokens to response objects, only sessions with currently open events requests should be here
 const responses = new Map();
-// A list of runners (generally one for tttt and one for tsc)
-const runners = [];
 
 function getOrThrow(map, key) {
   const ret = map.get(key);
@@ -139,20 +137,6 @@ function surfaceError(message) {
   }, 10000);
 }
 
-function setPropertyToContentsOf(key, filePath, ignoreMissing) {
-  let buffer;
-  try {
-    buffer = fs.readFileSync(filePath).toString();
-  } catch (error) {
-    if (ignoreMissing && error.code == 'ENOENT') {
-      buffer = '';
-    } else {
-      buffer = '[error reading ' + filePath + ': ' + error.code + ']';
-    }
-  }
-  setProperty(key, buffer);
-}
-
 function clearAndInvokeAll(funcs) {
   const local = funcs.slice();
   funcs.length = 0;
@@ -197,21 +181,87 @@ function subprocessThen(args, callback) {
   });
 }
 
-class TscRunner {
+class Runner {
   constructor(name) {
+    // Short name of this runner, used as part of property keys
     this.name = name;
+    // The serial of the currently in-progress run, or null when there is no in-progress run
     this.inProgressSerial = null;
-    this.process = null;
+    // Callbacks to call when the current in-progress run is done, should be empty whene there is no in-progress run
     this.onDone = [];
   }
 
-  startSubprocess(initialSerial) {
-    if (this.process) {
-      surfaceError('Tried to start ' + this.name + ' runner when it was already running');
-      return;
+  runCompleted(results) {
+    if (!this.inProgressSerial) {
+      surfaceError(this.name + ' run completed when no run was supposed to be in-progress');
+    }
+    setProperty('result.' + this.name + '.err', results.err);
+    setProperty('result.' + this.name + '.sym', results.sym);
+    setProperty('result.' + this.name + '.typ', results.typ);
+    setProperty('result.' + this.name + '.serial', this.inProgressSerial);
+    setProperty('result.' + this.name + '.stderr', results.stderr);
+    this.inProgressSerial = null;
+    clearAndInvokeAll(this.onDone);
+  }
+
+  stop() {
+    this.stopProcess();
+    this.inProgressSerial = null;
+    clearAndInvokeAll(this.onDone);
+  }
+
+  kick(serial, onDone) {
+    if (!serial) {
+      surfaceError('Kick called on ' + this.name + ' runner with falsey serial');
+      serial = 1;
     }
 
-    this.inProgressSerial = initialSerial;
+    if (this.inProgressSerial) {
+      // If we're currently running, queue another run to happen as soon as we're done
+      this.onDone.push(() => {
+        this.kick(serial, onDone);
+      });
+    } else {
+      this.onDone.push(onDone);
+      this.inProgressSerial = serial;
+      this.startRun();
+    }
+  }
+
+  stopProcess() {} // Virtual, any pending run should be cancelled, and not call runCompleted()
+  startRun() {} // Virtual, may start a new process or kick off a run on an existing one
+}
+
+class TscRunner extends Runner {
+  constructor(name) {
+    super(name);
+    this.process = null;
+  }
+
+  gatherResults() {
+    const results = {serial: this.inProgressSerial};
+    for (const channel of ['err', 'sym', 'typ']) {
+      const filePath = getOrThrow(tscPathForChannel, channel);
+      const ignoreMissing = (channel == 'err');
+      try {
+        results[channel] = fs.readFileSync(filePath).toString();
+      } catch (error) {
+        if (ignoreMissing && error.code == 'ENOENT') {
+          results[channel] = '';
+        } else {
+          results[channel] = '[error reading ' + filePath + ': ' + error.code + ']';
+        }
+      }
+    }
+    return results;
+  }
+
+  startRun() {
+    if (this.process) {
+      // This should kick off a re-run of the tests
+      this.process.stdin.write('\n');
+      return;
+    }
 
     this.process = child_process.spawn(
       'node',
@@ -228,24 +278,20 @@ class TscRunner {
       }
     );
 
+    let pendingOutput = '';
     this.process.stdout.on('data', chunk => {
-      // Yes, it says [tttt runner] because while the script that generates this is our tsc runner, it's in the tttt
-      // project and here it's distinguishing itself from the rest of the tsc output.
-      if (chunk.toString('utf-8').includes('[tttt runner] Done running tests\n')) {
-        if (!this.inProgressSerial) {
-          surfaceError('tsc claims to be done with a test run when no run was known to be in-flight');
+      pendingOutput += chunk.toString('utf-8');
+      const lines = pendingOutput.split('\n');
+      // Often '' if output ends in a newline, but if we got an incomplete line it's important to save
+      pendingOutput = lines.pop();
+      for (const line of lines) {
+        // Yes, it says [tttt runner] because while the script that generates this is our tsc runner, it's in the tttt
+        // project and here it's distinguishing itself from the rest of the tsc output.
+        if (line.includes('[tttt runner] Done running tests')) {
+          const results = this.gatherResults();
+          this.runCompleted(results);
+          break;
         }
-        const updateResult = channel => {
-          const filePath = getOrThrow(tscPathForChannel, channel);
-          const ignoreMissing = (channel == 'err');
-          setPropertyToContentsOf('result.' + this.name + '.' + channel, filePath, ignoreMissing);
-        }
-        updateResult('err');
-        updateResult('sym');
-        updateResult('typ');
-        setProperty('result.tsc.serial', this.inProgressSerial);
-        this.inProgressSerial = null;
-        clearAndInvokeAll(this.onDone);
       }
     });
 
@@ -257,34 +303,19 @@ class TscRunner {
     });
   }
 
-  stop() {
+  stopProcess() {
     if (this.process) {
       const local = this.process;
       this.process = null;
       local.kill()
     }
   }
-
-  kick(serial, onDone) {
-    if (this.inProgressSerial) {
-      surfaceError('Tried to start a ' + this.name + ' run while it was already running');
-    }
-    this.onDone.push(onDone);
-    if (this.process) {
-      this.inProgressSerial = serial;
-      // This should kick off a re-run of the tests
-      this.process.stdin.write('\n');
-    } else {
-      this.startSubprocess(serial);
-    }
-  }
 }
 
-class TtttRunner {
+class TtttRunner extends Runner {
   constructor(name) {
-    this.name = name;
-    this.inProgressSerial = null;
-    this.onDone = [];
+    super(name);
+    this.shouldBeRunning = false;
   }
 
   parseResults(stdout) {
@@ -300,20 +331,11 @@ class TtttRunner {
     return results;
   }
 
-  sendResults(results, stderrArray) {
-    const stderr = stderrArray.join('\n');
-    setProperty('result.' + this.name + '.err', results.err);
-    setProperty('result.' + this.name + '.sym', results.sym);
-    setProperty('result.' + this.name + '.typ', results.typ);
-    setProperty('result.' + this.name + '.serial', this.inProgressSerial);
-    setProperty('result.' + this.name + '.stderr', stderr);
-    this.inProgressSerial = null;
-    clearAndInvokeAll(this.onDone);
-  }
+  startRun() {
+    this.shouldBeRunning = true;
 
-  startSubprocess() {
     const stderrArray = [];
-    let results = {
+    let failResults = {
       err: '[tttt failed]',
       sym: '[tttt failed]',
       typ: '[tttt failed]',
@@ -327,7 +349,8 @@ class TtttRunner {
             stderrArray.push('C compiler:\n' + stdout);
           }
           stderrArray.push('Compiler exited with code ' + code);
-          this.sendResults(results, stderrArray);
+          failResults.stderr = stderrArray.join('\n');
+          if (this.shouldBeRunning) this.runCompleted(failResults);
           return;
         }
         const runnerArgs = [
@@ -349,30 +372,25 @@ class TtttRunner {
             }
             if (code === 69) {
               stderrArray.push('Valgrind error');
-              this.sendResults(results, stderrArray);
+              failResults.stderr = stderrArray.join('\n');
+              if (this.shouldBeRunning) this.runCompleted(failResults);
               return;
             } else if (code !== 0) {
-              stderrArray.push('tttt runner exited with code ' + code);
-              this.sendResults(results, stderrArray);
+              failResults.stderr = stderrArray.join('\n');
+              if (this.shouldBeRunning) this.runCompleted(failResults);
               return;
             }
-            results = this.parseResults(stdout, results);
-            this.sendResults(results, stderrArray);
+            const results = this.parseResults(stdout);
+            results.stderr = stderrArray.join('\n');
+            if (this.shouldBeRunning) this.runCompleted(results);
           }
         )
       }
     )
   }
 
-  stop() {}
-
-  kick(serial, onDone) {
-    if (this.inProgressSerial) {
-      surfaceError('Tried to start a ' + this.name + ' run while it was already running');
-    }
-    this.onDone.push(onDone);
-    this.inProgressSerial = serial;
-    this.startSubprocess();
+  stopProcess() {
+    this.shouldBeRunning = false;
   }
 }
 
@@ -647,9 +665,11 @@ function handleRequest(request, response) {
 }
 
 function startServer() {
+  const initialTestContents = fs.readFileSync(initialTestPath).toString();
+
   setProperty('errors', []);
   setProperty('running', false);
-  setPropertyToContentsOf('code.text', initialTestPath);
+  setProperty('code.text', initialTestContents);
   setProperty('code.serial', manager.currentSerial);
 
   // Protect from wiping anything important
