@@ -40,6 +40,27 @@ void display_fmt(Display d, const char* fmt, ...) {
     va_end(args);
 }
 
+static inline void display_pointer(Display d, void* ptr) {
+#define BITS_TO_CHAR(shift) (((uintptr_t)ptr >> shift * 6) & 0b01111111) | 0b01000000
+    char c[] = {
+        '(',
+        BITS_TO_CHAR(0),
+        BITS_TO_CHAR(1),
+        BITS_TO_CHAR(2),
+        BITS_TO_CHAR(3),
+        BITS_TO_CHAR(4),
+        BITS_TO_CHAR(5),
+        BITS_TO_CHAR(6),
+        BITS_TO_CHAR(7),
+        BITS_TO_CHAR(8),
+        BITS_TO_CHAR(9),
+        BITS_TO_CHAR(10),
+        ')',
+    };
+#undef BITS_TO_CHAR
+    display_sv(d, csview_from_n(c, sizeof(c)));
+}
+
 static void display_string_literal(Display d, csview sv) {
     display_lit(d, "\"");
     for (intptr_t i = 0; i < sv.size; i++) {
@@ -231,7 +252,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my decl_ref);
+        display_pointer(d, (void*)my decl_ref);
     }
 
     if (!vec_spanned_type_empty(&my generic_params)) {
@@ -259,7 +280,7 @@ static void display_inferred_type(Display d, InferredType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.hash_key) {
-        display_fmt(d, "@%p", (void*)my declaration_ref);
+        display_pointer(d, (void*)my declaration_ref);
     }
 
     if (d.debug) {
@@ -1059,7 +1080,7 @@ void display_statement(Display d, Statement const* me) {
                     display_lit(d, "reference ");
                     break;
             }
-            display_fmt(d, "path=");
+            display_lit(d, "path=");
             display_string_literal(d, cstr_sv(&my source_directive->path));
             if (my source_directive->preserve) {
                 display_lit(d, " preserve=\"true\"");
