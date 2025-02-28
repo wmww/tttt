@@ -23,8 +23,8 @@ add_project_arguments([
 ], language: 'c')
 
 if get_option('buildtype').startswith('debug')
-  add_project_arguments('-DDEBUG_BUILD', language : 'c')
-  add_project_arguments('-DINCLUDE_VALGRIND', language : 'c')
+    add_project_arguments('-DDEBUG_BUILD', language : 'c')
+    add_project_arguments('-DINCLUDE_VALGRIND', language : 'c')
 endif
 
 subdir('thirdparty')

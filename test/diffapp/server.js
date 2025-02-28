@@ -236,17 +236,14 @@ class Runner {
   }
 
   reportResults(results) {
-    if (!this.inProgressSerial) {
-      // This happens when .stop() is called while a run is active, this error may be ignorable
-      surfaceError(this.name + ' run completed when no run was supposed to be in-progress');
-      return;
-    }
     setProperty('result.' + this.name + '.err', results.err);
     setProperty('result.' + this.name + '.sym', results.sym);
     setProperty('result.' + this.name + '.typ', results.typ);
-    setProperty('result.' + this.name + '.serial', this.inProgressSerial);
     setProperty('result.' + this.name + '.stderr', results.stderr);
-    this.inProgressSerial = null;
+    if (this.inProgressSerial) {
+      setProperty('result.' + this.name + '.serial', this.inProgressSerial);
+      this.inProgressSerial = null;
+    }
     clearAndInvokeAll(this.onDone);
   }
 
@@ -368,9 +365,9 @@ class TtttRunner extends Runner {
     this.process = null;
   }
 
-  parseResults(stdout) {
+  parseResults(stdout, stderr) {
     let start = 0;
-    const results = {};
+    const results = { stderr };
     while (start < stdout.length) {
       const channel = stdout.slice(start, start + 3);
       const length = parseInt(stdout.slice(start + 4, start + 16));
@@ -412,14 +409,19 @@ class TtttRunner extends Runner {
     subprocessHandleLines(
       process,
       line => {
-        if (line === 'end') {
-          const results = this.parseResults(stdout.join('\n'));
-          results.stderr = stderr.join('\n');
-          stdout = [];
-          stderr = [];
-          this.reportResults(results);
-        } else {
-          stdout.push(line);
+        switch(line) {
+          case 'end':
+            const results = this.parseResults(
+              stdout.join('\n'),
+              stderr.join('\n')
+            );
+            stdout = [];
+            stderr = [];
+            this.reportResults(results);
+            break;
+
+          case 'mem': this.process.stdin.end(); break;
+          default: stdout.push(line); break;
         }
       },
       line => stderr.push(line),
