@@ -115,13 +115,14 @@ function resetToken(token) {
 
 // If sourceToken is set, it will not be notified (it's the soure of the change, so it already knows about it)
 function setProperty(key, value, sourceToken) {
-  if (properties.get(key) != value) {
-    properties.set(key, value);
-    for (const [token, session] of sessions) {
-      if (token != sourceToken) {
-        session.add(key);
-        queueSendEvents();
-      }
+  if (value === undefined || properties.get(key) === value) {
+    return;
+  }
+  properties.set(key, value);
+  for (const [token, session] of sessions) {
+    if (token != sourceToken) {
+      session.add(key);
+      queueSendEvents();
     }
   }
 }
@@ -151,6 +152,41 @@ function clearAndInvokeAll(funcs) {
   }
 }
 
+function subprocessHandleLines(process, stdoutCb, stderrCb, exitCb) {
+  const decoder = new TextDecoder('utf-8', { fatal: false });
+
+  const setUpStream = (name, stream, callback) => {
+    if (!stream || !callback) {
+      return;
+    }
+    let pending = '';
+    stream.on('data', chunk => {
+      try {
+        pending += decoder.decode(chunk);
+        const lines = pending.split('\n');
+        // Often '' if output ends in a newline, but if we got an incomplete line it's important to save
+        pending = lines.pop();
+        for (const line of lines) {
+          callback(line);
+        }
+      } catch (e) {
+        surfaceError('Error handling ' + process.spawnfile + ' ' + name + ': ' + e);
+      }
+    });
+  }
+
+  setUpStream('stdout', process.stdout, stdoutCb);
+  setUpStream('stderr', process.stderr, stderrCb);
+
+  process.on('close', (code) => {
+    try {
+      exitCb(code);
+    } catch (e) {
+      surfaceError('Error handling ' + process.spawnfile + ' exit code: ' + e);
+    }
+  });
+}
+
 function subprocessThen(args, callback) {
   //console.log('Running ' + args.join(' '));
   const command = args.shift();
@@ -163,37 +199,41 @@ function subprocessThen(args, callback) {
         'pipe',   // stdout
         'pipe',   // stderr
       ]
-    });
-  const stdoutChunks = [];
-  const stderrChunks = [];
-  child.stdout.on('data', chunk => stdoutChunks.push(Buffer.from(chunk)));
-  child.stderr.on('data', chunk => stderrChunks.push(Buffer.from(chunk)));
-  child.on("close", () => {
-    try {
-      callback(
-        child.exitCode,
-        Buffer.concat(stdoutChunks).toString('utf-8'),
-        Buffer.concat(stderrChunks).toString('utf-8'),
-      );
-    } catch (e) {
-      surfaceError('Error handling ' + command + ' output: ' + e);
     }
-  });
+  );
+
+  let stdout = [];
+  let stderr = [];
+  subprocessHandleLines(
+    child,
+    line => stdout.push(line),
+    line => stderr.push(line),
+    exit => callback(stdout.join('\n'), stderr.join('\n'), exit),
+  );
 }
 
 class Runner {
   constructor(name) {
     // Short name of this runner, used as part of property keys
     this.name = name;
+    // Tracks if the subprocess should currently be running (it may not be depending on logic specific to the runner)
+    this.shouldBeRunning = false;
     // The serial of the currently in-progress run, or null when there is no in-progress run
     this.inProgressSerial = null;
     // Callbacks to call when the current in-progress run is done, should be empty whene there is no in-progress run
     this.onDone = [];
   }
 
-  runCompleted(results) {
+  getFailResults(stderr) {
+    const str = '[' + this.name + ' failed]';
+    return { err: str, sym: str, typ: str, stderr: stderr ?? '' };
+  }
+
+  reportResults(results) {
     if (!this.inProgressSerial) {
+      // This happens when .stop() is called while a run is active, this error may be ignorable
       surfaceError(this.name + ' run completed when no run was supposed to be in-progress');
+      return;
     }
     setProperty('result.' + this.name + '.err', results.err);
     setProperty('result.' + this.name + '.sym', results.sym);
@@ -205,16 +245,19 @@ class Runner {
   }
 
   stop() {
-    this.stopProcess();
+    this.shouldBeRunning = false;
     this.inProgressSerial = null;
+    this.stopRequested();
     clearAndInvokeAll(this.onDone);
   }
 
   kick(serial, onDone) {
     if (!serial) {
       surfaceError('Kick called on ' + this.name + ' runner with falsey serial');
-      serial = 1;
+      return;
     }
+
+    this.shouldBeRunning = true;
 
     if (this.inProgressSerial) {
       // If we're currently running, queue another run to happen as soon as we're done
@@ -228,8 +271,8 @@ class Runner {
     }
   }
 
-  stopProcess() {} // Virtual, any pending run should be cancelled, and not call runCompleted()
-  startRun() {} // Virtual, may start a new process or kick off a run on an existing one
+  stopRequested() {} // Virtual
+  startRun() {} // Virtual
 }
 
 class TscRunner extends Runner {
@@ -239,7 +282,7 @@ class TscRunner extends Runner {
   }
 
   gatherResults() {
-    const results = {serial: this.inProgressSerial};
+    const results = {};
     for (const channel of ['err', 'sym', 'typ']) {
       const filePath = getOrThrow(tscPathForChannel, channel);
       const ignoreMissing = (channel == 'err');
@@ -278,36 +321,32 @@ class TscRunner extends Runner {
       }
     );
 
-    let pendingOutput = '';
-    this.process.stdout.on('data', chunk => {
-      pendingOutput += chunk.toString('utf-8');
-      const lines = pendingOutput.split('\n');
-      // Often '' if output ends in a newline, but if we got an incomplete line it's important to save
-      pendingOutput = lines.pop();
-      for (const line of lines) {
+    subprocessHandleLines(
+      this.process,
+      stdoutLine => {
         // Yes, it says [tttt runner] because while the script that generates this is our tsc runner, it's in the tttt
         // project and here it's distinguishing itself from the rest of the tsc output.
-        if (line.includes('[tttt runner] Done running tests')) {
+        if (stdoutLine.includes('[tttt runner] Done running tests')) {
           const results = this.gatherResults();
-          this.runCompleted(results);
-          break;
+          this.reportResults(results);
+        }
+      },
+      null,
+      exit => {
+        this.process = null;
+        if (this.shouldBeRunning) {
+          surfaceError('tsc baseline runner exited with code ' + exit);
+        }
+        if (this.inProgressSerial) {
+          this.reportResults(this.getFailResults());
         }
       }
-    });
-
-    this.process.on('close', (code) => {
-      if (this.process) {
-        this.process = null;
-        surfaceError('tsc baseline runner exited with code ' + code);
-      }
-    });
+    );
   }
 
-  stopProcess() {
+  stopRequested() {
     if (this.process) {
-      const local = this.process;
-      this.process = null;
-      local.kill()
+      this.process.kill()
     }
   }
 }
@@ -315,7 +354,6 @@ class TscRunner extends Runner {
 class TtttRunner extends Runner {
   constructor(name) {
     super(name);
-    this.shouldBeRunning = false;
   }
 
   parseResults(stdout) {
@@ -332,25 +370,16 @@ class TtttRunner extends Runner {
   }
 
   startRun() {
-    this.shouldBeRunning = true;
-
     const stderrArray = [];
-    let failResults = {
-      err: '[tttt failed]',
-      sym: '[tttt failed]',
-      typ: '[tttt failed]',
-    };
-
     subprocessThen(
       ['ninja', '-C', ttttBuildDir, 'diffapp_runner'],
-      (code, stdout, stderr) => {
-        if (code !== 0) {
+      (stdout, stderr, exit) => {
+        if (exit !== 0) {
           if (stdout) {
             stderrArray.push('C compiler:\n' + stdout);
           }
-          stderrArray.push('Compiler exited with code ' + code);
-          failResults.stderr = stderrArray.join('\n');
-          if (this.shouldBeRunning) this.runCompleted(failResults);
+          stderrArray.push('Compiler exited with code ' + exit);
+          this.reportResults(this.getFailResults(stderrArray.join('\n')));
           return;
         }
         const runnerArgs = [
@@ -364,34 +393,28 @@ class TtttRunner extends Runner {
           path.join(ttttBuildDir, 'diffapp_runner'),
           codePath
         ];
-        subprocessThen(
-          runnerArgs,
-          (code, stdout, stderr) => {
-            if (stderr) {
-              stderrArray.push(stderr);
-            }
-            if (code === 69) {
-              stderrArray.push('Valgrind error');
-              failResults.stderr = stderrArray.join('\n');
-              if (this.shouldBeRunning) this.runCompleted(failResults);
-              return;
-            } else if (code !== 0) {
-              failResults.stderr = stderrArray.join('\n');
-              if (this.shouldBeRunning) this.runCompleted(failResults);
-              return;
-            }
-            const results = this.parseResults(stdout);
-            results.stderr = stderrArray.join('\n');
-            if (this.shouldBeRunning) this.runCompleted(results);
+        subprocessThen(runnerArgs, (stdout, stderr, exit) => {
+          if (stderr) {
+            stderrArray.push(stderr);
           }
-        )
+          if (exit === 69) {
+            stderrArray.push('Valgrind error');
+            this.reportResults(this.getFailResults(stderrArray.join('\n')));
+            return;
+          } else if (exit !== 0) {
+            stderrArray.push('tttt exited with code ' + exit);
+            this.reportResults(this.getFailResults(stderrArray.join('\n')));
+            return;
+          }
+          const results = this.parseResults(stdout);
+          results.stderr = stderrArray.join('\n');
+          this.reportResults(results);
+        });
       }
     )
   }
 
-  stopProcess() {
-    this.shouldBeRunning = false;
-  }
+  stopRequested() {}
 }
 
 class RunnerManager {
