@@ -363,6 +363,7 @@ class TtttRunner extends Runner {
   constructor(name) {
     super(name);
     this.process = null;
+    this.useValgrind = false;
   }
 
   parseResults(stdout, stderr) {
@@ -384,18 +385,26 @@ class TtttRunner extends Runner {
       return;
     }
 
-    const runnerArgs = [
-      'valgrind',
-      '--leak-check=full',
-      '--show-leak-kinds=all',
-      '--exit-on-first-error=yes',
-      '--error-exitcode=69',
-      '--num-callers=100',
-      '--quiet',
-      path.join(ttttBuildDir, 'diffapp_runner'),
-      codePath
-    ];
+    const runnerArgs = [];
 
+    if (this.useValgrind) {
+      runnerArgs.push(...[
+        'valgrind',
+        '--leak-check=full',
+        '--show-leak-kinds=all',
+        '--exit-on-first-error=yes',
+        '--error-exitcode=69',
+        '--num-callers=100',
+        '--quiet',
+      ]);
+    }
+
+    runnerArgs.push(...[
+      path.join(ttttBuildDir, 'diffapp_runner'),
+      codePath,
+    ]);
+
+    let hasProblems = false;
     const process = this.process = child_process.spawn(runnerArgs.shift(), runnerArgs, {
       stdio: [
         'pipe', // stdin
@@ -408,33 +417,55 @@ class TtttRunner extends Runner {
     let stderr = [];
     subprocessHandleLines(
       process,
+
       line => {
         switch(line) {
           case 'end':
-            const results = this.parseResults(
-              stdout.join('\n'),
-              stderr.join('\n')
-            );
-            stdout = [];
-            stderr = [];
-            this.reportResults(results);
+            if (process === this.process && hasProblems) {
+              // If we have problems we don't run persistently
+              this.process.stdin.end();
+            } else {
+              const results = this.parseResults(
+                stdout.join('\n'),
+                stderr.join('\n')
+              );
+              stdout = [];
+              stderr = [];
+              this.reportResults(results);
+            }
             break;
 
-          case 'mem': this.process.stdin.end(); break;
+          case 'mem': hasProblems = true; break;
           default: stdout.push(line); break;
         }
       },
+
       line => stderr.push(line),
+
       exit => {
-        if (process === this.process) {
-          if (exit === 69) {
-            stderr.push('Valgrind error');
-            this.reportResults(this.getFailResults(stderr.join('\n')));
-          } else {
-            stderr.push('tttt exited with code ' + exit);
-            this.reportResults(this.getFailResults(stderr.join('\n')));
-          }
-          this.process = null;
+        if (process !== this.process) {
+          return;
+        }
+        this.process = null;
+
+        if (exit !== 0) hasProblems = true;
+
+        if (exit === 69 || exit === 0) {
+          // Valgrind error or no error
+          this.reportResults(this.parseResults(
+            stdout.join('\n'),
+            stderr.join('\n')
+          ));
+        } else {
+          stderr.push('tttt exited with code ' + exit);
+          this.reportResults(this.getFailResults(stderr.join('\n')));
+        }
+
+        if (hasProblems && !this.useValgrind) {
+          this.useValgrind = true;
+          this.startRunnerProcess();
+        } else if (this.useValgrind && !this.hasProblems) {
+          this.useValgrind = false;
         }
       }
     );
