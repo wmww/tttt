@@ -32,6 +32,9 @@ int main(int argc, const char** argv) {
 
     printf("%sLoading libraries...%s\n", color_good, color_normal);
     program_load_stdlib(program, c_sv("default"));
+    program_load_stdlib(program, c_sv("es2015.collection"));
+    program_load_stdlib(program, c_sv("es2015.iterable"));
+    program_load_stdlib(program, c_sv("es2015.generator"));
 
     if (!error_ctx_empty(&errs)) {
         const intptr_t lib_errors = vec_error_size(&errs.errors);
