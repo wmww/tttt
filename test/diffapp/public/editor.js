@@ -47,7 +47,14 @@ class Editor {
     const selectTo = ev => {
       let offset = this.tokenOffsetAtPoint(ev.clientX, ev.clientY);
       if (offset === null) {
-        return;
+        let beginning = false;
+        if (this.viewElem.firstElementChild) {
+          const top = this.viewElem.firstElementChild.getBoundingClientRect().top;
+          const bottom = this.viewElem.lastElementChild.getBoundingClientRect().bottom;
+          const middle = (top + bottom) / 2;
+          beginning = ev.clientY < middle;
+        }
+        offset = beginning ? 0 : this.inputElem.value.length;
       }
       this.selectionFocus = offset;
       if (this.selectionAnchor === null) {
