@@ -103,7 +103,9 @@ int main(int argc, const char** argv) {
         baseline_test_suite_save_results(suite.get, results_path);
     }
 
+#ifdef DEBUG_BUILD
     box_baseline_test_suite_drop(&suite);
+#endif
 
     return 0;
 }
