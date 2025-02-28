@@ -173,7 +173,7 @@ function subprocessHandleLines(process, stdoutCb, stderrCb, exitCb) {
         surfaceError('Error handling ' + process.spawnfile + ' ' + name + ': ' + e);
       }
     });
-  }
+  };
 
   setUpStream('stdout', process.stdout, stdoutCb);
   setUpStream('stderr', process.stderr, stderrCb);
@@ -190,7 +190,7 @@ function subprocessHandleLines(process, stdoutCb, stderrCb, exitCb) {
 function subprocessThen(args, callback) {
   //console.log('Running ' + args.join(' '));
   const command = args.shift();
-  const child = child_process.spawn(
+  const process = child_process.spawn(
     command, args,
     {
       timeout: 30000,
@@ -205,10 +205,16 @@ function subprocessThen(args, callback) {
   let stdout = [];
   let stderr = [];
   subprocessHandleLines(
-    child,
+    process,
     line => stdout.push(line),
     line => stderr.push(line),
-    exit => callback(stdout.join('\n'), stderr.join('\n'), exit),
+    exit => {
+      try {
+        callback(stdout.join('\n'), stderr.join('\n'), exit)
+      } catch (e) {
+        surfaceError('Error handling ' + process.spawnfile + ' result: ' + e);
+      }
+    },
   );
 }
 
@@ -242,6 +248,15 @@ class Runner {
     setProperty('result.' + this.name + '.stderr', results.stderr);
     this.inProgressSerial = null;
     clearAndInvokeAll(this.onDone);
+  }
+
+  reportExit(exit) {
+    if (this.shouldBeRunning) {
+      surfaceError(this.name + ' runner exited with code ' + exit);
+    }
+    if (this.inProgressSerial) {
+      this.reportResults(this.getFailResults());
+    }
   }
 
   stop() {
@@ -334,19 +349,15 @@ class TscRunner extends Runner {
       null,
       exit => {
         this.process = null;
-        if (this.shouldBeRunning) {
-          surfaceError('tsc baseline runner exited with code ' + exit);
-        }
-        if (this.inProgressSerial) {
-          this.reportResults(this.getFailResults());
-        }
+        this.reportExit(exit);
       }
     );
   }
 
   stopRequested() {
     if (this.process) {
-      this.process.kill()
+      this.process.kill();
+      this.process = null;
     }
   }
 }
@@ -354,6 +365,7 @@ class TscRunner extends Runner {
 class TtttRunner extends Runner {
   constructor(name) {
     super(name);
+    this.process = null;
   }
 
   parseResults(stdout) {
@@ -369,52 +381,93 @@ class TtttRunner extends Runner {
     return results;
   }
 
-  startRun() {
-    const stderrArray = [];
-    subprocessThen(
-      ['ninja', '-C', ttttBuildDir, 'diffapp_runner'],
-      (stdout, stderr, exit) => {
-        if (exit !== 0) {
-          if (stdout) {
-            stderrArray.push('C compiler:\n' + stdout);
-          }
-          stderrArray.push('Compiler exited with code ' + exit);
-          this.reportResults(this.getFailResults(stderrArray.join('\n')));
-          return;
-        }
-        const runnerArgs = [
-          'valgrind',
-          '--leak-check=full',
-          '--show-leak-kinds=all',
-          '--exit-on-first-error=yes',
-          '--error-exitcode=69',
-          '--num-callers=100',
-          '--quiet',
-          path.join(ttttBuildDir, 'diffapp_runner'),
-          codePath
-        ];
-        subprocessThen(runnerArgs, (stdout, stderr, exit) => {
-          if (stderr) {
-            stderrArray.push(stderr);
-          }
-          if (exit === 69) {
-            stderrArray.push('Valgrind error');
-            this.reportResults(this.getFailResults(stderrArray.join('\n')));
-            return;
-          } else if (exit !== 0) {
-            stderrArray.push('tttt exited with code ' + exit);
-            this.reportResults(this.getFailResults(stderrArray.join('\n')));
-            return;
-          }
-          const results = this.parseResults(stdout);
-          results.stderr = stderrArray.join('\n');
+  startRunnerProcess() {
+    if (!this.shouldBeRunning) {
+      this.reportExit(0);
+      return;
+    }
+
+    const runnerArgs = [
+      'valgrind',
+      '--leak-check=full',
+      '--show-leak-kinds=all',
+      '--exit-on-first-error=yes',
+      '--error-exitcode=69',
+      '--num-callers=100',
+      '--quiet',
+      path.join(ttttBuildDir, 'diffapp_runner'),
+      codePath
+    ];
+
+    const process = this.process = child_process.spawn(runnerArgs.shift(), runnerArgs, {
+      stdio: [
+        'pipe', // stdin
+        'pipe', // stdout
+        'pipe', // stderr
+      ]
+    });
+
+    let stdout = [];
+    let stderr = [];
+    subprocessHandleLines(
+      process,
+      line => {
+        if (line === 'end') {
+          const results = this.parseResults(stdout.join('\n'));
+          results.stderr = stderr.join('\n');
+          stdout = [];
+          stderr = [];
           this.reportResults(results);
-        });
+        } else {
+          stdout.push(line);
+        }
+      },
+      line => stderr.push(line),
+      exit => {
+        if (process === this.process) {
+          if (exit === 69) {
+            stderr.push('Valgrind error');
+            this.reportResults(this.getFailResults(stderr.join('\n')));
+          } else {
+            stderr.push('tttt exited with code ' + exit);
+            this.reportResults(this.getFailResults(stderr.join('\n')));
+          }
+          this.process = null;
+        }
       }
-    )
+    );
   }
 
-  stopRequested() {}
+  startRun() {
+    if (this.process) {
+      // This should kick off a re-run of the tests
+      this.process.stdin.write('\n');
+      return;
+    }
+
+    let compilerOutput = '';
+    subprocessThen(
+      ['ninja', '-C', ttttBuildDir, 'diffapp_runner'],
+      (compilerStdout, compilerStderr, compilerExit) => {
+        if (compilerExit !== 0) {
+          if (compilerStdout) {
+            compilerOutput += 'C compiler:\n' + compilerStdout;
+          }
+          compilerOutput += 'Compiler exited with code ' + compilerExit;
+          this.reportResults(this.getFailResults(compilerOutput));
+        } else {
+          this.startRunnerProcess();
+        }
+      }
+    );
+  }
+
+  stopRequested() {
+    if (this.process) {
+      this.process.stdin.end();
+      this.process = null;
+    }
+  }
 }
 
 class RunnerManager {
