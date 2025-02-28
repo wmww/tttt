@@ -29,9 +29,46 @@ BaselineTestCache baseline_test_cache_init() {
 }
 
 void baseline_test_cache_drop(BaselineTestCache* me) {
-    program_destroy(my default_libs);
     error_ctx_drop(my errors);
     free(my errors);
+    hmap_str_program_ptr_drop(&my libs);
+}
+
+Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview comma_sep_libs) {
+    auto value = hmap_str_program_ptr_get(&my libs, comma_sep_libs);
+    if (value) {
+        return value->second;
+    }
+    cstr key = cstr_null;
+    while (comma_sep_libs.size) {
+        intptr_t end = csview_find_sv(comma_sep_libs, c_sv(","));
+        csview single_lib = csview_trim_whitespace(csview_slice(comma_sep_libs, 0, end));
+        if (csview_size(single_lib)) {
+            if (cstr_size(&key)) {
+                cstr_append_lit(&key, ",");
+            }
+            cstr_append_sv(&key, single_lib);
+        }
+        if (end == c_NPOS) break;
+        comma_sep_libs = csview_slice(comma_sep_libs, end + 1, INTPTR_MAX);
+    }
+    cstr_lowercase(&key);
+    value = hmap_str_program_ptr_get(&my libs, cstr_sv(&key));
+    if (value) {
+        cstr_drop(&key);
+        return value->second;
+    }
+    Program* program = program_new(my errors, &real_fs_noisy);
+    comma_sep_libs = cstr_sv(&key);
+    while (comma_sep_libs.size) {
+        intptr_t end = csview_find_sv(comma_sep_libs, c_sv(","));
+        program_load_stdlib(program, csview_slice(comma_sep_libs, 0, end));
+        if (end == c_NPOS) break;
+        comma_sep_libs = csview_slice(comma_sep_libs, end + 1, INTPTR_MAX);
+    }
+    program_resolve_names(program);
+    hmap_str_program_ptr_insert(&my libs, key, program);
+    return program;
 }
 
 csview test_name_from_path(csview path) {
@@ -105,8 +142,6 @@ static void load_test_source(BaselineTestCase* me) {
         csview_end_ptr(cstr_sv(&unparsed_contents))
     );
 
-    csview libs_tag_value = {0};
-
     bool has_line = false;
     csview current_filename = basename_of(my source_path);
     c_foreach(i, lines_sv, contents_sv) {
@@ -124,7 +159,7 @@ static void load_test_source(BaselineTestCase* me) {
             } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
                 my error_ctx->config.no_implicit_any = true;
             } else if (tag_equals(tag_key, "lib")) {
-                libs_tag_value = tag_value;
+                my lib_list = cstr_from_sv(tag_value);
             }
         } else {
             cstr_append_sv(&source_contents, i.line);
@@ -135,24 +170,6 @@ static void load_test_source(BaselineTestCase* me) {
                 has_line = true;
             }
         }
-    }
-
-    if (libs_tag_value.size) {
-        if (!my lib_loader) {
-            my lib_loader = program_new(my error_ctx, &real_fs_noisy);
-        }
-        while (libs_tag_value.size) {
-            intptr_t end = csview_find_sv(libs_tag_value, c_sv(","));
-            cstr lib_name = cstr_tolower_sv(csview_trim_whitespace(csview_slice(libs_tag_value, 0, end)));
-            libs_tag_value = end != c_NPOS ?
-                csview_slice(libs_tag_value, end + 1, INTPTR_MAX) :
-                (csview){0};
-            program_load_stdlib(my lib_loader, cstr_sv(&lib_name));
-            cstr_drop(&lib_name);
-        }
-        program_resolve_names(my lib_loader);
-        program_add_globals_from_program(my program, my lib_loader);
-        my use_default_libs = false;
     }
 
     add_virtual_source_file(me, current_filename, source_contents);
@@ -293,21 +310,15 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         .source_path = source_path,
         .error_ctx = errs,
         .fs = fs,
-        .use_default_libs = true,
+        .lib_list = cstr_lit("default"),
         .program = program,
         .noisy = noisy,
     };
 
     load_test_source(&ret);
 
-    if (ret.use_default_libs) {
-        if (!cache->default_libs) {
-            cache->default_libs = program_new(cache->errors, &real_fs_noisy);
-            program_load_stdlib(cache->default_libs, c_sv("default"));
-            program_resolve_names(cache->default_libs);
-        }
-        program_add_globals_from_program(program, cache->default_libs);
-    }
+    Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
+    program_copy_globals_from(program, lib_program);
 
     c_foreach(i, vec_baseline_test_file, ret.files) {
         SourceFile* source = program_load(program, cstr_sv(&i.ref->path));
@@ -343,10 +354,10 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
 
 void baseline_test_case_drop(BaselineTestCase* me) {
     program_destroy(my program);
-    program_destroy(my lib_loader);
     mock_fs_destroy(my fs);
     error_ctx_drop(my error_ctx);
     free(my error_ctx);
+    cstr_drop(&my lib_list);
     cstr_drop(&my formatted_errors);
     vec_baseline_test_file_drop(&my files);
 }

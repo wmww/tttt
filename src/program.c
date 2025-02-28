@@ -250,10 +250,6 @@ void program_destroy(Program* me) {
     }
 }
 
-void program_add_globals_from_program(Program* me, Program const* other) {
-    scope_copy_declarations_from(&my global_scope, &other->global_scope);
-}
-
 static SourceFile* program_load_import_idempotent(Program* me, Span path_span, csview path) {
     ASSERT(span_valid(path_span));
     csview cwd = dirname_of(cstr_sv(&path_span.source->canonical_path));
@@ -403,6 +399,10 @@ SourceFile* program_load_stdlib(Program* me, csview name) {
     my loading_stdlib = false;
     cstr_drop(&path);
     return source;
+}
+
+void program_copy_globals_from(Program* me, Program const* other) {
+    scope_copy_declarations_from(&my global_scope, &other->global_scope);
 }
 
 void program_resolve_names(Program* me) {

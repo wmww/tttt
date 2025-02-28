@@ -2,6 +2,7 @@
 
 #include "error.h"
 #include "source_file.h"
+#include "program.h"
 
 typedef struct Span Span;
 typedef struct Type Type;
@@ -13,13 +14,21 @@ typedef struct LineNumberedStr LineNumberedStr;
 
 wrap_forward_vec(LineNumberedStr, line_numbered_str);
 
+typedef Program* ProgramPtr;
+#define i_key_ssv
+#define i_val_names ProgramPtr, program_ptr
+#define i_no_clone
+#define i_valdrop(program) program_destroy(*program)
+#include "wrap_stc/hmap.h"
+
 typedef struct BaselineTestCache {
     ErrorCtx* errors;
-    Program* default_libs;
+    HmapStrProgramPtr libs;
 } BaselineTestCache;
 
 BaselineTestCache baseline_test_cache_init();
 void baseline_test_cache_drop(BaselineTestCache* me);
+Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview comma_sep_libs);
 
 // Get the name of a test given it's path (just strips the dir and extension). output is only valid as long as input is.
 csview test_name_from_path(csview path);
@@ -46,9 +55,8 @@ typedef struct BaselineTestCase {
     ErrorCtx* error_ctx;
     bool noisy;
     MockFs* fs;
-    bool use_default_libs;
     Program* program;
-    Program* lib_loader;
+    cstr lib_list;
     cstr formatted_errors;
     VecBaselineTestFile files;
 } BaselineTestCase;

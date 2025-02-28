@@ -12,16 +12,16 @@ typedef struct arc_js_object ArcObject;
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
-// Add all declarations from other program to this one. Must be called after resolving names on other and before
-// resolving names on me. me must not outlive other.
-void program_add_globals_from_program(Program* me, Program const* other);
-
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.
 // Can be called multiple times. Returns nullptr if path is not found
 SourceFile* program_load(Program* me, csview path);
 
 // Loads the standard library file based on the name (such as es5 or es2015.collection)
 SourceFile* program_load_stdlib(Program* me, csview name);
+
+// Add all declarations from other program to this one. Must be called after resolving names on other and before
+// resolving names on me. me must not be used after other is destroyed
+void program_copy_globals_from(Program* me, Program const* other);
 
 // Should be called once after loading all files is done. Should always be called before typechecking
 void program_resolve_names(Program* me);
