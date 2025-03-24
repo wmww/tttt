@@ -574,6 +574,15 @@ static Result console_log_impl(Engine* engine, int argc, Value const argv[], voi
     return result_ok_undefined;
 }
 
+static Result math_sqrt_impl(Engine* engine, int argc, Value const argv[], void* data) {
+    ignore engine; ignore data;
+    if (argc > 0) {
+        return result_ok(value_number(sqrt(value_to_number(&argv[0]))));
+    } else {
+        return result_ok(value_number(0));
+    }
+}
+
 static Result string_impl(Engine* engine, int argc, Value const argv[], void* data) {
     ignore engine; ignore data;
     if (argc > 0) {
@@ -601,6 +610,9 @@ void run_in_engine(SourceFile const* source, ArcObject root) {
     }
     js_object_set(root.get, cstr_lit("console"), value_object_init({
         {"log", value_native_func(console_log_impl, nullptr, nullptr)}
+    }));
+    js_object_set(root.get, cstr_lit("Math"), value_object_init({
+        {"sqrt", value_native_func(math_sqrt_impl, nullptr, nullptr)}
     }));
     js_object_set(root.get, cstr_lit("String"), value_native_func(string_impl, nullptr, nullptr));
     js_object_set(root.get, cstr_lit("Number"), value_native_func(number_impl, nullptr, nullptr));
