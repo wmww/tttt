@@ -25,7 +25,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
         declaration_init(&i.ref->typeof_declaration, (DeclProps){
             .name = i.ref->name,
             .full = i.ref->name,
-            .tag = DECLARATION_TYPE,
+            .tag = DECLARATION_ENUM_CASE_TYPE,
             .declared_type = type_lazy(&i.ref->value.lazy_type),
         });
 
@@ -50,7 +50,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
         .name = my name,
         .full = my full_span,
         .exported = exported,
-        .tag = DECLARATION_TYPE,
+        .tag = DECLARATION_ENUM_CASE_TYPE,
         .declared_type = type_lazy(&my interface_type),
         .is_typeof = true,
     });

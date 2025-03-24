@@ -28,9 +28,10 @@ typedef enum DeclarationTag {
     DECLARATION_CLASS,
     DECLARATION_ENUM,
     DECLARATION_ENUM_CASE,
+    DECLARATION_ENUM_CASE_TYPE,
     // Be sure to update DECLARATION_TAG_COUNT when adding to the end
 } DeclarationTag;
-#define DECLARATION_TAG_COUNT (DECLARATION_ENUM_CASE + 1)
+#define DECLARATION_TAG_COUNT (DECLARATION_ENUM_CASE_TYPE + 1)
 
 // See https://www.typescriptlang.org/docs/handbook/declaration-merging.html
 static inline bool declaration_tag_has_value(DeclarationTag tag) {
@@ -55,6 +56,7 @@ static inline bool declaration_tag_has_type(DeclarationTag tag) {
         [DECLARATION_CLASS] = true,
         [DECLARATION_ENUM] = true,
         [DECLARATION_ENUM_CASE] = true,
+        [DECLARATION_ENUM_CASE_TYPE] = true,
     };
     return ret[tag];
 }
