@@ -89,7 +89,15 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
 
     bool has_value = false;
     c_foreach(i, vec_statement, my contents.statements) {
-        statement_add_names(i.ref, &my inner_scope);
+        Scope* inner_scope = &my inner_scope;
+        if (my is_global) {
+            if (my global_scope) {
+                inner_scope = my global_scope;
+            } else {
+                NONFATAL("Global scope not set");
+            }
+        }
+        statement_add_names(i.ref, inner_scope);
         switch (i.ref->tag) {
             case STATEMENT_NOOP:
             case STATEMENT_DECL_TYPE:

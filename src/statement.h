@@ -64,6 +64,7 @@ typedef struct NamespaceDecl {
     bool is_global;
     Block contents;
     Scope inner_scope;
+    Scope* global_scope; // Set only if global
     Type value_type;
     ArcDeclaration declaration;
 } NamespaceDecl;

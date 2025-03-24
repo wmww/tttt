@@ -9537,7 +9537,7 @@ const baselines = {
     },
     'duplicateIdentifierRelatedSpans5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'duplicateIdentifierRelatedSpans6': {
@@ -19452,7 +19452,7 @@ const baselines = {
     },
     'moduleAugmentationGlobal4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAugmentationGlobal5': {
@@ -19462,12 +19462,12 @@ const baselines = {
     },
     'moduleAugmentationGlobal6': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: true,
     },
     'moduleAugmentationGlobal6_1': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: true,
     },
     'moduleAugmentationGlobal7': {

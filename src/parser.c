@@ -4036,7 +4036,13 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             },
         };
     } else if (parse_global_block(&p, &ret->decl.namespace)) {
-        // TODO
+        if (decl_props.declared) {
+            c_foreach(i, vec_statement, ret->decl.namespace.contents.statements) {
+                if (statement_tag_is_decl(i.ref->tag)) {
+                    i.ref->decl.props.declared = true;
+                }
+            }
+        }
         ret->decl.namespace.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,

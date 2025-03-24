@@ -298,7 +298,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 
         case STATEMENT_DECL_NAMESPACE:
             if (statement->decl.namespace.is_global) {
-                scope_copy_declarations_from(&my global_scope, &statement->decl.namespace.inner_scope);
+                statement->decl.namespace.global_scope = &my global_scope;
             }
             // Fallthrough
 
