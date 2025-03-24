@@ -22,7 +22,7 @@ void identifier_expr_drop(IdentifierExpr* me) {
 
 void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs) {
     if (my keyword) {
-        my decl_ref = scope_stack_get_keyword(names, my keyword);
+        my decl_ref = scope_stack_get_keyword(names, my keyword, false);
         return;
     }
     my decl_ref = scope_stack_get_value(names, my name.sv);

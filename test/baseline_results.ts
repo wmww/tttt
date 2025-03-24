@@ -29696,7 +29696,7 @@ const baselines = {
         types: true,
     },
     'unusedParametersThis': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

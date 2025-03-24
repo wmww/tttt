@@ -13,4 +13,4 @@ void scope_stack_pop_scope(ScopeStack* me, Scope const* scope); // Generally cal
 Declaration const* scope_stack_get_value(ScopeStack const* me, csview name);
 Declaration const* scope_stack_get_type(ScopeStack const* me, csview name);
 Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name);
-Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifier keyword);
+Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifier keyword, bool type_else_value);

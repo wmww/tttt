@@ -78,7 +78,7 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
             my decl_ref = get_declaration_from_namespace(namespace, prev_name, my name, false, errs);
         }
     } else if (my keyword) {
-        my decl_ref = scope_stack_get_keyword(names, my keyword);
+        my decl_ref = scope_stack_get_keyword(names, my keyword, true);
     } else {
         my decl_ref = scope_stack_get_type(names, my name.sv);
         if (!my decl_ref) {

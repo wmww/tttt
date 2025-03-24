@@ -82,7 +82,7 @@ Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name) 
     return nullptr;
 }
 
-Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifier keyword) {
+Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifier keyword, bool type_else_value) {
     c_foreach_rev(i, vec_scope_cptr, my stack) {
         Declaration const* decl = nullptr;
         switch (keyword) {
@@ -90,7 +90,13 @@ Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifi
             case KEYWORD_IDENTIFIER_SUPER: decl = (*i.ref)->super_declaration; break;
             case KEYWORD_IDENTIFIER_NONE: break;
         }
-        if (decl) return decl;
+        if (decl) {
+            if (type_else_value && decl->type_tag) {
+                return decl;
+            } else if (!type_else_value && decl->value_tag) {
+                return decl;
+            }
+        }
     }
     return nullptr;
 }
