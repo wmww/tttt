@@ -12,6 +12,7 @@
 #include "display.h"
 #include "error.h"
 #include "math_helpers.h"
+#include "type_pair_cache.h"
 
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
@@ -27,16 +28,10 @@ const Type type_bigint = { .tag = TYPE_BIGINT };
 const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
 const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
-#define i_key_ssv
-#define i_val bool
-#define i_type hmap_str_bool
-#include "wrap_stc/hmap.h"
-typedef hmap_str_bool HmapStrBool;
-
 typedef struct TypeCtx {
     unsigned recursion_level;
     HsetDeclarationCPtr currently_resolving;
-    HmapStrBool extends_results;
+    TypePairCache extends_results;
 } TypeCtx;
 
 static bool type_extends_internal(
@@ -50,7 +45,7 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
 
 static void type_ctx_drop(TypeCtx* me) {
     hset_declaration_cptr_drop(&my currently_resolving);
-    hmap_str_bool_drop(&my extends_results);
+    type_pair_cache_drop(&my extends_results);
 }
 
 Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
@@ -626,7 +621,7 @@ Type const* type_resolve_until_identifier(Type const* me) {
     return ret;
 }
 
-static bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
+static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
     if (sub == super) {
         return true;
     }
@@ -903,29 +898,18 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
         return true;
     }
 
-    static const bool default_result = true;
-    cstr key = {0};
-    csview key_sv;
     bool cache_result = cache_type_in_extends_check(sub) || cache_type_in_extends_check(super);
+    TypePairCacheEntry cache_entry;
 
     if (cache_result) {
-        display_type(hash_key_display(&key), sub);
-        intptr_t sub_end = cstr_size(&key);
-        cstr_append_lit(&key, " # ");
-        intptr_t super_start = cstr_size(&key);
-        display_type(hash_key_display(&key), super);
-        if (csview_equals_sv(
-            csview_slice(cstr_sv(&key), 0, sub_end),
-            csview_slice(cstr_sv(&key), super_start, cstr_size(&key))
-        )) {
-            cstr_drop(&key);
+        cache_entry = type_pair_cache_entry_make(&ctx->extends_results, sub, super, true);
+        if (cache_entry.serialized_types_eq) {
+            type_pair_cache_entry_drop(&cache_entry);
             return true;
         }
-        key_sv = cstr_sv(&key); // Hacky but should work as long as we don't use it after key is dropped
-        // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
-        auto result = hmap_str_bool_insert(&ctx->extends_results, key, default_result);
-        if (!result.inserted) {
-            return result.ref->second;
+        if (!type_pair_cache_entry_insert(&cache_entry)) {
+            type_pair_cache_entry_drop(&cache_entry);
+            return cache_entry.result;
         }
     }
 
@@ -934,11 +918,8 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     ctx->recursion_level--;
 
     if (cache_result) {
-        if (ret != default_result) {
-            auto result = hmap_str_bool_get_mut(&ctx->extends_results, key_sv);
-            ASSERT(result);
-            result->second = ret;
-        }
+        type_pair_cache_entry_update(&cache_entry, ret);
+        type_pair_cache_entry_drop(&cache_entry);
     }
 
     return ret;
