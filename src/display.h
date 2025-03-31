@@ -35,17 +35,11 @@ typedef Declaration const* DeclarationCPtr;
 #define i_key_names DeclarationCPtr, declaration_cptr
 #include "wrap_stc/hset.h"
 
-typedef struct HashKeyTarget {
-    cstr target;
-    HsetDeclarationCPtr declarations;
-} HashKeyTarget;
-
 typedef struct Display {
     union {
         // The first element of all other union members is a cstr, so it is safe and well-defined to access target in
         // all cases.
         cstr* target;
-        HashKeyTarget* hash_key_target;
     };
     unsigned char indent;
     bool color : 1;
@@ -60,9 +54,9 @@ static inline Display error_display(cstr* target) {
     };
 }
 
-static inline Display hash_key_display(HashKeyTarget* target) {
+static inline Display hash_key_display(cstr* target) {
     return (Display) {
-        .hash_key_target = target,
+        .target = target,
         .hash_key = true,
     };
 }

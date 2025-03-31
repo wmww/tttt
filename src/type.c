@@ -904,27 +904,26 @@ static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* sup
     }
 
     static const bool default_result = true;
-    HashKeyTarget key = {0};
+    cstr key = {0};
     csview key_sv;
     bool cache_result = cache_type_in_extends_check(sub) || cache_type_in_extends_check(super);
 
     if (cache_result) {
         display_type(hash_key_display(&key), sub);
-        intptr_t sub_end = cstr_size(&key.target);
-        cstr_append_lit(&key.target, " # ");
-        intptr_t super_start = cstr_size(&key.target);
+        intptr_t sub_end = cstr_size(&key);
+        cstr_append_lit(&key, " # ");
+        intptr_t super_start = cstr_size(&key);
         display_type(hash_key_display(&key), super);
-        hset_declaration_cptr_drop(&key.declarations);
         if (csview_equals_sv(
-            csview_slice(cstr_sv(&key.target), 0, sub_end),
-            csview_slice(cstr_sv(&key.target), super_start, cstr_size(&key.target))
+            csview_slice(cstr_sv(&key), 0, sub_end),
+            csview_slice(cstr_sv(&key), super_start, cstr_size(&key))
         )) {
-            cstr_drop(&key.target);
+            cstr_drop(&key);
             return true;
         }
-        key_sv = cstr_sv(&key.target); // Hacky but should work as long as we don't use it after key is dropped
+        key_sv = cstr_sv(&key); // Hacky but should work as long as we don't use it after key is dropped
         // Owndership of the key is passed in here (which means key_sv is then invalid if result.inserted is false)
-        auto result = hmap_str_bool_insert(&ctx->extends_results, key.target, default_result);
+        auto result = hmap_str_bool_insert(&ctx->extends_results, key, default_result);
         if (!result.inserted) {
             return result.ref->second;
         }
