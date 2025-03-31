@@ -2506,7 +2506,7 @@ const baselines = {
         types: true,
     },
     'blockScopedNamespaceDifferentFile': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52261,7 +52261,7 @@ const baselines = {
         types: false,
     },
     'library-reference-scoped-packages': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

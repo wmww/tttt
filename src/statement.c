@@ -40,8 +40,30 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
         } else if (declared &&
             i.ref->value.tag != EXPR_IMPLICIT_ANY
         ) {
-            error_ctx_error(errs, i.ref->value.outer_span, 1039,
-                "Initializers are not allowed in ambient contexts.");
+            if (i.ref->binding.has_explicit_type || my keyword != VAR_INIT_CONST) {
+                error_ctx_error(errs, i.ref->value.outer_span, 1039,
+                    "Initializers are not allowed in ambient contexts.");
+            } else {
+                switch (i.ref->value.tag) {
+                    case EXPR_LITERAL:
+                        switch (i.ref->value.literal.tag) {
+                            case VALUE_NUMBER:
+                            case VALUE_STRING:
+                            case VALUE_BOOLEAN:
+                                break;
+
+                            default: goto bad_initializer;
+                        }
+                        break;
+
+                    case EXPR_IDENTIFIER:
+                        break;
+
+                    default: bad_initializer:
+                        error_ctx_error(errs, i.ref->value.outer_span, 1254,
+                            "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
+                }
+            }
         }
         initialized_binding_typecheck(i.ref, errs);
     }
