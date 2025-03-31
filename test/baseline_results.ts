@@ -7156,8 +7156,8 @@ const baselines = {
         types: false,
     },
     'declarationEmitAliasExportStar': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitAliasFromIndirectFile': {
@@ -19621,8 +19621,8 @@ const baselines = {
         types: false,
     },
     'moduleDeclarationExportStarShadowingGlobalIsNameable': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'moduleDetectionIsolatedModulesCjsFileScope': {
@@ -24591,7 +24591,7 @@ const baselines = {
         types: false,
     },
     'reexportWrittenCorrectlyInDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44372,7 +44372,7 @@ const baselines = {
     },
     'exportNamespace11': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportNamespace12': {

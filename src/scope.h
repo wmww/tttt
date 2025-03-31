@@ -87,6 +87,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 void scope_process_imports(Scope* me);
 Type scope_evaluate_value_interface(Scope const* me);
+Declaration const* scope_get_declaration(Scope const* me, Span name);
 
 typedef Scope const* ScopeCPtr;
 #define i_key_names ScopeCPtr, scope_cptr

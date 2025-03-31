@@ -206,7 +206,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
 }
 
-static Declaration const* find_declaration_in_exports(Scope* me, csview name, bool search_exports) {
+static Declaration const* find_declaration_in_exports(Scope const* me, csview name, bool search_exports) {
     Scope const* search_scope = search_exports ? my export_scope : me;
     ASSERT(search_scope);
 
@@ -215,7 +215,7 @@ static Declaration const* find_declaration_in_exports(Scope* me, csview name, bo
         return decl_result->second.get;
     }
 
-    auto import_result = hmap_str_port_item_ptr_get_mut(&my ports, name);
+    auto import_result = hmap_str_port_item_ptr_get(&my ports, name);
     if (import_result && port_item_is_export(import_result->second)) {
         Scope* next = source_file_get_scope_if_module(import_result->second->source_file);
         ASSERT(next);
@@ -318,6 +318,12 @@ static void process_port(Scope* me, PortItem* item) {
     }
 }
 
+void scope_process_imports(Scope* me) {
+    c_foreach(i, hmap_str_port_item_ptr, my ports) {
+        process_port(me, i.ref->second);
+    }
+}
+
 Type scope_evaluate_value_interface(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
     c_foreach(i, hmap_str_arc_declaration, my declarations) {
@@ -343,8 +349,6 @@ Type scope_evaluate_value_interface(Scope const* me) {
     });
 }
 
-void scope_process_imports(Scope* me) {
-    c_foreach(i, hmap_str_port_item_ptr, my ports) {
-        process_port(me, i.ref->second);
-    }
+Declaration const* scope_get_declaration(Scope const* me, Span name) {
+    return find_declaration_in_exports(me, name.sv, false);
 }

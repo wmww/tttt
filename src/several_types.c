@@ -31,14 +31,14 @@ static Declaration const* get_declaration_from_namespace(
     ErrorCtx* errs
 ) {
     if (!namespace) return nullptr;
-    auto result = hmap_str_arc_declaration_get(&namespace->declarations, item_name.sv);
-    if (!result || (namespace_only && !result->second.get->namespace)) {
+    Declaration const* decl = scope_get_declaration(namespace, item_name);
+    if (!decl || (namespace_only && !decl->namespace)) {
         error_ctx_error(errs, item_name, 2694,
             "Namespace '%.*s' has no exported member '%.*s'.",
             c_SPAN(namespace_name), c_SPAN(item_name));
-        result = nullptr;
+        decl = nullptr;
     }
-    return result ? result->second.get : nullptr;
+    return decl;
 }
 
 static cstr identifier_type_make_name_str(IdentifierType const* me) {
