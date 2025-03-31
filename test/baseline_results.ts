@@ -686,7 +686,7 @@ const baselines = {
         types: false,
     },
     'ambientErrors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2506,7 +2506,7 @@ const baselines = {
         types: true,
     },
     'blockScopedNamespaceDifferentFile': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -12441,7 +12441,7 @@ const baselines = {
         types: false,
     },
     'externSemantics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52261,7 +52261,7 @@ const baselines = {
         types: false,
     },
     'library-reference-scoped-packages': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

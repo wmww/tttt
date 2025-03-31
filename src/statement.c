@@ -35,12 +35,13 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
             i.ref->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
-            error_ctx_error(
-                errs,
-                i.ref->binding.content_span,
-                1155,
-                "'const' declarations must be initialized."
-            );
+            error_ctx_error(errs, i.ref->binding.content_span, 1155,
+                "'const' declarations must be initialized.");
+        } else if (declared &&
+            i.ref->value.tag != EXPR_IMPLICIT_ANY
+        ) {
+            error_ctx_error(errs, i.ref->value.outer_span, 1039,
+                "Initializers are not allowed in ambient contexts.");
         }
         initialized_binding_typecheck(i.ref, errs);
     }
