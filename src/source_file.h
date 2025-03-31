@@ -10,6 +10,7 @@ typedef struct SourceFile {
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
     bool is_module;
+    bool is_declaration;
     Scope module_scope; // Only used if is_module is true
     VecScopeCPtr global_scopes; // Toplevel global augmenttion scopes
     cstr decl_override; // Used for the tests

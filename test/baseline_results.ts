@@ -8271,7 +8271,7 @@ const baselines = {
         types: false,
     },
     'declarationsIndirectGeneratedAliasReference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

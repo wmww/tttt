@@ -3968,7 +3968,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 DECL_EXPORTED_YES :
                 DECL_EXPORTED_NO
             ),
-        .declared = modifiers.includes[MODIFIER_DECLARE],
+        .declared = modifiers.includes[MODIFIER_DECLARE] || p.shared->source->is_declaration,
     };
 
     modifier_list_validate_during_parse(

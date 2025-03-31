@@ -356,6 +356,10 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         source_file_make(cstr_clone(canonical_path), contents)
     );
 
+    if (csview_ends_with(path, ".d.ts")) {
+        source_file->is_declaration = true;
+    }
+
     if (my loading_stdlib) {
         source_file->is_stdlib = true;
         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
