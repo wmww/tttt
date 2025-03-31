@@ -41,6 +41,7 @@ static bool type_extends_internal(
     VecTypeRefinement* refinements
 );
 static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool through_identifier);
+static bool type_overlaps_internal(TypeCtx* ctx, Type const* a, Type const* b);
 static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type const* index, Type* ret);
 
 static void type_ctx_drop(TypeCtx* me) {
@@ -932,12 +933,12 @@ bool type_extends(Type const* sub, Type const* super) {
     return ret;
 }
 
-static bool composite_type_overlaps(Type const* composite, Type const* other) {
+static bool composite_type_overlaps(TypeCtx* ctx, Type const* composite, Type const* other) {
     ASSERT(composite->tag == TYPE_UNION || composite->tag == TYPE_INTERSECTION);
     bool overlaps_in_all = true;
     bool overlaps_in_any = false;
     c_foreach(i, vec_type, composite->composite) {
-        if (type_overlaps(other, i.ref)) {
+        if (type_overlaps_internal(ctx, other, i.ref)) {
             overlaps_in_any = true;
         } else {
             overlaps_in_all = false;
@@ -946,25 +947,25 @@ static bool composite_type_overlaps(Type const* composite, Type const* other) {
     return composite->tag == TYPE_UNION ? overlaps_in_any : overlaps_in_all;
 }
 
-static bool array_type_overlaps(Type const* a, Type const* b) {
+static bool array_type_overlaps(TypeCtx* ctx, Type const* a, Type const* b) {
     Type a_item = index_type_evaluate_type(a, &type_number);
     Type b_item = index_type_evaluate_type(b, &type_number);
-    bool overlaps = type_overlaps(&a_item, &b_item);
+    bool overlaps = type_overlaps_internal(ctx, &a_item, &b_item);
     type_drop(&a_item);
     type_drop(&b_item);
     return overlaps;
 }
 
-bool type_overlaps(Type const* a, Type const* b) {
-    a = type_resolve(a);
-    b = type_resolve(b);
+static inline bool type_overlaps_more_internal(TypeCtx* ctx, Type const* a, Type const* b) {
+    a = type_resolve_internal(ctx, a, true);
+    b = type_resolve_internal(ctx, b, true);
 
     if (a == b) {
         return a->tag != TYPE_NEVER;
     }
 
     if (b->tag == TYPE_UNION || b->tag == TYPE_INTERSECTION) {
-        return composite_type_overlaps(b, a);
+        return composite_type_overlaps(ctx, b, a);
     }
 
     switch (a->tag) {
@@ -996,20 +997,20 @@ bool type_overlaps(Type const* a, Type const* b) {
                     for (intptr_t i = 0; i < shared_min_args; i++) {
                         Type arg_a = callable_type_get_arg_type(a->callable, i);
                         Type arg_b = callable_type_get_arg_type(a->callable, i);
-                        bool overlaps = type_overlaps(&arg_a, &arg_b);
+                        bool overlaps = type_overlaps_internal(ctx, &arg_a, &arg_b);
                         type_drop(&arg_a);
                         type_drop(&arg_b);
                         if (!overlaps) {
                             return false;
                         }
                     }
-                    return type_overlaps(&a->callable->ret, &b->callable->ret);
+                    return type_overlaps_internal(ctx, &a->callable->ret, &b->callable->ret);
                 }
 
                 case TYPE_INTERFACE:
                     c_foreach(i, vec_interface_member, b->interface.members) {
                         if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                            if (type_overlaps(a, &i.ref->type)) {
+                            if (type_overlaps_internal(ctx, a, &i.ref->type)) {
                                 return true;
                             }
                         }
@@ -1042,7 +1043,7 @@ bool type_overlaps(Type const* a, Type const* b) {
                             // No need to drop index
                             Type elem_a = index_type_evaluate_type(a, &index);
                             Type elem_b = index_type_evaluate_type(b, &index);
-                            bool overlaps = type_overlaps(&elem_a, &elem_b);
+                            bool overlaps = type_overlaps_internal(ctx, &elem_a, &elem_b);
                             type_drop(&elem_a);
                             type_drop(&elem_b);
                             if (!overlaps) {
@@ -1051,7 +1052,7 @@ bool type_overlaps(Type const* a, Type const* b) {
                         }
                         return true;
                     } else {
-                        return array_type_overlaps(a, b);
+                        return array_type_overlaps(ctx, a, b);
                     }
 
                 case TYPE_INTERFACE:
@@ -1062,7 +1063,7 @@ bool type_overlaps(Type const* a, Type const* b) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            return composite_type_overlaps(a, b);
+            return composite_type_overlaps(ctx, a, b);
 
         case TYPE_IDENTIFIER:
         case TYPE_INFERRED:
@@ -1075,6 +1076,46 @@ bool type_overlaps(Type const* a, Type const* b) {
             UNREACHABLE; // Should have been resolved
     }
     UNREACHABLE;
+}
+
+static bool type_overlaps_internal(TypeCtx* ctx, Type const* a, Type const* b) {
+    if (ctx->recursion_level > 400) {
+        NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
+        return true;
+    }
+
+    bool cache_result = cache_type_in_extends_check(a) || cache_type_in_extends_check(b);
+    TypePairCacheEntry cache_entry;
+
+    if (cache_result) {
+        cache_entry = type_pair_cache_entry_make(&ctx->extends_results, a, b, false);
+        if (cache_entry.serialized_types_eq) {
+            type_pair_cache_entry_drop(&cache_entry);
+            return true;
+        }
+        if (!type_pair_cache_entry_insert(&cache_entry)) {
+            type_pair_cache_entry_drop(&cache_entry);
+            return cache_entry.result;
+        }
+    }
+
+    ctx->recursion_level++;
+    bool ret = type_overlaps_more_internal(ctx, a, b);
+    ctx->recursion_level--;
+
+    if (cache_result) {
+        type_pair_cache_entry_update(&cache_entry, ret);
+        type_pair_cache_entry_drop(&cache_entry);
+    }
+
+    return ret;
+}
+
+bool type_overlaps(Type const* a, Type const* b) {
+    TypeCtx ctx = {0};
+    bool ret = type_overlaps_internal(&ctx, a, b);
+    type_ctx_drop(&ctx);
+    return ret;
 }
 
 bool type_extends_array(Type const* sub) {
