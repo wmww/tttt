@@ -584,10 +584,6 @@ Type const* type_resolve_one_layer(Type const* me) {
 }
 
 static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool through_identifier) {
-    if (!through_identifier && my tag == TYPE_IDENTIFIER) {
-        return me;
-    }
-
     Declaration const* to_remove = nullptr;
     if (my tag == TYPE_IDENTIFIER) {
         if (through_identifier) {
