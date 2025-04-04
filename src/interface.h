@@ -12,6 +12,7 @@ wrap_forward_vec(Type, type);
 
 typedef struct Interface {
     VecInterfaceMember members;
+    bool parsed : 1;
 } Interface;
 
 void interface_drop(Interface* me);

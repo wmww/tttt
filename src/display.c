@@ -74,6 +74,22 @@ static void display_string_literal(Display d, csview sv) {
     display_lit(d, "\"");
 }
 
+static inline Display display_set_parsed(Display d, bool parsed) {
+    if (parsed) {
+        if (!d.nested) {
+            d.nested = true;
+            d.parsed = false;
+        } else if (!d.parsed) {
+            d.indent = 0;
+            d.parsed = true;
+        }
+    } else {
+        d.nested = false;
+        d.parsed = false;
+    }
+    return d;
+}
+
 void display_value(Display d, Value const* me) {
     display_color(d, color_value);
 
@@ -291,6 +307,7 @@ static void display_inferred_type(Display d, InferredType* me) {
 }
 
 static void display_callable(Display d, CallableType* me, bool is_interface_member_function) {
+    d = display_set_parsed(d, true);
     if (my is_abstract_constructor) {
         display_lit(d, "abstract ");
     }
@@ -398,6 +415,7 @@ void display_interface_member(Display d, InterfaceMember const* me) {
 }
 
 static void display_interface(Display d, Interface const* me) {
+    d = display_set_parsed(d, my parsed);
     if (!d.debug &&
         vec_interface_member_size(&my members) == 1 &&
         my members.data->key.tag == INTERFACE_KEY_CALLABLE
@@ -427,6 +445,7 @@ static void display_interface(Display d, Interface const* me) {
     d.indent++;
     c_foreach(i, vec_interface_member, my members) {
         if (i.ref->key.tag != INTERFACE_KEY_NAME) {
+            d = display_set_parsed(d, false);
             display_newline(d);
             display_interface_member(d, i.ref);
             display_lit(d, ";");
@@ -469,12 +488,9 @@ static void display_ternary_type(Display d, TernaryType* me) {
     display_type(d, &my maybe_sub);
     display_lit(d, " extends ");
     display_type(d, &my maybe_super);
-    d.indent++;
-    display_newline(d);
-    display_lit(d, "? ");
+    display_lit(d, " ? ");
     display_type(d, &my if_true);
-    display_newline(d);
-    display_lit(d, ": ");
+    display_lit(d, " : ");
     display_type(d, &my if_false);
 }
 
@@ -573,6 +589,8 @@ void display_type(Display d, Type const* me) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
+            d = display_set_parsed(d, false);
+
             if (d.debug) {
                 display_colored(d, color_implicit, "(");
             }

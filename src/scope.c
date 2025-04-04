@@ -345,7 +345,7 @@ Type scope_evaluate_value_interface(Scope const* me) {
         }
     }
     return type_interface((Interface){
-        members
+        .members = members
     });
 }
 

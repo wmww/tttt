@@ -1883,7 +1883,7 @@ const baselines = {
     'asyncFunctionReturnExpressionErrorSpans': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionReturnType.2': {
         errors: false,
@@ -7183,7 +7183,7 @@ const baselines = {
     'declarationEmitArrowFunctionNoRenaming': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitBindingPatternWithReservedWord': {
         errors: false,
@@ -8533,7 +8533,7 @@ const baselines = {
     'deeplyNestedAssignabilityIssue': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyNestedCheck': {
         errors: false,
@@ -8938,7 +8938,7 @@ const baselines = {
     'destructuringPropertyAssignmentNameIsNotAssignmentTarget': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringTempOccursAfterPrologue': {
         errors: false,
@@ -14398,7 +14398,7 @@ const baselines = {
     'generics2NoError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generics3': {
         errors: true,
@@ -14683,7 +14683,7 @@ const baselines = {
     'illegalGenericWrapping1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'illegalModifiersOnClassElements': {
         errors: false,
@@ -16038,7 +16038,7 @@ const baselines = {
     'infinitelyGenerativeInheritance1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inheritFromGenericTypeParameter': {
         errors: false,
@@ -16618,7 +16618,7 @@ const baselines = {
     'interfaceImplementation7': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceImplementation8': {
         errors: false,
@@ -16673,7 +16673,7 @@ const baselines = {
     'interfacePropertiesWithSameName1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfacePropertiesWithSameName2': {
         errors: false,
@@ -20238,7 +20238,7 @@ const baselines = {
     'multiLineErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multiLinePropertyAccessAndArrowFunctionIndent1': {
         errors: false,
@@ -28428,7 +28428,7 @@ const baselines = {
     'typeParametersInStaticMethods': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'typeParametersInStaticProperties': {
         errors: false,
@@ -45158,7 +45158,7 @@ const baselines = {
     'derivedInterfaceIncompatibleWithBaseIndexer': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'interfaceExtendingOptionalChain': {
         errors: false,
@@ -57238,7 +57238,7 @@ const baselines = {
     'callSignatureAssignabilityInInheritance6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructSignatureAssignabilityInInheritance': {
         errors: false,
@@ -57268,7 +57268,7 @@ const baselines = {
     'constructSignatureAssignabilityInInheritance6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'covariantCallbacks': {
         errors: false,
@@ -57648,7 +57648,7 @@ const baselines = {
     'subtypingWithConstructSignatures6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypingWithConstructSignaturesWithOptionalParameters': {
         errors: false,
