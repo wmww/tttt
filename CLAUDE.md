@@ -4,8 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build/test Commands
 - `./run.sh file.ts` - Debug build with Valgrind
-- `./test.sh -f testName -d` - Run specific test with diff
-- `./fasttest.sh` - Run tests with optimizations, no Valgrind
+- `./test.sh -f testName -d` - Run specific test name from tsc with diff
+- `./fasttest.sh --summary` - Run all tests with optimizations
 - `./filetest.sh path/to/file.ts -d` - Test arbitrary file with diff
 
 ## Code Style Guidelines
