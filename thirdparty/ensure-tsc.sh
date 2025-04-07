@@ -4,7 +4,7 @@ set -euo pipefail
 # Make sure we're in the same directory as this script
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
-TSC_VERSION=v5.4.2
+TSC_VERSION=v5.8.2
 
 EOL="\x1b[0m\n"
 BLUE="\x1b[34m"
