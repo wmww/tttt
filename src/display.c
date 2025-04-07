@@ -40,6 +40,18 @@ void display_fmt(Display d, const char* fmt, ...) {
     va_end(args);
 }
 
+#define display_set_underline(active) \
+    if (d.underline) { \
+        cstr_resize( \
+            &d.target_underline->underline, \
+            cstr_size(&d.target_underline->target), \
+            d.target_underline->chars[d.underline_active] \
+        ); \
+        d.underline_active = active; \
+    }
+
+#define display_finish_underline() display_set_underline(false)
+
 static inline void display_pointer(Display d, void* ptr) {
 #define BITS_TO_CHAR(shift) (((uintptr_t)ptr >> shift * 6) & 0b01111111) | 0b01000000
     char c[] = {
@@ -495,6 +507,8 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
+    display_set_underline(!my parsed);
+
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
         char c[] = {'(', my tag + 'A', ':'};
@@ -643,6 +657,8 @@ void display_type(Display d, Type const* me) {
     if (d.hash_key) {
         display_lit(d, ")");
     }
+
+    display_finish_underline();
 }
 
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {

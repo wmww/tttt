@@ -35,11 +35,18 @@ typedef Declaration const* DeclarationCPtr;
 #define i_key_names DeclarationCPtr, declaration_cptr
 #include "wrap_stc/hset.h"
 
+typedef struct DisplayUnderlineTarget {
+    cstr target;
+    cstr underline;
+    char chars[2];
+} DisplayUnderlineTarget;
+
 typedef struct Display {
     union {
         // The first element of all other union members is a cstr, so it is safe and well-defined to access target in
         // all cases.
         cstr* target;
+        DisplayUnderlineTarget* target_underline;
     };
     unsigned char indent;
     bool color : 1;
@@ -47,6 +54,8 @@ typedef struct Display {
     bool brief : 1;
     bool parsed : 1;
     bool nested : 1;
+    bool underline : 1;
+    bool underline_active : 1;
     bool hash_key : 1;
 } Display;
 
@@ -77,6 +86,13 @@ static inline Display debug_brief_display(cstr* target) {
         .color = true,
         .debug = true,
         .brief = true,
+    };
+}
+
+static inline Display underline_display(DisplayUnderlineTarget* target) {
+    return (Display) {
+        .target_underline = target,
+        .underline = true,
     };
 }
 
