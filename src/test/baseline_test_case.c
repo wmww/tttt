@@ -684,14 +684,23 @@ void baseline_test_case_add_type_recursive(
     outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
 
     intptr_t line = span_line_index(outer_span);
-    cstr str = cstr_lit(">");
-    append_span_contents_without_newlines(&str, outer_span);
-    cstr_append(&str, " : ");
-    cstr_append_type_error_msg(&str, type);
+    DisplayUnderlineTarget target = {
+        .target = cstr_lit(">"),
+        .underline = cstr_lit(">"),
+        .chars = {' ', '^'},
+    };
+    append_span_contents_without_newlines(&target.target, outer_span);
+    cstr_resize(&target.underline, cstr_size(&target.target), ' ');
+    cstr_append_lit(&target.target, " : ");
+    cstr_append_lit(&target.underline, " : ");
+    display_type(underline_display(&target), type);
+    cstr_append_lit(&target.target, "\r\n");
+    cstr_append_s(&target.target, target.underline);
+    cstr_drop(&target.underline);
     BaselineTestFile* test_file = find_file(me, outer_span.source);
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
-        .str = str,
+        .str = target.target,
     });
     if (!base_case) {
         outer_span.sv.buf++;

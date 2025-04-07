@@ -54,6 +54,7 @@ typedef struct Type {
         TYPE_LAZY,
         TYPE_REF,
     } tag;
+    bool parsed : 1;
     union {
         struct {
             bool self_referential_error;
