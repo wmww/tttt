@@ -356,7 +356,9 @@ static cstr get_git_hash_of_repo(csview repo_path) {
         cstr_drop(&err_str);
         return out_str;
     } else {
-        PANIC("getting git hash failed: %s", cstr_str(&err_str));
+        cstr_drop(&out_str);
+        cstr_drop(&err_str);
+        return cstr_null;
     }
 }
 
