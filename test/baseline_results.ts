@@ -1,4 +1,4 @@
-const tsCommit = "42bb138173e3b3869b6a6f68d277c7172387a4cf"
+const tsCommit = "beb69e4cdd61b1a0fd9ae21ae58bd4bd409d7217"
 const baselines = {
     '2dArrays': {
         errors: true,
