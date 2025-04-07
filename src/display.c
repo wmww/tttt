@@ -507,7 +507,7 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
-    display_set_underline(!my parsed);
+    display_set_underline(true);
 
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
