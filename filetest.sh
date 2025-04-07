@@ -31,4 +31,4 @@ mv "$TEST_DIR/tests/baselines/local" "$TEST_DIR/tests/baselines/reference"
 ./test.sh --dir "$TEST_DIR/tests" --results-path "$TEST_DIR/baseline_results.ts" "$@"
 
 # Clean up
-#rm -rf "$TEST_DIR"
+rm -rf "$TEST_DIR"
