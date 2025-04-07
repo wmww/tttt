@@ -21,3 +21,14 @@ else
         exit 1
     fi
 fi
+
+# Build the TypeScript compiler and test infra if needed
+if test ! -e tsc/built/local/run.js; then
+    (
+        printf "\x1b[1;33mInstalling Hereby with npm...\x1b[0m\n"
+        cd tsc
+        npm install hereby
+        printf "\x1b[1;33mBuilding compiler and tests...\x1b[0m\n"
+        node ./node_modules/.bin/hereby tests
+    )
+fi

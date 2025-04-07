@@ -12,17 +12,6 @@ fi
 # We need a copy of the TypeScript repo to run tests
 thirdparty/ensure-tsc.sh
 
-# Build the TypeScript compiler and test infra if needed
-if test ! -e thirdparty/tsc/built/local/run.js; then
-    (
-        printf "\x1b[1;33mInstalling Hereby with npm...\x1b[0m\n"
-        cd thirdparty/tsc
-        npm install hereby
-        printf "\x1b[1;33mBuilding compiler and tests...\x1b[0m\n"
-        node ./node_modules/.bin/hereby tests
-    )
-fi
-
 if test $# -gt 0; then
     # If we're given an argument
     if test "$1" == "-h" -o "$1" == "--help"; then
