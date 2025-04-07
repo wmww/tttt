@@ -125,7 +125,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
     );
 }
 
-void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_syms, bool show_typs) {
+void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show_errs, bool show_syms, bool show_typs) {
     intptr_t test_count = vec_baseline_test_result_size(&my results);
     int passed = 0, failed = 0, new_passed = 0, new_failed = 0;
     cstr display = cstr_null;
@@ -133,7 +133,8 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
     VecBaselineTestResultCPtr newly_passed = vec_baseline_test_result_c_ptr_init();
     VecBaselineTestResultCPtr memory_issues = vec_baseline_test_result_c_ptr_init();
 
-    printf("%sRunning tests...%s\n\n", color_status, color_normal);
+    if (!summary_only) printf("%sRunning tests...%s\n\n", color_status, color_normal);
+
     c_foreach(i, vec_baseline_test_result, my results) {
         intptr_t index = i.ref - my results.data;
         csview name = test_name_from_path(cstr_sv(&i.ref->source_path));
@@ -141,14 +142,17 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
             continue;
         }
 
-        cstr_clear(&display);
-        cstr_append_fmt(&display, "%ld%%", index * 100 / test_count);
-        printf("        %s%5s %s  %.*s ", color_run_percent, cstr_str(&display), color_normal, c_SV(name));
-        fflush(stdout);
+        if (!summary_only) {
+            cstr_clear(&display);
+            cstr_append_fmt(&display, "%ld%%", index * 100 / test_count);
+            printf("        %s%5s %s  %.*s ", color_run_percent, cstr_str(&display), color_normal, c_SV(name));
+            fflush(stdout);
 
-        if (show_errs || show_syms || show_typs) {
-            printf("- Testing %s\n", cstr_str(&i.ref->source_path));
+            if (show_errs || show_syms || show_typs) {
+                printf("- Testing %s\n", cstr_str(&i.ref->source_path));
+            }
         }
+
         Result prev_result = js_object_get(my prev_results.get, name);
         JsObject* prev_obj = prev_result.value.tag == VALUE_OBJECT ? prev_result.value.object.get : nullptr;
 
@@ -192,9 +196,11 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_sy
             vec_baseline_test_result_c_ptr_push(&newly_failed, i.ref);
         }
 
-        cstr_clear(&display);
-        append_test_result_to_cstr(&display, i.ref, true);
-        printf("\r%s\n", cstr_str(&display));
+        if (!summary_only) {
+            cstr_clear(&display);
+            append_test_result_to_cstr(&display, i.ref, true);
+            printf("\r%s\n", cstr_str(&display));
+        }
     }
 
     printf(
@@ -365,7 +371,8 @@ static cstr get_git_hash_of_repo(csview repo_path) {
 BoxBaselineTestSuite load_baseline_test_suite(
     csview tests_dir,
     const char* filter_re,
-    csview results_path
+    csview results_path,
+    bool summary_only
 ) {
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
@@ -375,16 +382,16 @@ BoxBaselineTestSuite load_baseline_test_suite(
     });
     ASSERT(!ret.get->filter.error);
 
-    printf("%sLoading saved results...%s\n", color_status, color_normal);
+    if (!summary_only) printf("%sLoading saved results...%s\n", color_status, color_normal);
     load_saved_results(ret.get, results_path);
 
-    printf("%sCollecting tests...%s\n", color_status, color_normal);
+    if (!summary_only) printf("%sCollecting tests...%s\n", color_status, color_normal);
     ret.get->typescript_commit = get_git_hash_of_repo(tests_dir);
     load_subdir(ret.get, c_sv("conformance"));
     load_subdir(ret.get, c_sv("compiler"));
     show_collected_test_counts(ret.get);
     printf("\n");
-    printf("%sSorting tests...%s\n", color_status, color_normal);
+    if (!summary_only) printf("%sSorting tests...%s\n", color_status, color_normal);
     vec_baseline_test_result_quicksort(&ret.get->results);
     return ret;
 }

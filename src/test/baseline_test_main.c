@@ -10,6 +10,7 @@ csview results_path = default_results_path;
 bool show_errs = false;
 bool show_syms = false;
 bool show_typs = false;
+bool summary_only = false;
 bool save_results = false;
 
 static void show_help(FILE* target) {
@@ -17,6 +18,7 @@ static void show_help(FILE* target) {
   -h, --help                show this help message\n\n\
   --dir [PATH]              path to TypeScript tests directory\n\
                             (default = %.*s)\n\n\
+  --summary                 only show tests who's results changed\n\n\
   -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n\
   -s, --save                save test results to results path\n\n\
   --results-path [PATH]     path to file where test results are loaded/saved\n\
@@ -51,6 +53,8 @@ static bool parse_args(int argc, const char** argv) {
                 show_help(stderr);
                 return false;
             }
+        } else if (streq(argv[i], "--summary")) {
+            summary_only = true;
         } else if (streq(argv[i], "-d") || streq(argv[i], "--diffs")) {
             show_errs = true;
             show_syms = true;
@@ -96,8 +100,8 @@ int main(int argc, const char** argv) {
         return 1;
     }
 
-    BoxBaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter, results_path);
-    baseline_test_suite_run(suite.get, show_errs, show_syms, show_typs);
+    BoxBaselineTestSuite suite = load_baseline_test_suite(tests_dir, test_filter, results_path, summary_only);
+    baseline_test_suite_run(suite.get, summary_only, show_errs, show_syms, show_typs);
 
     if (save_results) {
         baseline_test_suite_save_results(suite.get, results_path);

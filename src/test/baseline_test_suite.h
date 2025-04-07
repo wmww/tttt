@@ -24,7 +24,7 @@ typedef struct BaselineTestSuite {
 } BaselineTestSuite;
 
 void baseline_test_suite_drop(BaselineTestSuite* me);
-void baseline_test_suite_run(BaselineTestSuite* me, bool show_errs, bool show_syms, bool show_typs);
+void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show_errs, bool show_syms, bool show_typs);
 void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path);
 
 #define i_key_class_names BaselineTestSuite, baseline_test_suite
@@ -35,5 +35,6 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
 BoxBaselineTestSuite load_baseline_test_suite(
     csview tests_dir,
     const char* filter_re,
-    csview results_path
+    csview results_path,
+    bool summary_only
 );
