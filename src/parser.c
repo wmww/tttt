@@ -1102,6 +1102,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         return parse_fail(&p);
     }
 
+    ret->parsed = true;
+
     if (parse_type_right_side(&p, min_precedence, ret)) {
         if (ret->tag == TYPE_ARRAY && span_valid(readonly_span)) {
             ret->array.readonly = true;
