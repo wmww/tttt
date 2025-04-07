@@ -46,11 +46,7 @@ let triggerTestRerun; // Set by code we inject into the evaled code
     'triggerTestRerun = () => { runTests(runners); }; function startTestEnvironment() {'
   );
 
-  // This is required for TS v5.5.4
-  // testRunnerJsContent = assertOneReplacement(runJsPath, testRunnerJsContent, 'importTests();', '');
-
-  // This can be gotten rid of when we bump to TS v5.5.4
-  __filename = "Harness.js";
+  testRunnerJsContent = assertOneReplacement(runJsPath, testRunnerJsContent, 'importTests();', '');
 
   process.chdir(tmpDir);
 }
