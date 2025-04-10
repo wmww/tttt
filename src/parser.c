@@ -1222,7 +1222,6 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
     *ret = (Interface) {
         .members = members,
-        .parsed = true,
     };
     return parse_success(&p);
 }

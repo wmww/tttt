@@ -52,8 +52,6 @@ typedef struct Display {
     bool color : 1;
     bool debug : 1;
     bool brief : 1;
-    bool parsed : 1;
-    bool nested : 1;
     bool underline : 1;
     bool underline_active : 1;
     bool hash_key : 1;
@@ -111,8 +109,6 @@ static inline void display_repeated(Display d, csview sv, intptr_t n) {
 static inline void display_newline(Display d) {
     if (d.debug) {
         display_lit(d, "\n");
-        display_repeated(d, indent_string, d.indent);
-    } else if (d.parsed && !d.hash_key) {
         display_repeated(d, indent_string, d.indent);
     } else {
         display_lit(d, " ");
