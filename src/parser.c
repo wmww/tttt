@@ -1023,6 +1023,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {
         *ret = type_void;
+        ret->parsed = true;
     } else if (hop_start_if_ends_on_word_break(&p, "boolean")) {
         *ret = type_boolean;
     } else if (hop_start_if_ends_on_word_break(&p, "number")) {
@@ -1101,8 +1102,6 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else {
         return parse_fail(&p);
     }
-
-    ret->parsed = true;
 
     if (parse_type_right_side(&p, min_precedence, ret)) {
         if (ret->tag == TYPE_ARRAY && span_valid(readonly_span)) {
@@ -1558,6 +1557,7 @@ static bool parse_function_args(
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
+            ret->ret.parsed = true;
             hop_whitespace(&p);
             if (p.whitespace != WHITESPACE_NEWLINE && ret->ret.tag == TYPE_IDENTIFIER) {
                 if (hop_start_if_ends_on_word_break(&p, "is")) {
