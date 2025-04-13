@@ -71,10 +71,11 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me);
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me);
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me);
 
-typedef struct BaselineSym {
+typedef struct Annotation {
     VecSpan declarations;   // The places this symbol was declared. Empty spans are ignored. If empty or all nulls falls
                             // back to `span` unless allow_declaration_empty is set
-    bool allow_declaration_empty; // if this is true and `declarations` is empty or all null no declarations are added
+    bool allow_declaration_empty; // if this is false and `declarations` is empty or all null the span is used as a
+                            // declaration
     VecSpan namespaces;     // Includes the interface/class name if applicable. Empty spans are ignored, `span`/
                             // `name` is added to the end
     Span span;              // Used for placing this symbol in the output
@@ -82,10 +83,11 @@ typedef struct BaselineSym {
     Span name;              // The specific identifier or value, defaults to the contents of `span` if not set
     bool name_is_value;     // If to use namespace['property'] notation
     Type const* type;       // You can also add a type with the same span
-} BaselineSym;
+} Annotation;
 
 // These are used by traversial to assemble the test case data while the test is being run. After the test has completed
 // (and run_baseline_test_case() has returned) these should no longer be called.
-void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data);
-void baseline_test_case_add_type(BaselineTestCase* me, BaselineSym data);
+void baseline_test_case_add_symbol(BaselineTestCase* me, Annotation data);
+void baseline_test_case_add_type(BaselineTestCase* me, Annotation data);
+void baseline_test_case_add_both(BaselineTestCase* me, Annotation data);
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration);

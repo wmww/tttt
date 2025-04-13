@@ -597,7 +597,7 @@ static void append_decl(cstr* target, Span span) {
     );
 }
 
-void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
+void baseline_test_case_add_symbol(BaselineTestCase* me, Annotation data) {
     unsigned line_for_placement = span_line_index(data.span);
 
     cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SPAN(data.span));
@@ -644,10 +644,6 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     });
     vec_span_drop(&data.declarations);
     vec_span_drop(&data.namespaces);
-
-    if (data.type) {
-        baseline_test_case_add_type(me, data);
-    }
 }
 
 static void append_span_contents_without_newlines(cstr* target, Span span) {
@@ -677,7 +673,7 @@ static inline Type const* type_resolve_refs(Type const* type) {
     }
 }
 
-void baseline_test_case_add_type(BaselineTestCase* me, BaselineSym data) {
+void baseline_test_case_add_type(BaselineTestCase* me, Annotation data) {
     ASSERT(data.type);
 
     if (span_valid(data.inner_span)) {
@@ -731,6 +727,13 @@ void baseline_test_case_add_type(BaselineTestCase* me, BaselineSym data) {
     }
 }
 
+void baseline_test_case_add_both(BaselineTestCase* me, Annotation data) {
+    baseline_test_case_add_symbol(me, data);
+    if (data.type) {
+        baseline_test_case_add_type(me, data);
+    }
+}
+
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
     if (!declaration) {
         NONFATAL("baseline_test_case_add_declaration() called with null declaration");
@@ -743,7 +746,7 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declara
     } else if (declaration->type_tag) {
         type = &declaration->declared_type;
     }
-    baseline_test_case_add_symbol(me, (BaselineSym){
+    baseline_test_case_add_both(me, (Annotation){
         .declarations = vec_span_clone(declaration->declarations),
         .span = span,
         .name = declaration->name,

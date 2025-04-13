@@ -20,7 +20,7 @@ static inline VecSpan declaration_get_spans(Declaration const* me) {
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
     c_foreach(i, vec_generic_item, my items) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name });
+        baseline_test_case_add_symbol(ctx, (Annotation){ .span = i.ref->name });
         type_compile_test_info(&i.ref->extends, ctx);
         if (i.ref->fallback_explicit) {
             type_compile_test_info(&i.ref->fallback, ctx);
@@ -31,7 +31,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
 void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
-            baseline_test_case_add_type(ctx, (BaselineSym){
+            baseline_test_case_add_type(ctx, (Annotation){
                 .span = my content_span,
                 .type = &type_undefined,
             });
@@ -75,7 +75,7 @@ void initialized_binding_compile_test_info(
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_both(ctx, (Annotation){
                 .declarations = vec_span_clone(my declarations),
                 .namespaces = vec_span_single(scope),
                 .span = my key.span,
@@ -85,7 +85,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_INDEX:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_both(ctx, (Annotation){
                 .span = my key.index.name,
                 .type = &my key.index.type,
             });
@@ -93,7 +93,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_EXPR:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_both(ctx, (Annotation){
                 .declarations = vec_span_single(my key.span),
                 .namespaces = vec_span_single(scope),
                 .span = my key.span,
@@ -105,7 +105,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             break;
 
         case INTERFACE_KEY_MAPPED:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.mapped.type_name });
+            baseline_test_case_add_symbol(ctx, (Annotation){ .span = my key.mapped.type_name });
             type_compile_test_info(&my key.mapped.in_type, ctx);
             type_compile_test_info(&my key.mapped.as_type, ctx);
             break;
@@ -136,7 +136,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
         case TYPE_ANY:
             if (span_valid(my any.unkown_symbol_span)) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                baseline_test_case_add_symbol(ctx, (Annotation){
                     .allow_declaration_empty = true,
                     .name = sv_make_span(c_sv("unknown")),
                     .span = my any.unkown_symbol_span,
@@ -157,7 +157,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
                     *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
                     nullptr;
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                baseline_test_case_add_both(ctx, (Annotation){
                     .declarations = declaration_get_spans(decl),
                     .allow_declaration_empty = true,
                     .namespaces = vec_span_clone(so_far),
@@ -167,7 +167,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 vec_span_push(&so_far, *i.ref);
             }
             vec_span_drop(&so_far);
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_symbol(ctx, (Annotation){
                 .namespaces = vec_span_clone(my identifier->namespaces),
                 .declarations = declaration_get_spans(my identifier->decl_ref),
                 .allow_declaration_empty = true,
@@ -179,7 +179,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_INFERRED:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_symbol(ctx, (Annotation){
                 .declarations = declaration_get_spans(my inferred->declaration_ref),
                 .allow_declaration_empty = true,
                 .span = my inferred->name,
@@ -275,18 +275,18 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         Declaration const* declaration = i.ref->declaration.get;
         if (!declaration) continue;
         if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
-            if (i.ref->source_decl) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(i.ref->source_decl->declarations),
-                    .span = i.ref->source_name,
-                });
-            }
-            baseline_test_case_add_type(ctx, (BaselineSym){
+            Annotation data = {
                 .span = i.ref->source_name,
                 .type = &declaration->value_type,
-            });
+            };
+            if (i.ref->source_decl) {
+                data.declarations = vec_span_clone(i.ref->source_decl->declarations);
+                baseline_test_case_add_both(ctx, data);
+            } else {
+                baseline_test_case_add_type(ctx, data);
+            }
         }
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
+        baseline_test_case_add_both(ctx, (Annotation){
             .declarations = vec_span_clone(declaration->declarations),
             .span = i.ref->decl_name,
             .type = &declaration->value_type,
@@ -305,7 +305,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     Type t = type_identifier(c_new(IdentifierType, {
         .name = my name,
     }));
-    baseline_test_case_add_symbol(ctx, (BaselineSym){
+    baseline_test_case_add_both(ctx, (Annotation){
         .declarations = vec_span_single(my full_span),
         .span = my name,
         .type = &t,
@@ -315,7 +315,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         //baseline_test_case_add_declaration(ctx, i.ref->name, i.ref->declaration.get);
         Span span = i.ref->name;
         Declaration const* declaration = i.ref->declaration.get;
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
+        baseline_test_case_add_both(ctx, (Annotation){
             .namespaces = vec_span_single(my name),
             .declarations = vec_span_clone(declaration->declarations),
             .span = span,
@@ -336,7 +336,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 
         case CLASS_ITEM_METHOD:
             Type t = class_item_get_type(me);
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_both(ctx, (Annotation){
                 .declarations = vec_span_single(my span),
                 .namespaces = vec_span_single(class_name),
                 .span = my method.name_span,
@@ -349,7 +349,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 
         case CLASS_ITEM_FIELD: {
             Type t = class_item_get_type(me);
-            baseline_test_case_add_symbol(ctx, (BaselineSym){
+            baseline_test_case_add_both(ctx, (Annotation){
                 .declarations = vec_span_single(my span),
                 .namespaces = vec_span_single(class_name),
                 .span = my field.name_span,
@@ -378,7 +378,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
 
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
+        baseline_test_case_add_both(ctx, (Annotation){
             .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
             .type = is_expr ? &my declaration.get->value_type : &my instance_identifier_type,
@@ -395,7 +395,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             if (my extends.tag != EXPR_GENERIC_PARAMS) {
                 // Extremely hacky but whatever. No idea why tsc does this.
                 *(bool*)(&resolved->identifier->decl_ref->is_typeof) = false;
-                baseline_test_case_add_type(ctx, (BaselineSym){
+                baseline_test_case_add_type(ctx, (Annotation){
                     .span = my extends.outer_span,
                     .inner_span = my extends.inner_span,
                     .type = resolved,
@@ -452,7 +452,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         }
         resolved = &to_drop;
     }
-    baseline_test_case_add_symbol(ctx, (BaselineSym){
+    baseline_test_case_add_both(ctx, (Annotation){
         .declarations = declaration_get_spans(my declaration.get),
         .span = my name,
         .type = resolved,
@@ -464,7 +464,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
+        baseline_test_case_add_symbol(ctx, (Annotation){
             .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
         });
@@ -492,7 +492,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             }));
             type = &owned;
         }
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
+        baseline_test_case_add_both(ctx, (Annotation){
             .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
             .type = type,
@@ -505,7 +505,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (my decl_ref && span_valid(my decl_ref->name)) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
+        baseline_test_case_add_symbol(ctx, (Annotation){
             .declarations = declaration_get_spans(my decl_ref),
             .span = my name,
             .name = my decl_ref->name,
@@ -518,7 +518,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_IMPLICIT_ANY:
         case EXPR_LITERAL:
             if (my literal.tag == VALUE_UNDEFINED && csview_equals(my inner_span.sv, "undefined")) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                baseline_test_case_add_symbol(ctx, (Annotation){
                     .allow_declaration_empty = true,
                     .span = my inner_span,
                 });
@@ -560,7 +560,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             vec_span_push(&namespaces, i.ref->origin_interface->name);
                         }
                         if (my property->form == PROPERTY_EXPR_DOT) {
-                            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            baseline_test_case_add_symbol(ctx, (Annotation){
                                 .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
                                 .namespaces = vec_span_clone(namespaces),
@@ -572,7 +572,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
                         if (my property->prop.tag == EXPR_LITERAL) {
-                            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            baseline_test_case_add_symbol(ctx, (Annotation){
                                 .declarations = vec_span_clone(i.ref->declarations),
                                 .allow_declaration_empty = true,
                                 .namespaces = vec_span_clone(namespaces),
@@ -598,7 +598,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (my property->form == PROPERTY_EXPR_BRACKET) {
                 expr_compile_test_info(&my property->prop, ctx);
             } else {
-                baseline_test_case_add_type(ctx, (BaselineSym){
+                baseline_test_case_add_type(ctx, (Annotation){
                      .span = my property->prop.outer_span,
                      .type = expr_get_type(me),
                 });
@@ -646,7 +646,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (!i.ref->is_spread) {
                     Type t = type_clone(*expr_get_type(&i.ref->value));
                     type_abstract_literals(&t);
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    baseline_test_case_add_both(ctx, (Annotation){
                         .span = i.ref->name_span,
                         .type = &t,
                     });
@@ -697,7 +697,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     }
 
     if (type) {
-        baseline_test_case_add_type(ctx, (BaselineSym) {
+        baseline_test_case_add_type(ctx, (Annotation) {
             .span = my outer_span,
             .inner_span = my inner_span,
             .type = type,
