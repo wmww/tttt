@@ -693,7 +693,7 @@ void baseline_test_case_add_type_recursive(
     cstr_resize(&target.underline, cstr_size(&target.target), ' ');
     cstr_append_lit(&target.target, " : ");
     cstr_append_lit(&target.underline, " : ");
-    display_type(underline_display(&target), type);
+    display_type_use_given_toplevel_underline(underline_display(&target), type);
     bool display_underline = true;
     if (!my underline_any && error_ctx_empty(my error_ctx) && cstr_ends_with(&target.target, ": any")) {
         display_underline = false;
