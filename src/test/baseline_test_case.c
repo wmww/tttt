@@ -721,9 +721,12 @@ void baseline_test_case_add_type(BaselineTestCase* me, Annotation data) {
         .str = target.target,
     });
     if (span_valid(data.inner_span)) {
+        bool const prev_underline_any = my underline_any;
+        my underline_any = false;
         data.span.sv.buf++;
         data.span.sv.size -= 2;
         baseline_test_case_add_type(me, data);
+        my underline_any = prev_underline_any;
     }
 }
 

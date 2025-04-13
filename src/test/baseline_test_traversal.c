@@ -41,18 +41,25 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             baseline_test_case_add_declaration(ctx, my content_span, my declaration.get);
             break;
 
-        case BINDING_ARRAY:
+        case BINDING_ARRAY: {
+            bool const prev_underline_any = ctx->underline_any;
+            ctx->underline_any = true;
             c_foreach(i, vec_binding, my array) {
                 binding_content_compile_test_info(i.ref, ctx);
             }
-            break;
+            ctx->underline_any = prev_underline_any;
+        }   break;
 
-        case BINDING_OBJECT:
+        case BINDING_OBJECT: {
+            bool const prev_underline_any = ctx->underline_any;
+            ctx->underline_any = true;
             c_foreach(i, vec_object_binding_item, my object) {
                 binding_content_compile_test_info(&i.ref->target, ctx);
             }
-            break;
+            ctx->underline_any = prev_underline_any;
+        }   break;
     }
+
 }
 
 void binding_compile_test_info(Binding const* me, BaselineTestCase* ctx) {

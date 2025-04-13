@@ -74,13 +74,13 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me);
 typedef struct Annotation {
     VecSpan declarations;   // The places this symbol was declared. Empty spans are ignored. If empty or all nulls falls
                             // back to `span` unless allow_declaration_empty is set
-    bool allow_declaration_empty; // if this is false and `declarations` is empty or all null the span is used as a
-                            // declaration
     VecSpan namespaces;     // Includes the interface/class name if applicable. Empty spans are ignored, `span`/
                             // `name` is added to the end
     Span span;              // Used for placing this symbol in the output
     Span inner_span;        // Used when multiple layers of AST nodes need to be simulated
     Span name;              // The specific identifier or value, defaults to the contents of `span` if not set
+    bool allow_declaration_empty; // if this is false and `declarations` is empty or all null the span is used as a
+                            // declaration
     bool name_is_value;     // If to use namespace['property'] notation
     Type const* type;       // You can also add a type with the same span
 } Annotation;
