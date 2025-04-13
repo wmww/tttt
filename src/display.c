@@ -40,7 +40,7 @@ void display_fmt(Display d, const char* fmt, ...) {
     va_end(args);
 }
 
-#define display_set_underline(active) \
+#define display_change_underline(active) \
     if (d.underline) { \
         cstr_resize( \
             &d.target_underline->underline, \
@@ -50,7 +50,11 @@ void display_fmt(Display d, const char* fmt, ...) {
         d.underline_active = active; \
     }
 
-#define display_finish_underline() display_set_underline(false)
+#define display_start_underline(active) \
+    bool const remembered_underline = d.underline_active; \
+    display_change_underline(active);
+
+#define display_end_underline() display_change_underline(remembered_underline);
 
 static inline void display_pointer(Display d, void* ptr) {
 #define BITS_TO_CHAR(shift) (((uintptr_t)ptr >> shift * 6) & 0b01111111) | 0b01000000
@@ -312,6 +316,7 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     display_generic(d, &my generic);
     display_lit(d, "(");
     c_foreach(i, vec_callable_arg, my args) {
+        display_start_underline(false);
         if (i.ref->source->rest) {
             display_lit(d, "...");
         }
@@ -319,6 +324,7 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
         if (i.ref->optional) {
             display_lit(d, "?");
         }
+        display_end_underline();
         display_lit(d, ": ");
         display_type(d, &i.ref->type);
         if (i.ref != i.end - 1) {
@@ -488,7 +494,7 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
-    display_set_underline(!my parsed);
+    display_start_underline(!my parsed);
 
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
@@ -637,7 +643,7 @@ void display_type(Display d, Type const* me) {
         display_lit(d, ")");
     }
 
-    display_finish_underline();
+    display_end_underline();
 }
 
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {
