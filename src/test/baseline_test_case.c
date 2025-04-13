@@ -661,6 +661,22 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* ty
     baseline_test_case_add_type_recursive(me, span, span, type);
 }
 
+static inline Type const* type_resolve_refs(Type const* type) {
+    while (true) {
+        switch (type->tag) {
+            case TYPE_LAZY:
+                type = lazy_type_get(type->lazy);
+                break;
+
+            case TYPE_REF:
+                type = type->ref;
+                break;
+
+            default: return type;
+        }
+    }
+}
+
 void baseline_test_case_add_type_recursive(
     BaselineTestCase* me,
     Span outer_span,
@@ -682,6 +698,8 @@ void baseline_test_case_add_type_recursive(
         base_case = true;
     }
     outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
+
+    type = type_resolve_refs(type);
 
     intptr_t line = span_line_index(outer_span);
     DisplayUnderlineTarget target = {
