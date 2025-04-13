@@ -240,13 +240,17 @@ static void display_generic(Display d, Generic const* me) {
                 display_lit(d, " extends unknown");
             } else {
                 display_lit(d, " extends ");
-                display_type(d, &i.ref->extends);
+                display_start_underline(false);
+                display_type_use_given_toplevel_underline(d, &i.ref->extends);
+                display_end_underline();
             }
         }
 
         if (i.ref->fallback_explicit) {
             display_lit(d, " = ");
-            display_type(d, &i.ref->fallback);
+            display_start_underline(true);
+            display_type_use_given_toplevel_underline(d, &i.ref->fallback);
+            display_end_underline();
         }
         if (i.ref < i.end - 1) {
             display_lit(d, ", ");
