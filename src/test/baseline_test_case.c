@@ -694,8 +694,14 @@ void baseline_test_case_add_type_recursive(
     cstr_append_lit(&target.target, " : ");
     cstr_append_lit(&target.underline, " : ");
     display_type(underline_display(&target), type);
-    cstr_append_lit(&target.target, "\r\n");
-    cstr_append_s(&target.target, target.underline);
+    bool display_underline = true;
+    if (cstr_ends_with(&target.target, ": any") && error_ctx_empty(my error_ctx)) {
+        display_underline = false;
+    }
+    if (display_underline) {
+        cstr_append_lit(&target.target, "\r\n");
+        cstr_append_s(&target.target, target.underline);
+    }
     cstr_drop(&target.underline);
     BaselineTestFile* test_file = find_file(me, outer_span.source);
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
