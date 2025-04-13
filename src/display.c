@@ -231,7 +231,9 @@ static void display_generic(Display d, Generic const* me) {
     }
     display_lit(d, "<");
     c_foreach(i, vec_generic_item, my items) {
+        display_start_underline(false);
         display_colored_span(d, color_type, i.ref->name);
+        display_end_underline();
 
         if (i.ref->extends_explicit) {
             if (i.ref->extends.tag == TYPE_ANY) {
