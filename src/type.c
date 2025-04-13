@@ -232,6 +232,15 @@ Type type_clone(Type me) {
     UNREACHABLE;
 }
 
+Type type_deref_clone(Type me) {
+    switch (me.tag) {
+        case TYPE_LAZY: return type_deref_clone(*lazy_type_get(me.lazy));
+        case TYPE_REF:  return type_deref_clone(*me.ref);
+        default:        return type_clone(me);
+    }
+    UNREACHABLE;
+}
+
 void cstr_append_type_error_msg(cstr* target, Type const* me) {
     display_type(error_display(target), me);
 }

@@ -234,12 +234,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_LAZY:
-            *me = type_clone(*lazy_type_get(my lazy));
-            replace_named_types_with(me, refinements);
-            return;
-
         case TYPE_REF:
-            *me = type_clone(*my ref);
+            *me = type_deref_clone(*me);
             replace_named_types_with(me, refinements);
             return;
     }
