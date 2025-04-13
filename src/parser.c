@@ -845,8 +845,6 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             hop_whitespace(&p);
         }
 
-        elem.type.parsed = false;
-
         if (hop_char(&p, '?')) {
             elem.optional = true;
             hop_whitespace(&p);
@@ -883,7 +881,6 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
             return parse_success(&p);
         } else {
             expect_char(&p, ']');
-            left_and_ret->parsed = false;
             *left_and_ret = type_array(c_new(Type, *left_and_ret), false);
             return parse_success(&p);
         }
@@ -1111,7 +1108,10 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
             ret->array.readonly = true;
             readonly_span = span_null;
         }
-        while (parse_type_right_side(&p, min_precedence, ret)) {}
+        ret->parsed = true;
+        while (parse_type_right_side(&p, min_precedence, ret)) {
+            ret->parsed = true;
+        }
     }
 
     if (span_valid(readonly_span)) {
@@ -1142,6 +1142,7 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
         parse_error(parent, span_from_token(parent), 1110, "Type expected.");
         *ret = (Type){
             .tag = TYPE_ANY,
+            .parsed = true,
             .any.unkown_symbol_span = span_from_pos(parent),
         };
         return false;
@@ -1972,7 +1973,6 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, b
         hop_whitespace(&p);
 
         (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index.type);
-        ret->key.index.type.parsed = false;
     } else {
         Expr expr;
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
@@ -2194,8 +2194,6 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
             cstr_drop(&name_string);
             return parse_fail(&p);
         }
-
-        ret->interface_memeber.type.parsed = false;
 
         hop_whitespace(&p);
         if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != ',' && *p.pos != '}') {

@@ -50,8 +50,6 @@ static void type_ctx_drop(TypeCtx* me) {
 }
 
 Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
-    a.parsed = false;
-    b.parsed = false;
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
         vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
@@ -73,8 +71,6 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
 }
 
 static Type type_composite_internal(TypeCtx* ctx, typeof((Type){}.tag) tag, Type a, Type b) {
-    a.parsed = false;
-    b.parsed = false;
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
     if (a.tag == TYPE_REF) {
         return type_composite(tag, type_clone(*a.ref), b);
@@ -219,21 +215,59 @@ Type type_clone(Type me) {
         case TYPE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_LAZY:
-        case TYPE_REF: return me;
-        case TYPE_VALUE: return type_value(value_clone(me.value));
-        case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
-        case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
-        case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
-        case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
-        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array.element)), me.array.readonly);
-        case TYPE_TUPLE: return type_tuple(vec_tuple_element_clone(me.tuple.elements), me.tuple.readonly);
-        case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
-        case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
-        case TYPE_TYPEOF: return type_typeof(c_new(TypeofType, typeof_type_clone(*me.typeof_)));
-        case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
-        case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
+        case TYPE_REF:
+            break;
+
+        case TYPE_VALUE:
+            me.value = value_clone(me.value);
+            break;
+
+        case TYPE_IDENTIFIER:
+            me.identifier = c_new(IdentifierType, identifier_type_clone(*me.identifier));
+            break;
+
+        case TYPE_INFERRED:
+            me.inferred = c_new(InferredType, inferred_type_clone(*me.inferred));
+            break;
+
+        case TYPE_CALLABLE:
+            me.callable = c_new(CallableType, callable_type_clone(*me.callable));
+            break;
+
+        case TYPE_INTERFACE:
+            me.interface = interface_clone(me.interface);
+            break;
+
+        case TYPE_ARRAY:
+            me.array.element = c_new(Type, type_clone(*me.array.element));
+            break;
+
+        case TYPE_TUPLE:
+            me.tuple.elements = vec_tuple_element_clone(me.tuple.elements);
+            break;
+
+        case TYPE_INDEXED:
+            me.indexed = c_new(IndexedType, indexed_type_clone(*me.indexed));
+            break;
+
+        case TYPE_KEYOF:
+            me.keyof = c_new(KeyofType, keyof_type_clone(*me.keyof));
+            break;
+
+        case TYPE_TYPEOF:
+            me.typeof_ = c_new(TypeofType, typeof_type_clone(*me.typeof_));
+            break;
+
+        case TYPE_TERNARY:
+            me.ternary = c_new(TernaryType, ternary_type_clone(*me.ternary));
+            break;
+
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            me.composite = vec_type_clone(me.composite);
+            break;
     }
-    UNREACHABLE;
+    return me;
 }
 
 Type type_deref_clone(Type me) {
@@ -626,6 +660,22 @@ Type const* type_resolve(Type const* me) {
     Type const* ret = type_resolve_internal(&ctx, me, true);
     type_ctx_drop(&ctx);
     return ret;
+}
+
+Type const* type_resolve_refs(Type const* type) {
+    while (true) {
+        switch (type->tag) {
+            case TYPE_LAZY:
+                type = lazy_type_get(type->lazy);
+                break;
+
+            case TYPE_REF:
+                type = type->ref;
+                break;
+
+            default: return type;
+        }
+    }
 }
 
 Type const* type_resolve_until_identifier(Type const* me) {

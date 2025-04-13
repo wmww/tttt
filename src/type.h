@@ -256,6 +256,7 @@ static inline Type type_move(Type* me) {
 void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs);
 void type_typecheck(Type const* me, ErrorCtx* errs);
 Type const* type_resolve(Type const* me);
+Type const* type_resolve_refs(Type const* type);
 Type const* type_resolve_one_layer(Type const* me); // Returns nullptr if nothing to resolve
 Type const* type_resolve_until_identifier(Type const* me);
 bool type_extends(Type const* sub, Type const* super);

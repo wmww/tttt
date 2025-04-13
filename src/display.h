@@ -134,7 +134,6 @@ void display_fmt(Display d, const char* fmt, ...) __attribute__((format (printf,
 void display_value(Display d, Value const* me);
 void display_interface_member(Display d, InterfaceMember const* me);
 void display_type(Display d, Type const* me);
-void display_type_use_given_toplevel_underline(Display d, Type const* me);
 void display_expr(Display d, Expr const* me);
 void display_statement(Display d, Statement const* me);
 void display_block(Display d, Block const* me);

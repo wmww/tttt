@@ -40,18 +40,13 @@ void display_fmt(Display d, const char* fmt, ...) {
     va_end(args);
 }
 
-#define display_extend_underline() \
+#define display_change_underline(active) \
     if (d.underline) { \
         cstr_resize( \
             &d.target_underline->underline, \
             cstr_size(&d.target_underline->target), \
             d.target_underline->chars[d.underline_active] \
         ); \
-    }
-
-#define display_change_underline(active) \
-    if (d.underline) { \
-        display_extend_underline(); \
         d.underline_active = active; \
     }
 
@@ -241,7 +236,7 @@ static void display_generic(Display d, Generic const* me) {
             } else {
                 display_lit(d, " extends ");
                 display_start_underline(false);
-                display_type_use_given_toplevel_underline(d, &i.ref->extends);
+                display_type(d, &i.ref->extends);
                 display_end_underline();
             }
         }
@@ -249,7 +244,7 @@ static void display_generic(Display d, Generic const* me) {
         if (i.ref->fallback_explicit) {
             display_lit(d, " = ");
             display_start_underline(true);
-            display_type_use_given_toplevel_underline(d, &i.ref->fallback);
+            display_type(d, &i.ref->fallback);
             display_end_underline();
         }
         if (i.ref < i.end - 1) {
@@ -285,7 +280,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     if (!vec_spanned_type_empty(&my generic_params)) {
         display_lit(d, "<");
         c_foreach(i, vec_spanned_type, my generic_params) {
-            display_type_use_given_toplevel_underline(d, &i.ref->type);
+            display_type(d, &i.ref->type);
             if (i.ref != i.end - 1) {
                 display_lit(d, ", ");
             }
@@ -340,9 +335,13 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
         }
         display_lit(d, ": ");
         {
-            display_start_underline(!i.ref->source->initializer.binding.has_explicit_type);
-            display_type(d, &i.ref->type);
-            display_end_underline();
+            if (i.ref->source->initializer.binding.has_explicit_type) {
+                display_start_underline(false);
+                display_type(d, &i.ref->type);
+                display_end_underline();
+            } else {
+                display_type(d, &i.ref->type);
+            }
         }
         if (i.ref != i.end - 1) {
             display_lit(d, ", ");
@@ -357,10 +356,12 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     }
 
     if (my ret_explicit) {
-        display_change_underline(false);
+        display_start_underline(false);
+        display_type(d, &my ret);
+        display_end_underline();
+    } else {
+        display_type(d, &my ret);
     }
-    display_type_use_given_toplevel_underline(d, &my ret);
-    display_extend_underline();
 }
 
 void display_interface_member(Display d, InterfaceMember const* me) {
@@ -432,7 +433,14 @@ void display_interface_member(Display d, InterfaceMember const* me) {
             display_lit(d, "?");
         }
         display_lit(d, ": ");
-        display_type(d, &my type);
+
+        if (my key.tag == INTERFACE_KEY_NAME) {
+            display_start_underline(false);
+            display_type(d, &my type);
+            display_end_underline();
+        } else {
+            display_type(d, &my type);
+        }
     }
 }
 
@@ -515,12 +523,11 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
-    display_start_underline(!my parsed && d.underline_active);
-    display_type_use_given_toplevel_underline(d, me);
-    display_end_underline();
-}
+    if (d.underline) {
+        me = type_resolve_refs(me);
+    }
+    display_start_underline(!my parsed || d.underline_active);
 
-void display_type_use_given_toplevel_underline(Display d, Type const* me) {
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
         char c[] = {'(', my tag + 'A', ':'};
@@ -668,7 +675,7 @@ void display_type_use_given_toplevel_underline(Display d, Type const* me) {
         display_lit(d, ")");
     }
 
-    display_extend_underline();
+    display_end_underline();
 }
 
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {
