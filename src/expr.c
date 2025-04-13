@@ -53,7 +53,8 @@ Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
                 .decl_ref = my decl_ref,
             }));
         } else {
-            ret = type_refcopy(&my decl_ref->value_type);
+            ret = type_deref_clone(my decl_ref->value_type);
+            ret.parsed = false;
         }
         return ret;
     } else {

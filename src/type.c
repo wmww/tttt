@@ -1485,7 +1485,8 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
         case TYPE_INTERFACE: {
             c_foreach(i, vec_interface_member, my interface.members) {
                 if (interface_member_key_overlaps(i.ref, index)) {
-                    *ret = type_clone(i.ref->type);
+                    *ret = type_deref_clone(i.ref->type);
+                    ret->parsed = false;
                     if (i.ref->optional) {
                         *ret = type_composite_internal(ctx, TYPE_INTERSECTION, *ret, type_undefined);
                     }
@@ -1497,7 +1498,8 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
 
         case TYPE_ARRAY:
             if (type_extends(index, &type_number)) {
-                *ret = type_clone(*my array.element);
+                *ret = type_deref_clone(*my array.element);
+                ret->parsed = false;
                 return true;
             } else {
                 return false;
@@ -1513,7 +1515,9 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
                 intptr_t j = i.ref - my tuple.elements.data;
                 Type key = type_value(value_number(j));
                 if (type_extends(&key, index)) {
-                    comp = type_composite_internal(ctx, TYPE_UNION, comp, type_clone(i.ref->type));
+                    Type item_type = type_deref_clone(i.ref->type);
+                    item_type.parsed = false;
+                    comp = type_composite_internal(ctx, TYPE_UNION, comp, item_type);
                 }
             }
             *ret = comp;
@@ -1808,7 +1812,8 @@ Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
                 callable = &inferred;
             }
 
-            Type ret = type_clone(callable->ret);
+            Type ret = type_deref_clone(callable->ret);
+            ret.parsed = false;
             callable_type_drop(&inferred);
             return ret;
         }
@@ -1835,7 +1840,9 @@ Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
                 Type ret = type_composite_base(TYPE_INTERSECTION);
                 c_foreach(i, vec_interface_member, my interface.members) {
                     if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i.ref->type.callable->ret));
+                        Type callable_ret = type_deref_clone(i.ref->type.callable->ret);
+                        callable_ret.parsed = false;
+                        ret = type_composite(TYPE_INTERSECTION, ret, callable_ret);
                     }
                 }
                 return ret;

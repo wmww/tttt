@@ -355,13 +355,9 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
         display_lit(d, " => ");
     }
 
-    if (my ret_explicit) {
-        display_start_underline(false);
-        display_type(d, &my ret);
-        display_end_underline();
-    } else {
-        display_type(d, &my ret);
-    }
+    display_start_underline(false);
+    display_type(d, &my ret);
+    display_end_underline();
 }
 
 void display_interface_member(Display d, InterfaceMember const* me) {
