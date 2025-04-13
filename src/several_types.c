@@ -164,11 +164,11 @@ void indexed_type_drop(IndexedType* me) {
 }
 
 IndexedType indexed_type_clone(IndexedType me) {
-    return (IndexedType){
-        .interface = type_clone(me.interface),
-        .index = type_clone(me.index),
-        .cached = {0},
-    };
+    me.cached = (Type){0};
+    me.has_cache = false;
+    me.interface = type_clone(me.interface);
+    me.index = type_clone(me.index);
+    return me;
 }
 
 void indexed_type_lookup_names(IndexedType* me, ScopeStack* names, ErrorCtx* errs) {
