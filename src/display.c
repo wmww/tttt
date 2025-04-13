@@ -326,10 +326,10 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
             display_lit(d, "...");
         }
         display_binding_content(d, &i.ref->source->initializer.binding);
+        display_end_underline();
         if (i.ref->optional) {
             display_lit(d, "?");
         }
-        display_end_underline();
         display_lit(d, ": ");
         display_type(d, &i.ref->type);
         if (i.ref != i.end - 1) {
