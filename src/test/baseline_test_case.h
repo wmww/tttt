@@ -53,6 +53,7 @@ typedef struct BaselineTestCase {
     csview source_path; // Not owned, path to real file on disk that may describe several virtual files
     bool did_run;
     ErrorCtx* error_ctx;
+    bool underline_any;
     bool noisy;
     MockFs* fs;
     Program* program;

@@ -695,7 +695,7 @@ void baseline_test_case_add_type_recursive(
     cstr_append_lit(&target.underline, " : ");
     display_type(underline_display(&target), type);
     bool display_underline = true;
-    if (cstr_ends_with(&target.target, ": any") && error_ctx_empty(my error_ctx)) {
+    if (!my underline_any && error_ctx_empty(my error_ctx) && cstr_ends_with(&target.target, ": any")) {
         display_underline = false;
     }
     if (display_underline) {

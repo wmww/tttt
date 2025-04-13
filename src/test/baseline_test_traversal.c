@@ -256,6 +256,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
 }
 
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
+    ctx->underline_any = true;
     switch (my main.tag) {
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
@@ -283,6 +284,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         });
         baseline_test_case_add_type(ctx, i.ref->decl_name, &declaration->value_type);
     }
+    ctx->underline_any = false;
 }
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
@@ -532,6 +534,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             Type const* expr_t_resolved = type_resolve(expr_get_type(&my property->expr));
             Type const* prop_t = expr_get_type(&my property->prop);
 
+            bool const prev_underline_any = ctx->underline_any;
+            ctx->underline_any = true;
+
             if (expr_t_resolved->tag == TYPE_INTERFACE &&
                 prop_t->tag == TYPE_VALUE &&
                 prop_t->value.tag == VALUE_STRING
@@ -573,6 +578,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 }
             }
 
+            if (my property->form == PROPERTY_EXPR_BRACKET) {
+                ctx->underline_any = prev_underline_any;
+            }
+
             if (!has_compiled_expr_info) {
                 expr_compile_test_info(&my property->expr, ctx);
             }
@@ -582,6 +591,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             } else {
                 baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type(me));
             }
+
+            ctx->underline_any = prev_underline_any;
         }   break;
 
         case EXPR_GENERIC_PARAMS:
