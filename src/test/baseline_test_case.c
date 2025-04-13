@@ -644,6 +644,10 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     });
     vec_span_drop(&data.declarations);
     vec_span_drop(&data.namespaces);
+
+    if (data.type) {
+        baseline_test_case_add_type(me, data);
+    }
 }
 
 static void append_span_contents_without_newlines(cstr* target, Span span) {
@@ -655,10 +659,6 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
             default: cstr_push(target, c);
         }
     }
-}
-
-void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type) {
-    baseline_test_case_add_type_recursive(me, span, span, type);
 }
 
 static inline Type const* type_resolve_refs(Type const* type) {
@@ -677,41 +677,39 @@ static inline Type const* type_resolve_refs(Type const* type) {
     }
 }
 
-void baseline_test_case_add_type_recursive(
-    BaselineTestCase* me,
-    Span outer_span,
-    Span inner_span,
-    Type const* type
-) {
-    const char* outer_start = span_start_ptr(outer_span);
-    const char* outer_last = span_end_ptr(outer_span) - 1;
-    const char* inner_start = span_start_ptr(inner_span);
-    const char* inner_last = span_end_ptr(inner_span) - 1;
+void baseline_test_case_add_type(BaselineTestCase* me, BaselineSym data) {
+    ASSERT(data.type);
 
-    while (outer_start < inner_start && *outer_start != '(') outer_start++;
-    while (outer_last > inner_last && *outer_last != ')') outer_last--;
+    if (span_valid(data.inner_span)) {
+        const char* outer_start = span_start_ptr(data.span);
+        const char* outer_last = span_end_ptr(data.span) - 1;
+        const char* inner_start = span_start_ptr(data.inner_span);
+        const char* inner_last = span_end_ptr(data.inner_span) - 1;
 
-    bool base_case = false;
-    if (outer_start == inner_start || outer_last == inner_last) {
-        outer_start = inner_start;
-        outer_last = inner_last;
-        base_case = true;
+        while (outer_start < inner_start && *outer_start != '(') outer_start++;
+        while (outer_last > inner_last && *outer_last != ')') outer_last--;
+
+        if (outer_start == inner_start || outer_last == inner_last) {
+            outer_start = inner_start;
+            outer_last = inner_last;
+            data.inner_span = span_null;
+        }
+        data.span = span_make(data.span.source, outer_start, outer_last + 1);
     }
-    outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
 
-    type = type_resolve_refs(type);
+    data.type = type_resolve_refs(data.type);
 
-    intptr_t line = span_line_index(outer_span);
+    intptr_t line = span_line_index(data.span);
     DisplayUnderlineTarget target = {
         .target = cstr_lit(">"),
         .underline = cstr_lit(">"),
         .chars = {' ', '^'},
     };
-    append_span_contents_without_newlines(&target.target, outer_span);
+    append_span_contents_without_newlines(&target.target, data.span);
     cstr_resize(&target.underline, cstr_size(&target.target), ' ');
     cstr_append_lit(&target.target, " : ");
     cstr_append_lit(&target.underline, " : ");
-    display_type_use_given_toplevel_underline(underline_display(&target), type);
+    display_type_use_given_toplevel_underline(underline_display(&target), data.type);
     bool display_underline = true;
     if (!my underline_any && error_ctx_empty(my error_ctx) && cstr_ends_with(&target.target, ": any")) {
         display_underline = false;
@@ -721,15 +719,15 @@ void baseline_test_case_add_type_recursive(
         cstr_append_s(&target.target, target.underline);
     }
     cstr_drop(&target.underline);
-    BaselineTestFile* test_file = find_file(me, outer_span.source);
+    BaselineTestFile* test_file = find_file(me, data.span.source);
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
         .str = target.target,
     });
-    if (!base_case) {
-        outer_span.sv.buf++;
-        outer_span.sv.size -= 2;
-        baseline_test_case_add_type_recursive(me, outer_span, inner_span, type);
+    if (span_valid(data.inner_span)) {
+        data.span.sv.buf++;
+        data.span.sv.size -= 2;
+        baseline_test_case_add_type(me, data);
     }
 }
 
@@ -739,14 +737,16 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declara
         return;
     }
     ASSERT(span.source);
+    Type const* type = nullptr;
+    if (declaration->value_tag) {
+        type = &declaration->value_type;
+    } else if (declaration->type_tag) {
+        type = &declaration->declared_type;
+    }
     baseline_test_case_add_symbol(me, (BaselineSym){
         .declarations = vec_span_clone(declaration->declarations),
         .span = span,
         .name = declaration->name,
+        .type = type,
     });
-    if (declaration->value_tag) {
-        baseline_test_case_add_type(me, span, &declaration->value_type);
-    } else if (declaration->type_tag) {
-        baseline_test_case_add_type(me, span, &declaration->declared_type);
-    }
 }

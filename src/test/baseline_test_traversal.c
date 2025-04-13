@@ -31,7 +31,10 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
 void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
-            baseline_test_case_add_type(ctx, my content_span, &type_undefined);
+            baseline_test_case_add_type(ctx, (BaselineSym){
+                .span = my content_span,
+                .type = &type_undefined,
+            });
             break;
 
         case BINDING_IDENTIFIER:
@@ -77,13 +80,15 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .namespaces = vec_span_single(scope),
                 .span = my key.span,
                 .name_is_value = my key.name_is_value,
+                .type = &my type,
             });
-            baseline_test_case_add_type(ctx, my key.span, &my type);
             break;
 
         case INTERFACE_KEY_INDEX:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.index.name });
-            baseline_test_case_add_type(ctx, my key.index.name, &my key.index.type);
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .span = my key.index.name,
+                .type = &my key.index.type,
+            });
             type_compile_test_info(&my key.index.type, ctx);
             break;
 
@@ -94,8 +99,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .span = my key.span,
                 .name = my key.expr.ref->outer_span,
                 .name_is_value = true,
+                .type = &my type,
             });
-            baseline_test_case_add_type(ctx, my key.span, &my type);
             expr_compile_test_info(my key.expr.ref, ctx);
             break;
 
@@ -152,12 +157,12 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
                     *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
                     nullptr;
-                baseline_test_case_add_type(ctx, *i.ref, &type_any);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),
                     .allow_declaration_empty = true,
                     .namespaces = vec_span_clone(so_far),
                     .span = *i.ref,
+                    .type = &type_any,
                 });
                 vec_span_push(&so_far, *i.ref);
             }
@@ -276,13 +281,16 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = i.ref->source_name,
                 });
             }
-            baseline_test_case_add_type(ctx, i.ref->source_name, &declaration->value_type);
+            baseline_test_case_add_type(ctx, (BaselineSym){
+                .span = i.ref->source_name,
+                .type = &declaration->value_type,
+            });
         }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_clone(declaration->declarations),
             .span = i.ref->decl_name,
+            .type = &declaration->value_type,
         });
-        baseline_test_case_add_type(ctx, i.ref->decl_name, &declaration->value_type);
     }
     ctx->underline_any = false;
 }
@@ -294,14 +302,14 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
 }
 
 void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = vec_span_single(my full_span),
-        .span = my name,
-    });
     Type t = type_identifier(c_new(IdentifierType, {
         .name = my name,
     }));
-    baseline_test_case_add_type(ctx, my name, &t);
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = vec_span_single(my full_span),
+        .span = my name,
+        .type = &t,
+    });
     type_drop(&t);
     c_foreach(i, vec_enum_case, my cases) {
         //baseline_test_case_add_declaration(ctx, i.ref->name, i.ref->declaration.get);
@@ -312,10 +320,8 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
             .declarations = vec_span_clone(declaration->declarations),
             .span = span,
             .name = declaration->name,
+            .type = declaration->value_tag ? &declaration->value_type : nullptr,
         });
-        if (declaration->value_tag) {
-            baseline_test_case_add_type(ctx, span, &declaration->value_type);
-        }
         if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(&i.ref->value, ctx);
         }
@@ -329,27 +335,27 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             break;
 
         case CLASS_ITEM_METHOD:
+            Type t = class_item_get_type(me);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my span),
                 .namespaces = vec_span_single(class_name),
                 .span = my method.name_span,
                 .name_is_value = my method.name_is_value,
+                .type = &t,
             });
-            Type t = class_item_get_type(me);
-            baseline_test_case_add_type(ctx, my method.name_span, &t);
             type_drop(&t);
             function_impl_compile_test_info(&my method.func, ctx);
             break;
 
         case CLASS_ITEM_FIELD: {
+            Type t = class_item_get_type(me);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(my span),
                 .namespaces = vec_span_single(class_name),
                 .span = my field.name_span,
                 .name_is_value = my field.name_is_value,
+                .type = &t,
             });
-            Type t = class_item_get_type(me);
-            baseline_test_case_add_type(ctx, my field.name_span, &t);
             type_drop(&t);
 
             if (my field.has_explicit_type) {
@@ -375,12 +381,8 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my declaration.get),
             .span = my name,
+            .type = is_expr ? &my declaration.get->value_type : &my instance_identifier_type,
         });
-        if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my declaration.get->value_type);
-        } else {
-            baseline_test_case_add_type(ctx, my name, &my instance_identifier_type);
-        }
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
@@ -393,7 +395,11 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             if (my extends.tag != EXPR_GENERIC_PARAMS) {
                 // Extremely hacky but whatever. No idea why tsc does this.
                 *(bool*)(&resolved->identifier->decl_ref->is_typeof) = false;
-                baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, resolved);
+                baseline_test_case_add_type(ctx, (BaselineSym){
+                    .span = my extends.outer_span,
+                    .inner_span = my extends.inner_span,
+                    .type = resolved,
+                });
                 *(bool*)(&resolved->identifier->decl_ref->is_typeof) = true;
             }
             expr_compile_test_info_inner(&my extends, ctx);
@@ -410,10 +416,6 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
-    baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = declaration_get_spans(my declaration.get),
-        .span = my name,
-    });
     Type to_drop = {0};
     Type const* my_type = &my type;
     Type const* resolved = my_type;
@@ -450,7 +452,11 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         }
         resolved = &to_drop;
     }
-    baseline_test_case_add_type(ctx, my name, resolved);
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = declaration_get_spans(my declaration.get),
+        .span = my name,
+        .type = resolved,
+    });
     type_drop(&to_drop);
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(my_type, ctx);
@@ -472,24 +478,27 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
     if (span_valid(my name) && my declaration.get) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(my declaration.get),
-            .span = my name,
-        });
+        Declaration decl = {0};
+        Type owned = {0};
+        Type const* type = nullptr;
         if (my declaration.get->value_tag) {
-            Declaration d = {0};
-            declaration_init(&d, (DeclProps){
+            declaration_init(&decl, (DeclProps){
                 .tag = DECLARATION_TYPE,
                 .is_typeof = true,
             });
-            Type t = type_identifier(c_new(IdentifierType, {
+            owned = type_identifier(c_new(IdentifierType, {
                 .name = my name,
-                .decl_ref = &d,
+                .decl_ref = &decl,
             }));
-            baseline_test_case_add_type(ctx, my name, &t);
-            type_drop(&t);
-            declaration_drop(&d);
+            type = &owned;
         }
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = declaration_get_spans(my declaration.get),
+            .span = my name,
+            .type = type,
+        });
+        type_drop(&owned);
+        declaration_drop(&decl);
     }
     block_compile_test_info(&my contents, ctx);
 }
@@ -589,7 +598,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (my property->form == PROPERTY_EXPR_BRACKET) {
                 expr_compile_test_info(&my property->prop, ctx);
             } else {
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type(me));
+                baseline_test_case_add_type(ctx, (BaselineSym){
+                     .span = my property->prop.outer_span,
+                     .type = expr_get_type(me),
+                });
             }
 
             ctx->underline_any = prev_underline_any;
@@ -632,10 +644,12 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_OBJECT:
             c_foreach(i, vec_object_expr_item, my object) {
                 if (!i.ref->is_spread) {
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name_span });
                     Type t = type_clone(*expr_get_type(&i.ref->value));
                     type_abstract_literals(&t);
-                    baseline_test_case_add_type(ctx, i.ref->name_span, &t);
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .span = i.ref->name_span,
+                        .type = &t,
+                    });
                     type_drop(&t);
                 }
 
@@ -665,22 +679,29 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    Type const* type = nullptr;
     if (my tag == EXPR_IDENTIFIER && my identifier.decl_ref && !my identifier.keyword) {
         // Do NOT degenericize
-        baseline_test_case_add_type_recursive(
-            ctx,
-            my outer_span,
-            my inner_span,
-            &my identifier.decl_ref->value_type
-        );
+        type = &my identifier.decl_ref->value_type;
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
-        Type t = type_array((Type*)&type_undefined, false);
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
+        static const Type type_array_undefined = {
+            .tag = TYPE_ARRAY,
+            .array.element = (Type*)&type_undefined,
+        };
+        type = &type_array_undefined;
         // Don't drop, since we didn't allocate
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
     } else if (my tag == EXPR_GENERIC_PARAMS) {
     } else {
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, expr_get_type(me));
+        type = expr_get_type(me);
+    }
+
+    if (type) {
+        baseline_test_case_add_type(ctx, (BaselineSym) {
+            .span = my outer_span,
+            .inner_span = my inner_span,
+            .type = type,
+        });
     }
 
     expr_compile_test_info_inner(me, ctx);
