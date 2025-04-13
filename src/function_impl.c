@@ -93,6 +93,7 @@ static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me
     return type_callable(c_new(CallableType, {
         .generic = generic_clone(my generic),
         .args = args,
+        .ret_explicit = my ret_explicit,
         .ret = type_ref_always(&my ret),
         .is_constructor = my is_constructor,
         .is_abstract_constructor = my is_abstract_constructor

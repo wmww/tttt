@@ -628,6 +628,7 @@ Type expr_evaluate_type(Expr const* me) {
                     }
                 } else {
                     Type type = type_clone(*expr_get_type(&i.ref->value));
+                    type.parsed = false;
                     type_abstract_literals(&type);
                     vec_interface_member_push(
                         &interface.members,

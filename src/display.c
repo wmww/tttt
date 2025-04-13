@@ -279,7 +279,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     if (!vec_spanned_type_empty(&my generic_params)) {
         display_lit(d, "<");
         c_foreach(i, vec_spanned_type, my generic_params) {
-            display_type(d, &i.ref->type);
+            display_type_use_given_toplevel_underline(d, &i.ref->type);
             if (i.ref != i.end - 1) {
                 display_lit(d, ", ");
             }
@@ -344,7 +344,11 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
         display_lit(d, " => ");
     }
 
-    display_type(d, &my ret);
+    if (my ret_explicit) {
+        display_change_underline(false);
+    }
+    display_type_use_given_toplevel_underline(d, &my ret);
+    display_extend_underline();
 }
 
 void display_interface_member(Display d, InterfaceMember const* me) {

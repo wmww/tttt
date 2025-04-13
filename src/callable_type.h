@@ -20,6 +20,7 @@ CallableArg callable_arg_clone(CallableArg me);
 typedef struct CallableType {
     Generic generic;
     VecCallableArg args;
+    bool ret_explicit;
     Type ret;
     bool is_constructor;
     bool is_abstract_constructor;

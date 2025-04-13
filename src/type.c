@@ -50,6 +50,8 @@ static void type_ctx_drop(TypeCtx* me) {
 }
 
 Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
+    a.parsed = false;
+    b.parsed = false;
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
         vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
@@ -71,6 +73,8 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
 }
 
 static Type type_composite_internal(TypeCtx* ctx, typeof((Type){}.tag) tag, Type a, Type b) {
+    a.parsed = false;
+    b.parsed = false;
     ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
     if (a.tag == TYPE_REF) {
         return type_composite(tag, type_clone(*a.ref), b);

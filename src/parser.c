@@ -845,6 +845,8 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             hop_whitespace(&p);
         }
 
+        elem.type.parsed = false;
+
         if (hop_char(&p, '?')) {
             elem.optional = true;
             hop_whitespace(&p);
@@ -881,6 +883,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
             return parse_success(&p);
         } else {
             expect_char(&p, ']');
+            left_and_ret->parsed = false;
             *left_and_ret = type_array(c_new(Type, *left_and_ret), false);
             return parse_success(&p);
         }
@@ -1023,7 +1026,6 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         *ret = type_never;
     } else if (hop_start_if_ends_on_word_break(&p, "void")) {
         *ret = type_void;
-        ret->parsed = true;
     } else if (hop_start_if_ends_on_word_break(&p, "boolean")) {
         *ret = type_boolean;
     } else if (hop_start_if_ends_on_word_break(&p, "number")) {
@@ -1070,12 +1072,11 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
+        ret->parsed = true;
     } else if (hop_start(&p, "-")) {
         hop_whitespace(&p);
         if (parse_number(&p, &ret->value.number)) {
-            ret->tag = TYPE_VALUE;
-            ret->value.tag = VALUE_NUMBER;
-            ret->value.number = -ret->value.number;
+            *ret = type_value(value_number(-ret->value.number));
         } else {
             return parse_fail(&p);
         }
@@ -1102,6 +1103,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     } else {
         return parse_fail(&p);
     }
+
+    ret->parsed = true;
 
     if (parse_type_right_side(&p, min_precedence, ret)) {
         if (ret->tag == TYPE_ARRAY && span_valid(readonly_span)) {
@@ -1969,6 +1972,7 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, b
         hop_whitespace(&p);
 
         (show_errors ? expect_type : parse_type_or_set_to_default)(&p, TYPE_PRECEDENCE_NULL, &ret->key.index.type);
+        ret->key.index.type.parsed = false;
     } else {
         Expr expr;
         if (!parse_expr(&p, expr_ctx_null, &expr)) {
@@ -2190,6 +2194,8 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
             cstr_drop(&name_string);
             return parse_fail(&p);
         }
+
+        ret->interface_memeber.type.parsed = false;
 
         hop_whitespace(&p);
         if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != ',' && *p.pos != '}') {
