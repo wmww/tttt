@@ -323,10 +323,10 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     display_lit(d, "(");
     c_foreach(i, vec_callable_arg, my args) {
         {
-            display_start_underline(false);
             if (i.ref->source->rest) {
                 display_lit(d, "...");
             }
+            display_start_underline(false);
             display_binding_content(d, &i.ref->source->initializer.binding);
             display_end_underline();
         }
