@@ -327,17 +327,23 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     display_generic(d, &my generic);
     display_lit(d, "(");
     c_foreach(i, vec_callable_arg, my args) {
-        display_start_underline(false);
-        if (i.ref->source->rest) {
-            display_lit(d, "...");
+        {
+            display_start_underline(false);
+            if (i.ref->source->rest) {
+                display_lit(d, "...");
+            }
+            display_binding_content(d, &i.ref->source->initializer.binding);
+            display_end_underline();
         }
-        display_binding_content(d, &i.ref->source->initializer.binding);
-        display_end_underline();
         if (i.ref->optional) {
             display_lit(d, "?");
         }
         display_lit(d, ": ");
-        display_type(d, &i.ref->type);
+        {
+            display_start_underline(!i.ref->source->initializer.binding.has_explicit_type);
+            display_type(d, &i.ref->type);
+            display_end_underline();
+        }
         if (i.ref != i.end - 1) {
             display_lit(d, ", ");
         }
@@ -509,7 +515,7 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
-    display_start_underline(!my parsed);
+    display_start_underline(!my parsed && d.underline_active);
     display_type_use_given_toplevel_underline(d, me);
     display_end_underline();
 }
