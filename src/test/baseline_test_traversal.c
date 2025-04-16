@@ -91,6 +91,8 @@ void identifier_type_compile_test_info(IdentifierType const* me, BaselineTestCas
         Declaration const* decl = index < vec_declaration_cptr_size(&my namespace_decls) ?
             *vec_declaration_cptr_at(&my namespace_decls, index) :
             nullptr;
+        bool const prev_underline_any = ctx->underline_any;
+        ctx->underline_any = true;
         baseline_test_case_add_both(ctx, (Annotation){
             .declarations = declaration_get_spans(decl),
             .allow_declaration_empty = true,
@@ -98,6 +100,7 @@ void identifier_type_compile_test_info(IdentifierType const* me, BaselineTestCas
             .span = *i.ref,
             .type = &type_any,
         });
+        ctx->underline_any = prev_underline_any;
         vec_span_push(&so_far, *i.ref);
     }
     vec_span_drop(&so_far);
