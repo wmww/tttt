@@ -46,25 +46,17 @@ void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCt
 
 Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
     if (my decl_ref) {
-        Type ret;
         if (my keyword && my decl_ref->value_tag == DECLARATION_CLASS) {
-            ret = type_identifier(c_new(IdentifierType, {
+            return type_identifier(c_new(IdentifierType, {
                 .name = my decl_ref->name,
                 .decl_ref = my decl_ref,
             }));
         } else {
-            ret = type_deref_clone(my decl_ref->value_type);
-            if (ret.tag == TYPE_CALLABLE) {
-                ret.callable->parsed = false;
-            }
-            ret.parsed = false;
+            return type_nonparsed_clone(my decl_ref->value_type);
         }
-        return ret;
     } else {
-        switch (my keyword) {
-            case KEYWORD_IDENTIFIER_THIS:
-                return type_undefined;
-            default: break;
+        if (my keyword == KEYWORD_IDENTIFIER_THIS) {
+            return type_undefined;
         }
         return type_any;
     }

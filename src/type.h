@@ -246,6 +246,7 @@ void type_drop(Type* me);
 // PERF: should type_clone() be inlined?
 Type type_clone(Type me);
 Type type_deref_clone(Type me);
+Type type_nonparsed_clone(Type me);
 void cstr_append_type_error_msg(cstr* target, Type const* me);
 static inline Type type_move(Type* me) {
     Type ret = *me;
