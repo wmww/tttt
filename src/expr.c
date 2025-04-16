@@ -54,6 +54,9 @@ Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
             }));
         } else {
             ret = type_deref_clone(my decl_ref->value_type);
+            if (ret.tag == TYPE_CALLABLE) {
+                ret.callable->parsed = false;
+            }
             ret.parsed = false;
         }
         return ret;
@@ -629,7 +632,6 @@ Type expr_evaluate_type(Expr const* me) {
                     }
                 } else {
                     Type type = type_clone(*expr_get_type(&i.ref->value));
-                    type.parsed = false;
                     type_abstract_literals(&type);
                     vec_interface_member_push(
                         &interface.members,

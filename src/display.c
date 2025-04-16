@@ -339,7 +339,7 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
             display_set_underline(&d, parent_underline);
             display_lit(d, "?");
         }
-        display_set_underline(&d, parent_underline && d.type_toplevel);
+        display_set_underline(&d, parent_underline && (!my parsed || d.type_toplevel));
         display_lit(d, ": ");
         display_set_underline(&d, parent_underline && !i.ref->source->initializer.binding.has_explicit_type);
         display_type(d, &i.ref->type);
