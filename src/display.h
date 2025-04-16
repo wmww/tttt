@@ -52,8 +52,10 @@ typedef struct Display {
     bool color : 1;
     bool debug : 1;
     bool brief : 1;
-    bool underline : 1;
-    bool underline_active : 1;
+    bool enable_underline : 1;
+    bool underline_on : 1;
+    bool type_toplevel : 1; // If we are currently in a toplevel type
+    bool type_nested : 1; // If we are currently in a non-toplevel type
     bool hash_key : 1;
 } Display;
 
@@ -90,8 +92,8 @@ static inline Display debug_brief_display(cstr* target) {
 static inline Display underline_display(DisplayUnderlineTarget* target) {
     return (Display) {
         .target_underline = target,
-        .underline = true,
-        .underline_active = true,
+        .enable_underline = true,
+        .underline_on = true,
     };
 }
 

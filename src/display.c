@@ -40,21 +40,27 @@ void display_fmt(Display d, const char* fmt, ...) {
     va_end(args);
 }
 
-#define display_change_underline(active) \
-    if (d.underline) { \
-        cstr_resize( \
-            &d.target_underline->underline, \
-            cstr_size(&d.target_underline->target), \
-            d.target_underline->chars[d.underline_active] \
-        ); \
-        d.underline_active = active; \
+static inline void display_set_underline(Display* d, bool on) {
+    if (d->enable_underline) {
+        cstr_resize(
+            &d->target_underline->underline,
+            cstr_size(&d->target_underline->target),
+            d->target_underline->chars[d->underline_on]
+        );
+        d->underline_on = on;
     }
+}
 
-#define display_start_underline(active) \
-    bool const remembered_underline = d.underline_active; \
-    display_change_underline(active);
+static inline bool display_get_underline(Display d) {
+    return d.underline_on;
+}
 
-#define display_end_underline() display_change_underline(remembered_underline);
+static inline Display display_toplevel_type(Display d) {
+    // If both are false, the call to display_type() will set .type_toplevel=true
+    d.type_toplevel = false;
+    d.type_nested = false;
+    return d;
+}
 
 static inline void display_pointer(Display d, void* ptr) {
 #define BITS_TO_CHAR(shift) (((uintptr_t)ptr >> shift * 6) & 0b01111111) | 0b01000000
@@ -225,27 +231,28 @@ static void display_generic(Display d, Generic const* me) {
         return;
     }
     display_lit(d, "<");
+    bool const parent_underline = display_get_underline(d);
     c_foreach(i, vec_generic_item, my items) {
-        display_start_underline(false);
+        display_set_underline(&d, false);
         display_colored_span(d, color_type, i.ref->name);
-        display_end_underline();
+        display_set_underline(&d, parent_underline);
 
         if (i.ref->extends_explicit) {
             if (i.ref->extends.tag == TYPE_ANY) {
                 display_lit(d, " extends unknown");
             } else {
                 display_lit(d, " extends ");
-                display_start_underline(false);
+                display_set_underline(&d, false);
                 display_type(d, &i.ref->extends);
-                display_end_underline();
+                display_set_underline(&d, parent_underline);
             }
         }
 
         if (i.ref->fallback_explicit) {
             display_lit(d, " = ");
-            display_start_underline(true);
+            display_set_underline(&d, true);
             display_type(d, &i.ref->fallback);
-            display_end_underline();
+            display_set_underline(&d, parent_underline);
         }
         if (i.ref < i.end - 1) {
             display_lit(d, ", ");
@@ -280,7 +287,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     if (!vec_spanned_type_empty(&my generic_params)) {
         display_lit(d, "<");
         c_foreach(i, vec_spanned_type, my generic_params) {
-            display_type(d, &i.ref->type);
+            display_type(display_toplevel_type(d), &i.ref->type);
             if (i.ref != i.end - 1) {
                 display_lit(d, ", ");
             }
@@ -321,28 +328,22 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     }
     display_generic(d, &my generic);
     display_lit(d, "(");
+    bool const parent_underline = display_get_underline(d);
     c_foreach(i, vec_callable_arg, my args) {
-        {
-            if (i.ref->source->rest) {
-                display_lit(d, "...");
-            }
-            display_start_underline(false);
-            display_binding_content(d, &i.ref->source->initializer.binding);
-            display_end_underline();
+        if (i.ref->source->rest) {
+            display_lit(d, "...");
         }
+        display_set_underline(&d, false);
+        display_binding_content(d, &i.ref->source->initializer.binding);
         if (i.ref->optional) {
+            display_set_underline(&d, parent_underline);
             display_lit(d, "?");
         }
+        display_set_underline(&d, parent_underline && d.type_toplevel);
         display_lit(d, ": ");
-        {
-            if (i.ref->source->initializer.binding.has_explicit_type) {
-                display_start_underline(false);
-                display_type(d, &i.ref->type);
-                display_end_underline();
-            } else {
-                display_type(d, &i.ref->type);
-            }
-        }
+        display_set_underline(&d, parent_underline && !i.ref->source->initializer.binding.has_explicit_type);
+        display_type(d, &i.ref->type);
+        display_set_underline(&d, parent_underline);
         if (i.ref != i.end - 1) {
             display_lit(d, ", ");
         }
@@ -355,12 +356,14 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
         display_lit(d, " => ");
     }
 
-    display_start_underline(false);
+    display_set_underline(&d, false);
     display_type(d, &my ret);
-    display_end_underline();
+    display_set_underline(&d, parent_underline);
 }
 
 void display_interface_member(Display d, InterfaceMember const* me) {
+    bool const parent_underline = display_get_underline(d);
+
     if (my readonly) {
         display_lit(d, "readonly ");
     }
@@ -431,9 +434,9 @@ void display_interface_member(Display d, InterfaceMember const* me) {
         display_lit(d, ": ");
 
         if (my key.tag == INTERFACE_KEY_NAME) {
-            display_start_underline(false);
-            display_type(d, &my type);
-            display_end_underline();
+            display_set_underline(&d, false);
+            display_type(display_toplevel_type(d), &my type);
+            display_set_underline(&d, parent_underline);
         } else {
             display_type(d, &my type);
         }
@@ -441,12 +444,16 @@ void display_interface_member(Display d, InterfaceMember const* me) {
 }
 
 static void display_interface(Display d, Interface const* me) {
+    bool const parent_underline = display_get_underline(d);
+
     if (!d.debug &&
         vec_interface_member_size(&my members) == 1 &&
         my members.data->key.tag == INTERFACE_KEY_CALLABLE
     ) {
         // This interface has a single callable member, so display it as if it were just a callable
-        display_type(d, &my members.data->type);
+        display_set_underline(&d, false);
+        display_type(display_toplevel_type(d), &my members.data->type);
+        display_set_underline(&d, parent_underline);
         return;
     }
 
@@ -519,10 +526,19 @@ static void display_ternary_type(Display d, TernaryType* me) {
 }
 
 void display_type(Display d, Type const* me) {
-    if (d.underline) {
+    if (d.type_toplevel) {
+        d.type_nested = true;
+        d.type_toplevel = false;
+    } else if (!d.type_nested) {
+        d.type_toplevel = true;
+    }
+
+    if (d.enable_underline) {
         me = type_resolve_refs(me);
     }
-    display_start_underline(!my parsed || d.underline_active);
+
+    bool const parent_underline = display_get_underline(d);
+    display_set_underline(&d, parent_underline || !my parsed);
 
     if (d.hash_key) {
         // PERF: use an entirely different type serialization system for hashes that's faster and more compact
@@ -568,7 +584,7 @@ void display_type(Display d, Type const* me) {
             if (my array.readonly) {
                 display_lit(d, "readonly ");
             }
-            display_type(d, my array.element);
+            display_type(display_toplevel_type(d), my array.element);
             if (needs_peren) {
                 display_colored(d, color_implicit, ")");
             }
@@ -594,7 +610,7 @@ void display_type(Display d, Type const* me) {
                     display_lit(d, ": ");
                 }
 
-                display_type(d, &i.ref->type);
+                display_type(display_toplevel_type(d), &i.ref->type);
 
                 if (i.ref->optional) {
                     display_lit(d, "?");
@@ -671,7 +687,7 @@ void display_type(Display d, Type const* me) {
         display_lit(d, ")");
     }
 
-    display_end_underline();
+    display_set_underline(&d, parent_underline);
 }
 
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {
