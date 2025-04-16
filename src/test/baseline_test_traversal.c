@@ -79,6 +79,39 @@ void initialized_binding_compile_test_info(
     }
 }
 
+void identifier_type_compile_test_info(IdentifierType const* me, BaselineTestCase* ctx) {
+    if (span_equals(my name, "object")) {
+        return;
+    } else if (my decl_ref && !span_valid(my decl_ref->name)) {
+        return;
+    }
+    VecSpan so_far = vec_span_init();
+    c_foreach(i, vec_span, my namespaces) {
+        intptr_t index = i.ref - my namespaces.data;
+        Declaration const* decl = index < vec_declaration_cptr_size(&my namespace_decls) ?
+            *vec_declaration_cptr_at(&my namespace_decls, index) :
+            nullptr;
+        baseline_test_case_add_both(ctx, (Annotation){
+            .declarations = declaration_get_spans(decl),
+            .allow_declaration_empty = true,
+            .namespaces = vec_span_clone(so_far),
+            .span = *i.ref,
+            .type = &type_any,
+        });
+        vec_span_push(&so_far, *i.ref);
+    }
+    vec_span_drop(&so_far);
+    baseline_test_case_add_symbol(ctx, (Annotation){
+        .namespaces = vec_span_clone(my namespaces),
+        .declarations = declaration_get_spans(my decl_ref),
+        .allow_declaration_empty = true,
+        .span = my name,
+    });
+    c_foreach(i, vec_spanned_type, my generic_params) {
+        type_compile_test_info(&i.ref->type, ctx);
+    }
+}
+
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
@@ -152,37 +185,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER:
-            if (span_equals(my identifier->name, "object")) {
-                break;
-            }
-            if (my identifier->decl_ref && !span_valid(my identifier->decl_ref->name)) {
-                break;
-            }
-            VecSpan so_far = vec_span_init();
-            c_foreach(i, vec_span, my identifier->namespaces) {
-                intptr_t index = i.ref - my identifier->namespaces.data;
-                Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
-                    *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
-                    nullptr;
-                baseline_test_case_add_both(ctx, (Annotation){
-                    .declarations = declaration_get_spans(decl),
-                    .allow_declaration_empty = true,
-                    .namespaces = vec_span_clone(so_far),
-                    .span = *i.ref,
-                    .type = &type_any,
-                });
-                vec_span_push(&so_far, *i.ref);
-            }
-            vec_span_drop(&so_far);
-            baseline_test_case_add_symbol(ctx, (Annotation){
-                .namespaces = vec_span_clone(my identifier->namespaces),
-                .declarations = declaration_get_spans(my identifier->decl_ref),
-                .allow_declaration_empty = true,
-                .span = my identifier->name,
-            });
-            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
-                type_compile_test_info(&i.ref->type, ctx);
-            }
+            identifier_type_compile_test_info(my identifier, ctx);
             break;
 
         case TYPE_INFERRED:
