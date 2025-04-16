@@ -42,7 +42,7 @@ void panic_internal(const char* error_type, const char* file, int line, const ch
 #ifdef INCLUDE_VALGRIND
     VALGRIND_PRINTF_BACKTRACE("");
 #endif
-    exit(1);
+    abort();
 }
 
 #define DEBUG_CSTRS_CAP 20
