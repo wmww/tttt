@@ -63,9 +63,12 @@ static inline Display display_toplevel_type(Display d) {
 }
 
 static inline void display_pointer(Display d, void* ptr) {
-#define BITS_TO_CHAR(shift) (((uintptr_t)ptr >> shift * 6) & 0b01111111) | 0b01000000
+    if (!ptr) {
+        display_lit(d, "#");
+        return;
+    }
+#define BITS_TO_CHAR(shift) ((unsigned char)((uintptr_t)ptr >> (shift * 6)) & 0b01111111) | 0b01000000
     char c[] = {
-        '(',
         BITS_TO_CHAR(0),
         BITS_TO_CHAR(1),
         BITS_TO_CHAR(2),
@@ -77,7 +80,6 @@ static inline void display_pointer(Display d, void* ptr) {
         BITS_TO_CHAR(8),
         BITS_TO_CHAR(9),
         BITS_TO_CHAR(10),
-        ')',
     };
 #undef BITS_TO_CHAR
     display_sv(d, csview_from_n(c, sizeof(c)));
