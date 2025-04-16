@@ -41,7 +41,7 @@ int main(int argc, const char** argv) {
         if (debug_allocation_count != 0) {
             // Run again in case the increase came from the cache
             debug_allocation_count = 0;
-            BaselineTestCase rerun_case = run_baseline_test_case(&cache, test_path, true);
+            BaselineTestCase rerun_case = run_baseline_test_case(&cache, test_path, false);
             baseline_test_case_drop(&rerun_case);
             if (debug_allocation_count != 0) {
                 fprintf(stderr, "Detected %zd net allocations\n", debug_allocation_count);
