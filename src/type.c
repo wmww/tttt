@@ -660,12 +660,12 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
     Declaration const* to_remove = nullptr;
     if (my tag == TYPE_IDENTIFIER) {
         if (through_identifier) {
-            if (my identifier->decl_ref) {
-                if (hset_declaration_cptr_insert(&ctx->currently_resolving, my identifier->decl_ref).inserted) {
-                    to_remove = my identifier->decl_ref;
-                } else {
-                    return &type_any;
-                }
+            if (my identifier->decl_ref &&
+                hset_declaration_cptr_insert(&ctx->currently_resolving, my identifier->decl_ref).inserted
+            ) {
+                to_remove = my identifier->decl_ref;
+            } else {
+                return &type_any;
             }
         } else {
             return me;
