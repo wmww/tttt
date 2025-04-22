@@ -11,15 +11,16 @@ void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
     vec_declaration_cptr_drop(&my namespace_decls);
     vec_spanned_type_drop(&my generic_params);
-    lazy_type_drop(&my type);
+    type_drop(&my cached);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     me.namespaces = vec_span_clone(me.namespaces);
     me.namespace_decls = vec_declaration_cptr_clone(me.namespace_decls);
     me.generic_params = vec_spanned_type_clone(me.generic_params);
-    // PERF: perhaps this should clone the type if already evaluated?
-    me.type = (LazyType){ .tag = LAZY_TYPE_IDENTIFIER_TYPE };
+    me.has_cache = false;
+    me.cached = (Type){0};
+    // PERF: perhaps this should clone the type if cached?
     return me;
 }
 
@@ -104,23 +105,6 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
 
     c_foreach(i, vec_spanned_type, my generic_params) {
         type_lookup_names(&i.ref->type, names, errs);
-    }
-}
-
-Type identifier_type_evaluate_type(IdentifierType* me) {
-    if (my decl_ref) {
-        if (my decl_ref->type_generic) {
-            Type ret = generic_degenericize_type(
-                my decl_ref->type_generic,
-                type_clone(my decl_ref->declared_type),
-                &my generic_params
-            );
-            return ret;
-        } else {
-            return type_refcopy(&my decl_ref->declared_type);
-        }
-    } else {
-        return type_any;
     }
 }
 

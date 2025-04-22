@@ -579,6 +579,27 @@ static inline Type const* type_resolve_ternary_type(TypeCtx* ctx, TernaryType* m
     }
 }
 
+static Type const* identifier_type_resolve_internal(TypeCtx* ctx, IdentifierType* me) {
+    ignore ctx;
+    if (my has_cache) {
+        return &my cached;
+    } else if (my decl_ref) {
+        if (my decl_ref->type_generic) {
+            my has_cache = true;
+            my cached = generic_degenericize_type(
+                my decl_ref->type_generic,
+                type_clone(my decl_ref->declared_type),
+                &my generic_params
+            );
+            return &my cached;
+        } else {
+            return &my decl_ref->declared_type;
+        }
+    } else {
+        return &type_any;
+    }
+}
+
 static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me) {
     switch (my tag) {
         case TYPE_ANY:
@@ -597,7 +618,7 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
         case TYPE_TUPLE:
             return nullptr;
 
-        case TYPE_IDENTIFIER: return lazy_type_get(&my identifier->type);
+        case TYPE_IDENTIFIER: return identifier_type_resolve_internal(ctx, my identifier);
         case TYPE_INFERRED: return &my inferred->extends;
         case TYPE_INDEXED: return type_resolve_indexed_type(ctx, my indexed);
 

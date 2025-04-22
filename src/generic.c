@@ -142,6 +142,11 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_IDENTIFIER:
+            if (my identifier->has_cache) {
+                type_drop(&my identifier->cached);
+                my identifier->cached = (Type){0};
+                my identifier->has_cache = false;
+            }
             c_foreach(i, vec_spanned_type, my identifier->generic_params) {
                 replace_named_types_with(&i.ref->type, refinements);
             }
