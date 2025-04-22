@@ -726,6 +726,18 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
             return true;
 
         case TYPE_IDENTIFIER:
+            if (hset_declaration_cptr_insert(&ctx->currently_resolving, super->identifier->decl_ref).inserted) {
+                Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
+                bool ret = false;
+                if (super_resolved) {
+                    ret = type_extends_internal(ctx, sub, super_resolved, nullptr);
+                }
+                hset_declaration_cptr_erase(&ctx->currently_resolving, super->identifier->decl_ref);
+                return ret;
+            } else {
+                return true;
+            }
+
         case TYPE_INDEXED:
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
@@ -733,12 +745,7 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
         case TYPE_LAZY:
         case TYPE_REF: {
             Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
-            return type_extends_internal(
-                ctx,
-                sub,
-                super_resolved,
-                super->tag == TYPE_IDENTIFIER ? nullptr : refinements
-            );
+            return type_extends_internal(ctx, sub, super_resolved, refinements);
         }
 
         default: break;
@@ -757,6 +764,18 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
             return true;
 
         case TYPE_IDENTIFIER:
+            if (hset_declaration_cptr_insert(&ctx->currently_resolving, sub->identifier->decl_ref).inserted) {
+                Type const* sub_resolved = type_resolve_one_layer_internal(ctx, sub);
+                bool ret = false;
+                if (sub_resolved) {
+                    ret = type_extends_internal(ctx, sub_resolved, super, refinements);
+                }
+                hset_declaration_cptr_erase(&ctx->currently_resolving, sub->identifier->decl_ref);
+                return ret;
+            } else {
+                return true;
+            }
+
         case TYPE_INFERRED:
         case TYPE_INDEXED:
         case TYPE_KEYOF:
