@@ -6,6 +6,7 @@
 #include "string_helpers.h"
 #include "error.h"
 #include "value.h"
+#include "several_types.h"
 
 typedef struct LineNumberedStr {
     unsigned line;
@@ -657,6 +658,45 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
     }
 }
 
+static Type const* resolve_annotation_type(Type const* me) {
+    Type const* candidate = me;
+    for (intptr_t i = 0; i < 1000; i++) {
+        if (my tag == TYPE_IDENTIFIER) {
+            if (my identifier->decl_ref && (
+                my identifier->decl_ref->type_tag == DECLARATION_GENERIC_TYPE ||
+                my identifier->decl_ref->type_tag == DECLARATION_ENUM_CASE_TYPE ||
+                my identifier->decl_ref->type_tag == DECLARATION_ENUM
+            )) {
+                return me;
+            }
+            if (!vec_spanned_type_empty(&my identifier->generic_params)) {
+                return me;
+            }
+        }
+        Type const* prev = me;
+        me = type_resolve_one_layer(me);
+        if (!me) {
+            return prev;
+        }
+        me = type_resolve_until_identifier(me);
+        switch (my tag) {
+            case TYPE_IDENTIFIER:
+                candidate = me;
+                break;
+
+            case TYPE_ANY:
+            case TYPE_NEVER:
+            case TYPE_INTERFACE:
+            case TYPE_CALLABLE:
+            case TYPE_UNION:
+            case TYPE_INTERSECTION:
+                return candidate;
+            default: break;
+        }
+    }
+    return candidate;
+}
+
 void baseline_test_case_add_type(BaselineTestCase* me, Annotation data) {
     ASSERT(data.type);
 
@@ -689,7 +729,8 @@ void baseline_test_case_add_type(BaselineTestCase* me, Annotation data) {
     cstr_resize(&target.underline, cstr_size(&target.target), ' ');
     cstr_append_lit(&target.target, " : ");
     cstr_append_lit(&target.underline, " : ");
-    display_type(underline_display(&target), data.type);
+    Type const* resolved = resolve_annotation_type(data.type);
+    display_type(underline_display(&target), resolved);
     bool display_underline = true;
     if (!my underline_any && error_ctx_empty(my error_ctx) && cstr_ends_with(&target.target, ": any")) {
         display_underline = false;

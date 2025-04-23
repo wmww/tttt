@@ -429,50 +429,25 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
-    Type to_drop = {0};
-    Type const* my_type = &my type;
-    Type const* resolved = my_type;
-    if (generic_empty(&my generic)) { // If the type is not generic
-        if (my_type->tag == TYPE_IDENTIFIER &&
-            my_type->identifier->decl_ref &&
-            my_type->identifier->decl_ref->type_tag == DECLARATION_CLASS
-        ) {
-        } else {
-            resolved = type_resolve(my_type);
-            switch (resolved->tag) {
-                case TYPE_ANY:
-                case TYPE_UNKNOWN:
-                case TYPE_NEVER:
-                case TYPE_VOID:
-                case TYPE_BOOLEAN:
-                case TYPE_NUMBER:
-                case TYPE_STRING:
-                case TYPE_VALUE:
-                case TYPE_IDENTIFIER: break;
-                default: resolved = my_type;
-            }
-        }
-    } else { // If the type is generic
-        // This logic is still fucky, to test use ttttConditionalTypeResolving.ts
-        to_drop = type_identifier(c_new(IdentifierType, {
-            .name = my name,
-        }));
-        c_foreach(i, vec_generic_item, my generic.items) {
-            vec_spanned_type_push(&to_drop.identifier->generic_params, spanned_type(
-                i.ref->name,
-                type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
-            ));
-        }
-        resolved = &to_drop;
+    // This logic is still fucky, to test use ttttConditionalTypeResolving.ts
+    Type identifier_type = type_identifier(c_new(IdentifierType, {
+        .name = my name,
+        .decl_ref = my declaration.get,
+    }));
+    c_foreach(i, vec_generic_item, my generic.items) {
+        vec_spanned_type_push(&identifier_type.identifier->generic_params, spanned_type(
+            i.ref->name,
+            type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
+        ));
     }
     baseline_test_case_add_both(ctx, (Annotation){
         .declarations = declaration_get_spans(my declaration.get),
         .span = my name,
-        .type = resolved,
+        .type = &identifier_type,
     });
-    type_drop(&to_drop);
+    type_drop(&identifier_type);
     generic_compile_test_info(&my generic, ctx);
-    type_compile_test_info(my_type, ctx);
+    type_compile_test_info(&my type, ctx);
 }
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
