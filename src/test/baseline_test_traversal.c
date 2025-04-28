@@ -632,10 +632,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_CALL:
+            bool const prev_underline_any = ctx->underline_any;
+            ctx->underline_any = false;
             expr_compile_test_info(&my call->callable, ctx);
             c_foreach(i, vec_expr, my call->args) {
                 expr_compile_test_info(i.ref, ctx);
             }
+            ctx->underline_any = prev_underline_any;
             break;
 
         case EXPR_FUNCTION:
