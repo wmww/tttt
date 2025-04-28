@@ -541,7 +541,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             Type const* prop_t = expr_get_type(&my property->prop);
 
             bool const prev_underline_any = ctx->underline_any;
-            ctx->underline_any = true;
+            ctx->underline_any = my property->form == PROPERTY_EXPR_BRACKET ? false : true;
 
             if (expr_t_resolved->tag == TYPE_INTERFACE &&
                 prop_t->tag == TYPE_VALUE &&
@@ -582,10 +582,6 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         break;
                     }
                 }
-            }
-
-            if (my property->form == PROPERTY_EXPR_BRACKET) {
-                ctx->underline_any = prev_underline_any;
             }
 
             if (!has_compiled_expr_info) {
