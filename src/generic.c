@@ -160,7 +160,7 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
                 }
                 if (refinement) {
                     type_drop(me);
-                    *me = type_clone(*refinement);
+                    *me = type_nonparsed_clone(*refinement);
                 }
             }
             return;
