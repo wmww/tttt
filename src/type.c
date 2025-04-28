@@ -79,10 +79,12 @@ static Type type_composite_internal(TypeCtx* ctx, typeof((Type){}.tag) tag, Type
     } else if (a.tag == TYPE_NEVER || a.tag == TYPE_ANY || b.tag == TYPE_NEVER || b.tag == TYPE_ANY) {
         typeof((Type){}.tag) override_tag = tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER;
         typeof((Type){}.tag) ignore_tag = tag == TYPE_UNION ? TYPE_NEVER : TYPE_ANY;
-        if (a.tag == override_tag || b.tag == override_tag) {
-            type_drop(&a);
+        if (a.tag == override_tag) {
             type_drop(&b);
-            return (Type){.tag = override_tag};
+            return a;
+        } else if (b.tag == override_tag) {
+            type_drop(&a);
+            return b;
         } else if (a.tag == ignore_tag) {
             return b;
         } else {
