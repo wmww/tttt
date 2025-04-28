@@ -93,6 +93,8 @@ typedef struct Declaration {
     // standard library for the tests). Allows declarations to be "copy-on-write". A declaration shared between scopes
     // should be replaced by a deep copy before being modified.
     bool shared_between_scopes;
+    // Set if this is a declaration made from a duplicate name
+    bool duplicate;
 } Declaration;
 
 void declaration_drop(Declaration* me);

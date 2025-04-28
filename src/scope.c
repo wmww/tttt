@@ -96,7 +96,9 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
             .name = props.name,
             .namespaces = vec_span_clone(my namespaces),
         });
-        if (!existing) {
+        if (existing) {
+            ret->get->duplicate = true;
+        } else {
             hmap_str_arc_declaration_insert(
                 &my declarations,
                 cstr_from_span(props.name),

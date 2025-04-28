@@ -438,23 +438,31 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 }
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
-    // This logic is still fucky, to test use ttttConditionalTypeResolving.ts
-    Type identifier_type = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .decl_ref = my declaration.get,
-    }));
-    c_foreach(i, vec_generic_item, my generic.items) {
-        vec_spanned_type_push(&identifier_type.identifier->generic_params, spanned_type(
-            i.ref->name,
-            type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
-        ));
+    if (my declaration.get->duplicate) {
+        baseline_test_case_add_both(ctx, (Annotation){
+            .declarations = declaration_get_spans(my declaration.get),
+            .span = my name,
+            .type = &my type,
+        });
+    } else {
+        // This logic is still fucky, to test use ttttConditionalTypeResolving.ts
+        Type identifier_type = type_identifier(c_new(IdentifierType, {
+            .name = my name,
+            .decl_ref = my declaration.get,
+        }));
+        c_foreach(i, vec_generic_item, my generic.items) {
+            vec_spanned_type_push(&identifier_type.identifier->generic_params, spanned_type(
+                i.ref->name,
+                type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
+            ));
+        }
+        baseline_test_case_add_both(ctx, (Annotation){
+            .declarations = declaration_get_spans(my declaration.get),
+            .span = my name,
+            .type = &identifier_type,
+        });
+        type_drop(&identifier_type);
     }
-    baseline_test_case_add_both(ctx, (Annotation){
-        .declarations = declaration_get_spans(my declaration.get),
-        .span = my name,
-        .type = &identifier_type,
-    });
-    type_drop(&identifier_type);
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(&my type, ctx);
 }
