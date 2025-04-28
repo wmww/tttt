@@ -144,6 +144,15 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .name_is_value = true,
                 .type = &my type,
             });
+            if (my key.expr.ref->tag == EXPR_LITERAL) {
+                baseline_test_case_add_symbol(ctx, (Annotation){
+                    .declarations = vec_span_single(my key.span),
+                    .namespaces = vec_span_single(scope),
+                    .span = my key.expr.ref->outer_span,
+                    .name = my key.expr.ref->outer_span,
+                    .name_is_value = true,
+                });
+            }
             expr_compile_test_info(my key.expr.ref, ctx);
             break;
 

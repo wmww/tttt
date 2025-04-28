@@ -85,8 +85,24 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
 
         case INTERFACE_KEY_EXPR:
-            Type const* key_type = type_resolve(expr_get_type(my key.expr.ref));
-            if (key_type->tag != TYPE_VALUE) {
+            bool valid_key = true;
+            switch (my key.expr.ref->tag) {
+                case EXPR_LITERAL:
+                case EXPR_IDENTIFIER:
+                case EXPR_PROPERTY:
+                    Type valid_type = type_never;
+                    valid_type = type_composite(TYPE_UNION, valid_type, type_string);
+                    valid_type = type_composite(TYPE_UNION, valid_type, type_number);
+                    valid_type = type_composite(TYPE_UNION, valid_type, type_symbol);
+                    valid_key = type_extends(expr_get_type(my key.expr.ref), &valid_type);
+                    type_drop(&valid_type);
+                    break;
+
+                default:
+                    valid_key = false;
+                    break;
+            }
+            if (!valid_key) {
                 if (is_in_class) {
                     if (my is_method) {
                         error_ctx_error(errs, my key.span, 1168,
@@ -99,6 +115,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                     error_ctx_error(errs, my key.span, 1169,
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 }
+                break;
             }
             expr_typecheck(my key.expr.ref, errs);
             break;
