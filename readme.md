@@ -1,6 +1,8 @@
 # The Tess TypeScript Typechecker
 
-Work-in-progress [TypeScript](https://www.typescriptlang.org/) typechecker, alternative to [tsc](https://github.com/microsoft/TypeScript).
+Incomplete [TypeScript](https://www.typescriptlang.org/) typechecker.
+
+**Development on this project is halted indefinitely**, [retrospective](https://loginasroot.net/i_tried_to_write_a_typescript_type_checker)
 
 Internal documentation: [documentation.md](documentation.md)
 
