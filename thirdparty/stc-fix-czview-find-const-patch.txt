@@ -1,0 +1,11 @@
+--- stc/include/stc/czview.h
++++ stc/include/stc/czview.h
+@@ -51,7 +51,7 @@
+ }
+ 
+ STC_INLINE intptr_t czview_find(czview rs, const char* search) {
+-    char* res = strstr(rs.str, search);
++    const char* res = strstr(rs.str, search);
+     return res ? (res - rs.str) : c_NPOS;
+ }
+ 

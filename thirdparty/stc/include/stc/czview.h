@@ -51,7 +51,7 @@ STC_INLINE bool czview_equals(czview rs, const char* str) {
 }
 
 STC_INLINE intptr_t czview_find(czview rs, const char* search) {
-    char* res = strstr(rs.str, search);
+    const char* res = strstr(rs.str, search);
     return res ? (res - rs.str) : c_NPOS;
 }
 
