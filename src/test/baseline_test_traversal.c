@@ -714,7 +714,16 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 }
 
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
+    if (span_valid(my jump_label)) {
+        // Both labels and the targets of break and continue are shown as any
+        baseline_test_case_add_type(ctx, my jump_label, &type_any);
+    }
     switch (my tag) {
+        case STATEMENT_LABELED:
+            baseline_test_case_add_type(ctx, my labeled.name, &type_any);
+            statement_compile_test_info(my labeled.body, ctx);
+            break;
+
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
             break;
@@ -744,6 +753,11 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         }   break;
 
         case STATEMENT_FOR_LOOP:
+            if (my for_loop->is_do_while) {
+                statement_compile_test_info(&my for_loop->body, ctx);
+                expr_compile_test_info(&my for_loop->condition, ctx);
+                break;
+            }
             statement_compile_test_info(&my for_loop->initialization, ctx);
             expr_compile_test_info(&my for_loop->condition, ctx);
             if (my for_loop->afterthought.tag != EXPR_LITERAL ||

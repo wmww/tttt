@@ -81,6 +81,7 @@ typedef struct PortStatement {
     Span keyword_span; // Span of "import" or "export"
     PortItem main; // The main import item (not in {}s)
     VecPortItem items; // List of curly brace-enclosed imported items
+    bool side_effect_only; // `import "./abc"`
     bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes
         // a compile error
     cstr target_path; // Path of the module to import from

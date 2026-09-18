@@ -1263,6 +1263,12 @@ void display_statement(Display d, Statement const* me) {
             }
             break;
 
+        case STATEMENT_LABELED:
+            display_span(d, my labeled.name);
+            display_lit(d, ": ");
+            display_statement(d, my labeled.body);
+            break;
+
         case STATEMENT_BREAK: display_lit(d, "break;"); break;
         case STATEMENT_CONTINUE: display_lit(d, "continue;"); break;
 

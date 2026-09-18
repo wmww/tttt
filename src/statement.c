@@ -279,6 +279,11 @@ void statement_drop(Statement* me) {
             free(my try_catch);
             break;
 
+        case STATEMENT_LABELED:
+            statement_drop(my labeled.body);
+            free(my labeled.body);
+            break;
+
         case STATEMENT_BREAK: break;
         case STATEMENT_CONTINUE: break;
 
@@ -362,6 +367,10 @@ void statement_add_names(Statement* me, Scope* scope) {
             namespace_decl_add_names(&my decl.namespace, scope, my decl.props);
             break;
 
+        case STATEMENT_LABELED:
+            statement_add_names(my labeled.body, scope);
+            break;
+
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
         case STATEMENT_BLOCK:
@@ -382,6 +391,10 @@ void statement_add_names(Statement* me, Scope* scope) {
 
 void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
     switch (my tag) {
+        case STATEMENT_LABELED:
+            statement_resolve_names(my labeled.body, names, errs);
+            break;
+
         case STATEMENT_BLOCK:
             block_resolve_names(&my block, names, errs);
             break;
@@ -630,6 +643,8 @@ Type statement_evaluate_return_type(Statement* me) {
 
         case STATEMENT_RETURN_EXPR: return type_clone(*expr_get_type(&my expr));
 
+        case STATEMENT_LABELED: return statement_evaluate_return_type(my labeled.body);
+
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
         case STATEMENT_BREAK:
@@ -651,6 +666,11 @@ Type statement_evaluate_return_type(Statement* me) {
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     switch (my tag) {
+        case STATEMENT_LABELED:
+            ctx.inside_label = true;
+            statement_typecheck(my labeled.body, ctx, errs);
+            break;
+
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
             break;
@@ -804,7 +824,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_BREAK:
-            if (!ctx.break_allowed) {
+            // TODO: check the label actually exists (TS1116)
+            if (!ctx.break_allowed && !(span_valid(my jump_label) && ctx.inside_label)) {
                 error_ctx_error_d(errs, my keyword_span, 1105,
                     "A 'break' statement can only be used within an enclosing iteration or switch statement.");
             }

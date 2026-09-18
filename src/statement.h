@@ -95,6 +95,7 @@ typedef struct Statement {
         STATEMENT_FOR_EACH_LOOP,
         STATEMENT_SWITCH,
         STATEMENT_TRY_CATCH,
+        STATEMENT_LABELED,
         STATEMENT_BREAK,
         STATEMENT_CONTINUE,
         STATEMENT_EXPR,
@@ -120,6 +121,10 @@ typedef struct Statement {
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
         Span keyword_span; // Used for continue and break
+        struct {
+            Span name;
+            Statement* body; // Owned, never null
+        } labeled;
         PortStatement* import_export;
         struct {
             DeclStatementProps props;
@@ -136,6 +141,7 @@ typedef struct Statement {
             };
         } decl;
     };
+    Span jump_label; // The label break and continue jump to, null if there isn't one or for other statements
 } Statement;
 
 #define statement_noop ((Statement){ .tag = STATEMENT_NOOP })
@@ -192,6 +198,7 @@ typedef struct ForLoopStatement {
     Expr condition;
     Expr afterthought;
     Statement body;
+    bool is_do_while; // The body comes before the condition in the source
 } ForLoopStatement;
 
 typedef struct ForEachLoopStatement {

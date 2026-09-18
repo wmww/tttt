@@ -36,7 +36,8 @@ csview test_name_from_path(csview path);
 // A virtual file within a test case
 typedef struct BaselineTestFile {
     cstr path;
-    SourceFile const* source;
+    SourceFile const* source; // Null for files that aren't scripts (package.json and so on)
+    cstr raw_contents; // Only for files that aren't scripts, tsc still shows them in the errors baseline
     VecLineNumberedStr symbols;
     VecLineNumberedStr types;
     VecLineNumberedStr errors;

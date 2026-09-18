@@ -85,6 +85,7 @@ csview test_name_from_path(csview path) {
 
 void baseline_test_file_drop(BaselineTestFile* me) {
     cstr_drop(&my path);
+    cstr_drop(&my raw_contents);
     vec_line_numbered_str_drop(&my symbols);
     vec_line_numbered_str_drop(&my types);
     vec_line_numbered_str_drop(&my errors);
@@ -299,6 +300,16 @@ static void process_errors(BaselineTestCase* me) {
     }
 }
 
+static bool path_is_script(csview path) {
+    static const char* const extensions[] = { ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs" };
+    for (isize i = 0; i < (isize)c_arraylen(extensions); i++) {
+        if (csview_ends_with(path, extensions[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy, bool show_logs) {
     // A quiet test case shouldn't print the log_error()s the checker emits for constructs it can't handle yet
     LogLevel prev_threshold = logger_config.threshold;
@@ -328,6 +339,11 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     program_copy_globals_from(program, lib_program);
 
     for_each (i, vec_baseline_test_file, &ret.files) {
+        if (!path_is_script(cstr_sv(&i->path))) {
+            // package.json, tsconfig.json, .map files and so on exist in the filesystem but aren't root files
+            try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&i->path), &i->raw_contents)) or_panic;
+            continue;
+        }
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         source->display_path_override = cstr_str(&i->path);
@@ -346,6 +362,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
 
     set_error_config(&errs->config);
     for_each (i, vec_baseline_test_file, &ret.files) {
+        if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         block_compile_test_info(&i->source->ast, &ret);
     }
@@ -489,7 +506,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
             target,
             cstr_str(&i->path),
             true,
-            cstr_sv(&i->source->contents),
+            i->source ? cstr_sv(&i->source->contents) : cstr_sv(&i->raw_contents),
             &i->errors,
             i == vec_baseline_test_file_back(&my files)
         );
@@ -499,6 +516,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
+        if (!i->source) continue;
         render_lines_woven_with_file(
             target,
             cstr_str(&i->path),
@@ -513,6 +531,7 @@ void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me)
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
+        if (!i->source) continue;
         render_lines_woven_with_file(
             target,
             cstr_str(&i->path),

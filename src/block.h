@@ -13,6 +13,7 @@ typedef struct BlockTypecheckCtx {
     Type const* specified_return;
     bool break_allowed;
     bool continue_allowed;
+    bool inside_label; // Labeled breaks are allowed
 } BlockTypecheckCtx;
 
 typedef struct Block {

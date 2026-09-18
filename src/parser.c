@@ -3221,6 +3221,24 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         parse_fail(&import_p);
     } else if (parse_import_equals(&p, a, &statement)) {
         goto done;
+    } else if (*p.pos == '"' || *p.pos == '\'') {
+        // `import "./side-effects"`
+        Anchor path_anchor = anchor(&p);
+        Value path;
+        if (parse_literal(&p, &path)) {
+            if (path.tag == VALUE_STRING) {
+                statement.main.tag = PORT_NOOP;
+                statement.side_effect_only = true;
+                statement.requires_target = true;
+                statement.target_path = cstr_move(&path.string);
+                statement.target_path_span = span_from(path_anchor);
+                statement.main.full_span = span_from(a);
+                value_drop(&path);
+                goto done;
+            }
+            value_drop(&path);
+        }
+        return parse_fail(&p);
     }
 
     a = anchor(&p);
@@ -3746,6 +3764,78 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
     return parse_success(&p);
 }
 
+static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
+    Parser p = parser(parent);
+
+    if (!hop_start_if_ends_on_word_break(&p, "do")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    Statement body = statement_noop;
+    expect_statement(&p, false, &body);
+    hop_whitespace(&p);
+    ignore(hop_char(&p, ';'));
+    hop_whitespace(&p);
+
+    Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
+    if (hop_start_if_ends_on_word_break(&p, "while")) {
+        hop_whitespace(&p);
+        expect_char(&p, '(');
+        hop_whitespace(&p);
+        Expr parsed;
+        if (expect_expr(&p, expr_ctx_null, &parsed)) {
+            expr_drop(&condition);
+            condition = parsed;
+            parse_comma_ops_right_side(&p, &condition);
+        }
+        hop_whitespace(&p);
+        expect_char(&p, ')');
+    } else {
+        expected_token_error(&p, "while");
+    }
+
+    *ret = (Statement){
+        .tag = STATEMENT_FOR_LOOP,
+        .for_loop = c_new(ForLoopStatement, {
+            .initialization = statement_noop,
+            .condition = condition,
+            .afterthought = expr_undefined(span_from_pos(&p)),
+            .body = body,
+            .is_do_while = true,
+        }),
+    };
+    return parse_success(&p);
+}
+
+// `label:`, the statement that follows is parsed by the caller
+static bool parse_label(Parser* parent, Span* ret) {
+    Parser p = parser(parent);
+    Span label;
+    if (!parse_identifier(&p, &label)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    if (!hop_char(&p, ':')) {
+        return parse_fail(&p);
+    }
+    *ret = label;
+    return parse_success(&p);
+}
+
+// The optional label after break and continue
+static void parse_jump_target(Parser* parent, Span* ret) {
+    Parser p = parser(parent);
+    hop_whitespace_full(&p, true, false);
+    Span label;
+    if (parse_identifier(&p, &label)) {
+        *ret = label;
+        parse_success(&p);
+    } else {
+        parse_fail(&p);
+    }
+}
+
 static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecStatement* ret) {
     Parser p = parser(parent);
 
@@ -4245,8 +4335,22 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    Span label = span_null;
+    ret->jump_label = span_null;
     if (*p.pos == ';') {
         *ret = statement_noop;
+    } else if (parse_label(&p, &label)) {
+        hop_whitespace(&p);
+        Statement body;
+        expect_statement(&p, false, &body);
+        *ret = (Statement){
+            .tag = STATEMENT_LABELED,
+            .labeled = {
+                .name = label,
+                .body = c_new(Statement, body),
+            },
+        };
+        label = span_null;
     } else if (parse_import_export_statement(&p, ret)) {
     } else if (parse_decl_statement(&p, toplevel, ret)) {
     } else if (parse_block(&p, false, &ret->block)) {
@@ -4255,14 +4359,17 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         ret->tag = STATEMENT_IF_ELSE;
     } else if (parse_for_loop_statement(&p, ret)) {
     } else if (parse_while_loop_statement(&p, ret)) {
+    } else if (parse_do_while_loop_statement(&p, ret)) {
     } else if (parse_switch_statement(&p, ret)) {
     } else if (parse_try_catch_statement(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "break")) {
         ret->tag = STATEMENT_BREAK;
         ret->keyword_span = span_from(a);
+        parse_jump_target(&p, &label);
     } else if (hop_start_if_ends_on_word_break(&p, "continue")) {
         ret->tag = STATEMENT_CONTINUE;
         ret->keyword_span = span_from(a);
+        parse_jump_target(&p, &label);
     } else if (parse_return(&p, &ret->expr)) {
         ret->tag = STATEMENT_RETURN_EXPR;
     } else if (parse_throw(&p, &ret->expr)) {
@@ -4282,6 +4389,10 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         }
     } else {
         return parse_fail(&p);
+    }
+
+    if ((ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) && span_valid(label)) {
+        ret->jump_label = label;
     }
 
     reset_fail_cache(&p);

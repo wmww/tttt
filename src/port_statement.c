@@ -36,7 +36,8 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
             );
             return;
         }
-        if (!my main.source_file) {
+        // tsc doesn't mind unresolved side effect imports (`import "./a"`)
+        if (!my main.source_file && !my side_effect_only) {
             error_ctx_error_d(
                 scope->errs, my target_path_span, 2307,
                 "Cannot find module '", my target_path, "' or its corresponding type declarations."
