@@ -32,8 +32,9 @@ transient `ScopeStack`, then typechecking driven by `LazyType` (memoised, cycle-
 Things I believe are fine: C, cleat, the phase structure, LazyType as the memo/cycle mechanism, the parser
 approach (fast in principle; watch error-recovery fidelity since tsc's parse errors are part of the oracle).
 
-Things I believe are **foundationally wrong for the stated goal** (evidence is a skim, see plan 01 for the
-session that must confirm and design the fix):
+Things that are **foundationally wrong for the stated goal**. Points 1, 2 and 5 were confirmed with measurements
+by the planning session (evidence and the replacement design are in `plans/02-type-core.md`); 3 and 4 are still a
+skim, plan 03 covers them:
 1. **Types are value-semantic trees** (`Type` struct, `type_clone`/`type_drop`, `TYPE_REF` borrowed pointers,
    "sometimes owned by AST" rules). There is no type identity. tsc/tsgo intern types and give them ids; this is
    what makes union dedup, relation caches, instantiation caches, recursion-depth ("maybe") tracking and
@@ -49,13 +50,17 @@ session that must confirm and design the fix):
 4. **Scopes are discarded after name resolution**; there's no persistent symbol table. Declaration merging lives
    in `Scope` during resolution. Probably workable, but the symbols baseline, flow analysis, `this`/class member
    lookup and later language-service-ish needs all lean on persistent symbols. Needs a look.
+5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST
+   between all test programs. Blocks arena-owned types and multiple checkers over one AST. Plan 02 moves all checker
+   state into a per-`Program` `Checker` (side tables indexed by per-file slot), leaving the AST read-only after bind.
 
-At 17k LoC and 7% pass rate, replacing the type core now is cheap. At 60k LoC it will not be. So the direction
-is: **move to interned, arena-allocated, id-carrying types with id-keyed relation/instantiation caches before
-adding significant checker features.** The planning session may refine or, with real evidence, overturn this,
-but the default is that it happens. Expect the pass count to dip or stall during the migration; that is
-acceptable. Do not grind out test passes on top of the old representation in the meantime, beyond work that
-is independent of it (parser, harness, tooling, module resolution).
+At 19k LoC and 9% pass rate, replacing the type core now is cheap. At 60k LoC it will not be. **Decision: migrate to
+interned, arena-allocated, id-carrying types (`Ty`), split from syntax-only `TypeNode`s, with id-keyed relation
+caches, mapper-based instantiation and tsc-style recursion handling, staged in place over ~6 sessions with the suite
+runnable throughout (`plans/02-type-core.md`).** Expect the pass count to stall during the migration; that is
+acceptable. Do not grind out test passes on top of the old representation in the meantime, beyond work that is
+independent of it (parser, harness, tooling, module resolution). The main risk is the temporary `TYPE_NEW` bridge
+between old and new representations costing more than it saves; there's a short insights checkpoint after stage 4a.
 
 ## Risks / concerns
 - Test-chasing: 11k tests invite special-casing message text. Prefer fixes that move whole categories.
@@ -71,7 +76,7 @@ is independent of it (parser, harness, tooling, module resolution).
 
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
-2. Type core redesign (plan, then execute in stages).
+2. Type core redesign: ~~plan~~ done, execute `plans/02-type-core.md` stages 1-5.
 3. Persistent symbols + binder-time flow graph, then narrowing.
 4. Harness fidelity (compiler options, multi-config tests), module resolution.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template

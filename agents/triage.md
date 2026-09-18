@@ -59,3 +59,15 @@ Uninvestigated items. Triage sessions drain this.
 - bench corpus is rebuilt from whatever currently passes, so wall times aren't comparable across sessions. Pin the
   corpus (or report per-line numbers) so perf regressions are visible.
 
+- Parser bug: a statement following a block statement *on the same line* gives TS1005 "';' expected":
+  `function f(x: number) { if (x === 1) { return 1; } return 2; }` (newline after the inner `}` makes it parse).
+  Probably ASI logic treating `}` like an expression end. Likely affects many minified-looking tests; cheap fix.
+- Perf: `hmap_arc_declaration_bucket_lookup_` is 16% of all instructions (self time!) on the bench corpus, plus 3.4%
+  for insert, nearly all under `scope_init_declaration` / `namespace_decl_add_names`. A hash lookup shouldn't cost
+  that: suspect a poor hash or huge probe chains for `Span`/`cstr` keys, or the global scope (thousands of DOM names)
+  being copied/rehashed. This is the "resolve names costs as much as parsing" item above; callgrind it.
+- `tttt` finds `thirdparty/lib/` relative to the cwd ("File 'thirdparty/lib/default.d.ts' not found" from any other
+  directory). Should be relative to the executable / an install prefix.
+- No `perf` on the dev box; callgrind works (`valgrind --tool=callgrind ./release/tttt -q files...`, then
+  `callgrind_annotate [--inclusive=yes]`). Inclusive numbers for recursive functions are inflated. Worth a
+  `./profile.sh` wrapper if more sessions need it.

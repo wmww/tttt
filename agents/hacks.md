@@ -2,7 +2,10 @@
 Suboptimal-but-working code. Prefer function names over line numbers.
 
 - `type_pair_cache.h`: relation cache keyed by a string rendering of both types (`hash_key_display`). Slow and
-  fragile (two distinct types that print the same collide). Goes away with the type core redesign.
+  fragile (two distinct types that print the same collide). Worse: it lives in `TypeCtx`, which is created per
+  top-level `type_extends` call, so it only breaks cycles and never caches across queries. Goes away in plan 02 stage 3.
+- `LazyType` memos live in AST nodes and the harness shares the lib AST between test programs, so checker results
+  leak from one test into the next (harmless today because evaluated types are self-contained trees). Plan 02 stage 2.
 - `type_pair_cache_entry_update`: uses a key whose ownership was already handed to the map ("hacky but it works").
 - `baseline_test_case.c: load_test_source`: compiler option directives handled as ad-hoc string compares; almost
   all options ignored.
