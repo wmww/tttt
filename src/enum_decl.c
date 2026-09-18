@@ -24,14 +24,14 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
     for_each (i, vec_enum_case, &my cases) {
         declaration_init(&i->typeof_declaration, (DeclProps){
             .name = i->name,
-            .full = i->name,
+            .full = i->full_name,
             .tag = DECLARATION_ENUM_CASE_TYPE,
             .declared_type = type_lazy(&i->value.lazy_type),
         });
 
         scope_init_declaration(&my namespace, &i->declaration, (DeclProps) {
             .name = i->name,
-            .full = i->name,
+            .full = i->full_name,
             .tag = DECLARATION_ENUM_CASE,
             .value_type = type_identifier(c_new(IdentifierType, {
                 .namespaces = vec_span_single(my name),
@@ -90,13 +90,13 @@ Type enum_decl_evaluate_interface_type(EnumDecl* me) {
     VecInterfaceMember members = vec_interface_member_init();
     for_each (i, vec_enum_case, &my cases) {
         vec_interface_member_push(&members, interface_member_make(
-            i->name,
+            i->full_name,
             my declaration.get,
             true,
             false,
             cstr_from_span(i->name),
-            i->name,
-            false,
+            i->full_name,
+            i->name_is_value,
             type_refcopy(&i->declaration.get->value_type)
         ));
     }

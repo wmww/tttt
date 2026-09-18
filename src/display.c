@@ -959,8 +959,23 @@ void display_expr(Display d, Expr const* me) {
             d.indent++;
             for_each (i, vec_object_expr_item, &my object) {
                 display_newline(d);
-                display_s(d, i->name_string);
-                display_lit(d, ": ");
+                if (i->tag == OBJECT_ITEM_SPREAD) {
+                    display_lit(d, "...");
+                } else {
+                    if (i->tag == OBJECT_ITEM_GETTER) {
+                        display_lit(d, "get ");
+                    } else if (i->tag == OBJECT_ITEM_SETTER) {
+                        display_lit(d, "set ");
+                    }
+                    if (i->computed_key) {
+                        display_lit(d, "[");
+                        display_expr(d, i->computed_key);
+                        display_lit(d, "]");
+                    } else {
+                        display_s(d, i->name_string);
+                    }
+                    display_lit(d, ": ");
+                }
                 display_expr(d, &i->value);
                 display_lit(d, ",");
             }

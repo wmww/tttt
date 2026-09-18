@@ -911,7 +911,7 @@ static inline bool cache_type_in_extends_check(Type const* me) {
 }
 
 static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
-    if (ctx->recursion_level > 400) {
+    if (ctx->recursion_level > 100) {
         log_error("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }

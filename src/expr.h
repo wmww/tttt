@@ -311,13 +311,24 @@ typedef struct CallExpr {
 // Object
 
 typedef struct ObjectExprItem {
-    bool is_spread;
-    cstr name_string;
-    Span name_span;
+    enum {
+        OBJECT_ITEM_PROPERTY, // `a: 1`
+        OBJECT_ITEM_SHORTHAND, // `a`, value is an identifier expr with the same span as the name
+        OBJECT_ITEM_METHOD, // `a() {}`, value is a function expr
+        OBJECT_ITEM_GETTER, // `get a() {}`, value is a function expr
+        OBJECT_ITEM_SETTER, // `set a(v) {}`, value is a function expr
+        OBJECT_ITEM_SPREAD, // `...a`, no name
+    } tag;
+    Span span;
+    cstr name_string; // Empty for spreads and computed keys
+    Span name_span; // Includes the brackets of a computed key
+    bool name_is_value;
+    Expr* computed_key; // Owned, null unless the key is `[expr]`
     Expr value;
 } ObjectExprItem;
 
 void object_expr_item_drop(ObjectExprItem* me);
+Type object_expr_item_evaluate_type(ObjectExprItem* me, ObjectExpr const* object);
 
 #define g_class_key ObjectExprItem, object_expr_item
 #define g_opt (c_no_atomic)

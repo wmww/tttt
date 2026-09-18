@@ -257,6 +257,9 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
+                if (i->computed_key) {
+                    expr_lookup_names(i->computed_key, names, errs);
+                }
                 expr_lookup_names(&i->value, names, errs);
             }
             break;
@@ -557,6 +560,142 @@ static Type unary_op_evaluate_type(
     impossible;
 }
 
+// The type an object literal item contributes to the object's type (not abstracted)
+Type object_expr_item_evaluate_type(ObjectExprItem* me, ObjectExpr const* object) {
+    switch (my tag) {
+        case OBJECT_ITEM_SETTER:
+            // If there's a matching getter it decides the type
+            if (!my computed_key) {
+                for_each (i, vec_object_expr_item, object) {
+                    if (i->tag == OBJECT_ITEM_GETTER && !i->computed_key && cstr_eq(&i->name_string, &my name_string)) {
+                        return object_expr_item_evaluate_type(i, object);
+                    }
+                }
+            }
+            [[fallthrough]];
+        case OBJECT_ITEM_GETTER: {
+            Type const* func = type_resolve(expr_get_type(&my value));
+            if (func->tag != TYPE_CALLABLE) {
+                return type_any;
+            } else if (my tag == OBJECT_ITEM_GETTER) {
+                return type_clone(func->callable->ret);
+            } else if (vec_callable_arg_size(&func->callable->args)) {
+                return type_clone(vec_callable_arg_front(&func->callable->args)->type);
+            } else {
+                return type_any;
+            }
+        }
+
+        default:
+            return type_clone(*expr_get_type(&my value));
+    }
+}
+
+static InterfaceMember* interface_find_named_member(Interface* me, cstr const* name) {
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag == INTERFACE_KEY_NAME && cstr_eq(&i->key.name_string, name)) {
+            return i;
+        }
+    }
+    return nullptr;
+}
+
+static InterfaceMember* interface_find_index_member(Interface* me, Type const* key_type) {
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag == INTERFACE_KEY_INDEX && i->key.index.type.tag == key_type->tag) {
+            return i;
+        }
+    }
+    return nullptr;
+}
+
+static Type object_expr_evaluate_type(ObjectExpr const* me) {
+    Interface interface = {0};
+    for_each (i, vec_object_expr_item, me) {
+        if (i->tag == OBJECT_ITEM_SPREAD) {
+            Type const* type = type_resolve(expr_get_type(&i->value));
+            if (type->tag == TYPE_INTERFACE) {
+                for_each (i, vec_interface_member, &type->interface.members) {
+                    vec_interface_member_push(&interface.members, interface_member_clone(*i));
+                }
+            }
+            continue;
+        }
+
+        Type type = object_expr_item_evaluate_type(i, me);
+        type_abstract_literals(&type);
+        Span declaration = i->span;
+        bool is_method = i->tag == OBJECT_ITEM_METHOD;
+
+        cstr name = cstr_null;
+        bool name_is_value = i->name_is_value;
+        if (i->computed_key) {
+            Type const* key_type = type_resolve(expr_get_type(i->computed_key));
+            if (key_type->tag == TYPE_VALUE &&
+                (key_type->value.tag == VALUE_STRING || key_type->value.tag == VALUE_NUMBER)
+            ) {
+                cstr_append_value_js(&name, &key_type->value);
+                name_is_value = key_type->value.tag == VALUE_NUMBER;
+            } else if (key_type->tag == TYPE_STRING || key_type->tag == TYPE_NUMBER || key_type->tag == TYPE_ANY) {
+                // A key that's only known to be some string or number becomes an index signature
+                Type const* index_key_type = key_type->tag == TYPE_NUMBER ? &type_number : &type_string;
+                InterfaceMember* existing = interface_find_index_member(&interface, index_key_type);
+                if (existing) {
+                    existing->type = type_composite(TYPE_UNION, type_move(&existing->type), type);
+                } else {
+                    vec_interface_member_push(&interface.members, (InterfaceMember){
+                        .declarations = vec_span_single(declaration),
+                        .key = {
+                            .span = i->name_span,
+                            .tag = INTERFACE_KEY_INDEX,
+                            .index = {
+                                .name = sv_make_span(c_sv("x")),
+                                .type = type_clone(*index_key_type),
+                            },
+                        },
+                        .type = type,
+                    });
+                }
+                continue;
+            } else {
+                // TODO: unique symbol keys. For now the member is left out of the type
+                type_drop(&type);
+                continue;
+            }
+        } else {
+            name = cstr_clone(i->name_string);
+        }
+
+        InterfaceMember* existing = interface_find_named_member(&interface, &name);
+        if (existing && (i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER)) {
+            // The other half of an accessor pair. The getter decides the type
+            vec_span_push(&existing->declarations, declaration);
+            if (i->tag == OBJECT_ITEM_GETTER) {
+                type_drop(&existing->type);
+                existing->type = type;
+            } else {
+                type_drop(&type);
+            }
+            cstr_drop(&name);
+            continue;
+        }
+
+        InterfaceMember member = interface_member_make(
+            declaration,
+            nullptr,
+            false,
+            false,
+            name,
+            i->name_span,
+            name_is_value,
+            type
+        );
+        member.key.name_is_member_function = is_method;
+        vec_interface_member_push(&interface.members, member);
+    }
+    return type_interface(interface);
+}
+
 Type expr_evaluate_type(Expr const* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: return type_any;
@@ -597,36 +736,8 @@ Type expr_evaluate_type(Expr const* me) {
         case EXPR_FUNCTION:
             return type_lazy(&my function->lazy_type);
 
-        case EXPR_OBJECT: {
-            Interface interface = {0};
-            for_each (i, vec_object_expr_item, &my object) {
-                if (i->is_spread) {
-                    Type const* type = type_resolve(expr_get_type(&i->value));
-                    if (type->tag == TYPE_INTERFACE) {
-                        for_each (i, vec_interface_member, &type->interface.members) {
-                            vec_interface_member_push(&interface.members, interface_member_clone(*i));
-                        }
-                    }
-                } else {
-                    Type type = type_clone(*expr_get_type(&i->value));
-                    type_abstract_literals(&type);
-                    vec_interface_member_push(
-                        &interface.members,
-                        interface_member_make(
-                            span_between(i->name_span, i->value.outer_span),
-                            nullptr,
-                            false,
-                            false,
-                            cstr_clone(i->name_string),
-                            i->name_span,
-                            false,
-                            type
-                        )
-                    );
-                }
-            }
-            return type_interface(interface);
-        }
+        case EXPR_OBJECT:
+            return object_expr_evaluate_type(&my object);
 
         case EXPR_ARRAY: {
             Type index_t = type_never;
@@ -742,6 +853,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
+                if (i->computed_key) {
+                    expr_typecheck(i->computed_key, errs);
+                }
                 expr_typecheck(&i->value, errs);
             }
             break;
@@ -922,5 +1036,9 @@ zsview unary_op_get_zv(UnaryOp op) {
 
 void object_expr_item_drop(ObjectExprItem* me) {
     cstr_drop(&my name_string);
+    if (my computed_key) {
+        expr_drop(my computed_key);
+        free(my computed_key);
+    }
     expr_drop(&my value);
 }

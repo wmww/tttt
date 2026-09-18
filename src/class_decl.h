@@ -33,6 +33,17 @@ typedef struct ClassItem {
             Span name_span;
             bool name_is_value;
             FunctionImpl func;
+            // Accessors (`get x() {}`/`set x(v) {}`) are methods that show up as a property of accessor_type
+            enum {
+                CLASS_ACCESSOR_NONE = 0,
+                CLASS_ACCESSOR_GET,
+                CLASS_ACCESSOR_SET,
+            } accessor;
+            LazyType accessor_type;
+            // The first accessor in the class with the same name and staticness (possibly this one) and, for setters,
+            // the getter (if any). Set when looking up names.
+            struct ClassItem* accessor_first;
+            struct ClassItem* accessor_getter;
         } method;
         struct {
             bool is_static;
@@ -56,6 +67,7 @@ typedef struct ClassItem {
 void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
 Type class_item_field_evaluate_type(ClassItem* me);
+Type class_item_accessor_evaluate_type(ClassItem* me);
 Type class_item_get_type(ClassItem* me);
 
 #define g_class_key ClassItem, class_item

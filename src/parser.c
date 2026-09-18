@@ -99,6 +99,7 @@ static bool parse_function_args(
     FunctionImpl* ret
 );
 static bool parse_number(Parser* parent, double* ret);
+static bool parse_string(Parser* parent, cstr* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -547,6 +548,12 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
         if (!is_identifier_char(*p.pos)) {
             switch (*p.pos) {
                 case '[': case '"': case '\'': break;
+
+                case '#': case '*':
+                    if (!is_member) {
+                        goto loop_end;
+                    }
+                    break;
 
                 case '(':
                 case '{':
@@ -1162,6 +1169,47 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         if (parse_class_item(&p, true, true, &item)) {
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
+                    if (item.method.accessor) {
+                        // `get x(): T` / `set x(v: T)` in a type is a property. The getter's type wins
+                        bool is_getter = item.method.accessor == CLASS_ACCESSOR_GET;
+                        InterfaceMember* existing = nullptr;
+                        for_each (other, vec_interface_member, &members) {
+                            if (other->key.tag == INTERFACE_KEY_NAME &&
+                                cstr_eq(&other->key.name_string, &item.method.name_string)
+                            ) {
+                                existing = other;
+                            }
+                        }
+                        Type type = type_any;
+                        if (is_getter) {
+                            type = type_move(&item.method.func.ret);
+                        } else if (vec_function_arg_size(&item.method.func.args)) {
+                            type = type_move(&item.method.func.args.data[0].initializer.binding.explicit_type);
+                        }
+                        if (existing) {
+                            vec_span_push(&existing->declarations, item.span);
+                            if (is_getter) {
+                                type_drop(&existing->type);
+                                existing->type = type;
+                            } else {
+                                type_drop(&type);
+                                existing->readonly = false;
+                            }
+                        } else {
+                            InterfaceMember member = interface_member_make(
+                                item.span,
+                                nullptr,
+                                is_getter,
+                                false,
+                                cstr_move(&item.method.name_string),
+                                item.method.name_span,
+                                item.method.name_is_value,
+                                type
+                            );
+                            vec_interface_member_push(&members, member);
+                        }
+                        break;
+                    }
                     InterfaceMember member = interface_member_make(
                         item.span,
                         nullptr,
@@ -1385,7 +1433,23 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     VecEnumCase cases = vec_enum_case_init();
     while (*p.pos && *p.pos != '}') {
         EnumCase enum_case = {0};
-        if (!expect_identifier(&p, &enum_case.name)) {
+        cstr string_name;
+        Anchor name_anchor = anchor(&p);
+        if ((*p.pos == '"' || *p.pos == '\'') && parse_string(&p, &string_name)) {
+            // The name is taken from the source, so escape sequences in it aren't processed
+            cstr_drop(&string_name);
+            enum_case.full_name = span_from(name_anchor);
+            enum_case.name = span_make(
+                enum_case.full_name.source,
+                span_start_ptr(enum_case.full_name) + 1,
+                span_end_ptr(enum_case.full_name) - 1
+            );
+            enum_case.name_is_value = true;
+        } else if (parse_identifier_or_keyword(&p, &enum_case.name)) {
+            enum_case.full_name = enum_case.name;
+        } else {
+            expect_identifier(&p, &enum_case.name);
+            enum_case.full_name = enum_case.name;
             hop_token(&p);
         }
         hop_whitespace(&p);
@@ -1751,41 +1815,134 @@ static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* nam
     }
 }
 
+// Hops a contextual member keyword (`get`, `set`, `async`) if it is followed by a member name on the same line,
+// rather than being the member name itself (`{ get: 1 }`, `{ get() {} }`, `{ get }`)
+static bool hop_member_keyword(Parser* parent, const char* keyword, bool allow_newline) {
+    Parser p = parser(parent);
+    if (!hop_start_if_ends_on_word_break(&p, keyword)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    if (!allow_newline && p.whitespace == WHITESPACE_NEWLINE) {
+        return parse_fail(&p);
+    }
+    if (is_identifier_char(*p.pos) || *p.pos == '[' || *p.pos == '"' || *p.pos == '\'' || *p.pos == '#' ||
+        (*p.pos == '*' && strcmp(keyword, "async") == 0)
+    ) {
+        return parse_success(&p);
+    }
+    return parse_fail(&p);
+}
+
 static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     Parser p = parser(parent);
-    Span name_span;
-    cstr name_string;
-    bool name_is_value;
+    Anchor a = anchor(&p);
 
-    if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
-        if (hop_start(&p, "...")) {
-            Expr expr;
-            expect_expr(&p, expr_ctx_null, &expr);
-            *ret = (ObjectExprItem){
-                .is_spread = true,
-                .value = expr,
-            };
-            return parse_success(&p);
-        } else {
+    if (hop_start(&p, "...")) {
+        hop_whitespace(&p);
+        Expr expr;
+        expect_expr(&p, expr_ctx_null, &expr);
+        *ret = (ObjectExprItem){
+            .tag = OBJECT_ITEM_SPREAD,
+            .span = span_from(a),
+            .value = expr,
+        };
+        return parse_success(&p);
+    }
+
+    ObjectExprItem item = { .tag = OBJECT_ITEM_PROPERTY };
+    bool must_be_method = false;
+    if (hop_member_keyword(&p, "async", false)) {
+        must_be_method = true;
+    }
+    if (hop_char(&p, '*')) {
+        hop_whitespace(&p);
+        must_be_method = true;
+    }
+    if (!must_be_method) {
+        if (hop_member_keyword(&p, "get", true)) {
+            item.tag = OBJECT_ITEM_GETTER;
+            must_be_method = true;
+        } else if (hop_member_keyword(&p, "set", true)) {
+            item.tag = OBJECT_ITEM_SETTER;
+            must_be_method = true;
+        }
+    }
+
+    bool name_is_value = false;
+    bool name_is_identifier = false;
+    if (*p.pos == '[') {
+        Anchor key_anchor = anchor(&p);
+        hop_char(&p, '[');
+        hop_whitespace(&p);
+        Expr key;
+        if (!parse_expr(&p, expr_ctx_null, &key)) {
             return parse_fail(&p);
+        }
+        hop_whitespace(&p);
+        if (!hop_char(&p, ']')) {
+            expr_drop(&key);
+            return parse_fail(&p);
+        }
+        item.computed_key = c_new(Expr, key);
+        item.name_span = span_from(key_anchor);
+    } else {
+        const char* name_start = p.pos;
+        if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
+            return parse_fail(&p);
+        }
+        item.name_is_value = name_is_value;
+        name_is_identifier = !name_is_value;
+        if (name_is_identifier) {
+            // Keywords are fine as property names, but only real identifiers can be shorthand properties
+            Parser probe = parser(&p);
+            probe.pos = name_start;
+            Span ignored;
+            name_is_identifier = parse_identifier(&probe, &ignored);
+            parse_fail(&probe);
         }
     }
     hop_whitespace(&p);
 
-    if (!hop_char(&p, ':')) {
-        cstr_drop(&name_string);
+    // Tolerated here, the checker doesn't report TS1162 (object member cannot be declared optional) yet
+    if ((*p.pos == '?' || *p.pos == '!') && (p.pos[1] == '(' || p.pos[1] == ':' || p.pos[1] == '<')) {
+        p.pos++;
+        hop_whitespace(&p);
+    }
+
+    FunctionImpl func;
+    if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, &func)) {
+        if (item.tag == OBJECT_ITEM_PROPERTY) {
+            item.tag = OBJECT_ITEM_METHOD;
+        }
+        func.full_span = span_from(a);
+        item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
+    } else if (must_be_method) {
+        object_expr_item_drop(&item);
+        return parse_fail(&p);
+    } else if (hop_char(&p, ':')) {
+        hop_whitespace(&p);
+        expect_expr(&p, expr_ctx_null, &item.value);
+    } else if (name_is_identifier && !item.computed_key && (*p.pos == ',' || *p.pos == '}' || *p.pos == '=')) {
+        item.tag = OBJECT_ITEM_SHORTHAND;
+        item.value = expr_identifier((IdentifierExpr){ .name = item.name_span });
+        if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
+            // `{ a = 1 }` is only valid as a destructuring assignment target. The default is parsed and dropped
+            // TODO: keep it once assignment patterns are checked
+            hop_char(&p, '=');
+            hop_whitespace(&p);
+            Expr default_value;
+            if (expect_expr(&p, expr_ctx_null, &default_value)) {
+                expr_drop(&default_value);
+            }
+        }
+    } else {
+        object_expr_item_drop(&item);
         return parse_fail(&p);
     }
-    hop_whitespace(&p);
 
-    Expr value;
-    expect_expr(&p, expr_ctx_null, &value);
-
-    *ret = (ObjectExprItem){
-        .name_string = name_string,
-        .name_span = name_span,
-        .value = value,
-    };
+    item.span = span_from(a);
+    *ret = item;
     return parse_success(&p);
 }
 
@@ -2019,32 +2176,28 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     hop_whitespace(&p);
 
     bool is_getter = false, is_setter = false;
-    ignore is_setter;
-    ignore is_getter;
+    if (hop_member_keyword(&p, "get", true)) {
+        is_getter = true;
+    } else if (hop_member_keyword(&p, "set", true)) {
+        is_setter = true;
+    } else if (!is_type && hop_char(&p, '*')) {
+        // Generator method. TODO: nothing is recorded, its body is checked like a normal method's
+        hop_whitespace(&p);
+    }
 
     Span name_span;
     cstr name_string;
     bool name_is_value;
-    if (parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
-        if (!name_is_value && (span_equals(name_span, "get") || span_equals(name_span, "set"))) {
-            hop_whitespace(&p);
-
-            Span real_name_span;
-            cstr real_name_string;
-            bool real_name_is_value;
-            if (parse_name_or_value(&p, &real_name_span, &real_name_string, &real_name_is_value)) {
-                if (span_equals(name_span, "get")) {
-                    is_getter = true;
-                } else {
-                    is_setter = true;
-                }
-                cstr_drop(&name_string);
-                name_span = real_name_span;
-                name_string = real_name_string;
-                name_is_value = real_name_is_value;
-            }
-        }
-    } else {
+    if (!is_type && *p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+        // Private name, the `#` is part of the name
+        Anchor name_anchor = anchor(&p);
+        p.pos++;
+        Span ignored;
+        parse_identifier_or_keyword(&p, &ignored);
+        name_span = span_from(name_anchor);
+        name_string = cstr_from_span(name_span);
+        name_is_value = false;
+    } else if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
         name_span = span_null;
         name_string = cstr_null;
         name_is_value = false;
@@ -2071,6 +2224,10 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
         if (hop_char(&p, '?')) {
             hop_whitespace(&p);
             optional = true;
+        } else if (!is_type && *p.pos == '!' && p.pos[1] != '=') {
+            // Definite assignment assertion, only matters once definite assignment is checked
+            p.pos++;
+            hop_whitespace(&p);
         }
 
         FunctionImpl func;
@@ -2104,6 +2261,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
                     .is_optional = optional,
                     .name_is_value = name_is_value,
                     .func = func,
+                    .accessor = is_getter ? CLASS_ACCESSOR_GET : (is_setter ? CLASS_ACCESSOR_SET : CLASS_ACCESSOR_NONE),
                 }
             };
         } else {
@@ -2280,6 +2438,10 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
 
     ClassItem item;
     while (*p.pos && *p.pos != '}') {
+        if (hop_char(&p, ';')) {
+            hop_whitespace(&p);
+            continue;
+        }
         if (!parse_class_item(&p, false, is_abstract, &item)) {
             parse_error(
                 &p,
@@ -2387,7 +2549,13 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
     hop_whitespace(&p);
 
     Span prop;
-    if (!parse_identifier_or_keyword(&p, &prop)) {
+    if (*p.pos == '#' && is_identifier_start_char(p.pos[1])) {
+        // Private name, the `#` is part of the member's name
+        Anchor name_anchor = anchor(&p);
+        p.pos++;
+        parse_identifier_or_keyword(&p, &prop);
+        prop = span_from(name_anchor);
+    } else if (!parse_identifier_or_keyword(&p, &prop)) {
         return parse_fail(&p);
     }
 

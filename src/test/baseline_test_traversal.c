@@ -344,13 +344,14 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     type_drop(&t);
     for_each (i, vec_enum_case, &my cases) {
         //baseline_test_case_add_declaration(ctx, i->name, i->declaration.get);
-        Span span = i->name;
+        Span span = i->full_name;
         Declaration const* declaration = i->declaration.get;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .namespaces = vec_span_single(my name),
             .declarations = vec_span_clone(declaration->declarations),
             .span = span,
-            .name = declaration->name,
+            .name = i->name_is_value ? i->full_name : declaration->name,
+            .name_is_value = i->name_is_value,
         });
         if (declaration->value_tag) {
             baseline_test_case_add_type(ctx, span, &declaration->value_type);
@@ -361,15 +362,29 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     }
 }
 
-void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCase* ctx) {
+void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span class_name, BaselineTestCase* ctx) {
     switch(my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_compile_test_info(&my constructor.func, ctx);
             break;
 
-        case CLASS_ITEM_METHOD:
+        case CLASS_ITEM_METHOD: {
+            VecSpan declarations = {0};
+            if (my method.accessor && my method.accessor_first) {
+                // Both halves of an accessor pair declare the same property. Items live in one vec, so walk forward
+                // from the first
+                ClassItem* first = my method.accessor_first;
+                vec_span_push(&declarations, first->span);
+                for_each (other, vec_class_item, items) {
+                    if (other != first && other->tag == CLASS_ITEM_METHOD && other->method.accessor_first == first) {
+                        vec_span_push(&declarations, other->span);
+                    }
+                }
+            } else {
+                vec_span_push(&declarations, my span);
+            }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = vec_span_single(my span),
+                .declarations = declarations,
                 .namespaces = vec_span_single(class_name),
                 .span = my method.name_span,
                 .name_is_value = my method.name_is_value,
@@ -378,7 +393,7 @@ void class_item_compile_test_info(ClassItem* me, Span class_name, BaselineTestCa
             baseline_test_case_add_type(ctx, my method.name_span, &t);
             type_drop(&t);
             function_impl_compile_test_info(&my method.func, ctx);
-            break;
+        }   break;
 
         case CLASS_ITEM_FIELD: {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -444,7 +459,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         type_compile_test_info(i, ctx);
     }
     for_each (i, vec_class_item, &my items) {
-        class_item_compile_test_info(i, my name, ctx);
+        class_item_compile_test_info(i, &my items, my name, ctx);
     }
 }
 
@@ -598,7 +613,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         }
                         expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
-                        if (my property->prop.tag == EXPR_LITERAL) {
+                        // tsc has no line for the name in a private name access (`a.#b`)
+                        if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(my property->prop.outer_span.sv, "#")) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
                                 .declarations = vec_span_clone(i->declarations),
                                 .allow_declaration_empty = true,
@@ -620,7 +636,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
             if (my property->form == PROPERTY_EXPR_BRACKET) {
                 expr_compile_test_info(&my property->prop, ctx);
-            } else {
+            } else if (!csview_starts_with(my property->prop.outer_span.sv, "#")) {
                 baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type(me));
             }
         }   break;
@@ -661,15 +677,57 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
-                if (!i->is_spread) {
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i->name_span });
-                    Type t = type_clone(*expr_get_type(&i->value));
+                if (i->tag != OBJECT_ITEM_SPREAD) {
+                    VecSpan declarations = {0};
+                    if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) && !i->computed_key) {
+                        for_each (other, vec_object_expr_item, &my object) {
+                            if ((other->tag == OBJECT_ITEM_GETTER || other->tag == OBJECT_ITEM_SETTER) &&
+                                !other->computed_key &&
+                                cstr_eq(&other->name_string, &i->name_string)
+                            ) {
+                                vec_span_push(&declarations, other->span);
+                            }
+                        }
+                    } else {
+                        vec_span_push(&declarations, i->span);
+                    }
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = declarations,
+                        .span = i->name_span,
+                        .name_is_value = i->name_is_value,
+                    });
+                    if (i->computed_key && i->computed_key->tag == EXPR_LITERAL) {
+                        baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            .declarations = vec_span_single(i->span),
+                            .span = i->computed_key->outer_span,
+                            .name = i->name_span,
+                        });
+                    }
+                    Type t = object_expr_item_evaluate_type(i, &my object);
                     type_abstract_literals(&t);
                     baseline_test_case_add_type(ctx, i->name_span, &t);
                     type_drop(&t);
                 }
+                if (i->computed_key) {
+                    expr_compile_test_info(i->computed_key, ctx);
+                }
 
-                expr_compile_test_info(&i->value, ctx);
+                switch (i->tag) {
+                    case OBJECT_ITEM_SHORTHAND:
+                        // tsc only shows the property, not the identifier expression it's initialized from
+                        break;
+
+                    case OBJECT_ITEM_METHOD:
+                    case OBJECT_ITEM_GETTER:
+                    case OBJECT_ITEM_SETTER:
+                        // No line for the function as a whole, unlike a function expression
+                        function_impl_compile_test_info(i->value.function, ctx);
+                        break;
+
+                    default:
+                        expr_compile_test_info(&i->value, ctx);
+                        break;
+                }
             }
             break;
 

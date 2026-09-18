@@ -15,6 +15,7 @@ void class_item_drop(ClassItem* me) {
         case CLASS_ITEM_METHOD:
             cstr_drop(&my method.name_string);
             function_impl_drop(&my method.func);
+            lazy_type_drop(&my method.accessor_type);
             break;
 
         case CLASS_ITEM_FIELD:
@@ -57,10 +58,30 @@ Type class_item_field_evaluate_type(ClassItem* me) {
     return ret;
 }
 
+Type class_item_accessor_evaluate_type(ClassItem* me) {
+    check(my tag == CLASS_ITEM_METHOD && my method.accessor);
+    if (my method.accessor == CLASS_ACCESSOR_SET && my method.accessor_getter) {
+        return type_clone(*lazy_type_get(&my method.accessor_getter->method.accessor_type));
+    }
+    Type const* func = lazy_type_get(&my method.func.lazy_type);
+    if (func->tag != TYPE_CALLABLE) {
+        return type_any;
+    } else if (my method.accessor == CLASS_ACCESSOR_GET) {
+        Type ret = type_clone(func->callable->ret);
+        type_abstract_literals(&ret);
+        return ret;
+    } else if (vec_callable_arg_size(&func->callable->args)) {
+        return type_clone(vec_callable_arg_front(&func->callable->args)->type);
+    } else {
+        return type_any;
+    }
+}
+
 Type class_item_get_type(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR: return type_lazy(&my constructor.func.lazy_type);
-        case CLASS_ITEM_METHOD: return type_lazy(&my method.func.lazy_type);
+        case CLASS_ITEM_METHOD:
+            return type_lazy(my method.accessor ? &my method.accessor_type : &my method.func.lazy_type);
         case CLASS_ITEM_FIELD: return type_lazy(&my field.lazy_type);
         case CLASS_ITEM_INTERFACE_MEMBER: return type_refcopy(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return type_never;
@@ -88,6 +109,7 @@ void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_METHOD:
+            my method.accessor_type.tag = LAZY_TYPE_CLASS_ITEM_ACCESSOR;
             function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 
@@ -184,6 +206,25 @@ void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
         }
     }
 
+    for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
+            for_each (other, vec_class_item, &my items) {
+                if (other->tag == CLASS_ITEM_METHOD &&
+                    other->method.accessor &&
+                    other->method.is_static == i->method.is_static &&
+                    cstr_eq(&other->method.name_string, &i->method.name_string)
+                ) {
+                    if (!i->method.accessor_first) {
+                        i->method.accessor_first = other;
+                    }
+                    if (other->method.accessor == CLASS_ACCESSOR_GET && !i->method.accessor_getter) {
+                        i->method.accessor_getter = other;
+                    }
+                }
+            }
+        }
+    }
+
     expr_lookup_names(&my extends, names, errs);
     for_each (i, vec_type, &my implements) {
         type_lookup_names(i, names, errs);
@@ -260,7 +301,9 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                 break;
 
             case CLASS_ITEM_METHOD:
-                if (i->method.is_static != resolve_instance) {
+                if (i->method.is_static != resolve_instance && i->method.accessor && i->method.accessor_first != i) {
+                    // The second half of an accessor pair, the first half already added the property
+                } else if (i->method.is_static != resolve_instance) {
                     InterfaceMember member = interface_member_make(
                         i->span,
                         my declaration.get,
@@ -271,6 +314,21 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                         i->method.name_is_value,
                         class_item_get_type(i)
                     );
+                    if (i->method.accessor) {
+                        bool has_setter = false;
+                        for_each (other, vec_class_item, &my items) {
+                            if (other != i && other->tag == CLASS_ITEM_METHOD && other->method.accessor_first == i) {
+                                vec_span_push(&member.declarations, other->span);
+                            }
+                            if (other->tag == CLASS_ITEM_METHOD &&
+                                other->method.accessor_first == i &&
+                                other->method.accessor == CLASS_ACCESSOR_SET
+                            ) {
+                                has_setter = true;
+                            }
+                        }
+                        member.readonly = !has_setter;
+                    }
                     vec_interface_member_push(&interface.members, member);
                 }
                 break;

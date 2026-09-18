@@ -58,6 +58,10 @@ void lazy_type_evaluate(LazyType* me) {
             result = class_item_field_evaluate_type(c_container_of(me, ClassItem, field.lazy_type));
             break;
 
+        case LAZY_TYPE_CLASS_ITEM_ACCESSOR:
+            result = class_item_accessor_evaluate_type(c_container_of(me, ClassItem, method.accessor_type));
+            break;
+
         case LAZY_TYPE_ENUM_INSTANCE:
             result = enum_decl_evaluate_instance_type(c_container_of(me, EnumDecl, instance_type));
             break;

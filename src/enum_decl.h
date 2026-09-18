@@ -5,7 +5,9 @@
 #include "declaration.h"
 
 typedef struct EnumCase {
-    Span name;
+    Span name; // Without the quotes if the name is a string literal
+    Span full_name; // As written
+    bool name_is_value;
     Expr value;
     Declaration typeof_declaration;
     ArcDeclaration declaration;

@@ -344,6 +344,9 @@ static Result MUST_USE engine_eval_call(Engine* me, CallExpr const* call_expr) {
 static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr) {
     Value ret = value_object_make_empty();
     for_each (i, vec_object_expr_item, obj_expr) {
+        if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key) {
+            continue; // Not supported by the engine
+        }
         TRY_CATCH(value, engine_eval_expr(me, &i->value), res_err, {
             value_drop(&ret);
             return res_err;
