@@ -13,9 +13,12 @@ types components) are the oracle, not the goal.
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
   `@strict: true,false`...) is ignored.
-- No perf benchmark exists. We have no idea how we compare to tsc/tsgo on real code.
-- No tool tells us *why* tests fail in aggregate (which diagnostics are missing/extra, how many panics). Priorities
-  so far would be guesses.
+- Measurement exists now: `./failstats.py` (why tests fail, in aggregate) and `./bench.sh` (vs tsc and tsgo), with
+  results in `measurements.md`. Headlines: **40% of the suite fails in the parser** (valid syntax rejected, which
+  also switches off typechecking for the test) and a handful of constructs account for most of it; no crashes;
+  generic inference is the loudest "not implemented" in the checker. Perf on the (easy, synthetic) corpus tttt can
+  check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
+  with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
@@ -63,7 +66,7 @@ is independent of it (parser, harness, tooling, module resolution).
 - readme.md still says development is halted; update when convenient.
 
 ## Where this is going (rough order)
-1. Measurement tooling (failure aggregation, perf benchmark).
+1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. Type core redesign (plan, then execute in stages).
 3. Persistent symbols + binder-time flow graph, then narrowing.
 4. Harness fidelity (compiler options, multi-config tests), module resolution.

@@ -12,7 +12,9 @@
 
 typedef struct BaselineTestSuite {
     csview tests_dir;
+    csview dump_dir; // If not empty, every test's rendered output is written here
     bool has_filter;
+    bool show_progress; // The \r-overwritten collection counter is only noise when output isn't a terminal
     cregex filter;
     cstr prev_typescript_commit;
     cstr typescript_commit;

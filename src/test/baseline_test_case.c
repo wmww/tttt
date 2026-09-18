@@ -299,10 +299,10 @@ static void process_errors(BaselineTestCase* me) {
     }
 }
 
-BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy) {
+BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy, bool show_logs) {
     // A quiet test case shouldn't print the log_error()s the checker emits for constructs it can't handle yet
     LogLevel prev_threshold = logger_config.threshold;
-    if (!noisy) {
+    if (!noisy && !show_logs) {
         logger_config.threshold = LOG_LEVEL_NEVER;
     }
 

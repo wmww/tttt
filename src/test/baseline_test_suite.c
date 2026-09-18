@@ -40,7 +40,7 @@ static void load_dir(BaselineTestSuite* me, csview dir_path) {
                 make_baseline_test_result(cstr_from_sv(item.path))
             );
 
-            if (vec_baseline_test_result_size(&my results) % 100 == 0) {
+            if (my show_progress && vec_baseline_test_result_size(&my results) % 100 == 0) {
                 show_collected_test_counts(me);
             }
         }
@@ -396,6 +396,7 @@ failable load_baseline_test_suite(
         .has_filter = filter_re != nullptr,
         .filter = filter_re ? cregex_make(filter_re, CREG_ICASE) : (cregex){0},
         .cache = baseline_test_cache_init(),
+        .show_progress = !summary_only,
     });
 
     if (ret.get->filter.error) {
@@ -421,8 +422,10 @@ failable load_baseline_test_suite(
         box_baseline_test_suite_drop(&ret);
     }
 
-    show_collected_test_counts(ret.get);
-    println();
+    if (!summary_only) {
+        show_collected_test_counts(ret.get);
+        println();
+    }
     if (!summary_only) println(color_status, "Sorting tests...", color_normal);
     vec_baseline_test_result_sort(&ret.get->results);
     return ok(ret);

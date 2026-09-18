@@ -61,8 +61,9 @@ typedef struct BaselineTestCase {
     VecBaselineTestFile files;
 } BaselineTestCase;
 
-// Never prints to stdout, only prints to stderr if noisy is true, or if it panics
-BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy);
+// Never prints to stdout, only prints to stderr if noisy is true, or if it panics. show_logs leaves the checker's
+// log output on without the rest of what noisy does
+BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy, bool show_logs);
 void baseline_test_case_drop(BaselineTestCase* me);
 
 // These are used to get the data into string form, so it can be compared with known correct results or serialized

@@ -55,6 +55,13 @@ static bool compare_outputs(
     }
 }
 
+static void dump_output(BaselineTestSuite* suite, csview name, const char* extension, csview contents) {
+    if (!csview_size(suite->dump_dir)) return;
+    cstr path = cstr_d(suite->dump_dir, "/", name, extension);
+    try (fs_write_file(fs, cstr_sv(&path), contents)) or_log(error);
+    cstr_drop(&path);
+}
+
 void baseline_test_result_run(
     BaselineTestResult* me,
     BaselineTestSuite* suite,
@@ -98,13 +105,20 @@ void baseline_test_result_run(
         goto finish;
     }
 
-    BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_sv(&my source_path), noisy);
+    bool dumping = csview_size(suite->dump_dir) != 0;
+    if (dumping) {
+        // Lets whatever reads our stderr attribute the log lines that follow to a test
+        eprintln("### TEST ", name);
+    }
+
+    BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_sv(&my source_path), noisy, dumping);
     my did_run = test_case.did_run;
 
     if (my did_run) {
         cstr our_result = cstr_null;
 
         baseline_test_case_render_errors(&our_result, &test_case);
+        dump_output(suite, name, ".errors.txt", cstr_sv(&our_result));
         my errors_passed = compare_outputs(
             name,
             "errors",
@@ -115,6 +129,7 @@ void baseline_test_result_run(
         cstr_clear(&our_result);
 
         baseline_test_case_render_symbols(&our_result, &test_case);
+        dump_output(suite, name, ".symbols", cstr_sv(&our_result));
         my symbols_passed = compare_outputs(
             name,
             "symbols",
@@ -125,6 +140,7 @@ void baseline_test_result_run(
         cstr_clear(&our_result);
 
         baseline_test_case_render_types(&our_result, &test_case);
+        dump_output(suite, name, ".types", cstr_sv(&our_result));
         my types_passed = compare_outputs(
             name,
             "types",
