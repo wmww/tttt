@@ -46,21 +46,19 @@ static_failable check_file(csview path, returns int) {
     error_config_enable_strict(&errs.config);
     Program* program = program_new(&errs, fs);
 
-    printf("%sLoading libraries...%s\n", color_good, color_normal);
+    println(color_good, "Loading libraries...", color_normal);
     try (load_stdlib(program)) cleanup {
         destroy_program(program, &errs);
     }
 
     if (!error_ctx_empty(&errs)) {
         const intptr_t lib_errors = vec_error_size(&errs.errors);
-        printf(
-            "Encountered %s%zd errors%s loading libraries.\n",
-            color_error, lib_errors, color_normal);
+        println("Encountered ", color_error, lib_errors, " errors", color_normal, " loading libraries.");
         //print_error_ctx(&errs);
         error_ctx_clear(&errs);
     }
 
-    printf("%sLoading %.*s...%s\n", color_good, c_SV(path), color_normal);
+    println(color_good, "Loading ", path, "...", color_normal);
     try (SourceFile* source, program_load(program, path, &source)) cleanup {
         destroy_program(program, &errs);
     }
@@ -74,20 +72,17 @@ static_failable check_file(csview path, returns int) {
     const intptr_t name_errors = report_errors(&errs);
     if (name_errors) ret = 1;
 
-    cstr parsed_str = cstr_null;
-    display_block(debug_display(&parsed_str), &source->ast);
-    printf("%sParsed:%s\n", color_good, color_normal);
-    printf("%s\n\n", cstr_str(&parsed_str));
-    cstr_drop(&parsed_str);
+    println(color_good, "Parsed:", color_normal);
+    println(debug_d(&source->ast), "\n");
 
     intptr_t type_errors = 0;
     if (ret == 0) {
         program_typecheck(program);
 
         if (error_ctx_empty(&errs)) {
-            printf("%sTypecheck passed%s\n", color_good, color_normal);
+            println(color_good, "Typecheck passed", color_normal);
         } else {
-            printf("%sTypecheck failed%s\n", color_error, color_normal);
+            println(color_error, "Typecheck failed", color_normal);
         }
 
         type_errors = report_errors(&errs);
@@ -95,26 +90,19 @@ static_failable check_file(csview path, returns int) {
     }
 
     if (parse_errors || name_errors || type_errors) {
-        printf(
-            "Checked %zd files, found %s%zd parse errors%s, %s%zd name errors%s and %s%zd type errors%s.\n",
-            program_get_file_count(program),
-            parse_errors ? color_error : "",
-            parse_errors,
-            color_normal,
-            name_errors ? color_error : "",
-            name_errors,
-            color_normal,
-            type_errors ? color_error : "",
-            type_errors,
-            color_normal
+        println(
+            "Checked ", program_get_file_count(program), " files, found ",
+            parse_errors ? color_error : color_none, parse_errors, " parse errors", color_normal, ", ",
+            name_errors  ? color_error : color_none, name_errors,  " name errors",  color_normal, " and ",
+            type_errors  ? color_error : color_none, type_errors,  " type errors",  color_normal, "."
         );
     } else {
-        printf("%sChecked %zd files, no errors found!%s\n", color_good, program_get_file_count(program), color_normal);
+        println(color_good, "Checked ", program_get_file_count(program), " files, no errors found!", color_normal);
     }
 
-    //printf("%sRunning...%s\n", color_good, color_normal);
+    //println(color_good, "Running...", color_normal);
     //run_in_engine(source, arc_js_object_init());
-    //printf("%sRun succeeded%s\n", color_good, color_normal);
+    //println(color_good, "Run succeeded", color_normal);
 
     destroy_program(program, &errs);
     return ok(ret);
@@ -122,16 +110,13 @@ static_failable check_file(csview path, returns int) {
 
 int main(int argc, const char** argv) {
     if (argc > 2) {
-        printf("%sToo many arguments%s\n", color_error, color_normal);
+        println(color_error, "Too many arguments", color_normal);
         return 1;
     } else if (argc < 2) {
-        printf("%sToo few arguments%s\n", color_error, color_normal);
+        println(color_error, "Too few arguments", color_normal);
         return 1;
     } else if (streq(argv[1], "--help") || streq(argv[1], "-h")) {
-        printf(
-            "The Tess TypeScript Typechecker\n\n"
-            "USAGE: tttt [TSPATH]\n"
-        );
+        println("The Tess TypeScript Typechecker\n\nUSAGE: tttt [TSPATH]");
         return 0;
     }
 

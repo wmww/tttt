@@ -150,7 +150,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     type_typecheck(lazy_type_get(&my lazy_type), errs);
 
     if (my newline_before_arrow) {
-        error_ctx_error(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
+        error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
     BlockTypecheckCtx ctx = {

@@ -55,10 +55,7 @@ static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
         }
         // No need to drop the non-ok result since it's value is always undefined
     }
-    return result_err(value_string(cstr_from_fmt(
-        "ReferenceError: %.*s is not defined",
-        c_SV(identifier)
-    )));
+    return result_err(value_string(cstr_d("ReferenceError: ", identifier, " is not defined")));
 }
 
 static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, Value value) {
@@ -112,7 +109,7 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
                     js_object_set(target_value.object.get, cstr_from_span(target->identifier.name), value);
                     return result_ok_undefined;
             }
-            UNREACHABLE;
+            impossible;
         }
 
         default:
@@ -122,7 +119,7 @@ static Result MUST_USE engine_assign(Engine* me, Expr const* target, Value value
             });
             return result_err(value_string(cstr_lit("SyntaxError: invalid assignment left-hand side")));
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static Result MUST_USE engine_eval_binary_op(Engine* me, BinaryOpExpr const* op_expr) {
@@ -151,7 +148,7 @@ static Result MUST_USE engine_eval_binary_op(Engine* me, BinaryOpExpr const* op_
         case BINARY_OP_MINUS: ret = value_number(value_to_number(&left) - value_to_number(&right)); break;
         case BINARY_OP_STAR: ret = value_number(value_to_number(&left) * value_to_number(&right)); break;
         case BINARY_OP_SLASH: ret = value_number(value_to_number(&left) / value_to_number(&right)); break;
-        case BINARY_OP_EQUAL: UNREACHABLE; // handled above
+        case BINARY_OP_EQUAL: impossible; // handled above
         case BINARY_OP_DOUBLE_EQUAL: ret = value_boolean(value_loose_eq(&left, &right)); break;
         case BINARY_OP_TRIPLE_EQUAL: ret = value_boolean(value_strict_eq(&left, &right)); break;
         case BINARY_OP_LESS: ret = value_boolean(value_to_number(&left) < value_to_number(&right)); break;
@@ -162,7 +159,7 @@ static Result MUST_USE engine_eval_binary_op(Engine* me, BinaryOpExpr const* op_
         case BINARY_OP_TRIPLE_NOT_EQUAL: ret = value_boolean(!value_strict_eq(&left, &right)); break;
         case BINARY_OP_COMMA: ret = right; right = value_undefined; break;
         default:
-            NONFATAL("operator %s not implemented", binary_op_get_zv(op_expr->op).str);
+            log_error("operator ", binary_op_get_zv(op_expr->op).str, " not implemented");
             ret = value_undefined;
     }
     value_drop(&left);
@@ -184,7 +181,7 @@ static Result MUST_USE engine_eval_inc_dec(
 
 static Result MUST_USE engine_eval_typeof(Engine* me, Value const* value) {
     ignore me; ignore value;
-    NONFATAL("typeof not yet implemented");
+    log_error("typeof not yet implemented");
     return result_ok(value_string(cstr_lit("object")));
 }
 
@@ -275,7 +272,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
     for (int i = 0; i < defined_arg_num; i++) {
         FunctionArg const* arg = vec_function_arg_at(&func->impl->args, i);
         if (arg->rest) {
-            NONFATAL("Rest arguments not supported in engine");
+            log_error("Rest arguments not supported in engine");
         }
         if (arg->initializer.binding.tag == BINDING_IDENTIFIER) {
             Value value = value_undefined;
@@ -296,7 +293,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
             }
             js_object_set(locals, cstr_from_span(arg->initializer.binding.content_span), value);
         } else {
-            NONFATAL("Structured binding function arguments not yet supported in engine");
+            log_error("Structured binding function arguments not yet supported in engine");
         }
     }
     Result res = engine_run_block(me, &func->impl->body);
@@ -386,7 +383,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_ARRAY: return engine_eval_array(me, &expr->array);
         case EXPR_CLASS_DECL: return result_ok_undefined; // TODO
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static Result MUST_USE engine_run_if_else(Engine* me, IfStatement const* if_else) {
@@ -442,12 +439,12 @@ static Result MUST_USE engine_run_binding(Engine* me, Binding const* binding, Va
         }   break;
 
         case BINDING_ARRAY:
-            NONFATAL("Array structured bindings not supported");
+            log_error("Array structured bindings not supported");
             value_drop(&value);
             break;
 
         case BINDING_OBJECT:
-            NONFATAL("Object structured bindings not supported");
+            log_error("Object structured bindings not supported");
             value_drop(&value);
             break;
     }
@@ -475,15 +472,15 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_FOR_EACH_LOOP:
-            NONFATAL("Running for-each loops not yet implemented");
+            log_error("Running for-each loops not yet implemented");
             return result_ok_undefined;
 
         case STATEMENT_SWITCH:
-            NONFATAL("Running switch statements not yet implemented");
+            log_error("Running switch statements not yet implemented");
             return result_ok_undefined;
 
         case STATEMENT_TRY_CATCH:
-            NONFATAL("Running try-catch blocks not yet implemented");
+            log_error("Running try-catch blocks not yet implemented");
             return result_ok_undefined;
 
         case STATEMENT_BREAK: return result_break();
@@ -505,7 +502,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_IMPORT_EXPORT:
-            NONFATAL("Importing not yet implemented");
+            log_error("Importing not yet implemented");
             return result_ok_undefined;
 
         case STATEMENT_DECL_VARIABLE: {
@@ -529,7 +526,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         }
 
         case STATEMENT_DECL_CLASS:
-            NONFATAL("Creating classes not yet implemented");
+            log_error("Creating classes not yet implemented");
             return result_ok_undefined;
 
         case STATEMENT_DECL_ENUM: return result_ok_undefined;
@@ -537,10 +534,10 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         case STATEMENT_DECL_INTERFACE: return result_ok_undefined;
 
         case STATEMENT_DECL_NAMESPACE:
-            NONFATAL("Creating namespaces not yet implementated");
+            log_error("Creating namespaces not yet implementated");
             return result_ok_undefined;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static Result MUST_USE engine_run_block(Engine* me, Block const* block) {
@@ -569,8 +566,7 @@ static Result console_log_impl(Engine* engine, int argc, Value const argv[], voi
             cstr_append_lit(&str, " ");
         }
     }
-    printf("%s\n", cstr_str(&str));
-    cstr_drop(&str);
+    println(consume_d(str));
     return result_ok_undefined;
 }
 
@@ -625,14 +621,13 @@ void run_in_engine(SourceFile const* source, ArcObject root) {
     if (res.tag == RESULT_ERR) {
         cstr err = cstr_null;
         cstr_append_value_js(&err, &res.value);
-        printf("Error thrown: %s\n", cstr_str(&err));
-        cstr_drop(&err);
+        println("Error thrown: ", consume_d(err));
     }
     result_drop(&res);
     if (vec_stack_frame_size(&engine.stack) != 1) {
-        PANIC(
-            "Stack mismanaged. Ended up with %ld stack frames, should have been 1\n",
-            vec_stack_frame_size(&engine.stack)
+        panic(
+            "Stack mismanaged. Ended up with ", vec_stack_frame_size(&engine.stack),
+            " stack frames, should have been 1"
         );
     }
     engine_drop(&engine);

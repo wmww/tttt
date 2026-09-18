@@ -63,7 +63,7 @@ bool value_to_boolean(Value const* me) {
         case VALUE_JS_FUNC: return true;
         case VALUE_NATIVE_FUNC: return true;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 double value_to_number(Value const* me) {
@@ -96,7 +96,7 @@ double value_to_number(Value const* me) {
             }
         }
     }
-    UNREACHABLE;
+    impossible;
 }
 
 void cstr_append_value_js(cstr* target, Value const* me) {
@@ -120,6 +120,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             } else if (isnan(my number)) {
                 cstr_append_lit(target, "NaN");
             } else {
+                // Not display's %.12g: JS number-to-string needs the extra digits
                 cstr_append_fmt(target, "%.21g", my number);
             }
             break;
@@ -131,7 +132,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_BIGINT:
-            cstr_append_fmt(target, "%zd", (long int)my bigint);
+            cstr_append_d(target, DEFAULT_DISPLAY, (i64)my bigint);
             break;
 
         case VALUE_ARRAY:
@@ -151,10 +152,6 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             cstr_append_lit(target, "function() {\n    [native code]\n}");
             break;
     }
-}
-
-void cstr_append_value_error_msg(cstr* target, Value const* me) {
-    display_value(error_display(target), me);
 }
 
 bool value_loose_eq(Value const* a, Value const* b) {
@@ -198,7 +195,7 @@ bool value_strict_eq(Value const* a, Value const* b) {
         case VALUE_JS_FUNC: return a->js_func.get == b->js_func.get;
         case VALUE_NATIVE_FUNC: return a->native_func.get == b->native_func.get;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 void object_item_drop(ObjectItem* me) {

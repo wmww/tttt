@@ -61,7 +61,7 @@ Span span_between(Span const a, Span const b) {
         return a;
     }
     if (a.source != b.source) {
-        PANIC("Tried to make a span between two different files");
+        panic("Tried to make a span between two different files");
     }
     return span_make(
         a.source,
@@ -86,7 +86,7 @@ int span_cmp(Span a, Span b) {
     }
     if (a.source != b.source) {
         int cmp = cstr_cmp(&a.source->canonical_path, &b.source->canonical_path);
-        PANIC_IF(!cmp, "Two different source files both have path %s", cstr_str(&a.source->canonical_path));
+        panic_if(!cmp, "Two different source files both have path ", a.source->canonical_path);
         return cmp;
     } else if (a.sv.buf != b.sv.buf) {
         return a.sv.buf > b.sv.buf ? 1 : -1;

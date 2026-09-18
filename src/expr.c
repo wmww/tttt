@@ -28,19 +28,12 @@ void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCt
     my decl_ref = scope_stack_get_value(names, my name.sv);
     if (my decl_ref) {
     } else if (scope_stack_get_type(names, my name.sv)) {
-        error_ctx_error(
+        error_ctx_error_d(
             errs, my name, 2693,
-            "'%.*s' only refers to a type, but is being used as a value here.",
-            c_SPAN(my name)
+            "'", my name, "' only refers to a type, but is being used as a value here."
         );
     } else {
-        error_ctx_error(
-            errs,
-            my name,
-            2304,
-            "Cannot find name '%.*s'.",
-            c_SPAN(my name)
-        );
+        error_ctx_error_d(errs, my name, 2304, "Cannot find name '", my name, "'.");
     }
 }
 
@@ -78,7 +71,7 @@ static Generic const* generic_params_get_generic(GenericParamsExpr* me) {
     } else if (expr_type->tag == TYPE_INTERFACE) {
         for_each (i, vec_interface_member, &expr_type->interface.members) {
             if (i->key.tag == INTERFACE_KEY_CALLABLE) {
-                ASSERT(i->type.tag == TYPE_CALLABLE);
+                check(i->type.tag == TYPE_CALLABLE);
                 return &i->type.callable->generic;
             }
         }
@@ -108,27 +101,22 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
             if (item->extends_explicit && !type_extends(&arg->type, &item->extends)) {
                 Type abstracted = type_clone(arg->type);
                 type_abstract_literals(&abstracted);
-                cstr msg = cstr_lit("Type '");
-                cstr_append_type_error_msg(&msg, &abstracted);
-                cstr_append_lit(&msg, "' does not satisfy the constraint '");
-                cstr_append_type_error_msg(&msg, &item->extends);
-                cstr_append_lit(&msg, "'.");
-                error_ctx_error_s(errs, vec_spanned_type_at(&my params, i)->span, 2344, msg);
+                error_ctx_error_d(errs, vec_spanned_type_at(&my params, i)->span, 2344,
+                    "Type '", &abstracted, "' does not satisfy the constraint '", &item->extends, "'.");
                 type_drop(&abstracted);
             }
         }
     }
     if (type_resolve(expr_get_type(&my expr))->tag == TYPE_ANY) {
     } else if (generic_empty(generic)) {
-        error_ctx_error(
+        error_ctx_error_d(
             errs,
             span_between(
                 vec_spanned_type_at(&my params, 0)->span,
                 vec_spanned_type_back(&my params)->span
             ),
             2558,
-            "Expected 0 type arguments, but got %zd.",
-            vec_spanned_type_size(&my params)
+            "Expected 0 type arguments, but got ", vec_spanned_type_size(&my params), "."
         );
     }
 }
@@ -306,10 +294,10 @@ static BinaryOp binary_op_without_assignment(BinaryOp op) {
         case BINARY_OP_AND_AND_EQUAL: return BINARY_OP_AND_AND; break;
         case BINARY_OP_OR_OR_EQUAL: return BINARY_OP_OR_OR; break;
         case BINARY_OP_EH_EH_EQUAL: return BINARY_OP_EH_EH; break;
-        default: PANIC(
-            "binary_op_without_assignment() called with non-assignment op %s (%d)",
+        default: panic(
+            "binary_op_without_assignment() called with non-assignment op ",
             binary_op_get_zv(op).str,
-            op
+            " (", (i32)op, ")"
         );
     }
 }
@@ -399,7 +387,7 @@ static Type binary_op_evaluate_type(
             return type_composite(TYPE_UNION, a, type_clone(*right));
         }
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static void binary_op_typecheck(
@@ -416,12 +404,8 @@ static void binary_op_typecheck(
             } else if (type_extends(left, &type_number) && type_extends(right, &type_number)) {
             } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
-                cstr message = cstr_lit("Operator '+' cannot be applied to types '");
-                cstr_append_type_error_msg(&message, left);
-                cstr_append_lit(&message, "' and '");
-                cstr_append_type_error_msg(&message, right);
-                cstr_append_lit(&message, "'.");
-                error_ctx_error_s(errs, expr->inner_span, 2365, message);
+                error_ctx_error_d(errs, expr->inner_span, 2365,
+                    "Operator '+' cannot be applied to types '", left, "' and '", right, "'.");
             }
             break;
 
@@ -437,7 +421,7 @@ static void binary_op_typecheck(
         case BINARY_OP_XOR:
         case BINARY_OP_OR:
             if (!type_extends(left, &type_number)) {
-                error_ctx_error(
+                error_ctx_error_d(
                     errs,
                     expr->binary_op->left.outer_span,
                     2362,
@@ -445,7 +429,7 @@ static void binary_op_typecheck(
                 );
             }
             if (!type_extends(right, &type_number)) {
-                error_ctx_error(
+                error_ctx_error_d(
                     errs,
                     expr->binary_op->right.outer_span,
                     2363,
@@ -472,7 +456,7 @@ static void binary_op_typecheck(
                     break;
 
                 default:
-                    error_ctx_error(
+                    error_ctx_error_d(
                         errs,
                         expr->binary_op->left.outer_span,
                         2364,
@@ -487,12 +471,9 @@ static void binary_op_typecheck(
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_NOT_EQUAL:
             if (!type_overlaps(left, right)) {
-                cstr message = cstr_lit("This comparison appears to be unintentional because the types '");
-                cstr_append_type_error_msg(&message, left);
-                cstr_append_lit(&message, "' and '");
-                cstr_append_type_error_msg(&message, right);
-                cstr_append_lit(&message, "' have no overlap.");
-                error_ctx_error_s(errs, expr->outer_span, 2367, message);
+                error_ctx_error_d(errs, expr->outer_span, 2367,
+                    "This comparison appears to be unintentional because the types '", left,
+                    "' and '", right, "' have no overlap.");
             }
             break;
 
@@ -573,7 +554,7 @@ static Type unary_op_evaluate_type(
             return ret;
         }
     }
-    UNREACHABLE;
+    impossible;
 }
 
 Type expr_evaluate_type(Expr const* me) {
@@ -667,7 +648,7 @@ Type expr_evaluate_type(Expr const* me) {
         case EXPR_CLASS_DECL:
             return type_refcopy(&my class_decl->declaration.get->value_type);
     }
-    UNREACHABLE;
+    impossible;
 }
 
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
@@ -848,7 +829,7 @@ int binary_op_get_precedence(BinaryOp op) {
         case BINARY_OP_COMMA:
             return 10;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 zsview binary_op_get_zv(BinaryOp op) {
@@ -896,7 +877,7 @@ zsview binary_op_get_zv(BinaryOp op) {
         case BINARY_OP_EH_EH_EQUAL: return c_zv("\?\?=");
         case BINARY_OP_COMMA: return c_zv(",");
     }
-    NONFATAL("Invalid binary operator %d", op);
+    log_error("Invalid binary operator ", (i32)op);
     return c_zv("<INVALID_OP>");
 }
 
@@ -918,7 +899,7 @@ int unary_op_get_precedence(UnaryOp op) {
         case UNARY_OP_RIGHT_BANG:
             return 150;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 zsview unary_op_get_zv(UnaryOp op) {
@@ -935,7 +916,7 @@ zsview unary_op_get_zv(UnaryOp op) {
         case UNARY_OP_RIGHT_MINUS_MINUS: return c_zv("--");
         case UNARY_OP_RIGHT_BANG: return c_zv("!");
     }
-    NONFATAL("Invalid unary operator %d", op);
+    log_error("Invalid unary operator ", (i32)op);
     return c_zv("<INVALID_OP>");
 }
 

@@ -51,7 +51,7 @@ static inline LazyType lazy_type_clone(LazyType me) {
             break;
 
         default:
-            NONFATAL("LazyType with tag %d should not be cloned", me.tag);
+            log_error("LazyType with tag ", (i32)me.tag, " should not be cloned");
             break;
     }
     return me;

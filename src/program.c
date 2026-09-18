@@ -40,15 +40,14 @@ static const char* program_phase_get_str(ProgramPhase phase) {
         case PROGRAM_PHASE_TYPECHECKING: return "typechecking";
         case PROGRAM_PHASE_TYPECHECKED: return "typecheck done";
     }
-    UNREACHABLE;
+    impossible;
 }
 
 #define ASSERT_PHASE(expected) \
-    PANIC_IF( \
+    panic_if( \
         my phase != expected, \
-        "expected program phase to be %s, was actually %s", \
-        program_phase_get_str(expected), \
-        program_phase_get_str(my phase) \
+        "expected program phase to be ", program_phase_get_str(expected), \
+        ", was actually ", program_phase_get_str(my phase) \
     ) \
 
 #define CHANGE_PHASE(from, to) ASSERT_PHASE(from); my phase = to;
@@ -226,8 +225,8 @@ static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
 }
 
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
-    ASSERT(errs);
-    ASSERT(fs);
+    check(errs);
+    check(fs);
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
@@ -251,7 +250,7 @@ void program_destroy(Program* me) {
 }
 
 static SourceFile* program_load_import_idempotent(Program* me, Span path_span, csview path) {
-    ASSERT(span_valid(path_span));
+    check(span_valid(path_span));
     csview cwd = dirname_of(cstr_sv(&path_span.source->canonical_path));
     cstr source_path;
     if (get_import_path(my fs, cwd, path, &source_path)) {
@@ -370,7 +369,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (my loading_stdlib) {
         source_file->is_stdlib = true;
         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
-        cstr_take(&source_file->decl_override, cstr_from_fmt("lib.%.*s, --, --", c_SV(filename)));
+        cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
     }
 
     parse_file(source_file, my errs);
@@ -396,10 +395,10 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
 
     clear_error_config();
 
-    // An unreadable entry point isn't a TypeScript-level diagnostic: it has no span to attach to, so error_ctx_error()
-    // would just drop it. Report it to our caller instead.
+    // An unreadable entry point isn't a TypeScript-level diagnostic: it has no span to attach to, so
+    // error_ctx_error_d() would just drop it. Report it to our caller instead.
     if (!main_source) {
-        return err_fmt("File '%.*s' not found.", c_SV(path));
+        return err_d("File '", path, "' not found.");
     }
 
     return ok(main_source);
@@ -407,7 +406,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
 
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     my loading_stdlib = true;
-    cstr path = cstr_from_fmt("%.*s/%.*s.d.ts", c_SV(lib_path), c_SV(name));
+    cstr path = cstr_d(lib_path, "/", name, ".d.ts");
     try (SourceFile* source, program_load(me, cstr_sv(&path), &source)) cleanup {
         my loading_stdlib = false;
         cstr_drop(&path);

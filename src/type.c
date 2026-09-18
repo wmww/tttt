@@ -14,6 +14,27 @@
 #include "math_helpers.h"
 #include "type_pair_cache.h"
 
+// How an index shows up in a "Property 'x' does not exist" message: a string literal index shows its value, anything
+// else shows its type
+typedef struct IndexPropertyName {
+    Type const* index;
+} IndexPropertyName;
+
+#define index_property_name(index) ((IndexPropertyName){ .index = (index) })
+
+impl_display_no_drop(IndexPropertyName, index_property_name, static) {
+    if (me.index->tag == TYPE_VALUE && me.index->value.tag == VALUE_STRING) {
+        return debuggable_sv_display(cstr_sv(&me.index->value.string), d);
+    } else {
+        return type_display(me.index, d);
+    }
+}
+
+#undef DISPLAYABLES
+#define DISPLAYABLES \
+    TTTT_DISPLAYABLES, \
+    IndexPropertyName: index_property_name_display
+
 const Type type_any = { .tag = TYPE_ANY };
 const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
 const Type type_unknown = { .tag = TYPE_UNKNOWN };
@@ -71,7 +92,7 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
 }
 
 static Type type_composite_internal(TypeCtx* ctx, typeof((Type){}.tag) tag, Type a, Type b) {
-    ASSERT(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
+    check(tag == TYPE_UNION || tag == TYPE_INTERSECTION);
     if (a.tag == TYPE_REF) {
         return type_composite(tag, type_clone(*a.ref), b);
     } else if (b.tag == TYPE_REF) {
@@ -118,7 +139,7 @@ Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
 }
 
 void composite_type_simplify(Type* me) {
-    ASSERT(my tag == TYPE_UNION || my tag == TYPE_INTERSECTION);
+    check(my tag == TYPE_UNION || my tag == TYPE_INTERSECTION);
     Type ret = type_composite_base(my tag);
     for_each (i, vec_type, &my composite) {
         ret = type_composite(my tag, ret, *i);
@@ -229,11 +250,7 @@ Type type_clone(Type me) {
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
         case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
     }
-    UNREACHABLE;
-}
-
-void cstr_append_type_error_msg(cstr* target, Type const* me) {
-    display_type(error_display(target), me);
+    impossible;
 }
 
 static void type_add_inferred_names(Type const* me, Scope* scope) {
@@ -569,7 +586,7 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
 
         case TYPE_REF: return my ref;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 Type const* type_resolve_one_layer(Type const* me) {
@@ -876,9 +893,9 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
         case TYPE_LAZY:
         case TYPE_REF:
             // Should have been handled above
-            UNREACHABLE;
+            impossible;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static inline bool cache_type_in_extends_check(Type const* me) {
@@ -895,7 +912,7 @@ static inline bool cache_type_in_extends_check(Type const* me) {
 
 static bool type_extends_internal(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
     if (ctx->recursion_level > 400) {
-        NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
+        log_error("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }
 
@@ -934,7 +951,7 @@ bool type_extends(Type const* sub, Type const* super) {
 }
 
 static bool composite_type_overlaps(TypeCtx* ctx, Type const* composite, Type const* other) {
-    ASSERT(composite->tag == TYPE_UNION || composite->tag == TYPE_INTERSECTION);
+    check(composite->tag == TYPE_UNION || composite->tag == TYPE_INTERSECTION);
     bool overlaps_in_all = true;
     bool overlaps_in_any = false;
     for_each (i, vec_type, &composite->composite) {
@@ -1073,14 +1090,14 @@ static inline bool type_overlaps_more_internal(TypeCtx* ctx, Type const* a, Type
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
-            UNREACHABLE; // Should have been resolved
+            impossible; // Should have been resolved
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static bool type_overlaps_internal(TypeCtx* ctx, Type const* a, Type const* b) {
     if (ctx->recursion_level > 400) {
-        NONFATAL("Max type recursion depth exceeded (type_extends_internal)");
+        log_error("Max type recursion depth exceeded (type_extends_internal)");
         return true;
     }
 
@@ -1245,18 +1262,18 @@ void type_abstract_literals(Type* me) {
                             false,
                             type_value(value_clone(item->value))
                         );
-                        ASSERT(member.type.tag == INTERFACE_TYPE_INSTANTIATED);
+                        check(member.type.tag == INTERFACE_TYPE_INSTANTIATED);
                         type_abstract_literals(&member.type.instantiated);
                         vec_interface_member_push(&interface.members, member);
                     }
                     type_drop(me);
                     *me = type_interface(interface);
                 }   break; */
-                    NONFATAL("type_abstract_literals() not implemented for objects");
+                    log_error("type_abstract_literals() not implemented for objects");
                     break;
 
                 case VALUE_ARRAY:
-                    NONFATAL("type_abstract_literals() not implemented for arrays");
+                    log_error("type_abstract_literals() not implemented for arrays");
                     break;
 
                 case VALUE_JS_FUNC:
@@ -1335,13 +1352,13 @@ static inline bool type_is_simple_index_type(Type const* me) {
 
         default: return false;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 // Returns true if index found (ret is set). Else returns false and ret is unchanged.
 static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type const* index, Type* ret) {
     if (ctx->recursion_level > 500) {
-        NONFATAL("Max type recursion depth exceeded (index_type_evaluate_type_internal)");
+        log_error("Max type recursion depth exceeded (index_type_evaluate_type_internal)");
         return false;
     }
 
@@ -1488,9 +1505,9 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
-            PANIC("Type with tag %d should have been resolved away", my tag);
+            panic("Type with tag ", (i32)my tag, " should have been resolved away");
     }
-    UNREACHABLE;
+    impossible;
 }
 
 Type index_type_evaluate_type(Type const* me, Type const* index) {
@@ -1511,7 +1528,7 @@ static void index_type_typecheck_internal(
     ErrorCtx* errs
 ) {
     if (ctx->recursion_level > 500) {
-        NONFATAL("Max type recursion depth exceeded (index_type_typecheck_internal)");
+        log_error("Max type recursion depth exceeded (index_type_typecheck_internal)");
         return;
     }
 
@@ -1522,10 +1539,7 @@ static void index_type_typecheck_internal(
             index_type_typecheck_internal(ctx, me, i, indexed_span, index_span, error_if_not_found, errs);
         }
     } else if (!type_is_simple_index_type(index)) {
-        cstr msg = cstr_lit("Type '");
-        cstr_append_type_error_msg(&msg, index);
-        cstr_append_lit(&msg, "' cannot be used as an index type.");
-        error_ctx_error_s(errs, index_span, 2538, msg);
+        error_ctx_error_d(errs, index_span, 2538, "Type '", index, "' cannot be used as an index type.");
         return;
     }
 
@@ -1539,29 +1553,19 @@ static void index_type_typecheck_internal(
                 case VALUE_NULL:
                 case VALUE_UNDEFINED:
                     if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
-                        error_ctx_error(
-                            errs,
-                            indexed_span,
-                            18047,
-                            "'%.*s' is possibly '%s'.",
-                            c_SPAN(indexed_span),
-                            my value.tag == VALUE_NULL ? "null" : "undefined"
+                        error_ctx_error_d(
+                            errs, indexed_span, 18047,
+                            "'", indexed_span, "' is possibly '",
+                            my value.tag == VALUE_NULL ? "null" : "undefined", "'."
                         );
                     }
                     break;
 
                 default:
                     if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
-                        cstr msg = cstr_lit("Property '");
-                        if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
-                            cstr_append_s(&msg, index->value.string);
-                        } else {
-                            cstr_append_type_error_msg(&msg, index);
-                        }
-                        cstr_append_lit(&msg, "' does not exist on type '");
-                        cstr_append_type_error_msg(&msg, me_original);
-                        cstr_append_lit(&msg, "'.");
-                        error_ctx_error_s(errs, index_span, 2339, msg);
+                        error_ctx_error_d(errs, index_span, 2339,
+                            "Property '", index_property_name(index),
+                            "' does not exist on type '", me_original, "'.");
                     }
                 break;
             }
@@ -1577,16 +1581,9 @@ static void index_type_typecheck_internal(
         case TYPE_BIGINT:
         case TYPE_CALLABLE:
             if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
-                cstr msg = cstr_lit("Property '");
-                if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
-                    cstr_append_s(&msg, index->value.string);
-                } else {
-                    cstr_append_type_error_msg(&msg, index);
-                }
-                cstr_append_lit(&msg, "' does not exist on type '");
-                cstr_append_type_error_msg(&msg, me_original);
-                cstr_append_lit(&msg, "'.");
-                error_ctx_error_s(errs, index_span, 2339, msg);
+                error_ctx_error_d(errs, index_span, 2339,
+                    "Property '", index_property_name(index),
+                    "' does not exist on type '", me_original, "'.");
             }
             break;
 
@@ -1599,16 +1596,9 @@ static void index_type_typecheck_internal(
             }
             if (!found) {
                 if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
-                    cstr msg = cstr_lit("Property '");
-                    if (index->tag == TYPE_VALUE && index->value.tag == VALUE_STRING) {
-                        cstr_append_s(&msg, index->value.string);
-                    } else {
-                        cstr_append_type_error_msg(&msg, index);
-                    }
-                    cstr_append_lit(&msg, "' does not exist on type '");
-                    cstr_append_type_error_msg(&msg, me_original);
-                    cstr_append_lit(&msg, "'.");
-                    error_ctx_error_s(errs, index_span, 2551, msg);
+                    error_ctx_error_d(errs, index_span, 2551,
+                        "Property '", index_property_name(index),
+                        "' does not exist on type '", me_original, "'.");
                 }
             }
         }   break;
@@ -1622,16 +1612,9 @@ static void index_type_typecheck_internal(
                 errs
             ) {
                 // TODO: this logic doesn't account for rest elements
-                cstr msg = cstr_lit("Tuple type '");
-                cstr_append_type_error_msg(&msg, me);
-                cstr_append_fmt(
-                    &msg,
-                    "' of length '%ld' has no element at index '",
-                    vec_tuple_element_size(&my tuple.elements)
-                );
-                cstr_append_value_error_msg(&msg, &index->value);
-                cstr_append_lit(&msg, "'.");
-                error_ctx_error_s(errs, index_span, 2493, msg);
+                error_ctx_error_d(errs, index_span, 2493,
+                    "Tuple type '", me, "' of length '", vec_tuple_element_size(&my tuple.elements),
+                    "' has no element at index '", &index->value, "'.");
             }
             break;
 
@@ -1650,7 +1633,7 @@ static void index_type_typecheck_internal(
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
-            PANIC("Type with tag %d should have been resolved away", my tag);
+            panic("Type with tag ", (i32)my tag, " should have been resolved away");
     }
 }
 
@@ -1689,7 +1672,6 @@ static bool check_assignable_or_error_internal(
         return true;
     }
 
-    cstr source_str = cstr_null, target_str = cstr_null;
     Type source_abstracted = type_any;
     if (target->tag != TYPE_VALUE) {
         source_abstracted = type_clone(*source);
@@ -1697,19 +1679,14 @@ static bool check_assignable_or_error_internal(
         source = &source_abstracted;
     }
 
-    cstr_append_type_error_msg(&source_str, source);
-    cstr_append_type_error_msg(&target_str, target);
+    // Rendered before the types are dropped below, which happens before the error is built
+    cstr source_str = cstr_d(source);
+    cstr target_str = cstr_d(target);
     type_drop(&source_abstracted);
     type_drop(&local_type);
-    error_ctx_error(
-        errs,
-        target_span,
-        ts_code,
-        "%s '%s' is not assignable to %s '%s'.",
-        source_label,
-        cstr_str(&source_str),
-        target_label,
-        cstr_str(&target_str)
+    error_ctx_error_d(
+        errs, target_span, ts_code,
+        source_label, " '", source_str, "' is not assignable to ", target_label, " '", target_str, "'."
     );
     c_drop(cstr, &source_str, &target_str);
     return false;
@@ -1803,15 +1780,15 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             } else if (call->uses_new) {
                 if (!callable->is_constructor) {
                     if (get_error_config()->no_implicit_any) {
-                        error_ctx_error(errs, span, 7009,
+                        error_ctx_error_d(errs, span, 7009,
                             "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
                     }
                 } else if (callable->is_abstract_constructor) {
-                    error_ctx_error(errs, span, 2511, "Cannot create an instance of an abstract class.");
+                    error_ctx_error_d(errs, span, 2511, "Cannot create an instance of an abstract class.");
                 }
             } else {
                 if (callable->is_constructor) {
-                    error_ctx_error(errs, span, 2348,
+                    error_ctx_error_d(errs, span, 2348,
                         "Value of type 'typeof Foo' is not callable. Did you mean to include 'new'?");
                 }
             }
@@ -1839,14 +1816,14 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 }
 
                 if (max_args == INTPTR_MAX) {
-                    error_ctx_error(errs, span, 2555,
-                        "Expected at least %ld arguments, but got %ld.", min_args, call_arg_count);
+                    error_ctx_error_d(errs, span, 2555,
+                        "Expected at least ", min_args, " arguments, but got ", call_arg_count, ".");
                 } else if (min_args == max_args) {
-                    error_ctx_error(errs, span, 2554,
-                        "Expected %ld arguments, but got %ld.", min_args, call_arg_count);
+                    error_ctx_error_d(errs, span, 2554,
+                        "Expected ", min_args, " arguments, but got ", call_arg_count, ".");
                 } else {
-                    error_ctx_error(errs, span, 2554,
-                        "Expected %ld-%ld arguments, but got %ld.", min_args, max_args, call_arg_count);
+                    error_ctx_error_d(errs, span, 2554,
+                        "Expected ", min_args, "-", max_args, " arguments, but got ", call_arg_count, ".");
                 }
             }
 
@@ -1915,7 +1892,7 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
                 type_typecheck_call(&overload->type, call, span, errs);
                 return;
             } else if (is_callable) {
-                error_ctx_error(errs, call->callable.outer_span, 2769, "No overload matches this call.");
+                error_ctx_error_d(errs, call->callable.outer_span, 2769, "No overload matches this call.");
                 return;
             } else {
                 break;
@@ -1925,17 +1902,12 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
     }
 
     if (call->is_extends) {
-        cstr msg = cstr_lit("Type '");
-        cstr_append_type_error_msg(&msg, me);
-        cstr_append_lit(&msg, "' is not a constructor function type.");
-        error_ctx_error_s(errs, call->callable.outer_span, 2507, msg);
+        error_ctx_error_d(errs, call->callable.outer_span, 2507,
+            "Type '", me, "' is not a constructor function type.");
     } else {
-        Error* e = error_ctx_error(errs, call->callable.outer_span, 2349, "This expression is not callable.");
+        Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2349, "This expression is not callable.");
         if (my tag == TYPE_INTERFACE) {
-            cstr msg = cstr_lit("Type '");
-            cstr_append_type_error_msg(&msg, me);
-            cstr_append_lit(&msg, "' has no call signatures.");
-            error_sub_error_s(e, span_null, TS_CODE_NONE, msg);
+            error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", me, "' has no call signatures.");
         }
     }
 }

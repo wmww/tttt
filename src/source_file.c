@@ -1,7 +1,7 @@
 #include "source_file.h"
 
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
-    ASSERT(cstr_size(&canonical_path));
+    check(cstr_size(&canonical_path));
     return (SourceFile){
         .canonical_path = canonical_path,
         .contents = contents,
@@ -22,6 +22,6 @@ void source_file_set_module_true(SourceFile* me, ErrorCtx* errs) {
         my is_module = true;
         my module_scope = scope_init_toplevel(errs);
     } else {
-        ASSERT(my module_scope.errs == errs);
+        check(my module_scope.errs == errs);
     }
 }

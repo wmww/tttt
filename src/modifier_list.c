@@ -10,7 +10,7 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
 
 // Only shows the first modifier
 #define MODIFIER_ERROR(...) \
-    if (!has_modifier_error) { error_ctx_error(__VA_ARGS__); } \
+    if (!has_modifier_error) { error_ctx_error_d(__VA_ARGS__); } \
     modifier_is_error = true; \
     has_modifier_error = true \
 
@@ -77,7 +77,7 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
             case MODIFIER_PUBLIC:
                 if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT)) {
                     MODIFIER_ERROR(errs, i->span, 1044,
-                        "'%.*s' modifier cannot appear on a module or namespace element.", c_SPAN(i->span));
+                        "'", i->span, "' modifier cannot appear on a module or namespace element.");
                 } else if (accessibility_seen) {
                     MODIFIER_ERROR(errs, i->span, 1028, "Accessibility modifier already seen.");
                 }
@@ -91,15 +91,15 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
                 break;
 
             case MODIFIER_ENUM_CAP:
-                UNREACHABLE;
+                impossible;
         }
 
         if (index &&
             modifier_ordering[vec_spanned_modifier_at(&my spanned, index - 1)->tag] > modifier_ordering[i->tag]
         ) {
             MODIFIER_ERROR(errs, i->span, 1029,
-                "'%.*s' modifier must precede '%.*s' modifier.",
-                c_SPAN(i->span), c_SPAN(vec_spanned_modifier_at(&my spanned, index - 1)->span));
+                "'", i->span, "' modifier must precede '",
+                vec_spanned_modifier_at(&my spanned, index - 1)->span, "' modifier.");
         }
 
         if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER)) {
@@ -110,7 +110,7 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
                 case MODIFIER_PROTECTED:
                 case MODIFIER_PUBLIC:
                     MODIFIER_ERROR(errs, i->span, 1070,
-                        "'%.*s' modifier cannot appear on a type member.", c_SPAN(i->span));
+                        "'", i->span, "' modifier cannot appear on a type member.");
                     break;
 
                 default: break;
@@ -118,7 +118,7 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
         }
 
         if (already_seen[i->tag]) {
-            MODIFIER_ERROR(errs, i->span, 1030, "'%.*s' modifier already seen.", c_SPAN(i->span));
+            MODIFIER_ERROR(errs, i->span, 1030, "'", i->span, "' modifier already seen.");
         } else if (!modifier_is_error) {
             already_seen[i->tag] = true;
         }

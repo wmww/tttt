@@ -27,8 +27,8 @@ void lazy_type_evaluate(LazyType* me) {
 
     Type result = {0};
     switch (my tag) {
-        case LAZY_TYPE_UNINITIALIZED: PANIC("LazyType is uninitialized");
-        case LAZY_TYPE_EVALUATED: PANIC("lazy_type_evaluate() called when already evaluated");
+        case LAZY_TYPE_UNINITIALIZED: panic("LazyType is uninitialized");
+        case LAZY_TYPE_EVALUATED: panic("lazy_type_evaluate() called when already evaluated");
 
         case LAZY_TYPE_EXPR:
             result = expr_evaluate_type(c_container_of(me, Expr, lazy_type));

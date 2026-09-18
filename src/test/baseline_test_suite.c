@@ -25,12 +25,7 @@ static bool test_passes_filter(BaselineTestSuite* me, csview name) {
 }
 
 static void show_collected_test_counts(BaselineTestSuite* me) {
-    printf(
-        "\rCollected %s%ld%s tests      ",
-        color_good,
-        vec_baseline_test_result_size(&my results),
-        color_normal
-    );
+    print("\rCollected ", color_good, vec_baseline_test_result_size(&my results), color_normal, " tests      ");
 }
 
 // Recursively collects every .ts file below the given directory. Directories that can't be listed are silently
@@ -53,9 +48,9 @@ static void load_dir(BaselineTestSuite* me, csview dir_path) {
 }
 
 static_failable load_subdir(BaselineTestSuite* me, csview subdir) {
-    cstr full_dir = cstr_from_fmt("%.*s/cases/%.*s", c_SV(my tests_dir), c_SV(subdir));
+    cstr full_dir = cstr_d(my tests_dir, "/cases/", subdir);
     if (!fs_is_directory(fs, cstr_sv(&full_dir))) {
-        FailableResult ret = err_fmt("%s is not a directory", cstr_str(&full_dir));
+        FailableResult ret = err_d(full_dir, " is not a directory");
         cstr_drop(&full_dir);
         return ret;
     }
@@ -73,7 +68,7 @@ void baseline_test_suite_drop(BaselineTestSuite* me) {
     baseline_test_cache_drop(&my cache);
 }
 
-static const char* color_for_state(bool is_pass, bool highlight) {
+static AnsiColor color_for_state(bool is_pass, bool highlight) {
     if (highlight) {
         return is_pass ? color_highlighted_good : color_highlighted_error;
     } else {
@@ -83,7 +78,10 @@ static const char* color_for_state(bool is_pass, bool highlight) {
 
 static void append_test_subresult_to_cstr(cstr* target, const char* name, bool passed, bool prev, bool has_prev) {
     bool changed = !has_prev || passed != prev;
-    cstr_append_fmt(target, "%s %s %s", color_for_state(passed, changed), passed ? " - " : name, color_normal);
+    cstr_append_d(
+        target, PRINT_DISPLAY,
+        color_for_state(passed, changed), " ", passed ? " - " : name, " ", color_normal
+    );
 }
 
 static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* test, bool highlight_name) {
@@ -92,23 +90,18 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
         append_test_subresult_to_cstr(target, "SYM", test->symbols_passed, test->symbols_prev, test->has_prev);
         append_test_subresult_to_cstr(target, "TYP", test->types_passed,   test->types_prev,   test->has_prev);
     } else {
-        cstr_append_fmt(
-            target,
-            "%s  did not run  %s",
-            color_for_state(false, baseline_test_result_has_new_fail(test)),
-            color_normal
+        cstr_append_d(
+            target, PRINT_DISPLAY,
+            color_for_state(false, baseline_test_result_has_new_fail(test)), "  did not run  ", color_normal
         );
     }
     bool test_has_change = baseline_test_result_has_new_pass(test) || baseline_test_result_has_new_fail(test);
-    const char* name_color = test_has_change ?
+    AnsiColor name_color = test_has_change ?
         color_for_state(!baseline_test_result_has_new_fail(test), highlight_name) :
-        (baseline_test_result_is_pass(test) ? color_good : "");
-    cstr_append_fmt(
-        target,
-        "%s %.*s %s",
-        name_color,
-        c_SV(test_name_from_path(cstr_sv(&test->source_path))),
-        color_normal
+        (baseline_test_result_is_pass(test) ? color_good : color_none);
+    cstr_append_d(
+        target, PRINT_DISPLAY,
+        name_color, " ", test_name_from_path(cstr_sv(&test->source_path)), " ", color_normal
     );
 }
 
@@ -120,7 +113,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
     VecBaselineTestResultCPtr newly_passed = vec_baseline_test_result_c_ptr_init();
     VecBaselineTestResultCPtr memory_issues = vec_baseline_test_result_c_ptr_init();
 
-    if (!summary_only) printf("%sRunning tests...%s\n\n", color_status, color_normal);
+    if (!summary_only) println(color_status, "Running tests...", color_normal, "\n");
 
     for_each (i, vec_baseline_test_result, &my results) {
         intptr_t index = i_index;
@@ -131,12 +124,16 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
 
         if (!summary_only) {
             cstr_clear(&display);
-            cstr_append_fmt(&display, "%ld%%", index * 100 / test_count);
-            printf("        %s%5s %s  %.*s ", color_run_percent, cstr_str(&display), color_normal, c_SV(name));
+            cstr_append_d(&display, DEFAULT_DISPLAY, index * 100 / test_count, "%");
+            print(
+                "        ", color_run_percent,
+                repeated_d(" ", cstr_size(&display) < 5 ? 5 - cstr_size(&display) : 0), display,
+                " ", color_normal, "  ", name, " "
+            );
             fflush(stdout);
 
             if (show_errs || show_syms || show_typs) {
-                printf("- Testing %s\n", cstr_str(&i->source_path));
+                println("- Testing ", i->source_path);
             }
         }
 
@@ -156,8 +153,8 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             debug_allocation_count = 0;
             baseline_test_result_run(i, me, prev_obj, false, false, false);
             if (debug_allocation_count != 0) {
-                printf(" %s %zd net allocations! %s\n",
-                    color_highlighted_error, debug_allocation_count, color_normal);
+                println(" ", color_highlighted_error, " ", debug_allocation_count,
+                    " net allocations! ", color_normal);
                 vec_baseline_test_result_c_ptr_push(&memory_issues, i);
             }
         }
@@ -186,79 +183,73 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
         if (!summary_only) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, i, true);
-            printf("\r%s\n", cstr_str(&display));
+            println("\r", display);
         }
     }
 
-    printf(
-        "\n  %s%d%s passed, %s%d%s failed, %ld total\n\n",
-        color_good,
-        passed,
-        color_normal,
-        color_error,
-        failed,
-        color_normal,
-        vec_baseline_test_result_size(&my results)
+    println(
+        "\n  ", color_good, passed, color_normal, " passed, ",
+        color_error, failed, color_normal, " failed, ",
+        vec_baseline_test_result_size(&my results), " total\n"
     );
 
     intptr_t newly_passed_size = vec_baseline_test_result_c_ptr_size(&newly_passed);
     if (newly_passed_size) {
-        printf(
-            "%s%ld%s test%s have newly passing components:\n",
-            color_good, newly_passed_size, color_normal, newly_passed_size == 1 ? "" : "s"
+        println(
+            color_good, newly_passed_size, color_normal,
+            " test", newly_passed_size == 1 ? "" : "s", " have newly passing components:"
         );
 
         for_each (i, vec_baseline_test_result_c_ptr, &newly_passed) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i, false);
-            printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i)->source_path));
+            println(display, " (", (*i)->source_path, ")");
         }
-        printf("\n");
+        println();
     }
 
     intptr_t newly_failed_size = vec_baseline_test_result_c_ptr_size(&newly_failed);
     if (newly_failed_size) {
-        printf(
-            "%s%ld%s test%s have newly failing components:\n",
-            color_error, newly_failed_size, color_normal, newly_failed_size == 1 ? "" : "s"
+        println(
+            color_error, newly_failed_size, color_normal,
+            " test", newly_failed_size == 1 ? "" : "s", " have newly failing components:"
         );
 
         for_each (i, vec_baseline_test_result_c_ptr, &newly_failed) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i, false);
-            printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i)->source_path));
+            println(display, " (", (*i)->source_path, ")");
         }
-        printf("\n");
+        println();
     }
 
     intptr_t memory_issues_size = vec_baseline_test_result_c_ptr_size(&memory_issues);
     if (memory_issues_size) {
-        printf(
-            "%s%ld test%s have memory-related issues:%s\n",
-            color_highlighted_error, memory_issues_size, memory_issues_size == 1 ? "" : "s", color_normal
+        println(
+            color_highlighted_error, memory_issues_size,
+            " test", memory_issues_size == 1 ? "" : "s", " have memory-related issues:", color_normal
         );
 
         for_each (i, vec_baseline_test_result_c_ptr, &memory_issues) {
             cstr_clear(&display);
             append_test_result_to_cstr(&display, *i, false);
-            printf("%s\n", cstr_str(&display));
+            println(display);
         }
-        printf("\n");
+        println();
     }
 
     if (new_passed || new_failed) {
-        printf(
-            "  %s%d%s new passed, %s%d%s new failed\n\n",
-            new_passed ? color_good : "", new_passed, color_normal,
-            new_failed ? color_error : "", new_failed, color_normal
+        println(
+            "  ", new_passed ? color_good : color_none, new_passed, color_normal, " new passed, ",
+            new_failed ? color_error : color_none, new_failed, color_normal, " new failed\n"
         );
     }
 
     if (!cstr_eq(&my prev_typescript_commit, &my typescript_commit)) {
-        printf(
-            "Note: the TypeScript commit changed %s%s%s -> %s%s%s.\n\n",
-            color_for_state(false, true), cstr_str(&my prev_typescript_commit), color_normal,
-            color_for_state(true,  true), cstr_str(&my typescript_commit),      color_normal
+        println(
+            "Note: the TypeScript commit changed ",
+            color_for_state(false, true), my prev_typescript_commit, color_normal, " -> ",
+            color_for_state(true,  true), my typescript_commit,      color_normal, ".\n"
         );
     }
 
@@ -275,24 +266,26 @@ static inline const char* result_element_to_str(bool did_run, bool passed) {
 }
 
 void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path) {
-    printf("%sSaving results...%s\n", color_status, color_normal);
+    println(color_status, "Saving results...", color_normal);
 
     cstr results = cstr_null;
     cstr_reserve(&results, vec_baseline_test_result_size(&my results) * 150);
-    cstr_append_fmt(&results, "const tsCommit = \"%s\"\n", cstr_str(&my typescript_commit));
-    cstr_append_fmt(&results, "const baselines = {\n");
+    cstr_append_d(&results, DEFAULT_DISPLAY, "const tsCommit = \"", my typescript_commit, "\"\nconst baselines = {\n");
 
     for_each (i, vec_baseline_test_result, &my results) {
         csview name = test_name_from_path(cstr_sv(&i->source_path));
-        ASSERT(!csview_contains(name, "\\") && !csview_contains(name, "'"));
-        cstr_append_fmt(&results, "    '%.*s': {\n", c_SV(name));
-        cstr_append_fmt(&results, "        errors: %s,\n", result_element_to_str(i->did_run, i->errors_passed));
-        cstr_append_fmt(&results, "        symbols: %s,\n", result_element_to_str(i->did_run, i->symbols_passed));
-        cstr_append_fmt(&results, "        types: %s,\n", result_element_to_str(i->did_run, i->types_passed));
-        cstr_append_fmt(&results, "    },\n");
+        check(!csview_contains(name, "\\") && !csview_contains(name, "'"));
+        cstr_append_d(
+            &results, DEFAULT_DISPLAY,
+            "    '", name, "': {\n",
+            "        errors: ", result_element_to_str(i->did_run, i->errors_passed), ",\n",
+            "        symbols: ", result_element_to_str(i->did_run, i->symbols_passed), ",\n",
+            "        types: ", result_element_to_str(i->did_run, i->types_passed), ",\n",
+            "    },\n"
+        );
     }
 
-    cstr_append_fmt(&results, "}\n");
+    cstr_append_lit(&results, "}\n");
 
     bool saved = true;
     try (fs_write_file(fs, results_path, cstr_sv(&results))) if_err (e) {
@@ -302,9 +295,9 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
     cstr_drop(&results);
 
     if (saved) {
-        printf("%sSaving done%s\n", color_good, color_normal);
+        println(color_good, "Saving done", color_normal);
     } else {
-        printf("%sSaving failed%s\n", color_error, color_normal);
+        println(color_error, "Saving failed", color_normal);
     }
 }
 
@@ -325,7 +318,7 @@ static_failable load_saved_results(BaselineTestSuite* me, csview results_path) {
     if (!error_ctx_empty(&errs)) {
         print_error_ctx(&errs);
         destroy_program(program, &errs);
-        return err_fmt("Failed to load saved results from %.*s", c_SV(results_path));
+        return err_d("Failed to load saved results from ", results_path);
     }
 
     ArcObject root = arc_js_object_make((JsObject){0});
@@ -350,7 +343,7 @@ static_failable load_saved_results(BaselineTestSuite* me, csview results_path) {
 
 static cstr get_git_hash_of_repo(csview repo_path) {
     fs_path_from_csview(repo_str, repo_path, {
-        PANIC("Invalid repo path %.*s", c_SV(repo_path));
+        panic("Invalid repo path ", repo_path);
     });
     cstr out_str = cstr_null;
     int exit_code = 0;
@@ -406,18 +399,18 @@ failable load_baseline_test_suite(
     });
 
     if (ret.get->filter.error) {
-        FailableResult failed = err_fmt(
-            "Invalid filter regex '%s': %s", filter_re, cregex_error_str(ret.get->filter.error));
+        FailableResult failed = err_d(
+            "Invalid filter regex '", filter_re, "': ", cregex_error_str(ret.get->filter.error));
         box_baseline_test_suite_drop(&ret);
         return failed;
     }
 
-    if (!summary_only) printf("%sLoading saved results...%s\n", color_status, color_normal);
+    if (!summary_only) println(color_status, "Loading saved results...", color_normal);
     try (load_saved_results(ret.get, results_path)) cleanup {
         box_baseline_test_suite_drop(&ret);
     }
 
-    if (!summary_only) printf("%sCollecting tests...%s\n", color_status, color_normal);
+    if (!summary_only) println(color_status, "Collecting tests...", color_normal);
     ret.get->typescript_commit = get_git_hash_of_repo(tests_dir);
 
     // Collect both problems before giving up, so a botched --dir doesn't have to be fixed one message at a time
@@ -429,8 +422,8 @@ failable load_baseline_test_suite(
     }
 
     show_collected_test_counts(ret.get);
-    printf("\n");
-    if (!summary_only) printf("%sSorting tests...%s\n", color_status, color_normal);
+    println();
+    if (!summary_only) println(color_status, "Sorting tests...", color_normal);
     vec_baseline_test_result_sort(&ret.get->results);
     return ok(ret);
 }

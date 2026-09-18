@@ -33,9 +33,8 @@ static Declaration const* get_declaration_from_namespace(
     if (!namespace) return nullptr;
     Declaration const* decl = scope_get_declaration(namespace, item_name);
     if (!decl || (namespace_only && !decl->namespace)) {
-        error_ctx_error(errs, item_name, 2694,
-            "Namespace '%.*s' has no exported member '%.*s'.",
-            c_SPAN(namespace_name), c_SPAN(item_name));
+        error_ctx_error_d(errs, item_name, 2694,
+            "Namespace '", namespace_name, "' has no exported member '", item_name, "'.");
         decl = nullptr;
     }
     return decl;
@@ -52,7 +51,7 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
 }
 
 void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs) {
-    ASSERT(!my decl_ref);
+    check(!my decl_ref);
 
     if (vec_span_size(&my namespaces)) {
         Scope const* namespace = nullptr;
@@ -62,7 +61,7 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
             if (i == my namespaces.data /* First namespaces */) {
                 decl = scope_stack_get_namespace(names, i->sv);
                 if (!decl) {
-                    error_ctx_error(errs, *i, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i));
+                    error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                 }
             } else /* Subsequent namespaces */ {
                 decl = get_declaration_from_namespace(namespace, prev_name, *i, true, errs);
@@ -82,23 +81,16 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
     } else {
         my decl_ref = scope_stack_get_type(names, my name.sv);
         if (!my decl_ref) {
-            error_ctx_error(
-                errs,
-                my name,
-                2304,
-                "Cannot find name '%.*s'.",
-                c_SPAN(my name)
-            );
+            error_ctx_error_d(errs, my name, 2304, "Cannot find name '", my name, "'.");
         }
     }
 
     if (my decl_ref && !my decl_ref->type_tag) {
         cstr name_str = identifier_type_make_name_str(me);
         Span error_span = span_between(vec_span_size(&my namespaces) ? *my namespaces.data : my name, my name);
-        error_ctx_error(errs, error_span, 2749,
-            "'%s' refers to a value, but is being used as a type here. Did you mean 'typeof %s'?",
-            cstr_str(&name_str), cstr_str(&name_str)
-        );
+        error_ctx_error_d(errs, error_span, 2749,
+            "'", name_str, "' refers to a value, but is being used as a type here. Did you mean 'typeof ",
+            name_str, "'?");
         cstr_drop(&name_str);
     }
 
@@ -132,11 +124,11 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
         /*
         //This can be enabled once we're parsing the standard library
         if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my named_type->generic)) {
-            error_ctx_error(errs, my full_span, 2315, "Type '%.*s' is not generic.", c_SPAN(my name));
+            error_ctx_error_d(errs, my full_span, 2315, "Type '", my name, "' is not generic.");
         }
         Type const* t = type_resolve(lazy_type_resolve(&my named_type->type));
         if (t->tag == TYPE_ANY && t->any.excessively_deep_error) {
-            error_ctx_error(errs, my full_span, 2589, "Type instantiation is excessively deep and possibly infinite.");
+            error_ctx_error_d(errs, my full_span, 2589, "Type instantiation is excessively deep and possibly infinite.");
         }
         */
     }

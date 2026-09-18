@@ -237,7 +237,7 @@ static inline Type type_composite_base(typeof((Type){}.tag) tag) {
     switch (tag) {
         case TYPE_UNION:        return (Type){.tag = TYPE_NEVER};
         case TYPE_INTERSECTION: return (Type){.tag = TYPE_ANY};
-        default:                PANIC("Invalid composite tag");
+        default:                panic("Invalid composite tag");
     }
 }
 
@@ -245,7 +245,6 @@ static inline Type type_composite_base(typeof((Type){}.tag) tag) {
 void type_drop(Type* me);
 // PERF: should type_clone() be inlined?
 Type type_clone(Type me);
-void cstr_append_type_error_msg(cstr* target, Type const* me);
 static inline Type type_move(Type* me) {
     Type ret = *me;
     my tag = TYPE_ANY;

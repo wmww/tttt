@@ -35,13 +35,13 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
             i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
-            error_ctx_error(errs, i->binding.content_span, 1155,
+            error_ctx_error_d(errs, i->binding.content_span, 1155,
                 "'const' declarations must be initialized.");
         } else if (declared &&
             i->value.tag != EXPR_IMPLICIT_ANY
         ) {
             if (i->binding.has_explicit_type || my keyword != VAR_INIT_CONST) {
-                error_ctx_error(errs, i->value.outer_span, 1039,
+                error_ctx_error_d(errs, i->value.outer_span, 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
                 switch (i->value.tag) {
@@ -60,7 +60,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
                         break;
 
                     default: bad_initializer:
-                        error_ctx_error(errs, i->value.outer_span, 1254,
+                        error_ctx_error_d(errs, i->value.outer_span, 1254,
                             "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
             }
@@ -106,7 +106,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     my inner_scope = scope_init_namespace(my name, scope, scope->errs);
 
     if (my is_global && !props.declared) {
-        error_ctx_error(scope->errs, my name, 2670,
+        error_ctx_error_d(scope->errs, my name, 2670,
             "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");
     }
 
@@ -117,7 +117,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             if (my global_scope) {
                 inner_scope = my global_scope;
             } else {
-                NONFATAL("Global scope not set");
+                log_error("Global scope not set");
             }
         }
         statement_add_names(i, inner_scope);
@@ -142,7 +142,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     has_value |= my is_global;
 
     if (has_value) {
-        ASSERT(my value_type.tag == 0);
+        check(my value_type.tag == 0);
         my value_type = type_lazy(&my inner_scope.value_interface);
     }
 
@@ -175,7 +175,7 @@ zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
         case FOR_EACH_LOOP_OF: return c_zv("of");
         case FOR_EACH_LOOP_IN: return c_zv("in");
     }
-    UNREACHABLE;
+    impossible;
 }
 
 Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
@@ -419,32 +419,34 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
                     VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
                     intptr_t var_size = vec_initialized_binding_size(initializers);
                     if (var_size > 1) {
-                        error_ctx_error(
+                        error_ctx_error_d(
                             errs,
                             vec_initialized_binding_at(initializers, 1)->binding.content_span,
                             my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
-                            "Only a single variable declaration is allowed in a 'for...%s' statement.",
-                            for_each_loop_statement_keyword_str(my for_each_loop).str
+                            "Only a single variable declaration is allowed in a 'for...",
+                            for_each_loop_statement_keyword_str(my for_each_loop).str, "' statement."
                         );
                     } else if (var_size == 0) {
                         // Error added by parser
                     } else {
                         InitializedBinding* initializer = initializers->data;
                         if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
-                            error_ctx_error(
+                            error_ctx_error_d(
                                 errs,
                                 initializer->binding.content_span,
                                 1189,
-                                "The variable declaration of a 'for...%s' statement cannot have an initializer.",
-                                for_each_loop_statement_keyword_str(my for_each_loop).str
+                                "The variable declaration of a 'for...",
+                                for_each_loop_statement_keyword_str(my for_each_loop).str,
+                                "' statement cannot have an initializer."
                             );
                         } else if (initializer->binding.has_explicit_type) {
-                            error_ctx_error(
+                            error_ctx_error_d(
                                 errs,
                                 initializer->binding.content_span,
                                 2404,
-                                "The left-hand side of a 'for...%s' statement cannot use a type annotation.",
-                                for_each_loop_statement_keyword_str(my for_each_loop).str
+                                "The left-hand side of a 'for...",
+                                for_each_loop_statement_keyword_str(my for_each_loop).str,
+                                "' statement cannot use a type annotation."
                             );
                         }
                     }
@@ -525,7 +527,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
 
         case STATEMENT_RETURN_EXPR:
             if (!scope_stack_has_function(names)) {
-                error_ctx_error(
+                error_ctx_error_d(
                     errs,
                     my expr.outer_span,
                     1108,
@@ -637,7 +639,7 @@ Type statement_evaluate_return_type(Statement* me) {
         case STATEMENT_DECL_INTERFACE:
         case STATEMENT_DECL_NAMESPACE: return type_never;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
@@ -654,7 +656,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             int statement_size = vec_statement_size(&my if_else.statements);
             int cond_size = vec_expr_size(&my if_else.conditions);
             if (statement_size != cond_size && statement_size != cond_size + 1) {
-                PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
+                panic("invalid if statement has ", cond_size, " conditions and ", statement_size, " statements");
             }
             for_each (i, vec_expr, &my if_else.conditions) {
                 // Conditions do not have to be booleans
@@ -686,7 +688,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                             if (!vec_initialized_binding_is_empty(&my for_each_loop->variable.statement.initializers) &&
                                 my for_each_loop->variable.statement.initializers.data->binding.tag != BINDING_IDENTIFIER
                             ) {
-                                error_ctx_error(
+                                error_ctx_error_d(
                                     errs,
                                     my for_each_loop->variable.statement.initializers.data->binding.content_span,
                                     2491,
@@ -699,7 +701,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                             if (my for_each_loop->variable.expr.tag == EXPR_ARRAY ||
                                 my for_each_loop->variable.expr.tag == EXPR_OBJECT
                             ) {
-                                error_ctx_error(
+                                error_ctx_error_d(
                                     errs,
                                     my for_each_loop->variable.expr.outer_span,
                                     2491,
@@ -718,20 +720,17 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                             break;
 
                         default: {
-                            cstr msg = cstr_lit("The right-hand side of a 'for...in' statement must be of type 'any', an object type or a type parameter, but here has type '");
-                            cstr_append_type_error_msg(&msg, iterable_type);
-                            cstr_append_lit(&msg, "'.");
-                            error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2407, msg);
+                            error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2407,
+                                "The right-hand side of a 'for...in' statement must be of type 'any', an object type "
+                                "or a type parameter, but here has type '", iterable_type, "'.");
                         }   break;
                     }
                     break;
 
                 case FOR_EACH_LOOP_OF:
                     if (!type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
-                        cstr msg = cstr_lit("Type '");
-                        cstr_append_type_error_msg(&msg, iterable_type);
-                        cstr_append_lit(&msg, "' is not an array type or a string type.");
-                        error_ctx_error_s(errs, my for_each_loop->iterable.outer_span, 2495, msg);
+                        error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2495,
+                            "Type '", iterable_type, "' is not an array type or a string type.");
                     }
                     break;
             }
@@ -769,17 +768,13 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                     expr_typecheck(&i->pattern, errs);
                     Type const* pattern_type = expr_get_type(&i->pattern);
                     if (!type_overlaps(needle_type, pattern_type)) {
-                        cstr message = cstr_lit("Type '");
-                        cstr_append_type_error_msg(&message, pattern_type);
-                        cstr_append_lit(&message, "' is not comparable to type '");
-                        cstr_append_type_error_msg(&message, needle_type);
-                        cstr_append_lit(&message, "'.");
-                        error_ctx_error_s(errs, i->pattern.outer_span, 2678, message);
+                        error_ctx_error_d(errs, i->pattern.outer_span, 2678,
+                            "Type '", pattern_type, "' is not comparable to type '", needle_type, "'.");
                     }
                 } else {
                     default_count++;
                     if (default_count == 2) {
-                        error_ctx_error(
+                        error_ctx_error_d(
                             errs,
                             i->default_span,
                             1113,
@@ -803,14 +798,14 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
         case STATEMENT_BREAK:
             if (!ctx.break_allowed) {
-                error_ctx_error(errs, my keyword_span, 1105,
+                error_ctx_error_d(errs, my keyword_span, 1105,
                     "A 'break' statement can only be used within an enclosing iteration or switch statement.");
             }
             break;
 
         case STATEMENT_CONTINUE:
             if (!ctx.continue_allowed) {
-                error_ctx_error(errs, my keyword_span, 1104,
+                error_ctx_error_d(errs, my keyword_span, 1104,
                     "A 'continue' statement can only be used within an enclosing iteration statement.");
             }
             break;

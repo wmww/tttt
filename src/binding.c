@@ -102,13 +102,9 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            error_ctx_error(
-                errs,
-                my content_span,
-                toplevel ? 7006 : 7031,
-                "%s '%.*s' implicitly has an 'any' type.",
-                toplevel ? "Parameter" : "Binding element",
-                c_SPAN(my content_span)
+            error_ctx_error_d(
+                errs, my content_span, toplevel ? 7006 : 7031,
+                toplevel ? "Parameter" : "Binding element", " '", my content_span, "' implicitly has an 'any' type."
             );
             break;
 
@@ -144,22 +140,18 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             if (my declaration.get) {
                 Type const* type = type_resolve(binding_get_effective_type(me));
                 if (type_is_self_referential(type) && get_error_config()->no_implicit_any) {
-                    cstr msg = cstr_lit("'");
-                    cstr_append_span(&msg, my content_span);
-                    cstr_append_lit(&msg, "' implicitly has type '");
-                    cstr_append_type_error_msg(&msg, type);
-                    cstr_append_lit(&msg, "' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.");
-                    error_ctx_error_s(errs, my content_span, 7022, msg);
+                    error_ctx_error_d(errs, my content_span, 7022,
+                        "'", my content_span, "' implicitly has type '", type,
+                        "' because it does not have a type annotation and is referenced directly or indirectly in "
+                        "its own initializer.");
                 }
             }
             break;
 
         case BINDING_ARRAY:
             if (!type_extends_array(binding_get_effective_type(me))) {
-                cstr msg = cstr_lit("Type '");
-                cstr_append_type_error_msg(&msg, binding_get_effective_type(me));
-                cstr_append_lit(&msg, "' is not an array type.");
-                error_ctx_error_s(errs, my content_span, 2461, msg);
+                error_ctx_error_d(errs, my content_span, 2461,
+                    "Type '", binding_get_effective_type(me), "' is not an array type.");
             }
             for_each (i, vec_binding, &my array) {
                 binding_typecheck(i, errs);

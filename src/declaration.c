@@ -17,7 +17,7 @@ void merged_type_add(MergedType* me, Type t) {
             vec_type_push(&my merge_list, t);
             break;
 
-        default: UNREACHABLE;
+        default: impossible;
     }
 }
 
@@ -36,7 +36,7 @@ Type merged_type_evaluate_type(MergedType* me) {
         if (interface_try_from_type(i, &interface)) {
             vec_type_push(&interfaces, interface);
         } else {
-            NONFATAL("non-interface type in merge list");
+            log_error("non-interface type in merge list");
         }
     }
     return interface_from_merged_interfaces(interfaces);
@@ -119,15 +119,15 @@ static bool declaration_types_test_mergable(
 
     if (!mergable) {
         if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
-            error_ctx_error(errs, a_name, 2567,
+            error_ctx_error_d(errs, a_name, 2567,
                 "Enum declarations can only merge with namespace or other enum declarations.");
-            error_ctx_error(errs, b_name, 2567,
+            error_ctx_error_d(errs, b_name, 2567,
                 "Enum declarations can only merge with namespace or other enum declarations.");
         } else {
             if (a_tag != DECLARATION_GENERIC_TYPE) {
-                error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));
+                error_ctx_error_d(errs, a_name, 2300, "Duplicate identifier '", a_name, "'.");
             }
-            error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
+            error_ctx_error_d(errs, b_name, 2300, "Duplicate identifier '", b_name, "'.");
         }
     }
 
@@ -142,9 +142,9 @@ static bool declaration_values_test_mergable(
     if (!a_tag || !b_tag) {
         return true;
     } else if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
-        error_ctx_error(errs, a_name, 2567,
+        error_ctx_error_d(errs, a_name, 2567,
             "Enum declarations can only merge with namespace or other enum declarations.");
-        error_ctx_error(errs, b_name, 2567,
+        error_ctx_error_d(errs, b_name, 2567,
             "Enum declarations can only merge with namespace or other enum declarations.");
         return false;
     } else if (
@@ -153,7 +153,7 @@ static bool declaration_values_test_mergable(
         (a_tag == DECLARATION_CLASS                 && b_tag == DECLARATION_NAMESPACE_WITH_VALUE)
     ) {
         if (a_tag == DECLARATION_NAMESPACE_WITH_VALUE && b_tag == DECLARATION_CLASS) {
-            error_ctx_error(errs, a_name, 2434,
+            error_ctx_error_d(errs, a_name, 2434,
                 "A namespace declaration cannot be located prior to a class or function with which it is merged.");
         }
         return true;
@@ -164,14 +164,12 @@ static bool declaration_values_test_mergable(
         // TODO: make sure things are in the right order, there's only one implementation, etc
         return true;
     } else if (a_tag == DECLARATION_ARGUMENT) {
-        error_ctx_error(errs, b_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(b_name));
-        error_ctx_error(errs, a_name, 2300, "Duplicate identifier '%.*s'.", c_SPAN(a_name));
+        error_ctx_error_d(errs, b_name, 2300, "Duplicate identifier '", b_name, "'.");
+        error_ctx_error_d(errs, a_name, 2300, "Duplicate identifier '", a_name, "'.");
         return false;
     } else {
-        error_ctx_error(errs, b_name, 2451,
-            "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(b_name));
-        error_ctx_error(errs, a_name, 2451,
-            "Cannot redeclare block-scoped variable '%.*s'.", c_SPAN(a_name));
+        error_ctx_error_d(errs, b_name, 2451, "Cannot redeclare block-scoped variable '", b_name, "'.");
+        error_ctx_error_d(errs, a_name, 2451, "Cannot redeclare block-scoped variable '", a_name, "'.");
         return false;
     }
 }
@@ -193,7 +191,7 @@ bool declaration_test_mergable(Declaration const* me, DeclProps const* props, Er
 }
 
 void declaration_init(Declaration* me, DeclProps props) {
-    PANIC_IF(props.tag == DECLARATION_NONE, "props.tag not set");
+    panic_if(props.tag == DECLARATION_NONE, "props.tag not set");
     if (!span_valid(my name)) {
         my name = props.name;
     }
@@ -217,7 +215,7 @@ void declaration_init(Declaration* me, DeclProps props) {
             type_drop(&props.value_type);
         }
     } else if (props.value_type.tag) {
-        PANIC("declaration_init() called with tag %d and non-empty value type", props.tag);
+        panic("declaration_init() called with tag ", (i32)props.tag, " and non-empty value type");
     }
 
     if (declaration_tag_has_type(props.tag)) {
@@ -229,18 +227,18 @@ void declaration_init(Declaration* me, DeclProps props) {
         if (props.tag > my type_tag) my type_tag = props.tag;
         merged_type_add(&my merged_declared_type, props.declared_type);
     } else if (props.declared_type.tag) {
-        PANIC("declaration_init() called with tag %d and non-empty declared type", props.tag);
+        panic("declaration_init() called with tag ", (i32)props.tag, " and non-empty declared type");
     }
 
     if (declaration_tag_has_namespace(props.tag)) {
-        ASSERT(props.namespace); // This may not be correct
+        check(props.namespace); // This may not be correct
         if (!my namespace) {
             my namespace_tag = props.tag;
             my namespace = props.namespace;
         } else {
-            NONFATAL("Tried to add multiple namespaces to declaration %.*s", c_SPAN(my name));
+            log_error("Tried to add multiple namespaces to declaration ", my name);
         }
     } else if (props.namespace) {
-        PANIC("declaration_init() called with tag %d and non-null namespace", props.tag);
+        panic("declaration_init() called with tag ", (i32)props.tag, " and non-null namespace");
     }
 }

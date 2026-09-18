@@ -36,13 +36,13 @@ Scope scope_clone(Scope me) {
 }
 
 void scope_push_to_stack(Scope* me, ScopeStack* stack) {
-    ASSERT(!my current_scope_stack);
+    check(!my current_scope_stack);
     my current_scope_stack = stack;
     scope_stack_push_scope(stack, me);
 }
 
 void scope_push_generic_to_stack(Scope* me, Generic* generic, ScopeStack* stack) {
-    ASSERT(!my current_scope_stack);
+    check(!my current_scope_stack);
     if (!generic_empty(generic)) {
         generic_add_names(generic, me);
         my current_scope_stack = stack;
@@ -52,7 +52,7 @@ void scope_push_generic_to_stack(Scope* me, Generic* generic, ScopeStack* stack)
 }
 
 void scope_pop_from_stack(Scope* me) {
-    ASSERT(my current_scope_stack);
+    check(my current_scope_stack);
     scope_stack_pop_scope(my current_scope_stack, me);
     my current_scope_stack = nullptr;
 }
@@ -69,9 +69,9 @@ void scope_copy_declarations_from(Scope* me, Scope const* source) {
 }
 
 void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
-    ASSERT(!my current_scope_stack);
+    check(!my current_scope_stack);
     if (ret->get) {
-        NONFATAL("Declaration %.*s acquired multiple times", c_SPAN(ret->get->name));
+        log_error("Declaration ", ret->get->name, " acquired multiple times");
         arc_declaration_drop(ret);
     }
     auto existing = hmap_arc_declaration_get(&my declarations, props.name.sv);
@@ -115,7 +115,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
 }
 
 static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
-    ASSERT(!item->declaration.get);
+    check(!item->declaration.get);
     item->declaration = arc_declaration_make((Declaration){
         .name = item->decl_name,
         .declarations = vec_span_single(item->full_span),
@@ -128,18 +128,12 @@ static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
         cstr_from_sv(item->decl_name.sv),
         arc_declaration_clone(item->declaration)
     ).inserted) {
-        error_ctx_error(
-            my errs,
-            item->decl_name,
-            2300,
-            "Duplicate identifier '%.*s'.",
-            c_SPAN(item->decl_name)
-        );
+        error_ctx_error_d(my errs, item->decl_name, 2300, "Duplicate identifier '", item->decl_name, "'.");
     }
 }
 
 void scope_add_port(Scope* me, PortItem* item) {
-    ASSERT(!my current_scope_stack);
+    check(!my current_scope_stack);
 
     if (!item->source_file) {
         item->error_reported = true;
@@ -149,7 +143,7 @@ void scope_add_port(Scope* me, PortItem* item) {
 
     Scope* source_scope = source_file_get_scope_if_module(item->source_file);
     if (!source_scope) {
-        NONFATAL("Imported source file '%s' is not a module", cstr_str(&item->source_file->canonical_path));
+        log_error("Imported source file '", item->source_file->canonical_path, "' is not a module");
         return;
     }
 
@@ -190,13 +184,8 @@ void scope_add_port(Scope* me, PortItem* item) {
                 item
             );
             if (!result.inserted) {
-                error_ctx_error(
-                    my errs,
-                    item->decl_name,
-                    2300,
-                    "Duplicate identifier '%.*s'.",
-                    c_SPAN(item->decl_name)
-                );
+                error_ctx_error_d(my errs, item->decl_name, 2300,
+                    "Duplicate identifier '", item->decl_name, "'.");
             }
         }   break;
 
@@ -208,7 +197,7 @@ void scope_add_port(Scope* me, PortItem* item) {
 
 static Declaration const* find_declaration_in_exports(Scope const* me, csview name, bool search_exports) {
     Scope const* search_scope = search_exports ? my export_scope : me;
-    ASSERT(search_scope);
+    check(search_scope);
 
     auto decl_result = hmap_arc_declaration_get(&search_scope->declarations, name);
     if (decl_result) {
@@ -218,7 +207,7 @@ static Declaration const* find_declaration_in_exports(Scope const* me, csview na
     auto import_result = hmap_port_item_ptr_get(&my ports, name);
     if (import_result && port_item_is_export(import_result->second)) {
         Scope* next = source_file_get_scope_if_module(import_result->second->source_file);
-        ASSERT(next);
+        check(next);
         if (next->currently_adding_import) {
             // TODO: Record this somewhere so 2303, "Circular definition of import alias '%.*s'.", can be raised
             return nullptr;
@@ -231,7 +220,7 @@ static Declaration const* find_declaration_in_exports(Scope const* me, csview na
 
     for_each (i, vec_port_item_ptr, &my wildcard_reexports) {
         Scope* next = source_file_get_scope_if_module((*i)->source_file);
-        ASSERT(next);
+        check(next);
         if (next->currently_adding_import) {
             // We don't want to raise an error here
             return nullptr;
@@ -278,8 +267,8 @@ static void process_port(Scope* me, PortItem* item) {
     }
 
     Scope* source_scope = source_file_get_scope_if_module(item->source_file);
-    ASSERT(source_scope);
-    ASSERT(source_scope->export_scope);
+    check(source_scope);
+    check(source_scope->export_scope);
     item->source_decl = find_declaration_in_exports(source_scope, source_name, search_exports);
 
     if (item->source_decl) {
@@ -289,29 +278,22 @@ static void process_port(Scope* me, PortItem* item) {
         item->declaration.get->declarations = vec_span_single(item->full_span);
         bool is_export = port_item_is_export(item);
         item->declaration.get->exported = is_export;
-        ASSERT(my export_scope);
+        check(my export_scope);
         HMapArcDeclaration* declarations = is_export ? &my export_scope->declarations : &my declarations;
         if (!hmap_arc_declaration_insert(
             declarations,
             cstr_from_sv(item->decl_name.sv),
             arc_declaration_clone(item->declaration)
         ).inserted) {
-            error_ctx_error(
-                my errs,
-                item->decl_name,
-                2440,
-                "Import declaration conflicts with local declaration of '%.*s'.",
-                c_SPAN(item->decl_name)
+            error_ctx_error_d(
+                my errs, item->decl_name, 2440,
+                "Import declaration conflicts with local declaration of '", item->decl_name, "'."
             );
         }
     } else {
-        error_ctx_error(
-            my errs,
-            item->source_name,
-            2305,
-            "Module '%s' has no exported member '%.*s'.",
-            cstr_str(&item->source_file->canonical_path),
-            c_SPAN(item->source_name)
+        error_ctx_error_d(
+            my errs, item->source_name, 2305,
+            "Module '", item->source_file->canonical_path, "' has no exported member '", item->source_name, "'."
         );
         item->error_reported = true;
         add_placeholder_for_failed_import(me, item);

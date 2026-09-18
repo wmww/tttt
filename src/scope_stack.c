@@ -16,10 +16,9 @@ ScopeStack* scope_stack_new() {
 }
 
 static void scope_stack_drop(ScopeStack* me) {
-    PANIC_IF(
+    panic_if(
         vec_scope_cptr_size(&my stack),
-        "Name stack dropped with %zd frames left on it",
-        vec_scope_cptr_size(&my stack));
+        "Name stack dropped with ", vec_scope_cptr_size(&my stack), " frames left on it");
     vec_scope_cptr_drop(&my stack);
 }
 
@@ -35,11 +34,10 @@ void scope_stack_push_scope(ScopeStack* me, Scope const* scope) {
 
 // Declared and used exclusivly by scope.c
 void scope_stack_pop_scope(ScopeStack* me, Scope const* scope) {
-    PANIC_IF(vec_scope_cptr_is_empty(&my stack), "Tried to pop too many scopes");
-    PANIC_IF(
+    panic_if(vec_scope_cptr_is_empty(&my stack), "Tried to pop too many scopes");
+    panic_if(
         *vec_scope_cptr_back(&my stack) != scope,
-        "Tried to pop incorrect scope, %zd scopes on the stack",
-        vec_scope_cptr_size(&my stack));
+        "Tried to pop incorrect scope, ", vec_scope_cptr_size(&my stack), " scopes on the stack");
     vec_scope_cptr_pop(&my stack);
 }
 

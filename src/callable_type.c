@@ -59,7 +59,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     bool rest_not_last = false;
     for_each (i, vec_callable_arg, &my args) {
         if (my owned_function_impl && i->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
-            error_ctx_error(
+            error_ctx_error_d(
                 errs,
                 i->source->initializer.value.outer_span,
                 2371,
@@ -69,7 +69,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
 
         if (i->source->rest && i_index != vec_callable_arg_size(&my args) - 1 && !rest_not_last) {
             rest_not_last = true;
-            error_ctx_error(
+            error_ctx_error_d(
                 errs,
                 i->source->rest_span,
                 1014,
@@ -86,7 +86,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
             !required_after_optional
         ) {
             required_after_optional = true;
-            error_ctx_error(
+            error_ctx_error_d(
                 errs,
                 i->source->initializer.binding.content_span,
                 1016,
@@ -98,7 +98,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
 
         if (i->source->rest) {
             if (!type_extends_array(&i->type)) {
-                error_ctx_error(
+                error_ctx_error_d(
                     errs,
                     i->source->span,
                     2370,
@@ -106,7 +106,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
                 );
             }
             if (i->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
-                error_ctx_error(
+                error_ctx_error_d(
                     errs,
                     i->source->initializer.binding.content_span,
                     1048,

@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Use struct-oriented programming with `my foo` for member access (aliased to `me->` by macros)
 - Function naming: `[module]_[action]` (e.g., `type_drop`, `error_ctx_init`)
 - Memory management: Always call appropriate `*_drop` functions for cleanup
-- Error handling: Use `ASSERT`, `PANIC_IF`, `NONFATAL` macros appropriately
+- Error handling: Use cleat's `check()`, `panic()`/`panic_if()`, `impossible` and `log_error()` appropriately. They take display sequences, not format strings
 - Parser functions return bool: `parse_success(&p)` (true) or `parse_fail(&p)` (false)
 - Include sufficient context in `Edit` tool calls (3-5 lines before/after)
 - Don't modify AST structure after parsing (pointers need to remain valid)

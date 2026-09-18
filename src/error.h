@@ -25,11 +25,11 @@ typedef struct Error {
 
 void error_drop(Error* me);
 Error error_clone(Error me);
-void display_error(Display d, Error const* me);
 /// noop if me is null
 void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message);
-/// noop if me is null
-void error_sub_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
+/// Builds the message from a display sequence. noop if me is null
+#define error_sub_error_d(me, span, ts_code, ...) \
+    error_sub_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
 #define g_class_key Error, error
 #define g_declared
@@ -73,15 +73,16 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error);
 /// Returned Error can be used to add related errors, but is owned by the ErrorCtx. Additional calls into this ErrorCtx
 /// invalidate returned Error.
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
-/// noop and returns null if me is null. Returned Error can be used to add related errors, but is owned by the ErrorCtx.
-/// Additional calls into this ErrorCtx invalidate returned Error.
-Error* error_ctx_error(ErrorCtx* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
+/// Builds the message from a display sequence. noop and returns null if me is null. Returned Error can be used to add
+/// related errors, but is owned by the ErrorCtx. Additional calls into this ErrorCtx invalidate returned Error.
+#define error_ctx_error_d(me, span, ts_code, ...) \
+    error_ctx_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
 extern ErrorConfig const* global_error_config_private;
 void set_error_config(ErrorConfig const* conf);
 void clear_error_config();
 static inline ErrorConfig const* get_error_config() {
-    PANIC_IF(!global_error_config_private, "global ErrorConfig unset");
+    panic_if(!global_error_config_private, "global ErrorConfig unset");
     return global_error_config_private;
 }
 

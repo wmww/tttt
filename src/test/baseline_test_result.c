@@ -29,7 +29,7 @@ static bool compare_outputs(
         try (fs_read_file(fs, path_of_expected, &expected)) if_err (e) {
             // A missing or unreadable baseline just means the test component fails
             if (show_diff_on_error) {
-                printf("%.*s: %.*s could not be read\n", c_SV(test_name), c_SV(path_of_expected));
+                println(test_name, ": ", path_of_expected, " could not be read");
                 error_base_eprintln(e);
             }
             current_error_destroy();
@@ -42,16 +42,11 @@ static bool compare_outputs(
         cstr_drop(&expected);
         return true;
     } else {
-        cstr result_display = cstr_from_fmt("tttt %s:\n", output_name);
-        cstr_append_sv(&result_display, our_result);
-        cstr_append_lit(&result_display, "\n");
-
-        cstr expected_display = cstr_from_fmt("%.*s:\n", c_SV(path_of_expected));
-        cstr_append_sv(&expected_display, expected_sv);
-        cstr_append_lit(&expected_display, "\n");
+        cstr result_display = cstr_d("tttt ", output_name, ":\n", our_result, "\n");
+        cstr expected_display = cstr_d(path_of_expected, ":\n", expected_sv, "\n");
 
         if (show_diff_on_error) {
-            printf("%.*s: %s did not match:\n", c_SV(test_name), output_name);
+            println(test_name, ": ", output_name, " did not match:");
             run_diff_subprocess(cstr_sv(&result_display), cstr_sv(&expected_display));
         }
 
@@ -83,36 +78,22 @@ void baseline_test_result_run(
 
     bool noisy = show_errs || show_syms || show_typs;
     csview name = test_name_from_path(cstr_sv(&my source_path));
-    cstr errors_path = cstr_from_fmt("%.*s/baselines/reference/%.*s.errors.txt", c_SV(suite->tests_dir), c_SV(name));
-    cstr symbols_path = cstr_from_fmt("%.*s/baselines/reference/%.*s.symbols", c_SV(suite->tests_dir), c_SV(name));
-    cstr types_path = cstr_from_fmt("%.*s/baselines/reference/%.*s.types", c_SV(suite->tests_dir), c_SV(name));
+    cstr errors_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".errors.txt");
+    cstr symbols_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".symbols");
+    cstr types_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".types");
 
     // It's ok if errors file doesn't exist
 
     if (!fs_is_reg_file(fs, cstr_sv(&symbols_path))) {
         if (noisy) {
-            fprintf(
-                stderr,
-                "%s%.*s:%s %s does not exist\n",
-                color_error,
-                c_SV(name),
-                color_normal,
-                cstr_str(&symbols_path)
-            );
+            eprintln(color_error, name, ":", color_normal, " ", symbols_path, " does not exist");
         }
         goto finish;
     }
 
     if (!fs_is_reg_file(fs, cstr_sv(&types_path))) {
         if (noisy) {
-            fprintf(
-                stderr,
-                "%s%.*s:%s %s does not exist\n",
-                color_error,
-                c_SV(name),
-                color_normal,
-                cstr_str(&types_path)
-            );
+            eprintln(color_error, name, ":", color_normal, " ", types_path, " does not exist");
         }
         goto finish;
     }

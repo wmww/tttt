@@ -79,24 +79,24 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
             return;
 
         case TYPE_CALLABLE:
-            NONFATAL("inferring types of generic with callable not yet implemented");
+            log_error("inferring types of generic with callable not yet implemented");
             return;
 
         case TYPE_INTERFACE:
-            NONFATAL("inferring types of generic with interface not yet implemented");
+            log_error("inferring types of generic with interface not yet implemented");
             return;
 
         case TYPE_ARRAY:
-            NONFATAL("inferring types of generic with array not yet implemented");
+            log_error("inferring types of generic with array not yet implemented");
             return;
 
         case TYPE_TUPLE:
-            NONFATAL("inferring types of generic with tuple not yet implemented");
+            log_error("inferring types of generic with tuple not yet implemented");
             return;
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            NONFATAL("inferring types of generic with union/intersection not yet implemented");
+            log_error("inferring types of generic with union/intersection not yet implemented");
             return;
 
         case TYPE_INFERRED:
@@ -106,9 +106,9 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
-            PANIC("Type with tag %d should have been resolved away", my tag);
+            panic("Type with tag ", (i32)my tag, " should have been resolved away");
     }
-    UNREACHABLE;
+    impossible;
 }
 
 static inline void generic_replace_named_types_with(Generic* me, VecTypeRefinement const* refinements) {
@@ -243,7 +243,7 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             replace_named_types_with(me, refinements);
             return;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* generic_params) {
@@ -256,7 +256,7 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
                 .refined = generic_param_at(generic_params, index),
             });
         } else {
-            NONFATAL("Generic %.*s type is null", c_SPAN(i->name));
+            log_error("Generic ", i->name, " type is null");
         }
     }
     replace_named_types_with(&t, &refinements);
@@ -275,7 +275,7 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
                 .refined = &type_unknown,
             });
         } else {
-            NONFATAL("Generic %.*s type is null", c_SPAN(i->name));
+            log_error("Generic ", i->name, " type is null");
         }
     }
     VecType arg_types = {0};
@@ -305,7 +305,7 @@ void generic_typecheck(Generic const* me, ErrorCtx* errs) {
         type_typecheck(&i->extends, errs);
         type_typecheck(&i->fallback, errs);
         if (found_optional && !i->fallback_explicit) {
-            error_ctx_error(
+            error_ctx_error_d(
                 errs, i->full_span, 2706,
                 "Required type parameters may not follow optional type parameters."
             );

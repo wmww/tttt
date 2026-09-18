@@ -42,6 +42,13 @@ There is no AST node struct, interface or visitor. The AST is simply a *concept*
 ### Span
 A span is a reference to a section of source code, often used for error messages. Spans don't own anything, and don't need to be dropped. Identifier names are generally stores as spans.
 
+### Display
+tttt has its own rendering pass for AST nodes in [src/display.c](src/display.c), driven by a `Display` struct (`display_type()`, `display_expr()`, ...). It stays separate from [cleat's display system](thirdparty/cleat/docs/display.md) because it's on the typechecker's hot path (every failed type comparison renders both types into a message) and because it has rendering modes cleat knows nothing about: `debug` (the developer-facing tree), `brief` (the same, truncated), `hash_key` (a canonical string used to key the type pair cache), `parsed` and `underline` (used by the test runner to underline a type within its rendering).
+
+The two systems are bridged in [src/display.h](src/display.h). `declare_ast_display()`/`impl_ast_display()` generate a cleat display function per AST node, so `Span`, `Type const*`, `Expr const*`, `Error const*` and friends are all in `DISPLAYABLES` and can be passed straight to `println()`, `cstr_d()`, `panic()`, `log_error()`, `error_ctx_error_d()` and so on. A plain sequence gets the TypeScript-diagnostic form, `debug_d(x)` gets the developer form and `brief_d(type)` gets the truncated one.
+
+Everything that isn't an AST node goes through cleat's display system directly; `src/` has no `printf`-style format strings left apart from JavaScript's number-to-string precision in `value.c`.
+
 ### Parser
 The parser (including a minimal custom parsing framework) lives in `parser.c`. We do not compile grammars, combinate or tokenize. We simply take a const char* and use it to build an AST. Like real men.
 

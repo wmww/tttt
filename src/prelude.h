@@ -12,37 +12,21 @@
 
 // cleat.h pulls in cleat's types, string helpers, common macros, display, log, failable and generic/types headers,
 // plus STC's common/csview/cstr. See thirdparty/cleat/readme.md
+//
+// Error reporting comes from cleat too: panic()/panic_if() and check() from common_macros.h, impossible from the same
+// place for unreachable branches, and log_error()/log_warn()/log_debug() from log.h. All of them take a display
+// sequence rather than a format string, and display.h adds tttt's own types (Span, Type, Expr, ...) to DISPLAYABLES
+// so they can be passed straight in.
 #include <cleat.h>
 #include <stc/zsview.h>
-
-// PANIC()/ASSERT()/NONFATAL()/PRINT_DBG() are thin printf-style wrappers around cleat's logger. They predate cleat's
-// panic()/check()/log_*() and are used throughout the codebase, so they're kept as-is for now.
-__attribute__((noreturn))
-void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
-#define PANIC(...) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
-#define PANIC_IF(cond, ...) if (cond) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
-#define ASSERT(cond) if (!(cond)) panic_internal("assertion failed", __FILE__, __LINE__, "%s", #cond)
-#define UNREACHABLE PANIC("unreachable reached \\x_x/")
-
-extern int nonfatal_inhibit_count;
-cstr* acquire_debug_cstr(); // Should only be used by FMT_DBG
-const char* get_latest_debug_str(); // Should only be used by FMT_DBG
-void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
-void print_debug_internal(const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 3, 4)));
-#define NONFATAL(...) do { if (nonfatal_inhibit_count == 0) nonfatal_internal("nonfatal", __FILE__, __LINE__, __VA_ARGS__); } while (false)
-#define PRINT_DBG(...) { if (nonfatal_inhibit_count == 0) print_debug_internal(__FILE__, __LINE__, __VA_ARGS__); } while (false)
 
 #define MUST_USE __attribute__((warn_unused_result))
 
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
-#define PANIC_DBG PANIC("AAaaa");
+#define PANIC_DBG panic("AAaaa")
 #define PANIC_AFTER_DBG(count, ...) do { \
         static int panic_count = 0; \
         panic_count++; \
-        if (panic_count > count) PANIC(__VA_ARGS__); \
-        else NONFATAL(__VA_ARGS__); \
+        if (panic_count > count) panic(__VA_ARGS__); \
+        else log_error(__VA_ARGS__); \
     } while (false)
-#define NONFATAL_DBG NONFATAL
-#define INDENT_DBG(size) (display_repeated(debug_brief_display(acquire_debug_cstr()), c_sv(" "), size), get_latest_debug_str())
-#define FMT_DBG(type, value) (display_##type(debug_brief_display(acquire_debug_cstr()), &(value)), get_latest_debug_str())
-#define TYPE_DBG(value) FMT_DBG(type, value)

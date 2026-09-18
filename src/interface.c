@@ -123,7 +123,7 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
 Type interface_from_merged_interfaces(VecType types) {
     VecInterfaceMember members = vec_interface_member_init();
     for_each (i, vec_type, &types) {
-        ASSERT(i->tag == TYPE_INTERFACE);
+        check(i->tag == TYPE_INTERFACE);
         push_interface_members_to(&members, i->interface.members);
         i->interface.members = vec_interface_member_init();
     }
@@ -145,10 +145,9 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
     }
     Type const* from_named = type_resolve(&declaration->declared_type);
     if (from_named->tag != TYPE_INTERFACE) {
-        NONFATAL(
-            "Tried to typecheck against %.*s, which isn't interface. type tag: %d",
-            c_SPAN(declaration->name),
-            from_named->tag
+        log_error(
+            "Tried to typecheck against ", declaration->name,
+            ", which isn't interface. type tag: ", (i32)from_named->tag
         );
         return;
     }
@@ -176,20 +175,14 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
             !type_extends(&i->type, &matching->type) ||
             !type_extends(&matching->type, &i->type)
         )) {
-            cstr msg = cstr_lit("Subsequent property declarations must have the same type.  Property '");
-            cstr_append_span(&msg, i->key.span);
-            cstr_append_lit(&msg, "' must be of type '");
-            cstr_append_type_error_msg(&msg, &matching->type);
-            cstr_append_lit(&msg, "', but here has type '");
-            cstr_append_type_error_msg(&msg, &i->type);
-            cstr_append_lit(&msg, "'.");
-            Error* error = error_ctx_error_s(errs, i->key.span, 2717, msg);
+            Error* error = error_ctx_error_d(errs, i->key.span, 2717,
+                "Subsequent property declarations must have the same type.  Property '", i->key.span,
+                "' must be of type '", &matching->type, "', but here has type '", &i->type, "'.");
             error_related_error(
                 error,
                 matching->key.span,
                 6203,
-                "'%.*s' was also declared here.",
-                c_SPAN(matching->key.span)
+                "'", matching->key.span, "' was also declared here."
             );
             //type_drop(&i->type);
             //i->type = type_clone(matching->type);

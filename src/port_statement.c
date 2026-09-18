@@ -24,7 +24,7 @@ void port_statement_assign_source(PortStatement* me, SourceFile* source) {
 void port_statement_add_names(PortStatement* me, Scope* scope) {
     if (span_valid(my target_path_span)) {
         if (!scope->export_scope) {
-            error_ctx_error(
+            error_ctx_error_d(
                 scope->errs,
                 my keyword_span,
                 1232,
@@ -33,12 +33,9 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
             return;
         }
         if (!my main.source_file) {
-            error_ctx_error(
-                scope->errs,
-                my target_path_span,
-                2307,
-                "Cannot find module '%s' or its corresponding type declarations.",
-                cstr_str(&my target_path)
+            error_ctx_error_d(
+                scope->errs, my target_path_span, 2307,
+                "Cannot find module '", my target_path, "' or its corresponding type declarations."
             );
         }
     }

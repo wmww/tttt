@@ -70,7 +70,7 @@ static inline void type_pair_cache_entry_update(TypePairCacheEntry* me, bool res
     my result = result;
     // key may not have ownership over its data anymore, but can still be used. This is hacky but it works
     auto value = hmap_bool_get_mut(&my cache->hmap, cstr_sv(&my key));
-    ASSERT(value);
+    check(value);
     value->second = result;
 }
 

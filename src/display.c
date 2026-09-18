@@ -13,31 +13,47 @@
 #include "port_statement.h"
 #include "string_helpers.h"
 
-const char* color_normal = "\x1b[0m";
-const char* color_error = "\x1b[1;31m";
-const char* color_good = "\x1b[1;32m";
-const char* color_highlighted_error = "\x1b[1;41m";
-const char* color_highlighted_good = "\x1b[1;42m";
+#define ANSI(escape) { .code = c_sv_const_init(escape) }
 
-const char* color_path = "\x1b[94m";
-const char* color_status = "\x1b[0;94m";
-const char* color_line_number = "\x1b[95m";
-const char* color_run_percent = "\x1b[1;44m";
-const char* color_implicit = "\x1b[0;37m";
+AnsiColor color_none              = ANSI("");
+AnsiColor color_normal            = ANSI("\x1b[0m");
+AnsiColor color_error             = ANSI("\x1b[1;31m");
+AnsiColor color_good              = ANSI("\x1b[1;32m");
+AnsiColor color_highlighted_error = ANSI("\x1b[1;41m");
+AnsiColor color_highlighted_good  = ANSI("\x1b[1;42m");
 
-const char* color_name = "\x1b[0;35m";
-const char* color_value = "\x1b[0;36m";
-const char* color_string = "\x1b[0;33m";
-const char* color_number = "\x1b[0;34m";
-const char* color_type = "\x1b[0;32m";
+AnsiColor color_path        = ANSI("\x1b[94m");
+AnsiColor color_status      = ANSI("\x1b[0;94m");
+AnsiColor color_line_number = ANSI("\x1b[95m");
+AnsiColor color_run_percent = ANSI("\x1b[1;44m");
+AnsiColor color_implicit    = ANSI("\x1b[0;37m");
+
+AnsiColor color_name   = ANSI("\x1b[0;35m");
+AnsiColor color_value  = ANSI("\x1b[0;36m");
+AnsiColor color_string = ANSI("\x1b[0;33m");
+AnsiColor color_number = ANSI("\x1b[0;34m");
+AnsiColor color_type   = ANSI("\x1b[0;32m");
+
+#undef ANSI
 
 const csview indent_string = c_sv_const_init("    ");
 
-void display_fmt(Display d, const char* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    cstr_vfmt(d.target, cstr_size(d.target), fmt, args);
-    va_end(args);
+impl_display_no_drop(Span, span) { return debuggable_sv_display(me.sv, d); }
+
+// The bridges that let AST nodes appear directly in cleat display sequences, see declare_ast_display()
+impl_ast_display(Value, value)
+impl_ast_display(InterfaceMember, interface_member)
+impl_ast_display(Type, type)
+impl_ast_display(Expr, expr)
+impl_ast_display(Statement, statement)
+impl_ast_display(Block, block)
+
+impl_display_no_drop(BriefType, brief_type) {
+    Display td = display_borrow_ctx(&d);
+    td.debug = true;
+    td.brief = true;
+    display_type(td, me.type);
+    return d;
 }
 
 #define display_set_underline(active) \
@@ -415,7 +431,7 @@ void display_interface_member(Display d, InterfaceMember const* me) {
     ) {
         display_callable(d, my type.callable, true);
     } else if (my key.tag == INTERFACE_KEY_CALLABLE) {
-        ASSERT(my type.tag == TYPE_CALLABLE);
+        check(my type.tag == TYPE_CALLABLE);
         display_callable(d, my type.callable, true);
     } else {
         if (my optional) {
@@ -445,7 +461,9 @@ static void display_interface(Display d, Interface const* me) {
             display_lit(d, "; ");
             if (vec_interface_member_size(&my members) > 1) {
                 display_color(d, color_value);
-                display_fmt(d, "...and %zd more ", vec_interface_member_size(&my members) - 1);
+                display_lit(d, "...and ");
+                display_i64(d, vec_interface_member_size(&my members) - 1);
+                display_lit(d, " more ");
                 display_color(d, color_normal);
             }
         }
@@ -621,7 +639,9 @@ void display_type(Display d, Type const* me) {
 
                 if (d.brief && count >= 2) {
                     display_color(d, color_value);
-                    display_fmt(d, "...and %zd more", vec_type_size(&my composite) - count);
+                    display_lit(d, "...and ");
+                    display_i64(d, vec_type_size(&my composite) - count);
+                    display_lit(d, " more");
                     display_color(d, color_normal);
                     break;
                 }
@@ -859,7 +879,7 @@ void display_expr(Display d, Expr const* me) {
             switch (my property->form) {
                 case PROPERTY_EXPR_DOT:
                     display_lit(d, ".");
-                    ASSERT(my property->prop.tag == EXPR_LITERAL && my property->prop.literal.tag == VALUE_STRING);
+                    check(my property->prop.tag == EXPR_LITERAL && my property->prop.literal.tag == VALUE_STRING);
                     display_s(d, my property->prop.literal.string);
                     break;
 
@@ -997,7 +1017,7 @@ static void display_port_statement(Display d, PortStatement const* me) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_EXPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC:
-            NONFATAL("Unexpected main tag for port statement: %d", my main.tag);
+            log_error("Unexpected main tag for port statement: ", (i32)my main.tag);
             break;
     }
 
@@ -1285,8 +1305,5 @@ void display_block(Display d, Block const* me) {
 }
 
 void print_type_dbg(Type const* me) {
-    cstr s = cstr_null;
-    display_type(debug_display(&s), me);
-    fprintf(stderr, "Type %p: %s\n", (void*)me, cstr_str(&s));
-    cstr_drop(&s);
+    eprintln("Type ", (void*)me, ": ", debug_d(me));
 }

@@ -6,14 +6,21 @@
 #error debug allocator should be enabled for diffapp runner builds
 #endif
 
+// The diffapp protocol prefixes each section with its length, always as exactly 12 digits
+static void print_section(const char* tag, cstr const* body) {
+    cstr size = cstr_d(cstr_size(body));
+    isize padding = 12 - cstr_size(&size);
+    println(tag, " ", repeated_d("0", padding > 0 ? padding : 0), consume_d(size), "\n", *body);
+}
+
 int main(int argc, const char** argv) {
     if (argc != 2) {
-        fprintf(stderr, "USAGE: diffapp_runner [TSPATH]\n");
+        eprintln("USAGE: diffapp_runner [TSPATH]");
         return 1;
     }
     csview test_path = csview_from(argv[1]);
     if (!fs_is_reg_file(fs, test_path)) {
-        fprintf(stderr, "%.*s is not a file\n", c_SV(test_path));
+        eprintln(test_path, " is not a file");
         return 1;
     }
 
@@ -29,15 +36,15 @@ int main(int argc, const char** argv) {
 
         BaselineTestCase test_case = run_baseline_test_case(&cache, test_path, true);
         baseline_test_case_render_errors(&results, &test_case);
-        printf("err %012zd\n%s\n", cstr_size(&results), cstr_str(&results));
+        print_section("err", &results);
         cstr_clear(&results);
 
         baseline_test_case_render_symbols(&results, &test_case);
-        printf("sym %012zd\n%s\n", cstr_size(&results), cstr_str(&results));
+        print_section("sym", &results);
         cstr_clear(&results);
 
         baseline_test_case_render_types(&results, &test_case);
-        printf("typ %012zd\n%s\n", cstr_size(&results), cstr_str(&results));
+        print_section("typ", &results);
         cstr_clear(&results);
 
         baseline_test_case_drop(&test_case);
@@ -49,14 +56,14 @@ int main(int argc, const char** argv) {
             BaselineTestCase rerun_case = run_baseline_test_case(&cache, test_path, true);
             baseline_test_case_drop(&rerun_case);
             if (debug_allocation_count != 0) {
-                fprintf(stderr, "Detected %zd net allocations\n", debug_allocation_count);
-                printf("mem\n");
+                eprintln("Detected ", debug_allocation_count, " net allocations");
+                println("mem");
             }
         }
 #endif
 
         fflush(stderr);
-        printf("end\n");
+        println("end");
         fflush(stdout);
         c = getchar();
     }

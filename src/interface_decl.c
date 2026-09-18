@@ -42,7 +42,7 @@ void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx*
 }
 
 Type interface_decl_evaluate_type(InterfaceDecl* me) {
-    ASSERT(my type.tag == TYPE_INTERFACE);
+    check(my type.tag == TYPE_INTERFACE);
 
     for_each (i, vec_interface_member, &my type.interface.members) {
         i->origin_interface = my declaration.get;
@@ -65,12 +65,12 @@ Type interface_decl_evaluate_type(InterfaceDecl* me) {
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
 
-    ASSERT(my type.tag == TYPE_INTERFACE);
+    check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {
         type_typecheck(&extends->type, errs);
         Type const* resolved = type_resolve(&extends->type);
         if (extends->type.tag != TYPE_IDENTIFIER) {
-            error_ctx_error(
+            error_ctx_error_d(
                 errs,
                 extends->span,
                 2499,
@@ -78,7 +78,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             );
         } else if (resolved->tag != TYPE_INTERFACE) {
             /*
-            error_ctx_error(
+            error_ctx_error_d(
                 errs,
                 extends->span,
                 2312,
@@ -88,13 +88,10 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         } else {
             /*
             if (!type_extends(&i.ref->type, &my type)) {
-                error_ctx_error(
-                    errs,
-                    my name,
-                    2430,
-                    "Interface '%.*s' incorrectly extends interface '%.*s'.",
-                    c_SV(span_sv(&my name)),
-                    c_SV(span_sv(&i.ref->type.identifier->name))
+                error_ctx_error_d(
+                    errs, my name, 2430,
+                    "Interface '", my name, "' incorrectly extends interface '",
+                    i.ref->type.identifier->name, "'."
                 );
             }
             */

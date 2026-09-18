@@ -42,11 +42,11 @@ bool class_item_is_static(ClassItem* me) {
         case CLASS_ITEM_INTERFACE_MEMBER: return false;
         case CLASS_ITEM_STATIC_BLOCK: return true;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 Type class_item_field_evaluate_type(ClassItem* me) {
-    ASSERT(my tag == CLASS_ITEM_FIELD);
+    check(my tag == CLASS_ITEM_FIELD);
     Type const* ref = my field.has_explicit_type ?
         &my field.explicit_type :
         lazy_type_get(&my field.value.lazy_type);
@@ -65,7 +65,7 @@ Type class_item_get_type(ClassItem* me) {
         case CLASS_ITEM_INTERFACE_MEMBER: return type_refcopy(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return type_never;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 void class_decl_drop(ClassDecl* me) {
@@ -170,7 +170,7 @@ void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
             if (i->constructor.func.ret_explicit) {
-                error_ctx_error(
+                error_ctx_error_d(
                     errs,
                     i->constructor.func.ret_span,
                     1093,
@@ -178,7 +178,7 @@ void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
                 );
                 type_drop(&i->constructor.func.ret);
             }
-            ASSERT(i->constructor.func.ret.tag == TYPE_ANY);
+            check(i->constructor.func.ret.tag == TYPE_ANY);
             i->constructor.func.ret_explicit = true;
             i->constructor.func.ret = type_ref_always(&my instance_identifier_type);
         }
@@ -245,7 +245,7 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
                 if (!resolve_instance && !has_constructor) {
                     has_constructor = true;
                     Type type = type_clone(*lazy_type_get(&i->constructor.func.lazy_type));
-                    ASSERT(type.tag == TYPE_CALLABLE);
+                    check(type.tag == TYPE_CALLABLE);
                     generic_drop(&type.callable->generic);
                     type.callable->generic = generic_clone(my generic);
                     InterfaceMember member = {
@@ -380,9 +380,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (constructor_count > 1) {
         for_each (i, vec_class_item, &my items) {
             if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
-                ASSERT(span_valid(i->constructor.name_span));
-                ASSERT(span_valid(i->constructor.func.full_span));
-                error_ctx_error(
+                check(span_valid(i->constructor.name_span));
+                check(span_valid(i->constructor.func.full_span));
+                error_ctx_error_d(
                     errs,
                     span_between(i->constructor.name_span, i->constructor.func.full_span),
                     2392,

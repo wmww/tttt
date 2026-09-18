@@ -78,7 +78,7 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
 
 csview test_name_from_path(csview path) {
     csview name = basename_of(path);
-    ASSERT(csview_ends_with(name, ".ts"));
+    check(csview_ends_with(name, ".ts"));
     name = csview_subview(name, 0, csview_size(name) - 3);
     return name;
 }
@@ -191,13 +191,13 @@ static_failable load_test_source(BaselineTestCase* me) {
 }
 
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
-    PANIC_IF(!source, "Tests detected span with null source");
+    panic_if(!source, "Tests detected span with null source");
     for_each (i, vec_baseline_test_file, &my files) {
         if (i->source == source) {
             return i;
         }
     }
-    PANIC("failed to find test for source file %s", cstr_str(&source->canonical_path));
+    panic("failed to find test for source file ", source->canonical_path);
 }
 
 static void format_error_tree(
@@ -218,42 +218,32 @@ static void format_error_tree(
                 cstr_str(&error->span.source->canonical_path)
         ) : "(nil)";
 
-        cstr_append_fmt(
-            global_target,
-            "%s(%u,%u): error TS%d: ",
-            filename, line + 1, col + 1,
-            error->ts_code
+        cstr_append_d(
+            global_target, DEFAULT_DISPLAY,
+            filename, "(", line + 1, ",", col + 1, "): error TS", error->ts_code, ": "
         );
     }
 
     // Add toplevel errors and non-related errors (sub-errors that don't have a valid span) to the global string
     if (indent_level == 0 || !span_valid(error->span)) {
-        display_repeated(error_display(global_target), c_sv("  "), indent_level);
-        cstr_append_s(global_target, error->message);
-        cstr_append_lit(global_target, "\r\n");
+        cstr_append_d(global_target, DEFAULT_DISPLAY, repeated_d("  ", indent_level), error->message, "\r\n");
     }
 
     if (indent_level == 0 || !span_valid(error->span)) {
         // Handle toplevel errors and non-related errors (sub-errors that don't have a valid span)
-        cstr_append_fmt(
-            file_target,
-            "\r\n!!! error TS%d: ",
-            toplevel->ts_code
+        cstr_append_d(
+            file_target, DEFAULT_DISPLAY,
+            "\r\n!!! error TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level), error->message
         );
-        display_repeated(error_display(file_target), c_sv("  "), indent_level);
-        cstr_append_s(file_target, error->message);
     } else {
         // Handle related errors (sub-errors that do have a valid span)
         unsigned related_line = span_line_index(error->span);
         unsigned related_col = span_col_index(error->span);
-        cstr_append_fmt(
-            file_target,
-            "\r\n!!! related TS%d %.*s:%u:%u: %s",
-            error->ts_code,
-            c_SV(basename_of(cstr_sv(&current_source->canonical_path))),
-            related_line + 1,
-            related_col + 1,
-            cstr_str(&error->message)
+        cstr_append_d(
+            file_target, DEFAULT_DISPLAY,
+            "\r\n!!! related TS", error->ts_code, " ",
+            basename_of(cstr_sv(&current_source->canonical_path)), ":",
+            related_line + 1, ":", related_col + 1, ": ", error->message
         );
     }
 
@@ -281,7 +271,7 @@ static void process_errors(BaselineTestCase* me) {
             current_test_file = find_file(me, current_source);
         }
 
-        ASSERT(current_test_file);
+        check(current_test_file);
 
         unsigned line = span_line_index(error->span);
         unsigned col = span_col_index(error->span);
@@ -310,8 +300,10 @@ static void process_errors(BaselineTestCase* me) {
 }
 
 BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy) {
+    // A quiet test case shouldn't print the log_error()s the checker emits for constructs it can't handle yet
+    LogLevel prev_threshold = logger_config.threshold;
     if (!noisy) {
-        nonfatal_inhibit_count++;
+        logger_config.threshold = LOG_LEVEL_NEVER;
     }
 
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
@@ -361,9 +353,7 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
 
     process_errors(&ret);
 
-    if (!noisy) {
-        nonfatal_inhibit_count--;
-    }
+    logger_config.threshold = prev_threshold;
 
     return ret;
 }
@@ -416,7 +406,7 @@ static void render_lines_woven_with_file(
     bool newline_if_next_line_non_empty = false;
 
     if (!is_errors) {
-        cstr_append_fmt(target, "=== %s ===\r\n", source_path);
+        cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
         newline_if_next_line_non_empty = vec_size == 0;
     }
 
@@ -477,7 +467,7 @@ static void render_lines_woven_with_file(
     }
 
     for (intptr_t i = 0; i < newlines_at_end_of_source; i++) {
-        cstr_append_fmt(target, "\r\n%s", line_indent);
+        cstr_append_d(target, DEFAULT_DISPLAY, "\r\n", line_indent);
     }
 }
 
@@ -490,11 +480,9 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     cstr_append_lit(target, "\r\n");
 
     for_each (i, vec_baseline_test_file, &my files) {
-        cstr_append_fmt(
-            target,
-            "\r\n==== %s (%ld errors) ====\r\n",
-            cstr_str(&i->path),
-            i->error_count
+        cstr_append_d(
+            target, DEFAULT_DISPLAY,
+            "\r\n==== ", i->path, " (", i->error_count, " errors) ====\r\n"
         );
 
         render_lines_woven_with_file(
@@ -509,7 +497,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
 }
 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
-    cstr_append_fmt(target, "//// [%.*s] ////\r\n\r\n", c_SV(relative_test_path(my source_path)));
+    cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         render_lines_woven_with_file(
             target,
@@ -523,7 +511,7 @@ void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me)
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
-    cstr_append_fmt(target, "//// [%.*s] ////\r\n\r\n", c_SV(relative_test_path(my source_path)));
+    cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         render_lines_woven_with_file(
             target,
@@ -546,10 +534,9 @@ static void append_decl(cstr* target, Span span) {
         cstr_append_lit(target, ")");
         return;
     } else if (cstr_ends_with_sv(&span.source->canonical_path, c_sv("tslib.d.ts"))) {
-        cstr_append_fmt(
-            target,
-            ", Decl(%.*s, --, --)",
-            c_SV(basename_of(cstr_sv(&span.source->canonical_path)))
+        cstr_append_d(
+            target, DEFAULT_DISPLAY,
+            ", Decl(", basename_of(cstr_sv(&span.source->canonical_path)), ", --, --)"
         );
         return;
     }
@@ -604,19 +591,16 @@ static void append_decl(cstr* target, Span span) {
     span.sv = csview_from_n(start, 0);
     unsigned format_line = span_line_index(span);
     unsigned format_col = span_col_index(span);
-    cstr_append_fmt(
-        target,
-        ", Decl(%.*s, %u, %u)",
-        c_SV(basename_of(cstr_sv(&span.source->canonical_path))),
-        format_line,
-        format_col
+    cstr_append_d(
+        target, DEFAULT_DISPLAY,
+        ", Decl(", basename_of(cstr_sv(&span.source->canonical_path)), ", ", format_line, ", ", format_col, ")"
     );
 }
 
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     unsigned line_for_placement = span_line_index(data.span);
 
-    cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SPAN(data.span));
+    cstr text = cstr_d(">", data.span, " : Symbol(");
 
     bool has_namespace = false;
     for_each (i, vec_span, &data.namespaces) {
@@ -727,10 +711,10 @@ void baseline_test_case_add_type_recursive(
 
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
     if (!declaration) {
-        NONFATAL("baseline_test_case_add_declaration() called with null declaration");
+        log_error("baseline_test_case_add_declaration() called with null declaration");
         return;
     }
-    ASSERT(span.source);
+    check(span.source);
     baseline_test_case_add_symbol(me, (BaselineSym){
         .declarations = vec_span_clone(declaration->declarations),
         .span = span,

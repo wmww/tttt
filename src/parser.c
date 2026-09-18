@@ -108,7 +108,7 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
 
 static inline Parser parser(Parser* parent) {
 #ifdef DEBUG_BUILD
-    ASSERT(!parent->has_panding_child);
+    check(!parent->has_panding_child);
     parent->has_panding_child = true;
 #endif
     return (Parser){
@@ -124,7 +124,7 @@ static inline Parser parser(Parser* parent) {
 /// Must not be used on the root parser, always returns true, drops parser
 static inline bool parse_success(Parser* me) {
 #ifdef DEBUG_BUILD
-    ASSERT(my parent->has_panding_child);
+    check(my parent->has_panding_child);
     my parent->has_panding_child = false;
 #endif
     my parent->pos = my pos;
@@ -137,7 +137,7 @@ static inline bool parse_success(Parser* me) {
 /// Must not be used on the root parser, always returns false, drops parser
 static inline bool parse_fail(Parser* me) {
 #ifdef DEBUG_BUILD
-    ASSERT(my parent->has_panding_child);
+    check(my parent->has_panding_child);
     my parent->has_panding_child = false;
 #endif
     if (my error_count) {
@@ -191,25 +191,20 @@ static void reset_fail_cache(Parser* me) {
 // Should only be called for the current active parser
 static inline Error* add_error_to_parser(Parser* me, Error error) {
 #ifdef DEBUG_BUILD
-    ASSERT(!my has_panding_child);
+    check(!my has_panding_child);
 #endif
     my error_count++;
     return vec_error_push(&my shared->errors, error);
 }
 
-static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
-static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* fmt, ...) {
-    cstr message = cstr_null;
+static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
     if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
+        cstr_drop(&message);
         return nullptr;
     } else if (vec_error_size(&my shared->errors) == MAX_ERRORS - 1) {
+        cstr_drop(&message);
         ts_code = TS_CODE_NONE;
         message = cstr_lit("Too many errors, additional errors not shown.");
-    } else {
-        va_list args;
-        va_start(args, fmt);
-        cstr_vfmt(&message, 0, fmt, args);
-        va_end(args);
     }
     return add_error_to_parser(me, (Error){
         .message = message,
@@ -218,6 +213,9 @@ static Error* parse_error(Parser* me, Span span, unsigned ts_code, const char* f
         .phase = ERROR_PHASE_PARSE,
     });
 }
+
+/// Builds the message from a display sequence
+#define parse_error(me, span, ts_code, ...) parse_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
 typedef struct Anchor {
     Parser* parser;
@@ -438,13 +436,13 @@ static inline bool expect_char(Parser* parent, char c) {
     if (hop_char(parent, c)) {
         return true;
     } else {
-        parse_error(parent, span_from_token(parent), 1005, "'%c' expected.", c);
+        parse_error(parent, span_from_token(parent), 1005, "'", c, "' expected.");
         return false;
     }
 }
 
 static Error* expected_token_error(Parser* parent, const char* expected) {
-    return parse_error(parent, span_from_token(parent), 1005, "'%s' expected.", expected);
+    return parse_error(parent, span_from_token(parent), 1005, "'", expected, "' expected.");
 }
 
 static Error* expected_expression_error(Parser* parent) {
@@ -1174,7 +1172,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                         item.method.name_is_value,
                         function_impl_into_type(item.method.func)
                     );
-                    ASSERT(member.key.tag == INTERFACE_KEY_NAME);
+                    check(member.key.tag == INTERFACE_KEY_NAME);
                     member.key.name_is_member_function = true;
                     vec_interface_member_push(&members, member);
                     item.method.func = (FunctionImpl){0};
@@ -3454,7 +3452,7 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
 
     if (!hop_char(&p, ')')) {
         Error* error = expected_token_error(&p, ")");
-        error_sub_error(error, open_token, 1007, "The parser expected to find a ')' to match the '(' token here.");
+        error_sub_error_d(error, open_token, 1007, "The parser expected to find a ')' to match the '(' token here.");
     }
     hop_whitespace(&p);
 
@@ -3599,7 +3597,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
                 ret->for_each_loop->variable.expr = statement.expr;
                 break;
 
-            default: PANIC("Invalid statement type for for-each loop");
+            default: panic("Invalid statement type for for-each loop");
         }
     } else {
         *ret = (Statement){
@@ -3899,11 +3897,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             if (val.tag == VALUE_STRING) {
                 parse_error(&p, span_from(a), 1003, "Identifier expected.");
             } else {
-                cstr msg = cstr_lit("Scope name cannot be '");
-                cstr_append_value_error_msg(&msg, &val);
-                cstr_append_lit(&msg, "'.");
-                parse_error(&p, span_from(a), 2819, "%s", cstr_str(&msg));
-                cstr_drop(&msg);
+                parse_error(&p, span_from(a), 2819, "Scope name cannot be '", &val, "'.");
             }
             value_drop(&val);
             return parse_success(&p);

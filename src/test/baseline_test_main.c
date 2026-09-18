@@ -15,20 +15,21 @@ bool summary_only = false;
 bool save_results = false;
 
 static void show_help(FILE* target) {
-    fprintf(target, "tttt test runner\n\n\
-  -h, --help                show this help message\n\n\
-  --dir [PATH]              path to TypeScript tests directory\n\
-                            (default = %.*s)\n\n\
-  --summary                 only show tests who's results changed\n\n\
-  -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n\
-  -s, --save                save test results to results path\n\n\
-  --results-path [PATH]     path to file where test results are loaded/saved\n\
-                            (default = %.*s)\n\n\
-  -d, --diffs               if to show all diffs for failing tests\n\n\
-  --err                     show errors diffs for failing tests\n\n\
-  --sym                     show symbols diffs for failing tests\n\n\
-  --typ                     show types diffs for failing tests\n\n\
-", c_SV(default_tests_dir), c_SV(default_results_path));
+    print_display(target, display_sequence(PRINT_DISPLAY,
+        "tttt test runner\n\n"
+        "  -h, --help                show this help message\n\n"
+        "  --dir [PATH]              path to TypeScript tests directory\n"
+        "                            (default = ", default_tests_dir, ")\n\n"
+        "  --summary                 only show tests who's results changed\n\n"
+        "  -f, --filter [FILTER]     regex of tests to run, case insensitive\n\n"
+        "  -s, --save                save test results to results path\n\n"
+        "  --results-path [PATH]     path to file where test results are loaded/saved\n"
+        "                            (default = ", default_results_path, ")\n\n"
+        "  -d, --diffs               if to show all diffs for failing tests\n\n"
+        "  --err                     show errors diffs for failing tests\n\n"
+        "  --sym                     show symbols diffs for failing tests\n\n"
+        "  --typ                     show types diffs for failing tests\n\n"
+    ));
 }
 
 // Reads the value that follows a flag, failing if the next argument is missing or is itself a flag. Advances *i past
@@ -37,7 +38,7 @@ static_failable next_arg_value(int argc, const char** argv, int* i, returns cons
     const char* flag = argv[*i];
     (*i)++;
     if (*i >= argc || *argv[*i] == '-') {
-        return err_fmt("Expected argument after %s", flag);
+        return err_d("Expected argument after ", flag);
     }
     return ok(argv[*i]);
 }
@@ -73,15 +74,15 @@ static_failable parse_args(int argc, const char** argv) {
         } else if (streq(argv[i], "-s") || streq(argv[i], "--save")) {
             save_results = true;
         } else {
-            return err_fmt("Unexpected argument %s", argv[i]);
+            return err_d("Unexpected argument ", argv[i]);
         }
     }
 
     if (!fs_is_directory(fs, tests_dir)) {
-        return err_fmt("%.*s is not a directory", c_SV(tests_dir));
+        return err_d(tests_dir, " is not a directory");
     }
     if (!fs_is_reg_file(fs, results_path)) {
-        return err_fmt("%.*s is not a file", c_SV(results_path));
+        return err_d(results_path, " is not a file");
     }
 
     return ok;
@@ -91,7 +92,7 @@ int main(int argc, const char** argv) {
     try (parse_args(argc, argv)) if_err (e) {
         error_base_eprintln(e);
         current_error_destroy();
-        fprintf(stderr, "\n");
+        eprintln();
         show_help(stderr);
         return 1;
     }

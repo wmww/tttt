@@ -19,6 +19,7 @@ tttt uses [cleat](https://codeberg.org/sphi/cleat) as its standard library, vend
 
 - [generic.md](thirdparty/cleat/docs/generic.md): containers (`VecFoo`/`vec_foo_*`, `HMapFoo`/`hmap_foo_*`, `ArcFoo`, `BoxFoo`, ...). A container is instantiated by `#define`ing `g_key`/`g_class_key`/`g_pro_key` (and `g_val`/`g_class_val`/`g_pro_val` for maps) and then `#include <cleat/generic/vec.h>`
 - [error_handling.md](thirdparty/cleat/docs/error_handling.md): `failable` functions, `try (...) bubble`, `ok`/`err`, `returns`
+- [display.md](thirdparty/cleat/docs/display.md): format-string-free printing and formatting (`println()`, `cstr_d()`, `err_d()`, `DISPLAYABLES`)
 - [filesystem.md](thirdparty/cleat/docs/filesystem.md): the `Fs` interface and the `fs` global
 - [iterators_and_for_each.md](thirdparty/cleat/docs/iterators_and_for_each.md): `for_each`/`for_each_kv`
 
@@ -28,11 +29,12 @@ Note that `g_pro_key CStr, cstr` keys a container by `cstr` but looks it up by `
 
 `src/prelude.h` pulls in `cleat.h` and is included directly or indirectly in all files. Between them you get, among other things:
 - `#define my me->` (from cleat): This allows writing `my foo.bar` instead of `me->foo.bar` in functions that take a pointer argument `me`. This is the preferred style for method-like functions (`me`/`my` is used instead of `this` or `self`)
-- `PANIC("message %s %d", str, num);`: Immediately aborts the program with a message to stderr, if running under Valgrind a stack trace is printed to stderr as well. Implemented on top of cleat's logger, so it also gets a clickable source link. Cleat's own `panic_str()`/`check()`/`impossible` do much the same thing but without printf formatting; prefer the macros below, which the codebase already uses everywhere
-- `ASSERT(condition)`: Panics if condition is false, used for sanity checks
-- `UNREACHABLE`: Panics if hit, used in places control flow should never hit
-- `NONFATAL("message %s %d", str, num)`: Used for recoverable errors that do not require aborting, but should nonetheless never happen once the program is complete
-- `PRINT_DBG("message %s %d", str, num)`: Can be used for print debugging
+- `panic("message ", str, " ", num);` (from cleat): Immediately aborts the program with a message to stderr, if running under Valgrind a stack trace is printed to stderr as well, and the source location is a clickable link. `panic_if(condition, ...)` is the conditional form
+- `check(condition)` (from cleat): Panics if condition is false, used for sanity checks
+- `impossible` (from cleat): Panics if hit, used in places control flow should never hit
+- `log_error("message ", str, " ", num)` (from cleat): Used for recoverable errors that do not require aborting, but should nonetheless never happen once the program is complete. `log_warn()`/`log_info()`/`log_debug()` are also available for print debugging, but note that `logger_config.threshold` hides anything below info by default
+
+All of these take a [display](thirdparty/cleat/docs/display.md) sequence rather than a format string, and `src/display.h` adds tttt's own types (`Span`, `Type const*`, `Expr const*`, `Error const*`, ...) to `DISPLAYABLES`, so AST nodes can be passed straight in. `debug_d(x)` switches an AST node from its error-message form to its developer form.
 
 There's other stuff there, but those are the main things you need to be aware of.
 

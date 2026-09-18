@@ -8,7 +8,7 @@
 
 static_failable write_sv(int fd, csview sv) {
     if (write(fd, sv.buf, csview_size(sv)) < csview_size(sv)) {
-        return err_fmt("failed to write to pipe: %s", strerror(errno));
+        return err_d("failed to write to pipe: ", strerror(errno));
     }
     return ok;
 }
@@ -24,7 +24,7 @@ static void close_fd(int* fd) {
 // still open however this ends up returning
 static_failable run_diff(csview a, csview b, int a_pipe[2], int b_pipe[2]) {
     if (pipe(a_pipe) < 0 || pipe(b_pipe) < 0) {
-        return err_fmt("failed to open pipe: %s", strerror(errno));
+        return err_d("failed to open pipe: ", strerror(errno));
     }
 
     // NOTE: this will deadlock if either string is bigger than the pipe buffer (64KB by default). Test outputs have
@@ -36,8 +36,8 @@ static_failable run_diff(csview a, csview b, int a_pipe[2], int b_pipe[2]) {
     close_fd(&b_pipe[1]);
 
     // The read ends of the pipes are inherited by the subprocess, which reads them through /dev/fd
-    cstr a_arg = cstr_from_fmt("/dev/fd/%d", a_pipe[0]);
-    cstr b_arg = cstr_from_fmt("/dev/fd/%d", b_pipe[0]);
+    cstr a_arg = cstr_d("/dev/fd/", a_pipe[0]);
+    cstr b_arg = cstr_d("/dev/fd/", b_pipe[0]);
 
     try (run_subproc((SubprocArgs){
         // Other commands that have been handy here:

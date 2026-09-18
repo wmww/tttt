@@ -89,14 +89,14 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             if (key_type->tag != TYPE_VALUE) {
                 if (is_in_class) {
                     if (my is_method) {
-                        error_ctx_error(errs, my key.span, 1168,
+                        error_ctx_error_d(errs, my key.span, 1168,
                             "A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                     } else {
-                        error_ctx_error(errs, my key.span, 1166,
+                        error_ctx_error_d(errs, my key.span, 1166,
                             "A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.");
                     }
                 } else {
-                    error_ctx_error(errs, my key.span, 1169,
+                    error_ctx_error_d(errs, my key.span, 1169,
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 }
             }
@@ -130,7 +130,7 @@ bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index)
             // TODO
             return false;
     }
-    UNREACHABLE;
+    impossible;
 }
 
 bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super) {
