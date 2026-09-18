@@ -1365,6 +1365,11 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    bool is_const = false;
+    if (hop_start_if_ends_on_word_break(&p, "const")) {
+        is_const = true;
+        hop_whitespace(&p);
+    }
     if (!hop_start_if_ends_on_word_break(&p, "enum")) {
         return parse_fail(&p);
     }
@@ -1387,6 +1392,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
         if (hop_char(&p, '=')) {
             hop_whitespace(&p);
             expect_expr(&p, expr_ctx_null, &enum_case.value);
+            hop_whitespace(&p);
         } else {
             enum_case.value = expr_implicit_any_no_span;
         }
@@ -1400,6 +1406,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     *ret = (EnumDecl) {
         .name = name,
         .full_span = span_from(a),
+        .is_const = is_const,
         .cases = cases,
     };
     return parse_success(&p);
@@ -3479,6 +3486,11 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
     Anchor end_of_keyword = anchor(&p);
     hop_whitespace(&p);
 
+    if (ret->keyword == VAR_INIT_CONST && starts_with_followed_by_word_break(&p, "enum")) {
+        // `const enum E {}`
+        return parse_fail(&p);
+    }
+
     Span comma_span = span_null;
     InitializedBinding initializer = {0};
     ret->initializers = vec_initialized_binding_init();
@@ -3520,6 +3532,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
 
         if (*p.pos == ';' ||
             *p.pos == ')' ||
+            *p.pos == '}' ||
             *p.pos == '\0' ||
             hop_start_if_ends_on_word_break(&p, "in") ||
             hop_start_if_ends_on_word_break(&p, "of")

@@ -19,6 +19,7 @@ void enum_case_drop(EnumCase* me);
 typedef struct EnumDecl {
     Span name;
     Span full_span;
+    bool is_const; // `const enum`, TODO: nothing checks the extra restrictions on these yet
     VecEnumCase cases;
     LazyType instance_type;
     LazyType interface_type;
