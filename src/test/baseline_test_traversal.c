@@ -13,6 +13,7 @@
 #include "enum_decl.h"
 #include "function_impl.h"
 #include "callable_type.h"
+#include "ty/ty.h"
 
 static inline VecSpan declaration_get_spans(Declaration const* me) {
     return me ? vec_span_clone(my declarations) : vec_span_init();
@@ -479,46 +480,13 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         .declarations = declaration_get_spans(my declaration.get),
         .span = my name,
     });
-    Type to_drop = {0};
-    Type const* my_type = &my type;
-    Type const* resolved = my_type;
-    if (generic_empty(&my generic)) { // If the type is not generic
-        if (my_type->tag == TYPE_IDENTIFIER &&
-            my_type->identifier->decl_ref &&
-            my_type->identifier->decl_ref->type_tag == DECLARATION_CLASS
-        ) {
-        } else {
-            resolved = type_resolve(my_type);
-            switch (resolved->tag) {
-                case TYPE_ANY:
-                case TYPE_UNKNOWN:
-                case TYPE_NEVER:
-                case TYPE_VOID:
-                case TYPE_BOOLEAN:
-                case TYPE_NUMBER:
-                case TYPE_STRING:
-                case TYPE_VALUE:
-                case TYPE_IDENTIFIER: break;
-                default: resolved = my_type;
-            }
-        }
-    } else { // If the type is generic
-        // This logic is still fucky, to test use ttttConditionalTypeResolving.ts
-        to_drop = type_identifier(c_new(IdentifierType, {
-            .name = my name,
-        }));
-        for_each (i, vec_generic_item, &my generic.items) {
-            vec_spanned_type_push(&to_drop.identifier->generic_params, spanned_type(
-                i->name,
-                type_identifier(c_new(IdentifierType, { .name = i->name }))
-            ));
-        }
-        resolved = &to_drop;
-    }
-    baseline_test_case_add_type(ctx, my name, resolved);
-    type_drop(&to_drop);
+    // The declared type as the new core knows it, which carries the alias name where tsc would
+    Type declared = current_checker && my declaration.get ?
+        type_new(ty_declared_type_of(current_checker, my declaration.get)) :
+        type_any;
+    baseline_test_case_add_type(ctx, my name, &declared);
     generic_compile_test_info(&my generic, ctx);
-    type_compile_test_info(my_type, ctx);
+    type_compile_test_info(&my type, ctx);
 }
 
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {

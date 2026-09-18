@@ -104,20 +104,9 @@ Type identifier_type_evaluate_type(IdentifierType* me) {
     if (my decl_ref && ty_declaration_is_evaluated_by_new_core(my decl_ref)) {
         return type_new(ty_from_identifier_type(current_checker, me));
     }
-    if (my decl_ref) {
-        if (my decl_ref->type_generic) {
-            Type ret = generic_degenericize_type(
-                my decl_ref->type_generic,
-                type_clone(my decl_ref->declared_type),
-                &my generic_params
-            );
-            return ret;
-        } else {
-            return type_refcopy(&my decl_ref->declared_type);
-        }
-    } else {
-        return type_any;
-    }
+    // What's left for the legacy checker: type parameters (known by their constraint) and the `typeof` declarations of
+    // namespace imports, neither of which is generic
+    return my decl_ref ? type_refcopy(&my decl_ref->declared_type) : type_any;
 }
 
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
@@ -156,14 +145,14 @@ InferredType inferred_type_clone(InferredType me) {
 void indexed_type_drop(IndexedType* me) {
     type_drop(&my interface);
     type_drop(&my index);
-    type_drop(&my cached);
 }
 
 IndexedType indexed_type_clone(IndexedType me) {
     return (IndexedType){
         .interface = type_clone(me.interface),
         .index = type_clone(me.index),
-        .cached = {0},
+        .is_from_binding = me.is_from_binding,
+        .array_only = me.array_only,
     };
 }
 
@@ -181,14 +170,11 @@ void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
 
 void keyof_type_drop(KeyofType* me) {
     type_drop(&my interface);
-    type_drop(&my cached);
 }
 
 KeyofType keyof_type_clone(KeyofType me) {
     return (KeyofType){
         .interface = type_clone(me.interface),
-        .has_cache = false,
-        .cached = {0},
     };
 }
 
@@ -229,7 +215,6 @@ void ternary_type_drop(TernaryType* me) {
     type_drop(&my maybe_super);
     type_drop(&my if_true);
     type_drop(&my if_false);
-    type_drop(&my cached);
 }
 
 TernaryType ternary_type_clone(TernaryType me) {
@@ -238,6 +223,5 @@ TernaryType ternary_type_clone(TernaryType me) {
         .maybe_super = type_clone(me.maybe_super),
         .if_true = type_clone(me.if_true),
         .if_false = type_clone(me.if_false),
-        .cached = {0},
     };
 }

@@ -113,9 +113,8 @@ Uninvestigated items. Triage sessions drain this.
   plan 03's scope or a parser session before it.
 - (stage 4b1) A function merged with a namespace (`function F() {}` + `namespace F {}`) is a TS2451 at the top level, and
   inside a namespace across two blocks the call finds no signatures (`genericFunduleInModule2`). Legacy binder, plan 03.
-- (stage 4b1) Mapped types over arrays and tuples aren't expanded (`Promise.all([a, b])`: `{ -readonly [P in keyof T]:
-  Awaited<T[P]> }` with `T` a tuple should be a tuple), and an array literal is never a tuple without contextual typing
-  (`correctOrderOfPromiseMethod`). First half fits 4b2, second 4b3.
+- (stage 4b1/4b2) An array literal is never a tuple without contextual typing (`correctOrderOfPromiseMethod`; the
+  mapped-type-over-tuple half is done, `instantiate_mapped_over_list`). 4b3.
 - (stage 4b1) `error_clone()` was shallow (shared `sub_errors`, double free once anything cloned an error with
   children); it's deep now. Nothing else was cloning errors with children, but worth knowing.
 - (stage 4b1) `lower_identifier_internal` no longer treats a bare `C` inside generic class `C<T>` as `C<T>` (only `this`
@@ -123,3 +122,18 @@ Uninvestigated items. Triage sessions drain this.
   `CustomEvent<any>`. tsc reports TS2314 for the bare name; nothing here does yet.
 - (stage 4b1) Ideas not done: cache call resolutions per `CallExpr` in the checker (each call resolves twice today);
   variances for type aliases (inference and relations both want them).
+- (stage 4b2) Reverse mapped type inference (`{ [K in keyof T]: Box<T[K]> }` as a parameter type) doesn't exist:
+  `infer_from` only sees through the homomorphic `T[K]` template. `reverseMappedTupleContext`,
+  `homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1` lost their errors component to it in 4b2.
+- (stage 4b2) Permissive instantiation for conditional types is still missing (`ty_conditional_resolve` defers where tsc
+  picks the false branch). A flat `TyMapper` can't say "every type parameter -> any"; wants a mapper kind.
+- (stage 4b2) Circular aliases: `type N<T, K extends string> = T | { [P in K]: N<T, K> }[K]; type M = N<number, "M">` is
+  `any` + TS2589-ish in tsc (`recursivelyExpandingUnionNoStackoverflow`), here it prints `N<number, "M">`. TS2456 is
+  still only a TODO in `ty_declared_type_of`.
+- (stage 4b2) `type A = {}` clashing with `interface A` (`noSymbolForMergeCrash`): the traversal prints the merged
+  declaration's type, tsc the alias's own. Wants per-declaration symbols (plan 03).
+- (stage 4b2) Annotations print through the legacy display of the written node (`ex : Exclude<"a" | "b", "a">` where tsc
+  prints the resolved `"b"`); goes away when the traversal prints `Ty` (4b3). Worth a failstats check afterwards for
+  union member *order* (`"c" | "b"` in tsc for `Exclude<"a" | "b" | "c", "a">`: literal ids follow first creation).
+- (stage 4b2) `test/baseline_results.ts` wasn't saved by the 4b1 session (3 tests showed as "newly passing" at the start
+  of 4b2). Sessions should end with `./fasttest.sh -s`; consider making `--summary` say when the file is stale.

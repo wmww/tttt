@@ -136,20 +136,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
         case TYPE_INDEXED:
             replace_named_types_with(&my indexed->interface, refinements);
             replace_named_types_with(&my indexed->index, refinements);
-            if (my indexed->has_cache) {
-                type_drop(&my indexed->cached);
-                my indexed->cached = (Type){0};
-                my indexed->has_cache = false;
-            }
             return;
 
         case TYPE_KEYOF:
             replace_named_types_with(&my keyof->interface, refinements);
-            if (my keyof->has_cache) {
-                type_drop(&my keyof->cached);
-                my keyof->cached = (Type){0};
-                my keyof->has_cache = false;
-            }
             return;
 
         case TYPE_TYPEOF: return;
@@ -159,11 +149,6 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             replace_named_types_with(&my ternary->maybe_super, refinements);
             replace_named_types_with(&my ternary->if_true, refinements);
             replace_named_types_with(&my ternary->if_false, refinements);
-            if (my ternary->has_cache) {
-                type_drop(&my ternary->cached);
-                my ternary->cached = (Type){0};
-                my ternary->has_cache = false;
-            }
             return;
 
         case TYPE_UNION:

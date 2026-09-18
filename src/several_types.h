@@ -70,8 +70,6 @@ typedef struct IndexedType {
     Type index;
     bool is_from_binding;
     bool array_only;
-    bool has_cache;
-    Type cached; // Should be {0} if has_cache is false
 } IndexedType;
 
 void indexed_type_drop(IndexedType* me);
@@ -83,8 +81,6 @@ void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs);
 
 typedef struct KeyofType {
     Type interface;
-    bool has_cache;
-    Type cached; // Should be {0} if has_cache is false
 } KeyofType;
 
 void keyof_type_drop(KeyofType* me);
@@ -111,8 +107,6 @@ typedef struct TernaryType {
     Type maybe_super;
     Type if_true;
     Type if_false;
-    bool has_cache;
-    Type cached; // Should be {0} if has_cache is false
 } TernaryType;
 
 void ternary_type_drop(TernaryType* me);

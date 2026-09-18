@@ -88,6 +88,20 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (object->kind == TY_UNION) return access(me, object, index, depth + 1); // The constraint of a type parameter
     if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
 
+    // `T["0"]` is `T[0]` for a list (mapped types over tuples index with the property name)
+    if ((index->flags & TYF_STRING_LITERAL) && (ty_is_tuple(object) || ty_is_array(me, object))) {
+        csview name = atom_sv(index->literal.string);
+        bool digits = name.size > 0 && name.size < 10 && (name.size == 1 || name.buf[0] != '0');
+        double n = 0;
+        for (isize_t i = 0; digits && i < name.size; i++) {
+            digits = name.buf[i] >= '0' && name.buf[i] <= '9';
+            n = n * 10 + (name.buf[i] - '0');
+        }
+        if (digits) {
+            Value value = value_number(n);
+            index = ty_literal(me, &value);
+        }
+    }
     bool numeric = (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (ty_is_tuple(object) && (index->flags & TYF_NUMBER_LITERAL)) {
         double n = index->literal.value.number;

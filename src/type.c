@@ -52,18 +52,10 @@ const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 typedef struct TypeCtx {
     unsigned recursion_level;
     HSetDeclarationCPtr currently_resolving;
-    // legacy_infer_extends(): the (declaration of a named sub type, super type) pairs being compared up the stack
-    struct { void const* sub; void const* super; } in_progress[64];
-    unsigned in_progress_count;
 } TypeCtx;
 
 static bool type_is_strict_subtype(Type const* sub, Type const* super);
-static bool legacy_infer_extends(
-    TypeCtx* ctx,
-    Type const* sub,
-    Type const* super,
-    VecTypeRefinement* refinements
-);
+static Ty const* lower_for_relation(Checker* checker, Type const* type);
 static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool through_identifier);
 static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type const* index, Type* ret);
 
@@ -460,139 +452,12 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
     }
 }
 
-static Type type_all_keys(TypeCtx* ctx, Type const* me) {
-    me = type_resolve_internal(ctx, me, true);
-
-    switch (my tag) {
-        case TYPE_ANY:
-            return type_any;
-
-        case TYPE_NEVER:
-            return type_never;
-
-        case TYPE_INTERFACE: {
-            Type ret = type_never;
-            for_each (i, vec_interface_member, &my interface.members) {
-                switch (i->key.tag) {
-                    case INTERFACE_KEY_NAME:
-                        ret = type_composite_internal(
-                            ctx,
-                            TYPE_UNION,
-                            ret,
-                            type_value(value_string(cstr_clone(i->key.name_string)))
-                        );
-
-                    default: break;
-                }
-            }
-            return ret;
-        }
-
-        case TYPE_ARRAY:
-        case TYPE_TUPLE:
-        case TYPE_STRING:
-            return type_number; // TODO: needs to be more complicated
-
-        case TYPE_UNION:
-        case TYPE_INTERSECTION: {
-            typeof(my tag) flipped_tag = my tag == TYPE_UNION ? TYPE_INTERSECTION : TYPE_UNION;
-            Type ret = type_composite_base(flipped_tag);
-            for_each (i, vec_type, &my composite) {
-                ret = type_composite_internal(ctx, flipped_tag, ret, type_all_keys(ctx, i));
-            }
-            return ret;
-        }
-
-        case TYPE_REF: return type_all_keys(ctx, my ref);
-
-        default: return type_never;
-    }
-}
-
-static inline Type const* type_resolve_indexed_type(TypeCtx* ctx, IndexedType* me) {
-    if (!my has_cache) {
-        if (my array_only && !type_extends_array(&my interface)) {
-            my cached = type_any;
-        } else if (!index_type_evaluate_type_internal(ctx, &my interface, &my index, &my cached)) {
-            my cached = type_any;
-        }
-        my has_cache = true;
-    }
-    return &my cached;
-}
-
-static bool type_contains_inferred(Type const* me, unsigned depth) {
-    if (depth > 32) return true;
-    switch (my tag) {
-        case TYPE_INFERRED: return true;
-        case TYPE_REF: return type_contains_inferred(my ref, depth + 1);
-        case TYPE_ARRAY: return type_contains_inferred(my array.element, depth + 1);
-        case TYPE_TUPLE:
-            for_each (i, vec_tuple_element, &my tuple.elements) {
-                if (type_contains_inferred(&i->type, depth + 1)) return true;
-            }
-            return false;
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &my composite) {
-                if (type_contains_inferred(i, depth + 1)) return true;
-            }
-            return false;
-        case TYPE_IDENTIFIER:
-            for_each (i, vec_spanned_type, &my identifier->generic_params) {
-                if (type_contains_inferred(&i->type, depth + 1)) return true;
-            }
-            return false;
-        case TYPE_CALLABLE:
-            for_each (i, vec_callable_arg, &my callable->args) {
-                if (type_contains_inferred(&i->type, depth + 1)) return true;
-            }
-            return type_contains_inferred(&my callable->ret, depth + 1);
-        case TYPE_INTERFACE:
-            for_each (i, vec_interface_member, &my interface.members) {
-                if (type_contains_inferred(&i->type, depth + 1)) return true;
-            }
-            return false;
-        case TYPE_INDEXED:
-            return type_contains_inferred(&my indexed->interface, depth + 1) ||
-                type_contains_inferred(&my indexed->index, depth + 1);
-        case TYPE_KEYOF: return type_contains_inferred(&my keyof->interface, depth + 1);
-        case TYPE_TERNARY:
-            return type_contains_inferred(&my ternary->maybe_sub, depth + 1) ||
-                type_contains_inferred(&my ternary->maybe_super, depth + 1);
-        default: return false;
-    }
-}
-
-static inline Type const* type_resolve_ternary_type(TypeCtx* ctx, TernaryType* me) {
-    if (my has_cache) {
-        return &my cached;
-    } else if (my maybe_sub.tag == TYPE_ANY) {
-        my cached = type_composite_internal(ctx, TYPE_UNION, type_clone(my if_true), type_clone(my if_false));
-        my has_cache = true;
-        return &my cached;
-    } else if (!type_contains_inferred(&my maybe_super, 0)) {
-        return type_extends(&my maybe_sub, &my maybe_super) ? &my if_true : &my if_false;
-    } else {
-        // HACK(stage 4): `infer` needs its results as legacy types, so this is the one thing the legacy structural
-        // relation is still used for
-        VecTypeRefinement refinements = {0};
-        Type const* ret;
-        if (legacy_infer_extends(ctx, &my maybe_sub, &my maybe_super, &refinements)) {
-            if (!vec_type_refinement_is_empty(&refinements)) {
-                my cached = type_clone(my if_true);
-                my has_cache = true;
-                replace_named_types_with(&my cached, &refinements);
-                ret = &my cached;
-            } else {
-                ret = &my if_true;
-            }
-        } else {
-            ret = &my if_false;
-        }
-        vec_type_refinement_drop(&refinements);
-        return ret;
-    }
+// The type a destructuring binding takes out of its initializer: a property or element access
+static inline Type const* type_resolve_binding_indexed_type(IndexedType const* me) {
+    if (my array_only && !type_extends_array(&my interface)) return &type_any;
+    Checker* checker = current_checker;
+    Ty const* ret = ty_access(checker, lower_for_relation(checker, &my interface), lower_for_relation(checker, &my index));
+    return ret ? ty_legacy_wrapper(checker, ret) : &type_any;
 }
 
 static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me) {
@@ -615,17 +480,18 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
 
         case TYPE_IDENTIFIER: return lazy_type_get(&my identifier->type);
         case TYPE_INFERRED: return &my inferred->extends;
-        case TYPE_INDEXED: return type_resolve_indexed_type(ctx, my indexed);
-
+        case TYPE_INDEXED:
+            if (my indexed->is_from_binding) return type_resolve_binding_indexed_type(my indexed);
+            [[fallthrough]];
         case TYPE_KEYOF:
-            if (!my keyof->has_cache) {
-                my keyof->cached = type_all_keys(ctx, &my keyof->interface);
-                my keyof->has_cache = true;
-            }
-            return &my keyof->cached;
+        case TYPE_TERNARY:
+            // Type operators are evaluated by the new core
+            return ty_legacy_wrapper(
+                current_checker,
+                ty_from_legacy(current_checker, me, (LowerCtx){ .generic = true, .transient = !my parsed })
+            );
 
         case TYPE_TYPEOF: return &type_any;
-        case TYPE_TERNARY: return type_resolve_ternary_type(ctx, my ternary);
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
@@ -708,297 +574,6 @@ Type const* type_resolve_until_identifier(Type const* me) {
     return ret;
 }
 
-static inline bool legacy_infer_extends_more(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
-    if (sub == super) {
-        return true;
-    }
-
-    switch (super->tag) {
-        case TYPE_UNKNOWN:
-        case TYPE_ANY:
-            return true;
-
-        case TYPE_IDENTIFIER:
-        case TYPE_INDEXED:
-        case TYPE_KEYOF:
-        case TYPE_TYPEOF:
-        case TYPE_TERNARY:
-        case TYPE_LAZY:
-        case TYPE_NEW:
-        case TYPE_REF: {
-            Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
-            return legacy_infer_extends(
-                ctx,
-                sub,
-                super_resolved,
-                super->tag == TYPE_IDENTIFIER ? nullptr : refinements
-            );
-        }
-
-        default: break;
-    }
-
-    switch (sub->tag) {
-        case TYPE_ANY:
-            switch (super->tag) {
-                case TYPE_UNION:
-                case TYPE_INTERSECTION: break;
-                default: return true;
-            }
-            break;
-
-        case TYPE_NEVER:
-            return true;
-
-        case TYPE_IDENTIFIER:
-        case TYPE_INFERRED:
-        case TYPE_INDEXED:
-        case TYPE_KEYOF:
-        case TYPE_TERNARY:
-        case TYPE_LAZY:
-        case TYPE_NEW:
-        case TYPE_REF: {
-            Type const* sub_resolved = type_resolve_one_layer_internal(ctx, sub);
-            if (sub_resolved) {
-                return legacy_infer_extends(ctx, sub_resolved, super, refinements);
-            } else {
-                return false;
-            }
-        }
-
-        case TYPE_UNION:
-            for_each (i, vec_type, &sub->composite) {
-                if (!legacy_infer_extends(ctx, i, super, refinements)) return false;
-            }
-            return true;
-
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &sub->composite) {
-                if (legacy_infer_extends(ctx, i, super, refinements)) return true;
-            }
-            return false;
-
-        default: break;
-    }
-
-    switch (super->tag) {
-        case TYPE_NEVER:
-            return false;
-
-        case TYPE_VOID:
-            return sub->tag == TYPE_VOID || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_UNDEFINED);
-
-        case TYPE_BOOLEAN:
-            return sub->tag == TYPE_BOOLEAN || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_BOOLEAN);
-
-        case TYPE_NUMBER:
-            return sub->tag == TYPE_NUMBER || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_NUMBER);
-
-        case TYPE_STRING:
-            return sub->tag == TYPE_STRING || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_STRING);
-
-        case TYPE_SYMBOL:
-            return sub->tag == TYPE_SYMBOL || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_SYMBOL);
-
-        case TYPE_BIGINT:
-            return sub->tag == TYPE_BIGINT || (sub->tag == TYPE_VALUE && sub->value.tag == VALUE_BIGINT);
-
-        case TYPE_VALUE:
-            if (sub->tag != TYPE_VALUE) {
-                return false;
-            }
-            return value_strict_eq(&sub->value, &super->value);
-
-        case TYPE_CALLABLE:
-            if (sub->tag == TYPE_INTERFACE) {
-                for_each (i, vec_interface_member, &sub->interface.members) {
-                    if (i->key.tag == INTERFACE_KEY_CALLABLE) {
-                        if (legacy_infer_extends(
-                            ctx,
-                            &i->type,
-                            super,
-                            refinements
-                        )) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            } else if (sub->tag == TYPE_CALLABLE) {
-                long arg_count = vec_callable_arg_size(&super->callable->args);
-                if (vec_callable_arg_size(&sub->callable->args) != arg_count) {
-                    return false;
-                }
-                for (intptr_t i = 0; i < arg_count; i++) {
-                    // Order is flipped for arguments
-                    if (!legacy_infer_extends(
-                        ctx,
-                        &vec_callable_arg_at_mut(&sub->callable->args, i)->type,
-                        &vec_callable_arg_at_mut(&super->callable->args, i)->type,
-                        refinements
-                    )) {
-                        return false;
-                    }
-                }
-                // Order is not flipped for return
-                return legacy_infer_extends(ctx, &sub->callable->ret, &super->callable->ret, refinements);
-            } else {
-                return false;
-            }
-
-        case TYPE_INTERFACE:
-            for_each (i, vec_interface_member, &super->interface.members) {
-                switch (i->key.tag) {
-                    case INTERFACE_KEY_NAME: {
-                        // Don't clone the string, and don't drop it the type. Hacky but safe.
-                        Type key = type_value(value_string(i->key.name_string));
-                        Type prop;
-                        if (index_type_evaluate_type_internal(ctx, sub, &key, &prop)) {
-                            // TODO: pass in refinements, but first make refinements own it's types
-                            // (will fix nondistributiveConditionalTypeInfer)
-                            Type member_type = type_refcopy(&i->type);
-                            if (i->optional) {
-                                member_type = type_composite(TYPE_UNION, member_type, type_undefined);
-                            }
-                            bool extends = legacy_infer_extends(ctx, &prop, &member_type, nullptr);
-                            type_drop(&member_type);
-                            type_drop(&prop);
-                            if (!extends) return false;
-                        } else {
-                            return false;
-                        }
-                    }   break;
-                    case INTERFACE_KEY_INDEX:
-                    case INTERFACE_KEY_EXPR:
-                    case INTERFACE_KEY_MAPPED:
-                    case INTERFACE_KEY_CALLABLE:
-                        continue; // TODO
-                }
-            }
-            return true;
-
-        case TYPE_ARRAY:
-            if (sub->tag == TYPE_ARRAY) {
-                if (sub->array.readonly && !super->array.readonly) {
-                    return false;
-                }
-                return legacy_infer_extends(ctx, sub->array.element, super->array.element, refinements);
-            } else if (sub->tag == TYPE_TUPLE) {
-                if (sub->tuple.readonly && !super->array.readonly) {
-                    return false;
-                }
-                for_each (i, vec_tuple_element, &sub->tuple.elements) {
-                    if (i->rest) {
-                        // Make sure every item in the rest tuple/array extends the array type
-                        Type elem = index_type_evaluate_type(&i->type, &type_number);
-                        bool extends = legacy_infer_extends(ctx, &elem, super->array.element, refinements);
-                        type_drop(&elem);
-                        if (!extends) return false;
-                    } else {
-                        if (!legacy_infer_extends(ctx, &i->type, super->array.element, refinements)) {
-                            return false;
-                        }
-                    }
-                    if (i->readonly && !super->array.readonly) {
-                        return false;
-                    }
-                }
-                return true;
-            } else {
-                return false;
-            }
-
-        case TYPE_TUPLE:
-            if (sub->tag != TYPE_TUPLE ||
-                vec_tuple_element_size(&super->tuple.elements) != vec_tuple_element_size(&sub->tuple.elements) ||
-                (sub->tuple.readonly && !super->tuple.readonly)
-            ) {
-                // TODO: correctly account for rest elements
-                return false;
-            }
-            for (intptr_t i = 0; i < vec_tuple_element_size(&super->tuple.elements); i++) {
-                if (!legacy_infer_extends(
-                    ctx,
-                    &vec_tuple_element_at(&sub->tuple.elements, i)->type,
-                    &vec_tuple_element_at(&super->tuple.elements, i)->type,
-                    refinements
-                )) {
-                    return false;
-                }
-            }
-            return true;
-
-        case TYPE_INFERRED:
-            if (refinements) {
-                if (legacy_infer_extends(ctx, sub, &super->inferred->extends, nullptr)) {
-                    vec_type_refinement_push(refinements, (TypeRefinement){
-                        .target = super->inferred->declaration_ref,
-                        .refined = sub,
-                    });
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-            return true;
-
-        case TYPE_UNION:
-            for_each (i, vec_type, &super->composite) {
-                if (legacy_infer_extends(ctx, sub, i, refinements)) return true;
-            }
-            return false;
-
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &super->composite) {
-                if (!legacy_infer_extends(ctx, sub, i, refinements)) return false;
-            }
-            return true;
-
-        case TYPE_UNKNOWN:
-        case TYPE_ANY:
-        case TYPE_IDENTIFIER:
-        case TYPE_INDEXED:
-        case TYPE_KEYOF:
-        case TYPE_TYPEOF:
-        case TYPE_TERNARY:
-        case TYPE_LAZY:
-        case TYPE_REF:
-        case TYPE_NEW:
-            // Should have been handled above
-            impossible;
-    }
-    impossible;
-}
-
-static bool legacy_infer_extends(TypeCtx* ctx, Type const* sub, Type const* super, VecTypeRefinement* refinements) {
-    if (ctx->recursion_level > 100) {
-        log_error("Max type recursion depth exceeded (legacy_infer_extends)");
-        return true;
-    }
-    // HACK: recursive types are assumed to extend when they come around again. Coarse (type arguments are ignored),
-    // but without it this is exponential, and it only exists to collect `infer` results anymore
-    bool named = (sub->tag == TYPE_IDENTIFIER && sub->identifier->decl_ref) ||
-        (super->tag == TYPE_IDENTIFIER && super->identifier->decl_ref);
-    if (named) {
-        // Named types are cloned every time they're resolved, so their declaration is all the identity there is
-        void const* sub_key = sub->tag == TYPE_IDENTIFIER && sub->identifier->decl_ref ? (void const*)sub->identifier->decl_ref : sub;
-        void const* super_key = super->tag == TYPE_IDENTIFIER && super->identifier->decl_ref ? (void const*)super->identifier->decl_ref : super;
-        for (unsigned i = 0; i < ctx->in_progress_count; i++) {
-            if (ctx->in_progress[i].sub == sub_key && ctx->in_progress[i].super == super_key) return true;
-        }
-        if (ctx->in_progress_count == c_arraylen(ctx->in_progress)) return true;
-        ctx->in_progress[ctx->in_progress_count].sub = sub_key;
-        ctx->in_progress[ctx->in_progress_count++].super = super_key;
-    }
-    ctx->recursion_level++;
-    bool ret = legacy_infer_extends_more(ctx, sub, super, refinements);
-    ctx->recursion_level--;
-    if (named) ctx->in_progress_count--;
-    return ret;
-}
-
-// The relations live in the new type core (ty/relate.c). HACK(stage 4): until expressions evaluate to Ty, both sides
-// get lowered on every call. They may be temporaries, which is what LowerCtx.transient is about
 static Ty const* lower_for_relation(Checker* checker, Type const* type) {
     return ty_from_legacy(checker, type, (LowerCtx){ .generic = true, .transient = true });
 }
@@ -1228,6 +803,14 @@ void type_abstract_literals(Type* me) {
 }
 
 void type_remove_null_and_undefined(Type* me) {
+    // A type of the new core stays one (resolving it would flatten names and deferred types into their view)
+    Type const* named = type_resolve_until_identifier(me);
+    if (named->tag == TYPE_NEW) {
+        Ty const* ty = ty_non_nullable(current_checker, type_new_ty(current_checker, named));
+        type_drop(me);
+        *me = type_new(ty);
+        return;
+    }
     Type const* resolved = type_resolve(me);
     if (resolved != me) {
         Type tmp = type_clone(*resolved);
@@ -1264,6 +847,7 @@ static inline bool type_is_simple_index_type(Type const* me) {
         case TYPE_ANY:
         case TYPE_NUMBER:
         case TYPE_STRING:
+        case TYPE_SYMBOL:
             return true;
 
         case TYPE_VALUE:

@@ -72,6 +72,15 @@ static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, 
     return ret;
 }
 
+static Ty const* conditional_from_root(Checker* me, Ty const* root, Ty const* check_type, TyMapper const* mapper) {
+    TyCondBranch if_true = instantiate_branch(me, &root->conditional.branches[1], mapper);
+    TyCondBranch if_false = instantiate_branch(me, &root->conditional.branches[0], mapper);
+    return ty_conditional(
+        me, check_type, ty_instantiate(me, root->conditional.extends, mapper), &if_true, &if_false, root, mapper,
+        root->conditional.distributive
+    );
+}
+
 static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper, Ty const** buf, u32 buf_len) {
     // Returns the list itself if nothing changed. buf must hold list.len entries
     check(list.len <= buf_len);
@@ -83,10 +92,61 @@ static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper,
     return changed ? (TyList){ .data = buf, .len = list.len } : list;
 }
 
+// A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
+// the template, not an object with the array methods mapped (tsc's instantiateMappedType). Null if this isn't that
+static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    // Asking for the members of every object type that gets instantiated would defeat their laziness, so look at the
+    // syntax first
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    Type const* node = root->anonymous.node;
+    if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
+    InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
+    if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
+
+    MappedInfo const* mapped = ty_members(me, ty)->mapped;
+    if (!mapped || mapped->name_type || !mapped->modifiers_type || mapped->modifiers_type->kind != TY_TYPE_PARAM) return nullptr;
+    Ty const* list = ty_instantiate(me, mapped->modifiers_type, mapper);
+    if (list == mapped->modifiers_type || list->kind != TY_REFERENCE) return nullptr;
+
+    if (ty_is_array(me, list)) {
+        bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
+        TyMapper const* element_mapper = mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
+        return ty_array(me, ty_instantiate(me, mapped->template, element_mapper), readonly);
+    }
+    if (!ty_is_tuple(list)) return nullptr;
+    TupleShape const* shape = list->reference.target->declared.tuple;
+    TyList elements = ty_reference_args(me, list);
+    if (shape->arity > 32) return nullptr;
+    Ty const* mapped_elements[32];
+    unsigned char flags[32];
+    for (u32 i = 0; i < shape->arity; i++) {
+        if (shape->flags[i] & TUPLE_ELEMENT_REST) return nullptr; // TODO: rest and variadic elements
+        cstr index = cstr_d(i);
+        Ty const* key = ty_string_literal(me, cstr_sv(&index));
+        cstr_drop(&index);
+        mapped_elements[i] = ty_instantiate(me, mapped->template, mapper_with(me, mapper, mapped->type_param, key));
+        flags[i] = shape->flags[i];
+        if (mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
+        if (mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;
+    }
+    (void)elements;
+    TupleShape new_shape = {
+        .arity = shape->arity,
+        .readonly = mapped->readonly ? mapped->readonly > 0 : shape->readonly,
+        .flags = flags,
+        .names = shape->names,
+    };
+    Ty const* target = ty_tuple_target(me, &new_shape);
+    if (!shape->arity) return target;
+    return ty_reference(me, target, (TyList){ .data = mapped_elements, .len = shape->arity });
+}
+
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
     // HACK(stage 4b): instantiation expressions only exist for the legacy checker's `new Bar<T>()`, whose result it
     // substitutes itself; they aren't instantiated further
     if (ty->anonymous.applies_type_args) return ty;
+    Ty const* as_list = instantiate_mapped_over_list(me, ty, mapper);
+    if (as_list) return as_list;
     Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
     TyMapper const* inner = ty->anonymous.mapper;
 
@@ -178,7 +238,63 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         if (key != stack_key) free(key);
     }
     if (pairs != stack_buf) free(pairs);
+    if (ty->anonymous.realiased && ret != ty) {
+        Ty const* alias_buf[16];
+        check(ty->alias_args.len <= c_arraylen(alias_buf));
+        TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+        ret = ty_realias(me, ret, ty->alias, alias_args);
+    }
     return ret;
+}
+
+// `type Bar = Omit<Foo, "c">`: the instantiation of a generic alias written directly as the body of another alias goes
+// by the new name (tsc passes the new alias symbol to getTypeAliasInstantiation). Same members, its own identity
+Ty const* ty_realias(Checker* me, Ty const* ty, Declaration const* alias, TyList alias_args) {
+    if (ty->alias == alias) return ty;
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+    }
+    if (ty->kind == TY_INTERSECTION) {
+        return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+    }
+    bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL;
+    if (!deferred && (ty->kind != TY_ANONYMOUS || !ty->anonymous.target || ty->anonymous.applies_type_args)) return ty;
+    u64 stack_key[40];
+    u32 count = 4 + alias_args.len;
+    if (count > c_arraylen(stack_key)) return ty;
+    stack_key[0] = KEY_ANONYMOUS_INSTANCE;
+    stack_key[1] = ty->id;
+    stack_key[2] = UINT64_MAX - 1; // Not a type id: tells these apart from ordinary instantiations
+    stack_key[3] = (u64)(uintptr_t)alias;
+    for (u32 i = 0; i < alias_args.len; i++) stack_key[4 + i] = alias_args.data[i]->id;
+    Ty const* ret = intern_get(&my types, stack_key, count);
+    if (!ret) {
+        Ty* fresh = ty_alloc(me, ty->kind, ty->flags);
+        if (ty->kind == TY_INDEXED) {
+            fresh->indexed = ty->indexed;
+        } else if (ty->kind == TY_CONDITIONAL) {
+            // The root stays the unnamed one; instantiation puts the name back on (instantiate_inner)
+            fresh->conditional = ty->conditional;
+        } else {
+            fresh->anonymous = ty->anonymous;
+            fresh->anonymous.realiased = true;
+            fresh->anonymous.state = arena_new(&my arena, TyObjectState);
+        }
+        fresh->alias = alias;
+        fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
+        *intern_slot(me, &my types, stack_key, count) = fresh;
+        ret = fresh;
+    }
+    return ret;
+}
+
+// What an instantiation of a type operator made by an alias goes by: the alias, with its arguments instantiated
+static Ty const* instantiate_alias(Checker* me, Ty const* ty, Ty const* result, TyMapper const* mapper) {
+    if (!ty->alias) return result;
+    Ty const* alias_buf[16];
+    check(ty->alias_args.len <= c_arraylen(alias_buf));
+    TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+    return ty_realias(me, result, ty->alias, alias_args);
 }
 
 static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* mapper) {
@@ -198,7 +314,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         case TY_REFERENCE: {
             if (ty->reference.deferred) {
                 TyDeferredRef const* deferred = ty->reference.deferred;
-                if (deferred->state == LAZY_STATE_DONE) {
+                if (deferred->state == LAZY_STATE_DONE && !ty->alias) {
                     // Resolved by now, so it can become an ordinary reference
                     TyList args = deferred->args;
                     Ty const** buf = args.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * args.len);
@@ -207,7 +323,12 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                     if (buf != stack_buf) free(buf);
                     return ret;
                 }
-                return ty_deferred_reference(me, deferred->node, deferred->ctx, compose_mappers(me, deferred->mapper, mapper));
+                Ty const* alias_buf[16];
+                check(ty->alias_args.len <= c_arraylen(alias_buf));
+                TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+                return ty_deferred_reference(
+                    me, deferred->node, deferred->ctx, compose_mappers(me, deferred->mapper, mapper), ty->alias, alias_args
+                );
             }
             TyList args = ty->reference.args;
             Ty const** buf = args.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * args.len);
@@ -241,17 +362,22 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
         case TY_KEYOF:
             return ty_keyof(me, ty_instantiate(me, ty->keyof.operand, mapper));
 
-        case TY_INDEXED:
-            return ty_indexed(
+        case TY_INDEXED: {
+            Ty const* ret = ty_indexed(
                 me,
                 ty_instantiate(me, ty->indexed.object, mapper),
                 ty_instantiate(me, ty->indexed.index, mapper)
             );
+            return ret->kind == TY_INDEXED ? instantiate_alias(me, ty, ret, mapper) : ret;
+        }
 
         case TY_CONDITIONAL: {
-            Ty const* check_type = ty_instantiate(me, ty->conditional.check, mapper);
-            if (ty->conditional.distributive && ty->conditional.check->kind == TY_TYPE_PARAM &&
-                check_type != ty->conditional.check
+            // Start over from the conditional type as written, with everything that has happened to it since
+            Ty const* root = ty->conditional.root;
+            TyMapper const* combined = compose_mappers(me, ty->conditional.mapper, mapper);
+            Ty const* check_type = ty_instantiate(me, root->conditional.check, combined);
+            if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
+                check_type != root->conditional.check
             ) {
                 // Distribution: the whole conditional type is instantiated once per member, with the check type
                 // parameter mapped to that member everywhere
@@ -260,25 +386,16 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                     TyList members = check_type->composite.types;
                     Ty const** results = malloc(sizeof(Ty const*) * members.len);
                     for (u32 i = 0; i < members.len; i++) {
-                        TyMapper const* member_mapper = mapper_with(me, mapper, ty->conditional.check, members.data[i]);
-                        TyCondBranch if_true = instantiate_branch(me, &ty->conditional.branches[1], member_mapper);
-                        TyCondBranch if_false = instantiate_branch(me, &ty->conditional.branches[0], member_mapper);
-                        results[i] = ty_conditional(
-                            me, members.data[i], ty_instantiate(me, ty->conditional.extends, member_mapper),
-                            &if_true, &if_false, true
-                        );
+                        TyMapper const* member_mapper = mapper_with(me, combined, root->conditional.check, members.data[i]);
+                        results[i] = conditional_from_root(me, root, members.data[i], member_mapper);
                     }
                     Ty const* ret = ty_union(me, results, members.len, nullptr, (TyList){0});
                     free(results);
-                    return ret;
+                    return ret->kind == TY_UNION ? instantiate_alias(me, ty, ret, mapper) : ret;
                 }
             }
-            TyCondBranch if_true = instantiate_branch(me, &ty->conditional.branches[1], mapper);
-            TyCondBranch if_false = instantiate_branch(me, &ty->conditional.branches[0], mapper);
-            return ty_conditional(
-                me, check_type, ty_instantiate(me, ty->conditional.extends, mapper), &if_true, &if_false,
-                ty->conditional.distributive
-            );
+            Ty const* ret = conditional_from_root(me, root, check_type, combined);
+            return ret->kind == TY_CONDITIONAL ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
     }
     impossible;

@@ -1,11 +1,6 @@
 # Hacks
 Suboptimal-but-working code. Prefer function names over line numbers.
 
-- `IndexedType`/`KeyofType`/`TernaryType.has_cache/cached`: the last checker state that is written into AST-owned
-  `Type`s during typechecking, including the lib AST the harness shares between test programs (3 tests still leave
-  net allocations behind in it: `excessPropertyCheckWithEmptyObject`, `intersectionsOfLargeUnions`,
-  `modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib`). Goes away when type operators resolve in the new
-  core (plan 02 stages 3-5), not worth giving slots.
 - `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how legacy code without a context
   parameter finds its checker. Stays set after `program_typecheck` because the test traversal and debug display
   evaluate types afterwards. Shrinks as signatures get a `Checker*` (plan 02 stages 3-4).
@@ -103,10 +98,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   types (with `type_abstract_literals`), the elaboration lines under it come from `ty_display`. `TyDisplay.widen_literals`
   imitates the abstraction for temporaries. A source that lowers to `any` is let through even to `never`, because the
   legacy checker says `any` for whatever it can't type (missing initializer...).
-- `legacy_infer_extends` (+`_more`, `type_contains_inferred`): the old structural relation survives privately in
-  `type.c` for one job, resolving legacy conditional types that contain `infer` (the results are needed as legacy
-  types). No cache; cycles are cut by a coarse (declaration, declaration) in-progress list that assumes "extends",
-  plus the old depth limit. Conditional types without `infer` pick their branch with the new relation. Dies in 4b.
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS` / `type_extends_strict_nulls`: what the legacy operator checks in `expr.c`
   mean by "extends number" (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently
   (TS18050, never emitted here).
@@ -120,7 +111,9 @@ as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
 - `ty_legacy_view` / `view_build`: `type_resolve()` of a `TYPE_NEW` is a one-layer legacy copy of the `Ty` (interface with
   members, union, array...) owned by the checker, children `TYPE_NEW` again (lazy per property / return type through
   `Type.new_.prop` / `.ret_of`, because forcing every property type of a class when one member is looked at sends the
-  legacy checker into cycles). Deferred types (`keyof T`, `T[K]`, unresolved conditionals) view as `any`. An anonymous
+  legacy checker into cycles). Deferred types (`keyof T`, `T[K]`, unresolved conditionals) view as their base constraint
+  (`ty_base_constraint`), `unknown` without one, so legacy code that resolves one loses the type (`x!` had to learn
+  to stay in the new core for that reason: `type_remove_null_and_undefined`). An anonymous
   object with exactly one signature and nothing else views as `TYPE_CALLABLE`, anything else as `TYPE_INTERFACE`.
   Enum literals view as plain values (`type_is_trivially_truthy` has to ask the `Ty` to know better).
 - `view_signature`: legacy inference identifies type parameters by `GenericItem.declaration_ref`, so the view's `Generic`
@@ -134,7 +127,14 @@ as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
   without type variables it tries `apply_type_arguments` instead: an instantiation expression, `Ty.anonymous.
   applies_type_args`, signatures with `drops_mapped_type_params`. `instantiate_anonymous` never instantiates those further.
 - `ty_declaration_is_evaluated_by_new_core`: the switch that decides which declarations' types come from the new core
-  (class, interface, enum, enum member). Type aliases, namespaces, functions and variables are still legacy.
+  (class, interface, enum, enum member, type alias incl. `infer X`/mapped keys). What `identifier_type_evaluate_type`
+  still answers itself: type parameters (as their constraint) and the `typeof` declarations of namespace imports.
+  Namespaces, functions and variables are still legacy.
+- `type_resolve_one_layer_internal` (TYPE_INDEXED / TYPE_KEYOF / TYPE_TERNARY): a type operator that legacy code resolves
+  is lowered and handed back as a checker-owned `TYPE_NEW` (`ty_legacy_wrapper`). Nothing is memoised per node: parsed
+  nodes are cheap (interning), clones made by legacy substitution are lowered as transients every time.
+  `type_resolve_binding_indexed_type`: destructuring bindings are `TYPE_INDEXED` nodes with `is_from_binding`, resolved
+  with `ty_access` on every resolve (no TS2339-style errors from there, `array_only` is a legacy guess). Dies in 4b3.
 - `MergedType.declared_owner`: how `merged_type_evaluate_type` finds the Declaration of a merged class/interface.
 - `class_decl_evaluate_structure`: the legacy structural class type survives only to feed
   `interface_typecheck_members_against` (duplicate member checks) from `class_decl_typecheck`.
@@ -176,7 +176,7 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
 - `lower()` on a namespace node with call signatures (function/class merged with a namespace): the namespace `Ty`
   takes its members from the legacy merged node by structure, first one seen wins. Namespaces are still legacy (4b3).
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name, as the legacy `type_awaited` does for legacy types.
-- `ty_access`: no unique symbol keys, a numeric-looking string name doesn't reach array elements, `null`/`undefined`
+- `ty_access`: no unique symbol keys, `null`/`undefined`
   members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
   `index_type_typecheck` (TS2339 and friends) is still the legacy lookup over views, gated the way it always was.
 - `ty_structural_from_legacy`: the span of every property name is part of the structural identity now (so the
@@ -216,8 +216,21 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   generic reference to the alias in flight outside of those (`type T = Foo<T>` is an error in tsc, but `type T =
   { a: T } | Foo<T>`-style through other aliases isn't always) still becomes the error type.
 - `expand_mapped`: mapped types expand to properties/index signatures once the key type is a union of literals and
-  primitives. No `as` clauses, no array/tuple homomorphism, `-?` doesn't strip `undefined`, modifiers come from
-  `MappedInfo.modifiers_type` only when the key type was written as `keyof T`.
+  primitives. No `as` clauses, `-?` doesn't strip `undefined`, modifiers come from `MappedInfo.modifiers_type` only when
+  the key type was written as `keyof T`.
+- `instantiate_mapped_over_list`: a homomorphic mapped type instantiated with an array or tuple becomes an array or
+  tuple. Recognised syntactically (one mapped member over `keyof`) so instantiation doesn't force members; bails out
+  (object with mapped array methods, as before) for tuples with rest/variadic elements, unions of lists, `any`, and a
+  type parameter constrained to a list.
+- `ty_realias` / alias names: `type Bar = Omit<Foo, "c">`, and arrays, tuples, `T[K]` and conditional types written as
+  an alias body, go by the alias name like in tsc. A renamed object type is a second `Ty` with the same target +
+  mapper (members resolved twice); renamed deferred types are copies interned by (type, alias, args), related to their
+  unnamed twin structurally. tsc's "local alias" exception isn't applied, the union a distributive conditional
+  resolves to gets the alias only when it comes out of `ty_instantiate`, and `keyof` never has one (same as tsc).
+- `Ty.conditional.root` + `.mapper`: instantiation restarts from the conditional type as written (what makes
+  `Exclude<keyof T, K>` distribute inside `Omit`). The composed mapper is not restricted to the type parameters the
+  root mentions, and the intern key is still the instantiated operands (+ root), so the stored mapper is whichever
+  got there first. Equivalent for every parameter the root mentions.
 - `ty/shadow.c` and the `ty_shadow_record_*` hooks (`type_typecheck`, `*_decl_typecheck`, `program_typecheck`): the
   only thing that runs the new core today. Global recording state, one program at a time. Deleted in stage 5.
 - `ty_internal.h: legacy_skip_wrappers`, `legacy_expr_type`, `resolve_declared_members`: const-cast the AST to call
@@ -237,8 +250,8 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
 - `lower_tuple`: rest elements keep the written type (`...T[]` holds `T[]`), tsc holds the element type. Tuple
   targets have no members yet (`length`, numeric props, array methods).
 - `collect_free_params` / `Ty.anonymous.free_params`: which outer type parameters an anonymous type's node mentions,
-  found by walking the node when the type is created. Doesn't track scopes (a signature's own type parameters count
-  as mentioned, harmless), and gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys and
+  found by walking the node when the type is created. Parameters declared inside the node (signatures, mapped keys,
+  `infer`) are taken out at the end rather than tracked by scope, and it gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys and
   anything the legacy checker evaluated rather than parsed. `TyMapper` is always flat (no composed/merged forms yet,
   inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint; shadow mode sets it everywhere.
 - `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones. Return types

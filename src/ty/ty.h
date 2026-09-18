@@ -214,6 +214,7 @@ struct Ty {
             // An instantiation expression (`Bar<string>` as a value): target is any object type, and the mapper is
             // about the type parameters of its signatures, which lose them
             bool applies_type_args;
+            bool realiased; // the same type as `target` + `mapper` by another alias name, see ty_realias()
             LowerCtx ctx;
             // Uninstantiated only: the type parameters declared outside the node that it mentions. Instantiation
             // only cares about these. If unknown (the node has parts that aren't syntax), assume every one in scope
@@ -239,6 +240,12 @@ struct Ty {
             // first use, plus the mapper it has been instantiated with since
             TyCondBranch* branches; // [0] false, [1] true
             bool distributive; // the check type was written as a naked type parameter
+            // Like tsc's ConditionalRoot + mapper: the conditional type as it was written, and how to get from there
+            // to this one (null for the root itself). Instantiation always starts over from the root, because
+            // distribution has to see what the *written* check type parameter ends up as (`Exclude<keyof T, K>`
+            // inside `Omit<T, K>` only distributes once T is known)
+            Ty const* root;
+            TyMapper const* mapper;
         } conditional;
     };
 };
@@ -490,8 +497,11 @@ Ty const* ty_keyof(Checker* me, Ty const* operand);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
 Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
+    Ty const* root, TyMapper const* mapper, // null for a root
     bool distributive
 );
+Ty const* ty_realias(Checker* me, Ty const* ty, Declaration const* alias, TyList alias_args);
+Ty const* ty_non_nullable(Checker* me, Ty const* ty);
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
     return ty_cond_branch_type(me, &conditional->conditional.branches[which]);
@@ -505,6 +515,7 @@ void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained
+Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
 Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 
 // instantiate.c
@@ -524,6 +535,7 @@ Ty const* ty_anonymous_from_node(Checker* me, Type const* node, LowerCtx ctx, De
 // legacy_view.c: legacy code carrying and consuming `Ty` (TYPE_NEW), plan 02 stage 4 scaffolding
 Ty const* type_new_ty(Checker* me, Type const* type_new); // The Ty of a TYPE_NEW, resolving its lazy forms
 void ty_legacy_views_drop(Checker* me);
+Type const* ty_legacy_wrapper(Checker* me, Ty const* ty); // A TYPE_NEW for the type that lives as long as the checker
 Type const* ty_legacy_view(Checker* me, Ty const* ty); // One structural layer as a legacy type, owned by the checker
 Ty const* ty_instantiate_with_refinements(Checker* me, Ty const* ty, VecTypeRefinement const* refinements);
 static inline Type type_new_prop(Prop const* prop) { return (Type){ .tag = TYPE_NEW, .new_.prop = prop }; }

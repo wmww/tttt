@@ -194,9 +194,12 @@ static Type view_build(Checker* me, Ty const* ty) {
 
         case TY_KEYOF:
         case TY_INDEXED:
-        case TY_CONDITIONAL:
-            // Deferred: about a type parameter. HACK: legacy code sees `any`
-            return type_any;
+        case TY_CONDITIONAL: {
+            // Deferred: about a type parameter. Legacy code sees what it's known to be at least, like it sees a type
+            // parameter as its constraint
+            Ty const* constraint = ty_base_constraint(me, ty);
+            return constraint ? type_new(constraint) : type_unknown;
+        }
     }
     impossible;
 }
@@ -220,6 +223,19 @@ Type const* ty_legacy_view(Checker* me, Ty const* ty) {
     Type* view = c_new(Type, built);
     my views[ty->id] = view;
     return view;
+}
+
+// Legacy resolution hands out pointers, so a type operator that the new core evaluated needs a TYPE_NEW that stays
+Type const* ty_legacy_wrapper(Checker* me, Ty const* ty) {
+    u64 key[2] = { KEY_NEW_WRAPPER, ty->id };
+    Type const* wrapper = intern_get(&my links, key, 2);
+    if (!wrapper) {
+        Type* fresh = arena_new(&my arena, Type);
+        *fresh = type_new(ty);
+        *intern_slot(me, &my links, key, 2) = fresh;
+        wrapper = fresh;
+    }
+    return wrapper;
 }
 
 void ty_legacy_views_drop(Checker* me) {

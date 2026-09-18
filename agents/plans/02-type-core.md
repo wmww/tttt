@@ -331,6 +331,39 @@ suite 4.5 s, `log_error` lines 4.6k -> 2.2k, bench typecheck unchanged (118 ms),
 - 4b2 note: `ty_access` and `try_resolve_indexed` (checker.c) now overlap. When indexed access *types* move to the new
   core, make `try_resolve_indexed` call `ty_access` for the non-generic case instead of keeping two lookups.
 
+**Stage 4b2 - DONE (2026-09-18).** 1137 full / errors 4657 / symbols 5981 / types 2219 (from 1120 / 4648 / 5979 / 2186),
+suite 4.9 s, bench typecheck unchanged (118 ms), valgrind clean on ~400 tests. Details in `measurements.md`. What 4b3
+and 5 should know:
+- **The flip itself was one line** (`ty_declaration_is_evaluated_by_new_core` says yes to aliases); lowering already
+  handled every written type, so pass counts didn't move. Type operators legacy code resolves (`type_resolve` of a
+  TYPE_INDEXED / TYPE_KEYOF / TYPE_TERNARY node) are lowered and come back as a checker-owned `TYPE_NEW`
+  (`ty_legacy_wrapper`). Deleted: `legacy_infer_extends` (+ the in-progress list), `type_all_keys`,
+  `type_contains_inferred`, the legacy ternary/indexed/keyof resolvers, the `has_cache/cached` fields and with them the
+  last checker writes into the AST. `generic_degenericize_type` has two value-side callers left (`Bar<T>` as a value in
+  `expr.c`, the class prototype in `class_decl.c`); `index_type_evaluate_type_internal` only serves
+  `index_type_typecheck` now. The harness "run twice" workaround stays: it's about the lib program cache.
+- **What the work actually was: three things the new core had wrong that the legacy resolver used to hide.**
+  (1) Conditional types are now root + mapper like tsc (`Ty.conditional.root/.mapper`, stage 1 deviation undone):
+  `Omit<Foo, "c">` kept `c`, because `Exclude<keyof T, K>` inside it was stored with instantiated operands and could
+  no longer distribute once `T` was known. (2) `collect_free_params` counted a node's own type parameters (mapped key,
+  signature type parameters, `infer`) as free, so `Record<'foo', string>` looked generic and conditionals on it stayed
+  deferred. (3) `try_resolve_indexed` deferred on anything that *contained* a type variable; it defers on generic
+  operands only now and is `ty_access` underneath (4b1's note), so `{ a: T }["a"]` is `T` and `string["length"]` works.
+- Deferred types view as their base constraint (`ty_base_constraint`, new, also what apparent types of deferred types
+  should use later), `unknown` without one. Legacy code that resolves a deferred type therefore *loses* it: `x!` had
+  to be taught to stay in the new core (`ty_non_nullable`). Expect the same wherever 4b3 still finds legacy code
+  rebuilding a type from its view.
+- Alias names (not planned, +33 types components): `ty_realias` names the instantiation of a generic alias written as
+  another alias's body, arrays/tuples as alias bodies are always deferred references carrying the alias, `T[K]` and
+  conditional types carry their alias through instantiation. The `.types` traversal prints an alias declaration from
+  its declared `Ty`.
+- From triage: homomorphic mapped types over arrays and tuples instantiate to arrays and tuples
+  (`instantiate_mapped_over_list`), `T["0"]` reaches tuple elements. No test moved: they all also need tuple contextual
+  typing (4b3).
+- Lost: `homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1` and `reverseMappedTupleContext` (errors; they
+  passed because a constraint was wrongly generic, they need reverse mapped type inference), `mappedTypeNoTypeNoCrash`,
+  `noSymbolForMergeCrash`, `indexedAccessPrivateMemberOfGenericConstraint` (types; error-recovery printing).
+
 **Stage 4b - split in three (insights, 2026-09-18).** 4a showed flips are cheap when done one kind of thing at a
 time, and that the pain is wherever a *weak legacy algorithm* meets precise `Ty` inputs. So 4b is three sessions, each
 leaving the suite runnable and pass counts at or above the previous session's:

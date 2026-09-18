@@ -8,8 +8,8 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, second insights session)
 - ~22k LoC of C in `src/` (parser 5.0k, new core `src/ty/` 8.0k, legacy type.c 1.9k, display 1.4k, expr 1.2k). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 1120 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
-  3, 1100 before 4a, 1115 before 4b1). Per component: errors 4648, symbols 5979, types 2186 pass (of 11236 that run; the other 726 are
+- `./fasttest.sh`: 1137 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
+  3, 1100 before 4a, 1115 before 4b1, 1120 before 4b2). Per component: errors 4657, symbols 5981, types 2219 pass (of 11236 that run; the other 726 are
   explained in `measurements.md`).
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
@@ -24,7 +24,12 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
-- Type core migration (plan 02): **stages 1-3, 4a and 4b1 done.** Since 4b1 calls (overloads, arity, spread/rest),
+- Type core migration (plan 02): **stages 1-3, 4a, 4b1 and 4b2 done.** Since 4b2 every *written* type evaluates in the
+  new core (aliases, `keyof`, `T[K]`, conditional, mapped); the legacy structural relation, the legacy type operator
+  resolvers and the last checker writes into the AST are deleted. The flip was trivial; the session went into three
+  things the new core had wrong that legacy code used to hide (conditional types needed tsc's root + mapper to
+  distribute late, own type parameters counted as free, indexed access deferred too eagerly) and into alias naming.
+  What's legacy now is exactly 4b3's scope: expressions, statements, bindings, functions, namespaces. Since 4b1 calls (overloads, arity, spread/rest),
   generic inference (real, tsc-shaped, shared with `infer`) and property access run on `Ty` (`ty/call.c`, `ty/infer.c`,
   `ty/access.c`); 1120 full / errors 4648 / symbols 5979 / types 2186. What now fails loudest in calls is missing
   contextual typing (4b3). Before that: Since 4a, classes, interfaces and enums are evaluated
@@ -69,7 +74,7 @@ skim, plan 03 covers them:
    lookup and later language-service-ish needs all lean on persistent symbols. Needs a look.
 5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST
    between all test programs. Blocks arena-owned types and multiple checkers over one AST. **Fixed by plan 02 stage
-   2** (memos in per-`Checker` slots), except for the `has_cache` fields of legacy type operators, which die with them.
+   2** (memos in per-`Checker` slots); the `has_cache` fields of legacy type operators went in 4b2.
 
 At 19k LoC and 9% pass rate, replacing the type core now is cheap. At 60k LoC it will not be. **Decision: migrate to
 interned, arena-allocated, id-carrying types (`Ty`), split from syntax-only `TypeNode`s, with id-keyed relation
@@ -107,7 +112,7 @@ scaffolding, and stage 5 must actually prune it - the insights session after sta
 
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
-2. Type core redesign: ~~plan~~, ~~stages 1-4a, 4b1 (calls + inference)~~ done; 4b2 (aliases + type operators),
+2. Type core redesign: ~~plan~~, ~~stages 1-4a, 4b1 (calls + inference), 4b2 (aliases + type operators)~~ done;
    4b3 (expressions), 5 (delete the old world). Harness fidelity slots in before 4b3 so `CompilerOptions` exists.
 3. Persistent symbols + binder-time flow graph, then narrowing.
 4. Harness fidelity (compiler options, multi-config tests), module resolution.

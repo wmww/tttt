@@ -252,11 +252,7 @@ static Ty const* alias_instance(Checker* me, Declaration const* decl, Ty const* 
     return ret;
 }
 
-static Ty const* lower_identifier_internal(Checker* me, IdentifierType const* identifier, LowerCtx ctx, bool from_legacy);
-
-static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
-    return lower_identifier_internal(me, identifier, ctx, false);
-}
+static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
 bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl) {
     switch (decl->type_tag) {
@@ -266,6 +262,10 @@ bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl) {
         case DECLARATION_CLASS:
         case DECLARATION_INTERFACE:
             return true;
+        case DECLARATION_TYPE:
+            // Type aliases. `infer X` and mapped type keys are DECLARATION_TYPE too, they go the same way: lowering
+            // knows them as type parameters
+            return !decl->is_typeof;
         default:
             return false;
     }
@@ -273,10 +273,10 @@ bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl) {
 
 Ty const* ty_from_identifier_type(Checker* me, IdentifierType const* identifier) {
     // The type arguments may be temporaries of the legacy checker
-    return lower_identifier_internal(me, identifier, (LowerCtx){ .generic = true, .transient = true }, true);
+    return lower_identifier(me, identifier, (LowerCtx){ .generic = true, .transient = true });
 }
 
-static Ty const* lower_identifier_internal(Checker* me, IdentifierType const* identifier, LowerCtx ctx, bool from_legacy) {
+static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     Declaration const* decl = identifier->decl_ref;
     if (!decl) return ty_intrinsic(me, TY_ERROR);
     Ty const* args_buf[MAX_TYPE_ARGS];
@@ -324,7 +324,19 @@ typedef struct FreeParams {
     Ty const* params[MAX_FREE_PARAMS];
     u32 len;
     bool unknown;
+    // Type parameters declared inside the walked nodes (by a signature, a mapped type, `infer`). They aren't free,
+    // and since nothing outside a node can mention what's declared inside it, they're simply taken out at the end
+    Ty const* bound[MAX_FREE_PARAMS];
+    u32 bound_len;
 } FreeParams;
+
+static void free_params_bind(FreeParams* out, Ty const* param) {
+    if (out->bound_len == MAX_FREE_PARAMS) {
+        out->unknown = true;
+    } else {
+        out->bound[out->bound_len++] = param;
+    }
+}
 
 static void free_params_add(FreeParams* out, Ty const* param) {
     for (u32 i = 0; i < out->len; i++) {
@@ -341,13 +353,12 @@ static void collect_free_params(Checker* me, Type const* node, FreeParams* out);
 
 static void collect_free_params_of_generic(Checker* me, Generic const* generic, FreeParams* out) {
     for_each (i, vec_generic_item, &generic->items) {
+        if (i->declaration_ref) free_params_bind(out, ty_type_param(me, i->declaration_ref));
         collect_free_params(me, &i->extends, out);
         collect_free_params(me, &i->fallback, out);
     }
 }
 
-// Type parameters the node declares itself get collected too (the walk doesn't track scopes). That's harmless: they
-// only ever show up in a mapper when the signature that declares them gets instantiated, which is about them.
 static void collect_free_params(Checker* me, Type const* node, FreeParams* out) {
     if (out->unknown) return;
     switch (node->tag) {
@@ -381,7 +392,7 @@ static void collect_free_params(Checker* me, Type const* node, FreeParams* out) 
 
         case TYPE_INFERRED:
             if (node->inferred->declaration_ref) {
-                free_params_add(out, ty_type_param(me, node->inferred->declaration_ref));
+                free_params_bind(out, ty_type_param(me, node->inferred->declaration_ref));
             }
             collect_free_params(me, &node->inferred->extends, out);
             break;
@@ -408,7 +419,7 @@ static void collect_free_params(Checker* me, Type const* node, FreeParams* out) 
                         break;
                     case INTERFACE_KEY_MAPPED:
                         if (i->key.mapped.declaration_ref) {
-                            free_params_add(out, ty_type_param(me, i->key.mapped.declaration_ref));
+                            free_params_bind(out, ty_type_param(me, i->key.mapped.declaration_ref));
                         }
                         collect_free_params(me, &i->key.mapped.in_type, out);
                         if (i->key.mapped.has_as_type) collect_free_params(me, &i->key.mapped.as_type, out);
@@ -469,6 +480,13 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, Type const* const* no
     if (!ty->anonymous.ctx.generic) return; // No type parameter in scope, nothing to find
     FreeParams found = {0};
     for (u32 i = 0; i < count; i++) collect_free_params(me, nodes[i], &found);
+    u32 kept = 0;
+    for (u32 i = 0; i < found.len; i++) {
+        bool bound = false;
+        for (u32 j = 0; j < found.bound_len; j++) bound |= found.bound[j] == found.params[i];
+        if (!bound) found.params[kept++] = found.params[i];
+    }
+    found.len = kept;
     ty->anonymous.free_params_unknown = found.unknown;
     if (!found.unknown) ty->anonymous.free_params = ty_list_copy(me, found.params, found.len);
     if (found.unknown || found.len) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -639,7 +657,9 @@ static Ty const* deferred_reference_target(Checker* me, Type const* node) {
     return node->array.readonly ? my readonly_array_target : my array_target;
 }
 
-Ty const* ty_deferred_reference(Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper) {
+Ty const* ty_deferred_reference(
+    Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper, Declaration const* alias, TyList alias_args
+) {
     u64 stack_key[64];
     u32 count = 2 + (mapper ? mapper->len * 2 : 0);
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
@@ -662,6 +682,10 @@ Ty const* ty_deferred_reference(Checker* me, Type const* node, LowerCtx ctx, TyM
         deferred->ctx.in_alias = false;
         deferred->mapper = mapper;
         fresh->reference.deferred = deferred;
+        // An array or tuple written as the body of an alias goes by the alias name. The node says which alias, so the
+        // name isn't part of the key
+        fresh->alias = alias;
+        fresh->alias_args = ty_list_copy(me, alias_args.data, alias_args.len);
         *intern_slot(me, &my links, key, count) = fresh;
         ret = fresh;
     }
@@ -777,7 +801,17 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         case TYPE_SYMBOL: return ty_intrinsic(me, TY_ES_SYMBOL);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
         case TYPE_VALUE: return ty_literal(me, &node->value);
-        case TYPE_IDENTIFIER: return lower_identifier(me, node->identifier, ctx);
+        case TYPE_IDENTIFIER: {
+            Ty const* ret = lower_identifier(me, node->identifier, ctx);
+            Declaration const* decl = node->identifier->decl_ref;
+            // The body of an alias is an instantiation of a generic alias: it goes by the new name
+            if (alias && decl && decl->type_tag == DECLARATION_TYPE && decl->type_generic && !decl->is_typeof &&
+                !registered_type_param(me, decl)
+            ) {
+                ret = ty_realias(me, ret, alias, alias_args);
+            }
+            return ret;
+        }
 
         case TYPE_INFERRED: {
             if (!node->inferred->declaration_ref) return ty_intrinsic(me, TY_ERROR);
@@ -813,14 +847,14 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
             return ty_anonymous_from_node(me, node, outer_ctx, alias, alias_args);
 
         case TYPE_ARRAY:
-            if (ctx.in_alias && !ctx.transient && node_reaches_alias_in_flight(me, node, 0)) {
-                return ty_deferred_reference(me, node, ctx, nullptr);
+            if (!ctx.transient && (alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
+                return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
             return ty_array(me, ty_from_legacy(me, node->array.element, ctx), node->array.readonly);
 
         case TYPE_TUPLE:
-            if (ctx.in_alias && !ctx.transient && node_reaches_alias_in_flight(me, node, 0)) {
-                return ty_deferred_reference(me, node, ctx, nullptr);
+            if (!ctx.transient && (alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
+                return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
             return lower_tuple(me, node, ctx);
 
@@ -829,11 +863,12 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
                 Ty const* resolved = lower_legacy_resolution(me, node, ctx);
                 return resolved ? resolved : ty_intrinsic(me, TY_ERROR);
             }
-            return ty_indexed(
+            Ty const* ret = ty_indexed(
                 me,
                 ty_from_legacy(me, &node->indexed->interface, ctx),
                 ty_from_legacy(me, &node->indexed->index, ctx)
             );
+            return alias && ret->kind == TY_INDEXED ? ty_realias(me, ret, alias, alias_args) : ret;
         }
 
         case TYPE_KEYOF:
@@ -868,7 +903,8 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
             TyCondBranch if_true = lower_branch(me, &node->ternary->if_true, inner);
             TyCondBranch if_false = lower_branch(me, &node->ternary->if_false, ctx);
             bool distributive = is_naked_type_param_node(me, &node->ternary->maybe_sub);
-            return ty_conditional(me, check_type, extends, &if_true, &if_false, distributive);
+            Ty const* ret = ty_conditional(me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive);
+            return alias && ret->kind == TY_CONDITIONAL ? ty_realias(me, ret, alias, alias_args) : ret;
         }
 
         case TYPE_UNION:

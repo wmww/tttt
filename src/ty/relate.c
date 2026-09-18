@@ -1012,6 +1012,51 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
     return ret == indexed || (ret->flags & TYF_DEFERRED) ? nullptr : ret;
 }
 
+// What a type variable is known to be at least: tsc's getBaseConstraintOfType, without the circularity reporting.
+// Null if there's nothing to know (an unconstrained type parameter, `T[K]` that stays generic...)
+static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return nullptr;
+    switch ((TyKind)ty->kind) {
+        case TY_TYPE_PARAM: {
+            Ty const* constraint = ty_param_constraint(me, ty);
+            if (!constraint || constraint == ty) return nullptr;
+            if (constraint->kind == TY_TYPE_PARAM || (constraint->flags & TYF_DEFERRED)) {
+                return base_constraint(me, constraint, depth + 1);
+            }
+            return constraint;
+        }
+        case TY_KEYOF: {
+            Ty const* all[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+            return ty_union(me, all, 3, nullptr, (TyList){0});
+        }
+        case TY_INDEXED: {
+            Ty const* object = ty->indexed.object;
+            Ty const* index = ty->indexed.index;
+            Ty const* object_constraint = base_constraint(me, object, depth + 1);
+            Ty const* index_constraint = base_constraint(me, index, depth + 1);
+            if (!object_constraint && !index_constraint) return nullptr;
+            Ty const* ret = ty_indexed(me, object_constraint ? object_constraint : object, index_constraint ? index_constraint : index);
+            if (ret == ty) return nullptr;
+            return ret->flags & TYF_DEFERRED ? base_constraint(me, ret, depth + 1) : ret;
+        }
+        case TY_CONDITIONAL: {
+            Ty const* parts[2];
+            for (u32 i = 0; i < 2; i++) {
+                parts[i] = ty_conditional_branch(me, ty, i);
+                if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) {
+                    parts[i] = base_constraint(me, parts[i], depth + 1);
+                    if (!parts[i]) return nullptr;
+                }
+            }
+            return ty_union(me, parts, 2, nullptr, (TyList){0});
+        }
+        default:
+            return nullptr;
+    }
+}
+
+Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint(me, ty, 0); }
+
 static Ternary target_each_related(Checker* me, RelationState* st, Ty const* source, TyList targets, bool report) {
     Ternary result = TERNARY_TRUE;
     for (u32 i = 0; i < targets.len; i++) {

@@ -707,93 +707,28 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
 }
 
 // Returns null if the new core can't tell yet
+// Generic as far as deferring an indexed access goes: a type variable at the top level (tsc's isGenericObjectType /
+// isGenericIndexType). `{ a: T }["a"]` isn't, it's `T`
+static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
+    if (ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED)) return true;
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || depth > 8) return false;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_generic_operand(me, ty->composite.types.data[i], depth + 1)) return true;
+        }
+        return false;
+    }
+    // A mapped type whose keys aren't known yet
+    if (ty->kind == TY_ANONYMOUS) return ty_members(me, ty)->mapped != nullptr;
+    return false;
+}
+
+// The access itself is ty_access() (access.c), the same lookup property access expressions get
 static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
     if (index->flags & TYF_NEVER) return index;
-    if ((object->flags | index->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES) return nullptr;
-    if (index->kind == TY_UNION) {
-        TyBuf parts = {0};
-        Ty const* ret = nullptr;
-        for (u32 i = 0; i < index->composite.types.len; i++) {
-            Ty const* part = try_resolve_indexed(me, object, index->composite.types.data[i]);
-            if (!part) {
-                ty_buf_drop(&parts);
-                return nullptr;
-            }
-            ty_buf_push(&parts, part);
-        }
-        ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-        ty_buf_drop(&parts);
-        return ret;
-    }
-    if (object->kind == TY_UNION) {
-        TyBuf parts = {0};
-        for (u32 i = 0; i < object->composite.types.len; i++) {
-            Ty const* part = try_resolve_indexed(me, object->composite.types.data[i], index);
-            if (!part) {
-                ty_buf_drop(&parts);
-                return nullptr;
-            }
-            ty_buf_push(&parts, part);
-        }
-        Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-        ty_buf_drop(&parts);
-        return ret;
-    }
-    if (!(object->flags & TYF_OBJECT)) return nullptr;
-
-    // Tuple elements and array elements don't need members
-    if (object->kind == TY_REFERENCE) {
-        Ty const* target = object->reference.target;
-        if (target->declared.kind == TY_DECLARED_TUPLE_TARGET && (index->flags & TYF_NUMBER_LITERAL)) {
-            double n = index->literal.value.number;
-            TupleShape const* shape = target->declared.tuple;
-            if (n >= 0 && n < shape->arity && n == (u32)n && !(shape->flags[(u32)n] & TUPLE_ELEMENT_REST)) {
-                Ty const* element = ty_reference_args(me, object).data[(u32)n];
-                if (shape->flags[(u32)n] & TUPLE_ELEMENT_OPTIONAL) {
-                    Ty const* parts[2] = { element, my intrinsics[TY_UNDEFINED] };
-                    return ty_union(me, parts, 2, nullptr, (TyList){0});
-                }
-                return element;
-            }
-            return nullptr;
-        }
-        if ((target == my array_target || target == my readonly_array_target) &&
-            (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL))
-        ) {
-            return ty_reference_args(me, object).data[0];
-        }
-    }
-
-    Members const* members = ty_members(me, object);
-    if (members->mapped) return nullptr;
-    if (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
-        Atom const* name = index->literal.string;
-        if (!name) {
-            cstr rendered = cstr_null;
-            cstr_append_value_js(&rendered, &index->literal.value);
-            name = checker_atom(me, cstr_sv(&rendered));
-            cstr_drop(&rendered);
-        }
-        Prop const* prop = ty_get_prop(me, object, name);
-        if (prop) {
-            Ty const* type = prop_type(me, prop);
-            if (prop->flags & PROP_OPTIONAL) {
-                Ty const* parts[2] = { type, my intrinsics[TY_UNDEFINED] };
-                return ty_union(me, parts, 2, nullptr, (TyList){0});
-            }
-            return type;
-        }
-    }
-    for (u32 i = 0; i < members->index_count; i++) {
-        IndexInfo const* info = &members->index[i];
-        bool applies =
-            ((info->key->flags & TYF_STRING) && (index->flags & (TYF_STRING | TYF_STRING_LITERAL | TYF_NUMBER | TYF_NUMBER_LITERAL))) ||
-            ((info->key->flags & TYF_NUMBER) && (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL))) ||
-            ((info->key->flags & TYF_ES_SYMBOL) && (index->flags & TYF_ES_SYMBOL));
-        if (applies) return info->value;
-    }
-    return nullptr;
+    if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
+    return ty_access(me, object, index);
 }
 
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
@@ -806,6 +741,21 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
         fresh->indexed.object = object;
         fresh->indexed.index = index;
     }
+    return ret;
+}
+
+// `x!`: the type without null and undefined. TODO: tsc intersects a type variable with `{}` under strictNullChecks
+Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
+    if (ty->flags & TYF_NULLABLE) return ty_intrinsic(me, TY_NEVER);
+    if (ty->kind != TY_UNION) return ty;
+    TyList members = ty->composite.types;
+    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+    u32 len = 0;
+    for (u32 i = 0; i < members.len; i++) {
+        if (!(members.data[i]->flags & TYF_NULLABLE)) kept[len++] = members.data[i];
+    }
+    Ty const* ret = len == members.len ? ty : ty_union(me, kept, len, nullptr, (TyList){0});
+    free(kept);
     return ret;
 }
 
@@ -837,12 +787,12 @@ static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
 // Resolves right away unless the check type is generic (conditional.c)
 Ty const* ty_conditional(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
-    bool distributive
+    Ty const* root, TyMapper const* mapper, bool distributive
 ) {
     Ty const* resolved = ty_conditional_resolve(me, check_type, extends, if_true, if_false);
     if (resolved) return resolved;
-    u64 key[4 + 24 + 24] = { KEY_CONDITIONAL, check_type->id, extends->id, distributive };
-    u32 count = 4;
+    u64 key[5 + 24 + 24] = { KEY_CONDITIONAL, check_type->id, extends->id, distributive, root ? root->id : 0 };
+    u32 count = 5;
     count += cond_branch_key(key + count, if_true);
     count += cond_branch_key(key + count, if_false);
     u32 flags = check_type->flags | extends->flags | TYF_COULD_CONTAIN_TYPE_VARIABLES;
@@ -856,6 +806,8 @@ Ty const* ty_conditional(
         branches[1] = *if_true;
         fresh->conditional.branches = branches;
         fresh->conditional.distributive = distributive;
+        fresh->conditional.root = root ? root : fresh;
+        fresh->conditional.mapper = root ? mapper : nullptr;
     }
     return ret;
 }

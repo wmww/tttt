@@ -1079,8 +1079,6 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         expect_type(&p, min_precedence, &parsed.type);
         *ret = type_keyof(c_new(KeyofType, {
             .interface = parsed.type,
-            .has_cache = false,
-            .cached = {0},
         }));
     } else if (hop_start_if_ends_on_word_break(&p, "typeof")) {
         hop_whitespace(&p);

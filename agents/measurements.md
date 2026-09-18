@@ -2,6 +2,18 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 4b2 (type aliases and type operators evaluate to `Ty`)
+Suite: **1137 full (1120), errors 4657 (4648), symbols 5981 (5979), types 2219 (2186)**; suite wall 4.9 s (4.5 s).
+- Components: 51 tests gained components, 4 lost one (`homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1`
+  and `reverseMappedTupleContext`: errors, need reverse mapped type inference; `mappedTypeNoTypeNoCrash`,
+  `noSymbolForMergeCrash`, `indexedAccessPrivateMemberOfGenericConstraint`: types, error-recovery printing). No full
+  pass lost. Most of the types gain is alias naming (`type Bar = Omit<..>` is `Bar`, `type Tup<T> = [T, T]` is `Tup<T>`).
+- `log_error` lines unchanged (2 078 in 502 tests): none of what's left is about types.
+- Bench: typecheck 118 ms, total 0.60 s, RSS 842 MB - unchanged.
+- valgrind clean on ~400 tests (keyof*, mappedType*, indexedAccess*, destructuring*, conditionalType*, inferTypes*,
+  recursive*, tuple*, typeAlias*, circular*, variadicTuples*, promise*, awaited*, and the 3 tests that used to leave
+  allocations in the shared lib AST: they don't any more).
+
 ## 2026-09-18, type core stage 4b1 (calls, inference and property access on `Ty`)
 Suite: **1120 full (1115), errors 4648 (4590), symbols 5979 (5974), types 2186 (2183)**; suite wall 4.5 s (4.3 s).
 - `log_error` lines 4 606 -> 2 169: the legacy "inferring types of generic with ... not yet implemented" family is gone
