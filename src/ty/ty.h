@@ -225,6 +225,9 @@ struct Ty {
             TyDeclaredKind kind;
             Declaration const* decl; // null for tuple targets and synthetics
             Scope const* namespace_scope; // TY_DECLARED_NAMESPACE only
+            // Set if this is the value of a declaration with several value declarations (a namespace merged with a
+            // function, class or enum): the members are those of all of them, see ty_merged_value_type()
+            Declaration const* merged_value;
             Atom const* name;
             TyList type_params;
             TupleShape const* tuple;
@@ -244,6 +247,7 @@ struct Ty {
             // The type of a function declaration/expression, method, accessor or constructor: one signature, read
             // straight off the FunctionImpl (the return type is inferred from its body if it isn't annotated)
             FunctionImpl const* function;
+            Declaration const* merged_value; // Function overloads, see ty_merged_value_type()
             Type const* const* overloads; // If set, the type of an overloaded method: TYPE_CALLABLEs, node is the first
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
@@ -565,6 +569,8 @@ Ty const* ty_from_node(Checker* me, Type const* node, LowerCtx ctx);
 // Like ty_from_node(), but also follows the legacy checker's TYPE_LAZY/TYPE_REF (stage 1-4 scaffolding)
 Ty const* ty_from_legacy(Checker* me, Type const* type, LowerCtx ctx);
 Ty const* ty_declared_type_of(Checker* me, Declaration const* decl);
+Ty const* ty_namespace_type(Checker* me, Scope const* scope);
+Ty const* ty_merged_value_type(Checker* me, Declaration const* decl);
 Atom const* ty_qualified_name(Checker* me, Declaration const* decl); // `A.B.name`
 void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);

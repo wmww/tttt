@@ -403,7 +403,7 @@ const baselines = {
     'aliasInaccessibleModule2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasInstantiationExpressionGenericIntersectionNoCrash1': {
         errors: false,
@@ -3497,8 +3497,8 @@ const baselines = {
     },
     'classDeclarationMergedInModuleWithContinuation': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classDeclarationShouldBeOutOfScopeInComputedNames': {
         errors: false,
@@ -10453,7 +10453,7 @@ const baselines = {
     'elidingImportNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitAccessExpressionOfCastedObjectLiteralExpressionInArrowFunctionES5': {
         errors: true,
@@ -10848,7 +10848,7 @@ const baselines = {
     'enumBasics3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumCodeGenNewLines1': {
         errors: true,
@@ -14561,8 +14561,8 @@ const baselines = {
         types: false,
     },
     'genericCallOnMemberReturningClosedOverObject': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'genericCallSpecializedToTypeArg': {
@@ -14876,7 +14876,7 @@ const baselines = {
         types: false,
     },
     'genericFunduleInModule2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15858,7 +15858,7 @@ const baselines = {
     'importAliasWithDottedName': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importAnImport': {
         errors: false,
@@ -23408,7 +23408,7 @@ const baselines = {
     'nonExportedElementsOfMergedModules': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nonGenericClassExtendingGenericClassWithAny': {
         errors: true,
@@ -25273,12 +25273,12 @@ const baselines = {
     'privacyCheckTypeOfInvisibleModuleError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyCheckTypeOfInvisibleModuleNoError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyClass': {
         errors: true,
@@ -28028,7 +28028,7 @@ const baselines = {
     'sourceMapValidationModule': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'sourceMapValidationStatements': {
         errors: false,
@@ -28097,8 +28097,8 @@ const baselines = {
     },
     'sourcemapValidationDuplicateNames': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'spaceBeforeQuestionMarkInPropertyAssignment': {
         errors: false,

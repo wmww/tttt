@@ -7,6 +7,7 @@
 #include "generic.h"
 #include "program.h"
 #include "port_statement.h"
+#include "ty/ty.h"
 
 void scope_drop(Scope* me) {
     if (my current_scope_stack) {
@@ -330,29 +331,7 @@ void scope_process_imports(Scope* me) {
 }
 
 Type scope_evaluate_value_interface(Scope const* me) {
-    VecInterfaceMember members = vec_interface_member_init();
-    for_each (i, hmap_arc_declaration, &my declarations) {
-        if (i->second.get->value_tag) {
-            InterfaceMember member = interface_member_make(
-                span_null, // Declaration
-                nullptr, // Interface
-                false, // readonly
-                false, // optional
-                cstr_from_span(i->second.get->name),
-                i->second.get->name,
-                false, // name is value
-                type_clone(i->second.get->value_type)
-            );
-            // TODO: make this less stupid (probably by refactoring interface_member_make() to take a props struct)
-            vec_span_drop(&member.declarations);
-            member.declarations = vec_span_clone(i->second.get->declarations);
-            vec_interface_member_push(&members, member);
-        }
-    }
-    return type_interface((Interface){
-        .members = members,
-        .namespace_scope = vec_span_is_empty(&my namespaces) ? nullptr : me,
-    });
+    return type_new(ty_namespace_type(current_checker, me));
 }
 
 Declaration const* scope_get_declaration(Scope const* me, Span name) {

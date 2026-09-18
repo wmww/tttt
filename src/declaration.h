@@ -7,6 +7,8 @@ typedef struct MergedType {
     LazyType lazy;
     // Set if this is the declared type side of a Declaration (as opposed to its value side)
     struct Declaration const* declared_owner;
+    // Set if this is the value side
+    struct Declaration const* value_owner;
 } MergedType;
 
 void merged_type_add(MergedType* me, Type t);

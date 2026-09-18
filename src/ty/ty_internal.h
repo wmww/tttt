@@ -31,6 +31,7 @@ enum {
     KEY_ALIAS_INSTANCE, // (alias Declaration, argument ids) -> Ty
     KEY_NODE,           // TYPE_INTERFACE/TYPE_CALLABLE node -> Ty
     KEY_NAMESPACE,      // Scope -> Ty
+    KEY_MERGED_VALUE,   // Declaration -> Ty, see ty_merged_value_type()
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
     KEY_NEW_WRAPPER,    // Ty id -> arena TYPE_NEW, see ty_legacy_wrapper()
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()

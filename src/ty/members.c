@@ -523,6 +523,30 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     }
 }
 
+// The members of every value declaration of a merged declaration, see ty_merged_value_type()
+static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Declaration const* decl) {
+    for_each (i, vec_type, &decl->merged_value_type.merge_list) {
+        Ty const* entry = ty_from_legacy(me, i, (LowerCtx){ .generic = true });
+        if (!(entry->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, entry);
+        for (u32 j = 0; j < members->prop_count; j++) {
+            Prop* existing = builder_find_prop(builder, members->props[j]->name);
+            if (existing) {
+                prop_add_decl_spans(me, existing, members->props[j]->decl_spans, members->props[j]->decl_span_count);
+            } else {
+                // A copy: decl spans are added to it
+                Prop* prop = arena_new(&my arena, Prop);
+                *prop = *members->props[j];
+                if (prop->type_state != LAZY_STATE_DONE) prop->type_state = LAZY_STATE_NOT_STARTED;
+                builder_push(builder, props, prop);
+            }
+        }
+        for (u32 j = 0; j < members->call_count; j++) builder_push(builder, call, members->call[j]);
+        for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
+        for (u32 j = 0; j < members->index_count; j++) builder_push(builder, index, members->index[j]);
+    }
+}
+
 static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDecl const* enum_decl) {
     bool any_numeric = false;
     for_each (i, vec_enum_case, &enum_decl->cases) {
@@ -557,6 +581,10 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Declaration const* decl = ty->declared.decl;
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
     MembersBuilder builder = {0};
+    if (ty->declared.merged_value) {
+        builder_add_merged_value(me, &builder, ty->declared.merged_value);
+        return builder_finish(me, &builder);
+    }
     switch (ty->declared.kind) {
         case TY_DECLARED_INTERFACE:
         case TY_DECLARED_CLASS_INSTANCE: {
@@ -601,14 +629,19 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             }
             break;
 
-        case TY_DECLARED_NAMESPACE: {
-            // HACK(stage 4b): the members of a namespace value are the structural type the legacy checker made
-            Type const* structure = lazy_type_get((LazyType*)&ty->declared.namespace_scope->value_interface);
-            structure = type_resolve(structure);
-            if (structure->tag == TYPE_INTERFACE) {
-                builder_add_interface(me, &builder, &structure->interface, ctx, nullptr);
+        case TY_DECLARED_NAMESPACE:
+            for_each (i, hmap_arc_declaration, &ty->declared.namespace_scope->declarations) {
+                Declaration const* member = i->second.get;
+                if (!member->value_tag) continue;
+                Prop* prop = arena_new(&my arena, Prop);
+                prop->name = checker_atom(me, member->name.sv);
+                prop->node = &member->value_type;
+                prop->ctx = (LowerCtx){ .generic = true };
+                prop->name_span = member->name;
+                prop_add_decl_spans(me, prop, member->declarations.data, (u32)vec_span_size(&member->declarations));
+                builder_push(&builder, props, prop);
             }
-        }   break;
+            break;
 
         case TY_DECLARED_TUPLE_TARGET: // TODO: numeric properties and `length`, then the array members (relations see a tuple as its array for now)
         case TY_DECLARED_SYNTHETIC:
@@ -766,7 +799,9 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 return resolve_instantiated_members(me, ty->anonymous.target, ty->anonymous.mapper, ty->anonymous.applies_type_args);
             }
             MembersBuilder builder = {0};
-            if (ty->anonymous.function) {
+            if (ty->anonymous.merged_value) {
+                builder_add_merged_value(me, &builder, ty->anonymous.merged_value);
+            } else if (ty->anonymous.function) {
                 Signature* sig = signature_from_function(me, ty->anonymous.function, ty->anonymous.ctx);
                 if (sig->flags & SIGNATURE_CONSTRUCT) {
                     builder_push(&builder, construct, sig);

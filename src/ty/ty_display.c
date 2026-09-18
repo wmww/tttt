@@ -352,6 +352,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 case TY_DECLARED_CLASS_STATIC:
                 case TY_DECLARED_ENUM_OBJECT:
                 case TY_DECLARED_NAMESPACE:
+                    if (!ty->declared.name->len) {
+                        display_structure(me, d, ty); // A module nobody named
+                        break;
+                    }
                     out_lit(d, "typeof ");
                     out_name(d, atom_sv(ty->declared.name));
                     break;

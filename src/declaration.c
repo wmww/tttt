@@ -36,16 +36,9 @@ Type merged_type_evaluate_type(MergedType* me) {
     if (my declared_owner && ty_declaration_is_evaluated_by_new_core(my declared_owner)) {
         return type_new(ty_declared_type_of(current_checker, my declared_owner));
     }
-    VecType interfaces = vec_type_init();
-    for_each (i, vec_type, &my merge_list) {
-        Type interface;
-        if (interface_try_from_type(i, &interface)) {
-            vec_type_push(&interfaces, interface);
-        } else {
-            log_error("non-interface type in merge list");
-        }
-    }
-    return interface_from_merged_interfaces(interfaces);
+    if (my value_owner) return type_new(ty_merged_value_type(current_checker, my value_owner));
+    log_error("merged type without an owner");
+    return type_any;
 }
 
 void merged_type_drop(MergedType* me) {
@@ -71,6 +64,7 @@ void declaration_clone_in_place(Declaration* me) {
     my merged_value_type = merged_type_clone(my merged_value_type);
     if (my value_type.tag) {
         my value_type = type_lazy(&my merged_value_type.lazy);
+        my merged_value_type.value_owner = me;
     }
     my merged_declared_type = merged_type_clone(my merged_declared_type);
     if (my merged_declared_type.declared_owner) my merged_declared_type.declared_owner = me;
@@ -211,6 +205,7 @@ void declaration_init(Declaration* me, DeclProps props) {
         if (!my value_tag) {
             my value_generic = generic_or_null(props.generic);
             my value_type = type_lazy(&my merged_value_type.lazy);
+            my merged_value_type.value_owner = me;
         }
         bool add_type = true;
         if ((my value_tag == DECLARATION_FUNCTION_SIGNATURE || my value_tag == DECLARATION_FUNCTION_IMPL) &&

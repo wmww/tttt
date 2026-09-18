@@ -192,6 +192,13 @@ Ty const* ty_declared_type_of(Checker* me, Declaration const* decl) {
                 ret = ty_intrinsic(me, TY_ERROR);
             } else if (decl->is_typeof) {
                 ret = ty_from_legacy(me, &entries.data[0], (LowerCtx){0});
+                // `import * as ns`: the module's value goes by the name it was imported as (`typeof ns`)
+                if (ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_NAMESPACE && !ret->declared.name->len) {
+                    Ty* named = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
+                    named->declared = ret->declared; // Shares the members
+                    named->declared.name = checker_atom(me, decl->name.sv);
+                    ret = named;
+                }
             } else {
                 TyList params = ty_type_params_of(me, decl->type_generic);
                 ret = lower(me, &entries.data[0], (LowerCtx){ .generic = params.len > 0, .in_alias = true }, decl, params);
@@ -538,24 +545,66 @@ Ty const* ty_anonymous_from_overloads(Checker* me, Type const* const* overloads,
     return ret;
 }
 
-static Ty const* namespace_type(Checker* me, Scope const* scope) {
-    u64 key[2] = { KEY_NAMESPACE, (u64)(uintptr_t)scope };
-    void const** slot = intern_slot(me, &my links, key, 2);
-    if (!*slot) {
-        Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
-        ret->declared.kind = TY_DECLARED_NAMESPACE;
-        ret->declared.namespace_scope = scope;
-        cstr name = cstr_null;
-        for_each (i, vec_span, &scope->namespaces) {
-            if (i_index) cstr_append_lit(&name, ".");
-            cstr_append_span(&name, *i);
-        }
-        ret->declared.name = checker_atom(me, cstr_sv(&name));
-        cstr_drop(&name);
-        ret->declared.state = arena_new(&my arena, TyObjectState);
-        *slot = ret;
+static Ty* make_namespace(Checker* me, Scope const* scope) {
+    Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
+    ret->declared.kind = TY_DECLARED_NAMESPACE;
+    ret->declared.namespace_scope = scope;
+    cstr name = cstr_null;
+    for_each (i, vec_span, &scope->namespaces) {
+        if (i_index) cstr_append_lit(&name, ".");
+        cstr_append_span(&name, *i);
     }
-    return *slot;
+    // No name: the scope of a module (`import * as ns`), which prints as its structure
+    ret->declared.name = checker_atom(me, cstr_sv(&name));
+    cstr_drop(&name);
+    ret->declared.state = arena_new(&my arena, TyObjectState);
+    return ret;
+}
+
+// The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
+Ty const* ty_namespace_type(Checker* me, Scope const* scope) {
+    u64 key[2] = { KEY_NAMESPACE, (u64)(uintptr_t)scope };
+    Ty const* existing = intern_get(&my links, key, 2);
+    if (existing) return existing;
+    Ty const* ret = make_namespace(me, scope);
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
+}
+
+// The value of a declaration that several declarations contribute a value to: function overloads, a function, class
+// or enum merged with a namespace. The members of all of them (members.c: builder_add_merged_value)
+Ty const* ty_merged_value_type(Checker* me, Declaration const* decl) {
+    u64 key[2] = { KEY_MERGED_VALUE, (u64)(uintptr_t)decl };
+    Ty const* existing = intern_get(&my links, key, 2);
+    if (existing) return existing;
+
+    // With a namespace, class or enum among them it goes by name (`typeof f`), overloads alone are anonymous
+    Ty const* named = nullptr;
+    for_each (i, vec_type, &decl->merged_value_type.merge_list) {
+        Ty const* entry = ty_from_legacy(me, i, (LowerCtx){ .generic = true });
+        if (entry->kind == TY_DECLARED && !named) named = entry;
+    }
+    Ty* ret;
+    if (named) {
+        ret = named->declared.kind == TY_DECLARED_NAMESPACE ?
+            make_namespace(me, named->declared.namespace_scope) :
+            ty_alloc(me, TY_DECLARED, TYF_OBJECT);
+        if (named->declared.kind != TY_DECLARED_NAMESPACE) {
+            ret->declared = named->declared;
+            ret->declared.state = arena_new(&my arena, TyObjectState);
+        }
+        ret->declared.merged_value = decl;
+        if (!ret->declared.name->len) ret->declared.name = ty_qualified_name(me, decl);
+    } else {
+        // A function body can mention every type parameter in scope
+        ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | TYF_COULD_CONTAIN_TYPE_VARIABLES);
+        ret->anonymous.merged_value = decl;
+        ret->anonymous.ctx = (LowerCtx){ .generic = true };
+        ret->anonymous.free_params_unknown = true;
+        ret->anonymous.state = arena_new(&my arena, TyObjectState);
+    }
+    *intern_slot(me, &my links, key, 2) = ret;
+    return ret;
 }
 
 static Ty const* tuple_target_of_node(Checker* me, Type const* node) {
@@ -787,27 +836,6 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         }
 
         case TYPE_INTERFACE:
-            if (node->interface.namespace_scope) {
-                Ty const* ret = namespace_type(me, node->interface.namespace_scope);
-                // A namespace merged with a class or function: the legacy checker merged their members into this
-                // node, and the namespace scope alone doesn't know the signatures. HACK(stage 4b3): namespaces are
-                // still legacy; take the members of the merged node, by structure since it may be a temporary
-                bool has_signatures = false;
-                for_each (i, vec_interface_member, &node->interface.members) {
-                    has_signatures |= i->key.tag == INTERFACE_KEY_CALLABLE;
-                }
-                TyObjectState* state = ret->declared.state;
-                if (has_signatures && state->members_state == LAZY_STATE_NOT_STARTED) {
-                    state->members_state = LAZY_STATE_IN_FLIGHT;
-                    // The merged node is the memo of the declaration's merged type, which outlives the checker's use
-                    Type* unnamed = arena_new(&my arena, Type);
-                    *unnamed = (Type){ .tag = TYPE_INTERFACE, .interface = node->interface };
-                    unnamed->interface.namespace_scope = nullptr;
-                    state->members = ty_members(me, ty_anonymous_from_node(me, unnamed, (LowerCtx){ .generic = true }, nullptr, (TyList){0}));
-                    state->members_state = LAZY_STATE_DONE;
-                }
-                return ret;
-            }
             return ty_anonymous_from_node(me, node, ctx, alias, alias_args);
 
         case TYPE_CALLABLE:
