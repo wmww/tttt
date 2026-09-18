@@ -9,6 +9,7 @@ void error_drop(Error* me) {
 
 Error error_clone(Error me) {
     me.message = cstr_clone(me.message);
+    me.sub_errors = vec_error_clone(me.sub_errors);
     return me;
 }
 

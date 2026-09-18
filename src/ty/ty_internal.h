@@ -85,3 +85,64 @@ Type const* legacy_stable_view(Checker* me, Type const* type, u64* identity);
 Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx);
 Ty const* ty_deferred_reference(Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper);
 Ty const* ty_anonymous_from_overloads(Checker* me, Type const* const* overloads, u32 count, LowerCtx ctx);
+
+// infer.c: type inference, shared by generic calls (call.c) and `infer X` in conditional types (conditional.c)
+
+typedef struct InferParam {
+    Ty const* param;
+    Ty const** co; // candidates from covariant positions
+    u32 co_len;
+    Ty const** contra; // candidates from contravariant positions
+    u32 contra_len;
+    u32 priority; // of the candidates so far (lower is better), candidates of a worse priority are ignored
+    bool has_priority;
+    bool top_level; // every candidate so far came from the type parameter at the top level of a parameter type
+    // The seam for the context-sensitive second pass (4b3): a result that is already decided. Inference leaves it alone
+    Ty const* fixed;
+} InferParam;
+
+typedef enum InferPriority {
+    INFER_PRIORITY_NORMAL = 0,
+    INFER_PRIORITY_NAKED_TYPE_VARIABLE = 1, // to a naked type parameter in a union with other things
+    INFER_PRIORITY_RETURN_TYPE = 2,
+} InferPriority;
+
+#define INFER_MAX_DEPTH 24
+
+typedef struct Inference {
+    InferParam* params;
+    u32 len;
+    u32 cap;
+    bool collect_infer_params; // conditional types: every `infer X` met in the target becomes a parameter
+    // Walk state
+    u32 priority;
+    bool contravariant;
+    Ty const* original_target;
+    u32 depth;
+    Ty const* visiting_sources[INFER_MAX_DEPTH];
+    Ty const* visiting_targets[INFER_MAX_DEPTH];
+} Inference;
+
+void inference_init(Inference* inf, TyList params);
+void inference_drop(Inference* inf);
+void inference_collect_infer_params(Checker* me, Inference* inf, Ty const* target);
+void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority);
+// What a call infers for parameter i: common supertype of the candidates, widened unless `keep_literals`. Null if
+// there were no candidates
+Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals);
+// What a conditional type infers: union of the covariant candidates, else intersection of the contravariant ones
+Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
+
+// relate.c
+Ty const* ty_apparent_type(Checker* me, Ty const* ty);
+typedef struct FoundProp {
+    Ty const* type;
+    u32 flags;
+    bool found;
+} FoundProp;
+FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
+Ty const* ty_rest_element_type(Checker* me, Ty const* rest);
+// Type parameter `index` of a generic declared type was measured as contravariant
+bool ty_type_param_is_contravariant(Checker* me, Ty const* target, u32 index);
+bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
+bool ty_is_array(Checker* me, Ty const* ty);

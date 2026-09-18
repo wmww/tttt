@@ -6,10 +6,10 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-18, second insights session)
-- ~22k LoC of C in `src/` (parser 5.0k, new core `src/ty/` 6.4k, legacy type.c 1.9k, display 1.4k, expr 1.2k). Inherited from a
+- ~22k LoC of C in `src/` (parser 5.0k, new core `src/ty/` 8.0k, legacy type.c 1.9k, display 1.4k, expr 1.2k). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 1115 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
-  3, 1100 before 4a). Per component: errors 4590, symbols 5974, types 2183 pass (of 11236 that run; the other 726 are
+- `./fasttest.sh`: 1120 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
+  3, 1100 before 4a, 1115 before 4b1). Per component: errors 4648, symbols 5979, types 2186 pass (of 11236 that run; the other 726 are
   explained in `measurements.md`).
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
@@ -24,11 +24,14 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
-- Type core migration (plan 02): **stages 1-3 and 4a done.** Since 4a, classes, interfaces and enums are evaluated
+- Type core migration (plan 02): **stages 1-3, 4a and 4b1 done.** Since 4b1 calls (overloads, arity, spread/rest),
+  generic inference (real, tsc-shaped, shared with `infer`) and property access run on `Ty` (`ty/call.c`, `ty/infer.c`,
+  `ty/access.c`); 1120 full / errors 4648 / symbols 5979 / types 2186. What now fails loudest in calls is missing
+  contextual typing (4b3). Before that: Since 4a, classes, interfaces and enums are evaluated
   by the new core (members built from the AST, enums as unions of member literals with real values, inherited and
   static members, `Declaration.nodes` links), and the legacy checker consumes them as `TYPE_NEW` through a one-layer
-  legacy *view* (`ty/legacy_view.c`). Expressions, calls, property access, type aliases, functions and namespaces are
-  still legacy; legacy call inference is now the weakest link (4b starts there). Earlier: `src/ty/` has the interned, arena-allocated `Ty` core
+  legacy *view* (`ty/legacy_view.c`). Expressions, type aliases, functions and namespaces are
+  still legacy. Earlier: `src/ty/` has the interned, arena-allocated `Ty` core
   (identity, lazy members, mapper instantiation, lowering from the AST, tsc-style printer), the per-`Program`
   `Checker` owns all checker state, and since stage 3 **every type relation runs on the new core** (id-keyed
   persistent caches, maybe-stack, deep-nesting check, measured variances, conditional types with `infer`,
@@ -104,7 +107,7 @@ scaffolding, and stage 5 must actually prune it - the insights session after sta
 
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
-2. Type core redesign: ~~plan~~, ~~stages 1-4a~~ done; 4b1 (calls + inference), 4b2 (aliases + type operators),
+2. Type core redesign: ~~plan~~, ~~stages 1-4a, 4b1 (calls + inference)~~ done; 4b2 (aliases + type operators),
    4b3 (expressions), 5 (delete the old world). Harness fidelity slots in before 4b3 so `CompilerOptions` exists.
 3. Persistent symbols + binder-time flow graph, then narrowing.
 4. Harness fidelity (compiler options, multi-config tests), module resolution.

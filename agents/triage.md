@@ -108,3 +108,18 @@ Uninvestigated items. Triage sessions drain this.
 - Members of ambient non-const enums without initializer should be computed (no value), `ty_resolve_enum` auto-increments.
 - tsc prints string-named enum members as `(typeof E)["b c"]`.
 - `filetest.sh` takes `FAST=1` now (release build, no valgrind): seconds instead of a minute per probe.
+- (stage 4b1) Type predicates (`x is T`, `asserts x`) aren't in the AST: the parser reads them as `boolean`. Needed by
+  inference (`arr.find(isNumber)`, `arrayFind`, `typeGuardFunctionGenerics`) before narrowing ever uses them. Belongs in
+  plan 03's scope or a parser session before it.
+- (stage 4b1) A function merged with a namespace (`function F() {}` + `namespace F {}`) is a TS2451 at the top level, and
+  inside a namespace across two blocks the call finds no signatures (`genericFunduleInModule2`). Legacy binder, plan 03.
+- (stage 4b1) Mapped types over arrays and tuples aren't expanded (`Promise.all([a, b])`: `{ -readonly [P in keyof T]:
+  Awaited<T[P]> }` with `T` a tuple should be a tuple), and an array literal is never a tuple without contextual typing
+  (`correctOrderOfPromiseMethod`). First half fits 4b2, second 4b3.
+- (stage 4b1) `error_clone()` was shallow (shared `sub_errors`, double free once anything cloned an error with
+  children); it's deep now. Nothing else was cloning errors with children, but worth knowing.
+- (stage 4b1) `lower_identifier_internal` no longer treats a bare `C` inside generic class `C<T>` as `C<T>` (only `this`
+  is): with a generic `LowerCtx` that turned `x: CustomEvent` into the uninstantiated declared type instead of
+  `CustomEvent<any>`. tsc reports TS2314 for the bare name; nothing here does yet.
+- (stage 4b1) Ideas not done: cache call resolutions per `CallExpr` in the checker (each call resolves twice today);
+  variances for type aliases (inference and relations both want them).

@@ -39,6 +39,9 @@ core_files = files(
     'ty/shadow.c',
     'ty/relate.c',
     'ty/conditional.c',
+    'ty/infer.c',
+    'ty/call.c',
+    'ty/access.c',
 )
 
 main_files = core_files + files('main.c')

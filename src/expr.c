@@ -10,6 +10,7 @@
 #include "interface_member.h"
 #include "several_types.h"
 #include "callable_type.h"
+#include "ty/ty.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -558,6 +559,9 @@ static void binary_op_typecheck(
 // TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables. Should be the lib's Awaited<T>
 static Type type_awaited(Type const* type) {
     Type const* resolved = type_resolve_until_identifier(type);
+    if (resolved->tag == TYPE_NEW) {
+        return type_new(ty_awaited(current_checker, type_new_ty(current_checker, resolved)));
+    }
     if (resolved->tag == TYPE_IDENTIFIER &&
         vec_span_is_empty(&resolved->identifier->namespaces) &&
         vec_spanned_type_size(&resolved->identifier->generic_params) == 1 &&

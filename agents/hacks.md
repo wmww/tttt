@@ -112,9 +112,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   (TS18050, never emitted here).
 - `type_composite_internal`: union/intersection simplification of legacy types runs the new strict-subtype relation
   pairwise per added member (lowering both each time). Quadratic; `ty_union` itself still has no subtype reduction.
-- `generic_infer_callable_types` / `inference_gave_up`: a type parameter whose inference ran into a "not yet
-  implemented" shape (or a named generic like `Box<T>`) becomes `any` instead of `unknown`, so that the (now
-  correct) relation doesn't turn every weak inference into a TS2345/TS2322.
 - `callable_type_typecheck` TS2370: skipped for `...args: infer A` by looking at the written node.
 
 ## Legacy code consuming the new core (plan 02 stage 4a): `TYPE_NEW` and `ty/legacy_view.c`
@@ -136,10 +133,6 @@ as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
   builds a mapper from the refinements (lowering the refined types as transients) and instantiates. For an object type
   without type variables it tries `apply_type_arguments` instead: an instantiation expression, `Ty.anonymous.
   applies_type_args`, signatures with `drops_mapped_type_params`. `instantiate_anonymous` never instantiates those further.
-- `collect_generic_candidates(TYPE_NEW)`: a parameter type of the new core that mentions type variables but isn't a bare
-  type parameter makes inference give up (`any`). More parameter types are `TYPE_NEW` now (everything declared in an
-  interface or class), so more calls infer `any`/`unknown` than before: `arrayFind`, `typeParameterLeak`,
-  `correctOrderOfPromiseMethod`, `objectFreezeLiteralsDontWiden` regressed for this. Real inference on `Ty` is 4b+.
 - `ty_declaration_is_evaluated_by_new_core`: the switch that decides which declarations' types come from the new core
   (class, interface, enum, enum member). Type aliases, namespaces, functions and variables are still legacy.
 - `MergedType.declared_owner`: how `merged_type_evaluate_type` finds the Declaration of a merged class/interface.
@@ -154,6 +147,40 @@ as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
   literal type `E.x`). Needs fresh/regular literal types. `operatorAddNullUndefined` regressed for it.
 - `is_simple_related`: members of one enum are still related to each other, because the legacy checker doesn't widen
   `var x = E.A` to `E`.
+
+## Calls, inference and property access on the new core (plan 02 stage 4b1): `ty/call.c`, `ty/infer.c`, `ty/access.c`
+The algorithms are meant to stay; what's listed is where they lean on the legacy checker or stop short of tsc.
+- `type_call_evaluate_type` / `type_typecheck_call` / `index_type_evaluate_type`: the seam. Callee, arguments, object and
+  index are legacy types lowered as transients on every call, results go back as `TYPE_NEW`. A call is resolved twice
+  (type, then errors) and nothing is cached per `CallExpr`. Goes away when expressions evaluate to `Ty` (4b3).
+- `first_unfit_argument` / `Arg.widened_without_context`: an object or array literal argument only has to be
+  *comparable* to its parameter, because the legacy checker widens the literals inside (`{ kind: "a" }` is
+  `{ kind: string }`) without looking at a contextual type. Hides real errors of the same shape. Dies with contextual
+  typing + fresh literal types (4b3). The `any` argument always fits, same as `check_assignable_or_error_internal`.
+- `infer_type_arguments` / `Arg.context_sensitive`: no second inference pass. A function expression with unannotated
+  parameters contributes only its return type (its parameters are `any` to the legacy checker, so the return type is
+  often `any` too). `InferParam.fixed` and the `fixed` mapper parameter are the seam for the real thing (4b3). No
+  inference from the contextual return type either, and the inferred type arguments don't become the contextual type
+  of anything.
+- `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no template
+  literal inference, alias type arguments are only used for deferred types (there are no variances for aliases), no
+  `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
+- `resolve_call` on a union callee: resolved member by member and the results unioned; tsc builds one combined
+  signature and reports TS2349 when it can't.
+- `report_arity`: no "An argument for 'x' was not provided" related info; the span for too few arguments is the
+  callee's `inner_span`, not tsc's name-of-the-property-access rule.
+- `signature_resolve` / `structural_signature`: a `this` parameter is dropped from the parameter list and never checked
+  against the receiver.
+- `instantiate_outer` (call.c): an instantiated generic signature shares its type parameters with its target (the TODO
+  in `signature_resolve`), so constraints and defaults have to be pushed through the signature's mapper chain by hand.
+- `lower()` on a namespace node with call signatures (function/class merged with a namespace): the namespace `Ty`
+  takes its members from the legacy merged node by structure, first one seen wins. Namespaces are still legacy (4b3).
+- `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name, as the legacy `type_awaited` does for legacy types.
+- `ty_access`: no unique symbol keys, a numeric-looking string name doesn't reach array elements, `null`/`undefined`
+  members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
+  `index_type_typecheck` (TS2339 and friends) is still the legacy lookup over views, gated the way it always was.
+- `ty_structural_from_legacy`: the span of every property name is part of the structural identity now (so the
+  symbols baseline finds declarations through call results), which makes interning of temporaries less effective.
 
 ## New type core (`src/ty/`, plan 02). Everything here is about scaffolding or a known gap
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc

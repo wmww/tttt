@@ -1436,12 +1436,13 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
     impossible;
 }
 
+// Property and element access is resolved by the new core (ty/access.c). HACK(stage 4b): both sides are still typed by
+// the legacy checker and lowered on every access
 Type index_type_evaluate_type(Type const* me, Type const* index) {
-    TypeCtx ctx = {0};
-    Type ret = type_any;
-    index_type_evaluate_type_internal(&ctx, me, index, &ret);
-    type_ctx_drop(&ctx);
-    return ret;
+    Checker* checker = current_checker;
+    panic_if(!checker, "property access without a current checker");
+    Ty const* ret = ty_access(checker, lower_for_relation(checker, me), lower_for_relation(checker, index));
+    return ret ? type_new(ret) : type_any;
 }
 
 static void index_type_typecheck_internal(
@@ -1650,233 +1651,26 @@ void type_error_if_not_assignable(Type const* source, Type const* target, Span t
     check_assignable_or_error_internal("Type", source, "type", target, 2322, target_span, errs);
 }
 
+void type_report_unfit_argument(
+    Type const* legacy_source, Ty const* source, Ty const* target, Span span, ErrorCtx* errs
+) {
+    Type new_source = type_new(source);
+    Type new_target = type_new(target);
+    check_assignable_or_error_internal(
+        "Argument of type", legacy_source ? legacy_source : &new_source, "parameter of type", &new_target, 2345, span, errs
+    );
+}
+
+// Calls are resolved by the new core (ty/call.c). HACK(stage 4b): the callee and the arguments are still typed by the
+// legacy checker and lowered on every call
 Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
-    me = type_resolve(me);
-
-    switch (my tag) {
-        case TYPE_ANY:
-            return type_any;
-
-        case TYPE_CALLABLE: {
-            CallableType inferred = {0};
-            CallableType* callable = my callable;
-
-            if (call->is_extends) {
-                if (!callable->is_constructor) {
-                    return type_any;
-                }
-            } else if (call->uses_new) {
-                if (!callable->is_constructor || callable->is_abstract_constructor) {
-                    return type_any;
-                }
-            }
-
-            if (!generic_empty(&callable->generic)) {
-                inferred = generic_infer_callable_types(&callable->generic, callable, &call->args);
-                callable = &inferred;
-            }
-
-            Type ret = type_clone(callable->ret);
-            callable_type_drop(&inferred);
-            return ret;
-        }
-
-        case TYPE_UNION:
-        case TYPE_INTERSECTION: {
-            Type ret = type_composite_base(my tag);
-            for_each (i, vec_type, &my composite) {
-                ret = type_composite(
-                    my tag,
-                    ret,
-                    type_call_evaluate_type(i, call)
-                );
-            }
-            return ret;
-        }
-
-        case TYPE_INTERFACE:
-            bool is_callable;
-            InterfaceMember const* overload = interface_select_callable_overload(&my interface, call, &is_callable);
-            if (overload) {
-                return type_call_evaluate_type(&overload->type, call);
-            } else if (is_callable) {
-                Type ret = type_composite_base(TYPE_INTERSECTION);
-                for_each (i, vec_interface_member, &my interface.members) {
-                    if (i->key.tag == INTERFACE_KEY_CALLABLE) {
-                        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i->type.callable->ret));
-                    }
-                }
-                return ret;
-            } else {
-                return type_any;
-            }
-
-        default: break;
-    }
-
-    return type_any;
+    Checker* checker = current_checker;
+    panic_if(!checker, "call without a current checker");
+    return type_new(ty_call_return_type(checker, lower_for_relation(checker, me), call));
 }
 
 void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
-    me = type_resolve(me);
-
-    switch (my tag) {
-        case TYPE_ANY: return;
-
-        case TYPE_CALLABLE: {
-            CallableType inferred = {0};
-            CallableType* callable = my callable;
-
-            if (call->is_extends) {
-                if (!callable->is_constructor) {
-                    break;
-                }
-            } else if (call->uses_new) {
-                if (!callable->is_constructor) {
-                    if (get_error_config()->no_implicit_any) {
-                        error_ctx_error_d(errs, span, 7009,
-                            "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
-                    }
-                } else if (callable->is_abstract_constructor) {
-                    error_ctx_error_d(errs, span, 2511, "Cannot create an instance of an abstract class.");
-                }
-            } else {
-                if (callable->is_constructor) {
-                    error_ctx_error_d(errs, span, 2348,
-                        "Value of type 'typeof Foo' is not callable. Did you mean to include 'new'?");
-                }
-            }
-
-            if (!generic_empty(&callable->generic)) {
-                inferred = generic_infer_callable_types(&callable->generic, callable, &call->args);
-                callable = &inferred;
-            }
-
-            intptr_t call_arg_count = vec_expr_size(&call->args);
-            intptr_t callable_arg_count = vec_callable_arg_size(&callable->args);
-            intptr_t min_args = callable_type_min_arg_count(callable);
-            intptr_t max_args = callable_type_max_arg_count(callable);
-            bool check_types_against_callable = true;
-
-            // TODO: a spread argument stands for an unknown number of arguments, so nothing is checked from it onwards
-            intptr_t first_spread = INTPTR_MAX;
-            for_each (i, vec_expr, &call->args) {
-                if (i->tag == EXPR_SPREAD) {
-                    first_spread = i_index;
-                    break;
-                }
-            }
-
-            if (first_spread != INTPTR_MAX) {
-                // Can't know how many arguments there are
-            } else if (call_arg_count < min_args || call_arg_count > max_args) {
-                check_types_against_callable = false;
-
-                Span span = call->callable.inner_span;
-                if (call_arg_count > max_args) {
-                    span = span_between(
-                        vec_expr_at(&call->args, max_args)->outer_span,
-                        vec_expr_at(&call->args, call_arg_count - 1)->outer_span
-                    );
-                }
-
-                if (max_args == INTPTR_MAX) {
-                    error_ctx_error_d(errs, span, 2555,
-                        "Expected at least ", min_args, " arguments, but got ", call_arg_count, ".");
-                } else if (min_args == max_args) {
-                    error_ctx_error_d(errs, span, 2554,
-                        "Expected ", min_args, " arguments, but got ", call_arg_count, ".");
-                } else {
-                    error_ctx_error_d(errs, span, 2554,
-                        "Expected ", min_args, "-", max_args, " arguments, but got ", call_arg_count, ".");
-                }
-            }
-
-            bool last_arg_rest =
-                check_types_against_callable &&
-                callable_arg_count &&
-                vec_callable_arg_at(&callable->args, callable_arg_count - 1)->source->rest;
-            Span rest_span = span_null;
-            VecTupleElement rest_tuple = {0};
-
-            for_each (i, vec_expr, &call->args) {
-                intptr_t index = i_index;
-                if (index >= first_spread) {
-                    check_types_against_callable = false;
-                    break;
-                }
-                // Don't report errors, errors inside argument expressions are reported elsewhere
-                if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
-                    CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);
-                    if (!check_assignable_or_error_internal(
-                        "Argument of type",
-                        expr_get_type(i),
-                        "parameter of type",
-                        &arg->type,
-                        2345,
-                        i->outer_span,
-                        errs
-                    )) {
-                        check_types_against_callable = false;
-                    }
-                } else if (last_arg_rest) {
-                    rest_span = span_between(rest_span, i->outer_span);
-                    vec_tuple_element_push(&rest_tuple, (TupleElement){
-                        .type = type_refcopy(expr_get_type(i)),
-                    });
-                }
-            }
-
-            if (last_arg_rest) {
-                Type rest_type = type_tuple(rest_tuple, false);
-                if (check_types_against_callable) {
-                    CallableArg* arg = vec_callable_arg_at_mut(&callable->args, callable_arg_count - 1);
-                    check_assignable_or_error_internal(
-                        "Argument of type",
-                        &rest_type,
-                        "parameter of type",
-                        &arg->type,
-                        2345,
-                        span_valid(rest_span) ? rest_span : span,
-                        errs
-                    );
-                }
-                type_drop(&rest_type);
-            }
-
-            callable_type_drop(&inferred);
-        }   return;
-
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &my composite) {
-                type_typecheck_call(i, call, span, errs);
-            };
-            return;
-
-        case TYPE_INTERFACE:
-            bool is_callable;
-            InterfaceMember const* overload = interface_select_callable_overload(&my interface, call, &is_callable);
-            if (overload) {
-                type_typecheck_call(&overload->type, call, span, errs);
-                return;
-            } else if (is_callable) {
-                error_ctx_error_d(errs, call->callable.outer_span, 2769, "No overload matches this call.");
-                return;
-            } else {
-                break;
-            }
-
-        default: break;
-    }
-
-    if (call->is_extends) {
-        error_ctx_error_d(errs, call->callable.outer_span, 2507,
-            "Type '", me, "' is not a constructor function type.");
-    } else {
-        Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2349, "This expression is not callable.");
-        if (my tag == TYPE_INTERFACE) {
-            error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", me, "' has no call signatures.");
-        }
-    }
+    Checker* checker = current_checker;
+    panic_if(!checker, "call without a current checker");
+    ty_call_typecheck(checker, lower_for_relation(checker, me), call, span, errs);
 }

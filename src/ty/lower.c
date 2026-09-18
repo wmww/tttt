@@ -296,7 +296,7 @@ static Ty const* lower_identifier_internal(Checker* me, IdentifierType const* id
             if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
                 // TODO(stage 4a): `this` and a bare `C` inside generic class C are the class's own instantiation
                 // (type arguments = its type parameters), and `this` is really its own type parameter
-                if (identifier->keyword || (!from_legacy && !vec_spanned_type_size(&identifier->generic_params))) {
+                if (identifier->keyword) {
                     if (ctx.generic) return ty_reference(me, declared, declared->declared.type_params);
                 }
                 TyList args = lower_type_args(me, declared->declared.type_params, &identifier->generic_params, ctx, args_buf);
@@ -787,7 +787,26 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         }
 
         case TYPE_INTERFACE:
-            if (node->interface.namespace_scope) return namespace_type(me, node->interface.namespace_scope);
+            if (node->interface.namespace_scope) {
+                Ty const* ret = namespace_type(me, node->interface.namespace_scope);
+                // A namespace merged with a class or function: the legacy checker merged their members into this
+                // node, and the namespace scope alone doesn't know the signatures. HACK(stage 4b3): namespaces are
+                // still legacy; take the members of the merged node, by structure since it may be a temporary
+                bool has_signatures = false;
+                for_each (i, vec_interface_member, &node->interface.members) {
+                    has_signatures |= i->key.tag == INTERFACE_KEY_CALLABLE;
+                }
+                TyObjectState* state = ret->declared.state;
+                if (has_signatures && state->members_state == LAZY_STATE_NOT_STARTED) {
+                    state->members_state = LAZY_STATE_IN_FLIGHT;
+                    Interface copy = node->interface;
+                    copy.namespace_scope = nullptr;
+                    Type unnamed = { .tag = TYPE_INTERFACE, .interface = copy };
+                    state->members = ty_members(me, ty_structural_from_legacy(me, &unnamed, (LowerCtx){ .transient = true }));
+                    state->members_state = LAZY_STATE_DONE;
+                }
+                return ret;
+            }
             return ty_anonymous_from_node(me, node, ctx, alias, alias_args);
 
         case TYPE_CALLABLE:

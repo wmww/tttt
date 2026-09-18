@@ -304,6 +304,33 @@ Details in `measurements.md`, shortcuts in `hacks.md` ("Legacy code consuming th
   properties were read as `T & undefined`; atoms clustered in their hash table (+70% typecheck time on the bench until
   the hash got a finalizer - `hmap_arc_declaration` lookups may have the same problem, see triage).
 
+**Stage 4b1 - DONE (2026-09-18).** 1120 full / errors 4648 / symbols 5979 / types 2186 (from 1115 / 4590 / 5974 / 2183),
+suite 4.5 s, `log_error` lines 4.6k -> 2.2k, bench typecheck unchanged (118 ms), valgrind clean on 233 tests. Details in
+`measurements.md`, shortcuts in `hacks.md` ("Calls, inference and property access on the new core"), overview in
+`documentation.md`. What 4b2/4b3 should know:
+- **The `TYPE_NEW` seam for calls held, no merge with 4b3 needed.** `ty/call.c` (resolution, overloads, arity, spread and
+  rest, TS2769 reporting), `ty/infer.c` (one inference walker shared with conditional types: co/contravariant
+  candidates, priorities, top-level tracking, tsc's result rules) and `ty/access.c` (property/element access through
+  apparent types) replace `type_call_evaluate_type`, `type_typecheck_call`, `generic_infer_callable_types`,
+  `collect_generic_candidates`, `interface_select_callable_overload` and `index_type_evaluate_type`. The
+  `inference_gave_up -> any` mitigation is gone with them. The legacy `index_type_evaluate_type_internal` and
+  `type_all_keys` stay for the legacy type operators until 4b2; `index_type_typecheck` (TS2339) is still legacy too:
+  making it honest is cheap now (`ty_access` returning null = no such property) but floods until narrowing and
+  apparent types of everything are right, so it was left alone.
+- What replaced the blanket mitigation is one narrow one: object/array literal arguments only need to be *comparable*
+  (`Arg.widened_without_context`), because the legacy checker widens their literals with no contextual type. 39 error
+  components were lost anyway, nearly all for missing contextual typing (callback parameters, literal freshness,
+  tuple context) - 4b3 should expect them back and treat `Arg.context_sensitive`, `InferParam.fixed` and
+  `infer_type_arguments(..., fixed)` as the hooks for the second inference pass.
+- Bugs found in earlier stages on the way: `infer X` parameters that got no candidate were never replaced, so
+  `Awaited<unknown>`-like conditionals stayed deferred forever; inherited call signatures replaced instead of joined
+  the type's own; `this` parameters counted as arguments; structural (transient) object types were always flagged as
+  containing type variables, which kept `keyof {a, b}` deferred; a class merged with a namespace had no construct
+  signatures; instantiated generic signatures expose uninstantiated constraints (`instantiate_outer` works around it,
+  the real fix is fresh type parameters per instantiated signature in `signature_resolve`).
+- 4b2 note: `ty_access` and `try_resolve_indexed` (checker.c) now overlap. When indexed access *types* move to the new
+  core, make `try_resolve_indexed` call `ty_access` for the non-generic case instead of keeping two lookups.
+
 **Stage 4b - split in three (insights, 2026-09-18).** 4a showed flips are cheap when done one kind of thing at a
 time, and that the pain is wherever a *weak legacy algorithm* meets precise `Ty` inputs. So 4b is three sessions, each
 leaving the suite runnable and pass counts at or above the previous session's:

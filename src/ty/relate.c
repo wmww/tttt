@@ -391,12 +391,6 @@ static Ty const* tuple_as_array(Checker* me, Ty const* tuple) {
     return ty_array(me, element, shape->readonly);
 }
 
-typedef struct FoundProp {
-    Ty const* type;
-    u32 flags;
-    bool found;
-} FoundProp;
-
 static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
@@ -437,9 +431,17 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
     return ret;
 }
 
+FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0); }
+Ty const* ty_apparent_type(Checker* me, Ty const* ty) { return apparent_type(me, ty); }
+bool ty_is_tuple(Ty const* ty) { return is_tuple(ty); }
+bool ty_is_array(Checker* me, Ty const* ty) { return ty->kind == TY_REFERENCE && is_array_target(me, ty->reference.target); }
+
 // Signatures
 
-static Ty const* rest_element_type(Checker* me, Ty const* rest) {
+Ty const* ty_rest_element_type(Checker* me, Ty const* rest);
+static Ty const* rest_element_type(Checker* me, Ty const* rest) { return ty_rest_element_type(me, rest); }
+
+Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
     if (rest->kind == TY_REFERENCE && is_array_target(me, rest->reference.target)) {
         return ty_reference_args(me, rest).data[0];
     }
@@ -894,6 +896,13 @@ static Variances const* get_variances(Checker* me, Ty const* target) {
         cstr_drop(&name);
     }
     return variances;
+}
+
+bool ty_type_param_is_contravariant(Checker* me, Ty const* target, u32 index) {
+    if (target->kind != TY_DECLARED || index >= target->declared.type_params.len) return false;
+    Variances const* variances = get_variances(me, target);
+    if (!variances || index >= variances->len) return false;
+    return (variances->data[index] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_CONTRAVARIANT;
 }
 
 // Returns TERNARY_MAYBE + *unknown when the variances can't decide

@@ -2,6 +2,25 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 4b1 (calls, inference and property access on `Ty`)
+Suite: **1120 full (1115), errors 4648 (4590), symbols 5979 (5974), types 2186 (2183)**; suite wall 4.5 s (4.3 s).
+- `log_error` lines 4 606 -> 2 169: the legacy "inferring types of generic with ... not yet implemented" family is gone
+  with the code. What's left is mostly invalid-span errors and namespace merging (`failstats.py` lists them).
+- Components: errors +94 / -39, symbols +7 / -2, types +14 / -11; 4 full passes lost (`classDeclaredBeforeClassFactory`,
+  `classExtendingQualifiedName2`, `sourcemapValidationDuplicateNames`, `emitClassDeclarationWithPropertyAccessInHeritageClause1`:
+  all print `typeof X` / `M.X` where tsc prints a local or qualified name differently: symbol accessibility, plan 03).
+  The 39 lost error components are nearly all "inference is real now, contextual typing isn't": object/array literal
+  arguments whose literals the legacy checker already widened, callbacks whose parameters are `any` instead of
+  contextually typed, type predicates (`x is T`, not represented in the AST at all), reverse mapped types. Of the four
+  4a losses named below, `typeParameterLeak` and `addMoreCallSignaturesToBaseSignature*` are back; `arrayFind` needs
+  type predicates, `correctOrderOfPromiseMethod` mapped types over tuples + tuple contextual typing,
+  `objectFreezeLiteralsDontWiden` const-context inference.
+- Bench: typecheck phase 118 ms (116-122 before), total 0.58-0.60 s, RSS 843 MB. No call resolution cache yet: a call
+  is resolved once for its type and once for its errors.
+- valgrind clean on ~380 tests (genericCall*, overload*, functionCall*, typeArgumentInference*, spread*, restParam*,
+  propertyAccess*, inferT*, arrayF*, promise[A-P]*, classExtend*, clodule*, conditionalType[A-C]*, infer[A-S]*,
+  mappedType[A-C]*).
+
 ## 2026-09-18, type core stage 4a (classes, interfaces, enums evaluate to `Ty`)
 Suite: **1115 full (1100), errors 4590 (4553), symbols 5974 (5939), types 2183 (2149)**; suite wall **4.3 s (5.6 s)**.
 - `log_error` lines 7 590 -> 4 606. The legacy generic inference "not yet implemented" family is 2.9k of what's left.

@@ -43,5 +43,4 @@ void generic_add_names(Generic const* me, Scope* scope);
 void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs);
 void replace_named_types_with(Type* t, VecTypeRefinement const* refinements);
 Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* generic_params);
-CallableType generic_infer_callable_types(Generic const* me, CallableType* callable, VecExpr const* args);
 void generic_typecheck(Generic const* me, ErrorCtx* errs);

@@ -271,7 +271,7 @@ const baselines = {
         types: true,
     },
     'accessOverriddenBaseClassMember1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -361,12 +361,12 @@ const baselines = {
         types: false,
     },
     'addMoreCallSignaturesToBaseSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'addMoreCallSignaturesToBaseSignature2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -861,7 +861,7 @@ const baselines = {
         types: false,
     },
     'anonymousClassDeclarationDoesntPrintWithReadonly': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -2301,7 +2301,7 @@ const baselines = {
         types: true,
     },
     'baseTypeWrappingInstantiationChain': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2763,7 +2763,7 @@ const baselines = {
     'callOnClass': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callOnInstance': {
         errors: false,
@@ -2841,12 +2841,12 @@ const baselines = {
         types: true,
     },
     'captureSuperPropertyAccessInSuperCall01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'captureThisInSuperCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3271,7 +3271,7 @@ const baselines = {
         types: false,
     },
     'checkSuperCallBeforeThisAccessing7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3341,7 +3341,7 @@ const baselines = {
         types: false,
     },
     'circularContextualMappedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -3498,7 +3498,7 @@ const baselines = {
     'classDeclaredBeforeClassFactory': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'classExpressionAssignment': {
         errors: false,
@@ -3603,7 +3603,7 @@ const baselines = {
     'classExtendingQualifiedName2': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'classExtendsAcrossFiles': {
         errors: true,
@@ -3773,7 +3773,7 @@ const baselines = {
     'classInConvertedLoopES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classIndexer': {
         errors: true,
@@ -4028,7 +4028,7 @@ const baselines = {
     'cloduleStaticMembers': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'cloduleTest1': {
         errors: false,
@@ -4076,7 +4076,7 @@ const baselines = {
         types: false,
     },
     'coAndContraVariantInferences2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -4111,7 +4111,7 @@ const baselines = {
         types: false,
     },
     'collectionPatternNoError': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -4516,7 +4516,7 @@ const baselines = {
         types: false,
     },
     'commentEmitOnParenthesizedAssertionInReturnStatement2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4871,12 +4871,12 @@ const baselines = {
         types: false,
     },
     'commentsInheritance': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'commentsInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5326,7 +5326,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypeBasedContextualTypeReturnTypeWidening': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -5356,7 +5356,7 @@ const baselines = {
         types: false,
     },
     'conditionalTypeRelaxingConstraintAssignability': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -5663,7 +5663,7 @@ const baselines = {
     'constIndexedAccess': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constWithNonNull': {
         errors: false,
@@ -5736,7 +5736,7 @@ const baselines = {
         types: false,
     },
     'constructorArgs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6096,7 +6096,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeSelfReferencing': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -6206,7 +6206,7 @@ const baselines = {
         types: false,
     },
     'contextualTyping24': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6401,12 +6401,12 @@ const baselines = {
         types: false,
     },
     'contextualTypingOfTooShortOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'contextualTypingReturnStatementWithReturnTypeAnnotation': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -6446,7 +6446,7 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedBooleanLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6616,7 +6616,7 @@ const baselines = {
         types: false,
     },
     'contravariantOnlyInferenceFromAnnotatedFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6946,7 +6946,7 @@ const baselines = {
         types: false,
     },
     'customEventDetail': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -8143,7 +8143,7 @@ const baselines = {
     'declarationEmitNameConflicts3': {
         errors: false,
         symbols: false,
-        types: true,
+        types: false,
     },
     'declarationEmitNameConflictsWithAlias': {
         errors: true,
@@ -8721,7 +8721,7 @@ const baselines = {
         types: false,
     },
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9188,7 +9188,7 @@ const baselines = {
     'deleteReadonlyInStrictNullChecks': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'dependencyViaImportAlias': {
         errors: false,
@@ -9231,7 +9231,7 @@ const baselines = {
         types: true,
     },
     'derivedClassConstructorWithExplicitReturns01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9763,7 +9763,7 @@ const baselines = {
     'dottedNamesInSystem': {
         errors: true,
         symbols: false,
-        types: true,
+        types: false,
     },
     'dottedSymbolResolution1': {
         errors: true,
@@ -10758,7 +10758,7 @@ const baselines = {
     'enumWithComputedMember': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumWithExport': {
         errors: false,
@@ -11366,7 +11366,7 @@ const baselines = {
         types: true,
     },
     'es6ClassSuperCodegenBug': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12831,7 +12831,7 @@ const baselines = {
         types: true,
     },
     'extendGenericArray': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13128,7 +13128,7 @@ const baselines = {
     'fillInMissingTypeArgsOnConstructCalls': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fillInMissingTypeArgsOnJSConstructCalls': {
         errors: false,
@@ -13151,7 +13151,7 @@ const baselines = {
         types: false,
     },
     'fixTypeParameterInSignatureWithRestParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -13307,7 +13307,7 @@ const baselines = {
     },
     'freshLiteralInference': {
         errors: true,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'freshLiteralTypesInIntersections': {
@@ -13376,7 +13376,7 @@ const baselines = {
         types: false,
     },
     'functionCall10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14126,7 +14126,7 @@ const baselines = {
         types: false,
     },
     'genericArrayMethods1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14381,7 +14381,7 @@ const baselines = {
         types: false,
     },
     'genericContextualTypingSpecialization': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -14461,7 +14461,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionsAndConditionalInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14491,7 +14491,7 @@ const baselines = {
         types: false,
     },
     'genericFunduleInModule2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -14536,7 +14536,7 @@ const baselines = {
         types: false,
     },
     'genericInference2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -14691,7 +14691,7 @@ const baselines = {
         types: false,
     },
     'genericRestArgs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15131,7 +15131,7 @@ const baselines = {
         types: false,
     },
     'homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -16116,7 +16116,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessCanBeHighOrder': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16326,7 +16326,7 @@ const baselines = {
         types: false,
     },
     'inferStringLiteralUnionForBindingElement': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -16497,7 +16497,7 @@ const baselines = {
     },
     'inferentialTypingWithFunctionTypeZip': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferentialTypingWithObjectLiteralProperties': {
@@ -16541,12 +16541,12 @@ const baselines = {
         types: false,
     },
     'inferringAnyFunctionType1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
     'inferringAnyFunctionType2': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -16567,7 +16567,7 @@ const baselines = {
     },
     'inferringReturnTypeFromConstructSignatureGeneric': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'infiniteConstraints': {
@@ -16816,7 +16816,7 @@ const baselines = {
         types: false,
     },
     'inheritedConstructorWithRestParams': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -16833,7 +16833,7 @@ const baselines = {
     'inheritedGenericCallSignature': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inheritedMembersAndIndexSignaturesFromDifferentBases': {
         errors: false,
@@ -16966,7 +16966,7 @@ const baselines = {
         types: false,
     },
     'innerTypeArgumentInference': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -18937,7 +18937,7 @@ const baselines = {
     },
     'keyofIsLiteralContexualType': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'keyofModuleObjectHasCorrectKeys': {
@@ -19281,7 +19281,7 @@ const baselines = {
         types: false,
     },
     'lift': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19416,7 +19416,7 @@ const baselines = {
         types: false,
     },
     'mappedToToIndexSignatureInference': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -19496,7 +19496,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeNestedGenericInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19586,7 +19586,7 @@ const baselines = {
         types: false,
     },
     'maxConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19961,7 +19961,7 @@ const baselines = {
         types: false,
     },
     'mixinIntersectionIsValidbaseType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -21596,7 +21596,7 @@ const baselines = {
         types: false,
     },
     'nestedGenericSpreadInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22601,7 +22601,7 @@ const baselines = {
         types: false,
     },
     'nonnullAssertionPropegatesContextualType': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -22678,7 +22678,7 @@ const baselines = {
     'numericIndexExpressions': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'numericIndexerConstraint': {
         errors: false,
@@ -22711,14 +22711,14 @@ const baselines = {
         types: false,
     },
     'numericIndexerTyping1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericIndexerTyping2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericLiteralsWithTrailingDecimalPoints01': {
         errors: false,
@@ -23016,7 +23016,7 @@ const baselines = {
         types: true,
     },
     'observableInferenceCanBeMade': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -24246,7 +24246,7 @@ const baselines = {
         types: true,
     },
     'primitiveUnionDetection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24651,7 +24651,7 @@ const baselines = {
         types: false,
     },
     'propTypeValidatorInference': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -25256,7 +25256,7 @@ const baselines = {
         types: false,
     },
     'recursiveGenericMethodCall': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -25371,7 +25371,7 @@ const baselines = {
         types: false,
     },
     'recursiveReverseMappedType': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -25401,7 +25401,7 @@ const baselines = {
         types: true,
     },
     'recursiveTypeAliasWithSpreadConditionalReturnNotCircular': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25446,7 +25446,7 @@ const baselines = {
         types: true,
     },
     'recursiveUnionTypeInference': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -25456,7 +25456,7 @@ const baselines = {
         types: true,
     },
     'recursivelySpecializedConstructorDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26071,7 +26071,7 @@ const baselines = {
         types: false,
     },
     'returnInfiniteIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26121,7 +26121,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedContravariantInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26141,7 +26141,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedTupleContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26161,12 +26161,12 @@ const baselines = {
         types: false,
     },
     'reverseMappedTypeDeepDeclarationEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'reverseMappedTypeInferenceSameSource1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26541,7 +26541,7 @@ const baselines = {
         types: false,
     },
     'simplifyingConditionalWithInteriorConditionalIsRelated': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27033,7 +27033,7 @@ const baselines = {
     'sourcemapValidationDuplicateNames': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'spaceBeforeQuestionMarkInPropertyAssignment': {
         errors: false,
@@ -27071,7 +27071,7 @@ const baselines = {
         types: false,
     },
     'specializedInheritedConstructors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27086,7 +27086,7 @@ const baselines = {
         types: false,
     },
     'specializedSignatureAsCallbackParameter1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27343,7 +27343,7 @@ const baselines = {
     'staticMemberWithStringAndNumberNames': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'staticMethodReferencingTypeArgument1': {
         errors: false,
@@ -27441,7 +27441,7 @@ const baselines = {
         types: false,
     },
     'strictFunctionTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27716,7 +27716,7 @@ const baselines = {
         types: false,
     },
     'substitutionTypesInIndexedAccessTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27846,7 +27846,7 @@ const baselines = {
         types: false,
     },
     'superCallWithCommentEmit01': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28751,7 +28751,7 @@ const baselines = {
         types: false,
     },
     'topFunctionTypeNotCallable': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -29036,12 +29036,12 @@ const baselines = {
         types: false,
     },
     'typeArgInference2WithError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'typeArgInferenceWithNull': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -29067,7 +29067,7 @@ const baselines = {
     },
     'typeArgumentInferenceOrdering': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeArgumentInferenceWithConstraintAsCommonRoot': {
@@ -29196,12 +29196,12 @@ const baselines = {
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty11': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty12': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -29551,7 +29551,7 @@ const baselines = {
         types: true,
     },
     'typeParameterLeak': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29641,7 +29641,7 @@ const baselines = {
         types: false,
     },
     'typePredicateWithThisParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30121,7 +30121,7 @@ const baselines = {
         types: true,
     },
     'underscoreMapFirst': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -30256,7 +30256,7 @@ const baselines = {
         types: true,
     },
     'unionTypeParameterInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31276,7 +31276,7 @@ const baselines = {
         types: false,
     },
     'validUseOfThisInSuper': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31306,7 +31306,7 @@ const baselines = {
         types: false,
     },
     'varArgsOnConstructorTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31531,12 +31531,12 @@ const baselines = {
         types: true,
     },
     'widenToAny1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'widenToAny2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32806,7 +32806,7 @@ const baselines = {
         types: false,
     },
     'classAbstractInstantiations1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33011,7 +33011,7 @@ const baselines = {
         types: false,
     },
     'constructorFunctionTypeIsAssignableToBaseType2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33323,7 +33323,7 @@ const baselines = {
     'classWithoutExplicitConstructor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassWithoutExplicitConstructor': {
         errors: false,
@@ -33381,7 +33381,7 @@ const baselines = {
         types: false,
     },
     'classConstructorParametersAccessibility3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33578,12 +33578,12 @@ const baselines = {
     'privateStaticNotAccessibleInClodule': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'privateStaticNotAccessibleInClodule2': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'protectedClassPropertyAccessibleWithinClass': {
         errors: true,
@@ -33638,7 +33638,7 @@ const baselines = {
     'protectedStaticNotAccessibleInClodule': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'genericSetterInClassType': {
         errors: true,
@@ -33701,7 +33701,7 @@ const baselines = {
         types: false,
     },
     'derivedClassIncludesInheritedMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33716,12 +33716,12 @@ const baselines = {
         types: false,
     },
     'derivedClassOverridesProtectedMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'derivedClassOverridesProtectedMembers2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33736,7 +33736,7 @@ const baselines = {
         types: false,
     },
     'derivedClassOverridesPublicMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34556,7 +34556,7 @@ const baselines = {
         types: false,
     },
     'mixinClassesAnonymous': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35161,7 +35161,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccessNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -36358,7 +36358,7 @@ const baselines = {
     'enumConstantMemberWithTemplateLiteralsEmitDeclaration': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumConstantMembers': {
         errors: false,
@@ -36621,7 +36621,7 @@ const baselines = {
         types: false,
     },
     'intlDateTimeFormatRangeES2021': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37153,7 +37153,7 @@ const baselines = {
     'symbolType16': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolType17': {
         errors: true,
@@ -37533,7 +37533,7 @@ const baselines = {
     'emitClassDeclarationWithPropertyAccessInHeritageClause1': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'emitClassDeclarationWithPropertyAssignmentInES6': {
         errors: true,
@@ -37576,12 +37576,12 @@ const baselines = {
         types: false,
     },
     'superCallBeforeThisAccessing1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superCallBeforeThisAccessing2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37611,7 +37611,7 @@ const baselines = {
         types: false,
     },
     'superCallBeforeThisAccessing8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37772,12 +37772,12 @@ const baselines = {
     },
     'computedPropertyNames21_ES5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames21_ES6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames22_ES5': {
@@ -38236,12 +38236,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNamesContextualType7_ES5': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
     'computedPropertyNamesContextualType7_ES6': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -39211,7 +39211,7 @@ const baselines = {
         types: true,
     },
     'for-of11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -40231,12 +40231,12 @@ const baselines = {
         types: false,
     },
     'taggedTemplateStringsWithManyCallAndMemberExpressions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'taggedTemplateStringsWithManyCallAndMemberExpressionsES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43336,7 +43336,7 @@ const baselines = {
         types: false,
     },
     'superCallParameterContextualTyping1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43346,7 +43346,7 @@ const baselines = {
         types: false,
     },
     'superCallParameterContextualTyping3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43391,7 +43391,7 @@ const baselines = {
         types: false,
     },
     'callWithSpread2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -43551,7 +43551,7 @@ const baselines = {
         types: false,
     },
     'newOperatorErrorCases_noImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -43686,7 +43686,7 @@ const baselines = {
         types: false,
     },
     'callChainInference': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -43951,7 +43951,7 @@ const baselines = {
         types: false,
     },
     'typeGuardFunctionGenerics': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -46116,7 +46116,7 @@ const baselines = {
         types: true,
     },
     'twoMergedInterfacesWithDifferingOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46673,7 +46673,7 @@ const baselines = {
     'asiPreventsParsingAsNamespace05': {
         errors: true,
         symbols: false,
-        types: true,
+        types: false,
     },
     'instantiatedModule': {
         errors: false,
@@ -46911,7 +46911,7 @@ const baselines = {
         types: false,
     },
     'checkJsdocTypeTagOnObjectProperty1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47006,7 +47006,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsClasses': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47346,7 +47346,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsSubclassWithExplicitNoArgumentConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54581,7 +54581,7 @@ const baselines = {
         types: true,
     },
     'everyTypeWithAnnotationAndInitializer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54591,7 +54591,7 @@ const baselines = {
         types: false,
     },
     'everyTypeWithInitializer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55456,7 +55456,7 @@ const baselines = {
         types: true,
     },
     'forStatements': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55526,7 +55526,7 @@ const baselines = {
         types: undefined,
     },
     'returnStatements': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -55746,7 +55746,7 @@ const baselines = {
         types: false,
     },
     'partiallyAnnotatedFunctionInferenceError': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -55906,7 +55906,7 @@ const baselines = {
         types: false,
     },
     'intersectionTypeInference2': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -55916,7 +55916,7 @@ const baselines = {
         types: false,
     },
     'intersectionTypeMembers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56311,7 +56311,7 @@ const baselines = {
         types: false,
     },
     'mappedTypes3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57061,7 +57061,7 @@ const baselines = {
         types: false,
     },
     'stringPropertyAccessWithError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57546,7 +57546,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypesAsTypeParameterConstraint02': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -57791,7 +57791,7 @@ const baselines = {
         types: false,
     },
     'thisTypeSyntacticContext': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57941,7 +57941,7 @@ const baselines = {
         types: false,
     },
     'wideningTuples1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -58086,7 +58086,7 @@ const baselines = {
         types: false,
     },
     'functionConstraintSatisfaction': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -58161,7 +58161,7 @@ const baselines = {
         types: false,
     },
     'wrappedAndRecursiveConstraints4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -58182,12 +58182,12 @@ const baselines = {
     },
     'propertyAccessOnTypeParameterWithConstraints': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyAccessOnTypeParameterWithConstraints2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyAccessOnTypeParameterWithConstraints3': {
@@ -59326,7 +59326,7 @@ const baselines = {
         types: false,
     },
     'discriminatedUnionInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -59356,7 +59356,7 @@ const baselines = {
         types: false,
     },
     'genericCallWithConstructorTypedArguments5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -59386,7 +59386,7 @@ const baselines = {
         types: false,
     },
     'genericCallWithGenericSignatureArguments': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -59466,7 +59466,7 @@ const baselines = {
         types: false,
     },
     'genericCallWithOverloadedConstructorTypedArguments': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -59506,12 +59506,12 @@ const baselines = {
         types: false,
     },
     'genericContextualTypes2': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
     'genericContextualTypes3': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -59536,7 +59536,7 @@ const baselines = {
         types: false,
     },
     'keyofInferenceLowerPriorityThanReturn': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },

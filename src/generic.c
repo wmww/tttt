@@ -51,85 +51,6 @@ void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs) 
     }
 }
 
-// Set when inference ran into a shape it can't infer through yet
-static thread_local bool inference_gave_up;
-
-static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeRefinement* results) {
-    arg = type_resolve(arg);
-    me  = type_resolve_until_identifier(me);
-
-    switch (my tag) {
-        case TYPE_ANY:
-        case TYPE_UNKNOWN:
-        case TYPE_NEVER:
-        case TYPE_VOID:
-        case TYPE_BOOLEAN:
-        case TYPE_NUMBER:
-        case TYPE_STRING:
-        case TYPE_VALUE:
-        case TYPE_SYMBOL:
-        case TYPE_BIGINT:
-            return;
-
-        case TYPE_IDENTIFIER: {
-            bool is_type_param = false;
-            if (my identifier->decl_ref) {
-                for_each (i, vec_type_refinement, results) {
-                    if (i->target == my identifier->decl_ref) {
-                        i->refined = arg;
-                        is_type_param = true;
-                        break;
-                    }
-                }
-            }
-            // A named type that isn't one of the type parameters (`Box<T>`) would have to be inferred through
-            if (!is_type_param && vec_spanned_type_size(&my identifier->generic_params)) inference_gave_up = true;
-            return;
-        }
-
-        case TYPE_CALLABLE:
-            log_error("inferring types of generic with callable not yet implemented");
-            inference_gave_up = true;
-            return;
-
-        case TYPE_INTERFACE:
-            log_error("inferring types of generic with interface not yet implemented");
-            inference_gave_up = true;
-            return;
-
-        case TYPE_ARRAY:
-            log_error("inferring types of generic with array not yet implemented");
-            inference_gave_up = true;
-            return;
-
-        case TYPE_TUPLE:
-            log_error("inferring types of generic with tuple not yet implemented");
-            inference_gave_up = true;
-            return;
-
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            log_error("inferring types of generic with union/intersection not yet implemented");
-            inference_gave_up = true;
-            return;
-
-        case TYPE_INFERRED:
-        case TYPE_INDEXED:
-        case TYPE_KEYOF:
-        case TYPE_TYPEOF:
-        case TYPE_TERNARY:
-        case TYPE_NEW:
-            // A named type of the new core that isn't simply a type parameter (`Box<T>`, `T[]`): not inferred through
-            if (type_new_ty(current_checker, me)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) inference_gave_up = true;
-            return;
-
-        case TYPE_LAZY:
-        case TYPE_REF:
-            panic("Type with tag ", (i32)my tag, " should have been resolved away");
-    }
-    impossible;
-}
-
 static inline void generic_replace_named_types_with(Generic* me, VecTypeRefinement const* refinements) {
     for_each (i, vec_generic_item, &my items) {
         // Is this needed?
@@ -285,49 +206,6 @@ Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* 
     replace_named_types_with(&t, &refinements);
     vec_type_refinement_drop(&refinements);
     return t;
-}
-
-CallableType generic_infer_callable_types(Generic const* me, CallableType* callable, VecExpr const* args) {
-    int call_arg_count = vec_expr_size(args);
-    int callable_arg_count = vec_callable_arg_size(&callable->args);
-    VecTypeRefinement refinements = {0};
-    for_each (i, vec_generic_item, &my items) {
-        if (i->declaration_ref) {
-            vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i->declaration_ref,
-                .refined = &type_unknown,
-            });
-        } else {
-            log_error("Generic ", i->name, " type is null");
-        }
-    }
-    VecType arg_types = {0};
-    for_each (i, vec_expr, args) {
-        vec_type_push(&arg_types, type_refcopy(expr_get_type(i)));
-    }
-    inference_gave_up = false;
-    for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
-        collect_generic_candidates(
-            &vec_callable_arg_at_mut(&callable->args, i)->type,
-            vec_type_at(&arg_types, i),
-            &refinements
-        );
-    }
-    if (inference_gave_up) {
-        // HACK: `unknown` is what tsc infers when there's nothing to infer from, not when it can't. Until inference
-        // is real, a type parameter it gave up on is `any`, which doesn't cascade into errors
-        for_each (i, vec_type_refinement, &refinements) {
-            if (i->refined == &type_unknown) i->refined = &type_any;
-        }
-    }
-
-    CallableType ret = callable_type_clone(*callable);
-    callable_replace_named_types_with(&ret, &refinements);
-
-    vec_type_refinement_drop(&refinements);
-    vec_type_drop(&arg_types);
-
-    return ret;
 }
 
 void generic_typecheck(Generic const* me, ErrorCtx* errs) {

@@ -225,13 +225,10 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
             builder_push(builder, props, members->props[i]);
         }
     }
-    // Signatures and index signatures are inherited unless the derived type declares its own
-    if (!builder->call_count) {
-        for (u32 i = 0; i < members->call_count; i++) builder_push(builder, call, members->call[i]);
-    }
-    if (!builder->construct_count) {
-        for (u32 i = 0; i < members->construct_count; i++) builder_push(builder, construct, members->construct[i]);
-    }
+    // Signatures of the bases come after the type's own (they're overloads of each other). An index signature is
+    // inherited unless the derived type declares its own
+    for (u32 i = 0; i < members->call_count; i++) builder_push(builder, call, members->call[i]);
+    for (u32 i = 0; i < members->construct_count; i++) builder_push(builder, construct, members->construct[i]);
     for (u32 i = 0; i < members->index_count; i++) {
         bool has_own = false;
         for (u32 j = 0; j < builder->index_count; j++) has_own |= builder->index[j].key == members->index[i].key;
@@ -887,6 +884,12 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             if (param->optional || param->rest) counting_required = false;
             if (counting_required) sig->min_args++;
         }
+        if (count && params[0].name == checker_atom(me, c_sv("this")) && vec_callable_arg_front(&node->args)->source) {
+            // `this: T` is about how the function is called, not an argument. TODO: check the receiver against it
+            if (sig->min_args && !params[0].optional) sig->min_args--;
+            params++;
+            count--;
+        }
         sig->params = params;
         sig->param_count = count;
         sig->ret_node = &node->ret;
@@ -1010,6 +1013,12 @@ static Signature* structural_signature(Checker* me, CallableType const* node, Lo
         words_push(words, (u64)param->optional | (u64)param->rest << 1);
         words_push(words, param->type->id);
     }
+    if (count && params[0].name == checker_atom(me, c_sv("this")) && vec_callable_arg_front(&node->args)->source) {
+        // `this: T` isn't an argument, see signature_resolve()
+        if (sig->min_args && !params[0].optional) sig->min_args--;
+        params++;
+        count--;
+    }
     sig->params = params;
     sig->param_count = count;
     DetachedType ret = detach_type(me, &node->ret, ctx, words);
@@ -1041,6 +1050,7 @@ Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx)
     WordBuf words = {0};
     words_push(&words, KEY_STRUCTURAL);
     u32 flags = TYF_OBJECT;
+    bool fully_lowered = node->tag != TYPE_CALLABLE;
     if (node->tag == TYPE_CALLABLE) {
         structural_add_callable(me, &builder, node, ctx, &words);
     } else {
@@ -1077,13 +1087,20 @@ Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx)
                     if (is_method) prop->flags |= PROP_METHOD;
                     prop->ctx = ctx;
                     prop->ctx.method = is_method;
+                    // Where it was declared is part of the identity: two object literals of one shape are different
+                    // types to the symbols baseline
+                    prop->name_span = i->key.span;
+                    prop->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
+                    prop_add_decl_spans(me, prop, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     words_push(&words, 1);
                     words_push(&words, (u64)(uintptr_t)name);
                     words_push(&words, prop->flags);
+                    words_push(&words, (u64)(uintptr_t)i->key.span.sv.buf);
                     DetachedType type = detach_type(me, &i->type, prop->ctx, &words);
                     if (type.stable) {
                         prop->node = type.stable;
                         prop->ctx.transient = false;
+                        fully_lowered = false;
                     } else {
                         prop->type = type.type;
                         prop->type_state = LAZY_STATE_DONE;
@@ -1138,12 +1155,14 @@ Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx)
 
                 case INTERFACE_KEY_CALLABLE:
                     structural_add_callable(me, &builder, &i->type, ctx, &words);
+                    fully_lowered = false;
                     break;
             }
         }
     }
-    // What isn't lowered yet, and everything inside signatures, could mention type parameters
-    if (ctx.generic) flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
+    // What isn't lowered yet, and everything inside signatures, could mention type parameters. If every part was
+    // lowered right away the flags say it all
+    if (ctx.generic && !fully_lowered) flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
 
     Ty const* ret = intern_get(&my links, words.data, words.len);
     if (ret) {

@@ -551,6 +551,18 @@ Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false
 );
 
+// access.c
+// The type of `object[index]` (and `object.name`, the index being the name as a literal). Null if there's no such
+// property or the index isn't one that can be looked up
+Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
+
+// call.c
+Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call);
+void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Span call_span, ErrorCtx* errs);
+Ty const* ty_awaited(Checker* me, Ty const* ty);
+// type.c: the legacy error head with the new core's elaboration. `legacy_source` may be null
+void type_report_unfit_argument(Type const* legacy_source, Ty const* source, Ty const* target, Span span, ErrorCtx* errs);
+
 // ty_display.c
 // The old display's `underline` mode underlines a type's whole rendering, so the `.types` traversal can do that from
 // the string length when it switches over (stage 4); no display mode needed here.
