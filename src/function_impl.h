@@ -32,6 +32,9 @@ typedef struct FunctionImpl {
     bool ret_explicit;
     Type ret;
     bool is_constructor;
+    bool is_async;
+    bool is_generator;
+    Declaration const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
     LazyType lazy_type;
     bool evaluating_ret;

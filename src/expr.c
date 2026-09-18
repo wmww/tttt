@@ -199,6 +199,16 @@ void expr_drop(Expr* me) {
             expr_drop(my spread);
             free(my spread);
             break;
+
+        case EXPR_TEMPLATE:
+            if (my template_->tag) {
+                expr_drop(my template_->tag);
+                free(my template_->tag);
+            }
+            vec_expr_drop(&my template_->substitutions);
+            cstr_drop(&my template_->plain_string);
+            free(my template_);
+            break;
     }
     lazy_type_drop(&my lazy_type);
 }
@@ -285,6 +295,15 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_SPREAD:
             expr_lookup_names(my spread, names, errs);
+            break;
+
+        case EXPR_TEMPLATE:
+            if (my template_->tag) {
+                expr_lookup_names(my template_->tag, names, errs);
+            }
+            for_each (i, vec_expr, &my template_->substitutions) {
+                expr_lookup_names(i, names, errs);
+            }
             break;
     }
 }
@@ -530,6 +549,20 @@ static void binary_op_typecheck(
     }
 }
 
+// The type `await` gives for a value of the given type
+// TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables. Should be the lib's Awaited<T>
+static Type type_awaited(Type const* type) {
+    Type const* resolved = type_resolve_until_identifier(type);
+    if (resolved->tag == TYPE_IDENTIFIER &&
+        vec_span_is_empty(&resolved->identifier->namespaces) &&
+        vec_spanned_type_size(&resolved->identifier->generic_params) == 1 &&
+        (span_equals(resolved->identifier->name, "Promise") || span_equals(resolved->identifier->name, "PromiseLike"))
+    ) {
+        return type_awaited(&vec_spanned_type_front(&resolved->identifier->generic_params)->type);
+    }
+    return type_clone(*type);
+}
+
 static Type unary_op_evaluate_type(
     UnaryOp op,
     Expr* expr
@@ -546,6 +579,13 @@ static Type unary_op_evaluate_type(
         case UNARY_OP_TYPEOF: return type_string;
         case UNARY_OP_VOID: return type_undefined;
         case UNARY_OP_TILDE: return type_number;
+        case UNARY_OP_DELETE: return type_boolean;
+        case UNARY_OP_AWAIT: return type_awaited(expr_get_type(expr));
+
+        // TODO: what a yield evaluates to is decided by the generator's TNext, which needs generators to be typed
+        case UNARY_OP_YIELD:
+        case UNARY_OP_YIELD_STAR:
+            return type_any;
 
         case UNARY_OP_PLUS:
         case UNARY_OP_MINUS:
@@ -730,7 +770,12 @@ Type expr_evaluate_type(Expr const* me) {
 
         case EXPR_GENERIC_PARAMS: return generic_params_expr_evaluate_type(my generic_params);
 
-        case EXPR_AS_TYPE: return type_refcopy(&my as_type->type);
+        case EXPR_AS_TYPE:
+            if (my as_type->is_satisfies) {
+                // TODO: the type should contextually type the expression
+                return type_refcopy(expr_get_type(&my as_type->expr));
+            }
+            return type_refcopy(&my as_type->type);
 
         case EXPR_TERNARY:
             return type_composite(
@@ -767,6 +812,20 @@ Type expr_evaluate_type(Expr const* me) {
 
         case EXPR_CLASS_DECL:
             return type_refcopy(&my class_decl->declaration.get->value_type);
+
+        case EXPR_TEMPLATE: {
+            if (!my template_->tag) {
+                return type_string;
+            }
+            // TODO: a tagged template is a call (overloads, generics, argument checks). For now only the return type
+            // of a plain function is used
+            Type const* tag = type_resolve(expr_get_type(my template_->tag));
+            if (tag->tag == TYPE_CALLABLE && generic_empty(&tag->callable->generic)) {
+                return type_clone(tag->callable->ret);
+            } else {
+                return type_any;
+            }
+        }
 
         case EXPR_SPREAD: {
             // The type of each spread element. TODO: tuples and iterables, which are `any` for now
@@ -813,6 +872,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_LEFT_MINUS_MINUS:
                 case UNARY_OP_RIGHT_PLUS_PLUS:
                 case UNARY_OP_RIGHT_MINUS_MINUS:
+                case UNARY_OP_DELETE:
+                case UNARY_OP_AWAIT:
+                case UNARY_OP_YIELD:
+                case UNARY_OP_YIELD_STAR:
                     // TODO: add typechecking
                     break;
 
@@ -850,6 +913,16 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
             expr_typecheck(&my as_type->expr, errs);
             type_typecheck(&my as_type->type, errs);
+            if (my as_type->is_satisfies) {
+                Type const* source = expr_get_type(&my as_type->expr);
+                if (!type_extends(source, &my as_type->type)) {
+                    Type shown = type_clone(*source);
+                    type_abstract_literals(&shown);
+                    error_ctx_error_d(errs, my as_type->keyword_span, 1360,
+                        "Type '", (Type const*)&shown, "' does not satisfy the expected type '", &my as_type->type, "'.");
+                    type_drop(&shown);
+                }
+            }
             break;
 
         case EXPR_TERNARY:
@@ -891,6 +964,15 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_SPREAD:
             expr_typecheck(my spread, errs);
+            break;
+
+        case EXPR_TEMPLATE:
+            if (my template_->tag) {
+                expr_typecheck(my template_->tag, errs);
+            }
+            for_each (i, vec_expr, &my template_->substitutions) {
+                expr_typecheck(i, errs);
+            }
             break;
     }
 }
@@ -1029,7 +1111,13 @@ int unary_op_get_precedence(UnaryOp op) {
         case UNARY_OP_MINUS:
         case UNARY_OP_LEFT_PLUS_PLUS:
         case UNARY_OP_LEFT_MINUS_MINUS:
+        case UNARY_OP_DELETE:
+        case UNARY_OP_AWAIT:
             return 140;
+
+        case UNARY_OP_YIELD:
+        case UNARY_OP_YIELD_STAR:
+            return 20; // Same as assignment
 
         case UNARY_OP_RIGHT_PLUS_PLUS:
         case UNARY_OP_RIGHT_MINUS_MINUS:
@@ -1049,6 +1137,10 @@ zsview unary_op_get_zv(UnaryOp op) {
         case UNARY_OP_MINUS: return c_zv("-");
         case UNARY_OP_LEFT_PLUS_PLUS: return c_zv("++");
         case UNARY_OP_LEFT_MINUS_MINUS: return c_zv("--");
+        case UNARY_OP_DELETE: return c_zv("delete ");
+        case UNARY_OP_AWAIT: return c_zv("await ");
+        case UNARY_OP_YIELD: return c_zv("yield ");
+        case UNARY_OP_YIELD_STAR: return c_zv("yield* ");
         case UNARY_OP_RIGHT_PLUS_PLUS: return c_zv("++");
         case UNARY_OP_RIGHT_MINUS_MINUS: return c_zv("--");
         case UNARY_OP_RIGHT_BANG: return c_zv("!");

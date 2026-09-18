@@ -917,7 +917,11 @@ void display_expr(Display d, Expr const* me) {
 
         case EXPR_AS_TYPE: {
             display_expr(d, &my as_type->expr);
-            display_lit(d, " as ");
+            if (my as_type->is_satisfies) {
+                display_lit(d, " satisfies ");
+            } else {
+                display_lit(d, " as ");
+            }
             display_type(d, &my as_type->type);
         }   break;
 
@@ -996,6 +1000,19 @@ void display_expr(Display d, Expr const* me) {
             display_newline(d);
             display_lit(d, "]");
         }   break;
+
+        case EXPR_TEMPLATE:
+            if (my template_->tag) {
+                display_expr(d, my template_->tag);
+            }
+            display_lit(d, "`");
+            for_each (i, vec_expr, &my template_->substitutions) {
+                display_lit(d, "${");
+                display_expr(d, i);
+                display_lit(d, "}");
+            }
+            display_lit(d, "`");
+            break;
 
         case EXPR_SPREAD:
             display_lit(d, "...");

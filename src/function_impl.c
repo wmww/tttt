@@ -4,6 +4,7 @@
 #include "generic.h"
 #include "statement.h"
 #include "error.h"
+#include "several_types.h"
 
 void function_arg_drop(FunctionArg* me) {
     initialized_binding_drop(&my initializer);
@@ -32,6 +33,9 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
 
 void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* names, ErrorCtx* errs) {
     my lazy_type.tag = LAZY_TYPE_FUNCTION;
+    if (my is_async) {
+        my promise_decl = scope_stack_get_type(names, c_sv("Promise"));
+    }
 
     // Handle generics (includes adding names)
     Scope generic_scope = scope_init(errs);
@@ -121,12 +125,31 @@ Type function_impl_evaluate_type(FunctionImpl* me) {
         }
 
         type_drop(&result.callable->ret);
-        if (ret_type.tag == TYPE_NEVER) {
+        if (my is_generator) {
+            // TODO: Generator<TYield, TReturn, TNext>/AsyncGenerator<...> inferred from the yields and returns
+            result.callable->ret = type_any;
+        } else if (ret_type.tag == TYPE_NEVER) {
             // This will need to be improved
             result.callable->ret = type_void;
         } else {
             result.callable->ret = type_move(&ret_type);
             type_abstract_literals(&result.callable->ret);
+        }
+
+        if (my is_async && !my is_generator) {
+            // TODO: should be Promise<Awaited<T>>, returning a promise from an async function gives a nested one here
+            if (my promise_decl) {
+                VecSpannedType params = vec_spanned_type_init();
+                vec_spanned_type_push(&params, spanned_type(span_null, type_move(&result.callable->ret)));
+                result.callable->ret = type_identifier(c_new(IdentifierType, {
+                    .name = my promise_decl->name,
+                    .decl_ref = my promise_decl,
+                    .generic_params = params,
+                }));
+            } else {
+                type_drop(&result.callable->ret);
+                result.callable->ret = type_any;
+            }
         }
 
         type_drop(&ret_type);
@@ -154,7 +177,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     }
 
     BlockTypecheckCtx ctx = {
-        .specified_return = my ret_explicit ? &my ret : &type_any,
+        // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
+        .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret : &type_any,
     };
     block_typecheck(&my body, ctx, errs);
 }

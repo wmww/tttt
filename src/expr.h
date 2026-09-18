@@ -11,6 +11,7 @@ typedef struct GenericParamsExpr GenericParamsExpr;
 typedef struct AsTypeExpr AsTypeExpr;
 typedef struct TernaryExpr TernaryExpr;
 typedef struct CallExpr CallExpr;
+typedef struct TemplateExpr TemplateExpr;
 typedef struct ObjectExprItem ObjectExprItem;
 typedef struct vec_object_expr_item ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
@@ -53,6 +54,7 @@ typedef struct Expr {
         EXPR_ARRAY,
         EXPR_CLASS_DECL,
         EXPR_SPREAD, // `...a`, only appears directly in array literals and call arguments
+        EXPR_TEMPLATE, // Template literal with substitutions and/or a tag. Plain `abc` is a string EXPR_LITERAL
     } tag;
     union {
         Declaration const* this_or_super;
@@ -70,6 +72,7 @@ typedef struct Expr {
         VecExpr array;
         ClassDecl* class_decl;
         Expr* spread;
+        TemplateExpr* template_;
     };
     LazyType lazy_type;
 } Expr;
@@ -129,6 +132,10 @@ static inline Expr expr_class_decl(Span span, ClassDecl* class_decl) {
 
 static inline Expr expr_spread(Span span, Expr* operand) {
     return (Expr){ .tag = EXPR_SPREAD, .spread = operand, EXPR_DEFAULT(span) };
+}
+
+static inline Expr expr_template(Span span, TemplateExpr* template_) {
+    return (Expr){ .tag = EXPR_TEMPLATE, .template_ = template_, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_undefined(Span span) {
@@ -256,6 +263,10 @@ typedef enum UnaryOp {
     UNARY_OP_MINUS,
     UNARY_OP_LEFT_PLUS_PLUS,
     UNARY_OP_LEFT_MINUS_MINUS,
+    UNARY_OP_DELETE,
+    UNARY_OP_AWAIT,
+    UNARY_OP_YIELD, // The operand is EXPR_IMPLICIT_ANY for a bare `yield`
+    UNARY_OP_YIELD_STAR,
     UNARY_OP_RIGHT_PLUS_PLUS = UNARY_OP_MIN_RIGHT_HAND_OP,
     UNARY_OP_RIGHT_MINUS_MINUS,
     UNARY_OP_RIGHT_BANG,
@@ -294,6 +305,8 @@ typedef struct AsTypeExpr {
     Expr expr;
     Type type;
     bool angle_bracket_syntax; // If the <type>value syntax was used
+    Span keyword_span; // `as` or `satisfies`
+    bool is_satisfies; // `expr satisfies type`, which checks the expression against the type but doesn't change it
 } AsTypeExpr;
 
 // Ternary
@@ -313,6 +326,15 @@ typedef struct CallExpr {
     // PERF: types of each argument should be cached
     VecExpr args;
 } CallExpr;
+
+// Template
+
+typedef struct TemplateExpr {
+    Expr* tag; // Owned, null if the template isn't tagged
+    Span template_span; // Without the tag
+    VecExpr substitutions;
+    cstr plain_string; // The contents, if there are no substitutions (which only happens for tagged templates)
+} TemplateExpr;
 
 // Object
 

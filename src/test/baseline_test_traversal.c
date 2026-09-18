@@ -580,7 +580,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_UNARY_OP:
-            expr_compile_test_info(&my unary_op->expr, ctx);
+            if (my unary_op->op != UNARY_OP_YIELD || my unary_op->expr.tag != EXPR_IMPLICIT_ANY) { // Not a bare `yield`
+                expr_compile_test_info(&my unary_op->expr, ctx);
+            }
             break;
 
         case EXPR_PROPERTY: {
@@ -743,6 +745,22 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_SPREAD:
             expr_compile_test_info(my spread, ctx);
+            break;
+
+        case EXPR_TEMPLATE:
+            if (my template_->tag) {
+                expr_compile_test_info(my template_->tag, ctx);
+                if (vec_expr_is_empty(&my template_->substitutions)) {
+                    // Don't clone the string, and don't drop the type
+                    Type t = type_value(value_string(my template_->plain_string));
+                    baseline_test_case_add_type(ctx, my template_->template_span, &t);
+                } else {
+                    baseline_test_case_add_type(ctx, my template_->template_span, &type_string);
+                }
+            }
+            for_each (i, vec_expr, &my template_->substitutions) {
+                expr_compile_test_info(i, ctx);
+            }
             break;
     }
 }

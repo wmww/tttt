@@ -29,7 +29,23 @@ typedef struct ParserShared {
     const char* fail_cache_start;
     VecU8 fail_cache;
     VecError errors;
+    // What kind of function the parser is currently inside, decides if `await` and `yield` are operators
+    bool in_async;
+    bool in_generator;
+    int function_depth;
 } ParserShared;
+
+typedef struct FunctionFlags {
+    bool is_async;
+    bool is_generator;
+} FunctionFlags;
+
+static const FunctionFlags function_flags_null = {0};
+
+typedef struct FunctionCtx {
+    bool in_async;
+    bool in_generator;
+} FunctionCtx;
 
 void parser_shared_drop(ParserShared* me) {
     vec_u8_drop(&my fail_cache);
@@ -100,6 +116,8 @@ static bool parse_function_args(
 );
 static bool parse_number(Parser* parent, double* ret);
 static bool parse_string(Parser* parent, cstr* ret);
+static bool parse_template(Parser* parent, VecExpr* ret);
+static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -1662,7 +1680,34 @@ drop_and_fail:
     return parse_fail(&p);
 }
 
-static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
+// Call before parsing a function's arguments and body, and function_ctx_leave() after (on success and failure)
+static FunctionCtx function_ctx_enter(Parser* p, FunctionFlags flags) {
+    FunctionCtx saved = { .in_async = p->shared->in_async, .in_generator = p->shared->in_generator };
+    p->shared->in_async = flags.is_async;
+    p->shared->in_generator = flags.is_generator;
+    p->shared->function_depth++;
+    return saved;
+}
+
+static void function_ctx_leave(Parser* p, FunctionCtx saved) {
+    p->shared->in_async = saved.in_async;
+    p->shared->in_generator = saved.in_generator;
+    p->shared->function_depth--;
+}
+
+static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, FunctionImpl* ret);
+
+static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flags, FunctionImpl* ret) {
+    FunctionCtx saved = function_ctx_enter(parent, flags);
+    bool success = parse_arrow_function_inner(parent, ctx, ret);
+    function_ctx_leave(parent, saved);
+    if (success) {
+        ret->is_async = flags.is_async;
+    }
+    return success;
+}
+
+static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
     Parser p = parser(parent);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_ARROW_FUNCTION);
     Anchor a = anchor(&p);
@@ -1733,7 +1778,8 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     return parse_success(&p);
 }
 
-static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
+static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
+    ignore flags;
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -1745,7 +1791,20 @@ static bool parse_function_header(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
-static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
+static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret);
+
+static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
+    FunctionCtx saved = function_ctx_enter(parent, flags);
+    bool success = parse_non_arrow_function_inner(parent, ret);
+    function_ctx_leave(parent, saved);
+    if (success) {
+        ret->is_async = flags.is_async;
+        ret->is_generator = flags.is_generator;
+    }
+    return success;
+}
+
+static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -1766,7 +1825,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionImpl* ret) {
     return parse_success(&p);
 }
 
-static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
+static bool parse_function_keyword_function(Parser* parent, bool is_async, FunctionImpl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -1775,13 +1834,19 @@ static bool parse_function_keyword_function(Parser* parent, FunctionImpl* ret) {
     }
     hop_whitespace(&p);
 
+    FunctionFlags flags = { .is_async = is_async };
+    if (hop_char(&p, '*')) {
+        flags.is_generator = true;
+        hop_whitespace(&p);
+    }
+
     Span name;
     if (!parse_identifier(&p, &name)) {
         name = span_null;
     }
     hop_whitespace(&p);
 
-    if (!parse_non_arrow_function(&p, ret)) {
+    if (!parse_non_arrow_function(&p, flags, ret)) {
         parse_error(&p, span_from_token(&p), TS_CODE_NONE, "Expected function.");
         *ret = (FunctionImpl){0};
     }
@@ -1852,12 +1917,15 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     ObjectExprItem item = { .tag = OBJECT_ITEM_PROPERTY };
     bool must_be_method = false;
+    FunctionFlags flags = {0};
     if (hop_member_keyword(&p, "async", false)) {
         must_be_method = true;
+        flags.is_async = true;
     }
     if (hop_char(&p, '*')) {
         hop_whitespace(&p);
         must_be_method = true;
+        flags.is_generator = true;
     }
     if (!must_be_method) {
         if (hop_member_keyword(&p, "get", true)) {
@@ -1911,7 +1979,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     }
 
     FunctionImpl func;
-    if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, &func)) {
+    if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, flags, &func)) {
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
         }
@@ -2107,7 +2175,13 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     return parse_success(&p);
 }
 
-static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, bool is_index, InterfaceMember* ret) {
+static bool parse_index_or_expr_interface_member(
+    Parser* parent,
+    bool is_type,
+    bool is_index,
+    FunctionFlags flags,
+    InterfaceMember* ret
+) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -2167,11 +2241,11 @@ static bool parse_index_or_expr_interface_member(Parser* parent, bool is_type, b
         hop_whitespace(&p);
     }
 
-    bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
+    bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
     FunctionImpl func;
-    if (parse_function_fn(&p, &func)) {
+    if (parse_function_fn(&p, flags, &func)) {
         ret->type = function_impl_into_type(func);
         ret->is_method = true;
     } else if (hop_char(&p, ':')) {
@@ -2192,13 +2266,14 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     }
     hop_whitespace(&p);
 
+    FunctionFlags function_flags = { .is_async = modifiers.includes[MODIFIER_ASYNC] };
     bool is_getter = false, is_setter = false;
     if (hop_member_keyword(&p, "get", true)) {
         is_getter = true;
     } else if (hop_member_keyword(&p, "set", true)) {
         is_setter = true;
     } else if (!is_type && hop_char(&p, '*')) {
-        // Generator method. TODO: nothing is recorded, its body is checked like a normal method's
+        function_flags.is_generator = true;
         hop_whitespace(&p);
     }
 
@@ -2221,7 +2296,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     }
     hop_whitespace(&p);
 
-    bool (*parse_function_fn)(Parser* parent, FunctionImpl* ret) =
+    bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
         is_type ? parse_function_header : parse_non_arrow_function;
 
     if (
@@ -2254,7 +2329,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
         if (!is_type && !name_is_value && span_equals(name_span, "constructor")) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_METHOD | flags);
             name_span = span_from(a);
-            if (!parse_function_fn(&p, &func)) {
+            if (!parse_function_fn(&p, function_flags_null, &func)) {
                 parse_error(&p, span_from_token(&p), TS_CODE_NONE, "constructor expected");
                 func = (FunctionImpl){0};
             }
@@ -2267,7 +2342,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
                     .func = func,
                 }
             };
-        } else if (parse_function_fn(&p, &func)) {
+        } else if (parse_function_fn(&p, function_flags, &func)) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_METHOD | flags);
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_METHOD,
@@ -2349,8 +2424,8 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
     } else {
         FunctionImpl func;
         if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
-            parse_index_or_expr_interface_member(&p, is_type, true, &ret->interface_memeber) ||
-            parse_index_or_expr_interface_member(&p, is_type, false, &ret->interface_memeber)
+            parse_index_or_expr_interface_member(&p, is_type, true, function_flags, &ret->interface_memeber) ||
+            parse_index_or_expr_interface_member(&p, is_type, false, function_flags, &ret->interface_memeber)
         ) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER | MODIFIER_VALIDATION_FLAG_FIELD);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
@@ -2629,12 +2704,23 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_as_type(Parser* parent, Type* ret) {
+static bool parse_as_type(Parser* parent, Type* ret, Span* keyword_span_ret, bool* is_satisfies_ret) {
     Parser p = parser(parent);
 
-    if (!hop_start_if_ends_on_word_break(&p, "as")) {
+    // Neither keyword can follow a line break
+    hop_whitespace(&p);
+    if (p.whitespace == WHITESPACE_NEWLINE) {
         return parse_fail(&p);
     }
+    Anchor a = anchor(&p);
+    if (hop_start_if_ends_on_word_break(&p, "as")) {
+        *is_satisfies_ret = false;
+    } else if (hop_start_if_ends_on_word_break(&p, "satisfies")) {
+        *is_satisfies_ret = true;
+    } else {
+        return parse_fail(&p);
+    }
+    *keyword_span_ret = span_from(a);
     hop_whitespace(&p);
 
     expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
@@ -2720,9 +2806,42 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     return parse_success(&p);
 }
 
+// `await` is only a keyword in async functions and at the top level of modules. Elsewhere tsc still reads it as an
+// operator (and then complains) if an operand obviously follows
+static bool await_is_operator(Parser* parent) {
+    if (!starts_with_followed_by_word_break(parent, "await")) {
+        return false;
+    } else if (parent->shared->in_async) {
+        return true;
+    }
+    const char* c = parent->pos + strlen("await");
+    while (*c == ' ' || *c == '\t') {
+        c++;
+    }
+    if (is_identifier_start_char(*c) || is_number_start_char(*c) || *c == '"' || *c == '\'' || *c == '`') {
+        return true;
+    }
+    // At the top level an operand can start with anything that can't continue an expression that began with an
+    // identifier called await
+    return parent->shared->function_depth == 0 && (*c == '(' || *c == '[' || *c == '{' || *c == '!' || *c == '~');
+}
+
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
     if (hop_start(parent, "!")) {
         *op = UNARY_OP_LEFT_BANG;
+    } else if (hop_start_if_ends_on_word_break(parent, "delete")) {
+        *op = UNARY_OP_DELETE;
+    } else if (await_is_operator(parent) && hop_start_if_ends_on_word_break(parent, "await")) {
+        *op = UNARY_OP_AWAIT;
+    } else if (parent->shared->in_generator && hop_start_if_ends_on_word_break(parent, "yield")) {
+        *op = UNARY_OP_YIELD;
+        const char* after_yield = parent->pos;
+        hop_whitespace_full(parent, true, false);
+        if (hop_char(parent, '*')) {
+            *op = UNARY_OP_YIELD_STAR;
+        } else {
+            parent->pos = after_yield;
+        }
     } else if (hop_start_if_ends_on_word_break(parent, "typeof")) {
         *op = UNARY_OP_TYPEOF;
     } else if (hop_start_if_ends_on_word_break(parent, "void")) {
@@ -2752,11 +2871,33 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         return parse_fail(&p);
     }
     Span op_span = span_from(a);
+    const char* op_end = p.pos;
     hop_whitespace(&p);
+
+    if (op == UNARY_OP_AWAIT && !p.shared->in_async && p.shared->function_depth > 0) {
+        parse_error(&p, op_span, 1308,
+            "'await' expressions are only allowed within async functions and at the top levels of modules.");
+    }
 
     Expr expr;
     ctx.min_precedence = unary_op_get_precedence(op);
-    expect_expr(&p, ctx, &expr);
+    bool bare_yield = false;
+    if (op == UNARY_OP_YIELD) {
+        switch (*p.pos) {
+            case ')': case ']': case '}': case ',': case ';': case ':': case '\0':
+                bare_yield = true;
+                break;
+            default:
+                bare_yield = p.whitespace == WHITESPACE_NEWLINE;
+                break;
+        }
+    }
+    if (bare_yield) {
+        p.pos = op_end;
+        expr = expr_implicit_any_no_span;
+    } else {
+        expect_expr(&p, ctx, &expr);
+    }
 
     *ret = expr_unary_op(
         op_span,
@@ -2886,6 +3027,25 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
+    if (new_keyword_precedence > ctx.min_precedence && *p.pos == '`') {
+        Anchor template_a = anchor(&p);
+        cstr plain_string = cstr_null;
+        if (!parse_template(&p, &parsed.args)) {
+            parsed.args = vec_expr_init();
+            parse_string(&p, &plain_string);
+        }
+        *left_and_ret = expr_template(
+            span_from(a),
+            c_new(TemplateExpr, {
+                .tag = c_new(Expr, *left_and_ret),
+                .template_span = span_from(template_a),
+                .substitutions = parsed.args,
+                .plain_string = plain_string,
+            })
+        );
+        return parse_success(&p);
+    }
+
     if (parse_dot_prop(&p, &parsed.optional_chain, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_from(a),
@@ -2911,13 +3071,17 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (as_type_precedence > ctx.min_precedence && parse_as_type(&p, &parsed.type)) {
+    Span as_type_span;
+    bool is_satisfies;
+    if (as_type_precedence > ctx.min_precedence && parse_as_type(&p, &parsed.type, &as_type_span, &is_satisfies)) {
         *left_and_ret = expr_as_type(
             span_from(a),
             c_new(AsTypeExpr, {
                 .expr = *left_and_ret,
                 .type = parsed.type,
+                .keyword_span = as_type_span,
                 .angle_bracket_syntax = false,
+                .is_satisfies = is_satisfies,
             })
         );
         return parse_success(&p);
@@ -2927,7 +3091,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         Parser sub_p = parser(&p);
         sub_p.pos = span_start_ptr(left_and_ret->outer_span);
 
-        if (parse_arrow_function(&sub_p, ctx, &parsed.function)) {
+        if (parse_arrow_function(&sub_p, ctx, function_flags_null, &parsed.function)) {
             parse_success(&sub_p);
             expr_drop(left_and_ret);
             *left_and_ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
@@ -3040,6 +3204,75 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }
 
+// A template literal with substitutions. Only the substitutions are kept, the text between them doesn't matter to the
+// checker. Fails if there are no substitutions, a plain template is a string literal (see parse_string())
+static bool parse_template(Parser* parent, VecExpr* ret) {
+    Parser p = parser(parent);
+
+    if (*p.pos != '`') {
+        return parse_fail(&p);
+    }
+    p.pos++;
+
+    VecExpr substitutions = vec_expr_init();
+    while (*p.pos && *p.pos != '`') {
+        if (*p.pos == '\\' && p.pos[1]) {
+            p.pos += 2;
+        } else if (p.pos[0] == '$' && p.pos[1] == '{') {
+            p.pos += 2;
+            hop_whitespace(&p);
+            Expr expr;
+            if (expect_expr(&p, expr_ctx_null, &expr)) {
+                parse_comma_ops_right_side(&p, &expr);
+                vec_expr_push(&substitutions, expr);
+            }
+            hop_whitespace(&p);
+            if (!expect_char(&p, '}')) {
+                break;
+            }
+        } else {
+            p.pos++;
+        }
+    }
+
+    if (vec_expr_is_empty(&substitutions)) {
+        vec_expr_drop(&substitutions);
+        return parse_fail(&p);
+    }
+
+    if (*p.pos == '`') {
+        p.pos++;
+    } else {
+        parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
+    }
+
+    *ret = substitutions;
+    return parse_success(&p);
+}
+
+// `async function () {}`, `async () => {}`, `async x => {}`
+static bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
+    if (!hop_start_if_ends_on_word_break(&p, "async")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    if (p.whitespace == WHITESPACE_NEWLINE) {
+        return parse_fail(&p);
+    }
+
+    if (!parse_function_keyword_function(&p, true, ret) &&
+        !parse_arrow_function(&p, ctx, (FunctionFlags){ .is_async = true }, ret)
+    ) {
+        return parse_fail(&p);
+    }
+
+    ret->full_span = span_from(a);
+    return parse_success(&p);
+}
+
 static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
     Parser p = parser(parent);
 
@@ -3064,7 +3297,13 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } parsed;
     bool inner_span_set = false;
 
-    if (parse_literal(&p, &ret->literal)) {
+    VecExpr substitutions;
+    if (parse_template(&p, &substitutions)) {
+        *ret = expr_template(span_from(a), c_new(TemplateExpr, {
+            .template_span = span_from(a),
+            .substitutions = substitutions,
+        }));
+    } else if (parse_literal(&p, &ret->literal)) {
         ret->tag = EXPR_LITERAL;
     } else if (parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
@@ -3083,7 +3322,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         }
         *ret = expr_call(span_from(a), c_new(CallExpr, call));
     } else if (parse_left_unary_op_expr(&p, ctx, ret)) {
-    } else if (parse_function_keyword_function(&p, &parsed.function)) {
+    } else if (parse_function_keyword_function(&p, false, &parsed.function)) {
+        *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
+    } else if (parse_async_function_expr(&p, ctx, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = expr_identifier((IdentifierExpr){
@@ -3098,7 +3339,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
-    } else if (parse_arrow_function(&p, ctx, &parsed.function)) {
+    } else if (parse_arrow_function(&p, ctx, function_flags_null, &parsed.function)) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
@@ -4443,7 +4684,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .variable = parsed.variable,
             },
         };
-    } else if (parse_function_keyword_function(&p, &parsed.function)) {
+    } else if (parse_function_keyword_function(&p, modifiers.includes[MODIFIER_ASYNC], &parsed.function)) {
         parsed.function.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_FUNCTION,

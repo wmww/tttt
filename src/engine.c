@@ -192,6 +192,7 @@ static Result MUST_USE engine_eval_unary_op(Engine* me, UnaryOpExpr const* op_ex
         case UNARY_OP_LEFT_BANG: res.value = value_boolean(!value_to_boolean(&value)); break;
         case UNARY_OP_TYPEOF: res = engine_eval_typeof(me, &value); break;
         case UNARY_OP_VOID: break;
+        case UNARY_OP_DELETE: case UNARY_OP_AWAIT: case UNARY_OP_YIELD: case UNARY_OP_YIELD_STAR: break; // TODO
         case UNARY_OP_TILDE: res.value = value_number(~(long)value_to_number(&value)); break;
         case UNARY_OP_PLUS: res.value = value_number(value_to_number(&value)); break;
         case UNARY_OP_MINUS: res.value = value_number(-value_to_number(&value)); break;
@@ -386,6 +387,7 @@ static Result MUST_USE engine_eval_expr(Engine* me, Expr const* expr) {
         case EXPR_ARRAY: return engine_eval_array(me, &expr->array);
         case EXPR_CLASS_DECL: return result_ok_undefined; // TODO
         case EXPR_SPREAD: return result_ok_undefined; // TODO
+        case EXPR_TEMPLATE: return result_ok_undefined; // TODO
     }
     impossible;
 }
