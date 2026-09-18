@@ -141,6 +141,8 @@ IndexedType indexed_type_clone(IndexedType me) {
         .index = type_clone(me.index),
         .is_from_binding = me.is_from_binding,
         .array_only = me.array_only,
+        .rest = me.rest,
+        .default_value = me.default_value,
     };
 }
 

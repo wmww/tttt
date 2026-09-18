@@ -15,6 +15,10 @@ void binding_drop(Binding* me) {
     }
     type_drop(&my explicit_type);
     type_drop(&my assigned_type);
+    if (my default_value) {
+        expr_drop(my default_value);
+        free(my default_value);
+    }
 }
 
 void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddNamesProps props) {
@@ -37,7 +41,7 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
         case BINDING_ARRAY: {
             for_each (i, vec_binding, &my array) {
                 intptr_t index = i_index;
-                props.full = i->content_span;
+                props.full = span_valid(i->element_span) ? i->element_span : i->content_span;
                 binding_add_names(
                     i,
                     type_indexed(c_new(IndexedType, {
@@ -45,6 +49,8 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
                         .index = type_value(value_number(index)),
                         .is_from_binding = true,
                         .array_only = true,
+                        .rest = i->rest,
+                        .default_value = i->default_value,
                     })),
                     scope,
                     props
@@ -54,13 +60,15 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
 
         case BINDING_OBJECT: {
             for_each (i, vec_object_binding_item, &my object) {
-                props.full = i->target.content_span;
+                props.full = i->target.rest ? i->target.element_span : i->target.content_span;
                 binding_add_names(
                     &i->target,
                     type_indexed(c_new(IndexedType, {
                         .interface = type_refcopy(binding_get_effective_type(me)),
-                        .index = type_value(value_clone(i->source)),
+                        .index = i->computed_key ? type_lazy(&i->computed_key->lazy_type) : type_value(value_clone(i->source)),
                         .is_from_binding = true,
+                        .rest = i->target.rest,
+                        .default_value = i->target.default_value,
                     })),
                     scope,
                     props
@@ -83,11 +91,17 @@ void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs) {
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
+                if (i->computed_key) {
+                    expr_lookup_names(i->computed_key, names, errs);
+                }
                 binding_lookup_names(&i->target, names, errs);
             }
             break;
     }
 
+    if (my default_value) {
+        expr_lookup_names(my default_value, names, errs);
+    }
     if (my has_explicit_type) {
         type_lookup_names(&my explicit_type, names, errs);
     }
@@ -129,6 +143,10 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
         ty_check_assignable(current_checker, ty_of_node(&my assigned_type), ty_of_node(&my explicit_type), my content_span, errs);
     }
 
+    if (my default_value) {
+        expr_typecheck(my default_value, errs);
+    }
+
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -157,6 +175,9 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
+                if (i->computed_key) {
+                    expr_typecheck(i->computed_key, errs);
+                }
                 binding_typecheck(&i->target, errs);
             }
             break;
@@ -164,6 +185,10 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 }
 
 void object_binding_item_drop(ObjectBindingItem* me) {
+    if (my computed_key) {
+        expr_drop(my computed_key);
+        free(my computed_key);
+    }
     value_drop(&my source);
     binding_drop(&my target);
 }

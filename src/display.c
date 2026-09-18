@@ -176,7 +176,20 @@ void display_value(Display d, Value const* me) {
     display_normal(d);
 }
 
+static void display_binding_content_inner(Display d, Binding const* me);
+
 static void display_binding_content(Display d, Binding const* me) {
+    if (my rest) {
+        display_lit(d, "...");
+    }
+    display_binding_content_inner(d, me);
+    if (my default_value && d.debug) {
+        display_lit(d, " = ");
+        display_expr(d, my default_value);
+    }
+}
+
+static void display_binding_content_inner(Display d, Binding const* me) {
     switch (my tag) {
         case BINDING_NOOP: break;
 
@@ -210,8 +223,14 @@ static void display_binding_content(Display d, Binding const* me) {
                 if (i_index != 0) {
                     display_lit(d, ", ");
                 }
-                display_value(d, &i->source);
-                display_lit(d, ": ");
+                if (i->computed_key) {
+                    display_lit(d, "[");
+                    display_expr(d, i->computed_key);
+                    display_lit(d, "]: ");
+                } else if (!i->target.rest) {
+                    display_value(d, &i->source);
+                    display_lit(d, ": ");
+                }
                 display_binding_content(d, &i->target);
             }
             display_lit(d, " }");

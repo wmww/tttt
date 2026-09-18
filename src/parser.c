@@ -123,6 +123,7 @@ static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_binding_content(Parser* parent, Binding* ret);
+static bool parse_binding_element(Parser* parent, Binding* ret);
 static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
 
@@ -863,18 +864,31 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         }
         hop_whitespace(&p);
 
+        // `name: T` or `name?: T`
+        Parser name_p = parser(&p);
+        Span name;
+        bool named = parse_identifier_or_keyword(&name_p, &name);
+        if (named) {
+            hop_whitespace(&name_p);
+            if (hop_char(&name_p, '?')) {
+                elem.optional = true;
+                hop_whitespace(&name_p);
+            }
+            named = hop_char(&name_p, ':');
+        }
+        if (named) {
+            parse_success(&name_p);
+            elem.maybe_name = name;
+            hop_whitespace(&p);
+        } else {
+            parse_fail(&name_p);
+            elem.optional = false;
+        }
+
         expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
         hop_whitespace(&p);
 
-        if (elem.type.tag == TYPE_IDENTIFIER && hop_char(&p, ':')) {
-            elem.maybe_name = elem.type.identifier->name;
-            type_drop(&elem.type);
-            hop_whitespace(&p);
-            expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
-            hop_whitespace(&p);
-        }
-
-        if (hop_char(&p, '?')) {
+        if (!named && hop_char(&p, '?')) {
             elem.optional = true;
             hop_whitespace(&p);
         }
@@ -3896,6 +3910,37 @@ done:
 }
 
 // Only parses content, sets type and value to defaults
+// An element of an array or object pattern: `x`, `...x`, `x = 1`, `[a, b] = c`
+static bool parse_binding_element(Parser* parent, Binding* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
+    bool rest = hop_start(&p, "...");
+    if (rest) {
+        hop_whitespace(&p);
+    }
+    if (!parse_binding_content(&p, ret)) {
+        return parse_fail(&p);
+    }
+    ret->rest = rest;
+
+    Parser default_p = parser(&p);
+    hop_whitespace(&default_p);
+    if (*default_p.pos == '=' && default_p.pos[1] != '=' && default_p.pos[1] != '>') {
+        default_p.pos++;
+        hop_whitespace(&default_p);
+        Expr default_value;
+        expect_expr(&default_p, expr_ctx_null, &default_value);
+        ret->default_value = c_new(Expr, default_value);
+        parse_success(&default_p);
+    } else {
+        parse_fail(&default_p);
+    }
+
+    ret->element_span = span_from(a);
+    return parse_success(&p);
+}
+
 static bool parse_binding_content(Parser* parent, Binding* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -3910,7 +3955,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         ret->array = vec_binding_init();
         while (*p.pos && *p.pos != ']') {
             binding = (Binding){0};
-            if (parse_binding_content(&p, &binding)) {
+            if (parse_binding_element(&p, &binding)) {
                 vec_binding_push(&ret->array, binding);
             } else if (*p.pos == ',') {
                 vec_binding_push(&ret->array, (Binding){
@@ -3931,37 +3976,68 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
         ret->tag = BINDING_OBJECT;
         ret->object = vec_object_binding_item_init();
         while (*p.pos && *p.pos != '}') {
+            Anchor key_anchor = anchor(&p);
             Span name;
-            if (parse_identifier(&p, &name)) {
+            Value key;
+            Expr* computed_key = nullptr;
+            bool shorthand_allowed = false;
+            binding = (Binding){0};
+            if (*p.pos == '.' && parse_binding_element(&p, &binding)) {
+                // `...rest`
+                vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
+                    .source_span = binding.content_span,
+                    .target = binding,
+                });
+                goto object_item_done;
+            } else if (parse_identifier_or_keyword(&p, &name)) {
+                key = value_string(cstr_from_span(name));
+                shorthand_allowed = true;
+            } else if (*p.pos == '[') {
+                p.pos++;
                 hop_whitespace(&p);
-
-                if (hop_char(&p, ':')) {
-                    hop_whitespace(&p);
-
-                    binding = (Binding){0};
-                    if (!parse_binding_content(&p, &binding)) {
-                        // TODO
-                        break;
-                    }
-
-                    vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                        .source = value_string(cstr_from_span(name)),
-                        .source_span = name,
-                        .target = binding,
-                    });
-                } else {
-                    vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                        .source = value_string(cstr_from_span(name)),
-                        .source_span = name,
-                        .target = (Binding){
-                            .tag = BINDING_IDENTIFIER,
-                            .content_span = name,
-                        },
-                    });
-                }
+                Expr key_expr;
+                expect_expr(&p, expr_ctx_null, &key_expr);
+                hop_whitespace(&p);
+                expect_char(&p, ']');
+                computed_key = c_new(Expr, key_expr);
+                key = value_undefined;
+                name = span_from(key_anchor);
+            } else if (parse_type_compat_literal(&p, &key) && (key.tag == VALUE_STRING || key.tag == VALUE_NUMBER)) {
+                name = span_from(key_anchor);
             } else {
                 break;
             }
+            hop_whitespace(&p);
+
+            if (hop_char(&p, ':')) {
+                hop_whitespace(&p);
+                if (!parse_binding_element(&p, &binding)) {
+                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                    binding = (Binding){ .tag = BINDING_NOOP, .content_span = span_from_pos(&p) };
+                }
+            } else {
+                if (!shorthand_allowed) {
+                    expected_token_error(&p, ":");
+                }
+                binding = (Binding){
+                    .tag = shorthand_allowed ? BINDING_IDENTIFIER : BINDING_NOOP,
+                    .content_span = name,
+                };
+                if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
+                    p.pos++;
+                    hop_whitespace(&p);
+                    Expr default_value;
+                    expect_expr(&p, expr_ctx_null, &default_value);
+                    binding.default_value = c_new(Expr, default_value);
+                }
+            }
+            vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
+                .source = key,
+                .source_span = name,
+                .computed_key = computed_key,
+                .target = binding,
+            });
+        object_item_done:
             hop_whitespace(&p);
 
             ignore( *p.pos == '}' || expect_char(&p, ',') );

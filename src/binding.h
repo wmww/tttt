@@ -21,6 +21,9 @@ typedef struct Binding {
         VecObjectBindingItem object;
     };
     Span content_span; // Just the name/array/object, not the type/value
+    bool rest; // `...x` as an element of an array or object pattern
+    Span element_span; // With the `...` and the default, only valid for elements of a pattern
+    Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
     bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
     Span explicit_type_span; // Only valid if has_explicit_type
     TypeNode explicit_type; // The type explicitly specified
@@ -30,6 +33,7 @@ typedef struct Binding {
 typedef struct ObjectBindingItem {
     Value source;
     Span source_span;
+    Expr* computed_key; // Owned, `{ [k]: x }`. Null otherwise, and source is meaningless if set
     Binding target;
 } ObjectBindingItem;
 

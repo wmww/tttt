@@ -47,9 +47,15 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
+                if (i->computed_key) {
+                    expr_compile_test_info(i->computed_key, ctx);
+                }
                 binding_content_compile_test_info(&i->target, ctx);
             }
             break;
+    }
+    if (my default_value) {
+        expr_compile_test_info(my default_value, ctx);
     }
 }
 

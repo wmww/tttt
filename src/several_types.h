@@ -65,6 +65,9 @@ typedef struct IndexedType {
     TypeNode index;
     bool is_from_binding;
     bool array_only;
+    // Only for is_from_binding:
+    bool rest; // `[a, ...x]`: everything from index on. `{ a, ...x }`: the object (index is meaningless)
+    Expr* default_value; // Not owned (the Binding's): `[x = 1]`
 } IndexedType;
 
 void indexed_type_drop(IndexedType* me);

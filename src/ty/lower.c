@@ -753,13 +753,60 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     return deferred->args;
 }
 
+// `[a, b, ...rest]`: what `rest` gets out of a tuple or array, `start` being its index in the pattern
+static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start) {
+    if (!ty_is_tuple(object)) return object; // An array (TODO: a readonly array gives a mutable one), or the empty tuple
+    TupleShape const* shape = object->reference.target->declared.tuple;
+    TyList elements = ty_reference_args(me, object);
+    if (start >= shape->arity) {
+        bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
+        if (ends_in_rest) start = shape->arity - 1;
+        else return ty_tuple_target(me, &(TupleShape){0});
+    }
+    TupleShape rest_shape = {
+        .arity = shape->arity - start,
+        .flags = shape->flags + start,
+        .names = shape->names ? shape->names + start : nullptr,
+    };
+    return ty_reference(me, ty_tuple_target(me, &rest_shape), (TyList){ .data = elements.data + start, .len = rest_shape.arity });
+}
+
+static Ty const* without_undefined(Checker* me, Ty const* ty) {
+    if (ty->flags & TYF_UNDEFINED) return ty_intrinsic(me, TY_NEVER);
+    if (ty->kind != TY_UNION) return ty;
+    TyList members = ty->composite.types;
+    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+    u32 len = 0;
+    for (u32 i = 0; i < members.len; i++) {
+        if (!(members.data[i]->flags & TYF_UNDEFINED)) kept[len++] = members.data[i];
+    }
+    Ty const* ret = len == members.len ? ty : ty_union(me, kept, len, nullptr, (TyList){0});
+    free(kept);
+    return ret;
+}
+
 // The type a destructuring binding takes out of its initializer: a property or element access
 static Ty const* lower_binding_access(Checker* me, IndexedType const* indexed, LowerCtx ctx) {
     Ty const* object = ty_from_node(me, &indexed->interface, ctx);
     // TODO: iterables. No TS2339-style errors from here either
     if (indexed->array_only && !ty_extends_array(me, object)) return ty_intrinsic(me, TY_ANY);
-    Ty const* ret = ty_access(me, object, ty_from_node(me, &indexed->index, ctx));
-    return ret ? ret : ty_intrinsic(me, TY_ANY);
+    Ty const* ret;
+    if (indexed->rest && indexed->array_only) {
+        ret = binding_rest_elements(me, object, (u32)indexed->index.value.number);
+    } else if (indexed->rest) {
+        ret = object; // TODO: without the properties the pattern names, methods and accessors (tsc's getRestType())
+    } else {
+        ret = ty_access(me, object, ty_from_node(me, &indexed->index, ctx));
+    }
+    if (!ret) ret = ty_intrinsic(me, TY_ANY);
+    if (indexed->default_value) {
+        // `[x = 1]`: undefined is replaced by the default
+        Ty const* types[2] = { without_undefined(me, ret), nullptr };
+        // Not ty_check_expr() with types[0] as the contextual type: only the uncontextual path detects `[x = x]`
+        types[1] = ty_widened_for_declaration(me, ty_expr_type(me, indexed->default_value), true);
+        ret = ret->flags & TYF_ANY ? ret : ty_union(me, types, 2, nullptr, (TyList){0});
+    }
+    return ret;
 }
 
 static bool is_naked_type_param_node(Checker* me, TypeNode const* node) {
