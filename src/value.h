@@ -2,7 +2,7 @@
 
 #include "prelude.h"
 
-typedef struct Type Type;
+typedef struct TypeNode TypeNode;
 typedef struct Block Block;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct Value Value;

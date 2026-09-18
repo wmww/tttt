@@ -154,13 +154,26 @@ Uninvestigated items. Triage sessions drain this.
   still only a TODO in `ty_declared_type_of`.
 - (stage 4b2) `type A = {}` clashing with `interface A` (`noSymbolForMergeCrash`): the traversal prints the merged
   declaration's type, tsc the alias's own. Wants per-declaration symbols (plan 03).
-- (stage 4b2) Annotations print through the legacy display of the written node (`ex : Exclude<"a" | "b", "a">` where tsc
-  prints the resolved `"b"`); goes away when the traversal prints `Ty` (4b3). Worth a failstats check afterwards for
-  union member *order* (`"c" | "b"` in tsc for `Exclude<"a" | "b" | "c", "a">`: literal ids follow first creation).
-- (stage 4b2) `test/baseline_results.ts` wasn't saved by the 4b1 session (3 tests showed as "newly passing" at the start
-  of 4b2). Sessions should end with `./fasttest.sh -s`; consider making `--summary` say when the file is stale.
+- Baseline saving: 4b1 *and* 4b3 forgot `./fasttest.sh -s`. CLAUDE.md says so now; consider making `--summary` say
+  when the results file is older than the last commit.
 - From type core stage 4b3 (see `hacks.md` "Expressions on the new core" for the full list): `this` types are `any`
   (`m.set("a", 1)` on a `Map` returns `any` instead of the map: needs the `this` type parameter); the symbols
-  traversal finds no declaration for a property accessed on a primitive (`x.toFixed`, `s.length`: it looks at the legacy
-  view of the object type, which has no members for `number`/`string`); a failed type-argument-arity call returns
+  traversal finds no declaration for a property accessed on a primitive (`x.toFixed`, `s.length`: the lookup in
+  `expr_compile_test_info_inner` only looks at object types, it should go through `ty_apparent_type`); a failed type-argument-arity call returns
   `any` where tsc still resolves a signature; reverse mapped type inference is now the loudest inference gap.
+- From type core stage 5:
+  - Union member order depends on when literal types are created: tsc makes them when the type node is first resolved,
+    we lower annotations eagerly in a different order (`stringLiteralsWithEqualityChecks03`: `Refrigerator | "foo"`).
+    Worth a failstats pass over types/errors diffs that differ only by union order.
+  - `aliasUsageIn*` (4 tests): `var m: typeof moduleA = i` where `i` has a `typeof Backbone.Model` property reports a
+    missing property now that `typeof` is real. Look at how the static side of a class reached through
+    `import x = require()` relates to the same class reached through another import (declaration copies, see
+    `canonical_declaration` and `port_item_resolve_alias` in `hacks.md`).
+  - `CallableType` could shrink to `{ FunctionImpl* }` (see `hacks.md`), which would delete `CallableArg`, one of the two
+    signature resolution paths in `signature_resolve`, and `callable_type_resolve_names`' copying.
+  - `display.c`'s syntax printer is only needed for debug output and for written type *names* in the `.types` traversal
+    now. `DISPLAY_TYPE_MAX_DEPTH`, `BriefType` and the underline mode (`DisplayUnderlineTarget`) may be dead.
+  - `engine.c` (the JS interpreter) still builds; is anything using it?
+  - Parse (175 ms) and name resolution (166 ms) are each twice the typecheck phase (87 ms) on the bench. Name
+    resolution copying declarations per import (`declaration_clone_in_place`) and the lib scope per program is the
+    first suspect; nobody has profiled either phase yet.

@@ -71,7 +71,7 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     return sig->param_count ? sig->params[0].type : ty_intrinsic(checker, TY_ANY);
 }
 
-Type class_item_get_type(ClassItem* me) {
+TypeNode class_item_get_type(ClassItem* me) {
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR: return type_lazy(&my constructor.func.lazy_type);
         case CLASS_ITEM_METHOD:

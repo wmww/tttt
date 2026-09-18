@@ -3,7 +3,7 @@
 #include "span.h"
 
 typedef struct Value Value;
-typedef struct Type Type;
+typedef struct TypeNode TypeNode;
 typedef struct InterfaceMember InterfaceMember;
 typedef struct Expr Expr;
 typedef struct Statement Statement;
@@ -159,7 +159,7 @@ static inline void display_colored_span(Display d, AnsiColor color, Span s) {
 
 void display_value(Display d, Value const* me);
 void display_interface_member(Display d, InterfaceMember const* me);
-void display_type(Display d, Type const* me);
+void display_type(Display d, TypeNode const* me);
 void display_expr(Display d, Expr const* me);
 void display_statement(Display d, Statement const* me);
 void display_block(Display d, Block const* me);
@@ -186,7 +186,7 @@ void display_error(Display d, Error const* me);
 
 declare_ast_display(Value, value)
 declare_ast_display(InterfaceMember, interface_member)
-declare_ast_display(Type, type)
+declare_ast_display(TypeNode, type)
 declare_ast_display(Expr, expr)
 declare_ast_display(Statement, statement)
 declare_ast_display(Block, block)
@@ -196,10 +196,10 @@ declare_display(Span, span);
 // A semantic type as tsc prints it in messages (by the current checker)
 declare_display(Ty const*, ty_d);
 
-// Wrap a Type in a display sequence to get the truncated debug form: brief_d() is to debug_d() what a summary is to
+// Wrap a TypeNode in a display sequence to get the truncated debug form: brief_d() is to debug_d() what a summary is to
 // the whole tree, handy for logging a type that could be enormous
 typedef struct BriefType {
-    Type const* type;
+    TypeNode const* type;
 } BriefType;
 
 #define brief_d(t) ((BriefType){ .type = (t) })
@@ -217,7 +217,7 @@ declare_display(BriefType, brief_type);
     BriefType: brief_type_display, \
     AST_DISPLAY_ENTRIES(Value, value), \
     AST_DISPLAY_ENTRIES(InterfaceMember, interface_member), \
-    AST_DISPLAY_ENTRIES(Type, type), \
+    AST_DISPLAY_ENTRIES(TypeNode, type), \
     AST_DISPLAY_ENTRIES(Expr, expr), \
     AST_DISPLAY_ENTRIES(Statement, statement), \
     AST_DISPLAY_ENTRIES(Block, block), \
@@ -226,4 +226,4 @@ declare_display(BriefType, brief_type);
 #define DISPLAYABLES TTTT_DISPLAYABLES
 
 // Useful for calling from GDB
-void print_type_dbg(Type const* me);
+void print_type_dbg(TypeNode const* me);

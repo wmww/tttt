@@ -8,9 +8,9 @@ typedef struct GenericItem {
     Span name;
     Span full_span;
     bool extends_explicit;
-    Type extends;
+    TypeNode extends;
     bool fallback_explicit;
-    Type fallback;
+    TypeNode fallback;
     ArcDeclaration owned_declaration;
     Declaration const* declaration_ref;
 } GenericItem;

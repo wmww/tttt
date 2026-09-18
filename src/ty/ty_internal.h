@@ -1,7 +1,6 @@
 #pragma once
 
-// Shared between the files of the new type core, mostly the seams with the legacy checker. Everything named legacy_*
-// is scaffolding that goes away as plan 02's stages move type evaluation over.
+// Shared between the files of the type core
 
 #include "ty/ty.h"
 #include "several_types.h"
@@ -33,7 +32,6 @@ enum {
     KEY_NAMESPACE,      // Scope -> Ty
     KEY_MERGED_VALUE,   // Declaration -> Ty, see ty_merged_value_type()
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
-    KEY_NEW_WRAPPER,    // Ty id -> arena TYPE_NEW, see ty_legacy_wrapper()
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
@@ -47,13 +45,13 @@ enum {
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);
 
-// The declarations merged into a Declaration's type side, as the legacy types they were registered with
+// The declarations merged into a Declaration's type side, as the nodes they were registered with
 typedef struct DeclEntries {
-    Type const* data;
+    TypeNode const* data;
     u32 len;
 } DeclEntries;
 
-static inline DeclEntries legacy_declaration_entries(Declaration const* decl) {
+static inline DeclEntries declaration_type_entries(Declaration const* decl) {
     MergedType const* merged = &decl->merged_declared_type;
     if (vec_type_size(&merged->merge_list)) {
         return (DeclEntries){ .data = merged->merge_list.data, .len = (u32)vec_type_size(&merged->merge_list) };
@@ -65,14 +63,14 @@ static inline DeclEntries legacy_declaration_entries(Declaration const* decl) {
 }
 
 // Follows TYPE_REF only, which never evaluates anything
-static inline Type const* legacy_skip_refs(Type const* type) {
+static inline TypeNode const* node_skip_refs(TypeNode const* type) {
     while (type->tag == TYPE_REF) type = type->ref;
     return type;
 }
 
 // Follows TYPE_REF and the LazyTypes that stand for a written type (LAZY_TYPE_EVALUATED: a declaration with a single
 // entry), which never evaluates anything either
-static inline Type const* legacy_skip_to_syntax(Type const* type) {
+static inline TypeNode const* node_skip_to_syntax(TypeNode const* type) {
     for (;;) {
         if (type->tag == TYPE_REF) {
             type = type->ref;
@@ -86,9 +84,9 @@ static inline Type const* legacy_skip_to_syntax(Type const* type) {
 
 // alias_of: the deferred reference this is an instantiation of, if it goes by an alias name (null otherwise)
 Ty const* ty_deferred_reference(
-    Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper, Declaration const* alias, TyList alias_args
+    Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Declaration const* alias, TyList alias_args
 );
-Ty const* ty_anonymous_from_overloads(Checker* me, Type const* const* overloads, u32 count, LowerCtx ctx);
+Ty const* ty_anonymous_from_overloads(Checker* me, TypeNode const* const* overloads, u32 count, LowerCtx ctx);
 
 
 // infer.c: type inference, shared by generic calls (call.c) and `infer X` in conditional types (conditional.c)

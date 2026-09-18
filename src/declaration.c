@@ -3,7 +3,7 @@
 #include "ty/ty.h"
 #include "error.h"
 
-void merged_type_add(MergedType* me, Type t) {
+void merged_type_add(MergedType* me, TypeNode t) {
     switch (my lazy.tag) {
         case LAZY_TYPE_UNINITIALIZED:
             my lazy = lazy_type_preeval(t);

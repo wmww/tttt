@@ -17,7 +17,7 @@ void binding_drop(Binding* me) {
     type_drop(&my assigned_type);
 }
 
-void binding_add_names(Binding* me, Type assigned, Scope* scope, BindingAddNamesProps props) {
+void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddNamesProps props) {
     my assigned_type = assigned;
 
     switch (my tag) {
@@ -94,7 +94,7 @@ void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs) {
     type_lookup_names(&my assigned_type, names, errs);
 }
 
-Type const* binding_get_effective_type(Binding const* me) {
+TypeNode const* binding_get_effective_type(Binding const* me) {
     return my has_explicit_type ? &my explicit_type : &my assigned_type;
 }
 

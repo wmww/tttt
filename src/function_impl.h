@@ -31,7 +31,7 @@ typedef struct FunctionImpl {
     Span args_span;
     Span ret_span;
     bool ret_explicit;
-    Type ret;
+    TypeNode ret;
     bool is_constructor;
     bool is_method; // Declared with method syntax (parameters compare bivariantly)
     bool is_async;
@@ -51,7 +51,7 @@ typedef struct FunctionImpl {
 void function_impl_drop(FunctionImpl* me);
 void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported);
 void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* names, ErrorCtx* errs);
-Type function_impl_into_type(FunctionImpl me);
+TypeNode function_impl_into_type(FunctionImpl me);
 Ty const* function_impl_evaluate_type(FunctionImpl* me);
 // What return expressions are contextually typed by. Returns the enclosing function's, to be put back
 Ty const* function_impl_enter_return_context(FunctionImpl const* me);

@@ -28,7 +28,7 @@ g_declare_arc(Declaration, declaration);
 g_declare_vec(DeclarationCPtr, declaration_cptr);
 g_declare_vec(TupleElement, tuple_element);
 
-typedef struct Type {
+typedef struct TypeNode {
     enum {
         TYPE_ANY = 0,
         TYPE_UNKNOWN,
@@ -67,7 +67,7 @@ typedef struct Type {
         CallableType* callable;
         Interface interface;
         struct {
-            Type* element;
+            TypeNode* element;
             bool readonly;
         } array;
         struct {
@@ -78,28 +78,28 @@ typedef struct Type {
         KeyofType* keyof;
         TypeofType* typeof_;
         TernaryType* ternary;
-        VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
+        VecTypeNode composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         LazyType* lazy;
-        Type const* ref;
+        TypeNode const* ref;
     };
-} Type;
+} TypeNode;
 
-extern const Type type_any;
-extern const Type type_self_referential_error;
-extern const Type type_unknown;
-extern const Type type_never;
-extern const Type type_void;
-extern const Type type_object;
-extern const Type type_boolean;
-extern const Type type_number;
-extern const Type type_string;
-extern const Type type_symbol;
-extern const Type type_bigint;
-extern const Type type_null;
-extern const Type type_undefined;
+extern const TypeNode type_any;
+extern const TypeNode type_self_referential_error;
+extern const TypeNode type_unknown;
+extern const TypeNode type_never;
+extern const TypeNode type_void;
+extern const TypeNode type_object;
+extern const TypeNode type_boolean;
+extern const TypeNode type_number;
+extern const TypeNode type_string;
+extern const TypeNode type_symbol;
+extern const TypeNode type_bigint;
+extern const TypeNode type_null;
+extern const TypeNode type_undefined;
 
-static inline Type type_value(Value value) {
-    return (Type){
+static inline TypeNode type_value(Value value) {
+    return (TypeNode){
         .tag = TYPE_VALUE,
         .value = value,
     };
@@ -107,29 +107,29 @@ static inline Type type_value(Value value) {
 
 // type_identifier declared in several_types.h
 
-static inline Type type_inferred(InferredType* inferred) {
-    return (Type){
+static inline TypeNode type_inferred(InferredType* inferred) {
+    return (TypeNode){
         .tag = TYPE_INFERRED,
         .inferred = inferred,
     };
 }
 
-static inline Type type_callable(CallableType* callable) {
-    return (Type){
+static inline TypeNode type_callable(CallableType* callable) {
+    return (TypeNode){
         .tag = TYPE_CALLABLE,
         .callable = callable,
     };
 }
 
-static inline Type type_interface(Interface interface) {
-    return (Type){
+static inline TypeNode type_interface(Interface interface) {
+    return (TypeNode){
         .tag = TYPE_INTERFACE,
         .interface = interface,
     };
 }
 
-static inline Type type_array(Type* element, bool readonly) {
-    return (Type){
+static inline TypeNode type_array(TypeNode* element, bool readonly) {
+    return (TypeNode){
         .tag = TYPE_ARRAY,
         .array = {
             .element = element,
@@ -138,8 +138,8 @@ static inline Type type_array(Type* element, bool readonly) {
     };
 }
 
-static inline Type type_tuple(VecTupleElement elements, bool readonly) {
-    return (Type){
+static inline TypeNode type_tuple(VecTupleElement elements, bool readonly) {
+    return (TypeNode){
         .tag = TYPE_TUPLE,
         .tuple = {
             .elements = elements,
@@ -148,29 +148,29 @@ static inline Type type_tuple(VecTupleElement elements, bool readonly) {
     };
 }
 
-static inline Type type_indexed(IndexedType* indexed) {
-    return (Type){
+static inline TypeNode type_indexed(IndexedType* indexed) {
+    return (TypeNode){
         .tag = TYPE_INDEXED,
         .indexed = indexed,
     };
 }
 
-static inline Type type_keyof(KeyofType* keyof) {
-    return (Type){
+static inline TypeNode type_keyof(KeyofType* keyof) {
+    return (TypeNode){
         .tag = TYPE_KEYOF,
         .keyof = keyof,
     };
 }
 
-static inline Type type_typeof(TypeofType* typeof_) {
-    return (Type){
+static inline TypeNode type_typeof(TypeofType* typeof_) {
+    return (TypeNode){
         .tag = TYPE_TYPEOF,
         .typeof_ = typeof_,
     };
 }
 
-static inline Type type_ternary(TernaryType* ternary) {
-    return (Type){
+static inline TypeNode type_ternary(TernaryType* ternary) {
+    return (TypeNode){
         .tag = TYPE_TERNARY,
         .ternary = ternary,
     };
@@ -178,22 +178,22 @@ static inline Type type_ternary(TernaryType* ternary) {
 
 // type_composite() and type_composite_without_simplify() declared below
 
-static inline Type type_lazy(LazyType* lazy) {
-    return (Type){
+static inline TypeNode type_lazy(LazyType* lazy) {
+    return (TypeNode){
         .tag = TYPE_LAZY,
         .lazy = lazy,
     };
 }
 
-static inline Type type_ref_always(Type const* ref) {
-    return (Type){
+static inline TypeNode type_ref_always(TypeNode const* ref) {
+    return (TypeNode){
         .tag = TYPE_REF,
         .ref = ref,
     };
 }
 
 // Either clones or refs, whichevers cheaper (result never needs to be dropped)
-static inline Type type_refcopy(Type const* ref) {
+static inline TypeNode type_refcopy(TypeNode const* ref) {
     switch (ref->tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -226,47 +226,47 @@ static inline Type type_refcopy(Type const* ref) {
     return type_ref_always(ref);
 }
 
-static inline bool type_is_self_referential(Type const* me) {
+static inline bool type_is_self_referential(TypeNode const* me) {
     return my tag == TYPE_ANY && my any.self_referential_error;
 }
 
-Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b);
-static inline Type type_composite_base(typeof((Type){}.tag) tag) {
+TypeNode type_composite_without_simplify(typeof((TypeNode){}.tag) tag, TypeNode a, TypeNode b);
+static inline TypeNode type_composite_base(typeof((TypeNode){}.tag) tag) {
     switch (tag) {
-        case TYPE_UNION:        return (Type){.tag = TYPE_NEVER};
-        case TYPE_INTERSECTION: return (Type){.tag = TYPE_ANY};
+        case TYPE_UNION:        return (TypeNode){.tag = TYPE_NEVER};
+        case TYPE_INTERSECTION: return (TypeNode){.tag = TYPE_ANY};
         default:                panic("Invalid composite tag");
     }
 }
 
 // PERF: should type_drop() be inlined?
-void type_drop(Type* me);
+void type_drop(TypeNode* me);
 // PERF: should type_clone() be inlined?
-Type type_clone(Type me);
-static inline Type type_move(Type* me) {
-    Type ret = *me;
+TypeNode type_clone(TypeNode me);
+static inline TypeNode type_move(TypeNode* me) {
+    TypeNode ret = *me;
     my tag = TYPE_ANY;
     return ret;
 }
 
-void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs);
-void type_typecheck(Type const* me, ErrorCtx* errs);
-#define g_class_key Type, type
+void type_lookup_names(TypeNode* me, ScopeStack* names, ErrorCtx* errs);
+void type_typecheck(TypeNode const* me, ErrorCtx* errs);
+#define g_class_key TypeNode, type
 #define g_declared
 #include <cleat/generic/vec.h>
 
 typedef struct SpannedType {
     Span span;
-    Type type;
+    TypeNode type;
 } SpannedType;
-static inline SpannedType spanned_type(Span span, Type type) { return (SpannedType){span, type}; }
+static inline SpannedType spanned_type(Span span, TypeNode type) { return (SpannedType){span, type}; }
 static inline void spanned_type_drop(SpannedType* me) { type_drop(&my type); }
 static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedType){.span = me.span, .type = type_clone(me.type)}; }
 
 #define g_class_key SpannedType, spanned_type
 #include <cleat/generic/vec.h>
 
-static inline Type const* generic_param_at(VecSpannedType const* params, intptr_t i) {
+static inline TypeNode const* generic_param_at(VecSpannedType const* params, intptr_t i) {
     return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_any;
 }
 

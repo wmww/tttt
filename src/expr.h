@@ -303,7 +303,7 @@ typedef struct GenericParamsExpr {
 
 typedef struct AsTypeExpr {
     Expr expr;
-    Type type;
+    TypeNode type;
     bool angle_bracket_syntax; // If the <type>value syntax was used
     Span keyword_span; // `as` or `satisfies`
     bool is_satisfies; // `expr satisfies type`, which checks the expression against the type but doesn't change it

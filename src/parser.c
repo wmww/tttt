@@ -104,9 +104,9 @@ static bool parse_interface(Parser* parent, Interface* ret);
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
 static bool parse_statement(Parser* parent, bool toplevel, Statement* ret);
 static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret);
-static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
-static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, Type* ret);
-static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Type* ret);
+static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret);
+static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, TypeNode* ret);
+static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret);
 static bool parse_function_args(
     Parser* parent,
     bool parse_abstract_and_new,
@@ -684,7 +684,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     }
     hop_whitespace(&p);
 
-    Type extends = type_any;
+    TypeNode extends = type_any;
     bool extends_explicit = false;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         extends_explicit = true;
@@ -693,7 +693,7 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
         hop_whitespace(&p);
     }
 
-    Type fallback = type_any;
+    TypeNode fallback = type_any;
     bool fallback_explicit = false;
     if (hop_start(&p, "=")) {
         hop_whitespace(&p);
@@ -762,13 +762,13 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     Span trailing_comma_span = span_null;
     while (*p.pos && *p.pos != '>') {
         trailing_comma_span = span_null;
-        Type t;
+        TypeNode t;
         Anchor type_a = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
             vec_spanned_type_push(ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
-            vec_spanned_type_push(ret, spanned_type(span_from_pos(&p), (Type){
+            vec_spanned_type_push(ret, spanned_type(span_from_pos(&p), (TypeNode){
                 .tag = TYPE_ANY,
                 .any.unkown_symbol_span = span_from_pos(&p),
             }));
@@ -807,11 +807,11 @@ fail:
     return parse_fail(&p);
 }
 
-static bool parse_ternary_type(Parser* parent, Type* left_and_ret) {
+static bool parse_ternary_type(Parser* parent, TypeNode* left_and_ret) {
     Parser p = parser(parent);
-    Type maybe_super = {0};
-    Type if_true = {0};
-    Type if_false = {0};
+    TypeNode maybe_super = {0};
+    TypeNode if_true = {0};
+    TypeNode if_false = {0};
 
     if (!hop_start_if_ends_on_word_break(&p, "extends")) {
         return parse_fail(&p);
@@ -892,9 +892,9 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
 
 }
 
-static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, Type* left_and_ret) {
+static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence, TypeNode* left_and_ret) {
     Parser p = parser(parent);
-    Type type;
+    TypeNode type;
 
     hop_whitespace(&p);
 
@@ -910,7 +910,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
             return parse_success(&p);
         } else {
             expect_char(&p, ']');
-            *left_and_ret = type_array(c_new(Type, *left_and_ret), false);
+            *left_and_ret = type_array(c_new(TypeNode, *left_and_ret), false);
             return parse_success(&p);
         }
     }
@@ -994,7 +994,7 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     expect_identifier(&p, &name);
     hop_whitespace(&p);
 
-    Type extends;
+    TypeNode extends;
     if (hop_start_if_ends_on_word_break(&p, "extends")) {
         hop_whitespace(&p);
         if (expect_type(&p, TYPE_PRECEDENCE_NULL, &extends)) {
@@ -1026,7 +1026,7 @@ static bool parse_unique_symbol_type(Parser* parent) {
     return parse_success(&p);
 }
 
-static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
+static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -1034,7 +1034,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
         IdentifierType identifier;
         InferredType inferred;
         FunctionImpl func;
-        Type type;
+        TypeNode type;
         VecTupleElement tuple_elements;
     } parsed;
 
@@ -1151,21 +1151,21 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, Type* ret)
     return parse_success(&p);
 }
 
-static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, Type* ret) {
+static inline bool parse_type_or_set_to_default(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     if (parse_type(parent, min_precedence, ret)) {
         return true;
     } else {
-        *ret = (Type){0};
+        *ret = (TypeNode){0};
         return false;
     }
 }
 
-static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Type* ret) {
+static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     if (parse_type(parent, min_precedence, ret)) {
         return true;
     } else {
         parse_error(parent, span_from_token(parent), 1110, "Type expected.");
-        *ret = (Type){
+        *ret = (TypeNode){
             .tag = TYPE_ANY,
             .any.unkown_symbol_span = span_from_pos(parent),
         };
@@ -1203,7 +1203,7 @@ static bool parse_interface(Parser* parent, Interface* ret) {
                                 existing = other;
                             }
                         }
-                        Type type = type_any;
+                        TypeNode type = type_any;
                         if (is_getter) {
                             type = type_move(&item.method.func.ret);
                         } else if (vec_function_arg_size(&item.method.func.args)) {
@@ -1320,7 +1320,7 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
-    Type type;
+    TypeNode type;
     if (expect_char(&p, '=')) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
@@ -1366,11 +1366,11 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
 
         Span last_comma_span = span_null;
         Span second_last_comma_span = span_null;
-        Type last_type = type_any;
+        TypeNode last_type = type_any;
         Span last_type_span = span_null;
 
         while (*p.pos) {
-            Type t;
+            TypeNode t;
             Anchor type_start = anchor(&p);
             if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
                 if (span_valid(last_type_span)) {
@@ -1657,7 +1657,7 @@ static bool parse_function_args(
             if (p.whitespace != WHITESPACE_NEWLINE && ret->ret.tag == TYPE_IDENTIFIER) {
                 if (hop_start_if_ends_on_word_break(&p, "is")) {
                     hop_whitespace(&p);
-                    Type t;
+                    TypeNode t;
                     expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
                     type_drop(&t);
                     type_drop(&ret->ret);
@@ -1668,7 +1668,7 @@ static bool parse_function_args(
                         hop_whitespace(&p);
                         if (hop_start_if_ends_on_word_break(&p, "is")) {
                             hop_whitespace(&p);
-                            Type t;
+                            TypeNode t;
                             expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
                             type_drop(&t);
                         }
@@ -2565,7 +2565,7 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         hop_whitespace(&p);
 
         while (true) {
-            Type t;
+            TypeNode t;
             if (!expect_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
                 break;
             }
@@ -2762,7 +2762,7 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
-static bool parse_as_type(Parser* parent, Type* ret, Span* keyword_span_ret, bool* is_satisfies_ret) {
+static bool parse_as_type(Parser* parent, TypeNode* ret, Span* keyword_span_ret, bool* is_satisfies_ret) {
     Parser p = parser(parent);
 
     // Neither keyword can follow a line break
@@ -3063,7 +3063,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             Expr expr_a;
             Expr expr_b;
         };
-        Type type;
+        TypeNode type;
         UnaryOp unary;
         struct {
             Expr expr;
@@ -3432,7 +3432,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (hop_char(&p, '<')) {
         hop_whitespace(&p);
 
-        Type t;
+        TypeNode t;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
         hop_whitespace(&p);
 
@@ -3934,11 +3934,11 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
 
     Anchor a = anchor(parent);
 
-    Type type;
+    TypeNode type;
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
     ret->explicit_type = type;
-    ret->assigned_type = (Type){0};
+    ret->assigned_type = (TypeNode){0};
     ret->explicit_type_span = span_from(a);
 
     return true;
@@ -3950,8 +3950,8 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
     } else {
         ret->explicit_type_span = span_null;
         ret->has_explicit_type = false;
-        ret->explicit_type = (Type){0};
-        ret->assigned_type = (Type){0};
+        ret->explicit_type = (TypeNode){0};
+        ret->assigned_type = (TypeNode){0};
         return false;
     }
 }

@@ -39,7 +39,7 @@ typedef struct LazyType {
     // that share a lib AST don't share checker state. 0: not bound yet (evaluating is a bug)
     u32 slot;
     // LAZY_TYPE_EVALUATED: the type, as a node to lower
-    Type preevaluated;
+    TypeNode preevaluated;
 } LazyType;
 
 // Slot numbers are process-wide and never reused, see hacks.md
@@ -87,7 +87,7 @@ static inline void lazy_type_bind(LazyType* me, int tag) {
     if (!my slot) my slot = lazy_slot_new();
 }
 
-static inline LazyType lazy_type_preeval(Type type) {
+static inline LazyType lazy_type_preeval(TypeNode type) {
     return (LazyType){
         .tag = LAZY_TYPE_EVALUATED,
         .preevaluated = type,

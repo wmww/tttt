@@ -14,21 +14,21 @@
 #include "math_helpers.h"
 #include "ty/ty.h"
 
-const Type type_any = { .tag = TYPE_ANY };
-const Type type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
-const Type type_unknown = { .tag = TYPE_UNKNOWN };
-const Type type_never = { .tag = TYPE_NEVER };
-const Type type_void = { .tag = TYPE_VOID };
-const Type type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
-const Type type_boolean = { .tag = TYPE_BOOLEAN };
-const Type type_number = { .tag = TYPE_NUMBER };
-const Type type_string = { .tag = TYPE_STRING };
-const Type type_symbol = { .tag = TYPE_SYMBOL };
-const Type type_bigint = { .tag = TYPE_BIGINT };
-const Type type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
-const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
+const TypeNode type_any = { .tag = TYPE_ANY };
+const TypeNode type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
+const TypeNode type_unknown = { .tag = TYPE_UNKNOWN };
+const TypeNode type_never = { .tag = TYPE_NEVER };
+const TypeNode type_void = { .tag = TYPE_VOID };
+const TypeNode type_object = { .tag = TYPE_INTERFACE, .interface.members = {0} };
+const TypeNode type_boolean = { .tag = TYPE_BOOLEAN };
+const TypeNode type_number = { .tag = TYPE_NUMBER };
+const TypeNode type_string = { .tag = TYPE_STRING };
+const TypeNode type_symbol = { .tag = TYPE_SYMBOL };
+const TypeNode type_bigint = { .tag = TYPE_BIGINT };
+const TypeNode type_null = { .tag = TYPE_VALUE, .value.tag = VALUE_NULL };
+const TypeNode type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
-Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
+TypeNode type_composite_without_simplify(typeof((TypeNode){}.tag) tag, TypeNode a, TypeNode b) {
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
         vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
@@ -42,14 +42,14 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
         vec_type_insert_n(&b.composite, 0, &a, 1);
         return b;
     } else {
-        return (Type){
+        return (TypeNode){
             .tag = tag,
             .composite = c_init(vec_type, {a, b}),
         };
     }
 }
 
-void type_drop(Type* me) {
+void type_drop(TypeNode* me) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -124,7 +124,7 @@ void type_drop(Type* me) {
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
-Type type_clone(Type me) {
+TypeNode type_clone(TypeNode me) {
     switch (me.tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -142,18 +142,18 @@ Type type_clone(Type me) {
         case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
         case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
         case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
-        case TYPE_ARRAY: return type_array(c_new(Type, type_clone(*me.array.element)), me.array.readonly);
+        case TYPE_ARRAY: return type_array(c_new(TypeNode, type_clone(*me.array.element)), me.array.readonly);
         case TYPE_TUPLE: return type_tuple(vec_tuple_element_clone(me.tuple.elements), me.tuple.readonly);
         case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
         case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
         case TYPE_TYPEOF: return type_typeof(c_new(TypeofType, typeof_type_clone(*me.typeof_)));
         case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
-        case TYPE_UNION: case TYPE_INTERSECTION: return (Type){.tag = me.tag, .composite = vec_type_clone(me.composite)};
+        case TYPE_UNION: case TYPE_INTERSECTION: return (TypeNode){.tag = me.tag, .composite = vec_type_clone(me.composite)};
     }
     impossible;
 }
 
-static void type_add_inferred_names(Type const* me, Scope* scope) {
+static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -239,7 +239,7 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
     }
 }
 
-void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
+void type_lookup_names(TypeNode* me, ScopeStack* names, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -302,7 +302,7 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
     }
 }
 
-void type_typecheck(Type const* me, ErrorCtx* errs) {
+void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:

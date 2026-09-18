@@ -3,7 +3,7 @@
 #include "scope.h"
 #include "error.h"
 
-// The types of expressions (plan 02 stage 4b3). ty_check_expr(expr, contextual) is the one entry point: whoever knows
+// The types of expressions. ty_check_expr(expr, contextual) is the one entry point: whoever knows
 // the contextual type of an expression (a declaration with a type annotation, a call resolving its arguments, an
 // object literal checking its members, a return statement...) checks it with that type *before* anything else asks,
 // and the result is the expression's memo. Everything else reads the memo through ty_expr_type(), which checks
@@ -29,7 +29,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
 static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
 
 Ty const* ty_value_type_of(Checker* me, Declaration const* decl) {
-    return ty_from_legacy(me, &decl->value_type, expr_lower_ctx);
+    return ty_from_node(me, &decl->value_type, expr_lower_ctx);
 }
 
 // Memo
@@ -888,7 +888,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
 // The rest
 
 static bool is_const_assertion(AsTypeExpr const* as_type) {
-    Type const* type = &as_type->type;
+    TypeNode const* type = &as_type->type;
     return type->tag == TYPE_IDENTIFIER && !type->identifier->decl_ref && span_equals(type->identifier->name, "const") &&
         vec_span_is_empty(&type->identifier->namespaces);
 }
@@ -1039,7 +1039,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     impossible;
 }
 
-// What the legacy LazyType of an expression evaluates to: nobody checked it with a contextual type first
+// What the LazyType of an expression evaluates to: nobody checked it with a contextual type first
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr) {
     return compute(me, expr, (ExprCtx){0});
 }

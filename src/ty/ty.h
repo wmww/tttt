@@ -1,11 +1,9 @@
 #pragma once
 
-// The new type core (agents/plans/02-type-core.md). Semantic types are `Ty`: immutable once published, allocated in
-// the arena of a `Checker`, and interned, so pointer equality is type identity. The legacy `Type` struct is on its way
-// to being syntax only (the future `TypeNode`); `ty_from_node()` in lower.c is the only producer of `Ty` from it.
-//
-// The legacy checker uses it for every type relation, and gets the types of classes, interfaces and enums from it
-// (carried as TYPE_NEW, see legacy_view.c).
+// The type core. Semantic types are `Ty`: immutable once published, allocated in the arena of a `Checker`, and
+// interned, so pointer equality is type identity. `TypeNode` (type.h) is the syntax of a type; `ty_from_node()` in
+// lower.c is the only producer of `Ty` from it. Everything that has a type (expressions, declarations, functions...)
+// evaluates to a `Ty`, memoised per checker through its LazyType (lazy_type.h).
 
 #include "type.h"
 #include "lazy_type.h"
@@ -140,7 +138,7 @@ typedef enum TyFlags {
     // Cached facts
     TYF_ERROR                        = 1 << 24, // the `any` that stands for "an error was already reported"
     TYF_COULD_CONTAIN_TYPE_VARIABLES = 1 << 25, // if unset, instantiate() is the identity
-    TYF_FRESH_LITERAL                = 1 << 26, // TODO(stage 4): fresh/regular literal pairs for widening
+    TYF_FRESH_LITERAL                = 1 << 26, // TODO: fresh/regular literal pairs for widening
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
     TYF_LITERAL = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL,
@@ -189,7 +187,7 @@ typedef struct TyObjectState {
 
 typedef struct TyParamState {
     GenericItem const* item; // Null for type parameters that were only ever seen by reference (and infer/mapped ones)
-    Type const* constraint_node;
+    TypeNode const* constraint_node;
     LazyState constraint_state;
     Ty const* constraint; // null if unconstrained
     LazyState fallback_state;
@@ -243,12 +241,12 @@ struct Ty {
             TyObjectState* state;
         } reference;
         struct {
-            Type const* node; // TYPE_INTERFACE or TYPE_CALLABLE. Null for instantiations and functions
+            TypeNode const* node; // TYPE_INTERFACE or TYPE_CALLABLE. Null for instantiations and functions
             // The type of a function declaration/expression, method, accessor or constructor: one signature, read
             // straight off the FunctionImpl (the return type is inferred from its body if it isn't annotated)
             FunctionImpl const* function;
             Declaration const* merged_value; // Function overloads, see ty_merged_value_type()
-            Type const* const* overloads; // If set, the type of an overloaded method: TYPE_CALLABLEs, node is the first
+            TypeNode const* const* overloads; // If set, the type of an overloaded method: TYPE_CALLABLEs, node is the first
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
             TyMapper const* mapper;
@@ -293,14 +291,14 @@ struct Ty {
 
 struct TyCondBranch {
     Ty const* type; // null until lowered if `node` is set
-    Type const* node;
+    TypeNode const* node;
     LowerCtx ctx;
     TyMapper const* mapper;
     LazyState state;
 };
 
 typedef struct TyDeferredRef {
-    Type const* node; // TYPE_ARRAY or TYPE_TUPLE
+    TypeNode const* node; // TYPE_ARRAY or TYPE_TUPLE
     LowerCtx ctx;
     TyMapper const* mapper; // may be null
     LazyState state;
@@ -318,9 +316,9 @@ struct Prop {
     Atom const* name;
     u32 flags;
     Declaration const* parent; // the declared type it was declared in, may be null
-    // Exactly one source of the type: a node to lower, a legacy type to lower, or a target to instantiate
-    Type const* node;
-    Type const* const* overloads; // An overloaded method: all of its TYPE_CALLABLE nodes, node being the first
+    // Exactly one source of the type: a node to lower or a target to instantiate (or it is known from the start)
+    TypeNode const* node;
+    TypeNode const* const* overloads; // An overloaded method: all of its TYPE_CALLABLE nodes, node being the first
     u32 overload_count;
     LowerCtx ctx;
     Prop const* target;
@@ -369,8 +367,8 @@ struct Signature {
     u32 param_count;
     u32 min_args;
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
-    // that the legacy checker may be in the middle of evaluating
-    Type const* ret_node;
+    // that is in the middle of being checked
+    TypeNode const* ret_node;
     LazyState ret_state;
     Ty const* ret;
 };
@@ -430,7 +428,7 @@ typedef enum TyRelation {
     TY_RELATION_ASSIGNABLE,
     TY_RELATION_COMPARABLE,
     // Assignable, except that null and undefined are never assignable to other types, whatever strictNullChecks says.
-    // HACK(stage 4b): what the legacy operator checks mean by "extends number"
+    // HACK: what the legacy operator checks mean by "extends number"
     TY_RELATION_ASSIGNABLE_STRICT_NULLS,
     // What union (subtype) reduction uses: `any` is only a subtype of `any`/`unknown`, and a type that lacks an
     // optional property of the target isn't a subtype of it
@@ -504,7 +502,7 @@ struct Checker {
 Checker* checker_new(Program* program);
 void checker_drop(Checker* me);
 
-// The checker that legacy code without a context parameter works for: lazy_type_get() uses its slots (through
+// The checker that code without a context parameter works for: lazy_type_get() uses its slots (through
 // current_lazy_slots). One per Program; set by program_typecheck() and stays set until that program is destroyed or
 // another one is typechecked, because types are still evaluated after typechecking (the test traversal, for one).
 // New-core functions take a `Checker* me` instead. See hacks.md
@@ -561,16 +559,14 @@ TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);
 Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
 
 // lower.c
-Ty const* ty_from_node(Checker* me, Type const* node, LowerCtx ctx);
-// Like ty_from_node(), but also follows the legacy checker's TYPE_LAZY/TYPE_REF (stage 1-4 scaffolding)
-Ty const* ty_from_legacy(Checker* me, Type const* type, LowerCtx ctx);
+Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 Ty const* ty_declared_type_of(Checker* me, Declaration const* decl);
 Ty const* ty_namespace_type(Checker* me, Scope const* scope);
 Ty const* ty_merged_value_type(Checker* me, Declaration const* decl);
 Atom const* ty_qualified_name(Checker* me, Declaration const* decl); // `A.B.name`
 void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
-Ty const* ty_anonymous_from_node(Checker* me, Type const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
+Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
 
 // enums.c
 Ty const* ty_resolve_enum(Checker* me, Declaration const* decl); // Only ty_declared_type_of() should call this
@@ -643,7 +639,7 @@ bool ty_extends_array(Checker* me, Ty const* ty); // Assignable to `readonly any
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2345
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
-Ty const* ty_of_node(Type const* node); // A written type, by the current checker
+Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker
 // `object[index]` / `object.name`: TS2538, TS2493, TS2339...
 void ty_check_property_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool error_if_not_found,
@@ -670,7 +666,7 @@ typedef struct TyDisplay {
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
     // Literal types inside object types that came from expressions print as their primitive: tsc widens the
-    // properties of an object literal when it types it, the legacy checker only when it reports. HACK(stage 4b)
+    // properties of an object literal when it types it, the legacy checker only when it reports. HACK
     bool widen_literals;
     bool unqualified_names; // See out_name() in ty_display.c
 } TyDisplay;

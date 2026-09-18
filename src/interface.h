@@ -3,12 +3,12 @@
 #include "prelude.h"
 
 typedef struct InterfaceMember InterfaceMember;
-typedef struct Type Type;
+typedef struct TypeNode TypeNode;
 typedef struct CallExpr CallExpr;
 typedef struct Declaration Declaration;
 typedef struct ErrorCtx ErrorCtx;
 g_declare_vec(InterfaceMember, interface_member);
-g_declare_vec(Type, type);
+g_declare_vec(TypeNode, type);
 
 typedef struct Interface {
     VecInterfaceMember members;

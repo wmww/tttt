@@ -92,7 +92,7 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
     scope_drop(&generic_scope);
 }
 
-static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me) {
+static TypeNode function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me) {
     VecCallableArg args = vec_callable_arg_init();
     for_each (i, vec_function_arg, &my args) {
         vec_callable_arg_push(&args, (CallableArg){
@@ -110,10 +110,10 @@ static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me
     }));
 }
 
-Type function_impl_into_type(FunctionImpl me) {
+TypeNode function_impl_into_type(FunctionImpl me) {
     // PERF: Maybe allocate the CallableType and FunctionImpl in the same memory block?
     FunctionImpl* impl = c_new(FunctionImpl, me);
-    Type type = function_impl_make_callable_sans_inferred_ret(impl);
+    TypeNode type = function_impl_make_callable_sans_inferred_ret(impl);
     type.callable->owned_function_impl = impl;
     return type;
 }
@@ -173,10 +173,10 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
 
         if (i->rest) {
             // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
-            Type const* written = binding_get_effective_type(&i->initializer.binding);
+            TypeNode const* written = binding_get_effective_type(&i->initializer.binding);
             Checker* checker = current_checker;
             if (written->tag != TYPE_INFERRED &&
-                !ty_extends_array(checker, ty_from_legacy(checker, written, (LowerCtx){ .generic = true }))
+                !ty_extends_array(checker, ty_from_node(checker, written, (LowerCtx){ .generic = true }))
             ) {
                 error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");
             }

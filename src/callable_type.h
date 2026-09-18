@@ -7,7 +7,7 @@ typedef struct FunctionImpl FunctionImpl;
 
 typedef struct CallableArg {
     bool optional;
-    Type type;
+    TypeNode type;
     FunctionArg const* source;
 } CallableArg;
 
@@ -20,7 +20,7 @@ CallableArg callable_arg_clone(CallableArg me);
 typedef struct CallableType {
     Generic generic;
     VecCallableArg args;
-    Type ret;
+    TypeNode ret;
     bool is_constructor;
     bool is_abstract_constructor;
     // If this CallableType was parsed directly from code into the AST (not cloned from another or created from a

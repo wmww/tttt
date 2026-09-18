@@ -68,7 +68,7 @@ bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b) {
     return ty_is_related(me, a, b, TY_RELATION_COMPARABLE) || ty_is_related(me, b, a, TY_RELATION_COMPARABLE);
 }
 
-Ty const* ty_of_node(Type const* node) {
+Ty const* ty_of_node(TypeNode const* node) {
     return ty_from_node(current_checker, node, (LowerCtx){ .generic = true });
 }
 

@@ -56,7 +56,7 @@ typedef struct ClassItem {
             bool name_is_value;
             bool has_explicit_type;
             Span explicit_type_span;
-            Type explicit_type;
+            TypeNode explicit_type;
             Expr value;
             LazyType lazy_type;
         } field;
@@ -69,7 +69,7 @@ void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
 Ty const* class_item_field_evaluate_type(ClassItem* me);
 Ty const* class_item_accessor_evaluate_type(ClassItem* me);
-Type class_item_get_type(ClassItem* me);
+TypeNode class_item_get_type(ClassItem* me);
 
 #define g_class_key ClassItem, class_item
 #define g_no_clone
@@ -83,13 +83,13 @@ typedef struct ClassDecl {
     VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
     Generic generic;
     Expr extends;
-    VecType implements;
+    VecTypeNode implements;
     VecClassItem items;
     LazyType instance_type;
     LazyType class_type;
     Declaration typeof_declaration;
     ArcDeclaration declaration;
-    Type instance_identifier_type;
+    TypeNode instance_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

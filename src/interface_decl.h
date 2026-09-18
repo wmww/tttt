@@ -10,7 +10,7 @@ typedef struct InterfaceDecl {
     Span full_span;
     Generic generic;
     VecSpannedType extends;
-    Type type;
+    TypeNode type;
     LazyType lazy_type;
     ArcDeclaration declaration;
 } InterfaceDecl;

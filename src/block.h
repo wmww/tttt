@@ -3,14 +3,14 @@
 #include "type.h"
 
 typedef struct Statement Statement;
-typedef struct Type Type;
+typedef struct TypeNode TypeNode;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct ScopeStack ScopeStack;
 
 g_declare_vec(Statement, statement);
 
 typedef struct BlockTypecheckCtx {
-    Type const* specified_return;
+    TypeNode const* specified_return;
     bool break_allowed;
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed

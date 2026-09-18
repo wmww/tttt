@@ -683,7 +683,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (operand->flags & (TYF_UNKNOWN | TYF_NON_PRIMITIVE | TYF_VOID | TYF_NULLABLE)) {
         return my intrinsics[TY_NEVER];
     }
-    // TODO(stage 4): keyof a primitive is the keys of its apparent type (`String`, `Number`...), needs the globals
+    // TODO: keyof a primitive is the keys of its apparent type (`String`, `Number`...), needs the globals
     u64 key[2] = { KEY_KEYOF, operand->id };
     Ty* fresh;
     Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh);
@@ -755,7 +755,7 @@ Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
     if (!branch->node || branch->state == LAZY_STATE_DONE) return branch->type;
     if (branch->state == LAZY_STATE_IN_FLIGHT) return ty_intrinsic(me, TY_ERROR);
     branch->state = LAZY_STATE_IN_FLIGHT;
-    branch->type = ty_instantiate(me, ty_from_legacy(me, branch->node, branch->ctx), branch->mapper);
+    branch->type = ty_instantiate(me, ty_from_node(me, branch->node, branch->ctx), branch->mapper);
     branch->state = LAZY_STATE_DONE;
     return branch->type;
 }

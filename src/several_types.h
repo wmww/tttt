@@ -21,8 +21,8 @@ IdentifierType identifier_type_clone(IdentifierType me);
 void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
-static inline Type type_identifier(IdentifierType* identifier) {
-    return (Type){
+static inline TypeNode type_identifier(IdentifierType* identifier) {
+    return (TypeNode){
         .tag = TYPE_IDENTIFIER,
         .identifier = identifier,
     };
@@ -33,7 +33,7 @@ static inline Type type_identifier(IdentifierType* identifier) {
 typedef struct InferredType {
     Span name;
     Span full_span;
-    Type extends;
+    TypeNode extends;
     ArcDeclaration owned_declaration;
     Declaration const* declaration_ref;
 } InferredType;
@@ -45,7 +45,7 @@ InferredType inferred_type_clone(InferredType me);
 
 typedef struct TupleElement {
     Span maybe_name;
-    Type type;
+    TypeNode type;
     bool rest;
     bool readonly;
     bool optional;
@@ -61,8 +61,8 @@ static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type
 // Index
 
 typedef struct IndexedType {
-    Type interface;
-    Type index;
+    TypeNode interface;
+    TypeNode index;
     bool is_from_binding;
     bool array_only;
 } IndexedType;
@@ -75,7 +75,7 @@ void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs);
 // Keyof
 
 typedef struct KeyofType {
-    Type interface;
+    TypeNode interface;
 } KeyofType;
 
 void keyof_type_drop(KeyofType* me);
@@ -98,10 +98,10 @@ void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs);
 // Ternary
 
 typedef struct TernaryType {
-    Type maybe_sub;
-    Type maybe_super;
-    Type if_true;
-    Type if_false;
+    TypeNode maybe_sub;
+    TypeNode maybe_super;
+    TypeNode if_true;
+    TypeNode if_false;
 } TernaryType;
 
 void ternary_type_drop(TernaryType* me);

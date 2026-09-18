@@ -52,7 +52,7 @@ You're in charge of draining triage.md and otherwise maintaining the repo. Valid
 ## Development Scripts
 You will use scripts to help you run tests, but some scripts and options are more useful to AI agents than others. All scripts automatically compile the code in src before running tttt, and abort if there are any compile errors. The main scripts you will use are:
 
-- `./fasttest.sh --summary`: Shows which new tests pass and which new tests fail
+- `./fasttest.sh --summary`: Shows which new tests pass and which new tests fail, compared to the saved results (`test/baseline_results.ts`). **Save them with `./fasttest.sh -s` before you commit** (`./passcount.py` prints the totals of the saved file), or the next session's summary is polluted by yours
 - `./test.sh -f specificTestName -d`: Shows the detailed output of a specific failing test, runs under valgrind, so may fail with a useful message if there are memory errors.
 - `./test.sh -f specificTestName --sym`: Shows only symbols for a given test, flag can also be `--err` or `--typ`
 - `./filetest.sh path/to/file.ts -d`: Run a test on a file that is not part of TypeScript's existing test suite. This is useful for better understanding how both tttt and tsc work in a simplified case that may not otherwise be tested. You can create any typescript files you want and use this command on them. Prefix with `FAST=1` to use the release build without valgrind (seconds instead of a minute)

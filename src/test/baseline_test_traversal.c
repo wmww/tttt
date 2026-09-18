@@ -117,7 +117,7 @@ void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCa
     }
 }
 
-void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
+void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case TYPE_UNKNOWN:
         case TYPE_NEVER:
@@ -295,7 +295,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .name = decl->name,
                 });
                 if (decl->type_tag && !decl->namespace_tag) {
-                    Type t = type_identifier(c_new(IdentifierType, {
+                    TypeNode t = type_identifier(c_new(IdentifierType, {
                         .name = decl->name,
                         .decl_ref = decl,
                     }));
@@ -394,7 +394,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my method.name_span,
                 .name_is_value = my method.name_is_value,
             });
-            Type t = class_item_get_type(me);
+            TypeNode t = class_item_get_type(me);
             baseline_test_case_add_type_node(ctx, my method.name_span, &t);
             type_drop(&t);
             function_impl_compile_test_info(&my method.func, ctx);
@@ -407,7 +407,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my field.name_span,
                 .name_is_value = my field.name_is_value,
             });
-            Type t = class_item_get_type(me);
+            TypeNode t = class_item_get_type(me);
             baseline_test_case_add_type_node(ctx, my field.name_span, &t);
             type_drop(&t);
 
@@ -716,7 +716,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 expr_compile_test_info(my template_->tag, ctx);
                 if (vec_expr_is_empty(&my template_->substitutions)) {
                     // Don't clone the string, and don't drop the type
-                    Type t = type_value(value_string(my template_->plain_string));
+                    TypeNode t = type_value(value_string(my template_->plain_string));
                     baseline_test_case_add_type_node(ctx, my template_->template_span, &t);
                 } else {
                     baseline_test_case_add_type_node(ctx, my template_->template_span, &type_string);

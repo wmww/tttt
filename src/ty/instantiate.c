@@ -1,6 +1,6 @@
 #include "ty/ty_internal.h"
 
-// Instantiation never copies a type's structure. Type parameters map to their targets, interned types get rebuilt
+// Instantiation never copies a type's structure. TypeNode parameters map to their targets, interned types get rebuilt
 // through their constructors (and so come out as the existing type if there is one), and object types become a
 // {target, mapper} pair whose members are instantiated when somebody asks for them.
 
@@ -98,7 +98,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     // Asking for the members of every object type that gets instantiated would defeat their laziness, so look at the
     // syntax first
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
-    Type const* node = root->anonymous.node;
+    TypeNode const* node = root->anonymous.node;
     if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
@@ -142,7 +142,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
 }
 
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
-    // HACK(stage 4b): instantiation expressions only exist for the legacy checker's `new Bar<T>()`, whose result it
+    // HACK: instantiation expressions only exist for the legacy checker's `new Bar<T>()`, whose result it
     // substitutes itself; they aren't instantiated further
     if (ty->anonymous.applies_type_args) return ty;
     Ty const* as_list = instantiate_mapped_over_list(me, ty, mapper);

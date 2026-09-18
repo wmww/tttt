@@ -2,6 +2,27 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 5 (the old type world is deleted)
+Suite: **1434 full of 13165 tests** (was 1408), errors 5513 (5516), symbols 7797 (7701), types 3360 (3325). `./passcount.py`
+prints these from the saved results file (`./fasttest.sh -s`); 4b3 had forgotten to save its baseline.
+- Where the gains came from: namespaces and merged declarations built by the new core (+6 full: `typeof ns` for
+  namespace imports, clodules/fundules with the right members and parameter names), the `.symbols` property lookup on
+  `Ty` instead of on views (+93 symbols components), printing everything but written type names through `ty_display`
+  (+21 full; never qualifying would have been 1413, measured).
+- 16 error components lost, 8 symbols/types: `typeof x` is a real type now instead of `any`, which exposes missing
+  narrowing/freshness (`stringLiteralTypesInUnionTypes01/03`, `typeofStripsFreshness`, `invalidUndefinedValues`,
+  `stringLiteralsWithEqualityChecks03/04`: union order `Refrigerator | "foo"` needs literal types created as lazily
+  as tsc does), `aliasUsageIn*` (4 tests: `typeof moduleA` of an `import = require` module vs an interface, needs the
+  static side of a class exported from a module to relate), `indexedAccessAndNullableNarrowing` (passed by luck).
+- `log_error` lines 2 088 -> 2 096.
+- **Bench: total 0.55 s (0.64), typecheck 87 ms (132), peak RSS 774 MB (897)**, on a corpus that grew to 319 files
+  (more tests pass). tsc 3.33 s / 866 MB, tsgo 0.45 s / 559 MB (1.02 s single-threaded). The typecheck phase lost the
+  legacy views, per-relation lowering of temporaries and clone/drop traffic. Parse (175 ms) and name resolution
+  (166 ms) are now each twice the typecheck phase. Suite wall time 6.0 s.
+- `src/` is 28.7k lines (30.6k before): -3.4k / +1.5k. valgrind clean on ~2800 tests (`class*`, `enum*`, `namespace*`,
+  `function*`, `generic*`, `async*`, `mapped*`, `contextual*`, `infer*`, `object*`, `array*`, `module*`, `import*`,
+  `export*`, `alias*`, `decl*`).
+
 ## 2026-09-18, type core stage 4b3 (expressions evaluate to `Ty`, contextual typing, explicit type arguments)
 Suite: **1408 full of 13165 tests** (was 1362), errors 5516 (5277), symbols 7701 (7528), types 3325 (3243).
 - Against the committed baseline: 50 tests newly pass fully, 4 stopped (`contextualTyping24`: `this: void` doesn't

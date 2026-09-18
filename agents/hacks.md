@@ -1,17 +1,16 @@
 # Hacks
 Suboptimal-but-working code. Prefer function names over line numbers.
 
-- `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how legacy code without a context
-  parameter finds its checker. Stays set after `program_typecheck` because the test traversal and debug display
-  evaluate types afterwards. Shrinks as signatures get a `Checker*` (plan 02 stages 3-4).
+- `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how the AST-side walk
+  (`*_typecheck`, `*_evaluate_type`, `ty_of_node`, the `Ty const*` displayable) finds its checker. Stays set after
+  `program_typecheck` because the test traversal and debug display evaluate types afterwards. The type core itself
+  takes a `Checker*`; the walk should get one too (a check context with checker + errs + options).
 - `lazy_slot_new`: LazyType slot numbers come from one process-wide atomic counter and are never reused, and
   everything that might need a memo takes one eagerly (every transient `scope_init`, every `type_identifier` made
   during checking). A checker's slot table is sparse so this only costs page fragmentation (bench RSS +6%), and it
   panics after 1G slots. Per-file numbering (plan 02 §2) didn't fit because Declarations, Scopes and check-time
-  identifier types belong to no file. Revisit in stage 4/5 when slots hold `Ty*` and clones are gone; a long-running
-  process (language server) needs reuse.
-- `LAZY_SLOT_INLINE` / `LazyType.memo`: clones made during checking keep their memo inline, so `LazyType` hasn't
-  shrunk yet (it grew 8 bytes). Dies with `type_clone` in stage 5.
+  identifier types belong to no file. Slots hold a `Ty*` now and check-time clones are gone, so this can be
+  revisited; a long-running process (language server) needs reuse.
 - `lazy_type_drop`: a slotted LazyType dropped while a checker is current resets its slot (it must be a check-time
   temporary); the AST's own slots are dropped by `checker_drop`, which `program_drop` runs before dropping the AST.
   Dropping an AST while *another* program's checker is current would reset nothing (different slots), so it's safe,
@@ -30,8 +29,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   whether it should have had any.
 - `baseline_test_cache_get_program_with_libs`: one cached lib `Program` per distinct lib list (dozens per suite run,
   each with the DOM in it), never evicted. An unknown lib name is logged at info level and skipped, no TS6046.
-- `display_type` depth guard (`DISPLAY_TYPE_MAX_DEPTH`): the legacy display has no cycle detection, a module that
-  imports its own namespace recursed until the stack ran out. Prints `...` at depth 100. Dies with the legacy display.
+- `display_type` depth guard (`DISPLAY_TYPE_MAX_DEPTH`): the syntax display has no cycle detection. Nodes can't be
+  cyclic any more (the structural namespace types that were are gone), so this is probably dead; check and delete.
 - `main.c: default_libs`: without `--lib`/`--target` the CLI loads ES5 + DOM + three ES2015 libs (what the bench
   corpus needs) rather than tsc's default for the target.
 - `program.c`: `.js` import path handling by suffix check - not real module resolution.
@@ -51,9 +50,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `namespace_decl_add_names`: ambient modules (`declare module "m" {}`) get a scope for their contents but are not
   registered anywhere, so `import ... from "m"` still reports TS2307. Needs a program-level ambient module table
   (module resolution work). Their `"m"` name line is also missing from the symbols/types baselines.
-- `Interface.namespace_scope`: namespace value types print as `typeof A.B` via a borrowed `Scope*` stuffed into the
-  structural interface; without it, display recursed forever on `namespace A { export var a = A }`. Relations go
-  through the new core now, where a namespace is a declared type by scope. Dies with the legacy types.
 - `parse_jump_target` / `Statement.jump_label`: labels are parsed and shown in the types baseline, but never checked
   (TS1116 unknown label, TS1107 crossing function boundary, TS7028 unused label, duplicate labels). `inside_label`
   in `BlockTypecheckCtx` just permits any labeled `break` inside any labeled statement.
@@ -89,54 +85,51 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
 
-## Relations bridge (plan 02 stage 3): legacy checker -> `ty/relate.c`
-- `TY_RELATION_ASSIGNABLE_STRICT_NULLS` / `type_extends_strict_nulls`: what the legacy operator checks in `expr.c`
-  mean by "extends number" (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently
-  (TS18050, never emitted here).
-- `type_composite_internal`: union/intersection simplification of legacy types runs the new strict-subtype relation
-  pairwise per added member (lowering both each time). Quadratic; `ty_union` itself still has no subtype reduction.
-- `callable_type_typecheck` TS2370: skipped for `...args: infer A` by looking at the written node.
+## The AST-side walk and what's left of the old type world
+- **`TYPE_LAZY` / `TYPE_REF` / binding `TYPE_INDEXED` are still `TypeNode` tags** (plan 02 wanted them gone). They're
+  the links name resolution makes between a `Declaration` and what gives it its type (`Declaration.value_type`,
+  `MergedType.merge_list`, `Binding.assigned_type`), and lowering follows them. They're never cloned semantically or
+  resolved any more, so they're harmless, but they belong in a symbol (plan 03: a symbol's declarations + a
+  `ty_type_of_symbol`), not in the syntax tree's type.
+- `MergedType` / `LAZY_TYPE_MERGED` / `LAZY_TYPE_EVALUATED`: a declaration's type and value sides are each a list of
+  nodes plus a LazyType (`declared_owner` / `value_owner` say which side and whose). With one entry the LazyType is
+  `LAZY_TYPE_EVALUATED` and lowers the entry on every get (no memo); `node_skip_to_syntax()` and
+  `baseline_test_case_add_type_node()` look through it to find the written type. Same fate as above.
+- `CallableType` (`TYPE_CALLABLE`) still has its own `generic`/`args`/`ret` next to the `FunctionImpl` it owns, filled
+  in by `callable_type_resolve_names`. `Signature.node` reads those, `Signature.function` reads a `FunctionImpl`
+  directly: two ways to resolve a signature where `CallableType { FunctionImpl* }` would leave one.
+- `type_clone` (26 callers) survives for name resolution copying declarations (`declaration_clone_in_place`,
+  `decl_props_clone`, ports). A cloned `IdentifierType`/`CallableType` is lowered like an original, keyed by its own
+  address, so the copy of an interface-typed declaration is a second anonymous `Ty` for the same written type.
+- `ty/check.c: check_access` (TS2339 and friends): a missing property is only reported under
+  `noUncheckedIndexedAccess` and for dot access, the gate the legacy checker had. Everything is in place to report it
+  honestly (`ty_access` returning null), but it floods until narrowing and apparent types of everything are right.
+  A source that is `any` is let through to anything, even `never` (`check_assignable`).
+- `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
+  (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently (TS18050, never emitted here).
+- `function_impl_typecheck_signature` TS2370: skipped for `...args: infer A` by looking at the written node.
+- `generic_params_expr_typecheck` (`f<A>` outside a call): constraints are checked against the first signature only.
+- `for_each_loop_statement_evaluate_var_type`: `for..in` is `string`, `for..of` only knows arrays and strings (TS2495
+  for everything else, iterables are `any`).
+- `ty_function_return_type`: `void` when there's no `return` (tsc: `never` if the end isn't reachable), generators are
+  `any`, async wraps in `Promise<T>` without awaiting `T`. A function whose return type is being inferred further up
+  the stack is `any` without TS7023.
+- `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x` (it used to be `any`). tsc takes the *declared*
+  type of an identifier, not the narrowed one; no difference until narrowing exists.
+- `baseline_test_case_add_type_node`: a declaration whose type is a written type *name* (`var x: X.Y.Z`, an enum
+  member) shows as written (the legacy syntax printer), everything else through `ty_display` with unqualified names.
+  Measured: +21 full tests over never qualifying. The real rule needs symbol accessibility (plan 03).
+- `ty_merged_value_type`: the merged type copies the first named entry's `declared` struct (a class static side or an
+  enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one. Non-exported namespace
+  members are properties too (`Scope.declarations`, as the legacy structural type had it).
 
-## Legacy code consuming the new core (plan 02 stage 4a): `TYPE_NEW` and `ty/legacy_view.c`
-Classes, interfaces and enums (and every identifier type that names one) evaluate to `Ty`, carried through legacy code
-as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
-- `ty_legacy_view` / `view_build`: `type_resolve()` of a `TYPE_NEW` is a one-layer legacy copy of the `Ty` (interface with
-  members, union, array...) owned by the checker, children `TYPE_NEW` again (lazy per property / return type through
-  `Type.new_.prop` / `.ret_of`, because forcing every property type of a class when one member is looked at sends the
-  legacy checker into cycles). Deferred types (`keyof T`, `T[K]`, unresolved conditionals) view as their base constraint
-  (`ty_base_constraint`), `unknown` without one, so legacy code that resolves one loses the type (`x!` had to learn
-  to stay in the new core for that reason: `type_remove_null_and_undefined`). An anonymous
-  object with exactly one signature and nothing else views as `TYPE_CALLABLE`, anything else as `TYPE_INTERFACE`.
-  Enum literals view as plain values (`type_is_trivially_truthy` has to ask the `Ty` to know better).
-- `view_signature`: legacy inference identifies type parameters by `GenericItem.declaration_ref`, so the view's `Generic`
-  is a clone of the items the signature's type parameters were declared by; a parameter without a `FunctionArg` to point
-  at (signatures lowered from legacy temporaries) gets an arena stand-in without a name.
-- `type_resolve_internal`: `type_resolve_until_identifier()` stops at a `TYPE_NEW` (it's "named") unless it's a type
-  parameter, whose view is the `TYPE_IDENTIFIER` legacy code expects. `type_resolve_to_new()` exists for
-  `generic_params_expr_evaluate_type` (`Bar<T>` as a value), which needs the `Ty` behind an identifier.
-- `ty_declaration_is_evaluated_by_new_core`: the switch that decides which declarations' types come from the new core
-  (class, interface, enum, enum member, type alias incl. `infer X`/mapped keys). What `identifier_type_evaluate_type`
-  still answers itself: type parameters (as their constraint) and the `typeof` declarations of namespace imports.
-  Namespaces, functions and variables are still legacy.
-- `type_resolve_one_layer_internal` (TYPE_INDEXED / TYPE_KEYOF / TYPE_TERNARY): a type operator that legacy code resolves
-  is lowered and handed back as a checker-owned `TYPE_NEW` (`ty_legacy_wrapper`). Nothing is memoised per node: parsed
-  nodes are cheap (interning), clones made by legacy substitution are lowered as transients every time.
-  `type_resolve_binding_indexed_type`: destructuring bindings are `TYPE_INDEXED` nodes with `is_from_binding`, resolved
-  with `ty_access` on every resolve (no TS2339-style errors from there, `array_only` is a legacy guess). Dies in 4b3.
-- `MergedType.declared_owner`: how `merged_type_evaluate_type` finds the Declaration of a merged class/interface.
-- `class_decl_evaluate_structure`: the legacy structural class type survives only to feed
-  `interface_typecheck_members_against` (duplicate member checks) from `class_decl_typecheck`.
 - `canonical_declaration`: import aliases and re-exports are copies of a Declaration; identity goes by the declaration
   the AST node itself registered (found through `Declaration.nodes`), unless the copy merged with something since.
-- `display_type(TYPE_NEW)`: renders with `ty_display`; in underline mode (= the `.types` traversal) with
-  `TyDisplay.unqualified_names`, because always qualifying (`m1.C`) was wrong more often there. Both are guesses until
-  symbols know what's accessible from where (plan 03).
 - Single-member enums: `E.x` prints as `E` (right for `.types`, wrong in error messages where tsc shows the fresh
-  literal type `E.x`). Needs fresh/regular literal types. `operatorAddNullUndefined` regressed for it. Since 4b3
-  `ty_widened_literal` widens an enum member to its enum (inference, declarations, error messages).
+  literal type `E.x`). Needs fresh/regular literal types. `ty_widened_literal` widens an enum member to its enum.
 
-## Calls, inference and property access on the new core (plan 02 stage 4b1): `ty/call.c`, `ty/infer.c`, `ty/access.c`
-The algorithms are meant to stay; what's listed is where they lean on the legacy checker or stop short of tsc.
+## Calls, inference and property access (`ty/call.c`, `ty/infer.c`, `ty/access.c`): `ty/call.c`, `ty/infer.c`, `ty/access.c`
+The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no template
   literal inference, alias type arguments are only used for deferred types (there are no variances for aliases), no
   `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
@@ -148,13 +141,12 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   against the receiver.
 - `instantiate_outer` (call.c): an instantiated generic signature shares its type parameters with its target (the TODO
   in `signature_resolve`), so constraints and defaults have to be pushed through the signature's mapper chain by hand.
-- `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name, as the legacy `type_awaited` does for legacy types.
+- `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name.
 - `ty_access`: no unique symbol keys, `null`/`undefined`
   members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
-  `index_type_typecheck` (TS2339 and friends) is still the legacy lookup over views, gated the way it always was.
 
-## Expressions on the new core (plan 02 stage 4b3): `ty/expr.c`, contextual typing, the call passes
-`ty_check_expr(expr, contextual)` is meant to stay; what's listed is where it stops short of tsc or leans on legacy code.
+## Expressions (`ty/expr.c`), contextual typing, the call passes
+`ty_check_expr(expr, contextual)` is meant to stay; what's listed is where it stops short of tsc.
 - **No fresh/regular literal type pairs.** Every literal type that comes out of an expression counts as fresh: it
   widens at a mutable location (`ty_widened_for_declaration`, `check_for_mutable_location`), so `const c: 1 = 1; let x = c`
   gives `number` where tsc says `1`. No object literal freshness either (no excess property checks, TS2353).
@@ -167,12 +159,8 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   An expression first reached some other way (the `.types` traversal of a program that wasn't typechecked) is typed
   without context.
 - `Checker.return_context`: the contextual type of `return` expressions is checker state saved/restored around
-  function bodies (`function_impl_enter_return_context`), because `statement_evaluate_return_type` has no parameter
-  for it. `FunctionImpl.evaluating_ret` is still a write into the AST during checking.
-- Functions are still legacy underneath: `function_impl_evaluate_type` builds a legacy callable (memo of the function's
-  LazyType), which the new core lowers by node; contextual parameter types get in through `KEY_CONTEXT_PARAM` links read by
-  `initialized_binding_evaluate_assigned_type`. `statement_evaluate_return_type` unions return types with the legacy
-  `type_composite` (pairwise strict-subtype reduction, lowering each time). Stage 5 should give functions a real `Ty`.
+  function bodies (`function_impl_enter_return_context`), because `statement_collect_return_types` and
+  `statement_typecheck` have no parameter for it.
 - `assign_contextual_signature`: assigned once per function expression (tsc's ContextChecked), from the first contextual
   type that has a usable signature. A union context takes the first member signature (tsc: only if they agree), generic
   contextual signatures aren't instantiated (their type parameters leak into the parameter types), no contextual
@@ -197,35 +185,25 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   `as const`.
 - `compute`: `typeof x` is `string` (tsc: the union of typeof results), untagged templates are `string` even in a const
   context, tagged templates take the return type of a lone non-generic signature (no call resolution), `yield` is `any`,
-  arithmetic is always `number` (no bigint), `+` keeps the legacy rules (`TY_RELATION_ASSIGNABLE_STRICT_NULLS`).
+  arithmetic is always `number` (no bigint), `+` goes by `TY_RELATION_ASSIGNABLE_STRICT_NULLS`.
   `satisfies` contextually types its operand but the result isn't narrowed by it.
 - `ty_apply_type_arguments` (instantiation expressions): maps the type parameters of every signature that takes at
   least that many type arguments; signatures that don't fit aren't dropped, and nothing reports TS2635.
-- `lazy_type_evaluate` moves the evaluated legacy type into the memo instead of clone + drop when it is its own
-  resolution: the new core may already have lowered nodes inside it *by address* (class field with a conditional type
-  annotation crashed under valgrind otherwise). With `LowerCtx.transient` gone, **any legacy object type
-  (TYPE_INTERFACE/TYPE_CALLABLE) that is lowered and then freed is a dangling node key**; the remaining producers of
-  such temporaries are `function_impl_into_type`, `class_decl_evaluate_structure` and legacy clones of views, none of
-  which should reach a relation. Valgrind is the only guard.
-- `check_assignable_or_error_internal`: both sides are still lowered on every call (cheap now: `TYPE_NEW` or parsed
-  nodes). The head line comes from the new core (`ty_report_source_cstr`). A source that lowers to `any` is still let
-  through even to `never`.
 - `baseline_test_traversal.c`: the `extends Base` line shows the return type of the base's first construct signature.
-  Known display regressions of this stage: a namespace import prints structurally instead of `typeof a`
-  (`elidingImportNames`), `this: void` parameters don't print (`contextualTyping24`), qualified names in the type of an
+  Known display gaps: `this: void` parameters don't print (`contextualTyping24`), qualified names in the type of an
   assignment expression (`recursiveGenericUnionType1`).
 - `is_construct_signature_start` (parser): in a type, `new` followed by `(` or `<` is a construct signature. A method
   that is really called `new` with a type parameter list (`new<T>(): void` meaning a method) is misparsed now; tsc
   treats that as a construct signature too.
 
-## New type core (`src/ty/`, plan 02). Everything here is about scaffolding or a known gap
+## Type core (`src/ty/`): known gaps
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
   evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
   side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.
 - `builder_add_class_items`: no parameter properties (`constructor(public x)`, the parser doesn't even keep the
   modifier), no `this` type parameter, no accessibility (private/protected are ordinary members), computed member names
-  only if the legacy item has a `name_string`. Members of a class come from `LazyType`s the legacy checker evaluates
-  (field initializers, method bodies) through arena `TYPE_LAZY` wrappers (`arena_lazy_wrapper`).
+  only if the item has a `name_string`. Field and accessor types come from their LazyTypes through arena `TYPE_LAZY`
+  wrapper nodes (`arena_lazy_wrapper`), because `Prop.node` is the only lazy source a property has.
 - `ty_resolve_enum` / `evaluate` (enums.c): no template literals or `const` variable references in initializers, members
   of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
@@ -267,13 +245,8 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   `Exclude<keyof T, K>` distribute inside `Omit`). The composed mapper is not restricted to the type parameters the
   root mentions, and the intern key is still the instantiated operands (+ root), so the stored mapper is whichever
   got there first. Equivalent for every parameter the root mentions.
-- `ty/shadow.c` and the `ty_shadow_record_*` hooks (`type_typecheck`, `*_decl_typecheck`, `program_typecheck`): the
-  only thing that runs the new core today. Global recording state, one program at a time. Deleted in stage 5.
-- `ty_internal.h: legacy_skip_wrappers`, `legacy_expr_type`, `resolve_declared_members`: const-cast the AST to call
-  `lazy_type_get`. Harmless now (the memo is in the checker), the casts go when `lazy_type_get` takes a const pointer.
-- `lower_legacy_resolution`: `typeof x` and binding-derived indexed types lower whatever the legacy checker resolved
-  them to. Must never be used for type operators (conditional/keyof/indexed): forcing the legacy checker to resolve
-  one nobody used blew the stack in `recursiveConditionalTypes`.
+- `lazy_type_get((LazyType*)...)` const casts (`ty/expr.c`, `ty/lower.c`, `ty/members.c`): harmless, the memo is in the
+  checker; they go when `lazy_type_get` takes a const pointer.
 - `ty_keyof` of primitives and `ty_indexed` on anything but plain props / index signatures / tuple and array
   elements stay deferred.
 - `registered_type_param`: `infer X` and mapped-type keys are `DECLARATION_TYPE` declarations, indistinguishable
@@ -287,16 +260,14 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   targets have no members yet (`length`, numeric props, array methods).
 - `collect_free_params` / `Ty.anonymous.free_params`: which outer type parameters an anonymous type's node mentions,
   found by walking the node when the type is created. Parameters declared inside the node (signatures, mapped keys,
-  `infer`) are taken out at the end rather than tracked by scope, and it gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys and
-  anything the legacy checker evaluated rather than parsed. `TyMapper` is always flat (no composed/merged forms yet,
-  inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint; shadow mode sets it everywhere.
+  `infer`) are taken out at the end rather than tracked by scope, and it gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys,
+  `TYPE_LAZY` links, and for every function and merged value type (a body can mention any type parameter in scope). `TyMapper` is always flat (no composed/merged forms yet,
+  inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint.
 - `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones. Return types
-  are lazier than the rest (`signature_return_type`), because they're often the legacy checker's inferred return type.
+  are lazier than the rest (`signature_return_type`), because they're often inferred from a body that is being checked.
 - `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
   types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
 - `qualified_name`: declared types always print with their full namespace path (what tsc does in error messages);
   tsc's `.types` baselines qualify only as far as needed from the enclosing declaration. Needs symbols (plan 03).
-- `resolve_declared_members` (namespaces): the members of a namespace value are still the structural type the legacy
-  checker made (`Scope.value_interface`).
 - `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks, no fresh/regular
   literal pairs. No unique symbol types. TS2456 is only a TODO.

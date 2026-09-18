@@ -23,8 +23,8 @@ typedef struct Binding {
     Span content_span; // Just the name/array/object, not the type/value
     bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
     Span explicit_type_span; // Only valid if has_explicit_type
-    Type explicit_type; // The type explicitly specified
-    Type assigned_type; // Not meaningful until binding_add_names() is called
+    TypeNode explicit_type; // The type explicitly specified
+    TypeNode assigned_type; // Not meaningful until binding_add_names() is called
 } Binding;
 
 typedef struct ObjectBindingItem {
@@ -41,8 +41,8 @@ typedef struct BindingAddNamesProps {
 } BindingAddNamesProps;
 
 void binding_drop(Binding* me);
-void binding_add_names(Binding* me, Type input, Scope* scope, BindingAddNamesProps props);
-Type const* binding_get_effective_type(Binding const* me); // Only valid after binding_add_names() is called
+void binding_add_names(Binding* me, TypeNode input, Scope* scope, BindingAddNamesProps props);
+TypeNode const* binding_get_effective_type(Binding const* me); // Only valid after binding_add_names() is called
 void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 void binding_typecheck(Binding* me, ErrorCtx* errs);

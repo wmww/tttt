@@ -48,7 +48,7 @@ typedef struct TypeDecl {
     Span name;
     Span full_span;
     Generic generic;
-    Type type;
+    TypeNode type;
     ArcDeclaration declaration;
 } TypeDecl;
 
@@ -66,7 +66,7 @@ typedef struct NamespaceDecl {
     Block contents;
     Scope inner_scope;
     Scope* global_scope; // Set only if global
-    Type value_type;
+    TypeNode value_type;
     ArcDeclaration declaration;
 } NamespaceDecl;
 

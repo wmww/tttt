@@ -96,8 +96,8 @@ static Signature* signature_from_function(Checker* me, FunctionImpl const* funct
     return ret;
 }
 
-static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Type const* type, LowerCtx ctx) {
-    Type const* callable = legacy_skip_refs(type);
+static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, TypeNode const* type, LowerCtx ctx) {
+    TypeNode const* callable = node_skip_refs(type);
     Signature* sig;
     if (callable->tag == TYPE_LAZY) {
         // The type of a function (an overload of a method)
@@ -138,7 +138,7 @@ static void builder_add_interface_member(
                 if (i->key.tag == INTERFACE_KEY_NAME) {
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
-                    // TODO(stage 4): unique symbol keys (`[Symbol.iterator]`) are silently left out
+                    // TODO: unique symbol keys (`[Symbol.iterator]`) are silently left out
                     Ty const* key = ty_expr_type(me, i->key.expr.ref);
                     if (key->flags & TYF_STRING_LITERAL) {
                         name = key->literal.string;
@@ -152,15 +152,15 @@ static void builder_add_interface_member(
                     }
                 }
                 bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
-                    legacy_skip_refs(&i->type)->tag == TYPE_CALLABLE;
+                    node_skip_refs(&i->type)->tag == TYPE_CALLABLE;
                 Prop* existing = builder_find_prop(builder, name);
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
                     if (is_method && (existing->flags & PROP_METHOD) && existing->node) {
                         u32 count = existing->overload_count ? existing->overload_count : 1;
-                        Type const** nodes = arena_new_n(&my arena, Type const*, count + 1);
+                        TypeNode const** nodes = arena_new_n(&my arena, TypeNode const*, count + 1);
                         if (existing->overload_count) {
-                            memcpy(nodes, existing->overloads, sizeof(Type const*) * count);
+                            memcpy(nodes, existing->overloads, sizeof(TypeNode const*) * count);
                         } else {
                             nodes[0] = existing->node;
                         }
@@ -189,8 +189,8 @@ static void builder_add_interface_member(
             case INTERFACE_KEY_INDEX: {
                 // TODO: index signature value types are lowered eagerly, unlike property types
                 IndexInfo info = {
-                    .key = ty_from_legacy(me, &i->key.index.type, ctx),
-                    .value = ty_from_legacy(me, &i->type, ctx),
+                    .key = ty_from_node(me, &i->key.index.type, ctx),
+                    .value = ty_from_node(me, &i->type, ctx),
                     .param_name = checker_atom(me, i->key.index.name.sv),
                     .readonly = i->readonly,
                 };
@@ -204,14 +204,14 @@ static void builder_add_interface_member(
                 mapped->type_param = i->key.mapped.declaration_ref ?
                     ty_type_param(me, i->key.mapped.declaration_ref) :
                     ty_synthetic_type_param(me, i->key.mapped.type_name.sv);
-                mapped->constraint = ty_from_legacy(me, &i->key.mapped.in_type, mapped_ctx);
+                mapped->constraint = ty_from_node(me, &i->key.mapped.in_type, mapped_ctx);
                 if (i->key.mapped.has_as_type) {
-                    mapped->name_type = ty_from_legacy(me, &i->key.mapped.as_type, mapped_ctx);
+                    mapped->name_type = ty_from_node(me, &i->key.mapped.as_type, mapped_ctx);
                 }
-                mapped->template = ty_from_legacy(me, &i->type, mapped_ctx);
-                Type const* in_type = legacy_skip_refs(&i->key.mapped.in_type);
+                mapped->template = ty_from_node(me, &i->type, mapped_ctx);
+                TypeNode const* in_type = node_skip_refs(&i->key.mapped.in_type);
                 if (in_type->tag == TYPE_KEYOF) {
-                    mapped->modifiers_type = ty_from_legacy(me, &in_type->keyof->interface, mapped_ctx);
+                    mapped->modifiers_type = ty_from_node(me, &in_type->keyof->interface, mapped_ctx);
                 }
                 mapped->readonly = i->key.mapped.readonly;
                 mapped->optional = i->key.mapped.optional;
@@ -257,8 +257,8 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
 
 // Classes
 
-static Type const* arena_lazy_wrapper(Checker* me, LazyType const* lazy) {
-    Type* wrapper = arena_new(&my arena, Type);
+static TypeNode const* arena_lazy_wrapper(Checker* me, LazyType const* lazy) {
+    TypeNode* wrapper = arena_new(&my arena, TypeNode);
     *wrapper = type_lazy((LazyType*)lazy);
     return wrapper;
 }
@@ -299,7 +299,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     if (params.len > c_arraylen(args)) return false;
     for (u32 i = 0; i < params.len; i++) {
         if (written_args && (isize_t)i < vec_spanned_type_size(written_args)) {
-            args[i] = ty_from_legacy(me, &vec_spanned_type_at(written_args, i)->type, ctx);
+            args[i] = ty_from_node(me, &vec_spanned_type_at(written_args, i)->type, ctx);
         } else {
             Ty const* fallback = ty_param_default(me, params.data[i]);
             args[i] = fallback ? fallback : ty_intrinsic(me, TY_ANY);
@@ -310,7 +310,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
 }
 
 static Prop* builder_add_class_prop(
-    Checker* me, MembersBuilder* builder, cstr const* name_string, Declaration const* parent, Type const* node, LowerCtx ctx,
+    Checker* me, MembersBuilder* builder, cstr const* name_string, Declaration const* parent, TypeNode const* node, LowerCtx ctx,
     ClassItem const* item
 ) {
     Atom const* name = checker_atom(me, cstr_sv(name_string));
@@ -336,7 +336,7 @@ static void builder_add_class_items(
         switch (i->tag) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.is_static != static_side) break;
-                Type const* node = i->field.has_explicit_type ?
+                TypeNode const* node = i->field.has_explicit_type ?
                     &i->field.explicit_type :
                     arena_lazy_wrapper(me, &i->field.lazy_type);
                 Prop* prop = builder_add_class_prop(me, builder, &i->field.name_string, parent, node, ctx, i);
@@ -349,7 +349,7 @@ static void builder_add_class_items(
                 if (i->method.is_static != static_side) break;
                 if (i->method.accessor) {
                     if (i->method.accessor_first != i) break; // The second half of a get/set pair
-                    Type const* node = arena_lazy_wrapper(me, &i->method.accessor_type);
+                    TypeNode const* node = arena_lazy_wrapper(me, &i->method.accessor_type);
                     Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, node, ctx, i);
                     if (!prop) break;
                     bool has_setter = false;
@@ -384,7 +384,7 @@ static void builder_add_class_items(
                         }
                     }
                     if (abstract_only) has_overloads = false;
-                    Type const** nodes = arena_new_n(&my arena, Type const*, visible);
+                    TypeNode const** nodes = arena_new_n(&my arena, TypeNode const*, visible);
                     u32 count = 0;
                     for_each (other, vec_class_item, &class_decl->items) {
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
@@ -526,7 +526,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
 // The members of every value declaration of a merged declaration, see ty_merged_value_type()
 static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Declaration const* decl) {
     for_each (i, vec_type, &decl->merged_value_type.merge_list) {
-        Ty const* entry = ty_from_legacy(me, i, (LowerCtx){ .generic = true });
+        Ty const* entry = ty_from_node(me, i, (LowerCtx){ .generic = true });
         if (!(entry->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, entry);
         for (u32 j = 0; j < members->prop_count; j++) {
@@ -608,7 +608,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 } else if (node->kind == DECL_NODE_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->ptr;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
-                        Ty const* base = ty_from_legacy(me, &extends->type, ctx);
+                        Ty const* base = ty_from_node(me, &extends->type, ctx);
                         if (base != ty && (base->flags & TYF_OBJECT)) {
                             builder_add_inherited(me, &builder, base);
                         }
@@ -876,7 +876,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
     switch (prop->type_state) {
         case LAZY_STATE_DONE: return prop->type;
-        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR); // TODO(stage 4): TS2502 and friends
+        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR); // TODO: TS2502 and friends
         case LAZY_STATE_NOT_STARTED: break;
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
@@ -886,7 +886,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     } else if (prop->overload_count) {
         type = ty_anonymous_from_overloads(me, prop->overloads, prop->overload_count, prop->ctx);
     } else {
-        type = ty_from_legacy(me, prop->node, prop->ctx);
+        type = ty_from_node(me, prop->node, prop->ctx);
     }
     prop->type = type;
     prop->type_state = LAZY_STATE_DONE;
@@ -935,7 +935,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
             param->rest = i->rest;
             param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
-            param->type = ty_from_legacy(me, binding_get_effective_type(&i->initializer.binding), ctx);
+            param->type = ty_from_node(me, binding_get_effective_type(&i->initializer.binding), ctx);
             if (param->optional || param->rest) counting_required = false;
             if (counting_required) sig->min_args++;
         }
@@ -965,7 +965,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                 param->name = checker_atom(me, c_sv("arg"));
             }
             param->optional = i->optional;
-            param->type = ty_from_legacy(me, &i->type, ctx);
+            param->type = ty_from_node(me, &i->type, ctx);
             imply_rest_constraint(me, param);
             if (param->optional || param->rest) counting_required = false;
             if (counting_required) sig->min_args++;
@@ -1011,7 +1011,7 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         LowerCtx ctx = sig->ctx;
         ctx.generic |= sig->type_params.len > 0;
         ctx.method = false;
-        ret = ty_from_legacy(me, sig->ret_node, ctx);
+        ret = ty_from_node(me, sig->ret_node, ctx);
     } else {
         ret = ty_intrinsic(me, TY_ANY);
     }
@@ -1090,13 +1090,13 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     TyParamState* state = param->param.state;
     if (state->constraint_state == LAZY_STATE_NOT_STARTED) {
         state->constraint_state = LAZY_STATE_IN_FLIGHT;
-        Type const* node = state->constraint_node;
+        TypeNode const* node = state->constraint_node;
         if (state->item) {
             node = state->item->extends_explicit ? &state->item->extends : nullptr;
-        } else if (node && legacy_skip_to_syntax(node)->tag == TYPE_ANY) {
+        } else if (node && node_skip_to_syntax(node)->tag == TYPE_ANY) {
             node = nullptr; // An absent constraint is stored as `any`
         }
-        state->constraint = node ? ty_from_legacy(me, node, (LowerCtx){ .generic = true }) : nullptr;
+        state->constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
         state->constraint_state = LAZY_STATE_DONE;
     }
     // In flight means the constraint is circular (`T extends T`), tsc reports TS2313 and carries on without one
@@ -1109,7 +1109,7 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
     if (state->fallback_state == LAZY_STATE_NOT_STARTED) {
         state->fallback_state = LAZY_STATE_IN_FLIGHT;
         if (state->item && state->item->fallback_explicit) {
-            state->fallback = ty_from_legacy(me, &state->item->fallback, (LowerCtx){ .generic = true });
+            state->fallback = ty_from_node(me, &state->item->fallback, (LowerCtx){ .generic = true });
         }
         state->fallback_state = LAZY_STATE_DONE;
     }

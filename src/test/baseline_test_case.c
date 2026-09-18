@@ -912,7 +912,7 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type
     baseline_test_case_add_type_recursive(me, span, span, type);
 }
 
-void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, Type const* node) {
+void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode const* node) {
     for (;;) {
         if (node->tag == TYPE_REF) {
             node = node->ref;

@@ -3,7 +3,7 @@
 #include "lazy_type.h"
 
 typedef struct MergedType {
-    VecType merge_list;
+    VecTypeNode merge_list;
     LazyType lazy;
     // Set if this is the declared type side of a Declaration (as opposed to its value side)
     struct Declaration const* declared_owner;
@@ -11,7 +11,7 @@ typedef struct MergedType {
     struct Declaration const* value_owner;
 } MergedType;
 
-void merged_type_add(MergedType* me, Type t);
+void merged_type_add(MergedType* me, TypeNode t);
 MergedType merged_type_clone(MergedType me);
 Ty const* merged_type_evaluate_type(MergedType* me);
 void merged_type_drop(MergedType* me);
@@ -99,9 +99,9 @@ typedef struct Declaration {
     bool exported;
     DeclarationTag value_tag;
     Generic const* value_generic; // Null if generic empty
-    Type value_type;
+    TypeNode value_type;
     DeclarationTag type_tag;
-    Type declared_type;
+    TypeNode declared_type;
     Generic const* type_generic;
     bool is_typeof;
     MergedType merged_value_type;
@@ -129,8 +129,8 @@ typedef struct DeclProps {
     bool exported;
     DeclarationTag tag;
     Generic const* generic;
-    Type value_type;
-    Type declared_type;
+    TypeNode value_type;
+    TypeNode declared_type;
     bool is_typeof;
     Scope const* namespace;
     DeclNode node;

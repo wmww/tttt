@@ -52,7 +52,7 @@ impl_display_no_drop(Ty const*, ty_d) {
 // The bridges that let AST nodes appear directly in cleat display sequences, see declare_ast_display()
 impl_ast_display(Value, value)
 impl_ast_display(InterfaceMember, interface_member)
-impl_ast_display(Type, type)
+impl_ast_display(TypeNode, type)
 impl_ast_display(Expr, expr)
 impl_ast_display(Statement, statement)
 impl_ast_display(Block, block)
@@ -517,9 +517,9 @@ static void display_ternary_type(Display d, TernaryType* me) {
 static thread_local int display_type_depth = 0;
 enum { DISPLAY_TYPE_MAX_DEPTH = 100 };
 
-static void display_type_inner(Display d, Type const* me);
+static void display_type_inner(Display d, TypeNode const* me);
 
-void display_type(Display d, Type const* me) {
+void display_type(Display d, TypeNode const* me) {
     if (display_type_depth >= DISPLAY_TYPE_MAX_DEPTH) {
         display_lit(d, "...");
         return;
@@ -529,7 +529,7 @@ void display_type(Display d, Type const* me) {
     display_type_depth--;
 }
 
-static void display_type_inner(Display d, Type const* me) {
+static void display_type_inner(Display d, TypeNode const* me) {
     display_set_underline(true);
 
     switch (my tag) {
@@ -1356,6 +1356,6 @@ void display_block(Display d, Block const* me) {
     display_lit(d, "}");
 }
 
-void print_type_dbg(Type const* me) {
+void print_type_dbg(TypeNode const* me) {
     eprintln("Type ", (void*)me, ": ", debug_d(me));
 }

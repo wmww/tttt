@@ -26,7 +26,7 @@ typedef struct InterfaceMember {
             };
             struct {
                 Span name;
-                Type type;
+                TypeNode type;
             } index;
             struct {
                 Expr* ref;
@@ -35,8 +35,8 @@ typedef struct InterfaceMember {
             } expr;
             struct {
                 Span type_name;
-                Type in_type;
-                Type as_type;
+                TypeNode in_type;
+                TypeNode as_type;
                 bool has_as_type;
                 signed char readonly; // -1 for remove, +1 for add
                 signed char optional; // -1 for remove, +1 for add
@@ -45,7 +45,7 @@ typedef struct InterfaceMember {
             } mapped;
         };
     } key;
-    Type type;
+    TypeNode type;
 } InterfaceMember;
 
 static inline InterfaceMember interface_member_make(
@@ -56,7 +56,7 @@ static inline InterfaceMember interface_member_make(
     cstr name_string,
     Span name_span,
     bool name_is_value,
-    Type type
+    TypeNode type
 ) {
     return (InterfaceMember) {
         .declarations = vec_span_single(declaration),
