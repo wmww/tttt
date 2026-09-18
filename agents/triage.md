@@ -37,6 +37,25 @@ Uninvestigated items. Triage sessions drain this.
 - Type display uses the declared name / full namespace path (`typeof A.B`, `C`) where tsc prints the name as
   accessible from the use site, preferring aliases (`typeof AB`, `AB.C`). Symbols baseline likewise wants
   qualified names (`Symbol(A.x, ...)`) for namespace members. Both are for the symbols/printing design.
-- Error recovery: with `await` unsupported, `a = (await x) ? y : z` now mis-recovers into a labeled statement. Goes
-  away with `await`, but label parsing (`parse_label`) should probably refuse reserved words.
+- `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - `failstats.py --syntax` used to silently reuse the previous dump; it now re-runs the harness unless `--no-run`.
+- Remaining syntax gaps after parser round 2 (`./failstats.py --syntax`, 1204 tests, flat tail): object binding
+  patterns with computed keys / rest / nested defaults (`const { [k]: v, ...rest } = o`, `function f({ b = '' } = {})`),
+  `let x!: T`, `for await (... of ...)`, `export { a as default } from`, `import { default as b }`,
+  `import d, * as ns from`, `export import`, `import()`, `new.target`, `o?.()`, regex literal after `=`, `**=`,
+  shebang line, labeled `continue`/`break` target validation, `const c;` in ambient files, JSX (whole feature, needs
+  its own plan), `accessor` fields, `override`/TS4112+, overloads of `*()`-style nameless members (error recovery).
+  Worth one small execution session, not more; many of the rest are error-recovery fidelity.
+- Non-strict null widening is missing: `get b() { return null; }` has type `null` (tsc: `any`), so `C.b()` reports
+  TS2349. Same for `var x = null`/`undefined` initialisers presumably. Depends on `strictNullChecks` being a real option.
+- `[Symbol.iterator]() {}` computed class/interface members go through `InterfaceMember` (`INTERFACE_KEY_EXPR`), so
+  their bodies are not traversed for the types/symbols baselines and they print as `() => any`. Wants unique symbols.
+- Parameter properties (`constructor(private q: number)`) print their symbol as `q` instead of `A.q` and aren't added
+  to the instance type? Verify.
+- Function type display underlines (`^ ^^   ^^^^`) mismatch for functions with rest parameters / `any[]` in the types
+  baseline (seen in every spread/tagged template probe). Probably one bug in the underline mode of `display_callable`.
+- `this` inside methods prints as `C` where tsc prints `this`.
+- `propertyAndAccessorWithSameName`: tsc's symbol merging when a property and accessor clash (TS2300) isn't mirrored.
+- bench corpus is rebuilt from whatever currently passes, so wall times aren't comparable across sessions. Pin the
+  corpus (or report per-line numbers) so perf regressions are visible.
+

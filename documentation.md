@@ -135,5 +135,8 @@ Anchors are helpful for making spans. They are created with `anchor(&p)`. `span_
 
 Newlines are generally ignored but change how js/ts are parsed in some cases. For this reason parsers keep track of if the last whitespace they hopped contained a newline. This gets propagated to the parent on success.
 
+### Function context
+Whether `await` and `yield` are operators or plain identifiers depends on the function being parsed. `ParserShared` keeps `in_async`, `in_generator` and `function_depth`; `function_ctx_enter()`/`function_ctx_leave()` wrap the parsing of every function's parameters and body (see `parse_non_arrow_function()` and `parse_arrow_function()`), and `FunctionFlags` carries `async`/`*` from whoever saw the keyword to the function parser. Since a source position is always inside the same function, this doesn't conflict with the fail cache.
+
 ### Fail cache
 The fail cache is used to cache specific locations where specific parse functions have failed to parse before. There are some cases (such as arrow functions vs parenthesized expressions) where the correct way of parsing something is not obvious until after the parser has parsed some sub-expressions. If these cases are nested the time complexity of doing this naively is Not Good. However if you keep track of where you've tried and failed to parse specific things it's fine, so that's what we do. For details on precisely how it works you'll have to decipher the code.

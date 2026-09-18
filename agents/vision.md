@@ -8,15 +8,18 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, first insights session)
 - ~17k LoC of C in `src/` (parser 4.2k, type.c 1.9k, display 1.3k, expr/statement ~0.9k each). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 987 / 11962 tests fully pass (829 before the first parser-gaps session). Per component: errors
-  3695, symbols 5172, types 1974 pass (of 11236 that run; the other 726 are explained in `measurements.md`).
+- `./fasttest.sh`: 1084 / 11962 tests fully pass (829 before the parser-gaps sessions, 987 after the first). Per
+  component: errors 4396, symbols 5939, types 2146 pass (of 11236 that run; the other 726 are explained in
+  `measurements.md`).
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
   `@strict: true,false`...) is ignored.
 - Measurement exists now: `./failstats.py` (why tests fail, in aggregate) and `./bench.sh` (vs tsc and tsgo), with
-  results in `measurements.md`. Headlines: **a quarter of the suite still fails in the parser** (valid syntax
-  rejected, which also switches off typechecking for the test; was 40%), now mostly member syntax (object literal
-  and class members), generators/await, decorators and spread; no crashes;
+  results in `measurements.md`. Headlines: **the parser is no longer the main blocker**: 10% of the suite (1204 tests) still gets
+  a syntax error tsc doesn't report (was 40%, then 25%), and what's left is a flat tail, much of it error-recovery
+  fidelity. The newly parsing tests now fail in the checker and the harness instead: the old type core **blows up on
+  recursive generics** (38 GB before a depth-limit band-aid, see `hacks.md`), and the ES5-only lib set makes
+  `Symbol`/`Promise`/`Generator` unknown names in hundreds of tests; no crashes;
   generic inference is the loudest "not implemented" in the checker. Perf on the (easy, synthetic) corpus tttt can
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.

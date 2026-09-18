@@ -14,6 +14,7 @@ typedef struct BlockTypecheckCtx {
     bool break_allowed;
     bool continue_allowed;
     bool inside_label; // Labeled breaks are allowed
+    bool ambient; // Inside a `declare namespace`/`declare module`, where every statement is implicitly declared
 } BlockTypecheckCtx;
 
 typedef struct Block {

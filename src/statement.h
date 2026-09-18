@@ -73,7 +73,7 @@ typedef struct NamespaceDecl {
 void namespace_decl_drop(NamespaceDecl* me);
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props);
 void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs);
-void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs);
+void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs);
 
 // If statements
 

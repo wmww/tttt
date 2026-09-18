@@ -88,7 +88,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
 
         case INTERFACE_KEY_EXPR:
             Type const* key_type = type_resolve(expr_get_type(my key.expr.ref));
-            if (key_type->tag != TYPE_VALUE) {
+            // `unique symbol` is parsed as plain symbol, and an any key is never an error
+            if (key_type->tag != TYPE_VALUE && key_type->tag != TYPE_ANY && key_type->tag != TYPE_SYMBOL) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&

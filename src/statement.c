@@ -57,6 +57,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
                         break;
 
                     case EXPR_IDENTIFIER:
+                    case EXPR_PROPERTY: // TODO: check that it's actually a reference to a literal enum member
                         break;
 
                     default: bad_initializer:
@@ -169,8 +170,8 @@ void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx
     scope_pop_from_stack(&my inner_scope);
 }
 
-void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
-    block_typecheck(&my contents, (BlockTypecheckCtx){0}, errs);
+void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
+    block_typecheck(&my contents, (BlockTypecheckCtx){ .ambient = declared }, errs);
 }
 
 // If statements
@@ -859,7 +860,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         case STATEMENT_IMPORT_EXPORT: break;
 
         case STATEMENT_DECL_VARIABLE:
-            variable_statement_typecheck(&my decl.variable, my decl.props.declared, errs);
+            variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:
@@ -883,7 +884,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_typecheck(&my decl.namespace, errs);
+            namespace_decl_typecheck(&my decl.namespace, my decl.props.declared || ctx.ambient, errs);
             break;
     }
 }

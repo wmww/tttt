@@ -1826,7 +1826,7 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionImpl* ret) {
 
     if (parse_block(&p, false, &ret->body)) {
         ret->has_body = true;
-    } else if (*p.pos == ';' || p.whitespace == WHITESPACE_NEWLINE) {
+    } else if (*p.pos == ';' || *p.pos == '}' || !*p.pos || p.whitespace == WHITESPACE_NEWLINE) {
         ret->body = (Block){0};
     } else {
         parse_error(&p, span_from_token(&p), 1144, "'{' or ';' expected.");
@@ -2512,7 +2512,19 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
         .is_abstract = is_abstract,
         .extends = expr_implicit_any_no_span,
     };
-    if (!parse_identifier(&p, &ret->name)) {
+    // `class extends A {}` and `class implements A {}` are anonymous, but `class implements {}` is called implements
+    bool starts_with_implements_clause = false;
+    if (starts_with_followed_by_word_break(&p, "implements")) {
+        const char* c = p.pos + strlen("implements");
+        while (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r') {
+            c++;
+        }
+        starts_with_implements_clause = is_identifier_start_char(*c);
+    }
+    if (starts_with_followed_by_word_break(&p, "extends") ||
+        starts_with_implements_clause ||
+        !parse_identifier(&p, &ret->name)
+    ) {
         ret->name = span_null;
     }
     hop_whitespace(&p);
