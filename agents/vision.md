@@ -21,7 +21,7 @@ types components) are the oracle, not the goal.
   `Ty` itself had to be redesigned. `documentation.md` describes the result, `hacks.md` what's unfinished in it.
 - What did *not* get deleted: the bind-time links (`TYPE_LAZY`, `TYPE_REF`, binding `TYPE_INDEXED`, `MergedType`) that
   say where a `Declaration`'s type comes from are still `TypeNode`s, and the statement/expression walk still finds
-  its checker through a thread local. Both are plan 03 material (symbols), not more type core work.
+  its checker through a thread local. Both are symbols-plan material (plan 04), not more type core work.
 - The test harness parses every compiler option into one `CompilerOptions` (`src/compiler_options.h`, tsc's defaults
   resolved, also behind `tttt --target/--lib/--strict...`), runs multi-value directives as separate configurations
   with tsc's baseline names, and picks the default lib by target like tsc. The *checker* still only reads four of the
@@ -35,6 +35,28 @@ types components) are the oracle, not the goal.
   RSS between the two. Typecheck is 87 ms of that; **parse (175 ms) and name resolution (166 ms) now dominate**, and
   tttt still does far less checking work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
+## Course correction (insights, after the type core migration)
+- **tttt has never parsed a real program.** `./realworld.py` runs it on tsc's own `src/compiler` (146k lines, clean under
+  tsc): 1119 syntax errors (regex literals, `?.()`, `else` after a braceless `if`, comma operator, array rest
+  destructuring, optional tuple members) and then heap corruption in 0.7 s. The test suite barely contains these
+  shapes, so `failstats.py` ranked them as a flat tail and we walked past them for 15 sessions while the perf
+  headline came from a synthetic corpus of tests tttt already passes. **Second oracle from now on: `./realworld.py`
+  must reach zero diagnostics on a real project, and the benchmark is that project.** Plan 03 starts it. Every insights
+  session should look at its numbers next to the pass count; a rising pass count with a flat real-world count means
+  we're test-chasing.
+- The audit vision.md asked for: `hacks.md` is honest and detailed (it reads as a gap list of the new core, which is
+  what it should be), the migration did not drift, and the "AST-side walk" section is an acceptable starting point
+  for the symbols plan. No redesign of `Ty` is called for.
+- **Symbols before flow analysis, as two plans.** The old todo had one planning session for both. The binder
+  (`scope.c`, `declaration.c`, ports: ~1.5k lines) is the last legacy foundation: declarations are *copied* for
+  imports/aliases/lib sharing (so identity needs `canonical_declaration`, and a copied interface is a second `Ty`),
+  same-name namespaces don't merge (177 tests, `Intl`), scopes are thrown away, name resolution is as slow as parsing
+  and mutates shared state (blocks parallel bind). Narrowing keys its caches on reference identity -> symbol identity,
+  so it can't be built on copies. Plan 04 = symbols/binder (replace, don't patch; it's small), plan 05 = flow graph +
+  narrowing on top of it.
+- JS files (~900 tests parsed as TS) get the cheap gate only (skip without `allowJs`, no checker errors without
+  `checkJs`) in a triage-sized task; real JS/JSDoc support waits until TS itself works on real code.
+
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
 (no tokenizer, fail cache for the ambiguous cases), an AST of plain structs, a name resolution phase using a
@@ -45,7 +67,7 @@ approach (fast in principle; watch error-recovery fidelity since tsc's parse err
 
 Things that were or are **foundationally wrong for the stated goal**. 1, 2 and 5 are fixed (the type core
 migration, plan 02, now deleted: see git history for the plan and `documentation.md` for the result); 3 and 4 are
-next, plan 03 covers them:
+next (symbols = plan 04, flow = plan 05, see the course correction above):
 1. ~~Types are value-semantic trees with no identity (clone/drop, clone-and-substitute generics)~~ **Fixed**: `Ty`.
 2. ~~The relation cache is keyed by a string rendering of both types~~ **Fixed by plan 02 stage 3**: relations run
    on `Ty` with id-keyed caches; `type_pair_cache.h` and the `hash_key` display mode are deleted.
@@ -69,17 +91,20 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - When a checker feature "doesn't work" on lib types, look at what the lib *parsed* to first (`new (): T`).
 - Threading (not built, not precluded): all checker state is in `Checker`, the AST is read-only while checking, so N
   checkers over one AST is "make N `Checker`s and partition files". Type ids are per checker (printed union order
-  could depend on the partition; keep it deterministic). Parse is per file. Bind still mutates shared scopes: plan 03.
+  could depend on the partition; keep it deterministic). Parse is per file. Bind still mutates shared scopes: plan 04.
 
 ## Risks / concerns
 - Test-chasing: 11k tests invite special-casing message text. Prefer fixes that move whole categories.
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type *printing* (alias preservation, union
   ordering by type id, truncation). Union order by creation id is something an interned design can mimic and a
   tree design cannot. Keep this in mind when designing ids.
-- Perf claims without measurement. Get a benchmark early; keep it running in CI-ish fashion per session.
+- Perf claims on a flattering corpus: the 0.55 s headline is for replicated passing tests. Until the real corpus runs
+  end to end we know nothing about checker perf on real code, or about AST memory (malloc per node, ~120 bytes RSS
+  per source byte, `DEBUG_ALLOCATOR` on in release). An arena AST may be the next foundation issue; measure first.
+- Parser robustness: heap corruption on input it can't parse. Error recovery paths are barely exercised under valgrind.
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
   must not preclude per-file parallel parse/bind and ideally sharded checking (the type core doesn't, see above;
-  plan 03 must cover bind). Parse + bind are now 4x the typecheck phase on the bench: they're where the time is.
+  plan 04 must cover bind). Parse + bind are now 4x the typecheck phase on the bench: they're where the time is.
 - JS files, JSX, JSDoc, tsconfig/project handling, module resolution (node16/bundler), declaration emit: all
   absent. Declaration/JS emit is out of scope for now (typechecker only, `--noEmit` semantics).
 - readme.md still says development is halted; update when convenient.
@@ -87,7 +112,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. ~~Type core redesign~~ done (8 sessions).
-3. Persistent symbols + binder-time flow graph, then narrowing.
+3. Real-world corpus parses and runs end to end (plan 03); it becomes the pinned benchmark and second oracle.
+3b. Persistent symbols / new binder (plan 04), then bind-time flow graph + narrowing (plan 05).
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; module resolution, JS files (`allowJs`/`checkJs`).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.

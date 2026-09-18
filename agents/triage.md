@@ -100,7 +100,7 @@ Uninvestigated items. Triage sessions drain this.
 - `Declaration` pointer stability: references hold `decl_ref` from lookup time, while lib declarations are
   copy-on-write (`shared_between_scopes`) and import aliases are copies (`port_item_resolve_alias`). The new core keys
   declared types by `Declaration*`, so a copied declaration is a *different type* with the same name. Check whether
-  that happens for types in practice (import of an interface, then compare with the original); plan 03 should make
+  that happens for types in practice (import of an interface, then compare with the original); plan 04 (symbols) should make
   it impossible.
 - `type Phantom<T> = {}`: `Phantom<string>` and `Phantom<number>` are one `Ty` printing as `Phantom<T>`, because
   instantiating a node that mentions no type parameter returns the node's type, alias arguments and all. tsc gives
@@ -132,9 +132,9 @@ Uninvestigated items. Triage sessions drain this.
 - `filetest.sh` takes `FAST=1` now (release build, no valgrind): seconds instead of a minute per probe.
 - (stage 4b1) Type predicates (`x is T`, `asserts x`) aren't in the AST: the parser reads them as `boolean`. Needed by
   inference (`arr.find(isNumber)`, `arrayFind`, `typeGuardFunctionGenerics`) before narrowing ever uses them. Belongs in
-  plan 03's scope or a parser session before it.
+  the scope of plan 04 (symbols) or a parser session before it.
 - (stage 4b1) A function merged with a namespace (`function F() {}` + `namespace F {}`) is a TS2451 at the top level, and
-  inside a namespace across two blocks the call finds no signatures (`genericFunduleInModule2`). Legacy binder, plan 03.
+  inside a namespace across two blocks the call finds no signatures (`genericFunduleInModule2`). Legacy binder, plan 04 (symbols).
 - (stage 4b1/4b2) An array literal is never a tuple without contextual typing (`correctOrderOfPromiseMethod`; the
   mapped-type-over-tuple half is done, `instantiate_mapped_over_list`). 4b3.
 - (stage 4b1) `error_clone()` was shallow (shared `sub_errors`, double free once anything cloned an error with
@@ -153,7 +153,7 @@ Uninvestigated items. Triage sessions drain this.
   `any` + TS2589-ish in tsc (`recursivelyExpandingUnionNoStackoverflow`), here it prints `N<number, "M">`. TS2456 is
   still only a TODO in `ty_declared_type_of`.
 - (stage 4b2) `type A = {}` clashing with `interface A` (`noSymbolForMergeCrash`): the traversal prints the merged
-  declaration's type, tsc the alias's own. Wants per-declaration symbols (plan 03).
+  declaration's type, tsc the alias's own. Wants per-declaration symbols (plan 04, symbols).
 - Baseline saving: 4b1 *and* 4b3 forgot `./fasttest.sh -s`. CLAUDE.md says so now; consider making `--summary` say
   when the results file is older than the last commit.
 - From type core stage 4b3 (see `hacks.md` "Expressions on the new core" for the full list): `this` types are `any`

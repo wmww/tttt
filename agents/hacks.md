@@ -44,7 +44,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `port_item_resolve_alias` (`import x = A.B`): the alias is a *copy* of the target declaration, made during name
   resolution by overwriting a placeholder in place (other ports copy too, see `process_port`). An alias to something
   declared by a later alias, or to a namespace that gains members later, sees a stale/any copy. Wants real symbols
-  with alias links (plan 03). `alias_conflict` likewise only approximates merging an alias with an existing name.
+  with alias links (plan 04, symbols). `alias_conflict` likewise only approximates merging an alias with an existing name.
 - `parse_import_equals`: `import x = require("m")` is treated exactly like `import * as x from "m"`. Wrong for
   `export =` modules (not supported at all yet).
 - `namespace_decl_add_names`: ambient modules (`declare module "m" {}`) get a scope for their contents but are not
@@ -89,7 +89,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - **`TYPE_LAZY` / `TYPE_REF` / binding `TYPE_INDEXED` are still `TypeNode` tags** (plan 02 wanted them gone). They're
   the links name resolution makes between a `Declaration` and what gives it its type (`Declaration.value_type`,
   `MergedType.merge_list`, `Binding.assigned_type`), and lowering follows them. They're never cloned semantically or
-  resolved any more, so they're harmless, but they belong in a symbol (plan 03: a symbol's declarations + a
+  resolved any more, so they're harmless, but they belong in a symbol (plan 04: a symbol's declarations + a
   `ty_type_of_symbol`), not in the syntax tree's type.
 - `MergedType` / `LAZY_TYPE_MERGED` / `LAZY_TYPE_EVALUATED`: a declaration's type and value sides are each a list of
   nodes plus a LazyType (`declared_owner` / `value_owner` say which side and whose). With one entry the LazyType is
@@ -118,7 +118,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   type of an identifier, not the narrowed one; no difference until narrowing exists.
 - `baseline_test_case_add_type_node`: a declaration whose type is a written type *name* (`var x: X.Y.Z`, an enum
   member) shows as written (the legacy syntax printer), everything else through `ty_display` with unqualified names.
-  Measured: +21 full tests over never qualifying. The real rule needs symbol accessibility (plan 03).
+  Measured: +21 full tests over never qualifying. The real rule needs symbol accessibility (plan 04, symbols).
 - `ty_merged_value_type`: the merged type copies the first named entry's `declared` struct (a class static side or an
   enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one. Non-exported namespace
   members are properties too (`Scope.declarations`, as the legacy structural type had it).
@@ -268,6 +268,6 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
   types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
 - `qualified_name`: declared types always print with their full namespace path (what tsc does in error messages);
-  tsc's `.types` baselines qualify only as far as needed from the enclosing declaration. Needs symbols (plan 03).
+  tsc's `.types` baselines qualify only as far as needed from the enclosing declaration. Needs symbols (plan 04).
 - `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks, no fresh/regular
   literal pairs. No unique symbol types. TS2456 is only a TODO.
