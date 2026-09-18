@@ -358,6 +358,8 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
 
     if (typecheck) {
         program_typecheck(program);
+    } else {
+        program_make_current(program); // The traversal below looks at types either way
     }
 
     set_error_config(&errs->config);

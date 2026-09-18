@@ -19,7 +19,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
     me.namespace_decls = vec_declaration_cptr_clone(me.namespace_decls);
     me.generic_params = vec_spanned_type_clone(me.generic_params);
     // PERF: perhaps this should clone the type if already evaluated?
-    me.type = (LazyType){ .tag = LAZY_TYPE_IDENTIFIER_TYPE };
+    me.type = lazy_type_init_inline(LAZY_TYPE_IDENTIFIER_TYPE);
     return me;
 }
 

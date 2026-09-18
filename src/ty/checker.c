@@ -205,8 +205,18 @@ Checker* checker_new(Program* program) {
     return me;
 }
 
+thread_local Checker* current_checker;
+
+void checker_make_current(Checker* me) {
+    current_checker = me;
+    current_lazy_slots = me ? &my lazy : nullptr;
+}
+
 void checker_drop(Checker* me) {
     if (!me) return;
+    // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
+    if (current_checker == me) checker_make_current(nullptr);
+    lazy_slots_drop(&my lazy);
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);

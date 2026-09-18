@@ -2,12 +2,20 @@
 
 #include "type.h"
 
+// The memo of a LazyType: whether evaluation has started (to detect cycles) and the result
+typedef struct LazyMemo {
+    bool evaluation_started;
+    bool is_self_referential;
+    bool done;
+    Type evaluated;
+} LazyMemo;
+
 typedef struct LazyType {
     enum {
         // Makes it easy to show a warning if a LazyType is accidentally zero-initialized, otherwise shouldn't be used
         LAZY_TYPE_UNINITIALIZED = 0,
 
-        // The final type is already cached
+        // The type was known when this LazyType was created (see lazy_type_preeval())
         LAZY_TYPE_EVALUATED,
 
         // The rest means this LazyType is part of one of the following structs
@@ -26,56 +34,76 @@ typedef struct LazyType {
         LAZY_TYPE_MERGED,
         LAZY_TYPE_SCOPE_VALUE_INTERFACE,
     } tag;
-    // What tag was before evaluation replaced it with LAZY_TYPE_EVALUATED, so the new type core can still find the AST
-    // node a declared type came from. Goes away when LazyType becomes a slot (plan 02 stage 2)
-    unsigned char origin;
-    bool evaluation_started;
-    bool is_self_referential;
-    Type evaluated; // Should be {0} when tag is not LAZY_TYPE_EVALUATED
+    // Where the memo is. 0: not bound yet (evaluating is a bug). LAZY_SLOT_INLINE: in `memo` below, which is only for
+    // LazyTypes that aren't part of the AST or a Declaration (the ones inside types cloned during typechecking, which
+    // live and die within one checker). Anything else: a slot in the current Checker, so that typechecking never
+    // writes to the AST, and programs that share a lib AST don't share checker state
+    u32 slot;
+    // `memo.evaluated` is also where the type of a LAZY_TYPE_EVALUATED lives (put there when the LazyType was created,
+    // never written during typechecking). Should be {0} otherwise
+    LazyMemo memo;
 } LazyType;
 
+#define LAZY_SLOT_INLINE UINT32_MAX
+
+// Slot numbers are process-wide and never reused, see hacks.md
+u32 lazy_slot_new(void);
+
+// The slot memos of one Checker. Three levels, allocated on first touch: most programs touch a tiny part of the lib
+#define LAZY_PAGE_BITS 8
+#define LAZY_DIR_BITS 10
+#define LAZY_TOP_BITS 12
+typedef struct LazySlots {
+    LazyMemo** top[1 << LAZY_TOP_BITS];
+} LazySlots;
+
+void lazy_slots_drop(LazySlots* me);
+
+// The slots of the current checker (see current_checker in ty/ty.h), null when nothing is being typechecked
+extern thread_local LazySlots* current_lazy_slots;
+
 // Should only be called via lazy_type_get()
-void lazy_type_evaluate(LazyType* me);
+Type const* lazy_type_evaluate(LazyType* me);
 
-static inline void lazy_type_drop(LazyType* me) {
-    if (my tag == LAZY_TYPE_EVALUATED) {
-        type_drop(&my evaluated);
-    }
+// The memo if there is one already (without evaluating or allocating anything), otherwise null
+static inline LazyMemo* lazy_type_state_peek(LazyType* me) {
+    if (my slot == LAZY_SLOT_INLINE) return &my memo;
+    if (!current_lazy_slots) return nullptr;
+    LazyMemo** dir = current_lazy_slots->top[my slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
+    if (!dir) return nullptr;
+    LazyMemo* page = dir[(my slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
+    return page ? &page[my slot & ((1 << LAZY_PAGE_BITS) - 1)] : nullptr;
 }
 
-/*
- * This implementation is valid, but lazy types being clonable implies they are not part of the AST. this means pointers
- * to them could become invalid, which is unexpected if they are added to the name stack. Somehow make sure any non-AST
- * lazy types are not added to the name stack
- *
-static inline LazyType lazy_type_clone(LazyType me) {
-    switch (me.tag) {
-        case LAZY_TYPE_EVALUATED:
-            me.evaluated = type_clone(me.evaluated);
-            break;
+void lazy_type_drop(LazyType* me);
 
-        default:
-            log_error("LazyType with tag ", (i32)me.tag, " should not be cloned");
-            break;
-    }
-    return me;
+// Makes a LazyType that evaluates whatever contains it, according to tag
+static inline LazyType lazy_type_init(int tag) {
+    return (LazyType){ .tag = tag, .slot = lazy_slot_new() };
 }
-*/
 
-static inline int lazy_type_origin(LazyType const* me) {
-    return my tag == LAZY_TYPE_EVALUATED ? my origin : (int)my tag;
+// Same, but in place and keeping the slot if there is one
+static inline void lazy_type_bind(LazyType* me, int tag) {
+    my tag = tag;
+    if (!my slot) my slot = lazy_slot_new();
+}
+
+// For LazyTypes inside types that are created and dropped during typechecking
+static inline LazyType lazy_type_init_inline(int tag) {
+    return (LazyType){ .tag = tag, .slot = LAZY_SLOT_INLINE };
 }
 
 static inline LazyType lazy_type_preeval(Type type) {
     return (LazyType){
         .tag = LAZY_TYPE_EVALUATED,
-        .evaluated = type,
+        .memo.evaluated = type,
     };
 }
 
 static inline Type const* lazy_type_get(LazyType* me) {
-    if (my tag != LAZY_TYPE_EVALUATED) {
-        lazy_type_evaluate(me);
+    if (my tag == LAZY_TYPE_EVALUATED) {
+        return &my memo.evaluated;
     }
-    return &my evaluated;
+    LazyMemo* state = lazy_type_state_peek(me);
+    return state && state->done ? &state->evaluated : lazy_type_evaluate(me);
 }

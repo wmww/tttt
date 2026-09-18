@@ -9,8 +9,8 @@ void merged_type_add(MergedType* me, Type t) {
             break;
 
         case LAZY_TYPE_EVALUATED:
-            vec_type_push(&my merge_list, my lazy.evaluated);
-            my lazy.tag = LAZY_TYPE_MERGED;
+            vec_type_push(&my merge_list, my lazy.memo.evaluated);
+            my lazy = lazy_type_init(LAZY_TYPE_MERGED);
             // fallthrough
 
         case LAZY_TYPE_MERGED:
@@ -24,7 +24,9 @@ void merged_type_add(MergedType* me, Type t) {
 MergedType merged_type_clone(MergedType me) {
     me.merge_list = vec_type_clone(me.merge_list);
     if (me.lazy.tag == LAZY_TYPE_EVALUATED) {
-        me.lazy.evaluated = type_clone(me.lazy.evaluated);
+        me.lazy.memo.evaluated = type_clone(me.lazy.memo.evaluated);
+    } else if (me.lazy.tag == LAZY_TYPE_MERGED) {
+        me.lazy = lazy_type_init(LAZY_TYPE_MERGED); // The clone is a different type and needs its own slot
     }
     return me;
 }

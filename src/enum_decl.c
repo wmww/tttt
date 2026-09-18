@@ -71,8 +71,8 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
 }
 
 void enum_decl_lookup_names(EnumDecl* me, ScopeStack* names, ErrorCtx* errs) {
-    my instance_type.tag = LAZY_TYPE_ENUM_INSTANCE;
-    my interface_type.tag = LAZY_TYPE_ENUM_INTERFACE;
+    lazy_type_bind(&my instance_type, LAZY_TYPE_ENUM_INSTANCE);
+    lazy_type_bind(&my interface_type, LAZY_TYPE_ENUM_INTERFACE);
 
     for_each (i, vec_enum_case, &my cases) {
         expr_lookup_names(&i->value, names, errs);

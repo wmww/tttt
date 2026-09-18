@@ -1,5 +1,6 @@
 #include "ty/ty_internal.h"
 #include "display.h"
+#include "program.h"
 #include <ctype.h>
 #include <time.h>
 
@@ -214,7 +215,7 @@ void ty_shadow_finish(Program* program) {
 
     struct timespec start_time;
     timespec_get(&start_time, TIME_UTC); // clock_gettime() is hidden by -std=c2x
-    Checker* checker = checker_new(program);
+    Checker* checker = program_get_checker(program);
     u32 compared = 0, mismatches = 0, reordered = 0, requalified = 0;
     bool dump = getenv("TTTT_SHADOW_DUMP"); // Every recorded node's type id and rendering, for probing by hand
 
@@ -291,7 +292,6 @@ void ty_shadow_finish(Program* program) {
         );
     }
 
-    checker_drop(checker);
     vec_type_cptr_drop(&state->nodes);
     vec_declaration_cptr_drop(&state->decls);
     c_free_n(state, 1);

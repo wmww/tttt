@@ -27,7 +27,7 @@ void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported) {
 }
 
 void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx* errs) {
-    my lazy_type.tag = LAZY_TYPE_INTERFACE_DECL;
+    lazy_type_bind(&my lazy_type, LAZY_TYPE_INTERFACE_DECL);
     Scope generic_scope = scope_init(errs);
     scope_push_generic_to_stack(&generic_scope, &my generic, names);
     for_each (i, vec_spanned_type, &my extends) {

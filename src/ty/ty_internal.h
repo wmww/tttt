@@ -47,7 +47,7 @@ static inline DeclEntries legacy_declaration_entries(Declaration const* decl) {
     if (vec_type_size(&merged->merge_list)) {
         return (DeclEntries){ .data = merged->merge_list.data, .len = (u32)vec_type_size(&merged->merge_list) };
     } else if (merged->lazy.tag == LAZY_TYPE_EVALUATED) {
-        return (DeclEntries){ .data = &merged->lazy.evaluated, .len = 1 };
+        return (DeclEntries){ .data = &merged->lazy.memo.evaluated, .len = 1 };
     } else {
         return (DeclEntries){0};
     }
@@ -79,7 +79,7 @@ static inline Type const* legacy_expr_type(Expr const* expr) {
 // The InterfaceDecl an entry of legacy_declaration_entries() came from, or null if it's something else
 static inline InterfaceDecl const* legacy_entry_interface_decl(Type const* entry) {
     entry = legacy_skip_refs(entry);
-    if (entry->tag == TYPE_LAZY && lazy_type_origin(entry->lazy) == LAZY_TYPE_INTERFACE_DECL) {
+    if (entry->tag == TYPE_LAZY && entry->lazy->tag == LAZY_TYPE_INTERFACE_DECL) {
         return c_container_of(entry->lazy, InterfaceDecl, lazy_type);
     }
     return nullptr;

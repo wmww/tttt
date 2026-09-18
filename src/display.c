@@ -839,8 +839,11 @@ void display_expr(Display d, Expr const* me) {
                     display_implicit_peren = true;
                 }
                 display_colored(d, color_implicit, "<");
+                LazyMemo* state = lazy_type_state_peek((LazyType*)&my lazy_type);
                 if (my lazy_type.tag == LAZY_TYPE_EVALUATED) {
-                    display_type(d, &my lazy_type.evaluated);
+                    display_type(d, &my lazy_type.memo.evaluated);
+                } else if (state && state->done) {
+                    display_type(d, &state->evaluated);
                 } else {
                     Type t = expr_evaluate_type(me);
                     display_type(d, &t);

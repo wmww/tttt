@@ -25,7 +25,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
 static inline Type type_identifier(IdentifierType* identifier) {
     if (identifier->type.tag != LAZY_TYPE_EVALUATED) {
-        identifier->type.tag = LAZY_TYPE_IDENTIFIER_TYPE;
+        lazy_type_bind(&identifier->type, LAZY_TYPE_IDENTIFIER_TYPE);
     }
     return (Type){
         .tag = TYPE_IDENTIFIER,

@@ -61,6 +61,7 @@ typedef struct Program {
     Scope global_scope;
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
+    Checker* checker; // Created by program_make_current()
 } Program;
 
 static void program_add_builtins(Program* me) {
@@ -238,6 +239,8 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
 }
 
 static void program_drop(Program* me) {
+    // First, its memos point into the AST and the scopes
+    checker_drop(my checker);
     scope_drop(&my global_scope);
     hmap_box_source_file_drop(&my source_files_map);
     vec_source_file_ptr_drop(&my source_files_ordered);
@@ -460,6 +463,16 @@ void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_RESOLVING_NAMES, PROGRAM_PHASE_NAMES_RESOLVED);
 }
 
+void program_make_current(Program* me) {
+    panic_if(my phase < PROGRAM_PHASE_NAMES_RESOLVED, "program needs its names resolved before types can be evaluated");
+    if (!my checker) my checker = checker_new(me);
+    checker_make_current(my checker);
+}
+
+Checker* program_get_checker(Program const* me) {
+    return my checker;
+}
+
 Scope const* program_get_global_scope(Program const* me) {
     return &my global_scope;
 }
@@ -468,6 +481,7 @@ void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_error_config(&my errs->config);
+    program_make_current(me);
     ty_shadow_begin(me);
 
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {

@@ -64,21 +64,23 @@ A lexical scope, maps identifier names to `Declaration`s.
 Used for looking up identifier names, scopes can be pushed and popped.
 
 ### LazyType
-`LazyType` is a struct owned by the AST. They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to create a type while in the resolve names phase, but not evaluate what that type actually is until the typecheck phase when all names are resolved.
+`LazyType` is a struct owned by the AST (and by `Declaration`s and `Scope`s). They're `Type` wrappers that allow a referencing type to be created before the `LazyType` is evaluated. In practice that means it's possible to create a type while in the resolve names phase, but not evaluate what that type actually is until the typecheck phase when all names are resolved.
 
 The process goes something like this:
 1. An AST struct, for example `Expr`, contains a `LazyType`
-2. In the resolve names phase, it sets its LazyType's tag to `LAZY_TYPE_EXPR`
+2. In the resolve names phase, it calls `lazy_type_bind(&lazy, LAZY_TYPE_EXPR)`, which sets the tag and gives the LazyType a *slot* number
 3. That function or some other function then creates a `Type` with a pointer to its LazyType using `type_lazy()` (the expression's type hasn't and *can't* be evaluated yet since names haven't been fully resolved, so this is the only way to pass around its type)
 4. Later, in the typecheck phase, `type_resolve()` is called on the `Type`, which calls `lazy_type_get()`
 5. The tag of the LazyType is `LAZY_TYPE_EXPR`, so `lazy_type_evaluate()` uses the pointer to the LazyType to calculate a pointer to its containing `Expr` and calls `expr_evaluate_type()`
-6. It then sets `.evaluated` to the returned type, the tag to `LAZY_TYPE_EVALUATED` and returns a pointer to the evaluated type
+6. It then stores the returned type in the LazyType's memo (`LazyMemo`), marks it done and returns a pointer to the evaluated type
 7. Future calls to `lazy_type_get()` for the same Expr quickly return a pointer to the evaluated type, without needing to call `lazy_type_evaluate()`
 
-LazyTypes play a critical role in detecting self-referential types. While a LazyType is being evaluated it's put in an in-flight state. If something tries to evaluate it again in the same call stack it's evaluated type is set to `type_self_referential_error`.
+LazyTypes play a critical role in detecting self-referential types. While a LazyType is being evaluated its memo is in an in-flight state. If something tries to evaluate it again in the same call stack it's evaluated type is set to `type_self_referential_error`.
+
+**The memo is not in the LazyType.** The LazyType itself never changes after the resolve names phase: it's a tag and a slot number, and the memo lives in the slot storage (`LazySlots`, a sparse three level table allocated on first touch) of the current `Checker` (`current_checker` / `current_lazy_slots`, thread local). Each `Program` has one checker, created by `program_make_current()`, which `program_typecheck()` calls; call it yourself to look at the types of a program that wasn't typechecked. This keeps the AST read-only while checking, which is what lets many programs share one lib AST (the test harness does) and later lets several checkers work on one AST. Two exceptions, neither of which writes to the AST during checking: `LAZY_TYPE_EVALUATED` LazyTypes carry a type that was known when they were created (`lazy_type_preeval()`), and LazyTypes inside types that get cloned during checking (`identifier_type_clone`) use `LAZY_SLOT_INLINE`, a memo inside the LazyType, because they live and die within one checker.
 
 ### The new type core (`src/ty/`)
-The `Type` struct above is being split in two ([agents/plans/02-type-core.md](agents/plans/02-type-core.md)): it stays as the *syntax* of a type, and semantic types become `Ty` (`src/ty/ty.h`). Until the migration is done the legacy checker (`type.c` & co) still does all the checking and the new core only runs in shadow mode.
+The `Type` struct above is being split in two ([agents/plans/02-type-core.md](agents/plans/02-type-core.md)): it stays as the *syntax* of a type, and semantic types become `Ty` (`src/ty/ty.h`). Until the migration is done the legacy checker (`type.c` & co) still does all the checking and the new core only runs in shadow mode. The `Checker` already owns the legacy checker's LazyType memos though (see above).
 
 - A `Checker` owns an arena, a type id counter and the intern tables. Every `Ty` is immutable once published and interned, so **pointer equality is type identity**: `List<string>` is one pointer no matter how often or where it's written. Ids are handed out in creation order and intrinsics are created in tsc's order, because unions print in id order.
 - Intern keys are small arrays of `u64` words (a `KEY_*` tag followed by ids/pointers, `ty_internal.h`) in one open addressing table type (`InternTable`). `Checker.types` holds literals, unions/intersections, references, tuple targets, deferred types and instantiated anonymous types; `Checker.links` holds everything that is *about* an AST node or `Declaration` (declared types, type parameters, anonymous types by node, alias instantiations), so the AST is never written to. `intern_slot()` pointers die on the next insert into the same table; use `intern_get()` and look the slot up again when the value takes interning to compute.

@@ -115,12 +115,12 @@ void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_METHOD:
-            my method.accessor_type.tag = LAZY_TYPE_CLASS_ITEM_ACCESSOR;
+            lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 
         case CLASS_ITEM_FIELD:
-            my field.lazy_type.tag = LAZY_TYPE_CLASS_ITEM_FIELD;
+            lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
             expr_lookup_names(&my field.value, names, errs);
             break;
@@ -175,8 +175,8 @@ static void class_members_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCt
 }
 
 void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
-    my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
-    my class_type.tag = LAZY_TYPE_CLASS_CLASS;
+    lazy_type_bind(&my instance_type, LAZY_TYPE_CLASS_INSTANCE);
+    lazy_type_bind(&my class_type, LAZY_TYPE_CLASS_CLASS);
 
     for_each (i, vec_expr, &my decorators) {
         expr_lookup_names(i, names, errs);
@@ -476,5 +476,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // TODO: check that we do, in fact, implement each type
     }
 
-    interface_typecheck_members_against(&my instance_type.evaluated.interface, my declaration.get, errs);
+    LazyMemo* instance = lazy_type_state_peek(&my instance_type);
+    if (instance && instance->done && instance->evaluated.tag == TYPE_INTERFACE) {
+        interface_typecheck_members_against(&instance->evaluated.interface, my declaration.get, errs);
+    }
 }

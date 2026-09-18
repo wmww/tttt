@@ -8,23 +8,79 @@
 #include "interface_decl.h"
 #include "scope.h"
 
-void lazy_type_evaluate(LazyType* me) {
-    // THREADSAFETY: this will probably need to be rewritten to be threadsafe
+thread_local LazySlots* current_lazy_slots;
 
-    if (my evaluation_started) {
+u32 lazy_slot_new(void) {
+    static _Atomic u32 next = 1;
+    u32 ret = next++;
+    panic_if(ret >> (LAZY_PAGE_BITS + LAZY_DIR_BITS + LAZY_TOP_BITS), "out of LazyType slots");
+    return ret;
+}
+
+static LazyMemo* lazy_type_state(LazyType* me) {
+    if (my slot == LAZY_SLOT_INLINE) return &my memo;
+    panic_if(!my slot, "LazyType with tag ", (i32)my tag, " was never given a slot");
+    panic_if(!current_lazy_slots, "LazyType evaluated without a current checker");
+    LazyMemo*** dir = &current_lazy_slots->top[my slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
+    if (!*dir) {
+        *dir = calloc(1 << LAZY_DIR_BITS, sizeof(LazyMemo*));
+        panic_if(!*dir, "out of memory");
+    }
+    LazyMemo** page = &(*dir)[(my slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];
+    if (!*page) {
+        *page = calloc(1 << LAZY_PAGE_BITS, sizeof(LazyMemo));
+        panic_if(!*page, "out of memory");
+    }
+    return &(*page)[my slot & ((1 << LAZY_PAGE_BITS) - 1)];
+}
+
+void lazy_slots_drop(LazySlots* me) {
+    for (size_t i = 0; i < c_arraylen(my top); i++) {
+        if (!my top[i]) continue;
+        for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) {
+            LazyMemo* page = my top[i][j];
+            if (!page) continue;
+            for (size_t k = 0; k < (1 << LAZY_PAGE_BITS); k++) {
+                type_drop(&page[k].evaluated);
+            }
+            free(page);
+        }
+        free(my top[i]);
+        my top[i] = nullptr;
+    }
+}
+
+void lazy_type_drop(LazyType* me) {
+    if (my tag == LAZY_TYPE_EVALUATED || my slot == LAZY_SLOT_INLINE) {
+        type_drop(&my memo.evaluated);
+    } else if (my slot) {
+        // Dropped while a checker is around: this LazyType was made during typechecking, and nothing will ask for its
+        // slot again. Slots of the AST are dropped along with their checker instead, which is gone before the AST is
+        LazyMemo* state = lazy_type_state_peek(me);
+        if (state) {
+            type_drop(&state->evaluated);
+            *state = (LazyMemo){0};
+        }
+    }
+}
+
+Type const* lazy_type_evaluate(LazyType* me) {
+    // THREADSAFETY: slots belong to one checker, which belongs to one thread
+    LazyMemo* state = lazy_type_state(me);
+
+    if (state->evaluation_started) {
         // We've already hit this LazyType once, therefore it's self-referential
-        if (my is_self_referential) {
+        if (state->is_self_referential) {
             // We have hit this LazyType 3 times, which means we've hit every other LazyType in this cycle twice, which
             // means we have hit every other LazyType at least twice, which means we've marked them all self-referential
             // and so we can now safely bail.
-            my tag = LAZY_TYPE_EVALUATED;
-            my evaluated = type_self_referential_error;
-            return;
+            state->done = true;
+            state->evaluated = type_self_referential_error;
+            return &state->evaluated;
         }
-        my is_self_referential = true;
+        state->is_self_referential = true;
     }
-    my evaluation_started = true;
-    my origin = my tag;
+    state->evaluation_started = true;
 
     Type result = {0};
     switch (my tag) {
@@ -88,14 +144,15 @@ void lazy_type_evaluate(LazyType* me) {
             break;
     }
 
-    // This MUST be before the tag == LAZY_TYPE_EVALUATED check
+    // This MUST be before the done check
     Type const* resolved = type_resolve_until_identifier(&result);
 
-    if (my tag != LAZY_TYPE_EVALUATED) {
-        // Our tag wasn't touched by the call this function made, result is valid
-        my evaluated = type_clone(*resolved);
-        my tag = LAZY_TYPE_EVALUATED;
+    if (!state->done) {
+        // The calls this function made didn't decide that we're self-referential, result is valid
+        state->evaluated = type_clone(*resolved);
+        state->done = true;
     }
 
     type_drop(&result);
+    return &state->evaluated;
 }

@@ -214,7 +214,7 @@ void expr_drop(Expr* me) {
 }
 
 void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
-    my lazy_type.tag = LAZY_TYPE_EXPR;
+    lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:

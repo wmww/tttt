@@ -33,7 +33,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
 }
 
 void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* names, ErrorCtx* errs) {
-    my lazy_type.tag = LAZY_TYPE_FUNCTION;
+    lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
     if (my is_async) {
         my promise_decl = scope_stack_get_type(names, c_sv("Promise"));
     }

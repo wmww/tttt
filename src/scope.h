@@ -43,7 +43,7 @@ Scope scope_clone(Scope me);
 
 #define SCOPE_INIT_DEFAULT \
     .errs = errs, \
-    .value_interface.tag = LAZY_TYPE_SCOPE_VALUE_INTERFACE
+    .value_interface = lazy_type_init(LAZY_TYPE_SCOPE_VALUE_INTERFACE)
 
 static inline Scope scope_init(ErrorCtx* errs) {
     return (Scope){

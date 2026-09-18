@@ -178,7 +178,7 @@ void initialized_binding_drop(InitializedBinding* me) {
 }
 
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props) {
-    my lazy_type.tag = LAZY_TYPE_INITIALIZED_BINDING;
+    lazy_type_bind(&my lazy_type, LAZY_TYPE_INITIALIZED_BINDING);
     my abstract_literals = props.abstract_literals;
     binding_add_names(&my binding, type_lazy(&my lazy_type), scope, props);
 }

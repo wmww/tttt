@@ -433,7 +433,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
         }   break;
 
         case STATEMENT_FOR_EACH_LOOP: {
-            my for_each_loop->var_type.tag = LAZY_TYPE_FOR_EACH_LOOP_VAR;
+            lazy_type_bind(&my for_each_loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
             Scope loop_scope = scope_init(errs);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:

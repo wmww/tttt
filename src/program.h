@@ -30,6 +30,14 @@ void program_resolve_names(Program* me);
 // Typechecks the loaded file and all imports, does not typecheck libraries loaded with program_load_lib()
 void program_typecheck(Program* me);
 
+// Makes this program's checker (created on first use) the one that types get evaluated in, until another program is
+// made current or this one is destroyed. program_typecheck() does this, call it yourself to look at types of a program
+// that isn't typechecked
+void program_make_current(Program* me);
+
+// Null before program_make_current()
+struct Checker* program_get_checker(Program const* me);
+
 Scope const* program_get_global_scope(Program const* me);
 
 // Returns the number of source files loaded or imported

@@ -24,10 +24,11 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
-- Type core migration (plan 02): **stage 1 of 5 done.** `src/ty/` has the interned, arena-allocated `Ty` core
+- Type core migration (plan 02): **stages 1 and 2 of 5 done.** `src/ty/` has the interned, arena-allocated `Ty` core
   (identity, lazy members, mapper instantiation, lowering from the AST, tsc-style printer) running in shadow mode
   over the whole suite: no crashes, 0.4% rendering mismatches against the legacy display (mostly the new core being
-  right), 73 us per program. Nothing is switched over yet; the legacy checker still produces every result.
+  right), 73 us per program. The legacy checker still produces every result, but its `LazyType` memos now live in the per-`Program` `Checker`
+  (stage 2), so the AST is read-only while checking, bar the `has_cache` fields of legacy type operators.
 
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
@@ -56,8 +57,8 @@ skim, plan 03 covers them:
    in `Scope` during resolution. Probably workable, but the symbols baseline, flow analysis, `this`/class member
    lookup and later language-service-ish needs all lean on persistent symbols. Needs a look.
 5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST
-   between all test programs. Blocks arena-owned types and multiple checkers over one AST. Plan 02 moves all checker
-   state into a per-`Program` `Checker` (side tables indexed by per-file slot), leaving the AST read-only after bind.
+   between all test programs. Blocks arena-owned types and multiple checkers over one AST. **Fixed by plan 02 stage
+   2** (memos in per-`Checker` slots), except for the `has_cache` fields of legacy type operators, which die with them.
 
 At 19k LoC and 9% pass rate, replacing the type core now is cheap. At 60k LoC it will not be. **Decision: migrate to
 interned, arena-allocated, id-carrying types (`Ty`), split from syntax-only `TypeNode`s, with id-keyed relation

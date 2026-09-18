@@ -29,6 +29,7 @@ Scope scope_clone(Scope me) {
     me.ports = hmap_port_item_ptr_clone(me.ports);
     me.wildcard_reexports = vec_port_item_ptr_clone(me.wildcard_reexports);
     me.current_scope_stack = nullptr;
+    me.value_interface = lazy_type_init(LAZY_TYPE_SCOPE_VALUE_INTERFACE);
     if (me.export_scope) {
         me.export_scope = c_new(Scope, scope_clone(*me.export_scope));
     }

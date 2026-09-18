@@ -224,7 +224,21 @@ count recorded in `measurements.md` and the top causes either fixed or written d
 `filetest` with the flag) shows `List<string>` lowered twice is one id, 1500-literal union builds in < 5 ms, and
 lowering everything in the repro test terminates immediately.
 
-**Stage 2 - checker state out of the AST.** `LazyType` → `{tag, slot}` + checker slots holding the *legacy* `Type`
+**Stage 2 - DONE (2026-09-18).** Pass counts identical (1084 / 4396 / 5939 / 2146), suite wall time unchanged
+(8.3 s), valgrind clean on ~390 tests, bench typecheck phase within noise, RSS +6%. What later stages should know:
+- `LazyType` is `{tag, slot, inline memo}`; memos are `LazyMemo`s in `Checker.lazy` (`LazySlots`), still holding the
+  legacy `Type`. Flip `LazyMemo.evaluated` to `Ty const*` in stage 4. The tag never changes after bind any more, so
+  `LazyType.origin` is gone.
+- Deviation: slots are numbered by a process-wide counter, not per `SourceFile` (Declarations, Scopes and identifier
+  types made during checking belong to no file). Check-time clones keep an inline memo (`LAZY_SLOT_INLINE`). See
+  `hacks.md`.
+- One `Checker` per `Program`, made by `program_make_current()` (not only `program_typecheck`: the harness traversal
+  evaluates types of programs with parse errors, which are never typechecked). Name resolution evaluates no lazies
+  (it would panic now). The shadow pass uses the program's checker.
+- Not done: `has_cache/cached` in legacy type operators still write to the (lib) AST, so the harness "run twice if
+  net allocations" workaround stays (it's also needed for the lib program cache itself). No Declaration -> node link.
+
+**Stage 2 as planned - checker state out of the AST.** `LazyType` → `{tag, slot}` + checker slots holding the *legacy* `Type`
 for now (arena'd or heap, executor's call) and later a `Ty*`; `thread_local current_checker`; one `Checker` per
 `Program`, created in `program_typecheck` (or earlier if name resolution evaluates lazies - check). Lib ASTs are no
 longer written to during tests; delete the "run test twice if net allocations" harness workaround if it falls out.

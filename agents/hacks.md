@@ -4,8 +4,26 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `type_pair_cache.h`: relation cache keyed by a string rendering of both types (`hash_key_display`). Slow and
   fragile (two distinct types that print the same collide). Worse: it lives in `TypeCtx`, which is created per
   top-level `type_extends` call, so it only breaks cycles and never caches across queries. Goes away in plan 02 stage 3.
-- `LazyType` memos live in AST nodes and the harness shares the lib AST between test programs, so checker results
-  leak from one test into the next (harmless today because evaluated types are self-contained trees). Plan 02 stage 2.
+- `IndexedType`/`KeyofType`/`TernaryType.has_cache/cached`: the last checker state that is written into AST-owned
+  `Type`s during typechecking, including the lib AST the harness shares between test programs (3 tests still leave
+  net allocations behind in it: `excessPropertyCheckWithEmptyObject`, `intersectionsOfLargeUnions`,
+  `modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib`). Goes away when type operators resolve in the new
+  core (plan 02 stages 3-5), not worth giving slots.
+- `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how legacy code without a context
+  parameter finds its checker. Stays set after `program_typecheck` because the test traversal and debug display
+  evaluate types afterwards. Shrinks as signatures get a `Checker*` (plan 02 stages 3-4).
+- `lazy_slot_new`: LazyType slot numbers come from one process-wide atomic counter and are never reused, and
+  everything that might need a memo takes one eagerly (every transient `scope_init`, every `type_identifier` made
+  during checking). A checker's slot table is sparse so this only costs page fragmentation (bench RSS +6%), and it
+  panics after 1G slots. Per-file numbering (plan 02 §2) didn't fit because Declarations, Scopes and check-time
+  identifier types belong to no file. Revisit in stage 4/5 when slots hold `Ty*` and clones are gone; a long-running
+  process (language server) needs reuse.
+- `LAZY_SLOT_INLINE` / `LazyType.memo`: clones made during checking keep their memo inline, so `LazyType` hasn't
+  shrunk yet (it grew 8 bytes). Dies with `type_clone` in stage 5.
+- `lazy_type_drop`: a slotted LazyType dropped while a checker is current resets its slot (it must be a check-time
+  temporary); the AST's own slots are dropped by `checker_drop`, which `program_drop` runs before dropping the AST.
+  Dropping an AST while *another* program's checker is current would reset nothing (different slots), so it's safe,
+  but the rule is implicit.
 - `type_pair_cache_entry_update`: uses a key whose ownership was already handed to the map ("hacky but it works").
 - `baseline_test_case.c: load_test_source`: compiler option directives handled as ad-hoc string compares; almost
   all options ignored.
@@ -83,11 +101,11 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 ## New type core (`src/ty/`, plan 02). Everything here is about stage-1 scaffolding or a known gap
 - `ty/shadow.c` and the `ty_shadow_record_*` hooks (`type_typecheck`, `*_decl_typecheck`, `program_typecheck`): the
   only thing that runs the new core today. Global recording state, one program at a time. Deleted in stage 5.
-- `LazyType.origin` / `lazy_type_origin`: remembers the tag a LazyType had before it became `LAZY_TYPE_EVALUATED`, so
-  `legacy_entry_interface_decl` can `container_of` from a Declaration's merge list back to its `InterfaceDecl`.
-  There is no proper Declaration -> AST node link. Stage 2 (slots) or plan 03 (symbols) should give one.
+- `legacy_entry_interface_decl`: `container_of` from a Declaration's merge list entry (a `TYPE_LAZY` whose LazyType
+  has tag `LAZY_TYPE_INTERFACE_DECL`) back to its `InterfaceDecl`. There is still no proper Declaration -> AST node
+  link; stage 2 didn't add one (nothing needed it yet). Stage 4a needs it for classes and enums, or plan 03 does it.
 - `ty_internal.h: legacy_skip_wrappers`, `legacy_expr_type`, `resolve_declared_members`: const-cast the AST to call
-  `lazy_type_get` (checker state still lives in the AST until stage 2).
+  `lazy_type_get`. Harmless now (the memo is in the checker), the casts go when `lazy_type_get` takes a const pointer.
 - `resolve_declared_members`: only interfaces get their members from their own declarations (+ bases through a
   mapper). Class instance/static sides, enum objects and namespaces take the members of the structural type the
   legacy checker evaluated (`type_resolve` on the entry). Inherited class members, `this`, accessibility modifiers

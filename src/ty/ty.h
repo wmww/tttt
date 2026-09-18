@@ -7,6 +7,7 @@
 // Nothing outside src/ty/ depends on this yet except the `--shadow-types` hook (shadow.c).
 
 #include "type.h"
+#include "lazy_type.h"
 
 typedef struct Ty Ty;
 typedef struct Checker Checker;
@@ -332,6 +333,7 @@ typedef enum TyIntrinsic {
 
 struct Checker {
     Program* program;
+    LazySlots lazy; // The memos of every LazyType in the AST and in Declarations, see lazy_type.h
     Arena arena;
     u32 next_type_id;
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
@@ -350,6 +352,13 @@ struct Checker {
 // checker.c
 Checker* checker_new(Program* program);
 void checker_drop(Checker* me);
+
+// The checker that legacy code without a context parameter works for: lazy_type_get() uses its slots (through
+// current_lazy_slots). One per Program; set by program_typecheck() and stays set until that program is destroyed or
+// another one is typechecked, because types are still evaluated after typechecking (the test traversal, for one).
+// New-core functions take a `Checker* me` instead. See hacks.md
+extern thread_local Checker* current_checker;
+void checker_make_current(Checker* me); // null for none
 Atom const* checker_atom(Checker* me, csview sv);
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 

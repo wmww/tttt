@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 2 (LazyType memos in the Checker)
+Pure refactor. Suite: 1084 full, errors 4396, symbols 5939, types 2146 - identical; wall 8.29 s (8.27 s before).
+`log_error` lines 39187 -> 38933 with the same distribution: the harness reruns a test when it leaves net allocations
+behind, and tests no longer leave memos in the shared lib AST (49 reruns left, 46 of them lib program cache fills).
+Bench (machine noisier than for the run recorded below: unchanged tsc went 2.58 -> 3.04 s): tttt 0.650 s best, typecheck
+phase 124 ms (113), **peak RSS 838 MB (790)** - `LazyType` grew 8 bytes and slot pages are fragmented by slots taken
+for transient scopes, see `hacks.md`. The bench numbers further down are from before this stage.
+
 ## 2026-09-18, type core stage 1 (shadow mode)
 `TTTT_SHADOW_TYPES=1 TTTT_SHADOW_STATS=1 ./release/baseline_tests --summary --dump /tmp/dump 2>err.txt` (the env vars
 work with `./failstats.py` and `./test.sh` too; mismatches are `log_error`s, so failstats groups them). With the flag
