@@ -278,7 +278,33 @@ union member) since the lowering now knows `List<string>`'s name. Delete `type_p
 mode. *Validate:* repro test < 50 ms over startup and zero "Max type recursion depth" in `failstats`; errors-component
 passes ≥ 4396, full ≥ 1084; bench typecheck phase not slower.
 
-**Stage 4 - type evaluation produces `Ty`.** Flip `LazyType` slots and every `*_evaluate_type`
+**Stage 4a - DONE (2026-09-18).** 1115 full / errors 4590 / symbols 5974 / types 2183 (from 1100 / 4553 / 5939 / 2149),
+suite 4.3 s, `log_error` lines 7.6k -> 4.6k, bench typecheck phase unchanged (~118 ms), valgrind clean on ~650 tests.
+Details in `measurements.md`, shortcuts in `hacks.md` ("Legacy code consuming the new core"). What 4b should know:
+- **`TYPE_NEW` exists now and the scaffolding held.** Classes (instance + static side), interfaces, enums, enum members
+  and every identifier type that names one evaluate to `Ty` (`ty_declaration_is_evaluated_by_new_core` is the
+  switch). Legacy code consumes them through `ty/legacy_view.c`: `type_resolve()` of a `TYPE_NEW` is a memoised one-layer
+  legacy *view* with `TYPE_NEW` children. It took ~250 lines plus a `TYPE_NEW` case in ~15 switches, and the three flips
+  (enums, classes, interfaces) each cost a handful of fixes, not a long tail. Flipping type aliases is the obvious next
+  step and the same pattern (`identifier_type_evaluate_type` -> `ty_from_identifier_type`); then `generic_degenericize_type`
+  has no type-side callers left. Expect deferred types (`keyof T`...) viewed as `any` to matter there.
+- The new core builds class members itself from the `ClassDecl` (own items, overloads, accessors, inherited instance
+  and static members, construct signatures incl. inherited default constructors), enums are unions of member literal
+  types with real values (`ty/enums.c`, a constant evaluator over `Expr`), and `Declaration.nodes` links a Declaration
+  to the AST nodes it was made from. `Prop`/`Signature` carry declaration spans (the symbols baseline reads them
+  through the view). Instantiation expressions (`Bar<T>` as a value) exist in the new core because `new Bar<T>()` needs
+  them.
+- Not done from the 4a brief: a `this` type parameter, accessibility/nominal class rules, namespaces (still the legacy
+  structural value type), function declarations (still `LAZY_TYPE_FUNCTION` -> legacy callable, lowered by node).
+- The legacy call path is now the weakest link: parameter types declared in interfaces/classes are `TYPE_NEW`, legacy
+  inference only understands a bare type parameter, and everything else becomes `any`. 4b should start with calls
+  (`type_call_evaluate_type`/`type_typecheck_call`/`generic_infer_callable_types` on `Signature`s, `infer_from` in
+  `conditional.c` is a usable seed) and property access (`index_type_evaluate_type*` on `ty_members`), then expressions.
+- Exposed and fixed on the way: bare member names in enum initializers didn't resolve (`B = A << 1`); optional
+  properties were read as `T & undefined`; atoms clustered in their hash table (+70% typecheck time on the bench until
+  the hash got a finalizer - `hmap_arc_declaration` lookups may have the same problem, see triage).
+
+**Stage 4 as planned - type evaluation produces `Ty`.** Flip `LazyType` slots and every `*_evaluate_type`
 (`expr.c`, `statement.c`, `binding.c`, `function_impl.c`, `class_decl.c`, `enum_decl.c`, `interface_decl.c`,
 `scope_evaluate_value_interface`, `merged_type_evaluate_type`) to return `Ty const*`, file by file, using `TYPE_NEW`
 at the seams. Port `index_type_evaluate_type*`, `type_call_evaluate_type`/`type_typecheck_call`, `type_all_keys`,

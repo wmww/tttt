@@ -83,6 +83,9 @@ Type generic_params_expr_evaluate_type(GenericParamsExpr* me) {
     Type const* expr_type = expr_get_type(&my expr);
     Generic const* generic = generic_params_get_generic(me);
     if (!generic_empty(generic)) {
+        // A type of the new core is instantiated as a whole (an identifier for one would stay as it is)
+        Type const* new_type = type_resolve_to_new(expr_type);
+        if (new_type) expr_type = new_type;
         return generic_degenericize_type(generic, type_clone(*expr_type), &my params);
     } else {
         return type_clone(*expr_type);

@@ -5,6 +5,8 @@
 typedef struct MergedType {
     VecType merge_list;
     LazyType lazy;
+    // Set if this is the declared type side of a Declaration (as opposed to its value side)
+    struct Declaration const* declared_owner;
 } MergedType;
 
 void merged_type_add(MergedType* me, Type t);
@@ -70,8 +72,26 @@ static inline bool declaration_tag_has_namespace(DeclarationTag tag) {
     return ret[tag];
 }
 
+// The AST node(s) a declaration was made from. A merged declaration has one per contributing class, interface or enum
+typedef enum DeclNodeKind {
+    DECL_NODE_NONE = 0,
+    DECL_NODE_CLASS,          // ClassDecl, on both the class declaration and its `typeof` declaration
+    DECL_NODE_INTERFACE,      // InterfaceDecl
+    DECL_NODE_ENUM,           // EnumDecl, on both the enum declaration and its `typeof` declaration
+    DECL_NODE_ENUM_CASE,      // EnumCase, on both the member declaration and its `typeof` declaration
+} DeclNodeKind;
+
+typedef struct DeclNode {
+    DeclNodeKind kind;
+    void const* ptr;
+} DeclNode;
+
+#define g_key DeclNode, decl_node
+#include <cleat/generic/vec.h>
+
 typedef struct Declaration {
     Span name;
+    VecDeclNode nodes;
     VecSpan declarations;
     VecSpan namespaces;
     bool exported;
@@ -111,6 +131,7 @@ typedef struct DeclProps {
     Type declared_type;
     bool is_typeof;
     Scope const* namespace;
+    DeclNode node;
 } DeclProps;
 
 DeclProps decl_props_clone(DeclProps me);

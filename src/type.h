@@ -53,6 +53,9 @@ typedef struct Type {
         TYPE_INTERSECTION,
         TYPE_LAZY,
         TYPE_REF,
+        // A semantic type of the new core (ty/ty.h) carried by legacy code, plan 02 stage 4 scaffolding. Owns nothing.
+        // type_resolve() gives a one-layer legacy view of it (ty/legacy_view.c) whose children are TYPE_NEW again
+        TYPE_NEW,
     } tag;
     bool parsed : 1;
     union {
@@ -80,6 +83,11 @@ typedef struct Type {
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         LazyType* lazy;
         Type const* ref;
+        struct {
+            struct Ty const* ty; // Null if one of the lazy forms below hasn't been asked for its type yet
+            struct Prop const* prop; // The type of this property
+            struct Signature const* ret_of; // The return type of this signature
+        } new_;
     };
 } Type;
 
@@ -185,6 +193,13 @@ static inline Type type_lazy(LazyType* lazy) {
     };
 }
 
+static inline Type type_new(struct Ty const* ty) {
+    return (Type){
+        .tag = TYPE_NEW,
+        .new_.ty = ty,
+    };
+}
+
 static inline Type type_ref_always(Type const* ref) {
     return (Type){
         .tag = TYPE_REF,
@@ -206,6 +221,7 @@ static inline Type type_refcopy(Type const* ref) {
         case TYPE_BIGINT:
         case TYPE_LAZY:
         case TYPE_REF:
+        case TYPE_NEW:
             return *ref;
 
         case TYPE_VALUE:
@@ -256,6 +272,8 @@ void type_typecheck(Type const* me, ErrorCtx* errs);
 Type const* type_resolve(Type const* me);
 Type const* type_resolve_one_layer(Type const* me); // Returns nullptr if nothing to resolve
 Type const* type_resolve_until_identifier(Type const* me);
+// Resolves until it finds a type of the new core (TYPE_NEW), null if there's a legacy structural type first
+Type const* type_resolve_to_new(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
 // Like type_extends(), but null and undefined only extend themselves (and any/unknown/void) even without
 // strictNullChecks. What operators mean by "is a number"

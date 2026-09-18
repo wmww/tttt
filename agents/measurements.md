@@ -2,6 +2,23 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 4a (classes, interfaces, enums evaluate to `Ty`)
+Suite: **1115 full (1100), errors 4590 (4553), symbols 5974 (5939), types 2183 (2149)**; suite wall **4.3 s (5.6 s)**.
+- `log_error` lines 7 590 -> 4 606. The legacy generic inference "not yet implemented" family is 2.9k of what's left.
+- ~107 tests gained a component, 13 lost one (2 of them full passes). The losses: weaker call inference now that
+  parameter types from interfaces/classes are `TYPE_NEW` (`arrayFind`, `typeParameterLeak`, `correctOrderOfPromiseMethod`,
+  `objectFreezeLiteralsDontWiden`, `typeInferenceReturnTypeCallback`, `addMoreCallSignaturesToBaseSignature*`), single
+  member enums printing as `E` in messages (`operatorAddNullUndefined`), and a few not looked at
+  (`recursiveBaseCheck3`, `recursiveBaseConstructorCreation3`, `computedPropertyNames21_*`,
+  `controlFlowElementAccessNoCrash1`).
+- Bench: typecheck phase 116-122 ms vs 109-132 ms for b1be87d, measured back to back (total 0.68 s, RSS 838 MB). It was
+  205 ms until `checker_atom` got a hash finalizer: FNV's low bits put `ns1.Foo`, `ns2.Foo`... in long probe runs.
+  stdlib-only typecheck 73 ms -> 19 ms (lib interfaces are no longer merged structurally by the legacy checker).
+- valgrind clean on ~650 tests (enum*, constEnum*, class[A-E]*, derivedClass*, interface[A-E]*, generic[C-F]*, inherit*,
+  recursive[A-C]*, merged*, abstract*, accessor*, constructor*, static*, this*, super*, mappedType[A-E]*, arrayF*, promise*).
+- Shadow mode still runs the whole suite without crashing (mismatch count not re-measured; it compares less and
+  less as the legacy display of a named type *is* the new display now).
+
 ## 2026-09-18, type core stage 3 (relations on the new core)
 Suite: **1100 full (1084), errors 4553 (4396), symbols 5939 (=), types 2149 (2146)**; suite wall **5.6 s (8.3 s)**.
 - `log_error` lines 38 933 -> 7 590; "Max type recursion depth exceeded (type_extends_internal)" 31k -> 0 (one

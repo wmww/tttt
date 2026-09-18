@@ -4,10 +4,12 @@
 // the arena of a `Checker`, and interned, so pointer equality is type identity. The legacy `Type` struct is on its way
 // to being syntax only (the future `TypeNode`); `ty_from_node()` in lower.c is the only producer of `Ty` from it.
 //
-// Nothing outside src/ty/ depends on this yet except the `--shadow-types` hook (shadow.c).
+// The legacy checker uses it for every type relation, and gets the types of classes, interfaces and enums from it
+// (carried as TYPE_NEW, see legacy_view.c).
 
 #include "type.h"
 #include "lazy_type.h"
+#include "generic.h"
 
 typedef struct Ty Ty;
 typedef struct Checker Checker;
@@ -96,6 +98,7 @@ typedef enum TyFlags {
     TYF_UNION           = 1 << 19,
     TYF_INTERSECTION    = 1 << 20,
     TYF_DEFERRED        = 1 << 21, // keyof, indexed access, conditional
+    TYF_ENUM            = 1 << 22, // an enum member without a constant value (tsc's computed enum type), TY_LITERAL
     // Cached facts
     TYF_ERROR                        = 1 << 24, // the `any` that stands for "an error was already reported"
     TYF_COULD_CONTAIN_TYPE_VARIABLES = 1 << 25, // if unset, instantiate() is the identity
@@ -109,7 +112,6 @@ typedef enum TyDeclaredKind {
     TY_DECLARED_INTERFACE,
     TY_DECLARED_CLASS_INSTANCE,
     TY_DECLARED_CLASS_STATIC,
-    TY_DECLARED_ENUM,
     TY_DECLARED_ENUM_OBJECT,
     TY_DECLARED_NAMESPACE,
     TY_DECLARED_TUPLE_TARGET,
@@ -175,8 +177,10 @@ struct Ty {
         struct {
             Value value; // Strings are borrowed from `string`
             Atom const* string;
-            Declaration const* enum_member; // null unless an enum literal
-            Atom const* enum_name;
+            // Enum literals (TYF_ENUM_LITERAL): the enum, and the (first) member with this value. A member whose
+            // value isn't constant has TYF_ENUM instead of a literal flag, and no value
+            Declaration const* enum_decl;
+            Declaration const* enum_member;
         } literal;
         struct {
             Declaration const* decl; // null for synthesized ones
@@ -207,6 +211,9 @@ struct Ty {
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
             TyMapper const* mapper;
+            // An instantiation expression (`Bar<string>` as a value): target is any object type, and the mapper is
+            // about the type parameters of its signatures, which lose them
+            bool applies_type_args;
             LowerCtx ctx;
             // Uninstantiated only: the type parameters declared outside the node that it mentions. Instantiation
             // only cares about these. If unknown (the node has parts that aren't syntax), assume every one in scope
@@ -272,6 +279,11 @@ struct Prop {
     TyMapper const* mapper;
     LazyState type_state;
     Ty const* type;
+    // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
+    Span name_span;
+    Span const* decl_spans;
+    u32 decl_span_count;
+    bool name_is_value; // The name was written as a string or number literal
 };
 
 typedef enum SignatureFlags {
@@ -290,6 +302,16 @@ typedef struct SigParam {
 struct Signature {
     u32 flags;
     CallableType const* node;
+    // Instead of `node`: a legacy type (the LazyType of a constructor, in an arena wrapper) that evaluates to the
+    // callable when the signature is resolved
+    Type const* lazy_node;
+    // Construct signatures of a class: the type parameters are the class's and the return type is its instance type,
+    // whatever `node` or `target` say
+    Ty const* class_instance;
+    TyList class_type_params;
+    Span name_span; // For the symbols baseline
+    Span decl_span;
+    bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
     LowerCtx ctx;
     Signature const* target;
     TyMapper const* mapper;
@@ -428,6 +450,8 @@ struct Checker {
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
+    Type** views; // Ty id -> legacy view, see legacy_view.c
+    u32 views_len;
     // --shadow-types bookkeeping, see shadow.c
     struct ShadowState* shadow;
 };
@@ -451,7 +475,9 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags);
 TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
-Ty const* ty_literal(Checker* me, Value const* value, Declaration const* enum_member, Atom const* enum_name);
+Ty const* ty_literal(Checker* me, Value const* value);
+Ty const* ty_enum_literal(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* member);
+Ty const* ty_enum_computed_member(Checker* me, Declaration const* enum_decl, Declaration const* member);
 Ty const* ty_string_literal(Checker* me, csview sv);
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args);
@@ -490,8 +516,27 @@ Ty const* ty_from_node(Checker* me, Type const* node, LowerCtx ctx);
 // Like ty_from_node(), but also follows the legacy checker's TYPE_LAZY/TYPE_REF (stage 1-4 scaffolding)
 Ty const* ty_from_legacy(Checker* me, Type const* type, LowerCtx ctx);
 Ty const* ty_declared_type_of(Checker* me, Declaration const* decl);
+Atom const* ty_qualified_name(Checker* me, Declaration const* decl); // `A.B.name`
+void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
 Ty const* ty_anonymous_from_node(Checker* me, Type const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
+
+// legacy_view.c: legacy code carrying and consuming `Ty` (TYPE_NEW), plan 02 stage 4 scaffolding
+Ty const* type_new_ty(Checker* me, Type const* type_new); // The Ty of a TYPE_NEW, resolving its lazy forms
+void ty_legacy_views_drop(Checker* me);
+Type const* ty_legacy_view(Checker* me, Ty const* ty); // One structural layer as a legacy type, owned by the checker
+Ty const* ty_instantiate_with_refinements(Checker* me, Ty const* ty, VecTypeRefinement const* refinements);
+static inline Type type_new_prop(Prop const* prop) { return (Type){ .tag = TYPE_NEW, .new_.prop = prop }; }
+static inline Type type_new_return(Signature const* sig) { return (Type){ .tag = TYPE_NEW, .new_.ret_of = sig }; }
+
+// Which declarations' types the legacy checker gets from the new core (as TYPE_NEW) instead of evaluating them itself
+bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl);
+Ty const* ty_from_identifier_type(Checker* me, IdentifierType const* identifier); // An identifier type evaluated by legacy code
+
+// enums.c
+Ty const* ty_resolve_enum(Checker* me, Declaration const* decl); // Only ty_declared_type_of() should call this
+Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
+bool ty_is_enum_union(Ty const* ty);
 
 // relate.c
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation);
@@ -515,6 +560,7 @@ typedef struct TyDisplay {
     // Literal types inside object types that came from expressions print as their primitive: tsc widens the
     // properties of an object literal when it types it, the legacy checker only when it reports. HACK(stage 4b)
     bool widen_literals;
+    bool unqualified_names; // See out_name() in ty_display.c
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

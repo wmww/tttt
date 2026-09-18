@@ -23,11 +23,13 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
     my namespace = scope_init_namespace(my name, scope, scope->errs);
 
     for_each (i, vec_enum_case, &my cases) {
+        i->parent = me;
         declaration_init(&i->typeof_declaration, (DeclProps){
             .name = i->name,
             .full = i->full_name,
             .tag = DECLARATION_ENUM_CASE_TYPE,
             .declared_type = type_lazy(&i->value.lazy_type),
+            .node = { DECL_NODE_ENUM_CASE, i },
         });
 
         scope_init_declaration(&my namespace, &i->declaration, (DeclProps) {
@@ -44,6 +46,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
                 .name = i->name,
                 .decl_ref = &i->typeof_declaration,
             })),
+            .node = { DECL_NODE_ENUM_CASE, i },
         });
     }
 
@@ -54,6 +57,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
         .tag = DECLARATION_ENUM_CASE_TYPE,
         .declared_type = type_lazy(&my interface_type),
         .is_typeof = true,
+        .node = { DECL_NODE_ENUM, me },
     });
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
@@ -67,6 +71,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
         })),
         .declared_type = type_lazy(&my instance_type),
         .namespace = &my namespace,
+        .node = { DECL_NODE_ENUM, me },
     });
 }
 
@@ -74,36 +79,21 @@ void enum_decl_lookup_names(EnumDecl* me, ScopeStack* names, ErrorCtx* errs) {
     lazy_type_bind(&my instance_type, LAZY_TYPE_ENUM_INSTANCE);
     lazy_type_bind(&my interface_type, LAZY_TYPE_ENUM_INTERFACE);
 
+    // Initializers see the members by their bare names
+    scope_push_to_stack(&my namespace, names);
     for_each (i, vec_enum_case, &my cases) {
         expr_lookup_names(&i->value, names, errs);
     }
+    scope_pop_from_stack(&my namespace);
 }
 
+// Enums are evaluated by the new type core (ty/enums.c)
 Type enum_decl_evaluate_instance_type(EnumDecl* me) {
-    Type ret = type_never;
-    for_each (i, vec_enum_case, &my cases) {
-        ret = type_composite(TYPE_UNION, ret, type_clone(*expr_get_type(&i->value)));
-    }
-    return ret;
+    return my declaration.get ? type_new(ty_declared_type_of(current_checker, my declaration.get)) : type_any;
 }
 
 Type enum_decl_evaluate_interface_type(EnumDecl* me) {
-    VecInterfaceMember members = vec_interface_member_init();
-    for_each (i, vec_enum_case, &my cases) {
-        vec_interface_member_push(&members, interface_member_make(
-            i->full_name,
-            my declaration.get,
-            true,
-            false,
-            cstr_from_span(i->name),
-            i->full_name,
-            i->name_is_value,
-            type_refcopy(&i->declaration.get->value_type)
-        ));
-    }
-    return type_interface((Interface){
-        .members = members,
-    });
+    return type_new(ty_declared_type_of(current_checker, &my typeof_declaration));
 }
 
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {

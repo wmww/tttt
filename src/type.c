@@ -164,6 +164,7 @@ void type_drop(Type* me) {
         case TYPE_BIGINT:
         case TYPE_LAZY:
         case TYPE_REF:
+        case TYPE_NEW:
             break;
 
         case TYPE_VALUE:
@@ -238,7 +239,8 @@ Type type_clone(Type me) {
         case TYPE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_LAZY:
-        case TYPE_REF: return me;
+        case TYPE_REF:
+        case TYPE_NEW: return me;
         case TYPE_VALUE: return type_value(value_clone(me.value));
         case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
         case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
@@ -334,6 +336,7 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             break;
 
         case TYPE_LAZY: break;
+        case TYPE_NEW: break;
 
         case TYPE_REF:
             type_add_inferred_names(my ref, scope);
@@ -400,6 +403,7 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_LAZY: // Resolving names is the responsibility of the LazyType owner
+        case TYPE_NEW:
         case TYPE_REF: break;
     }
 }
@@ -450,6 +454,7 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
             break;
 
         case TYPE_LAZY: // Typechecking is the responsibility of the LazyType owner
+        case TYPE_NEW:
         case TYPE_REF:
             break;
     }
@@ -635,6 +640,8 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
         case TYPE_LAZY: return lazy_type_get(my lazy);
 
         case TYPE_REF: return my ref;
+
+        case TYPE_NEW: return ty_legacy_view(current_checker, type_new_ty(current_checker, me));
     }
     impossible;
 }
@@ -662,6 +669,9 @@ static Type const* type_resolve_internal(TypeCtx* ctx, Type const* me, bool thro
         }
     }
 
+    // Named things of the new core are their own name, except type parameters, which legacy code knows by identifier
+    if (my tag == TYPE_NEW && !through_identifier && type_new_ty(current_checker, me)->kind != TY_TYPE_PARAM) return me;
+
     Type const* tmp = type_resolve_one_layer_internal(ctx, me);
     if (tmp) {
         ctx->recursion_level++;
@@ -680,6 +690,15 @@ Type const* type_resolve(Type const* me) {
     Type const* ret = type_resolve_internal(&ctx, me, true);
     type_ctx_drop(&ctx);
     return ret;
+}
+
+Type const* type_resolve_to_new(Type const* me) {
+    TypeCtx ctx = {0};
+    for (unsigned depth = 0; me && my tag != TYPE_NEW && depth < 64; depth++) {
+        me = type_resolve_one_layer_internal(&ctx, me);
+    }
+    type_ctx_drop(&ctx);
+    return me && my tag == TYPE_NEW ? me : nullptr;
 }
 
 Type const* type_resolve_until_identifier(Type const* me) {
@@ -705,6 +724,7 @@ static inline bool legacy_infer_extends_more(TypeCtx* ctx, Type const* sub, Type
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
         case TYPE_LAZY:
+        case TYPE_NEW:
         case TYPE_REF: {
             Type const* super_resolved = type_resolve_one_layer_internal(ctx, super);
             return legacy_infer_extends(
@@ -736,6 +756,7 @@ static inline bool legacy_infer_extends_more(TypeCtx* ctx, Type const* sub, Type
         case TYPE_KEYOF:
         case TYPE_TERNARY:
         case TYPE_LAZY:
+        case TYPE_NEW:
         case TYPE_REF: {
             Type const* sub_resolved = type_resolve_one_layer_internal(ctx, sub);
             if (sub_resolved) {
@@ -942,6 +963,7 @@ static inline bool legacy_infer_extends_more(TypeCtx* ctx, Type const* sub, Type
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
+        case TYPE_NEW:
             // Should have been handled above
             impossible;
     }
@@ -1085,6 +1107,9 @@ intptr_t type_max_numeric_index(Type const* me) {
 }
 
 signed char type_is_trivially_truthy(Type const* me) {
+    // tsc doesn't look at the value of an enum member here
+    Type const* named = type_resolve_until_identifier(me);
+    if (named->tag == TYPE_NEW && (type_new_ty(current_checker, named)->flags & TYF_ENUM_LITERAL)) return -1;
     me = type_resolve(me);
     switch (my tag) {
         case TYPE_VALUE: return value_to_boolean(&my value);
@@ -1194,6 +1219,10 @@ void type_abstract_literals(Type* me) {
         case TYPE_REF:
             *me = type_clone(*my ref);
             type_abstract_literals(me);
+            break;
+
+        case TYPE_NEW:
+            *me = type_new(ty_widened_literal(current_checker, type_new_ty(current_checker, me)));
             break;
     }
 }
@@ -1336,8 +1365,8 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
             for_each (i, vec_interface_member, &my interface.members) {
                 if (interface_member_key_overlaps(i, index)) {
                     *ret = type_clone(i->type);
-                    if (i->optional) {
-                        *ret = type_composite_internal(ctx, TYPE_INTERSECTION, *ret, type_undefined);
+                    if (i->optional && get_error_config()->strict_null_checks) {
+                        *ret = type_composite_internal(ctx, TYPE_UNION, *ret, type_undefined);
                     }
                     return true;
                 }
@@ -1401,6 +1430,7 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
+        case TYPE_NEW:
             panic("Type with tag ", (i32)my tag, " should have been resolved away");
     }
     impossible;
@@ -1529,6 +1559,7 @@ static void index_type_typecheck_internal(
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
+        case TYPE_NEW:
             panic("Type with tag ", (i32)my tag, " should have been resolved away");
     }
 }

@@ -98,3 +98,13 @@ Uninvestigated items. Triage sessions drain this.
   assignment with a chain. Needs expression-level elaboration (`elaborateError`), after 4b.
 - (stage 3) TS18050 ("The value 'null' cannot be used here", 680 missing in 38 tests) is what tsc says for null/
   undefined operands; `expr.c` operator checks use `type_extends_strict_nulls` + TS2365 instead.
+- Parameter properties (`constructor(public x: number)`): the parser drops the modifier, so neither the legacy checker
+  nor `builder_add_class_items` gives the class an `x`. Common in real code and in the class tests.
+- `hmap_arc_declaration_bucket_lookup_` is ~15% of the bench run (self time). `checker_atom` had the same profile until
+  its FNV hash got a finalizer (stage 4a: similar names cluster in the low bits under linear probing); check whether
+  the STC map's hash for `SvStr` keys can get the same treatment (a custom `i_hash`), it could be a cheap 10%.
+- The debug AST dump (`tttt` without `-q`) evaluated expression types before there was a checker and panicked on any
+  file with a call in a class body; it prints `?` now (`display_expr`). Is that dump worth keeping at all?
+- Members of ambient non-const enums without initializer should be computed (no value), `ty_resolve_enum` auto-increments.
+- tsc prints string-named enum members as `(typeof E)["b c"]`.
+- `filetest.sh` takes `FAST=1` now (release build, no valgrind): seconds instead of a minute per probe.

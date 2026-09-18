@@ -1,5 +1,6 @@
 #include "declaration.h"
 #include "generic.h"
+#include "ty/ty.h"
 #include "error.h"
 
 void merged_type_add(MergedType* me, Type t) {
@@ -32,6 +33,9 @@ MergedType merged_type_clone(MergedType me) {
 }
 
 Type merged_type_evaluate_type(MergedType* me) {
+    if (my declared_owner && ty_declaration_is_evaluated_by_new_core(my declared_owner)) {
+        return type_new(ty_declared_type_of(current_checker, my declared_owner));
+    }
     VecType interfaces = vec_type_init();
     for_each (i, vec_type, &my merge_list) {
         Type interface;
@@ -50,6 +54,7 @@ void merged_type_drop(MergedType* me) {
 }
 
 void declaration_drop(Declaration* me) {
+    vec_decl_node_drop(&my nodes);
     vec_span_drop(&my declarations);
     vec_span_drop(&my namespaces);
     type_drop(&my value_type);
@@ -59,6 +64,7 @@ void declaration_drop(Declaration* me) {
 }
 
 void declaration_clone_in_place(Declaration* me) {
+    my nodes = vec_decl_node_clone(my nodes);
     my declarations = vec_span_clone(my declarations);
     my namespaces = vec_span_clone(my namespaces);
     my value_type = type_clone(my value_type);
@@ -67,6 +73,7 @@ void declaration_clone_in_place(Declaration* me) {
         my value_type = type_lazy(&my merged_value_type.lazy);
     }
     my merged_declared_type = merged_type_clone(my merged_declared_type);
+    if (my merged_declared_type.declared_owner) my merged_declared_type.declared_owner = me;
     if (my declared_type.tag) {
         my declared_type = type_lazy(&my merged_declared_type.lazy);
     }
@@ -198,6 +205,7 @@ void declaration_init(Declaration* me, DeclProps props) {
         my name = props.name;
     }
     vec_span_push(&my declarations, props.full);
+    if (props.node.kind) vec_decl_node_push(&my nodes, props.node);
 
     if (declaration_tag_has_value(props.tag)) {
         if (!my value_tag) {
@@ -228,6 +236,7 @@ void declaration_init(Declaration* me, DeclProps props) {
         }
         if (props.tag > my type_tag) my type_tag = props.tag;
         merged_type_add(&my merged_declared_type, props.declared_type);
+        my merged_declared_type.declared_owner = me;
     } else if (props.declared_type.tag) {
         panic("declaration_init() called with tag ", (i32)props.tag, " and non-empty declared type");
     }

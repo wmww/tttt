@@ -186,43 +186,52 @@ static bool could_have_singletons(Checker* me, Ty const* ty) {
     return ty->kind == TY_LITERAL || (ty->flags & (TYF_DEFERRED | TYF_UNDEFINED | TYF_NULL)) != 0;
 }
 
-// Enums. HACK(stage 4a): an enum is a nominal placeholder, not the union of its members (see hacks.md)
+// Enums
 
-static bool enum_has_member(Ty const* enum_type, Declaration const* member) {
-    Declaration const* decl = enum_type->declared.decl;
-    if (!decl || !decl->namespace || !member) return false;
-    return scope_get_declaration(decl->namespace, member->name) == member;
+static csview unqualified(csview name) {
+    isize_t dot = name.size;
+    while (dot > 0 && name.buf[dot - 1] != '.') dot--;
+    return csview_from_n(name.buf + dot, name.size - dot);
 }
 
-static bool is_enum(Ty const* ty) {
-    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_ENUM;
-}
-
-// Whether the enum has a member of the kind (TYF_STRING_LITERAL / TYF_NUMBER_LITERAL)
-static bool enum_has_kind(Checker* me, Ty const* enum_type, u32 literal_flag) {
-    Declaration const* decl = enum_type->declared.decl;
-    if (!decl) return false;
-    Type const* structure = type_resolve(&decl->declared_type);
-    bool any = false;
-    bool found = false;
-    Type const* members = structure;
-    u32 count = 1;
-    if (structure->tag == TYPE_UNION) {
-        members = structure->composite.data;
-        count = (u32)vec_type_size(&structure->composite);
-    }
-    for (u32 i = 0; i < count; i++) {
-        Type const* member = type_resolve(&members[i]);
-        if (member->tag == TYPE_VALUE && member->value.tag == VALUE_STRING) {
-            any = true;
-            found |= literal_flag == TYF_STRING_LITERAL;
-        } else if (member->tag != TYPE_NEVER) {
-            any = true;
-            found |= literal_flag == TYF_NUMBER_LITERAL;
+// tsc's isEnumTypeRelatedTo: the same enum, or enums of the same name whose members agree (two versions of a library)
+static bool enums_related(Checker* me, Declaration const* source, Declaration const* target) {
+    if (source == target) return true;
+    if (!source || !target || !csview_eq(&source->name.sv, &target->name.sv)) return false;
+    if (!source->namespace || !target->namespace) return false;
+    Ty const* source_type = ty_declared_type_of(me, source);
+    TyList members = source_type->kind == TY_UNION ?
+        source_type->composite.types :
+        (TyList){ .data = &source_type, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (member->kind != TY_LITERAL || !member->literal.enum_member || member->literal.enum_member == source) continue;
+        Declaration const* other = scope_get_declaration(target->namespace, member->literal.enum_member->name);
+        if (!other || other->value_tag != DECLARATION_ENUM_CASE) return false;
+        Ty const* other_type = ty_declared_type_of(me, other);
+        if (other_type->kind != TY_LITERAL) return false;
+        bool known = (member->flags & TYF_LITERAL) && (other_type->flags & TYF_LITERAL);
+        if (known) {
+            if ((member->flags & TYF_LITERAL) != (other_type->flags & TYF_LITERAL)) return false;
+            if ((member->flags & TYF_STRING_LITERAL) && member->literal.string != other_type->literal.string) return false;
+            if ((member->flags & TYF_NUMBER_LITERAL) && member->literal.value.number != other_type->literal.value.number) {
+                return false;
+            }
+        } else if ((member->flags | other_type->flags) & TYF_STRING_LITERAL) {
+            return false; // An unknown value is assumed to be numeric
         }
     }
-    (void)me;
-    return any ? found : literal_flag == TYF_NUMBER_LITERAL;
+    return true;
+}
+
+static bool same_literal_value(Ty const* s, Ty const* t) {
+    if ((s->flags & TYF_LITERAL) != (t->flags & TYF_LITERAL)) return false;
+    if (s->flags & TYF_STRING_LITERAL) return s->literal.string == t->literal.string;
+    if (s->flags & TYF_NUMBER_LITERAL) {
+        return s->literal.value.number == t->literal.value.number ||
+            (s->literal.value.number != s->literal.value.number && t->literal.value.number != t->literal.value.number);
+    }
+    return false;
 }
 
 // Simple relations: decided by flags and identity alone (tsc's isSimpleTypeRelatedTo)
@@ -246,46 +255,47 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     }
     if ((sf & TYF_OBJECT) && (tf & TYF_NON_PRIMITIVE)) return true;
     // Enums
-    if (s->kind == TY_LITERAL && s->literal.enum_member && is_enum(t)) return enum_has_member(t, s->literal.enum_member);
-    if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && s->literal.enum_member && t->literal.enum_member) {
-        // HACK(stage 4): `var x = E.A` should have the widened type E, but declarations aren't widened by the
-        // new core yet, so members of one enum are related to each other
-        csview s_name = atom_sv(s->literal.enum_name);
-        csview t_name = atom_sv(t->literal.enum_name);
-        isize_t s_dot = s_name.size, t_dot = t_name.size;
-        while (s_dot > 0 && s_name.buf[s_dot - 1] != '.') s_dot--;
-        while (t_dot > 0 && t_name.buf[t_dot - 1] != '.') t_dot--;
-        if (s_dot == t_dot && s_dot > 0 && memcmp(s_name.buf, t_name.buf, (size_t)s_dot) == 0) return true;
-    }
-    if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && (sf & TYF_NUMBER_LITERAL) && (tf & TYF_NUMBER_LITERAL) &&
-        (s->literal.enum_member != nullptr) != (t->literal.enum_member != nullptr)
+    if ((sf & TYF_ENUM) && (tf & TYF_NUMBER)) return true;
+    if ((sf & TYF_ENUM_LITERAL) && (sf & TYF_LITERAL) && (tf & TYF_LITERAL) && !(tf & TYF_ENUM_LITERAL) &&
+        s->kind == TY_LITERAL && t->kind == TY_LITERAL && same_literal_value(s, t)
     ) {
-        // A numeric enum member and the number literal of its value
-        // (members without an initializer don't know their value yet, see enum_member_type())
-        return s->literal.value.number == t->literal.value.number || s->literal.value.number != s->literal.value.number ||
-            t->literal.value.number != t->literal.value.number;
+        return true;
     }
-    if (is_enum(s)) {
-        if ((tf & TYF_NUMBER) && t->kind == TY_INTRINSIC) return enum_has_kind(me, s, TYF_NUMBER_LITERAL);
-        if ((tf & TYF_STRING) && t->kind == TY_INTRINSIC) return !enum_has_kind(me, s, TYF_NUMBER_LITERAL);
+    if ((sf & TYF_ENUM) && (tf & TYF_ENUM)) {
+        if (enums_related(me, s->literal.enum_decl, t->literal.enum_decl) &&
+            csview_eq(&s->literal.enum_member->name.sv, &t->literal.enum_member->name.sv)
+        ) {
+            return true;
+        }
     }
-    if (is_enum(t)) {
-        // Any number is assignable to a numeric enum
-        if (((sf & TYF_NUMBER) && s->kind == TY_INTRINSIC) || ((sf & TYF_NUMBER_LITERAL) && !s->literal.enum_member)) {
-            return enum_has_kind(me, t, TYF_NUMBER_LITERAL);
+    if (ty_is_enum_union(s) && ty_is_enum_union(t) && enums_related(me, s->alias, t->alias)) return true;
+    if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && s->literal.enum_decl && t->literal.enum_decl) {
+        if ((sf & TYF_LITERAL) && same_literal_value(s, t) && enums_related(me, s->literal.enum_decl, t->literal.enum_decl)) {
+            return true;
+        }
+        // HACK(stage 4b): `var x = E.A` should have the widened type E, but the legacy checker doesn't widen enum
+        // members, so members of one enum are related to each other
+        if (s->literal.enum_decl == t->literal.enum_decl && st->relation != TY_RELATION_STRICT_SUBTYPE) return true;
+    }
+    if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE ||
+        st->relation == TY_RELATION_ASSIGNABLE_STRICT_NULLS
+    ) {
+        // Type number is assignable to any computed numeric enum type or any numeric enum literal type, and a numeric
+        // literal type to a computed one or an enum literal with the same value (enums as bit flags)
+        bool t_numeric_enum_literal = (tf & TYF_NUMBER_LITERAL) && (tf & TYF_ENUM_LITERAL);
+        if ((sf & TYF_NUMBER) && ((tf & TYF_ENUM) || t_numeric_enum_literal)) return true;
+        if ((sf & TYF_NUMBER_LITERAL) && !(sf & TYF_ENUM_LITERAL) && s->kind == TY_LITERAL &&
+            ((tf & TYF_ENUM) || (t_numeric_enum_literal && t->kind == TY_LITERAL && same_literal_value(s, t)))
+        ) {
+            return true;
         }
     }
     if (st->relation == TY_RELATION_COMPARABLE) {
-        // A number is comparable to a numeric enum member, and enum members of the same value to each other
-        if ((sf & TYF_NUMBER) && s->kind == TY_INTRINSIC && (tf & TYF_NUMBER_LITERAL) && (tf & TYF_ENUM_LITERAL)) return true;
-        if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && (s->literal.enum_member || t->literal.enum_member) &&
-            (sf & TYF_LITERAL) == (tf & TYF_LITERAL)
+        // Enum members of the same value are comparable to each other
+        if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && (s->literal.enum_decl || t->literal.enum_decl) &&
+            (sf & TYF_LITERAL) && same_literal_value(s, t)
         ) {
-            if (sf & TYF_STRING_LITERAL) return s->literal.string == t->literal.string;
-            if (sf & TYF_NUMBER_LITERAL) {
-                return s->literal.value.number == t->literal.value.number ||
-                    s->literal.value.number != s->literal.value.number || t->literal.value.number != t->literal.value.number;
-            }
+            return true;
         }
     }
     return false;
@@ -353,8 +363,8 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         else return ty;
         return global ? global : global_type(me, GLOBAL_EMPTY_OBJECT);
     }
-    if (is_enum(ty)) {
-        global = global_type(me, enum_has_kind(me, ty, TYF_NUMBER_LITERAL) ? GLOBAL_NUMBER : GLOBAL_STRING);
+    if (f & TYF_ENUM) {
+        global = global_type(me, GLOBAL_NUMBER);
         return global ? global : global_type(me, GLOBAL_EMPTY_OBJECT);
     }
     return ty;
@@ -944,10 +954,10 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
         if (targets.data[i] == source) return TERNARY_TRUE;
     }
     // A unit type is only ever related to a union member by identity (above) or through a non-unit member
-    bool source_is_unit = (source->kind == TY_LITERAL && !source->literal.enum_member) ||
+    bool source_is_unit = (source->kind == TY_LITERAL && !source->literal.enum_decl) ||
         (source->kind == TY_INTRINSIC && (source->flags & TYF_NULLABLE));
     for (u32 i = 0; i < targets.len; i++) {
-        if (source_is_unit && targets.data[i]->kind == TY_LITERAL && !targets.data[i]->literal.enum_member &&
+        if (source_is_unit && targets.data[i]->kind == TY_LITERAL && !targets.data[i]->literal.enum_decl &&
             st->relation != TY_RELATION_COMPARABLE
         ) {
             continue;

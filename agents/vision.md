@@ -8,9 +8,9 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, first insights session)
 - ~17k LoC of C in `src/` (parser 4.2k, type.c 1.9k, display 1.3k, expr/statement ~0.9k each). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 1100 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
-  3). Per component: errors 4553, symbols 5939, types 2149 pass (of 11236 that run; the other 726 are explained in
-  `measurements.md`).
+- `./fasttest.sh`: 1115 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
+  3, 1100 before 4a). Per component: errors 4590, symbols 5974, types 2183 pass (of 11236 that run; the other 726 are
+  explained in `measurements.md`).
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
   `@strict: true,false`...) is ignored.
@@ -24,12 +24,16 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
-- Type core migration (plan 02): **stages 1-3 of 5 done.** `src/ty/` has the interned, arena-allocated `Ty` core
+- Type core migration (plan 02): **stages 1-3 and 4a done.** Since 4a, classes, interfaces and enums are evaluated
+  by the new core (members built from the AST, enums as unions of member literals with real values, inherited and
+  static members, `Declaration.nodes` links), and the legacy checker consumes them as `TYPE_NEW` through a one-layer
+  legacy *view* (`ty/legacy_view.c`). Expressions, calls, property access, type aliases, functions and namespaces are
+  still legacy; legacy call inference is now the weakest link (4b starts there). Earlier: `src/ty/` has the interned, arena-allocated `Ty` core
   (identity, lazy members, mapper instantiation, lowering from the AST, tsc-style printer), the per-`Program`
   `Checker` owns all checker state, and since stage 3 **every type relation runs on the new core** (id-keyed
   persistent caches, maybe-stack, deep-nesting check, measured variances, conditional types with `infer`,
   elaboration chains). The recursive-generics blow-up is gone (31k depth-limit hits -> 0, suite 8.3 s -> 5.6 s).
-  Types are still *evaluated* by the legacy checker and lowered at every relation call; that bridge
+  Expression types are still *evaluated* by the legacy checker and lowered at every relation call; that bridge
   (`LowerCtx.transient`, see `hacks.md`) is the main piece of scaffolding now, and stage 4 removes the need for it.
   A correct relation also stopped forgiving the legacy checker's weak spots (inference, contextual typing,
   narrowing): expect error-noise from those areas until they're rebuilt on `Ty`.
@@ -70,7 +74,8 @@ caches, mapper-based instantiation and tsc-style recursion handling, staged in p
 runnable throughout (`plans/02-type-core.md`).** Expect the pass count to stall during the migration; that is
 acceptable. Do not grind out test passes on top of the old representation in the meantime, beyond work that is
 independent of it (parser, harness, tooling, module resolution). The main risk is the temporary `TYPE_NEW` bridge
-between old and new representations costing more than it saves; there's a short insights checkpoint after stage 4a.
+between old and new representations costing more than it saves; 4a's experience says it doesn't (three flips, a
+handful of fixes each, pass counts up), and there's a short insights checkpoint before 4b.
 
 ## Risks / concerns
 - Test-chasing: 11k tests invite special-casing message text. Prefer fixes that move whole categories.

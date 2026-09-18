@@ -1,4 +1,5 @@
 #include "generic.h"
+#include "ty/ty.h"
 #include "scope_stack.h"
 #include "scope.h"
 #include "several_types.h"
@@ -117,6 +118,11 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
         case TYPE_KEYOF:
         case TYPE_TYPEOF:
         case TYPE_TERNARY:
+        case TYPE_NEW:
+            // A named type of the new core that isn't simply a type parameter (`Box<T>`, `T[]`): not inferred through
+            if (type_new_ty(current_checker, me)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) inference_gave_up = true;
+            return;
+
         case TYPE_LAZY:
         case TYPE_REF:
             panic("Type with tag ", (i32)my tag, " should have been resolved away");
@@ -254,6 +260,10 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
         case TYPE_REF:
             *me = type_clone(*my ref);
             replace_named_types_with(me, refinements);
+            return;
+
+        case TYPE_NEW:
+            *me = type_new(ty_instantiate_with_refinements(current_checker, type_new_ty(current_checker, me), refinements));
             return;
     }
     impossible;

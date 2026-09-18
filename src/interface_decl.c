@@ -23,6 +23,7 @@ void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported) {
         .tag = DECLARATION_INTERFACE,
         .generic = &my generic,
         .declared_type = type_lazy(&my lazy_type),
+        .node = { DECL_NODE_INTERFACE, me },
     });
 }
 
@@ -44,6 +45,8 @@ void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx*
 
 Type interface_decl_evaluate_type(InterfaceDecl* me) {
     check(my type.tag == TYPE_INTERFACE);
+    // Interfaces are evaluated by the new type core (ty/members.c)
+    if (my declaration.get) return type_new(ty_declared_type_of(current_checker, my declaration.get));
 
     for_each (i, vec_interface_member, &my type.interface.members) {
         i->origin_interface = my declaration.get;

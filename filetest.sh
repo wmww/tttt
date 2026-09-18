@@ -27,8 +27,10 @@ NODE_PATH=$PWD/thirdparty/tsc/node_modules/ node ./test/diffapp/tsc_custom_basel
 # Put the output files where the tttt runner expects them
 mv "$TEST_DIR/tests/baselines/local" "$TEST_DIR/tests/baselines/reference"
 
-# Run the test
-./test.sh --dir "$TEST_DIR/tests" --results-path "$TEST_DIR/baseline_results.ts" "$@"
+# Run the test (FAST=1: release build without valgrind, much quicker to iterate with)
+RUNNER=./test.sh
+if test -n "${FAST:-}"; then RUNNER=./fasttest.sh; fi
+"$RUNNER" --dir "$TEST_DIR/tests" --results-path "$TEST_DIR/baseline_results.ts" "$@"
 
 # Clean up
 rm -rf "$TEST_DIR"

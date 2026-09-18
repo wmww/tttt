@@ -31,6 +31,8 @@ core_files = files(
     'string_helpers.c',
     'ty/checker.c',
     'ty/members.c',
+    'ty/enums.c',
+    'ty/legacy_view.c',
     'ty/instantiate.c',
     'ty/lower.c',
     'ty/ty_display.c',

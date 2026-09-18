@@ -1,6 +1,7 @@
 #include "ty/ty_internal.h"
 #include "scope.h"
 #include "enum_decl.h"
+#include "class_decl.h"
 #include <math.h>
 
 // Lowering: syntax (`Type`, the future `TypeNode`) to semantic types (`Ty`). Until plan 02 stage 4 the legacy checker
@@ -70,6 +71,10 @@ static Atom const* qualified_name(Checker* me, VecSpan const* namespaces, Span n
     return ret;
 }
 
+Atom const* ty_qualified_name(Checker* me, Declaration const* decl) {
+    return qualified_name(me, &decl->namespaces, decl->name);
+}
+
 static Ty const* make_declared(Checker* me, Declaration const* decl, TyDeclaredKind kind) {
     Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
     ret->declared.kind = kind;
@@ -78,10 +83,10 @@ static Ty const* make_declared(Checker* me, Declaration const* decl, TyDeclaredK
     ret->declared.state = arena_new(&my arena, TyObjectState);
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE) {
         ret->declared.type_params = ty_type_params_of(me, decl->type_generic);
-        DeclEntries entries = legacy_declaration_entries(decl);
-        for (u32 i = 0; i < entries.len; i++) {
-            InterfaceDecl const* interface_decl = legacy_entry_interface_decl(&entries.data[i]);
-            if (interface_decl && &interface_decl->generic != decl->type_generic) {
+        for_each (node, vec_decl_node, &decl->nodes) {
+            if (node->kind != DECL_NODE_INTERFACE) continue;
+            InterfaceDecl const* interface_decl = node->ptr;
+            if (&interface_decl->generic != decl->type_generic) {
                 unify_type_params(me, ret->declared.type_params, &interface_decl->generic);
             }
         }
@@ -89,18 +94,64 @@ static Ty const* make_declared(Checker* me, Declaration const* decl, TyDeclaredK
     return ret;
 }
 
+void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type) {
+    DeclLinks* links = decl_links(me, decl);
+    links->declared_type = type;
+    links->declared_state = LAZY_STATE_DONE;
+}
+
+// The (first) AST node of the given kind a declaration was made from
+static void const* decl_node(Declaration const* decl, DeclNodeKind kind) {
+    for_each (i, vec_decl_node, &decl->nodes) {
+        if (i->kind == kind) return i->ptr;
+    }
+    return nullptr;
+}
+
+// An enum member's type is made when its enum's is
 static Ty const* enum_member_type(Checker* me, Declaration const* decl) {
-    // The declared type of an enum member is an identifier (`E.A`) for the declaration that holds its value
-    // HACK(stage 4a): members without an initializer have no value in the legacy checker. They still get a literal
-    // type of their own (its value is a placeholder), since that's what they are once enums are evaluated here
-    Atom const* name = qualified_name(me, &decl->namespaces, decl->name);
-    Type const* value = type_resolve(&decl->declared_type);
-    Value placeholder = { .tag = VALUE_NUMBER, .number = NAN };
-    bool has_value = value->tag == TYPE_VALUE && (value->value.tag == VALUE_NUMBER || value->value.tag == VALUE_STRING);
-    return ty_literal(me, has_value ? &value->value : &placeholder, decl, name);
+    EnumCase const* enum_case = decl_node(decl, DECL_NODE_ENUM_CASE);
+    if (!enum_case || !enum_case->parent || !enum_case->parent->declaration.get) return ty_intrinsic(me, TY_ERROR);
+    Ty const* enum_type = ty_declared_type_of(me, enum_case->parent->declaration.get);
+    DeclLinks* links = decl_links(me, decl);
+    if (links->declared_state == LAZY_STATE_DONE) return links->declared_type;
+    // The enum is being resolved further up the stack and hasn't got to this member yet
+    (void)enum_type;
+    return nullptr;
+}
+
+// Import aliases (`import b = a.E`) and re-exports are *copies* of the declaration they alias (see hacks.md:
+// port_item_resolve_alias). The AST node knows the declaration it made, which is the one identity goes by.
+static Declaration const* canonical_declaration(Declaration const* decl) {
+    if (!vec_decl_node_size(&decl->nodes)) return decl;
+    DeclNode node = *vec_decl_node_at(&decl->nodes, 0);
+    Declaration const* canonical = nullptr;
+    switch (node.kind) {
+        case DECL_NODE_NONE: break;
+        case DECL_NODE_CLASS: {
+            ClassDecl const* class_decl = node.ptr;
+            canonical = decl->is_typeof ? &class_decl->typeof_declaration : class_decl->declaration.get;
+        }   break;
+        case DECL_NODE_INTERFACE:
+            canonical = ((InterfaceDecl const*)node.ptr)->declaration.get;
+            break;
+        case DECL_NODE_ENUM: {
+            EnumDecl const* enum_decl = node.ptr;
+            canonical = decl->is_typeof ? &enum_decl->typeof_declaration : enum_decl->declaration.get;
+        }   break;
+        case DECL_NODE_ENUM_CASE: {
+            EnumCase const* enum_case = node.ptr;
+            canonical = decl->type_tag == DECLARATION_ENUM_CASE_TYPE ? &enum_case->typeof_declaration : enum_case->declaration.get;
+        }   break;
+    }
+    // A copy that has merged with something else since (a program adding to a lib interface) is its own thing
+    if (!canonical || vec_decl_node_size(&canonical->nodes) != vec_decl_node_size(&decl->nodes)) return decl;
+    if (canonical->type_tag != decl->type_tag || canonical->is_typeof != decl->is_typeof) return decl;
+    return canonical;
 }
 
 Ty const* ty_declared_type_of(Checker* me, Declaration const* decl) {
+    decl = canonical_declaration(decl);
     DeclLinks* links = decl_links(me, decl);
     switch (links->declared_state) {
         case LAZY_STATE_DONE: return links->declared_type;
@@ -119,24 +170,19 @@ Ty const* ty_declared_type_of(Checker* me, Declaration const* decl) {
             break;
 
         case DECLARATION_ENUM:
-            // TODO(stage 4a): tsc's enum type is the union of its member types, with the enum as its symbol
-            ret = make_declared(me, decl, TY_DECLARED_ENUM);
+            ret = ty_resolve_enum(me, decl);
             break;
 
         case DECLARATION_ENUM_CASE:
-            ret = enum_member_type(me, decl);
-            break;
-
         case DECLARATION_ENUM_CASE_TYPE:
-            if (decl->is_typeof) {
+            if (decl->type_tag == DECLARATION_ENUM_CASE_TYPE && decl->is_typeof) {
                 ret = make_declared(me, decl, TY_DECLARED_ENUM_OBJECT);
-            } else {
-                // HACK(stage 4a): the declaration an enum member's value identifier (`E.A` as an expression) points
-                // at is EnumCase.typeof_declaration, and the member itself is the declaration next to it
-                EnumCase const* enum_case = c_container_of(decl, EnumCase, typeof_declaration);
-                ret = enum_case->declaration.get ?
-                    ty_declared_type_of(me, enum_case->declaration.get) :
-                    ty_intrinsic(me, TY_ERROR);
+                break;
+            }
+            ret = enum_member_type(me, decl);
+            if (!ret) {
+                links->declared_state = LAZY_STATE_NOT_STARTED;
+                return ty_intrinsic(me, TY_ERROR);
             }
             break;
 
@@ -206,7 +252,31 @@ static Ty const* alias_instance(Checker* me, Declaration const* decl, Ty const* 
     return ret;
 }
 
+static Ty const* lower_identifier_internal(Checker* me, IdentifierType const* identifier, LowerCtx ctx, bool from_legacy);
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
+    return lower_identifier_internal(me, identifier, ctx, false);
+}
+
+bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl) {
+    switch (decl->type_tag) {
+        case DECLARATION_ENUM:
+        case DECLARATION_ENUM_CASE:
+        case DECLARATION_ENUM_CASE_TYPE:
+        case DECLARATION_CLASS:
+        case DECLARATION_INTERFACE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+Ty const* ty_from_identifier_type(Checker* me, IdentifierType const* identifier) {
+    // The type arguments may be temporaries of the legacy checker
+    return lower_identifier_internal(me, identifier, (LowerCtx){ .generic = true, .transient = true }, true);
+}
+
+static Ty const* lower_identifier_internal(Checker* me, IdentifierType const* identifier, LowerCtx ctx, bool from_legacy) {
     Declaration const* decl = identifier->decl_ref;
     if (!decl) return ty_intrinsic(me, TY_ERROR);
     Ty const* args_buf[MAX_TYPE_ARGS];
@@ -226,7 +296,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
                 // TODO(stage 4a): `this` and a bare `C` inside generic class C are the class's own instantiation
                 // (type arguments = its type parameters), and `this` is really its own type parameter
-                if (identifier->keyword || !vec_spanned_type_size(&identifier->generic_params)) {
+                if (identifier->keyword || (!from_legacy && !vec_spanned_type_size(&identifier->generic_params))) {
                     if (ctx.generic) return ty_reference(me, declared, declared->declared.type_params);
                 }
                 TyList args = lower_type_args(me, declared->declared.type_params, &identifier->generic_params, ctx, args_buf);
@@ -388,6 +458,7 @@ static void collect_free_params(Checker* me, Type const* node, FreeParams* out) 
 
         case TYPE_TYPEOF:
         case TYPE_LAZY:
+        case TYPE_NEW:
             // Not syntax: the type of an expression, which could be about any type parameter in scope
             out->unknown = true;
             break;
@@ -705,7 +776,7 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         case TYPE_STRING: return ty_intrinsic(me, TY_STRING);
         case TYPE_SYMBOL: return ty_intrinsic(me, TY_ES_SYMBOL);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
-        case TYPE_VALUE: return ty_literal(me, &node->value, nullptr, nullptr);
+        case TYPE_VALUE: return ty_literal(me, &node->value);
         case TYPE_IDENTIFIER: return lower_identifier(me, node->identifier, ctx);
 
         case TYPE_INFERRED: {
@@ -809,6 +880,9 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
 
         case TYPE_REF:
             return lower(me, node->ref, outer_ctx, alias, alias_args);
+
+        case TYPE_NEW:
+            return type_new_ty(me, node);
     }
     impossible;
 }

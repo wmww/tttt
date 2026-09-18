@@ -144,6 +144,7 @@ void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
         .value_type = type_lazy(&my class_type),
         .declared_type = type_lazy(&my class_type),
         .is_typeof = true,
+        .node = { DECL_NODE_CLASS, me },
     });
 
     scope_init_declaration(scope, &my declaration, (DeclProps){
@@ -157,6 +158,7 @@ void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
             .decl_ref = &my typeof_declaration,
         })),
         .declared_type = type_lazy(&my instance_type),
+        .node = { DECL_NODE_CLASS, me },
     });
 }
 
@@ -246,7 +248,16 @@ void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
     scope_drop(&generic_scope);
 }
 
+// Classes are evaluated by the new type core (ty/members.c)
 Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
+    if (resolve_instance) {
+        return my declaration.get ? type_new(ty_declared_type_of(current_checker, my declaration.get)) : type_any;
+    }
+    return type_new(ty_declared_type_of(current_checker, &my typeof_declaration));
+}
+
+// The legacy structural type of a class, which interface_typecheck_members_against() still wants
+static Type class_decl_evaluate_structure(ClassDecl* me, bool resolve_instance) {
     Interface interface = {0};
 
     if (!resolve_instance) {
@@ -476,8 +487,9 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // TODO: check that we do, in fact, implement each type
     }
 
-    LazyMemo* instance = lazy_type_state_peek(&my instance_type);
-    if (instance && instance->done && instance->evaluated.tag == TYPE_INTERFACE) {
-        interface_typecheck_members_against(&instance->evaluated.interface, my declaration.get, errs);
+    Type structure = class_decl_evaluate_structure(me, true);
+    if (structure.tag == TYPE_INTERFACE) {
+        interface_typecheck_members_against(&structure.interface, my declaration.get, errs);
     }
+    type_drop(&structure);
 }

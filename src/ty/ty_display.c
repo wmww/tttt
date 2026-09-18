@@ -15,6 +15,17 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
     }
 }
 
+// A declared name. HACK(plan 03): tsc qualifies a name as far as needed from where it's printed, which needs symbols.
+// Error messages always qualify (so does tsc there), the `.types` baselines never do (right more often than not)
+static void out_name(TyDisplay d, csview qualified) {
+    if (d.unqualified_names) {
+        isize_t dot = qualified.size;
+        while (dot > 0 && qualified.buf[dot - 1] != '.') dot--;
+        qualified = csview_from_n(qualified.buf + dot, qualified.size - dot);
+    }
+    out(d, qualified);
+}
+
 static void display_string_literal(TyDisplay d, csview sv) {
     out_lit(d, "\"");
     for (isize_t i = 0; i < sv.size; i++) {
@@ -253,7 +264,18 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
             i++;
             continue;
         }
-        // TODO(stage 4a): a run of all the members of an enum prints as the enum
+        // A run of all the members of an enum prints as the enum
+        if (t->kind == TY_LITERAL && t->literal.enum_decl) {
+            Ty const* enum_type = ty_enum_of_member(me, t);
+            if (enum_type->kind == TY_UNION) {
+                u32 count = enum_type->composite.types.len;
+                if (i + count <= types.len && types.data[i + count - 1] == enum_type->composite.types.data[count - 1]) {
+                    ty_display(me, d, enum_type);
+                    i += count - 1;
+                    continue;
+                }
+            }
+        }
         display_parenthesized_if(me, d, t, is_function_like(me, t) || (t->kind == TY_CONDITIONAL && !t->alias));
     }
     if (nullable & TYF_NULL) {
@@ -279,6 +301,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         d.widen_literals = false;
     }
 
+    if (ty_is_enum_union(ty)) {
+        out_name(d, atom_sv(ty_qualified_name(me, ty->alias)));
+        return;
+    }
     if (ty->alias) {
         out(d, ty->alias->name.sv);
         if (ty->alias_args.len) {
@@ -295,12 +321,18 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             break;
 
         case TY_LITERAL:
-            if (d.widen_literals && !ty->literal.enum_member) {
+            if (d.widen_literals && !ty->literal.enum_decl) {
                 ty_display(me, (TyDisplay){ .target = d.target, .depth = d.depth }, ty_widened_literal(me, ty));
                 break;
             }
-            if (ty->literal.enum_member) {
-                out(d, atom_sv(ty->literal.enum_name));
+            if (ty->literal.enum_decl) {
+                // The only member of an enum is the enum. TODO(fresh literals): tsc prints the *fresh* type of the
+                // expression `E.x` as `E.x` even then (error messages); `.types` baselines show the widened `E`
+                out_name(d, atom_sv(ty_qualified_name(me, ty->literal.enum_decl)));
+                if (ty->literal.enum_member != ty->literal.enum_decl && ty_enum_of_member(me, ty) != ty) {
+                    out_lit(d, ".");
+                    out(d, ty->literal.enum_member->name.sv);
+                }
             } else if (ty->literal.string) {
                 display_string_literal(d, atom_sv(ty->literal.string));
             } else if (ty->flags & TYF_BOOLEAN_LITERAL) {
@@ -321,7 +353,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 case TY_DECLARED_ENUM_OBJECT:
                 case TY_DECLARED_NAMESPACE:
                     out_lit(d, "typeof ");
-                    out(d, atom_sv(ty->declared.name));
+                    out_name(d, atom_sv(ty->declared.name));
                     break;
 
                 case TY_DECLARED_TUPLE_TARGET:
@@ -329,7 +361,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     break;
 
                 default:
-                    out(d, atom_sv(ty->declared.name));
+                    out_name(d, atom_sv(ty->declared.name));
                     if (ty->declared.type_params.len) {
                         out_lit(d, "<");
                         display_list(me, d, ty->declared.type_params);
@@ -349,7 +381,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 display_parenthesized_if(me, d, args.data[0], needs_parens_in_array(me, args.data[0]));
                 out_lit(d, "[]");
             } else {
-                out(d, atom_sv(target->declared.name));
+                out_name(d, atom_sv(target->declared.name));
                 out_lit(d, "<");
                 display_list(me, d, args);
                 out_lit(d, ">");

@@ -123,6 +123,7 @@ static bool node_is_comparable(Type const* node) {
         case TYPE_TERNARY:
         case TYPE_LAZY:
         case TYPE_REF:
+        case TYPE_NEW:
             return false;
     }
     impossible;

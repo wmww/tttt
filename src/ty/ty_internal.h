@@ -81,15 +81,6 @@ static inline Type const* legacy_expr_type(Expr const* expr) {
     return lazy_type_get((LazyType*)&expr->lazy_type);
 }
 
-// The InterfaceDecl an entry of legacy_declaration_entries() came from, or null if it's something else
-static inline InterfaceDecl const* legacy_entry_interface_decl(Type const* entry) {
-    entry = legacy_skip_refs(entry);
-    if (entry->tag == TYPE_LAZY && entry->lazy->tag == LAZY_TYPE_INTERFACE_DECL) {
-        return c_container_of(entry->lazy, InterfaceDecl, lazy_type);
-    }
-    return nullptr;
-}
-
 Type const* legacy_stable_view(Checker* me, Type const* type, u64* identity);
 Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx);
 Ty const* ty_deferred_reference(Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper);

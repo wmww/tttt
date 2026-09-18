@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include <math.h>
 #include "declaration.h"
 #include "program.h"
 #include "scope.h"
@@ -129,7 +130,14 @@ Atom const* checker_atom(Checker* me, csview sv) {
         free(table->entries);
         *table = bigger;
     }
+    // c_hash_n() leaves similar strings (`ns1.Foo`, `ns2.Foo`) close together in the low bits, which linear probing
+    // turns into long runs: finish it off (murmur3's finalizer)
     u64 hash = c_hash_n(sv.buf, sv.size);
+    hash ^= hash >> 33;
+    hash *= 0xff51afd7ed558ccdULL;
+    hash ^= hash >> 33;
+    hash *= 0xc4ceb9fe1a85ec53ULL;
+    hash ^= hash >> 33;
     if (!hash) hash = 1;
     u32 mask = table->cap - 1;
     for (u32 i = (u32)hash & mask;; i = (i + 1) & mask) {
@@ -194,8 +202,8 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_BIGINT] = make_intrinsic(me, "bigint", TYF_BIGINT);
     Value false_value = { .tag = VALUE_BOOLEAN, .boolean = false };
     Value true_value = { .tag = VALUE_BOOLEAN, .boolean = true };
-    my intrinsics[TY_FALSE] = ty_literal(me, &false_value, nullptr, nullptr);
-    my intrinsics[TY_TRUE] = ty_literal(me, &true_value, nullptr, nullptr);
+    my intrinsics[TY_FALSE] = ty_literal(me, &false_value);
+    my intrinsics[TY_TRUE] = ty_literal(me, &true_value);
     my intrinsics[TY_BOOLEAN] = ty_union(me, &my intrinsics[TY_FALSE], 2, nullptr, (TyList){0});
     my intrinsics[TY_ES_SYMBOL] = make_intrinsic(me, "symbol", TYF_ES_SYMBOL);
     my intrinsics[TY_VOID] = make_intrinsic(me, "void", TYF_VOID);
@@ -217,6 +225,7 @@ void checker_drop(Checker* me) {
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
     lazy_slots_drop(&my lazy);
+    ty_legacy_views_drop(me);
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);
@@ -225,8 +234,9 @@ void checker_drop(Checker* me) {
     free(me);
 }
 
-Ty const* ty_literal(Checker* me, Value const* value, Declaration const* enum_member, Atom const* enum_name) {
-    u64 key[4] = { KEY_LITERAL, value->tag, 0, (u64)(uintptr_t)enum_member };
+static Ty const* literal_type(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* enum_member) {
+    // An enum's literal types are per (value, enum): members of one enum with the same value share a type, as in tsc
+    u64 key[4] = { KEY_LITERAL, value->tag, 0, (u64)(uintptr_t)enum_decl };
     Atom const* string = nullptr;
     u32 flags = 0;
     switch (value->tag) {
@@ -244,7 +254,7 @@ Ty const* ty_literal(Checker* me, Value const* value, Declaration const* enum_me
             // Objects, arrays, functions and symbols aren't literal types; the legacy checker shouldn't produce them
             return my intrinsics[TY_ERROR];
     }
-    if (enum_member) flags |= TYF_ENUM_LITERAL;
+    if (enum_decl) flags |= TYF_ENUM_LITERAL;
     void const** slot = intern_slot(me, &my types, key, 4);
     if (!*slot) {
         Ty* ret = ty_alloc(me, TY_LITERAL, flags);
@@ -254,8 +264,31 @@ Ty const* ty_literal(Checker* me, Value const* value, Declaration const* enum_me
             ret->literal.value.string = cstr_null;
         }
         ret->literal.string = string;
+        ret->literal.enum_decl = enum_decl;
         ret->literal.enum_member = enum_member;
-        ret->literal.enum_name = enum_name;
+        *slot = ret;
+    }
+    return *slot;
+}
+
+Ty const* ty_literal(Checker* me, Value const* value) {
+    return literal_type(me, value, nullptr, nullptr);
+}
+
+Ty const* ty_enum_literal(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* member) {
+    return literal_type(me, value, enum_decl, member);
+}
+
+// The type of an enum member whose value isn't a compile time constant (tsc's computed enum type, TypeFlags.Enum).
+// Also the type of an enum without members, with the enum as its own member
+Ty const* ty_enum_computed_member(Checker* me, Declaration const* enum_decl, Declaration const* member) {
+    u64 key[4] = { KEY_LITERAL, UINT32_MAX, (u64)(uintptr_t)member, (u64)(uintptr_t)enum_decl };
+    void const** slot = intern_slot(me, &my types, key, 4);
+    if (!*slot) {
+        Ty* ret = ty_alloc(me, TY_LITERAL, TYF_ENUM_LITERAL | TYF_ENUM);
+        ret->literal.value = (Value){ .tag = VALUE_NUMBER, .number = NAN };
+        ret->literal.enum_decl = enum_decl;
+        ret->literal.enum_member = member;
         *slot = ret;
     }
     return *slot;
@@ -263,7 +296,7 @@ Ty const* ty_literal(Checker* me, Value const* value, Declaration const* enum_me
 
 Ty const* ty_string_literal(Checker* me, csview sv) {
     Value value = { .tag = VALUE_STRING, .string = cstr_from_sv(sv) };
-    Ty const* ret = ty_literal(me, &value, nullptr, nullptr);
+    Ty const* ret = ty_literal(me, &value);
     value_drop(&value);
     return ret;
 }

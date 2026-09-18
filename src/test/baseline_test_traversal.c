@@ -238,6 +238,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
         case TYPE_REF:
             type_compile_test_info(my ref, ctx);
             break;
+
+        case TYPE_NEW: break; // Not syntax
     }
 }
 

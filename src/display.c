@@ -1,4 +1,5 @@
 #include "display.h"
+#include "ty/ty.h"
 #include "type.h"
 #include "several_types.h"
 #include "callable_type.h"
@@ -641,6 +642,21 @@ void display_type(Display d, Type const* me) {
             display_type(d, my ref);
             if (d.debug) display_colored(d, color_implicit, ")");
             break;
+
+        case TYPE_NEW: {
+            cstr rendered = cstr_null;
+            if (current_checker) {
+                // Underlining is what the `.types` baseline traversal does
+                TyDisplay ty_d = { .target = &rendered, .unqualified_names = d.underline };
+                ty_display(current_checker, ty_d, type_new_ty(current_checker, me));
+            } else {
+                cstr_append_lit(&rendered, "(type)");
+            }
+            display_color(d, color_type);
+            display_sv(d, cstr_sv(&rendered));
+            display_normal(d);
+            cstr_drop(&rendered);
+        }   break;
     }
 
     if (d.debug && type_is_self_referential(me)) {
@@ -800,6 +816,8 @@ void display_expr(Display d, Expr const* me) {
                     display_type(d, &my lazy_type.memo.evaluated);
                 } else if (state && state->done) {
                     display_type(d, &state->evaluated);
+                } else if (!current_lazy_slots) {
+                    display_colored(d, color_implicit, "?"); // Nothing can be evaluated before there's a checker
                 } else {
                     Type t = expr_evaluate_type(me);
                     display_type(d, &t);

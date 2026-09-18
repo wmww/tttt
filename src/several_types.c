@@ -1,4 +1,5 @@
 #include "several_types.h"
+#include "ty/ty.h"
 #include "scope_stack.h"
 #include "declaration.h"
 #include "scope.h"
@@ -100,6 +101,9 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
 }
 
 Type identifier_type_evaluate_type(IdentifierType* me) {
+    if (my decl_ref && ty_declaration_is_evaluated_by_new_core(my decl_ref)) {
+        return type_new(ty_from_identifier_type(current_checker, me));
+    }
     if (my decl_ref) {
         if (my decl_ref->type_generic) {
             Type ret = generic_degenericize_type(

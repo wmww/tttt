@@ -84,6 +84,9 @@ static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper,
 }
 
 static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    // HACK(stage 4b): instantiation expressions only exist for the legacy checker's `new Bar<T>()`, whose result it
+    // substitutes itself; they aren't instantiated further
+    if (ty->anonymous.applies_type_args) return ty;
     Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
     TyMapper const* inner = ty->anonymous.mapper;
 
