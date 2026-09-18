@@ -6,6 +6,10 @@
 typedef struct SourceFile {
     cstr canonical_path; // The canonical path of this file relative to the current working directory
     cstr contents;
+    // Offset of the first character of each line, for span_line_index(). Diagnostics are sorted and printed by line,
+    // counting newlines from the start of the file for each of them was a fifth of a run with 10k errors
+    u32* line_starts;
+    u32 line_count;
     Block ast;
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
@@ -21,6 +25,9 @@ typedef struct SourceFile {
 SourceFile source_file_make(cstr canonical_path, cstr contents);
 void source_file_drop(SourceFile* me);
 void source_file_set_module_true(SourceFile* me, ErrorCtx* errs);
+
+// 0-based index of the line `pos` (which must point into the contents, or at their end) is on
+unsigned source_file_line_index(SourceFile const* me, const char* pos);
 
 static inline const char* source_file_start(SourceFile const* me) {
     return cstr_str(&my contents);

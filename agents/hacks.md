@@ -56,6 +56,17 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
 - `EnumDecl.is_const`: recorded, nothing uses it.
+- `parse_import_type`: `import("./a").B<T>` and `typeof import("./a")` parse to `any`; nothing is loaded or resolved
+  (imports are only discovered from toplevel statements, `program_handle_statement`). Wants module symbols: plan 04.
+- `parse_type_predicate`: `x is T` / `asserts x is T` become `boolean` / `void`, the predicate is dropped (plan 05).
+  `parse_generic_decl_item` likewise parses and drops `in`/`out`/`const` type parameter modifiers, and
+  `parse_variable_statement` drops the `!` of `let x!: T`.
+- Destructuring (`binding.c`, `lower_binding_access`): pattern elements are still `TYPE_INDEXED` link nodes with
+  `rest` / `default_value` bolted on (the default is a non-owning `Expr*` into the `Binding`). Object rest returns the
+  whole object type, defaults are checked without a contextual type (see triage: `check_with` has no cycle detection).
+- `parse_if_else` looks ahead past a `;` for `else`, because statement terminators belong to
+  `parse_append_statement_sequence` rather than to the statement; `ended_on_brace` there is the same kind of guess.
+- `EXPR_REGEX` carries nothing but its span: no flag/pattern validation (tsc reports TS1499+ for bad flags and groups).
 - `parse_object_item`: `{ a = 1 }` (shorthand with default, only legal in destructuring assignment) parses and throws
   the default away; `?`/`!` after a member name is swallowed without TS1162. `ObjectExprItem` methods are plain
   `EXPR_FUNCTION` values.

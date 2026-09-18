@@ -2,6 +2,47 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, plan 03: the real-world corpus parses and typechecks
+Suite: **1508 full of 13163 tests** (was 1434), errors 5738 (5513), symbols 7891 (7797), types 3459 (3360). No test or
+component was lost at any step. Tests with a spurious TS1xxx: 1497 (was 2017).
+
+### Real corpus: `./realworld.py` (entry `thirdparty/tsc/src/compiler/checker.ts`, 78 files, 193k lines, 9.9 MB; clean under tsc)
+| | before | after |
+|-|-|-|
+| syntax errors (TS1xxx) | 1119 in 31 files | **0** |
+| outcome | SIGABRT after 0.7 s (heap corruption) | runs to the end, exit 1 |
+| name errors | never got there | 117 (104 TS2304: `require`, `process`, ... no `@types/node`; 10 TS2440; 2 TS2451) |
+| type errors | never got there | 9699 |
+
+Diagnostics by code (all of them tttt bugs): TS2345 6840, TS7006 896, TS2322 567, TS2769 565, TS2349 179, TS2367 173,
+TS2495 147, TS2304 104, TS7022 68, TS2362 56, TS2558 38, TS2538 25, TS2740 20, TS2363 20, TS2364 19, TS2556 15, TS2461 12,
+TS2440 10, TS2493 10, the rest < 10 each. What they are (as far as was looked): `triage.md`, "Real corpus, first look".
+
+Perf on the same corpus (`./bench.sh`, second table; tsc/tsgo run `-p src/compiler` with `--composite false
+--incremental false` and friends, otherwise the second run finds a tsbuildinfo and checks nothing):
+| | wall (best of 3) | peak RSS |
+|-|-|-|
+| tttt (`--keep-going`, reports 9.8k errors) | **0.87 s** (2.69 s before the two fixes below) | 410 MB |
+| tsc 5.8.2 (node) | 4.92 s | 644 MB |
+| tsgo 7.0.2 | 0.78 s | 397 MB |
+| tsgo single-threaded | 1.27 s | 376 MB |
+
+tttt phases: load+parse libs 17 ms, load+parse files 146 ms (68 MB/s), resolve names 116 ms, typecheck 619 ms.
+RSS is 41 bytes per source byte (the synthetic corpus' ~105 is dominated by 200 copies of the same declarations).
+The first callgrind profile of this run (`valgrind --tool=callgrind ./release/tttt -q --keep-going .../checker.ts`,
+~10 min) found two things that were plainly wrong, fixed in the same session, typecheck 2430 -> ~600 ms:
+- `span_line_index` counted newlines from the start of the file for every diagnostic (21% of all instructions with
+  9.8k errors in 50k-line files). `SourceFile.line_starts` + binary search now.
+- `find_prop` on an intersection type built the intersection of the property types on every lookup (2.9M lookups,
+  53% inclusive, most of it in `ty_intersection` distributing over unions). Memoised per (intersection, name) in
+  `Checker.intersection_props`, like tsc's synthetic property symbols.
+Still not a comparison: tttt fails most calls early and tsgo reports nothing. Re-profile when the error count is down;
+next suspects from that profile were `intern_slot`/`intern_composite` (union/intersection construction), the
+`qsort` in `ty_union`, and `span_cmp` (error sorting).
+
+Synthetic corpus (unchanged meaning, 328 files now): tttt 0.60 s / 798 MB, tsc 3.52 s / 862 MB, tsgo 0.54 s / 566 MB
+(1.01 s single-threaded). Phases: parse ~200 ms, resolve names 174 ms, typecheck 81 ms.
+
 ## 2026-09-18, type core stage 5 (the old type world is deleted)
 Suite: **1434 full of 13165 tests** (was 1408), errors 5513 (5516), symbols 7797 (7701), types 3360 (3325). `./passcount.py`
 prints these from the saved results file (`./fasttest.sh -s`); 4b3 had forgotten to save its baseline.
@@ -151,119 +192,6 @@ types component: 9920 failing, mean line match 83.4%; failing tests by line matc
 
 full data: build/failstats/report.txt, tests.tsv, near_symbols.txt, near_types.txt, stderr.txt
 ```
-
-## 2026-09-18, type core stage 4b2 (type aliases and type operators evaluate to `Ty`)
-Suite: **1137 full (1120), errors 4657 (4648), symbols 5981 (5979), types 2219 (2186)**; suite wall 4.9 s (4.5 s).
-- Components: 51 tests gained components, 4 lost one (`homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1`
-  and `reverseMappedTupleContext`: errors, need reverse mapped type inference; `mappedTypeNoTypeNoCrash`,
-  `noSymbolForMergeCrash`, `indexedAccessPrivateMemberOfGenericConstraint`: types, error-recovery printing). No full
-  pass lost. Most of the types gain is alias naming (`type Bar = Omit<..>` is `Bar`, `type Tup<T> = [T, T]` is `Tup<T>`).
-- `log_error` lines unchanged (2 078 in 502 tests): none of what's left is about types.
-- Bench: typecheck 118 ms, total 0.60 s, RSS 842 MB - unchanged.
-- valgrind clean on ~400 tests (keyof*, mappedType*, indexedAccess*, destructuring*, conditionalType*, inferTypes*,
-  recursive*, tuple*, typeAlias*, circular*, variadicTuples*, promise*, awaited*, and the 3 tests that used to leave
-  allocations in the shared lib AST: they don't any more).
-
-## 2026-09-18, type core stage 4b1 (calls, inference and property access on `Ty`)
-Suite: **1120 full (1115), errors 4648 (4590), symbols 5979 (5974), types 2186 (2183)**; suite wall 4.5 s (4.3 s).
-- `log_error` lines 4 606 -> 2 169: the legacy "inferring types of generic with ... not yet implemented" family is gone
-  with the code. What's left is mostly invalid-span errors and namespace merging (`failstats.py` lists them).
-- Components: errors +94 / -39, symbols +7 / -2, types +14 / -11; 4 full passes lost (`classDeclaredBeforeClassFactory`,
-  `classExtendingQualifiedName2`, `sourcemapValidationDuplicateNames`, `emitClassDeclarationWithPropertyAccessInHeritageClause1`:
-  all print `typeof X` / `M.X` where tsc prints a local or qualified name differently: symbol accessibility, plan 03).
-  The 39 lost error components are nearly all "inference is real now, contextual typing isn't": object/array literal
-  arguments whose literals the legacy checker already widened, callbacks whose parameters are `any` instead of
-  contextually typed, type predicates (`x is T`, not represented in the AST at all), reverse mapped types. Of the four
-  4a losses named below, `typeParameterLeak` and `addMoreCallSignaturesToBaseSignature*` are back; `arrayFind` needs
-  type predicates, `correctOrderOfPromiseMethod` mapped types over tuples + tuple contextual typing,
-  `objectFreezeLiteralsDontWiden` const-context inference.
-- Bench: typecheck phase 118 ms (116-122 before), total 0.58-0.60 s, RSS 843 MB. No call resolution cache yet: a call
-  is resolved once for its type and once for its errors.
-- valgrind clean on ~380 tests (genericCall*, overload*, functionCall*, typeArgumentInference*, spread*, restParam*,
-  propertyAccess*, inferT*, arrayF*, promise[A-P]*, classExtend*, clodule*, conditionalType[A-C]*, infer[A-S]*,
-  mappedType[A-C]*).
-
-## 2026-09-18, type core stage 4a (classes, interfaces, enums evaluate to `Ty`)
-Suite: **1115 full (1100), errors 4590 (4553), symbols 5974 (5939), types 2183 (2149)**; suite wall **4.3 s (5.6 s)**.
-- `log_error` lines 7 590 -> 4 606. The legacy generic inference "not yet implemented" family is 2.9k of what's left.
-- ~107 tests gained a component, 13 lost one (2 of them full passes). The losses: weaker call inference now that
-  parameter types from interfaces/classes are `TYPE_NEW` (`arrayFind`, `typeParameterLeak`, `correctOrderOfPromiseMethod`,
-  `objectFreezeLiteralsDontWiden`, `typeInferenceReturnTypeCallback`, `addMoreCallSignaturesToBaseSignature*`), single
-  member enums printing as `E` in messages (`operatorAddNullUndefined`), and a few not looked at
-  (`recursiveBaseCheck3`, `recursiveBaseConstructorCreation3`, `computedPropertyNames21_*`,
-  `controlFlowElementAccessNoCrash1`).
-- Bench: typecheck phase 116-122 ms vs 109-132 ms for b1be87d, measured back to back (total 0.68 s, RSS 838 MB). It was
-  205 ms until `checker_atom` got a hash finalizer: FNV's low bits put `ns1.Foo`, `ns2.Foo`... in long probe runs.
-  stdlib-only typecheck 73 ms -> 19 ms (lib interfaces are no longer merged structurally by the legacy checker).
-- valgrind clean on ~650 tests (enum*, constEnum*, class[A-E]*, derivedClass*, interface[A-E]*, generic[C-F]*, inherit*,
-  recursive[A-C]*, merged*, abstract*, accessor*, constructor*, static*, this*, super*, mappedType[A-E]*, arrayF*, promise*).
-- Shadow mode still runs the whole suite without crashing (mismatch count not re-measured; it compares less and
-  less as the legacy display of a named type *is* the new display now).
-
-## 2026-09-18, type core stage 3 (relations on the new core)
-Suite: **1100 full (1084), errors 4553 (4396), symbols 5939 (=), types 2149 (2146)**; suite wall **5.6 s (8.3 s)**.
-- `log_error` lines 38 933 -> 7 590; "Max type recursion depth exceeded (type_extends_internal)" 31k -> 0 (one
-  `index_type_evaluate_type_internal` depth hit is left). What's left is led by the legacy generic inference
-  "not yet implemented" family (5.4k) and invalid-span errors.
-- Recursive generics repro (`varianceProblingAndZeroOrderIndexSignatureRelationsAlign`): 0.68 s / 222 MB -> not
-  measurable above harness startup (0.07 s / 50 MB, same as `2dArrays`).
-- Spurious TS2322: 1812 in 581 tests -> 1024 in 371; missing TS2322 1542 in 535 -> 1323 in 500. Spurious TS2345 1240
-  in 306 -> see `./failstats.py --code TS2345`. Elaboration chains (`Types of property 'x' are incompatible.`, TS2741/
-  TS2739/TS2740 heads, parameter/return lines, variance-based type argument lines) are where most of the +157
-  errors-component passes come from.
-- 41 test components regressed (list with `./fasttest.sh --summary` against the saved results of ec5fbe5; none of
-  them a full pass). Sampled causes: the old relation said yes where the legacy checker hands it garbage - weak generic
-  inference (`unknown`/unsubstituted type parameters), no contextual typing / literal freshness (`Box<0>` vs
-  `Box<number>`, `{ x: string }` against `"lit"`), no narrowing (`assert<0>(a)` in a `switch`), no discriminated
-  union decomposition, elaboration that tsc attaches to the object literal property instead. Those are 4b's problems.
-- Shadow mode (`TTTT_SHADOW_TYPES=1`) still runs the whole suite without crashing: 1072 mismatch lines. New in there:
-  ~250 union *order* differences nested in other types (`(Derived2 | Derived1)[]`): relations now lower types during
-  checking, so creation order follows check order rather than the order the shadow pass used to impose. Expected
-  residue until evaluation order is tsc's (stage 4).
-- Bench: typecheck phase 127.5 ms vs 124.7 ms for ec5fbe5 measured back to back (best of 5; +2%, within noise, total
-  0.68 s, RSS 846 MB vs 838). stdlib-only typecheck 73 ms for both. The relation itself is ~1.4% of the bench run,
-  lowering ~1%: the corpus is assignment-light, and the legacy evaluation around it is unchanged.
-- valgrind clean on ~280 tests mid-session and 759 at the end (assignmentCompat*, recursive*,
-  conditionalType*, inferTypes*, variance*, mappedType*, enum*, tuple*, unionType*, intersectionType*, circular*,
-  genericClass*, typeAlias*, class[A-E]*, derivedClass*, subtyp*, indexSignature*, keyof*, comparisonOperator*).
-
-## 2026-09-18, type core stage 2 (LazyType memos in the Checker)
-Pure refactor. Suite: 1084 full, errors 4396, symbols 5939, types 2146 - identical; wall 8.29 s (8.27 s before).
-`log_error` lines 39187 -> 38933 with the same distribution: the harness reruns a test when it leaves net allocations
-behind, and tests no longer leave memos in the shared lib AST (49 reruns left, 46 of them lib program cache fills).
-Bench (machine noisier than for the run recorded below: unchanged tsc went 2.58 -> 3.04 s): tttt 0.650 s best, typecheck
-phase 124 ms (113), **peak RSS 838 MB (790)** - `LazyType` grew 8 bytes and slot pages are fragmented by slots taken
-for transient scopes, see `hacks.md`. The bench numbers further down are from before this stage.
-
-## 2026-09-18, type core stage 1 (shadow mode)
-`TTTT_SHADOW_TYPES=1 TTTT_SHADOW_STATS=1 ./release/baseline_tests --summary --dump /tmp/dump 2>err.txt` (the env vars
-work with `./failstats.py` and `./test.sh` too; mismatches are `log_error`s, so failstats groups them). With the flag
-off the suite is unchanged: 1084 full passes, same wall time.
-
-- Whole suite, 10 076 programs: 229 569 recorded type nodes + 27 710 declarations lowered, members of every
-  declaration resolved, everything printed. **No crashes, valgrind clean on 430 tests** (recursive*, mappedType*,
-  intersectionType*, conditionalType*, infer*, keyof*, indexedAccess*, genericClass*, typeAlias*, enum*...).
-  328 522 types created, 74.5 MB arena in total (7.4 KB and 33 types per program), **0.74 s for the whole shadow pass
-  across the suite** (73 us per program, which includes rendering every node with the legacy display to compare).
-  Suite wall time 8.3 s -> 9.3 s with the flag on.
-- Of 149 885 comparable nodes (no aliases/type operators/`typeof` inside, where the new core prints differently on
-  purpose): **~590 mismatches (0.4%)**, plus 539 that differ only in union member order and 3 509 only in namespace
-  qualification (both expected, see `hacks.md: qualified_name`). What they are, from sampling:
-  - the new core reducing where the legacy display echoes syntax: `string & number` -> `never`, `"a" & string` ->
-    `"a"`, `A & (B | C)` distributed, duplicate union members/properties removed, `true | false` -> `boolean`,
-    unions nested in other types reordered (the order-only check is top level only). ~60%, new core is right.
-  - legacy display quirks: function types in unions without parentheses, `?` missing on optional methods, property
-    names that need quotes printed bare. New core is right.
-  - parse error recovery leftovers (`typeof (empty)`, `Promise<(empty)>`): garbage in, different garbage out.
-  - real gaps (in `triage.md`/`hacks.md`): construct signatures in type literals parse as a method called `new`
-    (parser), `{ 2.5: B }` prints as `"2.5"`, file-module namespace values print as `typeof ` with no name.
-- Probes (`--shadow-types` with `TTTT_SHADOW_DUMP=1` prints every node's type id and rendering):
-  `List<string>` lowered twice is one id; `Box<Box<number>>["v"]["v"]` resolves to `number` through two lazy
-  instantiations; a 1500-literal union alias used 4 times: whole shadow pass 2.4 ms (3005 nodes, 1518 types, 289 KB);
-  `varianceProblingAndZeroOrderIndexSignatureRelationsAlign` (the recursive generics repro): whole shadow pass
-  0.11 ms, 142 types, 35 KB - the legacy checker still takes 0.8 s on it, that's stage 3's target.
-- `deeplyNestedConditionalTypes` hits the instantiation depth limit (100): conditional types never resolve yet, so
-  instantiating a 100-deep conditional chain instantiates all of it. Expected to go away with stage 3.
 
 ## 2026-09-18, after the second parser gaps session (working tree on top of 5aba5cc)
 

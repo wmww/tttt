@@ -483,6 +483,7 @@ struct Checker {
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
     InternTable atoms;
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
+    InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
     InternTable links;  // Declaration -> DeclLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;

@@ -62,13 +62,40 @@ Uninvestigated items. Triage sessions drain this.
   qualified names (`Symbol(A.x, ...)`) for namespace members. Both are for the symbols/printing design.
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - `failstats.py --syntax` used to silently reuse the previous dump; it now re-runs the harness unless `--no-run`.
-- Remaining syntax gaps after parser round 2 (`./failstats.py --syntax`, 1204 tests, flat tail): object binding
-  patterns with computed keys / rest / nested defaults (`const { [k]: v, ...rest } = o`, `function f({ b = '' } = {})`),
-  `let x!: T`, `for await (... of ...)`, `export { a as default } from`, `import { default as b }`,
-  `import d, * as ns from`, `export import`, `import()`, `new.target`, `o?.()`, regex literal after `=`, `**=`,
-  shebang line, labeled `continue`/`break` target validation, `const c;` in ambient files, JSX (whole feature, needs
-  its own plan), `accessor` fields, `override`/TS4112+, overloads of `*()`-style nameless members (error recovery).
-  Worth one small execution session, not more; many of the rest are error-recovery fidelity.
+- Remaining syntax gaps (`./failstats.py --syntax`; the real corpus has none left, so these are test-suite only):
+  `for await (... of ...)`, `export { a as default } from`, `import { default as b }`, `import d, * as ns from`,
+  `export import`, `import()` expressions, `new.target`, `**=`, shebang line, labeled `continue`/`break` target
+  validation, `const c;` in ambient files, JSX (whole feature, needs its own plan), `accessor` fields,
+  `override`/TS4112+, overloads of `*()`-style nameless members (error recovery), TS1161 for an unterminated regex
+  (`parse_regex` just fails), TS6188/6189 misplaced numeric separators, TS1263/1264 misplaced `let x!`.
+- **Real corpus, first look at the 9.8k checker diagnostics** (`./realworld.py`, plan 03). Not investigated beyond this:
+  - ~4000 of the 6840 TS2345 are "Argument of type 'Identifier' is not assignable to parameter of type 'Node' ...
+    missing baseURI, childNodes": in some files the `Node`/`Symbol`/`Type` imported from the `_namespaces/ts.ts`
+    barrel (`export *` of 60 files that all import the barrel back) resolves to the *global* DOM/lib type. A 3-file
+    repro of the cycle (`/tmp`-sized: types.ts, barrel, util.ts importing through the barrel) does NOT reproduce it,
+    so it depends on load order / depth in the real graph. Binder bug: **plan 04 input, and the first thing to look
+    at once plan 04 lands** (or the first thing its planner should reproduce).
+  - 896 TS7006 (parameter implicitly any): contextual typing of callbacks not reaching (probably the same `Node`
+    mixup killing overload resolution first, recount after).
+  - 565 TS2769 / 179 TS2349 / 38 TS2558: overload resolution and calls on unions.
+  - 567 TS2322 + 173 TS2367 + the `X | undefined` share of TS2345: no narrowing (plan 05).
+  - 147 TS2495 / 12 TS2461 / 10 TS2493: iterating `Map`/`Set`/iterables in for-of and array destructuring (lib es2020
+    iterables aren't understood; tsconfig `lib`/`target` aren't read either, tttt runs with its default libs).
+  - 104 TS2304: `require`, `process`, `Buffer`...: `types: ["node"]` / `node_modules/@types` aren't resolved, and
+    `import("fs").Stats`-style import types are parsed but are `any` (`parse_import_type`).
+  - 68 TS7022, 56+20+19 TS2362/3/4 (arithmetic on enums/any), 25 TS2538.
+- Real corpus perf: see `measurements.md` for the profile notes (after the two fixes typecheck is ~600 ms of 0.9 s).
+  `find_prop`'s intersection memo caches whatever depth it was computed at (`depth > 8` gives "not found"), harmless
+  so far. `ty_intersection` still distributes over non-primitive unions with no size limit (tsc: TS2590 at 100k).
+- `check_with()` (ty/expr.c) computes an expression with a contextual type *without* going through the LazyType, so
+  it has no cycle detection: `let [x = x] = []` recursed forever when a binding default was checked contextually
+  (`lower_binding_access` now checks defaults uncontextually to stay on the detecting path). Any other contextual
+  self-reference can still overflow the stack.
+- Optional chaining has no semantics beyond stripping null/undefined from the receiver (`a?.b`, `a?.[i]`, `f?.()`):
+  the result doesn't get `| undefined`, and the rest of the chain isn't short-circuited.
+- An array literal contextually typed by an array binding pattern should be a tuple (`const [a = 1, b] = [undefined, "s"]`
+  gives `(string | number | undefined)[]`), object rest (`{ a, ...rest }`) gives the whole object instead of tsc's
+  `getRestType()`, and the symbols baseline wants property symbols for binding pattern keys (`{ q: { r } }`).
 - Non-strict null widening is missing: `get b() { return null; }` has type `null` (tsc: `any`), so `C.b()` reports
   TS2349. Same for `var x = null`/`undefined` initialisers presumably. Depends on `strictNullChecks` being a real option.
 - `[Symbol.iterator]() {}` computed class/interface members go through `InterfaceMember` (`INTERFACE_KEY_EXPR`), so
@@ -130,7 +157,7 @@ Uninvestigated items. Triage sessions drain this.
 - Members of ambient non-const enums without initializer should be computed (no value), `ty_resolve_enum` auto-increments.
 - tsc prints string-named enum members as `(typeof E)["b c"]`.
 - `filetest.sh` takes `FAST=1` now (release build, no valgrind): seconds instead of a minute per probe.
-- (stage 4b1) Type predicates (`x is T`, `asserts x`) aren't in the AST: the parser reads them as `boolean`. Needed by
+- (stage 4b1) Type predicates (`x is T`, `asserts x`) aren't in the AST: `parse_type_predicate` reads them as `boolean`/`void`. Needed by
   inference (`arr.find(isNumber)`, `arrayFind`, `typeGuardFunctionGenerics`) before narrowing ever uses them. Belongs in
   the scope of plan 04 (symbols) or a parser session before it.
 - (stage 4b1) A function merged with a namespace (`function F() {}` + `namespace F {}`) is a TS2451 at the top level, and

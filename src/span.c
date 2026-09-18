@@ -6,16 +6,7 @@ unsigned span_line_index(Span me) {
     if (!span_valid(me) || !me.source) {
         return 1;
     }
-    const char* end = span_start_ptr(me);
-    const char* pos = source_file_start(me.source);
-    unsigned line = 0;
-    while (pos < end) {
-        if (*pos == '\n') {
-            line++;
-        }
-        pos++;
-    }
-    return line;
+    return source_file_line_index(me.source, span_start_ptr(me));
 }
 
 unsigned span_col_index(Span me) {

@@ -158,6 +158,8 @@ Each perse function receives a pointer to it's parent parser as an argument, as 
 Note that a parser can succeed without errors, succeed with one or more errors or fail without errors. It **cannot** fail with errors (any errors added are silently dropped on fail). The idea is a parser either parsed something and advanced the current position (success) or did not (failure). Errors are only relevant when a parser parsed something, and understood a way that thing is wrong.
 
 ### Tokens
+Because there are no tokens, `/` needs no rescanning: `parse_expr()` is only ever called where an expression may start, so a `/` there is a regular expression literal (`parse_regex()`, `EXPR_REGEX`), and anywhere else it's a division.
+
 Unlike other typescript/javascript parsers, tttt doesn't tokenize before parsing. Sometimes tokens are needed though (such as when an error message for an unexpected token is to be added), which is what `hop_token()` is for. It's not called for most code.
 
 ### Anchors

@@ -5,13 +5,19 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-18, after type core stage 5)
+## State (2026-09-18, after plan 03: the real corpus runs)
 - ~28.7k LoC of C in `src/` (parser 5.0k, type core `src/ty/` 9.5k, display 1.4k). Inherited from a solo human
   project halted in 2025, ported onto the cleat stdlib, then had its type core replaced (below).
-- `./fasttest.sh`: **1434 / 13165 tests fully pass** (errors 5513, symbols 7797, types 3360; `./passcount.py`).
-  History, like for like denominators and what each session moved are in `measurements.md` and the git log (829 before
-  the parser-gaps sessions, 1084 before the type core migration, 1137 -> 1362 was the suite growing to one test per
-  `@option: a,b` configuration).
+- `./fasttest.sh`: **1508 / 13163 tests fully pass** (errors 5738, symbols 7891, types 3459; `./passcount.py`).
+  History, like for like denominators and what each session moved are in `measurements.md` and the git log.
+- **`./realworld.py` (tsc's own `src/compiler`, 193k lines, clean under tsc): 0 syntax errors, 117 name errors, 9699
+  type errors, 0.9 s** (tsc 4.9 s, tsgo 0.78 s, 1.27 s single-threaded; tttt: parse + bind 0.27 s, typecheck 0.6 s). Plan 03 got it
+  from "1119 syntax errors, then heap corruption" to running end to end in one session; the parser needed regex
+  literals, `?.()`, `else` after `b;`, the comma operator, real destructuring patterns, right-associative assignment
+  and a dozen small things; the checker needed `keyof` of a union not to be a cross product, and its first real
+  profile found two silly hot spots worth 3x (line numbers of diagnostics, properties of intersections). ~40% of the type errors are
+  one binder bug (an imported `Node` resolving to the DOM `Node`), most of the rest is missing narrowing: the two
+  plans that were next anyway.
 - **The type core migration is finished.** Every type is a `Ty` (`src/ty/`): interned, arena-allocated, id-carrying,
   lazily resolved members, mapper instantiation, tsc-shaped relations (id-keyed caches, maybe-stack, variances),
   calls/overloads/two-pass inference, contextual typing through one `ty_check_expr(expr, contextual)`, conditional/
@@ -36,14 +42,12 @@ types components) are the oracle, not the goal.
   tttt still does far less checking work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
 ## Course correction (insights, after the type core migration)
-- **tttt has never parsed a real program.** `./realworld.py` runs it on tsc's own `src/compiler` (146k lines, clean under
-  tsc): 1119 syntax errors (regex literals, `?.()`, `else` after a braceless `if`, comma operator, array rest
-  destructuring, optional tuple members) and then heap corruption in 0.7 s. The test suite barely contains these
-  shapes, so `failstats.py` ranked them as a flat tail and we walked past them for 15 sessions while the perf
-  headline came from a synthetic corpus of tests tttt already passes. **Second oracle from now on: `./realworld.py`
-  must reach zero diagnostics on a real project, and the benchmark is that project.** Plan 03 starts it. Every insights
-  session should look at its numbers next to the pass count; a rising pass count with a flat real-world count means
-  we're test-chasing.
+- **tttt had never parsed a real program** until plan 03 (see State). The test suite barely contains regex literals,
+  `?.()`, braceless `if/else`, comma operators, so `failstats.py` ranked them as a flat tail and we walked past them
+  for 15 sessions while the perf headline came from a synthetic corpus of tests tttt already passes. **Second oracle
+  from now on: `./realworld.py` must reach zero diagnostics on a real project, and the benchmark is that project**
+  (`./bench.sh`, second table). Every insights session should look at its numbers next to the pass count; a rising
+  pass count with a flat real-world count means we're test-chasing.
 - The audit vision.md asked for: `hacks.md` is honest and detailed (it reads as a gap list of the new core, which is
   what it should be), the migration did not drift, and the "AST-side walk" section is an acceptable starting point
   for the symbols plan. No redesign of `Ty` is called for.
@@ -98,10 +102,13 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type *printing* (alias preservation, union
   ordering by type id, truncation). Union order by creation id is something an interned design can mimic and a
   tree design cannot. Keep this in mind when designing ids.
-- Perf claims on a flattering corpus: the 0.55 s headline is for replicated passing tests. Until the real corpus runs
-  end to end we know nothing about checker perf on real code, or about AST memory (malloc per node, ~120 bytes RSS
-  per source byte, `DEBUG_ALLOCATOR` on in release). An arena AST may be the next foundation issue; measure first.
-- Parser robustness: heap corruption on input it can't parse. Error recovery paths are barely exercised under valgrind.
+- Perf: on real code tttt is at 0.9 s next to tsgo's 0.78 s (1.27 s single-threaded), parse + bind healthy (0.27 s
+  for 9.9 MB, 41 bytes RSS per source byte). **Not a result yet**: tttt fails most calls early and spends time
+  rendering 9.8k errors, tsgo does all the work and reports nothing. Fix correctness on the corpus first, re-profile
+  when the error count is down (the first profile paid for itself at once), and don't trust the synthetic 0.6 s
+  headline for anything.
+- Parser robustness: error recovery paths are barely exercised under valgrind (plan 03's heap corruption turned out
+  to be the error *printer*, `span_line_start` on a span starting at a newline, not the parser).
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
   must not preclude per-file parallel parse/bind and ideally sharded checking (the type core doesn't, see above;
   plan 04 must cover bind). Parse + bind are now 4x the typecheck phase on the bench: they're where the time is.
@@ -112,7 +119,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. ~~Type core redesign~~ done (8 sessions).
-3. Real-world corpus parses and runs end to end (plan 03); it becomes the pinned benchmark and second oracle.
+3. ~~Real-world corpus parses and runs end to end~~ done (plan 03); it is the pinned benchmark and second oracle.
 3b. Persistent symbols / new binder (plan 04), then bind-time flow graph + narrowing (plan 05).
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; module resolution, JS files (`allowJs`/`checkJs`).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template

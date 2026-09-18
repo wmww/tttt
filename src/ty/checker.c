@@ -228,6 +228,7 @@ void checker_drop(Checker* me) {
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);
+    free(my intersection_props.entries);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
     arena_drop(&my arena);
     free(me);

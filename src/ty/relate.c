@@ -404,6 +404,10 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
     FoundProp ret = {0};
     if (depth > 8) return ret;
     if (ty->kind == TY_INTERSECTION) {
+        // The property of an intersection is a type of its own (tsc makes a synthetic symbol per name as well)
+        u64 key[2] = { ty->id, (u64)(uintptr_t)name };
+        FoundProp const* cached = intern_get(&my intersection_props, key, 2);
+        if (cached) return *cached;
         Ty const* stack_buf[16];
         u32 len = 0;
         bool all_optional = true;
@@ -415,10 +419,14 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
             all_optional &= (part.flags & PROP_OPTIONAL) != 0;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
         }
-        if (!len) return ret;
-        ret.found = true;
-        ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
-        ret.flags = flags | (all_optional ? PROP_OPTIONAL : 0);
+        if (len) {
+            ret.found = true;
+            ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
+            ret.flags = flags | (all_optional ? PROP_OPTIONAL : 0);
+        }
+        FoundProp* memo = arena_new(&my arena, FoundProp);
+        *memo = ret;
+        *intern_slot(me, &my intersection_props, key, 2) = memo;
         return ret;
     }
     if (!(ty->flags & TYF_OBJECT)) return ret;
