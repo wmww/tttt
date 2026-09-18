@@ -26,3 +26,17 @@ Uninvestigated items. Triage sessions drain this.
   `globalThis.`).
 - tttt's `main.c` only loads 4 lib files and ignores tsconfig; `error.c` "Error added with invalid span" fires ~1.4k
   times per suite run, mostly duplicate-identifier / redeclare errors whose other declaration is in a lib.
+- Namespaces with the same name don't merge (`module A {} module A {}`, also namespace + enum/function): `declaration.c`
+  logs "Tried to add multiple namespaces to declaration" in 167 tests now that `module` parses. Probably belongs in
+  the symbols plan (03) rather than a patch on `Scope`.
+- Non-exported namespace members appear to be visible from outside (`scope_evaluate_value_interface` puts every
+  declaration with a value into the namespace's value type, and namespace scopes have no `export_scope`). Verify,
+  write up as a bug.
+- `for (var a ...) {}` then using `a` after the loop gives TS2304: `var` isn't hoisted out of for-loop scopes to the
+  function/file scope. Verify for blocks in general.
+- Type display uses the declared name / full namespace path (`typeof A.B`, `C`) where tsc prints the name as
+  accessible from the use site, preferring aliases (`typeof AB`, `AB.C`). Symbols baseline likewise wants
+  qualified names (`Symbol(A.x, ...)`) for namespace members. Both are for the symbols/printing design.
+- Error recovery: with `await` unsupported, `a = (await x) ? y : z` now mis-recovers into a labeled statement. Goes
+  away with `await`, but label parsing (`parse_label`) should probably refuse reserved words.
+- `failstats.py --syntax` used to silently reuse the previous dump; it now re-runs the harness unless `--no-run`.

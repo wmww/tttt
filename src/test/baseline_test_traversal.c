@@ -260,7 +260,10 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
         case PORT_REEXPORT_GATHER:
-            baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
+            // Null when the scope refused the import, eg `import a = require("b")` inside an ambient module
+            if (my main.declaration.get) {
+                baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
+            }
             break;
 
         case PORT_IMPORT_ALIAS:

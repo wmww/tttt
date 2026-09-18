@@ -8,14 +8,15 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, first insights session)
 - ~17k LoC of C in `src/` (parser 4.2k, type.c 1.9k, display 1.3k, expr/statement ~0.9k each). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 829 / 11962 tests fully pass. Per component: errors 3080, symbols 4738, types 1678 pass
-  (of 11236 that run; 726 are `undefined` in `test/baseline_results.ts` - reason not yet investigated).
+- `./fasttest.sh`: 987 / 11962 tests fully pass (829 before the first parser-gaps session). Per component: errors
+  3695, symbols 5172, types 1974 pass (of 11236 that run; the other 726 are explained in `measurements.md`).
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
   `@strict: true,false`...) is ignored.
 - Measurement exists now: `./failstats.py` (why tests fail, in aggregate) and `./bench.sh` (vs tsc and tsgo), with
-  results in `measurements.md`. Headlines: **40% of the suite fails in the parser** (valid syntax rejected, which
-  also switches off typechecking for the test) and a handful of constructs account for most of it; no crashes;
+  results in `measurements.md`. Headlines: **a quarter of the suite still fails in the parser** (valid syntax
+  rejected, which also switches off typechecking for the test; was 40%), now mostly member syntax (object literal
+  and class members), generators/await, decorators and spread; no crashes;
   generic inference is the loudest "not implemented" in the checker. Perf on the (easy, synthetic) corpus tttt can
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
