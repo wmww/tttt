@@ -2,6 +2,117 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, harness fidelity (`CompilerOptions`, multi-config tests, libs by target)
+Suite: **1362 full of 13165 tests** (was 1137 of 11962), errors 5277, symbols 7528, types 3243; suite wall 6.2 s (5.4 s).
+**The denominators changed, don't compare these with older rows directly:**
+- A test file with `@target: es5,es2015` & co is now one test per configuration (11962 files -> 13165 tests), and
+  tests with `@noTypesAndSymbols` run for their errors only (913 tests; their symbols and types count as passed,
+  which inflates those two columns by 913). 2 tests don't run (no baselines, tsc's harness refuses their options).
+- Like for like, the 11236 tests that ran before: full 1137 -> 1137 (none lost, none gained), errors 4657 -> 4810,
+  symbols 5981 -> 6211, types 2219 -> 2225. The 1929 newly running tests: 225 full, errors 467, symbols 1315 (913 free),
+  types 1017 (913 free).
+- 9 tests lost a component, all because an option is honoured now: real `strictNullChecks`-only tests need narrowing
+  (`classStaticPropertyTypeGuard`, `destructuringTypeGuardFlow`, `controlFlowOptionalChain2`, `optionalMethods`,
+  `defaultParameterAddsUndefinedWithStrictNullChecks`, `literalTypes1`), `for-of13` (for..of over an iterator: TS2495
+  was hidden by the missing lib), `es2021/es2022LocalesObjectArgument` (`Intl` var + namespaces don't merge).
+- `Symbol`/`Promise`/`Generator`/`IterableIterator` are gone from the spurious TS2304/TS2693 list. What leads it now:
+  `import`/`export`/`using`/`const`/`module`/`exports` as names, ie **JS files and newer syntax parsed wrongly** (the
+  newly running tests are heavy on `@allowJs`, JSX and ES module syntax: spurious TS1xxx tests 1170 -> 2015).
+- `log_error` lines 2 078 -> 2 082.
+- Bench unchanged (typecheck 124 ms, total 0.63 s, RSS 874 MB on a corpus that grew to 307 files); `tttt` loads the
+  same libs as before unless `--target`/`--lib` is given.
+- valgrind clean on ~60 tests including multi-config ones (`abstractProperty`, `strictBuiltinIteratorReturn*`, `a[a-c]*`).
+
+### ./failstats.py -n 14
+```
+failstats @ 1084036
+11962 test files, 13165 tests (configurations), 13163 ran (913 of them errors only: @noTypesAndSymbols), 2 did not (no types/symbols baselines)
+pass: all 1362  errors 5277  symbols 7528  types 3243  (of 13163)
+
+checker log_error output: 2082 lines across 651 tests
+  top messages:
+     485  in 144 tests  error.c:159: error: Error added with invalid span: TS2300: Duplicate identifier '_'.
+     471  in 177 tests  declaration.c:250: error: Tried to add multiple namespaces to declaration _
+     378  in 19 tests  error.c:159: error: Error added with invalid span: TS2304: Cannot find name '_'.
+     243  in 163 tests  scope.c:165: error: Imported source file '_' is not a module
+     227  in 133 tests  error.c:159: error: Error added with invalid span: TS2305: Module '_' has no exported member '_'.
+     144  in 18 tests  error.c:159: error: Error added with invalid span: TS2694: Namespace '_' has no exported member '_'.
+      37  in 12 tests  error.c:159: error: Error added with invalid span: TS2451: Cannot redeclare block-scoped variable '_
+      27  in 14 tests  declaration.c:250: error: Tried to add multiple namespaces to declaration
+      24  in 12 tests  error.c:159: error: Error added with invalid span: TS2511: Cannot create an instance of an abstract 
+      19  in 10 tests  statement.c:123: error: Global scope not set
+      18  in 6 tests  error.c:159: error: Error added with invalid span: TS2503: Cannot find namespace '_'.
+       8  in 3 tests  error.c:159: error: Error added with invalid span: TS2567: Enum declarations can only merge with nam
+       1  in 1 tests  scope.c:75: error: Declaration B acquired multiple times
+
+errors component: 7886 failing
+  by shape:
+    2428  tsc reports nothing, tttt reports errors (all spurious)
+    2382  both missing and spurious
+    2352  tsc reports errors, tttt reports nothing
+     307  only missing errors
+     225  same codes+positions, message text differs
+     157  only spurious errors
+      35  same codes+lines, column differs
+  2015 tests have a spurious TS1xxx, ie the parser rejects syntax tsc accepts (typechecking is skipped for those, so their types/symbols fail too); 901 of them expect no errors at all
+  missing diagnostics (tsc has, tttt lacks) by code:
+    1316  in 500 tests  TS2322
+    1056  in 407 tests  TS2339
+     680  in 38 tests  TS18050
+     583  in 127 tests  TS2300
+     502  in 162 tests  TS1005
+     356  in 28 tests  TS2365
+     339  in 141 tests  TS2345
+     314  in 126 tests  TS6133
+     244  in 58 tests  TS2411
+     201  in 22 tests  TS2356
+     185  in 10 tests  TS2834
+     184  in 114 tests  TS2304
+     184  in 39 tests  TS2314
+     175  in 37 tests  TS1206
+  ... 950 more rows, 21821 total
+  spurious diagnostics (tttt has, tsc lacks) by code:
+   11730  in 2282 tests  TS2304
+    6156  in 1174 tests  TS1005
+    5088  in 737 tests  TS1128
+    3283  in 462 tests  TS2451
+    2398  in 575 tests  TS2307
+    1989  in 405 tests  TS1109
+    1839  in 606 tests  TS1434
+    1485  in 23 tests  TS2694
+    1132  in 385 tests  TS2322
+     881  in 234 tests  TS7006
+     873  in 80 tests  TS1127
+     743  in 177 tests  TS2300
+     732  in 220 tests  TS2693
+     589  in 129 tests  TS2364
+  ... 81 more rows, 44577 total
+  tests whose errors diff involves a single code (would pass errors if fixed alone):
+     392  spurious TS2304
+     181  spurious TS2307
+     161  missing TS2322
+     145  spurious TS2322
+     132  missing TS2339
+     131  spurious TS2451
+     102  missing TS6133
+      90  spurious TS7006
+      72  spurious TS2345
+      57  spurious TS2364
+      54  spurious TS2351
+      39  missing TS2304
+      34  missing TS2345
+      33  missing TS2300
+  ... 457 more rows, 3623 total
+
+symbols component: 5635 failing, mean line match 95.7%; failing tests by line match: >=95%: 2009, 80-95%: 2920, 50-80%: 688, <50%: 18
+  nearly passing (full list in report.txt): aliasAssignments allowJsCrossMonorepoPackage allowSyntheticDefaultImports10 commentOnAmbientVariable2 crashInResolveInterface declFileAliasUseBeforeDeclaration duplicatePackage_packageIdIncludesSubModule duplicatePackage_relativeImportWithinPackage duplicatePackage_relativeImportWithinPackage_scoped es6UseOfTopLevelRequire importAsBaseClass literalTypeNameAssertionNotTriggered moduleImportedForTypeArgumentPosition moduleLocalImportNotIncorrectlyRedirected
+
+types component: 9920 failing, mean line match 83.4%; failing tests by line match: >=95%: 837, 80-95%: 4486, 50-80%: 4072, <50%: 525
+  nearly passing (full list in report.txt): aliasAssignments allowSyntheticDefaultImports10 collisionExportsRequireAndAlias commentOnAmbientClass1 commentOnAmbientEnum commentOnAmbientVariable2 commentOnElidedModule1 commentOnInterface1 declFileForExportedImport declarationEmitHasTypesRefOnNamespaceUse doNotemitTripleSlashComments externalModuleReferenceOfImportDeclarationWithExportModifier importDeclarationUsedAsTypeQuery moduleLocalImportNotIncorrectlyRedirected
+
+full data: build/failstats/report.txt, tests.tsv, near_symbols.txt, near_types.txt, stderr.txt
+```
+
 ## 2026-09-18, type core stage 4b2 (type aliases and type operators evaluate to `Ty`)
 Suite: **1137 full (1120), errors 4657 (4648), symbols 5981 (5979), types 2219 (2186)**; suite wall 4.9 s (4.5 s).
 - Components: 51 tests gained components, 4 lost one (`homomorphicMappedTypeWithNonHomomorphicInstantiationSpreadable1`
@@ -146,99 +257,7 @@ off the suite is unchanged: 1084 full passes, same wall time.
   previous run. Per line tttt is unchanged within noise (stdlib-only parse 18-27 ms run to run on this machine).
   Ratios are as before: ~4x faster than JS tsc, between single- and multi-threaded tsgo, worst memory of the three.
 
-### ./failstats.py -n 12
-```
-failstats @ 5aba5cc
-11962 test files, 11236 ran, 726 did not: 412 only have multi-config baselines (name(option=value).types), 314 have no types/symbols baseline at all
-  options varied by the multi-config tests we skip (tests):
-     192  target
-     150  module
-      12  strict
-      12  moduleresolution
-      12  exactoptionalpropertytypes
-       8  isolatedmodules
-       7  esmoduleinterop
-       5  usedefineforclassfields
-  ... 18 more rows, 436 total
-pass: all 1084  errors 4396  symbols 5939  types 2146  (of 11236)
-
-checker log_error output: 39187 lines across 901 tests
-  top messages:
-   31403  in 36 tests  type.c:915: error: Max type recursion depth exceeded (type_extends_internal)
-    2570  in 179 tests  generic.c:82: error: inferring types of generic with callable not yet implemented
-    2010  in 97 tests  generic.c:99: error: inferring types of generic with union/intersection not yet implemented
-     494  in 81 tests  generic.c:86: error: inferring types of generic with interface not yet implemented
-     467  in 70 tests  error.c:180: error: Error added with invalid span: TS2300: Duplicate identifier '_'.
-     464  in 84 tests  generic.c:90: error: inferring types of generic with array not yet implemented
-     458  in 15 tests  error.c:180: error: Error added with invalid span: TS2451: Cannot redeclare block-scoped variable '_
-     404  in 167 tests  declaration.c:239: error: Tried to add multiple namespaces to declaration _
-     233  in 12 tests  error.c:180: error: Error added with invalid span: TS2304: Cannot find name '_'.
-     212  in 142 tests  scope.c:164: error: Imported source file '_' is not a module
-     183  in 99 tests  error.c:180: error: Error added with invalid span: TS2305: Module '_' has no exported member '_'.
-     159  in 21 tests  generic.c:94: error: inferring types of generic with tuple not yet implemented
-  ... 8 more rows, 39187 total
-
-errors component: 6840 failing
-  by shape:
-    2175  both missing and spurious
-    2087  tsc reports nothing, tttt reports errors (all spurious)
-    1962  tsc reports errors, tttt reports nothing
-     265  only missing errors
-     165  only spurious errors
-     161  same codes+positions, message text differs
-      25  same codes+lines, column differs
-  1170 tests have a spurious TS1xxx, ie the parser rejects syntax tsc accepts (typechecking is skipped for those, so their types/symbols fail too); 367 of them expect no errors at all
-  missing diagnostics (tsc has, tttt lacks) by code:
-    1542  in 535 tests  TS2322
-     892  in 350 tests  TS2339
-     680  in 38 tests  TS18050
-     565  in 122 tests  TS2300
-     436  in 168 tests  TS2345
-     408  in 39 tests  TS2365
-     334  in 134 tests  TS1005
-     312  in 124 tests  TS6133
-     244  in 58 tests  TS2411
-     218  in 21 tests  TS2362
-     201  in 22 tests  TS2356
-     184  in 39 tests  TS2314
-  ... 875 more rows, 18469 total
-  spurious diagnostics (tttt has, tsc lacks) by code:
-    7291  in 1604 tests  TS2304
-    3720  in 728 tests  TS1005
-    3424  in 460 tests  TS1128
-    3228  in 442 tests  TS2451
-    1812  in 581 tests  TS2322
-    1484  in 22 tests  TS2694
-    1273  in 277 tests  TS1109
-    1240  in 306 tests  TS2345
-    1209  in 439 tests  TS2693
-     811  in 214 tests  TS7006
-     770  in 237 tests  TS1434
-     648  in 198 tests  TS2554
-  ... 76 more rows, 34006 total
-  tests whose errors diff involves a single code (would pass errors if fixed alone):
-     402  spurious TS2304
-     204  spurious TS2322
-     169  missing TS2322
-     139  spurious TS2307
-     113  spurious TS2451
-     110  missing TS2339
-     102  missing TS6133
-      93  spurious TS2693
-      88  spurious TS2345
-      69  spurious TS7006
-      65  misplaced TS2322
-      54  spurious TS2554
-  ... 422 more rows, 3341 total
-
-symbols component: 5297 failing, mean line match 95.2%; failing tests by line match: >=95%: 1827, 80-95%: 2846, 50-80%: 606, <50%: 18
-  nearly passing (full list in report.txt): aliasAssignments allowJsCrossMonorepoPackage allowSyntheticDefaultImports10 commentOnAmbientVariable2 crashInResolveInterface declFileAliasUseBeforeDeclaration duplicatePackage_packageIdIncludesSubModule duplicatePackage_relativeImportWithinPackage duplicatePackage_relativeImportWithinPackage_scoped es6UseOfTopLevelRequire importAsBaseClass literalTypeNameAssertionNotTriggered
-
-types component: 9090 failing, mean line match 81.8%; failing tests by line match: >=95%: 723, 80-95%: 3986, 50-80%: 3865, <50%: 516
-  nearly passing (full list in report.txt): aliasAssignments allowSyntheticDefaultImports10 collisionExportsRequireAndAlias commentOnAmbientClass1 commentOnAmbientEnum commentOnAmbientVariable2 commentOnElidedModule1 commentOnInterface1 declFileForExportedImport declarationEmitHasTypesRefOnNamespaceUse doNotemitTripleSlashComments externalModuleReferenceOfImportDeclarationWithExportModifier
-
-full data: build/failstats/report.txt, tests.tsv, near_symbols.txt, near_types.txt, stderr.txt
-```
+(the `./failstats.py` output of this date was replaced by the one in the harness fidelity section at the top)
 
 ### ./failstats.py --syntax -n 20
 ```

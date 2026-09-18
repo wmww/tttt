@@ -62,6 +62,7 @@ typedef struct Program {
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     Checker* checker; // Created by program_make_current()
+    CompilerOptions options;
 } Program;
 
 static void program_add_builtins(Program* me) {
@@ -233,6 +234,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .errs = errs,
         .fs = fs,
         .global_scope = scope_init(errs),
+        .options = compiler_options_init(),
     });
     program_add_builtins(ret);
     return ret;
@@ -244,6 +246,11 @@ static void program_drop(Program* me) {
     scope_drop(&my global_scope);
     hmap_box_source_file_drop(&my source_files_map);
     vec_source_file_ptr_drop(&my source_files_ordered);
+    compiler_options_drop(&my options);
+}
+
+CompilerOptions* program_options(Program* me) {
+    return &my options;
 }
 
 void program_destroy(Program* me) {
@@ -395,12 +402,12 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
 failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
-    set_error_config(&my errs->config);
+    set_compiler_options(&my options);
 
     // Add the source file to the program
     SourceFile* main_source = program_add_source_idempotent(me, path);
 
-    clear_error_config();
+    clear_compiler_options();
 
     // An unreadable entry point isn't a TypeScript-level diagnostic: it has no span to attach to, so
     // error_ctx_error_d() would just drop it. Report it to our caller instead.
@@ -480,7 +487,7 @@ Scope const* program_get_global_scope(Program const* me) {
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
-    set_error_config(&my errs->config);
+    set_compiler_options(&my options);
     program_make_current(me);
     ty_shadow_begin(me);
 
@@ -493,7 +500,7 @@ void program_typecheck(Program* me) {
 
     ty_shadow_finish(me);
 
-    clear_error_config();
+    clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
     CHANGE_PHASE(PROGRAM_PHASE_TYPECHECKING, PROGRAM_PHASE_TYPECHECKED);
 }

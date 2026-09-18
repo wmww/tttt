@@ -148,7 +148,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
     TyMapper const* base = base_signature_mapper(me, source);
     // Parameters are a contravariant position. Without strictFunctionTypes (and for methods) they compare
     // bivariantly, and tsc infers as if they were covariant
-    bool flip = get_error_config()->strict_function_types && !(target->flags & SIGNATURE_METHOD);
+    bool flip = compiler_options()->strict_function_types && !(target->flags & SIGNATURE_METHOD);
     if (flip) inf->contravariant = !inf->contravariant;
     for (u32 i = 0; i < target->param_count; i++) {
         SigParam const* target_param = &target->params[i];
@@ -503,7 +503,7 @@ static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) 
                 if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_STRICT_SUBTYPE)) ret = primary[i];
             }
         }
-        if (nullable_len && get_error_config()->strict_null_checks) {
+        if (nullable_len && compiler_options()->strict_null_checks) {
             nullable[nullable_len++] = ret; // there's room: at least one slot of `primary` isn't nullable
             ret = ty_union(me, nullable, nullable_len, nullptr, (TyList){0});
         }

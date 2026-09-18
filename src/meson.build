@@ -22,6 +22,7 @@ core_files = files(
     'display.c',
     'parser.c',
     'error.c',
+    'compiler_options.c',
     'source_file.c',
     'program.c',
     'declaration.c',

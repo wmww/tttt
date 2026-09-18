@@ -1,0 +1,180 @@
+#pragma once
+
+#include "prelude.h"
+
+// Values are ordered, so `target >= SCRIPT_TARGET_ES2015` works
+typedef enum ScriptTarget {
+    SCRIPT_TARGET_ES3,
+    SCRIPT_TARGET_ES5,
+    SCRIPT_TARGET_ES2015,
+    SCRIPT_TARGET_ES2016,
+    SCRIPT_TARGET_ES2017,
+    SCRIPT_TARGET_ES2018,
+    SCRIPT_TARGET_ES2019,
+    SCRIPT_TARGET_ES2020,
+    SCRIPT_TARGET_ES2021,
+    SCRIPT_TARGET_ES2022,
+    SCRIPT_TARGET_ES2023,
+    SCRIPT_TARGET_ES2024,
+    SCRIPT_TARGET_ESNEXT,
+} ScriptTarget;
+
+typedef enum ModuleKind {
+    MODULE_KIND_NONE,
+    MODULE_KIND_COMMONJS,
+    MODULE_KIND_AMD,
+    MODULE_KIND_UMD,
+    MODULE_KIND_SYSTEM,
+    MODULE_KIND_ES2015,
+    MODULE_KIND_ES2020,
+    MODULE_KIND_ES2022,
+    MODULE_KIND_ESNEXT,
+    MODULE_KIND_NODE16,
+    MODULE_KIND_NODE18,
+    MODULE_KIND_NODENEXT,
+    MODULE_KIND_PRESERVE,
+} ModuleKind;
+
+typedef enum ModuleResolutionKind {
+    MODULE_RESOLUTION_CLASSIC,
+    MODULE_RESOLUTION_NODE10,
+    MODULE_RESOLUTION_NODE16,
+    MODULE_RESOLUTION_NODENEXT,
+    MODULE_RESOLUTION_BUNDLER,
+} ModuleResolutionKind;
+
+typedef enum JsxKind {
+    JSX_NONE,
+    JSX_PRESERVE,
+    JSX_REACT_NATIVE,
+    JSX_REACT,
+    JSX_REACT_JSX,
+    JSX_REACT_JSXDEV,
+} JsxKind;
+
+typedef enum ModuleDetectionKind {
+    MODULE_DETECTION_AUTO,
+    MODULE_DETECTION_LEGACY,
+    MODULE_DETECTION_FORCE,
+} ModuleDetectionKind;
+
+// The boolean options. X(field, "lowercasename", in_strict_family). Options in the strict family default to the value
+// of `strict`, the rest default to false unless compiler_options_resolve() says otherwise
+#define COMPILER_BOOL_OPTIONS(X) \
+    X(strict, "strict", false) \
+    X(always_strict, "alwaysstrict", true) \
+    X(no_implicit_any, "noimplicitany", true) \
+    X(no_implicit_this, "noimplicitthis", true) \
+    X(strict_bind_call_apply, "strictbindcallapply", true) \
+    X(strict_builtin_iterator_return, "strictbuiltiniteratorreturn", true) \
+    X(strict_function_types, "strictfunctiontypes", true) \
+    X(strict_null_checks, "strictnullchecks", true) \
+    X(strict_property_initialization, "strictpropertyinitialization", true) \
+    X(use_unknown_in_catch_variables, "useunknownincatchvariables", true) \
+    X(allow_js, "allowjs", false) \
+    X(check_js, "checkjs", false) \
+    X(allow_unreachable_code, "allowunreachablecode", false) \
+    X(allow_unused_labels, "allowunusedlabels", false) \
+    X(allow_synthetic_default_imports, "allowsyntheticdefaultimports", false) \
+    X(allow_umd_global_access, "allowumdglobalaccess", false) \
+    X(allow_importing_ts_extensions, "allowimportingtsextensions", false) \
+    X(allow_arbitrary_extensions, "allowarbitraryextensions", false) \
+    X(declaration, "declaration", false) \
+    X(downlevel_iteration, "downleveliteration", false) \
+    X(emit_decorator_metadata, "emitdecoratormetadata", false) \
+    X(erasable_syntax_only, "erasablesyntaxonly", false) \
+    X(es_module_interop, "esmoduleinterop", false) \
+    X(exact_optional_property_types, "exactoptionalpropertytypes", false) \
+    X(experimental_decorators, "experimentaldecorators", false) \
+    X(import_helpers, "importhelpers", false) \
+    X(isolated_declarations, "isolateddeclarations", false) \
+    X(isolated_modules, "isolatedmodules", false) \
+    X(keyof_strings_only, "keyofstringsonly", false) \
+    X(no_emit, "noemit", false) \
+    X(no_fallthrough_cases_in_switch, "nofallthroughcasesinswitch", false) \
+    X(no_implicit_override, "noimplicitoverride", false) \
+    X(no_implicit_returns, "noimplicitreturns", false) \
+    X(no_lib, "nolib", false) \
+    X(no_property_access_from_index_signature, "nopropertyaccessfromindexsignature", false) \
+    X(no_resolve, "noresolve", false) \
+    X(no_strict_generic_checks, "nostrictgenericchecks", false) \
+    X(no_unchecked_indexed_access, "nouncheckedindexedaccess", false) \
+    X(no_unchecked_side_effect_imports, "nouncheckedsideeffectimports", false) \
+    X(no_unused_locals, "nounusedlocals", false) \
+    X(no_unused_parameters, "nounusedparameters", false) \
+    X(preserve_const_enums, "preserveconstenums", false) \
+    X(preserve_symlinks, "preservesymlinks", false) \
+    X(resolve_json_module, "resolvejsonmodule", false) \
+    X(resolve_package_json_exports, "resolvepackagejsonexports", false) \
+    X(resolve_package_json_imports, "resolvepackagejsonimports", false) \
+    X(rewrite_relative_import_extensions, "rewriterelativeimportextensions", false) \
+    X(skip_default_lib_check, "skipdefaultlibcheck", false) \
+    X(skip_lib_check, "skiplibcheck", false) \
+    X(suppress_excess_property_errors, "suppressexcesspropertyerrors", false) \
+    X(suppress_implicit_any_index_errors, "suppressimplicitanyindexerrors", false) \
+    X(use_define_for_class_fields, "usedefineforclassfields", false) \
+    X(verbatim_module_syntax, "verbatimmodulesyntax", false)
+
+typedef enum CompilerOptionId {
+#define X(field, name, strict_family) COMPILER_OPTION_##field,
+    COMPILER_BOOL_OPTIONS(X)
+#undef X
+    COMPILER_BOOL_OPTION_COUNT,
+} CompilerOptionId;
+
+// What tsc calls CompilerOptions. Every field holds the *effective* value (defaults that depend on other options are
+// already applied), as long as compiler_options_resolve() ran after the last compiler_options_set(). One per Program,
+// read during parsing and checking through compiler_options()
+typedef struct CompilerOptions {
+#define X(field, name, strict_family) bool field;
+    COMPILER_BOOL_OPTIONS(X)
+#undef X
+    ScriptTarget target;
+    ModuleKind module;
+    ModuleResolutionKind module_resolution;
+    JsxKind jsx;
+    ModuleDetectionKind module_detection;
+    cstr lib; // Comma separated, lowercase, as written ("es2015,dom"). Empty: the default library of the target
+
+    // Which options were given explicitly, the rest get their defaults from compiler_options_resolve()
+    bool is_set[COMPILER_BOOL_OPTION_COUNT];
+    bool target_set, module_set, module_resolution_set, module_detection_set;
+} CompilerOptions;
+
+typedef enum CompilerOptionSetResult {
+    COMPILER_OPTION_OK,
+    COMPILER_OPTION_UNKNOWN,   // Not an option we do anything with (which includes most of tsc's emit options)
+    COMPILER_OPTION_BAD_VALUE,
+} CompilerOptionSetResult;
+
+CompilerOptions compiler_options_init();
+void compiler_options_drop(CompilerOptions* me);
+// name is case insensitive ("strictNullChecks"), value is what would be written in a tsconfig or on the command line
+CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value);
+// Applies the defaults that depend on other options. Idempotent
+void compiler_options_resolve(CompilerOptions* me);
+// Shorthand for tests and tools: `strict: true` and resolve
+void compiler_options_enable_strict(CompilerOptions* me);
+
+// The standard library files (names as in thirdparty/lib, without .d.ts) to load for these options, comma separated:
+// the `lib` option if there is one (mapped through tsc's lib names, "es6" is lib.es2015.d.ts), else the default
+// library of the target ("default", "es6", "es2016.full"...). Empty with noLib. Names aren't validated, that's up to whoever loads them
+cstr compiler_options_lib_files(CompilerOptions const* me);
+
+bool compiler_option_is_boolean(csview name);
+
+// For the harness: if name is an option that tsc's test runner varies ("@target: es5,es2015" is two test
+// configurations, "@lib: es5,dom" is one). True for the boolean and enum options, including ones we ignore otherwise
+bool compiler_option_varies(csview name);
+// For "@target: *" and exclusions ("-es3"): the values of an enum option (or true/false), and which spellings mean the
+// same thing. Writes up to max names into out, returns how many there are. ids[i] is equal for equal values
+isize compiler_option_values(csview name, const char** out, int* ids, isize max);
+
+// The options of the program being parsed or checked
+extern CompilerOptions const* compiler_options_private;
+void set_compiler_options(CompilerOptions const* options);
+void clear_compiler_options();
+static inline CompilerOptions const* compiler_options() {
+    panic_if(!compiler_options_private, "global CompilerOptions unset");
+    return compiler_options_private;
+}

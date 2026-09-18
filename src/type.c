@@ -949,7 +949,7 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
             for_each (i, vec_interface_member, &my interface.members) {
                 if (interface_member_key_overlaps(i, index)) {
                     *ret = type_clone(i->type);
-                    if (i->optional && get_error_config()->strict_null_checks) {
+                    if (i->optional && compiler_options()->strict_null_checks) {
                         *ret = type_composite_internal(ctx, TYPE_UNION, *ret, type_undefined);
                     }
                     return true;
@@ -1063,7 +1063,7 @@ static void index_type_typecheck_internal(
             switch (my value.tag) {
                 case VALUE_NULL:
                 case VALUE_UNDEFINED:
-                    if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+                    if (compiler_options()->no_unchecked_indexed_access && error_if_not_found) {
                         error_ctx_error_d(
                             errs, indexed_span, 18047,
                             "'", indexed_span, "' is possibly '",
@@ -1073,7 +1073,7 @@ static void index_type_typecheck_internal(
                     break;
 
                 default:
-                    if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+                    if (compiler_options()->no_unchecked_indexed_access && error_if_not_found) {
                         error_ctx_error_d(errs, index_span, 2339,
                             "Property '", index_property_name(index),
                             "' does not exist on type '", me_original, "'.");
@@ -1091,7 +1091,7 @@ static void index_type_typecheck_internal(
         case TYPE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_CALLABLE:
-            if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+            if (compiler_options()->no_unchecked_indexed_access && error_if_not_found) {
                 error_ctx_error_d(errs, index_span, 2339,
                     "Property '", index_property_name(index),
                     "' does not exist on type '", me_original, "'.");
@@ -1106,7 +1106,7 @@ static void index_type_typecheck_internal(
                 }
             }
             if (!found) {
-                if (get_error_config()->no_unchecked_indexed_access && error_if_not_found) {
+                if (compiler_options()->no_unchecked_indexed_access && error_if_not_found) {
                     error_ctx_error_d(errs, index_span, 2551,
                         "Property '", index_property_name(index),
                         "' does not exist on type '", me_original, "'.");

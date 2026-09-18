@@ -7,14 +7,19 @@
 
 #include <cleat/filesystem.h>
 
-BaselineTestResult make_baseline_test_result(cstr source_path) {
+BaselineTestResult make_baseline_test_result(cstr source_path, cstr config) {
+    csview base = test_name_from_path(cstr_sv(&source_path));
     return (BaselineTestResult){
+        .name = cstr_size(&config) ? cstr_d(base, "(", config, ")") : cstr_from_sv(base),
         .source_path = source_path,
+        .config = config,
     };
 }
 
 void baseline_test_result_drop(BaselineTestResult* me) {
     cstr_drop(&my source_path);
+    cstr_drop(&my config);
+    cstr_drop(&my name);
 }
 
 static bool compare_outputs(
@@ -84,26 +89,15 @@ void baseline_test_result_run(
     result_drop(&types_prev);
 
     bool noisy = show_errs || show_syms || show_typs;
-    csview name = test_name_from_path(cstr_sv(&my source_path));
+    csview name = cstr_sv(&my name);
     cstr errors_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".errors.txt");
     cstr symbols_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".symbols");
     cstr types_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".types");
 
-    // It's ok if errors file doesn't exist
-
-    if (!fs_is_reg_file(fs, cstr_sv(&symbols_path))) {
-        if (noisy) {
-            eprintln(color_error, name, ":", color_normal, " ", symbols_path, " does not exist");
-        }
-        goto finish;
-    }
-
-    if (!fs_is_reg_file(fs, cstr_sv(&types_path))) {
-        if (noisy) {
-            eprintln(color_error, name, ":", color_normal, " ", types_path, " does not exist");
-        }
-        goto finish;
-    }
+    // It's ok if errors file doesn't exist, and with @noTypesAndSymbols the other two don't either. Whether a test
+    // has that is only known after loading it, so a test without baselines runs and is then dropped if it turns out
+    // it should have had them (a handful of tests tsc itself doesn't produce baselines for)
+    bool has_baselines = fs_is_reg_file(fs, cstr_sv(&symbols_path)) && fs_is_reg_file(fs, cstr_sv(&types_path));
 
     bool dumping = csview_size(suite->dump_dir) != 0;
     if (dumping) {
@@ -111,8 +105,13 @@ void baseline_test_result_run(
         eprintln("### TEST ", name);
     }
 
-    BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_sv(&my source_path), noisy, dumping);
-    my did_run = test_case.did_run;
+    BaselineTestCase test_case = run_baseline_test_case(
+        &suite->cache, cstr_sv(&my source_path), cstr_sv(&my config), noisy, dumping);
+    my errors_only = test_case.no_types_and_symbols;
+    my did_run = test_case.did_run && (has_baselines || my errors_only);
+    if (test_case.did_run && !my did_run && noisy) {
+        eprintln(color_error, name, ":", color_normal, " ", symbols_path, " or ", types_path, " does not exist");
+    }
 
     if (my did_run) {
         cstr our_result = cstr_null;
@@ -126,7 +125,14 @@ void baseline_test_result_run(
             cstr_sv(&our_result),
             show_errs
         );
-        cstr_clear(&our_result);
+        cstr_drop(&our_result);
+    }
+
+    if (my did_run && my errors_only) {
+        my symbols_passed = true;
+        my types_passed = true;
+    } else if (my did_run) {
+        cstr our_result = cstr_null;
 
         baseline_test_case_render_symbols(&our_result, &test_case);
         dump_output(suite, name, ".symbols", cstr_sv(&our_result));
@@ -153,7 +159,6 @@ void baseline_test_result_run(
 
     baseline_test_case_drop(&test_case);
 
-finish:
     c_drop(cstr,
         &errors_path,
         &symbols_path,

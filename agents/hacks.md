@@ -16,8 +16,24 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   temporary); the AST's own slots are dropped by `checker_drop`, which `program_drop` runs before dropping the AST.
   Dropping an AST while *another* program's checker is current would reset nothing (different slots), so it's safe,
   but the rule is implicit.
-- `baseline_test_case.c: load_test_source`: compiler option directives handled as ad-hoc string compares; almost
-  all options ignored.
+- `CompilerOptions` (`compiler_options.c`): every tsc boolean/enum option parses and resolves its defaults, but the
+  checker only *reads* `strict_null_checks`, `strict_function_types`, `no_implicit_any` and
+  `no_unchecked_indexed_access`. Everything else (target-gated diagnostics, `allowJs`/`checkJs`, `jsx`, module kind,
+  unused locals, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
+  `ErrorConfig` it replaced, set around load/resolve/check by `program.c`; becomes a `Checker`/`Program` field read
+  through a context when signatures get one.
+- `baseline_test_case.c: apply_setting`: harness-only directives other than `@filename` and `@noTypesAndSymbols` are
+  ignored (`@libFiles`, `@noImplicitReferences`, `@currentDirectory`, `@link`/`@symlink`, `@baselineFile`, a
+  `tsconfig.json` among the test's files). Bad option values are ignored too (tsc's harness throws).
+- `baseline_test_result_run`: with `@noTypesAndSymbols` the symbols and types components count as *passed*, so the
+  per-component totals include ~900 free passes. A test without types/symbols baselines is run before we know
+  whether it should have had any.
+- `baseline_test_cache_get_program_with_libs`: one cached lib `Program` per distinct lib list (dozens per suite run,
+  each with the DOM in it), never evicted. An unknown lib name is logged at info level and skipped, no TS6046.
+- `display_type` depth guard (`DISPLAY_TYPE_MAX_DEPTH`): the legacy display has no cycle detection, a module that
+  imports its own namespace recursed until the stack ran out. Prints `...` at depth 100. Dies with the legacy display.
+- `main.c: default_libs`: without `--lib`/`--target` the CLI loads ES5 + DOM + three ES2015 libs (what the bench
+  corpus needs) rather than tsc's default for the target.
 - `program.c`: `.js` import path handling by suffix check - not real module resolution.
 - ~60 `PERF`/`HACK`/`TODO`/`FIXME` comments in `src/` not yet catalogued here (triage).
 - `failstats.py: line_ratio`: "line match" is multiset overlap of lines, not a diff (difflib was far too slow), so
@@ -61,8 +77,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Generator methods/functions (`FunctionImpl.is_generator`): inferred return type is `any`, `yield`/`yield*`
   expressions are `any`, returns aren't checked against the declared type. Needs `Generator<Y, R, N>` inference.
 - Async functions (`FunctionImpl.is_async`, `promise_decl`): inferred return is `Promise<T>` built from the global
-  `Promise` looked up by name during name resolution (`any` if the lib has none - which is the default ES5 lib set in
-  the harness); returning a promise nests instead of flattening; returns aren't checked against the declared type;
+  `Promise` looked up by name during name resolution (`any` if the lib has none, eg target ES5 without `@lib`); returning a promise nests instead of flattening; returns aren't checked against the declared type;
   no TS1064/TS2705. `type_awaited` only unwraps types literally named `Promise`/`PromiseLike`.
 - `await_is_operator`: decides keyword-vs-identifier from `ParserShared.in_async`/`function_depth` plus a peek at the
   next character. Top-level await never reports TS1375/TS1378 (needs module detection + `@module`/`@target`).

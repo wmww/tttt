@@ -248,7 +248,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     if ((sf & TYF_BOOLEAN_LITERAL) && (tf & TYF_BOOLEAN)) return true;
     if ((sf & TYF_UNDEFINED) && (tf & (TYF_UNDEFINED | TYF_VOID))) return true;
     if ((sf & TYF_NULL) && (tf & TYF_NULL)) return true;
-    if ((sf & TYF_NULLABLE) && !get_error_config()->strict_null_checks &&
+    if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
         st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && st->relation != TY_RELATION_STRICT_SUBTYPE
     ) {
         return true;
@@ -505,7 +505,7 @@ static Ternary compare_signatures(
         return TERNARY_FALSE;
     }
 
-    bool strict = st->relation != TY_RELATION_COMPARABLE && get_error_config()->strict_function_types &&
+    bool strict = st->relation != TY_RELATION_COMPARABLE && compiler_options()->strict_function_types &&
         !(target->flags & (SIGNATURE_METHOD | SIGNATURE_CONSTRUCT));
     Ternary result = TERNARY_TRUE;
     u32 count = source->param_count > target->param_count ? source->param_count : target->param_count;
@@ -663,7 +663,7 @@ static Ternary props_related(
         }
         Ty const* source_type = source_prop.type;
         Ty const* target_type = prop_type(me, target_prop);
-        if ((target_prop->flags & PROP_OPTIONAL) && get_error_config()->strict_null_checks) {
+        if ((target_prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
             Ty const* parts[2] = { target_type, undefined };
             target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
             if (source_prop.flags & PROP_OPTIONAL) {

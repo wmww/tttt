@@ -8,12 +8,17 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, second insights session)
 - ~22k LoC of C in `src/` (parser 5.0k, new core `src/ty/` 8.0k, legacy type.c 1.9k, display 1.4k, expr 1.2k). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 1137 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
+- `./fasttest.sh`: **1362 / 13165 tests fully pass since the harness fidelity session** (the suite grew: one test per
+  `@option: a,b` configuration, `@noTypesAndSymbols` tests run for errors only; like for like the old 11236 tests are
+  still at 1137 full with errors +153, symbols +230 - `measurements.md` has the split). Before that: 1137 / 11962 (829 before the parser-gaps sessions, 1084 before type core stage
   3, 1100 before 4a, 1115 before 4b1, 1120 before 4b2). Per component: errors 4657, symbols 5981, types 2219 pass (of 11236 that run; the other 726 are
   explained in `measurements.md`).
-- The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
-  compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
-  `@strict: true,false`...) is ignored.
+- The test harness parses every compiler option into one `CompilerOptions` (`src/compiler_options.h`, tsc's defaults
+  resolved, also behind `tttt --target/--lib/--strict...`), runs multi-value directives as separate configurations
+  with tsc's baseline names, and picks the default lib by target like tsc. The *checker* still only reads four of the
+  options; harness-only directives (`@libFiles`, `@noImplicitReferences`, tsconfig files) are ignored. The newly
+  running tests are heavy on JS files (`@allowJs`), which tttt parses as TypeScript: that is now the largest source
+  of junk diagnostics and needs its own plan (triage).
 - Measurement exists now: `./failstats.py` (why tests fail, in aggregate) and `./bench.sh` (vs tsc and tsgo), with
   results in `measurements.md`. Headlines: **the parser is no longer the main blocker**: 10% of the suite (1204 tests) still gets
   a syntax error tsc doesn't report (was 40%, then 25%), and what's left is a flat tail, much of it error-recovery
@@ -113,9 +118,9 @@ scaffolding, and stage 5 must actually prune it - the insights session after sta
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. Type core redesign: ~~plan~~, ~~stages 1-4a, 4b1 (calls + inference), 4b2 (aliases + type operators)~~ done;
-   4b3 (expressions), 5 (delete the old world). Harness fidelity slots in before 4b3 so `CompilerOptions` exists.
+   4b3 (expressions), 5 (delete the old world). `CompilerOptions` exists (harness fidelity session).
 3. Persistent symbols + binder-time flow graph, then narrowing.
-4. Harness fidelity (compiler options, multi-config tests), module resolution.
+4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; module resolution, JS files (`allowJs`/`checkJs`).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark.

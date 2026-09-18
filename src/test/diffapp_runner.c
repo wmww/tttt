@@ -34,7 +34,7 @@ int main(int argc, const char** argv) {
         debug_allocation_count = 0;
 #endif
 
-        BaselineTestCase test_case = run_baseline_test_case(&cache, test_path, true, false);
+        BaselineTestCase test_case = run_baseline_test_case(&cache, test_path, c_sv(""), true, false);
         baseline_test_case_render_errors(&results, &test_case);
         print_section("err", &results);
         cstr_clear(&results);
@@ -53,7 +53,7 @@ int main(int argc, const char** argv) {
         if (debug_allocation_count != 0) {
             // Run again in case the increase came from the cache
             debug_allocation_count = 0;
-            BaselineTestCase rerun_case = run_baseline_test_case(&cache, test_path, true, false);
+            BaselineTestCase rerun_case = run_baseline_test_case(&cache, test_path, c_sv(""), true, false);
             baseline_test_case_drop(&rerun_case);
             if (debug_allocation_count != 0) {
                 eprintln("Detected ", debug_allocation_count, " net allocations");

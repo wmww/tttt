@@ -172,10 +172,10 @@ def main():
     stderr = read(f'{OUT}/stderr.txt') or ''
     logs = parse_stderr(stderr)
 
-    # Every test the harness considered announces itself on stderr, those that then ran have a dumped .types
+    # Every test the harness considered announces itself on stderr, those that then ran have a dumped .errors.txt
     # (deduplicated: the harness reruns a test when the first run left allocations behind, eg a newly cached lib)
     considered = list(dict.fromkeys(l[9:] for l in stderr.splitlines() if l.startswith('### TEST ')))
-    ran = [t for t in considered if os.path.exists(f'{DUMP}/{t}.types')]
+    ran = [t for t in considered if os.path.exists(f'{DUMP}/{t}.errors.txt')]
     crashed_in = considered[-1] if exit_code != 0 and considered else None
 
     with ProcessPoolExecutor() as pool:
@@ -195,34 +195,15 @@ def main():
         rep.append(f'!!! HARNESS DIED (exit {exit_code}) while running {crashed_in}; everything after it is missing. '
                    f'See build/failstats/stderr.txt')
 
-    # Tests that never ran: the harness skips anything without a plain <name>.symbols + <name>.types baseline
-    all_cases = []
-    for sub in ('conformance', 'compiler'):
-        for d, _, files in os.walk(f'{ROOT}/thirdparty/tsc/tests/cases/{sub}'):
-            all_cases += [f[:-3] for f in files if f.endswith('.ts')]
-    if args.filter:
-        rx = re.compile(args.filter, re.I)
-        all_cases = [c for c in all_cases if rx.fullmatch(c)]
+    # Tests that never ran: no .symbols/.types baseline although the test doesn't say @noTypesAndSymbols (tsc doesn't
+    # produce them either, eg when the harness refuses the options). A test file with several configurations
+    # ("@target: es5,es2015") is one test per configuration, named name(target=es5)
     ran_set = set(ran)
-    not_run = [c for c in all_cases if c not in ran_set]
-    variants = collections.Counter()
-    ref_files = os.listdir(REF)
-    variant_names = collections.defaultdict(set)
-    for f in ref_files:
-        m = re.match(r'^(.*?)\((.*)\)\.(types|symbols|errors\.txt)$', f)
-        if m:
-            variant_names[m[1]].update(k.split('=')[0] for k in m[2].split(','))
-    no_baseline = 0
-    for c in not_run:
-        if c in variant_names:
-            for option in variant_names[c]:
-                variants[option] += 1
-        else:
-            no_baseline += 1
-    n_variant = sum(1 for c in not_run if c in variant_names)
-    rep.append(f'{len(all_cases)} test files, {len(ran)} ran, {len(not_run)} did not: {n_variant} only have '
-               f'multi-config baselines (name(option=value).types), {no_baseline} have no types/symbols baseline at all')
-    rep += table('  options varied by the multi-config tests we skip (tests):', variants, 8)
+    not_run = [c for c in considered if c not in ran_set]
+    files = {c.split('(')[0] for c in considered}
+    errors_only = sum(1 for t in ran if not os.path.exists(f'{DUMP}/{t}.types'))
+    rep.append(f'{len(files)} test files, {len(considered)} tests (configurations), {len(ran)} ran ({errors_only} of '
+               f'them errors only: @noTypesAndSymbols), {len(not_run)} did not (no types/symbols baselines)')
 
     n = len(results) or 1
     full = sum(1 for r in results if r['errors'] and r['symbols'] and r['types'])

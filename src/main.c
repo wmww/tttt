@@ -9,12 +9,12 @@
 #include <cleat/filesystem.h>
 #include <time.h>
 
-static const char* const stdlib_names[] = {
-    "default",
-    "es2015.collection",
-    "es2015.iterable",
-    "es2015.generator",
-};
+// What gets loaded when neither --lib nor --target say otherwise (tsc would load just lib.d.ts, which makes for..of
+// over anything but an array an error; bench.sh gives tsc the same list)
+static const char* const default_libs =
+    "es5,dom,webworker.importscripts,scripthost,es2015.collection,es2015.iterable,es2015.generator";
+
+enum { MAX_COMPILER_OPTION_ARGS = 64 };
 
 typedef struct Options {
     bool quiet;   // Only print diagnostics and the final summary (no AST dump)
@@ -23,6 +23,10 @@ typedef struct Options {
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
     const char** paths;
     intptr_t path_count;
+    // --strictNullChecks false, --target es2020 and so on, in order
+    const char* option_names[MAX_COMPILER_OPTION_ARGS];
+    const char* option_values[MAX_COMPILER_OPTION_ARGS];
+    intptr_t option_count;
 } Options;
 
 static double now_ms() {
@@ -41,10 +45,37 @@ static void phase_done(Options const* opts, const char* name, double* last) {
 }
 
 static_failable load_stdlib(Program* program) {
-    for (intptr_t i = 0; i < (intptr_t)c_arraylen(stdlib_names); i++) {
-        try (SourceFile* lib, program_load_stdlib(program, csview_from(stdlib_names[i]), &lib)) bubble;
+    cstr libs = compiler_options_lib_files(program_options(program));
+    csview rest = cstr_sv(&libs);
+    while (rest.size) {
+        intptr_t end = csview_find_sv(rest, c_sv(","));
+        try (SourceFile* lib, program_load_stdlib(program, csview_slice(rest, 0, end), &lib)) cleanup {
+            cstr_drop(&libs);
+        }
         ignore lib;
+        if (end == c_NPOS) break;
+        rest = csview_slice(rest, end + 1, INTPTR_MAX);
     }
+    cstr_drop(&libs);
+    return ok;
+}
+
+// Strict unless told otherwise, then whatever was on the command line
+static_failable apply_compiler_options(Options const* opts, CompilerOptions* options) {
+    bool libs_decided = false;
+    ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
+    for (intptr_t i = 0; i < opts->option_count; i++) {
+        csview name = csview_from(opts->option_names[i]);
+        switch (compiler_options_set(options, name, csview_from(opts->option_values[i]))) {
+            case COMPILER_OPTION_OK: break;
+            case COMPILER_OPTION_UNKNOWN: return err_d("Unknown option --", name);
+            case COMPILER_OPTION_BAD_VALUE:
+                return err_d("Bad value '", opts->option_values[i], "' for option --", name);
+        }
+        if (csview_equals(name, "lib") || csview_equals(name, "target")) libs_decided = true;
+    }
+    if (!libs_decided) ignore compiler_options_set(options, c_sv("lib"), csview_from(default_libs));
+    compiler_options_resolve(options);
     return ok;
 }
 
@@ -69,8 +100,10 @@ static intptr_t report_errors(ErrorCtx* errs) {
 // at all (an unreadable standard library or entry point) come back as errors.
 static_failable check_files(Options const* opts, returns int) {
     ErrorCtx errs = error_ctx_init();
-    error_config_enable_strict(&errs.config);
     Program* program = program_new(&errs, fs);
+    try (apply_compiler_options(opts, program_options(program))) cleanup {
+        destroy_program(program, &errs);
+    }
     double last = now_ms();
 
     if (!opts->no_lib) {
@@ -157,6 +190,8 @@ int main(int argc, const char** argv) {
                 "  --time        print how long each phase took to stderr\n"
                 "  --no-lib      don't load the standard library\n"
                 "  --keep-going  typecheck even after parse or name errors\n"
+                "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
+                "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n"
                 "  --shadow-types  also lower every type to the new type core and report where it disagrees\n"
                 "                (same as TTTT_SHADOW_TYPES=1, TTTT_SHADOW_STATS=1 adds a summary line)"
             );
@@ -171,6 +206,26 @@ int main(int argc, const char** argv) {
             ty_shadow_set_enabled(true);
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
+        } else if (argv[i][0] == '-' && argv[i][1] == '-') {
+            if (opts.option_count == MAX_COMPILER_OPTION_ARGS) {
+                println(color_error, "Too many options", color_normal);
+                return 1;
+            }
+            // Whether this is an option we know is checked once there's a CompilerOptions to try it on. A boolean
+            // option may come without a value, anything else has one
+            bool has_value = i + 1 < argc && argv[i + 1][0] != '-' && (
+                !compiler_option_is_boolean(csview_from(argv[i] + 2)) ||
+                streq(argv[i + 1], "true") || streq(argv[i + 1], "false")
+            );
+            CompilerOptions scratch = compiler_options_init();
+            bool unknown = compiler_options_set(&scratch, csview_from(argv[i] + 2), c_sv("")) == COMPILER_OPTION_UNKNOWN;
+            compiler_options_drop(&scratch);
+            if (unknown) {
+                println(color_error, "Unknown option ", argv[i], color_normal);
+                return 1;
+            }
+            opts.option_names[opts.option_count] = argv[i] + 2;
+            opts.option_values[opts.option_count++] = has_value ? argv[++i] : "true";
         } else {
             // Paths are compacted to the front of argv, which is fine as they never outnumber what we've already read
             opts.paths[opts.path_count++] = argv[i];

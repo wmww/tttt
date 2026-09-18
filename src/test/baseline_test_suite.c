@@ -35,10 +35,19 @@ static void load_dir(BaselineTestSuite* me, csview dir_path) {
         if (fs_is_directory(fs, item.path)) {
             load_dir(me, item.path);
         } else if (fs_is_reg_file(fs, item.path) && csview_ends_with(item.path, ".ts")) {
-            vec_baseline_test_result_push(
-                &my results,
-                make_baseline_test_result(cstr_from_sv(item.path))
-            );
+            // One test per configuration ("@target: es5,es2015" is two). Most files have exactly one
+            cstr contents = cstr_null;
+            VecCStr configs = {0};
+            try (fs_read_file(fs, item.path, &contents)) or_log(error);
+            baseline_test_configurations(cstr_sv(&contents), &configs);
+            for_each (config, vec_cstr, &configs) {
+                vec_baseline_test_result_push(
+                    &my results,
+                    make_baseline_test_result(cstr_from_sv(item.path), cstr_move(config))
+                );
+            }
+            vec_cstr_drop(&configs);
+            cstr_drop(&contents);
 
             if (my show_progress && vec_baseline_test_result_size(&my results) % 100 == 0) {
                 show_collected_test_counts(me);
@@ -101,7 +110,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
         (baseline_test_result_is_pass(test) ? color_good : color_none);
     cstr_append_d(
         target, PRINT_DISPLAY,
-        name_color, " ", test_name_from_path(cstr_sv(&test->source_path)), " ", color_normal
+        name_color, " ", test->name, " ", color_normal
     );
 }
 
@@ -117,8 +126,9 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
 
     for_each (i, vec_baseline_test_result, &my results) {
         intptr_t index = i_index;
-        csview name = test_name_from_path(cstr_sv(&i->source_path));
-        if (!test_passes_filter(me, name)) {
+        csview name = cstr_sv(&i->name);
+        // "-f someTest" means all configurations of it
+        if (!test_passes_filter(me, name) && !test_passes_filter(me, test_name_from_path(cstr_sv(&i->source_path)))) {
             continue;
         }
 
@@ -273,7 +283,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
     cstr_append_d(&results, DEFAULT_DISPLAY, "const tsCommit = \"", my typescript_commit, "\"\nconst baselines = {\n");
 
     for_each (i, vec_baseline_test_result, &my results) {
-        csview name = test_name_from_path(cstr_sv(&i->source_path));
+        csview name = cstr_sv(&i->name);
         check(!csview_contains(name, "\\") && !csview_contains(name, "'"));
         cstr_append_d(
             &results, DEFAULT_DISPLAY,

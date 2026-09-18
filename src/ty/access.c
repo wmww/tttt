@@ -6,7 +6,7 @@
 // parameter is accessed through its constraint.
 
 static Ty const* with_undefined(Checker* me, Ty const* type) {
-    if (!get_error_config()->strict_null_checks) return type;
+    if (!compiler_options()->strict_null_checks) return type;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }

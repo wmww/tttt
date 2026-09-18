@@ -7,7 +7,10 @@ typedef struct BaselineTestSuite BaselineTestSuite;
 
 typedef struct BaselineTestResult {
     cstr source_path;
+    cstr config; // One of baseline_test_configurations(), usually empty
+    cstr name;   // What the baselines are called: the file's name, plus "(config)" if there is one
     bool did_run;
+    bool errors_only; // @noTypesAndSymbols: only the errors are compared, the other two count as passed
     bool has_prev;
     bool errors_prev;
     bool symbols_prev;
@@ -17,8 +20,13 @@ typedef struct BaselineTestResult {
     bool types_passed;
 } BaselineTestResult;
 
-BaselineTestResult make_baseline_test_result(cstr source_path);
+// Takes ownership of both
+BaselineTestResult make_baseline_test_result(cstr source_path, cstr config);
 void baseline_test_result_drop(BaselineTestResult* me);
+static inline int baseline_test_result_cmp(BaselineTestResult const* a, BaselineTestResult const* b) {
+    int by_path = cstr_cmp(&a->source_path, &b->source_path);
+    return by_path ? by_path : cstr_cmp(&a->config, &b->config);
+}
 void baseline_test_result_run(
     BaselineTestResult* me,
     BaselineTestSuite* suite,

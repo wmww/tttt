@@ -169,7 +169,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         if (!i->initializer.binding.has_explicit_type &&
             i->initializer.value.tag == EXPR_IMPLICIT_ANY
         ) {
-            if (get_error_config()->no_implicit_any) {
+            if (compiler_options()->no_implicit_any) {
                 binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
             }
         }

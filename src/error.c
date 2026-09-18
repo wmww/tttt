@@ -83,28 +83,6 @@ void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message) {
     });
 }
 
-void error_config_enable_strict(ErrorConfig* me) {
-    my allow_unreachable_code = true;
-    my allow_unused_labels = true;
-    my always_strict = true;
-    my exact_optional_property_types = true;
-    my no_fallthrough_cases_in_switch = true;
-    //my no_implicit_any = true;
-    my no_implicit_override = true;
-    my no_implicit_returns = true;
-    my no_implicit_this = true;
-    my no_implicit_any = true;
-    my no_property_access_from_index_signature = true;
-    my no_unchecked_indexed_access = true;
-    my no_unused_locals = true;
-    my no_unused_parameters = true;
-    my strict_bind_call_apply = true;
-    my strict_function_types = true;
-    my strict_null_checks = true;
-    my strict_property_initialization = true;
-    my use_unknown_in_catch_variables = true;
-}
-
 void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }
@@ -191,14 +169,3 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
     });
 }
 
-ErrorConfig const* global_error_config_private = nullptr;
-void set_error_config(ErrorConfig const* conf) {
-    // Threadsafety: this will need to be thread-local or refactored entirely
-    panic_if(global_error_config_private, "Global error config set multiple times without being cleared");
-    global_error_config_private = conf;
-}
-
-void clear_error_config() {
-    panic_if(!global_error_config_private, "Global error config cleared when unset");
-    global_error_config_private = nullptr;
-}

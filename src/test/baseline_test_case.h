@@ -58,13 +58,27 @@ typedef struct BaselineTestCase {
     MockFs* fs;
     Program* program;
     cstr lib_list;
+    bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
     VecBaselineTestFile files;
 } BaselineTestCase;
 
 // Never prints to stdout, only prints to stderr if noisy is true, or if it panics. show_logs leaves the checker's
-// log output on without the rest of what noisy does
-BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy, bool show_logs);
+// log output on without the rest of what noisy does. config is one of baseline_test_configurations(), or empty
+BaselineTestCase run_baseline_test_case(
+    BaselineTestCache* cache,
+    csview source_path,
+    csview config,
+    bool noisy,
+    bool show_logs
+);
+
+// A test whose `// @option:` directives give several values for a compiler option ("@target: es5,es2015",
+// "@strict: *", "@module: *,-amd") is one test per combination of those, each with its own baselines named
+// name(option=value,other=value). Appends the configurations of the test with the given source text to out in that
+// form ("option=value,other=value", options sorted by name, all lowercase), or a single empty string for the usual
+// test that has only one
+void baseline_test_configurations(csview test_source, VecCStr* out);
 void baseline_test_case_drop(BaselineTestCase* me);
 
 // These are used to get the data into string form, so it can be compared with known correct results or serialized

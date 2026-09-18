@@ -7,7 +7,7 @@
 
 #define g_class_key BaselineTestResult, baseline_test_result
 #define g_no_clone
-#define g_cmp(a, b) cstr_cmp(&a->source_path, &b->source_path)
+#define g_cmp(a, b) baseline_test_result_cmp(a, b)
 #include <cleat/generic/vec.h>
 
 typedef struct BaselineTestSuite {

@@ -1,6 +1,29 @@
 # Triage
 Uninvestigated items. Triage sessions drain this.
 
+- **JS files are parsed as TypeScript.** Since the harness honours multi-config and `@noTypesAndSymbols` tests, ~900
+  `@allowJs`/`@checkJs` tests run; tttt loads `.js`/`.jsx` files like `.ts` (CommonJS `module.exports`, JSDoc types,
+  no type annotations allowed...) and without `allowJs` tsc doesn't load them at all (TS6504). At minimum: don't
+  report checker errors in JS files unless `checkJs`, and skip them without `allowJs`. `compiler_options()->allow_js`
+  / `check_js` exist. Needs a plan of its own (JSDoc is big).
+- Spurious TS2304 for `import`, `export`, `using`, `const`, `module`, `exports`, `with`, `of` (4k diagnostics): parser
+  recovery turns keywords it can't place into identifier expressions. Partly the JS item above, partly `using`
+  declarations and import/export forms that don't parse. `./failstats.py --syntax` has the shapes.
+- Target-gated diagnostics that can now be implemented because `compiler_options()->target`/`module` exist: TS18028
+  (private identifiers < ES2015), TS2705/TS2468 (async needs `Promise`), TS1375/TS1378 (top-level await), TS2802
+  (iteration needs `downlevelIteration` or ES2015), TS1056 (accessors, ES3). Small each; check counts with
+  `./failstats.py --code`.
+- `for (x of iterator)`: TS2495 "is not an array type or a string type" for anything that isn't an array, now visible
+  because ES2015 libs load (`for-of13`). for..of needs the iteration protocol (`[Symbol.iterator]()`), which needs
+  well-known symbol property names.
+- `Intl`: `declare var Intl` doesn't exist but `declare namespace Intl` is declared in a dozen lib files, and
+  "Tried to add multiple namespaces to declaration Intl" means only the first contributes
+  (`es2021LocalesObjectArgument`: `new Intl.Locale` isn't constructable). Same root cause as the 177-test namespace
+  merging item.
+- Harness: `@libFiles`, `@noImplicitReferences`, `tsconfig.json` in a test, `@currentDirectory`, `@link` are ignored
+  (see `hacks.md`). `@noImplicitReferences` (155 tests) decides which files are roots, probably the most valuable.
+- `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there
+  (the last value of "es5,es2015" is a bad value and ignored -> defaults). Untested.
 - readme.md says development is halted and describes the project as "Tess"'s; refresh it.
 - Catalogue the ~60 PERF/HACK/TODO/FIXME comments in `src/` into hacks.md (smaller-model sub-agent job).
 - Parser: no tokenizer + backtracking with fail cache. Fine for speed in principle, but check parse-error fidelity

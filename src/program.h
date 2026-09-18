@@ -1,6 +1,7 @@
 #pragma once
 
 #include "span.h"
+#include "compiler_options.h"
 
 typedef struct Program Program;
 typedef struct ErrorCtx ErrorCtx;
@@ -11,6 +12,10 @@ typedef union arc_js_object ArcObject;
 
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
+
+// Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and
+// checking of this program read them through compiler_options()
+CompilerOptions* program_options(Program* me);
 
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.
 // Can be called multiple times. Fails if path can't be read; problems inside the file are reported through the

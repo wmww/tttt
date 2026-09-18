@@ -6,54 +6,54 @@ const baselines = {
         types: false,
     },
     'APILibCheck': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_Watch': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_WatchWithDefaults': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_WatchWithOwnWatchHost': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_compile': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_jsdoc': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_linter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_parseConfig': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_transform': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'APISample_watcher': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'ArrowFunctionExpression1': {
         errors: false,
@@ -755,10 +755,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'ambientRequireFunction': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'ambientRequireFunction(module=commonjs)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'ambientRequireFunction(module=preserve)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'ambientStatement1': {
         errors: false,
@@ -1377,7 +1382,7 @@ const baselines = {
     },
     'arrowFunctionParsingGenericInObject': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrowFunctionWithObjectLiteralBody1': {
@@ -1461,7 +1466,7 @@ const baselines = {
         types: false,
     },
     'assertionFunctionWildcardImport1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1917,7 +1922,7 @@ const baselines = {
     },
     'asyncFunctionReturnType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionTempVariableScoping': {
@@ -1951,13 +1956,13 @@ const baselines = {
         types: false,
     },
     'asyncIteratorExtraParameters': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'asyncYieldStarContextualType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'augmentArray': {
@@ -2172,7 +2177,7 @@ const baselines = {
     },
     'awaitCallExpressionInSyncFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitExpressionInnerCommentEmit': {
@@ -2197,7 +2202,7 @@ const baselines = {
     },
     'awaitUnionPromise': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitedType': {
@@ -2206,8 +2211,8 @@ const baselines = {
         types: false,
     },
     'awaitedTypeCrash': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'awaitedTypeJQuery': {
@@ -2217,7 +2222,7 @@ const baselines = {
     },
     'awaitedTypeNoLib': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitedTypeStrictNull': {
@@ -2416,14 +2421,14 @@ const baselines = {
         types: true,
     },
     'binderBinaryExpressionStress': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'binderBinaryExpressionStressJs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'bindingPatternCannotBeOnlyInferenceSource': {
         errors: false,
@@ -2886,9 +2891,9 @@ const baselines = {
         types: false,
     },
     'capturedLetConstInLoop14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'capturedLetConstInLoop1_ES6': {
         errors: true,
@@ -3350,10 +3355,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'circularGetAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'circularGetAccessor(noimplicitany=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'circularGetAccessor(noimplicitany=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'circularInferredTypeOfVariable': {
         errors: true,
@@ -3521,9 +3531,9 @@ const baselines = {
         types: false,
     },
     'classExpressionPropertyModifiers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'classExpressionTest1': {
         errors: true,
@@ -3681,7 +3691,7 @@ const baselines = {
         types: false,
     },
     'classFieldSuperAccessibleJs2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -3810,10 +3820,25 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'classMemberInitializerScoping2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classMemberInitializerScoping2(target=es2017,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'classMemberInitializerScoping2(target=es2017,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'classMemberInitializerScoping2(target=esnext,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'classMemberInitializerScoping2(target=esnext,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classMemberInitializerWithLamdaScoping': {
         errors: false,
@@ -3861,9 +3886,9 @@ const baselines = {
         types: true,
     },
     'classNameReferencesInStaticElements': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'classNonUniqueSymbolMethodHasSymbolIndexer': {
         errors: true,
@@ -3936,7 +3961,7 @@ const baselines = {
         types: false,
     },
     'classStaticPropertyTypeGuard': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -4106,7 +4131,7 @@ const baselines = {
         types: false,
     },
     'coAndContraVariantInferences8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4996,9 +5021,9 @@ const baselines = {
         types: false,
     },
     'commonMissingSemicolons': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'commonSourceDir1': {
         errors: true,
@@ -5145,15 +5170,25 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'computedEnumMemberSyntacticallyString': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'computedEnumMemberSyntacticallyString(isolatedmodules=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'computedEnumMemberSyntacticallyString2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'computedEnumMemberSyntacticallyString(isolatedmodules=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'computedEnumMemberSyntacticallyString2(isolatedmodules=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'computedEnumMemberSyntacticallyString2(isolatedmodules=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'computedEnumTypeWidening': {
         errors: false,
@@ -5191,7 +5226,7 @@ const baselines = {
         types: false,
     },
     'computedPropertiesWithSetterAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5595,15 +5630,20 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'constEnumNamespaceReferenceCausesNoImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'constEnumNamespaceReferenceCausesNoImport(isolatedmodules=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'constEnumNamespaceReferenceCausesNoImport(isolatedmodules=true)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'constEnumNamespaceReferenceCausesNoImport2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'constEnumNoEmitReexport': {
         errors: false,
@@ -5896,7 +5936,7 @@ const baselines = {
         types: false,
     },
     'contextualExpressionTypecheckingDoesntBlowStack': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6046,7 +6086,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6066,8 +6106,8 @@ const baselines = {
         types: false,
     },
     'contextualTypeIterableUnions': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'contextualTypeLogicalOr': {
@@ -6087,12 +6127,12 @@ const baselines = {
     },
     'contextualTypeOnYield1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeOnYield2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeSelfReferencing': {
@@ -6437,7 +6477,7 @@ const baselines = {
     },
     'contextuallyTypeAsyncFunctionReturnTypeFromUnion': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypeGeneratorReturnTypeFromUnion': {
@@ -6465,10 +6505,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'contextuallyTypedOptionalProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'contextuallyTypedParametersOptionalInJSDoc': {
         errors: false,
@@ -6691,7 +6736,7 @@ const baselines = {
         types: false,
     },
     'controlFlowDestructuringLoop': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -6876,9 +6921,9 @@ const baselines = {
         types: false,
     },
     'crashInEmitTokenWithComment': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'crashInGetTextOfComputedPropertyName': {
         errors: false,
@@ -6892,7 +6937,7 @@ const baselines = {
     },
     'crashInYieldStarInAsyncFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'crashInresolveReturnStatement': {
@@ -6931,9 +6976,9 @@ const baselines = {
         types: false,
     },
     'crossFileOverloadModifierConsistency': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'curiousNestedConditionalEvaluationResult': {
         errors: true,
@@ -6941,7 +6986,7 @@ const baselines = {
         types: false,
     },
     'customAsyncIterator': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7461,34 +7506,59 @@ const baselines = {
         types: false,
     },
     'declarationEmitBundlerConditions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'declarationEmitCastReusesTypeNode1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationEmitCastReusesTypeNode1(strictnullchecks=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'declarationEmitCastReusesTypeNode2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationEmitCastReusesTypeNode1(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'declarationEmitCastReusesTypeNode3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationEmitCastReusesTypeNode2(strictnullchecks=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'declarationEmitCastReusesTypeNode4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationEmitCastReusesTypeNode2(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'declarationEmitCastReusesTypeNode5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationEmitCastReusesTypeNode3(strictnullchecks=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationEmitCastReusesTypeNode3(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationEmitCastReusesTypeNode4(strictnullchecks=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationEmitCastReusesTypeNode4(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationEmitCastReusesTypeNode5(strictnullchecks=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationEmitCastReusesTypeNode5(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitClassAccessorsJs1': {
         errors: false,
@@ -7795,10 +7865,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'declarationEmitExactOptionalPropertyTypesNodeNotReused': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'declarationEmitExpandoPropertyPrivateName': {
         errors: false,
@@ -8041,9 +8116,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitJsReExportDefault': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitKeywordDestructuring': {
         errors: false,
@@ -8056,7 +8131,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLateBoundAssignments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8066,7 +8141,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitLateBoundJSAssignments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8121,9 +8196,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitMonorepoBaseUrl': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitMultipleComputedNamesSameDomain': {
         errors: false,
@@ -8296,9 +8371,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitPrivatePromiseLikeInterface': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitPrivateReadonlyLiterals': {
         errors: true,
@@ -8346,9 +8421,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitRedundantTripleSlashModuleAugmentation': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitReexportedSymlinkReference': {
         errors: false,
@@ -8456,9 +8531,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitTripleSlashReferenceAmbientModule': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitTupleRestSignatureLeadingVariadic': {
         errors: true,
@@ -8526,8 +8601,8 @@ const baselines = {
         types: false,
     },
     'declarationEmitTypeofRest': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'declarationEmitTypeofThisInClass': {
@@ -8800,15 +8875,25 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'decoratorMetadataElidedImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'decoratorMetadataElidedImport(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'decoratorMetadataElidedImportOnDeclare': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'decoratorMetadataElidedImport(module=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'decoratorMetadataElidedImportOnDeclare(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'decoratorMetadataElidedImportOnDeclare(module=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'decoratorMetadataForMethodWithNoReturnTypeAnnotation01': {
         errors: true,
@@ -8847,7 +8932,7 @@ const baselines = {
     },
     'decoratorMetadataPromise': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataRestParameterWithImportedType': {
@@ -8996,7 +9081,7 @@ const baselines = {
         types: false,
     },
     'deeplyNestedConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9006,9 +9091,9 @@ const baselines = {
         types: false,
     },
     'deeplyNestedTemplateLiteralIntersection': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'defaultArgsInFunctionExpressions': {
         errors: false,
@@ -9091,7 +9176,7 @@ const baselines = {
         types: false,
     },
     'defaultParameterAddsUndefinedWithStrictNullChecks': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -9160,15 +9245,25 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'deleteExpressionMustBeOptional': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'deleteExpressionMustBeOptional(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'deleteExpressionMustBeOptional_exactOptionalPropertyTypes': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'deleteExpressionMustBeOptional(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'deleteOperator1': {
         errors: false,
@@ -9265,10 +9360,25 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'destructureCatchClause': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructureCatchClause(strict=false,useunknownincatchvariables=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructureCatchClause(strict=false,useunknownincatchvariables=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructureCatchClause(strict=true,useunknownincatchvariables=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructureCatchClause(strict=true,useunknownincatchvariables=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'destructureComputedProperty': {
         errors: false,
@@ -9401,7 +9511,7 @@ const baselines = {
         types: false,
     },
     'destructuringTypeGuardFlow': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -9531,7 +9641,7 @@ const baselines = {
         types: true,
     },
     'discriminateWithDivergentAccessors1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9540,25 +9650,45 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'discriminateWithOptionalProperty1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'discriminateWithOptionalProperty1(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'discriminateWithOptionalProperty2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'discriminateWithOptionalProperty1(exactoptionalpropertytypes=true)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'discriminateWithOptionalProperty3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'discriminateWithOptionalProperty2(exactoptionalpropertytypes=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'discriminateWithOptionalProperty4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'discriminateWithOptionalProperty2(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'discriminateWithOptionalProperty3(exactoptionalpropertytypes=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'discriminateWithOptionalProperty3(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'discriminateWithOptionalProperty4(exactoptionalpropertytypes=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'discriminateWithOptionalProperty4(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'discriminatedUnionErrorMessage': {
         errors: false,
@@ -9735,10 +9865,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'doYouNeedToChangeYourTargetLibraryES2023': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'doYouNeedToChangeYourTargetLibraryES2023(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'doYouNeedToChangeYourTargetLibraryES2023(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'doesNotNarrowUnionOfConstructorsWithInstanceof': {
         errors: true,
@@ -10305,10 +10440,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'elidedJSImport2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'elidedJSImport2(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'elidedJSImport2(module=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'elidingImportNames': {
         errors: true,
@@ -10385,10 +10525,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'emitDecoratorMetadata_isolatedModules': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emitDecoratorMetadata_isolatedModules(module=commonjs)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'emitDecoratorMetadata_isolatedModules(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'emitDecoratorMetadata_object': {
         errors: true,
@@ -10400,10 +10545,70 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'emitHelpersWithLocalCollisions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emitHelpersWithLocalCollisions(module=amd)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=es2020)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=es6)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=none)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=preserve)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=system)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'emitHelpersWithLocalCollisions(module=umd)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'emitMemberAccessExpression': {
         errors: true,
@@ -10485,10 +10690,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'emptyAnonymousObjectNarrowing': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emptyAnonymousObjectNarrowing(strictnullchecks=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'emptyAnonymousObjectNarrowing(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'emptyArgumentsListComment': {
         errors: true,
@@ -10726,9 +10936,9 @@ const baselines = {
         types: true,
     },
     'enumNoInitializerFollowsNonLiteralInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'enumNumbering1': {
         errors: true,
@@ -10781,9 +10991,9 @@ const baselines = {
         types: false,
     },
     'enumWithNonLiteralStringInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'enumWithParenthesizedInitializer1': {
         errors: true,
@@ -10840,10 +11050,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'errorCause': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'errorCause(target=es2021)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'errorCause(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'errorCause(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'errorConstructorSubtypes': {
         errors: false,
@@ -11037,7 +11257,7 @@ const baselines = {
     },
     'es2018ObjectAssign': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'es5-amd': {
@@ -11866,9 +12086,9 @@ const baselines = {
         types: false,
     },
     'esDecoratorsClassFieldsCrash': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esModuleInterop': {
         errors: false,
@@ -11960,10 +12180,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'esmNoSynthesizedDefault': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esmNoSynthesizedDefault(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'esmNoSynthesizedDefault(module=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'evalAfter0': {
         errors: false,
@@ -12131,7 +12356,7 @@ const baselines = {
         types: false,
     },
     'expandoFunctionSymbolProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12300,10 +12525,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'exportDeclarationForModuleOrEnumWithMemberOfSameName': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportDeclarationForModuleOrEnumWithMemberOfSameName(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportDeclarationForModuleOrEnumWithMemberOfSameName(module=system)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportDeclarationInInternalModule': {
         errors: true,
@@ -12342,7 +12572,7 @@ const baselines = {
     },
     'exportDefaultAsyncFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportDefaultAsyncFunction2': {
@@ -12361,9 +12591,9 @@ const baselines = {
         types: true,
     },
     'exportDefaultDuplicateCrash': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'exportDefaultForNonInstantiatedModule': {
         errors: false,
@@ -12376,9 +12606,9 @@ const baselines = {
         types: true,
     },
     'exportDefaultImportedType': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'exportDefaultInterface': {
         errors: true,
@@ -12480,15 +12710,105 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'exportEmptyArrayBindingPattern': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportEmptyArrayBindingPattern(module=amd,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'exportEmptyObjectBindingPattern': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportEmptyArrayBindingPattern(module=amd,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=commonjs,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=commonjs,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=es2015,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=es2015,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=esnext,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=esnext,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=system,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyArrayBindingPattern(module=system,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=amd,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=amd,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=commonjs,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=commonjs,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=es2015,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=es2015,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=esnext,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=esnext,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=system,target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'exportEmptyObjectBindingPattern(module=system,target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportEqualCallable': {
         errors: false,
@@ -12605,10 +12925,55 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'exportObjectRest': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportObjectRest(module=amd,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=amd,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=es2015,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=es2015,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'exportObjectRest(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'exportPrivateType': {
         errors: true,
@@ -13002,7 +13367,7 @@ const baselines = {
     },
     'extractInferenceImprovement': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'fakeInfinity1': {
@@ -13135,10 +13500,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'findLast': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'findLast(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'findLast(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'firstMatchRegExpMatchArray': {
         errors: false,
@@ -13300,10 +13670,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'forwardRefInTypeDeclaration': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'forwardRefInTypeDeclaration(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'forwardRefInTypeDeclaration(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'freshLiteralInference': {
         errors: true,
@@ -13355,10 +13730,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'functionAssignabilityWithArrayLike01': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'functionAssignabilityWithArrayLike01(strict=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'functionAssignabilityWithArrayLike01(strict=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'functionAssignment': {
         errors: false,
@@ -13992,13 +14372,18 @@ const baselines = {
     },
     'functionsMissingReturnStatementsAndExpressionsStrictNullChecks': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
-    'functionsWithImplicitReturnTypeAssignableToUndefined': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'functionsWithImplicitReturnTypeAssignableToUndefined(strictnullchecks=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'functionsWithImplicitReturnTypeAssignableToUndefined(strictnullchecks=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'functionsWithModifiersInBlocks1': {
         errors: false,
@@ -14066,7 +14451,7 @@ const baselines = {
         types: false,
     },
     'generatorES6_6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15327,7 +15712,7 @@ const baselines = {
     },
     'implicitAnyGenericTypeInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'implicitAnyGenerics': {
@@ -15375,25 +15760,80 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'impliedNodeFormatEmit1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'impliedNodeFormatEmit1(module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'impliedNodeFormatEmit2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'impliedNodeFormatEmit1(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'impliedNodeFormatEmit3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'impliedNodeFormatEmit1(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'impliedNodeFormatEmit4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'impliedNodeFormatEmit1(module=preserve)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit1(module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit1(module=umd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit2(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit2(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit2(module=preserve)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit3(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit3(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit3(module=preserve)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit4(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit4(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'impliedNodeFormatEmit4(module=preserve)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'impliedNodeFormatInterop1': {
         errors: false,
@@ -15565,10 +16005,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'importHelpersCommonJSJavaScript': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersCommonJSJavaScript(verbatimmodulesyntax=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersCommonJSJavaScript(verbatimmodulesyntax=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'importHelpersDeclarations': {
         errors: true,
@@ -15591,9 +16036,9 @@ const baselines = {
         types: false,
     },
     'importHelpersNoEmitHelpersExportDefault': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'importHelpersNoHelpers': {
         errors: false,
@@ -15630,40 +16075,325 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'importHelpersWithExportStarAs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=false,module=amd)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'importHelpersWithImportOrExportDefault': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=false,module=commonjs)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'importHelpersWithImportOrExportDefaultNoTslib.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=false,module=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'importHelpersWithImportOrExportDefaultNoTslib.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=false,module=es2020)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'importHelpersWithImportOrExportDefaultNoTslib.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=false,module=system)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'importHelpersWithImportStarAs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=true,module=amd)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'importHelpersWithLocalCollisions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importHelpersWithExportStarAs(esmoduleinterop=true,module=commonjs)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithExportStarAs(esmoduleinterop=true,module=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithExportStarAs(esmoduleinterop=true,module=es2020)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithExportStarAs(esmoduleinterop=true,module=system)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=true,module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=true,module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=true,module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=true,module=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=true,module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=false,module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=false,module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=false,module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=false,module=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=false,module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=true,module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=true,module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=true,module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=true,module=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.2(esmoduleinterop=true,module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=false,module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=false,module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=false,module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=false,module=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=false,module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=true,module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=true,module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=true,module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=true,module=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportOrExportDefaultNoTslib.3(esmoduleinterop=true,module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=false,module=amd)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=false,module=commonjs)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=false,module=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=false,module=es2020)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=false,module=system)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=true,module=amd)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=true,module=commonjs)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=true,module=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=true,module=es2020)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithImportStarAs(esmoduleinterop=true,module=system)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'importHelpersWithLocalCollisions(module=amd)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithLocalCollisions(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithLocalCollisions(module=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'importHelpersWithLocalCollisions(module=system)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importInTypePosition': {
         errors: false,
@@ -15876,7 +16606,7 @@ const baselines = {
         types: false,
     },
     'inKeywordAndIntersection': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -15890,10 +16620,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'inKeywordTypeguard': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'inKeywordTypeguard(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'inKeywordTypeguard(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'inOperator': {
         errors: false,
@@ -15990,10 +16725,20 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'indexAt': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'indexAt(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'indexAt(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'indexAt(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'indexClassByNumber': {
         errors: true,
@@ -16161,7 +16906,7 @@ const baselines = {
         types: false,
     },
     'indexedAccessTypeConstraints': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17622,7 +18367,7 @@ const baselines = {
     },
     'intersectionWithConflictingPrivates': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionWithConstructSignaturePrototypeResult': {
@@ -17635,15 +18380,25 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'intersectionsAndOptionalProperties2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'intersectionsAndOptionalProperties2(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'intersectionsAndOptionalProperties3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'intersectionsAndOptionalProperties2(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'intersectionsAndOptionalProperties3(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'intersectionsAndOptionalProperties3(exactoptionalpropertytypes=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'intersectionsAndReadonlyProperties': {
         errors: false,
@@ -17857,7 +18612,7 @@ const baselines = {
     },
     'isolatedDeclarationErrorsObjects': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'isolatedDeclarationErrorsReturnTypes': {
@@ -17900,10 +18655,25 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'isolatedDeclarationsStrictBuiltinIteratorReturn': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'isolatedDeclarationsStrictBuiltinIteratorReturn(isolateddeclarations=false,strictbuiltiniteratorreturn=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'isolatedDeclarationsStrictBuiltinIteratorReturn(isolateddeclarations=false,strictbuiltiniteratorreturn=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'isolatedDeclarationsStrictBuiltinIteratorReturn(isolateddeclarations=true,strictbuiltiniteratorreturn=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'isolatedDeclarationsStrictBuiltinIteratorReturn(isolateddeclarations=true,strictbuiltiniteratorreturn=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'isolatedModulesAmbientConstEnum': {
         errors: false,
@@ -17931,14 +18701,14 @@ const baselines = {
         types: false,
     },
     'isolatedModulesExportDeclarationType': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'isolatedModulesExportImportUninstantiatedNamespace': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'isolatedModulesExternalModuleForced': {
         errors: true,
@@ -18016,9 +18786,9 @@ const baselines = {
         types: false,
     },
     'isolatedModulesReExportAlias': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'isolatedModulesReExportType': {
         errors: false,
@@ -18030,15 +18800,45 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'isolatedModulesShadowGlobalTypeNotValue': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=false,verbatimmodulesyntax=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'isolatedModulesSketchyAliasLocalMerge': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=false,verbatimmodulesyntax=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=false,verbatimmodulesyntax=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=false,verbatimmodulesyntax=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=true,verbatimmodulesyntax=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=true,verbatimmodulesyntax=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'isolatedModulesSourceMap': {
         errors: true,
@@ -18070,15 +18870,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'iterableTReturnTNext': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'iterableTReturnTNext(strictbuiltiniteratorreturn=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'iterableTReturnTNext(strictbuiltiniteratorreturn=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'iteratorExtraParameters': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'iteratorsAndStrictNullChecks': {
         errors: true,
@@ -18166,9 +18971,9 @@ const baselines = {
         types: false,
     },
     'jsEmitIntersectionProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'jsEnumCrossFileExport': {
         errors: true,
@@ -18436,9 +19241,9 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationOptionalClassElementSyntaxOfClass': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationOptionalParameter': {
         errors: false,
@@ -18486,9 +19291,9 @@ const baselines = {
         types: false,
     },
     'jsFileCompilationTypeArgumentSyntaxOfCall': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationTypeAssertions': {
         errors: false,
@@ -18666,7 +19471,7 @@ const baselines = {
         types: true,
     },
     'jsdocArrayObjectPromiseImplicitAny': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -18890,15 +19695,35 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'jsxRuntimePragma': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'jsxRuntimePragma(jsx=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'jsxSpreadTag': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'jsxRuntimePragma(jsx=react)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxRuntimePragma(jsx=react-jsx)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxRuntimePragma(jsx=react-jsxdev)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxSpreadTag(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxSpreadTag(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'keepImportsInDts1': {
         errors: true,
@@ -18946,8 +19771,8 @@ const baselines = {
         types: false,
     },
     'keyofObjectWithGlobalSymbolIncluded': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'keywordExpressionInternalComments': {
@@ -19021,7 +19846,7 @@ const baselines = {
         types: false,
     },
     'lateBoundFunctionMemberAssignmentDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19225,10 +20050,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'libReplacement': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'libReplacement(libreplacement=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'libReplacement(libreplacement=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'libTypeScriptOverrideSimple': {
         errors: false,
@@ -19387,12 +20217,12 @@ const baselines = {
     },
     'mapConstructor': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mapConstructorOnReadonlyTuple': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mapGroupBy': {
@@ -19711,7 +20541,7 @@ const baselines = {
         types: false,
     },
     'mergedInstantiationAssignment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20087,7 +20917,7 @@ const baselines = {
     },
     'modularizeLibrary_Worker.iterable': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleAliasAsFunctionArgument': {
@@ -20515,20 +21345,50 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'moduleNodeDefaultImports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'moduleNodeDefaultImports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'moduleNodeImportRequireEmit': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'moduleNodeDefaultImports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'moduleNoneDynamicImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'moduleNodeDefaultImports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleNodeImportRequireEmit(target=es2016)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleNodeImportRequireEmit(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleNodeImportRequireEmit(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleNodeImportRequireEmit(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleNoneDynamicImport(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleNoneDynamicImport(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'moduleNoneErrors': {
         errors: false,
@@ -20556,9 +21416,9 @@ const baselines = {
         types: false,
     },
     'modulePreserve3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'modulePreserve4': {
         errors: false,
@@ -20566,19 +21426,24 @@ const baselines = {
         types: false,
     },
     'modulePreserve5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'modulePreserveImportHelpers': {
         errors: true,
         symbols: true,
         types: false,
     },
-    'modulePreserveTopLevelAwait1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'modulePreserveTopLevelAwait1(target=es2016)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'modulePreserveTopLevelAwait1(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'modulePrologueAMD': {
         errors: true,
@@ -20700,10 +21565,45 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'moduleResolutionWithModule': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'moduleResolutionWithModule(module=commonjs,moduleresolution=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=commonjs,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=node16,moduleresolution=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=node16,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=node18,moduleresolution=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=node18,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=nodenext,moduleresolution=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'moduleResolutionWithModule(module=nodenext,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'moduleResolutionWithRequire': {
         errors: true,
@@ -21231,7 +22131,7 @@ const baselines = {
         types: false,
     },
     'narrowByClauseExpressionInSwitchTrue1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21291,14 +22191,29 @@ const baselines = {
         types: false,
     },
     'narrowByParenthesizedSwitchExpression': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=false,nouncheckedindexedaccess=false)': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'narrowBySwitchDiscriminantUndefinedCase1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=false,nouncheckedindexedaccess=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=true,nouncheckedindexedaccess=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'narrowBySwitchDiscriminantUndefinedCase1(exactoptionalpropertytypes=true,nouncheckedindexedaccess=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'narrowCommaOperatorNestedWithinLHS': {
         errors: false,
@@ -21401,7 +22316,7 @@ const baselines = {
         types: false,
     },
     'narrowingOrderIndependent': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21412,7 +22327,7 @@ const baselines = {
     },
     'narrowingPastLastAssignmentInModule': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'narrowingPlainJsNoCrash1': {
@@ -21431,7 +22346,7 @@ const baselines = {
         types: false,
     },
     'narrowingTypeofDiscriminant': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21471,7 +22386,7 @@ const baselines = {
         types: false,
     },
     'narrowingUnionWithBang': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21676,9 +22591,9 @@ const baselines = {
         types: false,
     },
     'nestedSuperCallEmit': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'nestedThisContainer': {
         errors: true,
@@ -21695,10 +22610,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'neverAsDiscriminantType': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'neverAsDiscriminantType(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'neverAsDiscriminantType(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'newAbstractInstance': {
         errors: false,
@@ -21761,7 +22681,7 @@ const baselines = {
         types: false,
     },
     'newNamesInGlobalAugmentations1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22136,8 +23056,8 @@ const baselines = {
         types: false,
     },
     'noImplicitReturnsInAsync1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'noImplicitReturnsInAsync2': {
@@ -22266,7 +23186,7 @@ const baselines = {
         types: true,
     },
     'noSubtypeReduction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22545,10 +23465,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'nonNullableAndObjectIntersections': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nonNullableAndObjectIntersections(strict=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'nonNullableAndObjectIntersections(strict=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'nonNullableReduction': {
         errors: false,
@@ -22735,10 +23660,40 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'numericUnderscoredSeparator': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'numericUnderscoredSeparator(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'numericUnderscoredSeparator(target=es2016)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'numericUnderscoredSeparator(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'numericUnderscoredSeparator(target=es2018)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'numericUnderscoredSeparator(target=es2019)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'numericUnderscoredSeparator(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'numericUnderscoredSeparator(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'objectAssignLikeNonUnionResult': {
         errors: true,
@@ -22792,7 +23747,7 @@ const baselines = {
     },
     'objectFromEntries': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectGroupBy': {
@@ -22932,7 +23887,7 @@ const baselines = {
     },
     'objectLiteralPropertyImplicitlyAny': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralReferencingInternalProperties': {
@@ -23001,9 +23956,9 @@ const baselines = {
         types: false,
     },
     'objectRestSpread': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'objectSpreadWithinMethodWithinObjectWithSpread': {
         errors: true,
@@ -23065,15 +24020,25 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'optionalChainWithInstantiationExpression1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainWithInstantiationExpression1(target=es2019)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'optionalChainWithInstantiationExpression2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainWithInstantiationExpression1(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'optionalChainWithInstantiationExpression2(target=es2019)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'optionalChainWithInstantiationExpression2(target=es2020)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'optionalConstructorArgInSuper': {
         errors: true,
@@ -23596,9 +24561,9 @@ const baselines = {
         types: true,
     },
     'parameterDecoratorsEmitCrash': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'parameterDestructuringObjectLiteral': {
         errors: false,
@@ -23681,19 +24646,19 @@ const baselines = {
         types: true,
     },
     'parametersSyntaxErrorNoCrash1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'parametersSyntaxErrorNoCrash2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'parametersSyntaxErrorNoCrash3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'paramsOnlyHaveLiteralTypesWhenAppropriatelyContextualized': {
         errors: false,
@@ -23941,7 +24906,7 @@ const baselines = {
         types: false,
     },
     'partialTypeNarrowedToByTypeGuard': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24091,19 +25056,19 @@ const baselines = {
         types: true,
     },
     'pathMappingInheritedBaseUrl': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingWithoutBaseUrl1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingWithoutBaseUrl2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'pathsValidation1': {
         errors: false,
@@ -24121,14 +25086,14 @@ const baselines = {
         types: true,
     },
     'pathsValidation4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'pathsValidation5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'performanceComparisonOfStructurallyIdenticalInterfacesWithGenericSignatures': {
         errors: true,
@@ -24557,7 +25522,7 @@ const baselines = {
     },
     'promiseEmptyTupleNoException': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'promiseIdentity': {
@@ -24606,12 +25571,12 @@ const baselines = {
         types: false,
     },
     'promiseTry': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'promiseType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24626,18 +25591,18 @@ const baselines = {
         types: false,
     },
     'promiseTypeStrictNull': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'promiseVoidErrorCallback': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'promiseWithResolvers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'promises': {
@@ -25007,7 +25972,7 @@ const baselines = {
     },
     'reachabilityChecks7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reachabilityChecks8': {
@@ -25555,10 +26520,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'regExpWithOpenBracketInCharClass': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'regExpWithOpenBracketInCharClass(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'regExpWithOpenBracketInCharClass(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'regExpWithOpenBracketInCharClass(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'regExpWithSlashInCharClass': {
         errors: false,
@@ -25567,18 +26542,23 @@ const baselines = {
     },
     'regexMatchAll-esnext': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'regexMatchAll': {
         errors: false,
+        symbols: true,
+        types: false,
+    },
+    'regexpExecAndMatchTypeUsages(strict=false)': {
+        errors: false,
         symbols: false,
         types: false,
     },
-    'regexpExecAndMatchTypeUsages': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'regexpExecAndMatchTypeUsages(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'regularExpressionAnnexB': {
         errors: false,
@@ -25600,10 +26580,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'regularExpressionScanning': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'regularExpressionScanning(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'regularExpressionScanning(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'regularExpressionScanning(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'regularExpressionUnicodePropertyValueExpressionSuggestions': {
         errors: false,
@@ -25905,10 +26895,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'resolutionCandidateFromPackageJsonField2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'resolutionCandidateFromPackageJsonField2(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'resolutionCandidateFromPackageJsonField2(moduleresolution=node10)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'resolveInterfaceNameWithSameLetDeclarationName1': {
         errors: true,
@@ -26111,9 +27106,9 @@ const baselines = {
         types: false,
     },
     'reuseTypeAnnotationImportTypeInGlobalThisTypeArgument': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'reverseInferenceInContextualInstantiation': {
         errors: true,
@@ -26256,9 +27251,9 @@ const baselines = {
         types: false,
     },
     'selfNameAndImportsEmitInclusion': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'selfRef': {
         errors: false,
@@ -26430,25 +27425,95 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'sideEffectImports1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'sideEffectImports1(module=commonjs,nouncheckedsideeffectimports=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'sideEffectImports2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'sideEffectImports1(module=commonjs,nouncheckedsideeffectimports=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'sideEffectImports3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'sideEffectImports1(module=nodenext,nouncheckedsideeffectimports=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'sideEffectImports4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'sideEffectImports1(module=nodenext,nouncheckedsideeffectimports=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'sideEffectImports1(module=preserve,nouncheckedsideeffectimports=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'sideEffectImports1(module=preserve,nouncheckedsideeffectimports=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'sideEffectImports2(noimplicitany=false,nouncheckedsideeffectimports=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'sideEffectImports2(noimplicitany=false,nouncheckedsideeffectimports=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'sideEffectImports2(noimplicitany=true,nouncheckedsideeffectimports=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'sideEffectImports2(noimplicitany=true,nouncheckedsideeffectimports=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'sideEffectImports3(moduledetection=auto,nouncheckedsideeffectimports=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'sideEffectImports3(moduledetection=auto,nouncheckedsideeffectimports=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'sideEffectImports3(moduledetection=force,nouncheckedsideeffectimports=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'sideEffectImports3(moduledetection=force,nouncheckedsideeffectimports=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'sideEffectImports3(moduledetection=legacy,nouncheckedsideeffectimports=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'sideEffectImports3(moduledetection=legacy,nouncheckedsideeffectimports=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'sideEffectImports4(nouncheckedsideeffectimports=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'sideEffectImports4(nouncheckedsideeffectimports=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'sigantureIsSubTypeIfTheyAreIdentical': {
         errors: true,
@@ -26511,7 +27576,7 @@ const baselines = {
         types: false,
     },
     'silentNeverPropagation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27175,10 +28240,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'spreadObjectPermutations': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'spreadObjectPermutations(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'spreadObjectPermutations(exactoptionalpropertytypes=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'spreadObjectWithIndexDoesNotAddUndefinedToLocalIndex': {
         errors: true,
@@ -27291,9 +28361,9 @@ const baselines = {
         types: false,
     },
     'staticInitializersAndLegacyClassDecorators': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'staticInstanceResolution': {
         errors: true,
@@ -27551,7 +28621,7 @@ const baselines = {
         types: false,
     },
     'strictTypeofUnionNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -27630,10 +28700,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'stripMembersOptionality': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'stripMembersOptionality(exactoptionalpropertytypes=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'stripMembersOptionality(exactoptionalpropertytypes=true)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'structural1': {
         errors: true,
@@ -27706,8 +28781,8 @@ const baselines = {
         types: false,
     },
     'substitutionTypePassedToExtends': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'substitutionTypesCompareCorrectlyInRestrictiveInstances': {
@@ -28056,7 +29131,7 @@ const baselines = {
         types: false,
     },
     'symbolObserverMismatchingPolyfillsWorkTogether': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28681,7 +29756,7 @@ const baselines = {
         types: false,
     },
     'thisIndexOnExistingReadonlyFieldIsNotNever': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28840,10 +29915,25 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'tripleSlashTypesReferenceWithMissingExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tripleSlashTypesReferenceWithMissingExports(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'tripleSlashTypesReferenceWithMissingExports(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'tripleSlashTypesReferenceWithMissingExports(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'tripleSlashTypesReferenceWithMissingExports(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'trivialSubtypeReductionNoStructuralCheck': {
         errors: false,
@@ -28901,9 +29991,9 @@ const baselines = {
         types: false,
     },
     'tsconfigExtendsPackageJsonExportsWildcard': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'tsconfigMapOptionsAreCaseInsensitive': {
         errors: true,
@@ -29057,12 +30147,12 @@ const baselines = {
     },
     'typeArgumentInferenceApparentType1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeArgumentInferenceApparentType2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeArgumentInferenceOrdering': {
@@ -29107,7 +30197,7 @@ const baselines = {
     },
     'typeAssignabilityErrorMessage': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeCheckExportsVariable': {
@@ -29161,7 +30251,7 @@ const baselines = {
         types: false,
     },
     'typeGuardConstructorNarrowAny': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29171,7 +30261,7 @@ const baselines = {
         types: false,
     },
     'typeGuardConstructorPrimitiveTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29196,12 +30286,12 @@ const baselines = {
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty11': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty12': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29221,17 +30311,17 @@ const baselines = {
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29376,8 +30466,8 @@ const baselines = {
         types: true,
     },
     'typeOfYieldWithUnionInContextualReturnType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'typeParamExtendsOtherTypeParam': {
@@ -29836,9 +30926,9 @@ const baselines = {
         types: false,
     },
     'typedArrayConstructorOverloads': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'typedArrays-es5': {
         errors: false,
@@ -29847,17 +30937,17 @@ const baselines = {
     },
     'typedArrays-es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typedArrays': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typedArraysCrossAssignability01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typedArraysSubarray': {
@@ -30065,10 +31155,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'undefinedAsDiscriminantWithUnknown': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'undefinedAsDiscriminantWithUnknown(strictnullchecks=false)': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'undefinedAsDiscriminantWithUnknown(strictnullchecks=true)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'undefinedAssignableToGenericMappedIntersection': {
         errors: false,
@@ -30155,15 +31250,30 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'unicodeEscapesInNames01': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeEscapesInNames01(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'unicodeEscapesInNames02': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeEscapesInNames01(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'unicodeEscapesInNames01(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'unicodeEscapesInNames02(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'unicodeEscapesInNames02(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'unicodeIdentifierName2': {
         errors: false,
@@ -30306,22 +31416,22 @@ const baselines = {
         types: false,
     },
     'uniqueSymbolAssignmentOnGlobalAugmentationSuceeds': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'uniqueSymbolJs': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'uniqueSymbolPropertyDeclarationEmit': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unknownLikeUnionObjectFlagsNotPropagated': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30390,10 +31500,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'unreachableDeclarations': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unreachableDeclarations(preserveconstenums=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'unreachableDeclarations(preserveconstenums=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'unreachableFlowAfterFinally': {
         errors: true,
@@ -31216,14 +32331,19 @@ const baselines = {
         types: false,
     },
     'useBeforeDeclaration_classDecorators.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'useBeforeDeclaration_classDecorators.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'useBeforeDeclaration_classDecorators.2(experimentaldecorators=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'useBeforeDeclaration_classDecorators.2(experimentaldecorators=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'useBeforeDeclaration_destructuring': {
         errors: false,
@@ -31245,10 +32365,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'useDefineForClassFieldsFlagDefault': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'useDefineForClassFieldsFlagDefault(target=es2020)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'useDefineForClassFieldsFlagDefault(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'useStrictLikePrologueString01': {
         errors: true,
@@ -31261,9 +32386,9 @@ const baselines = {
         types: false,
     },
     'usedImportNotElidedInJs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingModuleWithExportImportInValuePosition': {
         errors: false,
@@ -31416,9 +32541,9 @@ const baselines = {
         types: false,
     },
     'verbatimModuleSyntaxReactReference': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'verifyDefaultLib_dom': {
         errors: true,
@@ -31491,7 +32616,7 @@ const baselines = {
         types: false,
     },
     'voidUndefinedReduction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31521,7 +32646,7 @@ const baselines = {
         types: false,
     },
     'wellKnownSymbolExpando': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31602,7 +32727,7 @@ const baselines = {
     },
     'yieldExpression1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'yieldExpressionInFlowLoop': {
@@ -31621,8 +32746,8 @@ const baselines = {
         types: false,
     },
     'yieldStarContextualType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'yieldStringLiteral': {
@@ -31785,10 +32910,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'asyncFunctionDeclarationParameterEvaluation': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'asyncFunctionDeclarationParameterEvaluation(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'asyncFunctionDeclarationParameterEvaluation(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'arrowFunctionWithParameterNameAsync_es2017': {
         errors: true,
@@ -31797,12 +32927,12 @@ const baselines = {
     },
     'asyncArrowFunction10_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction1_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction2_es2017': {
@@ -31822,22 +32952,22 @@ const baselines = {
     },
     'asyncArrowFunction5_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction6_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction7_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction8_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction9_es2017': {
@@ -31862,17 +32992,17 @@ const baselines = {
     },
     'asyncUnParenthesizedArrowFunction_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncAwaitIsolatedModules_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncAwait_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncMethodWithSuperConflict_es6': {
@@ -31887,88 +33017,88 @@ const baselines = {
     },
     'asyncUseStrict_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression1_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression2_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression3_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression4_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression5_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression1_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression2_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression3_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression4_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression5_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression6_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression7_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression8_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitClassExpression_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitInheritedPromise_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'await_incorrectThisType': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'await_unaryExpression_es2017': {
         errors: true,
@@ -31997,27 +33127,27 @@ const baselines = {
     },
     'asyncFunctionDeclaration11_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration12_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration13_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration14_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration1_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration2_es2017': {
@@ -32037,17 +33167,17 @@ const baselines = {
     },
     'asyncFunctionDeclaration5_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration6_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration7_es2017': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration8_es2017': {
@@ -32057,7 +33187,7 @@ const baselines = {
     },
     'asyncFunctionDeclaration9_es2017': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncAliasReturnType_es5': {
@@ -32382,7 +33512,7 @@ const baselines = {
     },
     'asyncAliasReturnType_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrowFunctionWithParameterNameAsync_es6': {
@@ -32392,12 +33522,12 @@ const baselines = {
     },
     'asyncArrowFunction10_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction1_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction2_es6': {
@@ -32417,22 +33547,22 @@ const baselines = {
     },
     'asyncArrowFunction5_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction6_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction7_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction8_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncArrowFunction9_es6': {
@@ -32452,17 +33582,17 @@ const baselines = {
     },
     'asyncUnParenthesizedArrowFunction_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncAwaitIsolatedModules_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncAwait_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncClass_es6': {
@@ -32477,7 +33607,7 @@ const baselines = {
     },
     'asyncDeclare_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncEnum_es6': {
@@ -32492,7 +33622,7 @@ const baselines = {
     },
     'asyncImportedPromise_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncInterface_es6': {
@@ -32517,7 +33647,7 @@ const baselines = {
     },
     'asyncQualifiedReturnType_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncSetter_es6': {
@@ -32527,7 +33657,7 @@ const baselines = {
     },
     'asyncUseStrict_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncWithVarShadowing_es6': {
@@ -32537,72 +33667,72 @@ const baselines = {
     },
     'awaitBinaryExpression1_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression2_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression3_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression4_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitBinaryExpression5_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression1_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression2_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression3_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression4_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression5_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression6_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression7_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitCallExpression8_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitClassExpression_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'awaitUnion_es6': {
@@ -32637,22 +33767,22 @@ const baselines = {
     },
     'asyncFunctionDeclaration11_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration12_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration13_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration14_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration15_es6': {
@@ -32662,7 +33792,7 @@ const baselines = {
     },
     'asyncFunctionDeclaration1_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration2_es6': {
@@ -32682,17 +33812,17 @@ const baselines = {
     },
     'asyncFunctionDeclaration5_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration6_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration7_es6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncFunctionDeclaration8_es6': {
@@ -32702,7 +33832,7 @@ const baselines = {
     },
     'asyncFunctionDeclaration9_es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncOrYieldAsBindingIdentifier1': {
@@ -32711,14 +33841,24 @@ const baselines = {
         types: false,
     },
     'asyncGeneratorGenericNonWrappedReturn': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
-    'asyncGeneratorParameterEvaluation': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'asyncGeneratorParameterEvaluation(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'asyncGeneratorParameterEvaluation(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'asyncGeneratorParameterEvaluation(target=es2018)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'asyncGeneratorPromiseNextType': {
         errors: false,
@@ -32726,9 +33866,9 @@ const baselines = {
         types: false,
     },
     'awaitAndYieldInProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'classAbstractAccessor': {
         errors: false,
@@ -33110,35 +34250,75 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'classWithStaticFieldInParameterBindingPattern.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classWithStaticFieldInParameterBindingPattern.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterBindingPattern.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterBindingPattern.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'classWithStaticFieldInParameterBindingPattern.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'classWithStaticFieldInParameterBindingPattern': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classWithStaticFieldInParameterBindingPattern(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'classWithStaticFieldInParameterInitializer.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classWithStaticFieldInParameterBindingPattern(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterBindingPattern(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterInitializer.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterInitializer.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterInitializer.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'classWithStaticFieldInParameterInitializer.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'classWithStaticFieldInParameterInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classWithStaticFieldInParameterInitializer(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterInitializer(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classWithStaticFieldInParameterInitializer(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendClassExpressionFromModule': {
         errors: false,
@@ -33155,40 +34335,100 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'classStaticBlock1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock1(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'classStaticBlock10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock1(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'classStaticBlock11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock1(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock1(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock10(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock10(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock10(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock10(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock11(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlock11(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlock11(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'classStaticBlock12': {
         errors: true,
         symbols: true,
         types: true,
     },
-    'classStaticBlock13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock13(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlock13(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlock13(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'classStaticBlock14': {
         errors: true,
         symbols: true,
         types: true,
     },
-    'classStaticBlock15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock15(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlock15(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlock15(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'classStaticBlock16': {
         errors: false,
@@ -33200,20 +34440,50 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'classStaticBlock18': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock18(target=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock18(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock18(target=es5)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock18(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'classStaticBlock19': {
         errors: false,
         symbols: true,
         types: true,
     },
-    'classStaticBlock2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock2(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock2(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock2(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock2(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classStaticBlock20': {
         errors: true,
@@ -33225,30 +34495,85 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'classStaticBlock22': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock22(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'classStaticBlock23': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock22(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'classStaticBlock24': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock23(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'classStaticBlock25': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock23(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'classStaticBlock26': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock24(module=amd)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=commonjs)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=es2020)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=system)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock24(module=umd)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock25(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock25(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock26(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock26(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'classStaticBlock27': {
         errors: true,
@@ -33260,20 +34585,45 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'classStaticBlock3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock3(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'classStaticBlock4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock3(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'classStaticBlock5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock4(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock4(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock5(target=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock5(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock5(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'classStaticBlock5(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'classStaticBlock6': {
         errors: false,
@@ -33290,20 +34640,45 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'classStaticBlock9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock9(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'classStaticBlockUseBeforeDef1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock9(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'classStaticBlockUseBeforeDef2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'classStaticBlock9(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlock9(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'classStaticBlockUseBeforeDef1(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlockUseBeforeDef1(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlockUseBeforeDef2(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'classStaticBlockUseBeforeDef2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'classStaticBlockUseBeforeDef3': {
         errors: false,
@@ -33795,30 +35170,70 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'superInStaticMembers1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'superInStaticMembers1(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'thisAndSuperInStaticMembers1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'superInStaticMembers1(target=es2021)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'thisAndSuperInStaticMembers2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'superInStaticMembers1(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'superInStaticMembers1(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'superInStaticMembers1(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'thisAndSuperInStaticMembers1(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'thisAndSuperInStaticMembers1(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'thisAndSuperInStaticMembers1(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'thisAndSuperInStaticMembers2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'thisAndSuperInStaticMembers2(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'thisAndSuperInStaticMembers2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'thisAndSuperInStaticMembers3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'thisAndSuperInStaticMembers4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'typeOfThisInInstanceMember': {
         errors: false,
@@ -33835,65 +35250,215 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'typeOfThisInStaticMembers10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers10(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers10(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers10(target=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers10(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers11(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers11(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers11(target=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers11(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers12(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers12(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers12(target=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers12(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers13(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers13(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers13(target=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers13(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'typeOfThisInStaticMembers2': {
         errors: true,
         symbols: true,
         types: true,
     },
-    'typeOfThisInStaticMembers3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers3(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers3(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers3(target=es6)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers3(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers4(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers4(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers4(target=es6)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers4(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers5(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'typeOfThisInStaticMembers5(target=es5)': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'typeOfThisInStaticMembers5(target=es6)': {
+        errors: true,
+        symbols: false,
+        types: true,
+    },
+    'typeOfThisInStaticMembers5(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: true,
     },
     'typeOfThisInStaticMembers6': {
         errors: false,
         symbols: true,
         types: false,
     },
-    'typeOfThisInStaticMembers7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers7(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers7(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'typeOfThisInStaticMembers9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOfThisInStaticMembers7(target=es6)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers7(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers8(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers8(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers8(target=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers8(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers9(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers9(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers9(target=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOfThisInStaticMembers9(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'typeOfThisInstanceMemberNarrowedWithLoopAntecedent': {
         errors: false,
@@ -33945,10 +35510,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameAndStaticInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameAndStaticInitializer(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'privateNameAndStaticInitializer(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'privateNameAndStaticInitializer(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameBadAssignment': {
         errors: false,
@@ -33965,10 +35540,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameBadSuperUseDefineForClassFields': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameBadSuperUseDefineForClassFields(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameBadSuperUseDefineForClassFields(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'privateNameCircularReference': {
         errors: false,
@@ -33980,25 +35560,65 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameComputedPropertyName1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameComputedPropertyName1(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameComputedPropertyName2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameComputedPropertyName1(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameComputedPropertyName3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameComputedPropertyName1(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameComputedPropertyName4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameComputedPropertyName2(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'privateNameComputedPropertyName2(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'privateNameComputedPropertyName2(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'privateNameComputedPropertyName3(target=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNameComputedPropertyName3(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNameComputedPropertyName3(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNameComputedPropertyName4(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'privateNameComputedPropertyName4(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'privateNameComputedPropertyName4(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'privateNameConstructorReserved': {
         errors: false,
@@ -34070,10 +35690,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameFieldDestructuredBinding': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameFieldDestructuredBinding(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'privateNameFieldDestructuredBinding(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'privateNameFieldDestructuredBinding(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'privateNameFieldInitializer': {
         errors: true,
@@ -34090,10 +35720,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameFieldsESNext': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameFieldsESNext(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'privateNameFieldsESNext(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'privateNameHashCharName': {
         errors: false,
@@ -34105,20 +35740,40 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'privateNameInInExpression': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameInInExpression(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameInInExpressionTransform': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameInInExpression(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameInInExpressionUnused': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameInInExpressionTransform(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameInInExpressionTransform(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameInInExpressionTransform(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameInInExpressionUnused(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameInInExpressionUnused(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'privateNameInLhsReceiverExpression': {
         errors: true,
@@ -34155,10 +35810,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameLateSuperUseDefineForClassFields': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameLateSuperUseDefineForClassFields(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNameLateSuperUseDefineForClassFields(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'privateNameMethod': {
         errors: false,
@@ -34176,7 +35836,7 @@ const baselines = {
         types: false,
     },
     'privateNameMethodAsync': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34270,10 +35930,20 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'privateNameStaticAndStaticInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameStaticAndStaticInitializer(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'privateNameStaticAndStaticInitializer(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'privateNameStaticAndStaticInitializer(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'privateNameStaticEmitHelpers': {
         errors: false,
@@ -34305,20 +35975,50 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNameStaticFieldDestructuredBinding': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameStaticFieldDestructuredBinding(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameStaticFieldInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameStaticFieldDestructuredBinding(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'privateNameStaticFieldNoInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameStaticFieldDestructuredBinding(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameStaticFieldInitializer(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'privateNameStaticFieldInitializer(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'privateNameStaticFieldInitializer(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'privateNameStaticFieldNoInitializer(target=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNameStaticFieldNoInitializer(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNameStaticFieldNoInitializer(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'privateNameStaticFieldUnaryMutation': {
         errors: true,
@@ -34355,10 +36055,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'privateNameStaticsAndStaticMethods': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameStaticsAndStaticMethods(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameStaticsAndStaticMethods(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'privateNameUncheckedJsOptionalChain': {
         errors: false,
@@ -34370,10 +36075,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'privateNameWhenNotUseDefineForClassFieldsInEsNext': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNameWhenNotUseDefineForClassFieldsInEsNext(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNameWhenNotUseDefineForClassFieldsInEsNext(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'privateNamesAndDecorators': {
         errors: false,
@@ -34395,30 +36105,45 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'privateNamesAndMethods': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNamesAndMethods(target=es2022)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'privateNamesAndMethods(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'privateNamesAndStaticFields': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'privateNamesAndStaticMethods': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNamesAndStaticMethods(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNamesAndStaticMethods(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'privateNamesAndkeyof': {
         errors: false,
         symbols: true,
         types: true,
     },
-    'privateNamesAssertion': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'privateNamesAssertion(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'privateNamesAssertion(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'privateNamesConstructorChain-1': {
         errors: false,
@@ -34525,10 +36250,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'optionalMethodDeclarations': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalMethodDeclarations(target=es2016)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'optionalMethodDeclarations(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mixinAbstractClasses.2': {
         errors: false,
@@ -34575,10 +36305,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'abstractProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'abstractProperty(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'abstractProperty(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'abstractPropertyInitializer': {
         errors: false,
@@ -34650,10 +36385,25 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'autoAccessor1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor1(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor1(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor1(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'autoAccessor1(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'autoAccessor10': {
         errors: false,
@@ -34665,35 +36415,140 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'autoAccessor2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor2(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'autoAccessor3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor2(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'autoAccessor4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor2(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'autoAccessor5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor3(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'autoAccessor6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor3(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'autoAccessor7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessor3(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'autoAccessor3(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor4(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor4(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor4(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'autoAccessor4(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor5(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor5(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor5(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor5(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor6(target=es2015,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor6(target=es2015,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor6(target=es2022,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor6(target=es2022,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor6(target=esnext,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor6(target=esnext,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'autoAccessor7(target=es2015,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor7(target=es2015,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor7(target=es2022,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor7(target=es2022,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor7(target=esnext,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessor7(target=esnext,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'autoAccessor8': {
         errors: true,
@@ -34706,19 +36561,34 @@ const baselines = {
         types: true,
     },
     'autoAccessorAllowedModifiers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'autoAccessorDisallowedModifiers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessorDisallowedModifiers(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'autoAccessorExperimentalDecorators': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'autoAccessorDisallowedModifiers(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'autoAccessorExperimentalDecorators(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessorExperimentalDecorators(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'autoAccessorExperimentalDecorators(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'autoAccessorNoUseDefineForClassFields': {
         errors: true,
@@ -34726,9 +36596,9 @@ const baselines = {
         types: false,
     },
     'canFollowGetSetKeyword': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'constructorParameterShadowsOuterScopes': {
         errors: false,
@@ -34740,20 +36610,50 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'defineProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'defineProperty(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'defineProperty(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'derivedUninitializedPropertyDeclaration': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'initializationOrdering1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'initializationOrdering1(target=es2021,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'initializationOrdering1(target=es2021,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'initializationOrdering1(target=es2022,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'initializationOrdering1(target=es2022,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'initializationOrdering1(target=esnext,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'initializationOrdering1(target=esnext,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'initializerReferencingConstructorLocals': {
         errors: false,
@@ -34851,14 +36751,14 @@ const baselines = {
         types: false,
     },
     'optionalMethod': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'optionalProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'overrideInterfaceProperty': {
         errors: false,
@@ -34916,29 +36816,39 @@ const baselines = {
         types: true,
     },
     'redeclaredProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'redefinedPararameterProperty': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'staticAndNonStaticPropertiesSameName': {
         errors: true,
         symbols: true,
         types: true,
     },
-    'staticAutoAccessors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'staticAutoAccessors(target=es2017)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'staticAutoAccessorsWithDecorators': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'staticAutoAccessors(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'staticAutoAccessorsWithDecorators(target=es2017)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'staticAutoAccessorsWithDecorators(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'staticMemberInitialization': {
         errors: true,
@@ -34950,10 +36860,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'staticPropertyNameConflicts': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'staticPropertyNameConflicts(usedefineforclassfields=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'staticPropertyNameConflicts(usedefineforclassfields=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'staticPropertyNameConflictsInAmbientContext': {
         errors: true,
@@ -35011,7 +36926,7 @@ const baselines = {
         types: false,
     },
     'staticIndexSignature6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35085,10 +37000,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'controlFlowAliasingCatchVariables': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'controlFlowAliasingCatchVariables(useunknownincatchvariables=false)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'controlFlowAliasingCatchVariables(useunknownincatchvariables=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'controlFlowAssignmentExpression': {
         errors: false,
@@ -35126,7 +37046,7 @@ const baselines = {
         types: false,
     },
     'controlFlowComputedPropertyNames': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35156,7 +37076,7 @@ const baselines = {
         types: false,
     },
     'controlFlowElementAccess2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35246,7 +37166,7 @@ const baselines = {
         types: false,
     },
     'controlFlowOptionalChain2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -35256,7 +37176,7 @@ const baselines = {
         types: false,
     },
     'controlFlowStringIndex': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35316,7 +37236,7 @@ const baselines = {
         types: false,
     },
     'switchWithConstrainedTypeVariable': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35526,9 +37446,9 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassConstructorParameter5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratedBlockScopedClass1': {
         errors: true,
@@ -35665,10 +37585,20 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'decoratorOnClassMethod19': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'decoratorOnClassMethod19(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'decoratorOnClassMethod19(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'decoratorOnClassMethod19(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'decoratorOnClassMethod2': {
         errors: true,
@@ -35727,7 +37657,7 @@ const baselines = {
     },
     'decoratorOnClassMethodParameter3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethodThisParameter': {
@@ -35786,7 +37716,7 @@ const baselines = {
         types: false,
     },
     'decoratorInAmbientContext': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -35877,7 +37807,7 @@ const baselines = {
     },
     'missingDecoratorType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'ts-expect-error-js': {
@@ -36326,9 +38256,9 @@ const baselines = {
         types: false,
     },
     'awaitAndYield': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'enumBasics': {
         errors: false,
@@ -36460,10 +38390,20 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'invalidTaggedTemplateEscapeSequences': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'invalidTaggedTemplateEscapeSequences(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'invalidTaggedTemplateEscapeSequences(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'invalidTaggedTemplateEscapeSequences(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'usePromiseFinally': {
         errors: false,
@@ -36530,15 +38470,60 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'importMeta': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importMeta(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'importMetaNarrowing': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importMeta(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMeta(module=es2020,target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMeta(module=es2020,target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMeta(module=esnext,target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMeta(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMeta(module=system,target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMeta(module=system,target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMetaNarrowing(module=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMetaNarrowing(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importMetaNarrowing(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'bigintMissingES2019': {
         errors: true,
@@ -36575,25 +38560,125 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'exportAsNamespace1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportAsNamespace1(module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'exportAsNamespace2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportAsNamespace1(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'exportAsNamespace3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportAsNamespace1(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'exportAsNamespace4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportAsNamespace1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace1(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace1(module=umd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace2(module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace2(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace2(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace2(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace2(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace2(module=umd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace3(module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace3(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace3(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace3(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace3(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace3(module=umd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace4(module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace4(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace4(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace4(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace4(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportAsNamespace4(module=umd)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'exportAsNamespace5': {
         errors: false,
@@ -36601,22 +38686,22 @@ const baselines = {
         types: false,
     },
     'exportAsNamespace_exportAssignment': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'exportAsNamespace_missingEmitHelpers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'exportAsNamespace_nonExistent': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'es2021LocalesObjectArgument': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -36625,50 +38710,185 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'logicalAssignment1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment1(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment1(target=es2020)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment1(target=es2021)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment1(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment10(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment10(target=es2020)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment10(target=es2021)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment10(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'logicalAssignment8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment2(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'logicalAssignment2(target=es2020)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'logicalAssignment2(target=es2021)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'logicalAssignment2(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'logicalAssignment3(target=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment3(target=es2020)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment3(target=es2021)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment3(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment4(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment4(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment4(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment4(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment5(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment5(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment5(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment5(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment6(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment6(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment6(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment6(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment7(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment7(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment7(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment7(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment8(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment8(target=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment8(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment8(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'logicalAssignment9': {
         errors: true,
@@ -36685,10 +38905,70 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'arbitraryModuleNamespaceIdentifiers_module': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'arbitraryModuleNamespaceIdentifiers_module(module=amd)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=es2020)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=es6)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=none)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'arbitraryModuleNamespaceIdentifiers_module(module=umd)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'arbitraryModuleNamespaceIdentifiers_syntax': {
         errors: false,
@@ -36701,7 +38981,7 @@ const baselines = {
         types: false,
     },
     'es2022LocalesObjectArgument': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -36741,12 +39021,12 @@ const baselines = {
         types: false,
     },
     'symbolDeclarationEmit1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36761,53 +39041,53 @@ const baselines = {
         types: false,
     },
     'symbolDeclarationEmit13': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolDeclarationEmit14': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolDeclarationEmit2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolDeclarationEmit4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolDeclarationEmit5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolDeclarationEmit8': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit9': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty1': {
@@ -36817,12 +39097,12 @@ const baselines = {
     },
     'symbolProperty10': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty11': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty12': {
@@ -36831,18 +39111,18 @@ const baselines = {
         types: false,
     },
     'symbolProperty13': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty14': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty15': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty16': {
@@ -36852,78 +39132,78 @@ const baselines = {
     },
     'symbolProperty17': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty18': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty19': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty20': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty21': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty22': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty23': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty24': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty25': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty26': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty27': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty28': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty29': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'symbolProperty30': {
         errors: false,
@@ -36931,7 +39211,7 @@ const baselines = {
         types: false,
     },
     'symbolProperty31': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36952,7 +39232,7 @@ const baselines = {
     },
     'symbolProperty35': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty36': {
@@ -36961,12 +39241,12 @@ const baselines = {
         types: false,
     },
     'symbolProperty37': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty38': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -36976,17 +39256,17 @@ const baselines = {
         types: false,
     },
     'symbolProperty4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty40': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty41': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37006,7 +39286,7 @@ const baselines = {
         types: false,
     },
     'symbolProperty45': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37031,58 +39311,58 @@ const baselines = {
         types: false,
     },
     'symbolProperty5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty50': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty51': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty52': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty53': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty54': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'symbolProperty55': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty56': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty57': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty58': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'symbolProperty59': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolProperty6': {
@@ -37091,12 +39371,12 @@ const baselines = {
         types: false,
     },
     'symbolProperty60': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty61': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37106,48 +39386,48 @@ const baselines = {
         types: false,
     },
     'symbolProperty8': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolProperty9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'symbolType10': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolType11': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType12': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType13': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'symbolType14': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'symbolType15': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolType16': {
@@ -37172,7 +39452,7 @@ const baselines = {
     },
     'symbolType2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType20': {
@@ -37182,37 +39462,37 @@ const baselines = {
     },
     'symbolType3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolType6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType7': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'symbolType8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolType9': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'disallowLineTerminatorBeforeArrow': {
@@ -37387,7 +39667,7 @@ const baselines = {
     },
     'emitArrowFunctionWhenUsingArguments14_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitArrowFunctionWhenUsingArguments15': {
@@ -37397,7 +39677,7 @@ const baselines = {
     },
     'emitArrowFunctionWhenUsingArguments15_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'emitArrowFunctionWhenUsingArguments16': {
@@ -38110,10 +40390,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'computedPropertyNames52': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'computedPropertyNames52(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'computedPropertyNames52(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'computedPropertyNames5_ES5': {
         errors: false,
@@ -38530,20 +40815,35 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'destructuringEvaluationOrder': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringEvaluationOrder(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'destructuringEvaluationOrder(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'destructuringInFunctionType': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'destructuringObjectAssignmentPatternWithNestedSpread': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringObjectAssignmentPatternWithNestedSpread(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'destructuringObjectAssignmentPatternWithNestedSpread(target=es2018)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'destructuringObjectAssignmentPatternWithNestedSpread(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'destructuringObjectBindingPatternAndAssignment1ES5': {
         errors: false,
@@ -38570,30 +40870,50 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'destructuringObjectBindingPatternAndAssignment6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringObjectBindingPatternAndAssignment6(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'destructuringObjectBindingPatternAndAssignment7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringObjectBindingPatternAndAssignment6(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'destructuringObjectBindingPatternAndAssignment8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringObjectBindingPatternAndAssignment7(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructuringObjectBindingPatternAndAssignment7(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructuringObjectBindingPatternAndAssignment8(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructuringObjectBindingPatternAndAssignment8(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'destructuringObjectBindingPatternAndAssignment9SiblingInitializer': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'destructuringParameterDeclaration10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringParameterDeclaration10(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructuringParameterDeclaration10(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'destructuringParameterDeclaration1ES5': {
         errors: false,
@@ -38660,10 +40980,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'destructuringParameterDeclaration9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'destructuringParameterDeclaration9(strict=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'destructuringParameterDeclaration9(strict=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'destructuringParameterProperties1': {
         errors: false,
@@ -38941,7 +41266,7 @@ const baselines = {
         types: false,
     },
     'iterableArrayPattern15': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38997,17 +41322,17 @@ const baselines = {
     },
     'iterableArrayPattern25': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern26': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern27': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern28': {
@@ -39017,7 +41342,7 @@ const baselines = {
     },
     'iterableArrayPattern29': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern3': {
@@ -39027,7 +41352,7 @@ const baselines = {
     },
     'iterableArrayPattern30': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern4': {
@@ -39221,9 +41546,9 @@ const baselines = {
         types: false,
     },
     'for-of13': {
-        errors: true,
+        errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'for-of14': {
         errors: false,
@@ -39297,7 +41622,7 @@ const baselines = {
     },
     'for-of27': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of28': {
@@ -39352,12 +41677,12 @@ const baselines = {
     },
     'for-of37': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of38': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of39': {
@@ -39392,17 +41717,17 @@ const baselines = {
     },
     'for-of44': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of45': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of46': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of47': {
@@ -39417,7 +41742,7 @@ const baselines = {
     },
     'for-of49': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of5': {
@@ -39427,7 +41752,7 @@ const baselines = {
     },
     'for-of50': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of51': {
@@ -39462,7 +41787,7 @@ const baselines = {
     },
     'for-of57': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'for-of58': {
@@ -39691,14 +42016,14 @@ const baselines = {
         types: false,
     },
     'topLevelVarHoistingCommonJS': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'topLevelVarHoistingSystem': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'anonymousDefaultExportsUmd': {
         errors: true,
@@ -39717,12 +42042,12 @@ const baselines = {
     },
     'defaultExportInAwaitExpression01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultExportInAwaitExpression02': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'defaultExportWithOverloads01': {
@@ -40061,9 +42386,9 @@ const baselines = {
         types: false,
     },
     'arraySpreadImportHelpers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'arraySpreadInCall': {
         errors: false,
@@ -40071,7 +42396,7 @@ const baselines = {
         types: false,
     },
     'iteratorSpreadInArray': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40081,22 +42406,22 @@ const baselines = {
         types: false,
     },
     'iteratorSpreadInArray11': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'iteratorSpreadInArray2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInArray3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInArray4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -40111,57 +42436,57 @@ const baselines = {
         types: false,
     },
     'iteratorSpreadInArray7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInArray8': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'iteratorSpreadInArray9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall10': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall11': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall12': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'iteratorSpreadInCall5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41075,325 +43400,645 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions01': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions01(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions02': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions01(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions03': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions02(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions04': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions02(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions05': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions03(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions06': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions03(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions07': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions04(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions08': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions04(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions09': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions05(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions05(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions06(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions06(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions07(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions07(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions08(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions16': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions08(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions17': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions09(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions18': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions09(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInRegularExpressions19': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions10(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings01': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions10(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings02': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions11(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings03': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions11(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings04': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions12(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings05': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions12(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings06': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions13(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings07': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions13(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings08': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions14(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings09': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions14(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions15(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions15(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions16(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions16(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions17(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions17(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings16': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions18(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings17': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions18(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings18': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions19(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings19': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInRegularExpressions19(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings20': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings01(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings21': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings01(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings22': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings02(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings23': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings02(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings24': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings03(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInStrings25': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings03(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates01': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings04(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates02': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings04(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates03': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings05(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates04': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings05(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates05': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings06(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates06': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings06(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates07': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings07(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates08': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings07(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates09': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings08(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings08(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings09(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings09(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings10(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings10(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings11(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates16': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings11(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates17': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings12(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates18': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings12(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates19': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings13(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'unicodeExtendedEscapesInTemplates20': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'unicodeExtendedEscapesInStrings13(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings14(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings14(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings15(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings15(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings16(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings16(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings17(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings17(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings18(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings18(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings19(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings19(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings20(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings20(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings21(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings21(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings22(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings22(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings23(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings23(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings24(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings24(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings25(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInStrings25(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates01(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates01(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates02(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates02(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates03(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates03(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates04(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates04(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates05(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates05(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates06(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates06(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates07(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates07(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates08(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates08(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates09(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates09(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates10(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates10(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates11(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates11(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates12(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates12(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates13(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates13(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates14(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates14(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates15(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates15(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates16(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates16(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates17(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates17(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates18(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates18(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates19(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates19(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates20(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'unicodeExtendedEscapesInTemplates20(target=es6)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'VariableDeclaration10_es6': {
         errors: true,
@@ -41607,17 +44252,17 @@ const baselines = {
     },
     'generatorNoImplicitReturns': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorOverloads1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorOverloads2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorOverloads3': {
@@ -41626,38 +44271,38 @@ const baselines = {
         types: false,
     },
     'generatorOverloads4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorOverloads5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck10': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck11': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck12': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck13': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck14': {
@@ -41676,33 +44321,33 @@ const baselines = {
         types: false,
     },
     'generatorTypeCheck17': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck18': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck19': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck20': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck21': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck22': {
@@ -41722,42 +44367,42 @@ const baselines = {
     },
     'generatorTypeCheck25': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck26': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorTypeCheck27': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorTypeCheck28': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorTypeCheck29': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorTypeCheck3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck30': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorTypeCheck31': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck32': {
@@ -41831,12 +44476,12 @@ const baselines = {
         types: false,
     },
     'generatorTypeCheck45': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'generatorTypeCheck46': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -41937,12 +44582,12 @@ const baselines = {
     },
     'generatorTypeCheck7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck9': {
@@ -42180,80 +44825,180 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'esDecorators-classDeclaration-accessors-nonStatic': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-accessors-nonStatic(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-accessors-nonStaticAbstract': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-accessors-nonStatic(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-accessors-nonStaticPrivate': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-accessors-nonStatic(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-accessors-static': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-accessors-nonStatic(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-accessors-staticPrivate': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-accessors-nonStaticAbstract(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-nonStaticAbstract(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-nonStaticAbstract(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-nonStaticAbstract(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-nonStaticPrivate(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-nonStaticPrivate(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-nonStaticPrivate(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-static(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-static(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-static(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-static(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-staticPrivate(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-staticPrivate(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-accessors-staticPrivate(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classSuper.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-classThisReference.es5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-classThisReference': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-classThisReference(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-commentPreservation': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-classThisReference(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-classThisReference(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-commentPreservation(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-commentPreservation(module=commonjs,target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-commentPreservation(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-commentPreservation(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-commentPreservation(module=esnext,target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-commentPreservation(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-commonjs-classNamespaceMerge': {
         errors: true,
@@ -42276,389 +45021,769 @@ const baselines = {
         types: false,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-classDecorator.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-classDecorator.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-classDecorator.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-nonStaticPrivateAutoAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-nonStaticPrivateField': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-nonStaticPrivateGetter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-nonStaticPrivateMethod': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-nonStaticPrivateSetter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticComputedAutoAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticComputedField': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticComputedGetter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticComputedMethod': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticComputedSetter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticPrivateAutoAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticPrivateField': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticPrivateGetter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticPrivateMethod': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-staticPrivateSetter': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-multipleDecorators': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-multipleDecorators(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-outerThisReference': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-multipleDecorators(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-parameterDecorators': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-multipleDecorators(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-parameterProperties': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-multipleDecorators(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-setFunctionName': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-outerThisReference(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'esDecorators-classDeclaration-simpleTransformation': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-outerThisReference(target=es2021)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'esDecorators-classDeclaration-sourceMap': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-outerThisReference(target=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'esDecorators-classDeclaration-fields-nonStatic': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-outerThisReference(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'esDecorators-classDeclaration-fields-nonStaticAbstract': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterDecorators(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-nonStaticAbstractAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterDecorators(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-nonStaticAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterDecorators(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-nonStaticAmbient': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterDecorators(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-nonStaticPrivate': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=es2015,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-nonStaticPrivateAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=es2015,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-static': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=es2022,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-staticAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=es2022,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-staticAmbient': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=es5,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-staticPrivate': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=es5,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-fields-staticPrivateAccessor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=esnext,usedefineforclassfields=false)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-methods-nonStatic': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-parameterProperties(target=esnext,usedefineforclassfields=true)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-methods-nonStaticAbstract': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-setFunctionName(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-methods-nonStaticPrivate': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-setFunctionName(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-methods-static': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-setFunctionName(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classDeclaration-methods-staticPrivate': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classDeclaration-setFunctionName(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-simpleTransformation(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-simpleTransformation(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-simpleTransformation(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-simpleTransformation(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-sourceMap(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'esDecorators-classDeclaration-sourceMap(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'esDecorators-classDeclaration-sourceMap(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=es2015,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=es2015,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=es2022,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=es2022,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=es5,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=es5,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=esnext,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStatic(target=esnext,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstract(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstract(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstract(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstract(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstractAccessor(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstractAccessor(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAbstractAccessor(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAccessor(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAccessor(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAccessor(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAmbient(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAmbient(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAmbient(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticAmbient(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticPrivate(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticPrivate(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticPrivate(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticPrivateAccessor(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticPrivateAccessor(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-nonStaticPrivateAccessor(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=es2015,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=es2015,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=es2022,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=es2022,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=es5,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=es5,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=esnext,usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-static(target=esnext,usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAccessor(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAccessor(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAccessor(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAmbient(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAmbient(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAmbient(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticAmbient(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticPrivate(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticPrivate(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticPrivate(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticPrivateAccessor(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticPrivateAccessor(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-fields-staticPrivateAccessor(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStatic(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStatic(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStatic(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStatic(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticAbstract(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticAbstract(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticAbstract(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticAbstract(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticPrivate(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticPrivate(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-nonStaticPrivate(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-static(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-static(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-static(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-static(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-staticPrivate(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-staticPrivate(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classDeclaration-methods-staticPrivate(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-classSuper.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-classSuper.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-classSuper.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-classSuper.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-classSuper.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-classSuper.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-classExpression-commentPreservation': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-classExpression-commentPreservation(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classExpression-commentPreservation(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-classExpression-commentPreservation(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.16': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.17': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-missingEmitHelpers-classDecorator.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classExpression-namedEvaluation.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-arguments': {
         errors: false,
@@ -42675,25 +45800,55 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'esDecorators-decoratorExpression.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-decoratorExpression.1(experimentaldecorators=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-decoratorExpression.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-decoratorExpression.1(experimentaldecorators=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-decoratorExpression.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-decoratorExpression.2(experimentaldecorators=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'esDecorators-emitDecoratorMetadata': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecorators-decoratorExpression.2(experimentaldecorators=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-decoratorExpression.3(experimentaldecorators=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-decoratorExpression.3(experimentaldecorators=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-emitDecoratorMetadata(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-emitDecoratorMetadata(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-emitDecoratorMetadata(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecorators-emitDecoratorMetadata(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecorators-preservesThis': {
         errors: true,
@@ -42705,39 +45860,69 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'esDecoratorsMetadata1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecoratorsMetadata1(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecoratorsMetadata2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecoratorsMetadata1(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecoratorsMetadata3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecoratorsMetadata2(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'esDecoratorsMetadata4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'esDecoratorsMetadata2(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecoratorsMetadata3(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecoratorsMetadata3(target=es2022)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'esDecoratorsMetadata4(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'esDecoratorsMetadata4(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'esDecoratorsMetadata5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'logicalAssignment11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'logicalAssignment11(target=es2015)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment11(target=es2020)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'logicalAssignment11(target=esnext)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
     'arrayLiteralInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrayLiterals': {
@@ -43311,7 +46496,7 @@ const baselines = {
         types: false,
     },
     'iterableContextualTyping1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -43380,10 +46565,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'callWithMissingVoidUndefinedUnknownAnyInJs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'callWithMissingVoidUndefinedUnknownAnyInJs(strict=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'callWithMissingVoidUndefinedUnknownAnyInJs(strict=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'callWithSpread': {
         errors: false,
@@ -43615,30 +46805,80 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'nullishCoalescingOperatorInAsyncGenerator': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nullishCoalescingOperatorInAsyncGenerator(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nullishCoalescingOperatorInParameterBindingPattern.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nullishCoalescingOperatorInAsyncGenerator(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nullishCoalescingOperatorInParameterBindingPattern': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nullishCoalescingOperatorInAsyncGenerator(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nullishCoalescingOperatorInParameterInitializer.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nullishCoalescingOperatorInParameterBindingPattern.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'nullishCoalescingOperatorInParameterInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nullishCoalescingOperatorInParameterBindingPattern.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterBindingPattern.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterBindingPattern(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterBindingPattern(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterBindingPattern(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterInitializer.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterInitializer.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterInitializer.2(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterInitializer(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterInitializer(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'nullishCoalescingOperatorInParameterInitializer(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'nullishCoalescingOperator_es2020': {
         errors: true,
@@ -43690,15 +46930,70 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'callChainWithSuper': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'callChainWithSuper(target=es2016)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2018)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2019)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2020)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2021)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2023)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es2024)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=es6)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'callChainWithSuper(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'parentheses': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'superMethodCall': {
         errors: false,
@@ -43731,39 +47026,84 @@ const baselines = {
         types: false,
     },
     'optionalChainingInArrow': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'optionalChainingInLoop': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'optionalChainingInParameterBindingPattern.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainingInParameterBindingPattern.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'optionalChainingInParameterBindingPattern': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainingInParameterBindingPattern.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'optionalChainingInParameterInitializer.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainingInParameterBindingPattern.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'optionalChainingInParameterInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainingInParameterBindingPattern(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'optionalChainingInTypeAssertions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'optionalChainingInParameterBindingPattern(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterBindingPattern(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterInitializer.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterInitializer.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterInitializer.2(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterInitializer(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterInitializer(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInParameterInitializer(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'optionalChainingInTypeAssertions(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'optionalChainingInTypeAssertions(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'optionalChainingInference': {
         errors: false,
@@ -43841,12 +47181,12 @@ const baselines = {
         types: false,
     },
     'superSymbolIndexedAccess1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superSymbolIndexedAccess2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44295,15 +47635,25 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'typeSatisfaction_propertyValueConformance1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeSatisfaction_propertyValueConformance1(nopropertyaccessfromindexsignature=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'typeSatisfaction_propertyValueConformance2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeSatisfaction_propertyValueConformance1(nopropertyaccessfromindexsignature=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'typeSatisfaction_propertyValueConformance2(nouncheckedindexedaccess=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'typeSatisfaction_propertyValueConformance2(nouncheckedindexedaccess=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'typeSatisfaction_propertyValueConformance3': {
         errors: false,
@@ -44935,10 +48285,20 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'exportNonInitializedVariablesInIfThenStatementNoCrash1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportNonInitializedVariablesInIfThenStatementNoCrash1(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportNonInitializedVariablesInIfThenStatementNoCrash1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'exportNonInitializedVariablesInIfThenStatementNoCrash1(module=system)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'exportNonInitializedVariablesSystem': {
         errors: false,
@@ -45030,15 +48390,25 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'moduleResolutionWithoutExtension3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'moduleResolutionWithoutExtension3(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'moduleResolutionWithoutExtension4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'moduleResolutionWithoutExtension3(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'moduleResolutionWithoutExtension4(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'moduleResolutionWithoutExtension4(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithoutExtension5': {
         errors: false,
@@ -45125,120 +48495,245 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'cjsErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'cjsErrors(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'emit': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'cjsErrors(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'emitModuleCommonJS': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emit(jsx=preserve)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesTsFiles': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emit(jsx=react)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'nonTSExtensions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emitModuleCommonJS(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'packageJsonImportsErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emitModuleCommonJS(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesTsFiles(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesTsFiles(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nonTSExtensions(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nonTSExtensions(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'packageJsonImportsErrors(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'packageJsonImportsErrors(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'topLevelAmbientModule': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'topLevelAwait.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwait.1(module=es2022,target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'topLevelAwait.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwait.1(module=es2022,target=es2017)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'topLevelAwait.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwait.1(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'topLevelAwaitErrors.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwait.1(module=esnext,target=es2017)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'topLevelAwaitErrors.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwait.1(module=system,target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwait.1(module=system,target=es2017)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwait.2(module=es2022)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'topLevelAwait.2(module=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'topLevelAwait.3(module=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwait.3(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwaitErrors.1(module=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwaitErrors.1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwaitErrors.10(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.10(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'topLevelAwaitErrors.11': {
         errors: false,
         symbols: true,
         types: true,
     },
-    'topLevelAwaitErrors.12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.12(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitErrors.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.12(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitErrors.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.2(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitErrors.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.2(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitErrors.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.3(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitErrors.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.3(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitErrors.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.4(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'topLevelAwaitErrors.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.4(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'topLevelAwaitErrors.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.5(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'topLevelAwaitNonModule': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'topLevelAwaitErrors.5(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.6(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.6(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.7(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.7(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.8(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.8(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.9(module=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitErrors.9(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'topLevelAwaitNonModule(module=es2022)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'topLevelAwaitNonModule(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'topLevelFileModule': {
         errors: true,
@@ -45315,15 +48810,20 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'exportDeclaration': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'exportDeclaration(isolatedmodules=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'exportDeclaration(isolatedmodules=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'exportDeclaration_missingBraces': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'exportDeclaration_moduleSpecifier-isolatedModules': {
         errors: true,
@@ -45436,9 +48936,9 @@ const baselines = {
         types: false,
     },
     'grammarErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'implementsClause': {
         errors: true,
@@ -45491,9 +48991,9 @@ const baselines = {
         types: false,
     },
     'importEqualsDeclaration': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'importSpecifiers1': {
         errors: false,
@@ -45545,15 +49045,25 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'preserveValueImports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'preserveValueImports(isolatedmodules=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'preserveValueImports_errors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'preserveValueImports(isolatedmodules=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'preserveValueImports_errors(isolatedmodules=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'preserveValueImports_errors(isolatedmodules=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'preserveValueImports_importsNotUsedAsValues': {
         errors: false,
@@ -45565,20 +49075,40 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'preserveValueImports_module': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'preserveValueImports_module(module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'preserveValueImports_module(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'preserveValueImports_module(module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'preserveValueImports_module(module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'renamed': {
         errors: false,
         symbols: true,
         types: false,
     },
-    'typeOnlyESMImportFromCJS': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'typeOnlyESMImportFromCJS(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'typeOnlyESMImportFromCJS(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'typeQuery': {
         errors: true,
@@ -45686,29 +49216,29 @@ const baselines = {
         types: false,
     },
     'verbatimModuleSyntaxAmbientConstEnum': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'verbatimModuleSyntaxCompat': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'verbatimModuleSyntaxCompat2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'verbatimModuleSyntaxCompat3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'verbatimModuleSyntaxCompat4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'verbatimModuleSyntaxConstEnum': {
         errors: true,
@@ -45745,10 +49275,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'verbatimModuleSyntaxRestrictionsESM': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'verbatimModuleSyntaxRestrictionsESM(esmoduleinterop=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'verbatimModuleSyntaxRestrictionsESM(esmoduleinterop=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'fixSignatureCaching': {
         errors: false,
@@ -45796,9 +49331,9 @@ const baselines = {
         types: false,
     },
     'functionParameterObjectRestAndInitializers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'functionWithUseStrictAndSimpleParameterList': {
         errors: true,
@@ -45810,15 +49345,35 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'parameterInitializersBackwardReferencing': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'parameterInitializersBackwardReferencing(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'parameterInitializersForwardReferencing.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'parameterInitializersBackwardReferencing(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'parameterInitializersBackwardReferencing(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'parameterInitializersForwardReferencing.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'parameterInitializersForwardReferencing.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'parameterInitializersForwardReferencing.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'parameterInitializersForwardReferencing': {
         errors: false,
@@ -45852,7 +49407,7 @@ const baselines = {
     },
     'generatorExplicitReturnType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorImplicitAny': {
@@ -45862,7 +49417,7 @@ const baselines = {
     },
     'generatorReturnContextualType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorReturnTypeFallback.1': {
@@ -45891,18 +49446,18 @@ const baselines = {
         types: false,
     },
     'generatorReturnTypeIndirectReferenceToGlobalType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorReturnTypeInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorReturnTypeInferenceNonStrict': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorYieldContextualType': {
@@ -45915,25 +49470,55 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'yieldStatementNoAsiAfterTransform': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'yieldStatementNoAsiAfterTransform(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'importAssertion1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'yieldStatementNoAsiAfterTransform(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'importAssertion2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importAssertion1(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'importAssertion3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importAssertion1(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importAssertion1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importAssertion2(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importAssertion2(module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importAssertion2(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importAssertion3(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importAssertion3(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'importAssertion4': {
         errors: false,
@@ -45945,20 +49530,45 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'importAttributes1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importAttributes1(module=commonjs)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'importAttributes2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importAttributes1(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'importAttributes3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importAttributes1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importAttributes2(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importAttributes2(module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importAttributes2(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importAttributes3(module=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importAttributes3(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'importAttributes4': {
         errors: false,
@@ -45970,10 +49580,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'importAttributes6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importAttributes6(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'importAttributes6(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'importAttributes7': {
         errors: false,
@@ -47236,8 +50851,8 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsJSDocRedirectedLookups': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsJson': {
@@ -47407,7 +51022,7 @@ const baselines = {
     },
     'jsDeclarationsTypedefFunction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsTypedefPropertyAndExportAssignment': {
@@ -47535,10 +51150,15 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'importTag15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'importTag15(module=es2015)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'importTag15(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'importTag16': {
         errors: true,
@@ -47571,14 +51191,14 @@ const baselines = {
         types: false,
     },
     'importTag21': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importTag22': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importTag23': {
         errors: false,
@@ -48380,115 +52000,295 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'jsxAttributeInitializer': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'jsxAttributeInitializer(jsx=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'jsxAttributeInitializer(jsx=react)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'jsxUnclosedParserRecovery': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'tsxEmitSpreadAttribute': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tsxEmitSpreadAttribute(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'tsxReactEmitSpreadAttribute': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tsxEmitSpreadAttribute(target=es2018)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'allowImportingTsExtensions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tsxEmitSpreadAttribute(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'allowImportingTypesDtsExtension': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tsxReactEmitSpreadAttribute(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'bundlerConditionsExcludesNode': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tsxReactEmitSpreadAttribute(target=es2018)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'bundlerDirectoryModule': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'tsxReactEmitSpreadAttribute(target=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'bundlerImportESM': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'allowImportingTsExtensions(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'bundlerImportTsExtensions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'allowImportingTsExtensions(moduleresolution=classic)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'bundlerNodeModules1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'allowImportingTsExtensions(moduleresolution=node10)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTsExtensions(moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTsExtensions(moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=false,moduleresolution=classic)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=false,moduleresolution=node10)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=false,moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=false,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=true,moduleresolution=classic)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=true,moduleresolution=node10)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=true,moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'allowImportingTypesDtsExtension(allowimportingtsextensions=true,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerConditionsExcludesNode(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bundlerConditionsExcludesNode(module=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bundlerDirectoryModule(module=node18,moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerDirectoryModule(module=node18,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerDirectoryModule(module=nodenext,moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerDirectoryModule(module=nodenext,moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerImportESM(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bundlerImportESM(module=preserve)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'bundlerImportTsExtensions(allowimportingtsextensions=false,noemit=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerImportTsExtensions(allowimportingtsextensions=false,noemit=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerImportTsExtensions(allowimportingtsextensions=true,noemit=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerImportTsExtensions(allowimportingtsextensions=true,noemit=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'bundlerNodeModules1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'bundlerNodeModules1(module=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'bundlerOptionsCompat': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'bundlerRelative1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'bundlerRelative1(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'bundlerSyntaxRestrictions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'bundlerRelative1(module=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'conditionalExportsResolutionFallback': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'bundlerSyntaxRestrictions(module=esnext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'customConditions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'bundlerSyntaxRestrictions(module=preserve)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'conditionalExportsResolutionFallback(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'conditionalExportsResolutionFallback(moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'conditionalExportsResolutionFallback(moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'customConditions(resolvepackagejsonexports=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'customConditions(resolvepackagejsonexports=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'declarationNotFoundPackageBundlesTypes': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'extensionLoadingPriority': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'extensionLoadingPriority(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'extensionLoadingPriority(moduleresolution=classic)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'extensionLoadingPriority(moduleresolution=node)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'extensionLoadingPriority(moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'extensionLoadingPriority(moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'importFromDot': {
         errors: false,
         symbols: true,
         types: true,
     },
-    'nestedPackageJsonRedirect': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nestedPackageJsonRedirect(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nestedPackageJsonRedirect(moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nestedPackageJsonRedirect(moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'node10AlternateResult_noResolution': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'node10Alternateresult_noTypes': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'node10IsNode_node': {
         errors: true,
@@ -48506,14 +52306,34 @@ const baselines = {
         types: false,
     },
     'packageJsonExportsOptionsCompat': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'packageJsonImportsExportsOptionCompat': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'packageJsonImportsExportsOptionCompat(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'packageJsonImportsExportsOptionCompat(moduleresolution=classic)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'packageJsonImportsExportsOptionCompat(moduleresolution=node)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'packageJsonImportsExportsOptionCompat(moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'packageJsonImportsExportsOptionCompat(moduleresolution=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'packageJsonMain': {
         errors: false,
@@ -48530,45 +52350,70 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'resolutionModeImportType1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'resolutionModeImportType1(moduleresolution=bundler)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'resolutionModeImportType1(moduleresolution=classic)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'resolutionModeImportType1(moduleresolution=node10)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'resolutionModeTripleSlash1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'resolutionModeTripleSlash2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'resolutionModeTripleSlash3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'resolutionModeTripleSlash4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'resolutionModeTripleSlash5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'resolutionModeTypeOnlyImport1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'resolutionModeTypeOnlyImport1(moduleresolution=bundler)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'resolvesWithoutExportsDiagnostic1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'resolutionModeTypeOnlyImport1(moduleresolution=classic)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'resolutionModeTypeOnlyImport1(moduleresolution=node10)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'resolvesWithoutExportsDiagnostic1(moduleresolution=bundler)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'resolvesWithoutExportsDiagnostic1(moduleresolution=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'scopedPackages': {
         errors: false,
@@ -48645,475 +52490,1300 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'nodeAllowJsPackageSelfName': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeAllowJsPackageSelfName(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeAllowJsPackageSelfName(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeAllowJsPackageSelfName(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'nodeAllowJsPackageSelfName2': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'nodeModulesAllowJs1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJs1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsCjsFromJs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJs1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsConditionalPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJs1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsDynamicImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsCjsFromJs(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsExportAssignment': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsCjsFromJs(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsExportlessJsModuleDetectionAuto': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsCjsFromJs(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsGeneratedNameCollisions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsConditionalPackageExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsImportAssignment': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsConditionalPackageExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsImportHelpersCollisions1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsConditionalPackageExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsImportHelpersCollisions2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsDynamicImport(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsImportHelpersCollisions3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsDynamicImport(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsImportMeta': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsDynamicImport(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsExportAssignment(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsPackageImports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsExportAssignment(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsPackagePatternExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsExportAssignment(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesAllowJsPackagePatternExportsExclude': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsExportlessJsModuleDetectionAuto(module=node16)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesAllowJsPackagePatternExportsTrailers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsExportlessJsModuleDetectionAuto(module=node18)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesAllowJsSynchronousCallErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsExportlessJsModuleDetectionAuto(module=nodenext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesAllowJsTopLevelAwait': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesAllowJsGeneratedNameCollisions(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesAllowJsGeneratedNameCollisions(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesAllowJsGeneratedNameCollisions(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesAllowJsImportAssignment(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportAssignment(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportAssignment(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions2(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions2(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions2(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions3(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions3(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportHelpersCollisions3(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportMeta(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportMeta(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsImportMeta(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackageExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackageExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackageExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackageImports(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesAllowJsPackageImports(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesAllowJsPackageImports(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExportsExclude(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExportsExclude(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExportsExclude(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExportsTrailers(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExportsTrailers(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsPackagePatternExportsTrailers(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsSynchronousCallErrors(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsSynchronousCallErrors(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsSynchronousCallErrors(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsTopLevelAwait(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsTopLevelAwait(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesAllowJsTopLevelAwait(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'legacyNodeModulesExportsSpecifierGenerationConditions': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'nodeModules1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModules1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesCJSEmit1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModules1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModules1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesCJSEmit1(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesCJSEmit1(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesCJSResolvingToESM1_emptyPackageJson': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesCJSResolvingToESM2_cjsPackageJson': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesCJSResolvingToESM3_modulePackageJson': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesCJSResolvingToESM4_noPackageJson': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesCjsFormatFileAlwaysHasDefault': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesCjsFormatFileAlwaysHasDefault(module=node16)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesConditionalPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesCjsFormatFileAlwaysHasDefault(module=node18)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesDeclarationEmitDynamicImportWithPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesCjsFormatFileAlwaysHasDefault(module=nodenext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesDeclarationEmitWithPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesConditionalPackageExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesDynamicImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesConditionalPackageExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportAssignments': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesConditionalPackageExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsBlocksSpecifierResolution': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDeclarationEmitDynamicImportWithPackageExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsBlocksTypesVersions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDeclarationEmitDynamicImportWithPackageExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsDoubleAsterisk': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDeclarationEmitWithPackageExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsSourceTs': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDeclarationEmitWithPackageExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsSpecifierGenerationConditions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDeclarationEmitWithPackageExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsSpecifierGenerationDirectory': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDynamicImport(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesExportsSpecifierGenerationPattern': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDynamicImport(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesForbidenSyntax': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesDynamicImport(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesGeneratedNameCollisions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportAssignments(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesImportAssertions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportAssignments(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesImportAssignments': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportAssignments(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesImportAttributes': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsBlocksSpecifierResolution(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportAttributesModeDeclarationEmit1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsBlocksSpecifierResolution(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportAttributesModeDeclarationEmit2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsBlocksSpecifierResolution(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportAttributesModeDeclarationEmitErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsBlocksTypesVersions(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportAttributesTypeModeDeclarationEmit': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsBlocksTypesVersions(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportAttributesTypeModeDeclarationEmitErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsBlocksTypesVersions(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportHelpersCollisions': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsDoubleAsterisk(module=node18)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesImportHelpersCollisions2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsDoubleAsterisk(module=nodenext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesImportHelpersCollisions3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSourceTs(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportMeta': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSourceTs(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportModeDeclarationEmit1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSourceTs(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportModeDeclarationEmit2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationConditions(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportModeDeclarationEmitErrors1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationConditions(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportResolutionIntoExport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationConditions(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportResolutionNoCycle': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationDirectory(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportTypeModeDeclarationEmit1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationDirectory(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesImportTypeModeDeclarationEmitErrors1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationDirectory(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesJson': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesExportsSpecifierGenerationPattern(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesExportsSpecifierGenerationPattern(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesExportsSpecifierGenerationPattern(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesForbidenSyntax(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesForbidenSyntax(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesForbidenSyntax(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesGeneratedNameCollisions(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesGeneratedNameCollisions(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesGeneratedNameCollisions(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesImportAssertions(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAssertions(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAssertions(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAssignments(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAssignments(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAssignments(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributes(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributes(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributes(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmit1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmit1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmit1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmit2(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmit2(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmit2(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmitErrors(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmitErrors(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesModeDeclarationEmitErrors(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesTypeModeDeclarationEmit(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesTypeModeDeclarationEmit(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesTypeModeDeclarationEmit(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions2(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions2(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions2(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions3(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions3(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportHelpersCollisions3(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportMeta(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportMeta(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportMeta(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmit1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmit1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmit1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmit2(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmit2(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmit2(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmitErrors1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmitErrors1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportModeDeclarationEmitErrors1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportResolutionIntoExport(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesImportResolutionIntoExport(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesImportResolutionIntoExport(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodeModulesImportResolutionNoCycle(module=node16)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesImportResolutionNoCycle(module=node18)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesImportResolutionNoCycle(module=nodenext)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'nodeModulesImportTypeModeDeclarationEmit1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportTypeModeDeclarationEmit1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportTypeModeDeclarationEmit1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesImportTypeModeDeclarationEmitErrors1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesJson(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesJson(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesJson(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'nodeModulesNoDirectoryModule': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'nodeModulesPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackageExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesPackageImports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackageExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesPackagePatternExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackageExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesPackagePatternExportsExclude': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackageImports(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesPackagePatternExportsTrailers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackageImports(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesResolveJsonModule': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackageImports(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'nodeModulesSynchronousCallErrors': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExports(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTopLevelAwait': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExports(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExports(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExportsExclude(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExportsExclude(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExportsExclude(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExportsTrailers(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExportsTrailers(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeDeclarationEmit7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesPackagePatternExportsTrailers(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeOverride1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesResolveJsonModule(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeOverride2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesResolveJsonModule(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeOverride3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesResolveJsonModule(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeOverride4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesSynchronousCallErrors(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeOverride5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesSynchronousCallErrors(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'nodeModulesTripleSlashReferenceModeOverrideModeError': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesSynchronousCallErrors(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTopLevelAwait(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTopLevelAwait(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTopLevelAwait(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit1(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit1(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit1(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit2(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit2(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit2(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit3(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit3(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit3(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit4(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit4(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit4(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit5(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit5(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit5(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit6(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit6(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit6(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit7(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit7(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeDeclarationEmit7(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride1(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride1(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride1(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride2(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride2(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride2(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride3(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride3(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride3(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride4(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride4(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride4(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride5(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride5(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverride5(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverrideModeError(module=node16)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverrideModeError(module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'nodeModulesTripleSlashReferenceModeOverrideModeError(module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'nodeModulesTripleSlashReferenceModeOverrideOldResolutionError': {
         errors: true,
         symbols: false,
         types: false,
     },
-    'nodeModulesTypesVersionPackageExports': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesTypesVersionPackageExports(module=node16)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'nodePackageSelfName': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesTypesVersionPackageExports(module=node18)': {
+        errors: true,
+        symbols: false,
+        types: false,
     },
-    'nodePackageSelfNameScoped': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'nodeModulesTypesVersionPackageExports(module=nodenext)': {
+        errors: true,
+        symbols: false,
+        types: false,
+    },
+    'nodePackageSelfName(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodePackageSelfName(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodePackageSelfName(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodePackageSelfNameScoped(module=node16)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodePackageSelfNameScoped(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'nodePackageSelfNameScoped(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'declarationFileForHtmlFileWithinDeclarationFile': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'declarationFileForHtmlImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationFileForHtmlImport(allowarbitraryextensions=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'declarationFileForJsonImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationFileForHtmlImport(allowarbitraryextensions=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'declarationFileForTsJsImport': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationFileForJsonImport(resolvejsonmodule=false)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
-    'declarationFilesForNodeNativeModules': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'declarationFileForJsonImport(resolvejsonmodule=true)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'declarationFileForTsJsImport(module=node18)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationFileForTsJsImport(module=nodenext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'declarationFilesForNodeNativeModules(allowarbitraryextensions=false,module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'declarationFilesForNodeNativeModules(allowarbitraryextensions=false,module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'declarationFilesForNodeNativeModules(allowarbitraryextensions=true,module=node18)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'declarationFilesForNodeNativeModules(allowarbitraryextensions=true,module=nodenext)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'override1': {
         errors: false,
@@ -49130,10 +53800,15 @@ const baselines = {
         symbols: false,
         types: false,
     },
-    'override12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'override12(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'override12(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'override13': {
         errors: false,
@@ -49150,20 +53825,35 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'override16': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'override16(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'override17': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'override16(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
-    'override18': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'override17(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'override17(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'override18(target=es2015)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'override18(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'override19': {
         errors: false,
@@ -49220,25 +53910,40 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'overrideDynamicName1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'overrideDynamicName1(noimplicitoverride=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'overrideDynamicName1(noimplicitoverride=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'overrideKeywordOrder': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'overrideLateBindableIndexSignature1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'overrideLateBindableIndexSignature1(noimplicitoverride=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
-    'overrideLateBindableName1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'overrideLateBindableIndexSignature1(noimplicitoverride=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'overrideLateBindableName1(noimplicitoverride=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'overrideLateBindableName1(noimplicitoverride=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'overrideParameterProperty': {
         errors: false,
@@ -49305,10 +54010,20 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'parser.numericSeparators.decimal': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'parser.numericSeparators.decimal(target=es2020)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'parser.numericSeparators.decimal(target=es2021)': {
+        errors: false,
+        symbols: true,
+        types: false,
+    },
+    'parser.numericSeparators.decimal(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: false,
     },
     'parser.numericSeparators.decmialNegative': {
         errors: false,
@@ -53321,47 +58036,47 @@ const baselines = {
         types: false,
     },
     'parserSymbolProperty1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty7': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserSymbolProperty8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'parserSymbolProperty9': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53741,8 +58456,8 @@ const baselines = {
         types: false,
     },
     'lateBoundClassMemberAssignmentJS': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'lateBoundClassMemberAssignmentJS2': {
@@ -53751,8 +58466,8 @@ const baselines = {
         types: false,
     },
     'lateBoundClassMemberAssignmentJS3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'malformedTags': {
@@ -54605,135 +59320,270 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'awaitUsingDeclarations.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarations.1(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.1(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.1(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.1(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.1(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarations.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarations.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarations.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarations.2(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.2(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.3(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.3(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.3(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.3(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarations.3(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarations.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarationsInFor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarationsInFor(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInFor(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInFor(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInFor(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInFor(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsInForAwaitOf.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarationsInForAwaitOf.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarationsInForAwaitOf.3(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarationsInForAwaitOf': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarationsInForAwaitOf.3(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForAwaitOf(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForAwaitOf(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForAwaitOf(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForAwaitOf(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForAwaitOf(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsInForIn': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarationsInForOf.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarationsInForOf.1(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForOf.1(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForOf.1(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForOf.1(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsInForOf.1(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsInForOf.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsInForOf.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsInForOf.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarationsInForOf.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarationsInForOf.5(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'awaitUsingDeclarationsTopLevelOfModule.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'awaitUsingDeclarationsInForOf.5(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsTopLevelOfModule.1(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'awaitUsingDeclarationsTopLevelOfModule.1(module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsWithAsyncIteratorObject': {
         errors: false,
@@ -54741,289 +59591,1414 @@ const baselines = {
         types: false,
     },
     'awaitUsingDeclarationsWithImportHelpers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'awaitUsingDeclarationsWithIteratorObject': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'usingDeclarations.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarations.1(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.1(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.1(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.1(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.1(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarations.12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarations.12(usedefineforclassfields=false)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.12(usedefineforclassfields=true)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.13': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.14': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.15': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarations.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarations.2(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarations.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarations.2(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.2(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.2(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.2(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.3(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.3(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.3(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.3(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarations.3(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarations.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsDeclarationEmit.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsDeclarationEmit.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsInFor': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsInFor(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsInForAwaitOf': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsInFor(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInFor(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInFor(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInFor(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForAwaitOf(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForAwaitOf(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForAwaitOf(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForAwaitOf(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForAwaitOf(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsInForIn': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsInForOf.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsInForOf.1(target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForOf.1(target=es2017)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForOf.1(target=es2022)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForOf.1(target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsInForOf.1(target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsInForOf.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsInForOf.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsNamedEvaluationDecoratorsAndClassFields': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsTopLevelOfModule.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.1(module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsTopLevelOfModule.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.1(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsTopLevelOfModule.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.1(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.1(module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.2(module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.2(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.3(module=amd)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.3(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.3(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsTopLevelOfModule.3(module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithESClassDecorators.1(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithESClassDecorators.1(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithESClassDecorators.1(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithESClassDecorators.1(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithESClassDecorators.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithESClassDecorators.1(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.1(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.1(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.1(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.1(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.10(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.11(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.12(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.2(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.3(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.4(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.5(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.6(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.7(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.8(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithESClassDecorators.9(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsWithImportHelpers': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsWithIteratorObject': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'usingDeclarationsWithLegacyClassDecorators.1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.10': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.11': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.12': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.5': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.6': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.1(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.7': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.10(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.8': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.10(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'usingDeclarationsWithLegacyClassDecorators.9': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithLegacyClassDecorators.10(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.10(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.10(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.10(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.10(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.10(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.10(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.11(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.12(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.2(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.3(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.4(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.5(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.6(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.7(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.8(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=commonjs,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=commonjs,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=commonjs,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=esnext,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=esnext,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=esnext,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=system,target=es2015)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=system,target=es5)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'usingDeclarationsWithLegacyClassDecorators.9(module=system,target=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'usingDeclarationsWithObjectLiterals1': {
         errors: false,
         symbols: false,
         types: false,
     },
-    'usingDeclarationsWithObjectLiterals2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'usingDeclarationsWithObjectLiterals2(noimplicitany=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'usingDeclarationsWithObjectLiterals2(noimplicitany=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'validMultipleVariableDeclarations': {
         errors: false,
@@ -55125,15 +61100,30 @@ const baselines = {
         symbols: true,
         types: true,
     },
-    'emitter.forAwait': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'emitter.forAwait(target=es2015)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'emitter.forAwait(target=es2017)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'emitter.forAwait(target=es2018)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'emitter.forAwait(target=es5)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'forAwaitPerIterationBindingDownlevel': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'for-inStatements': {
         errors: false,
@@ -55476,29 +61466,39 @@ const baselines = {
         types: false,
     },
     'labeledStatementDeclarationListInLoopNoCrash1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'labeledStatementDeclarationListInLoopNoCrash2': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'labeledStatementDeclarationListInLoopNoCrash3': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'labeledStatementDeclarationListInLoopNoCrash4': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+        errors: false,
+        symbols: true,
+        types: true,
     },
-    'labeledStatementExportDeclarationNoCrash1': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'labeledStatementExportDeclarationNoCrash1(module=commonjs)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'labeledStatementExportDeclarationNoCrash1(module=esnext)': {
+        errors: false,
+        symbols: true,
+        types: true,
+    },
+    'labeledStatementExportDeclarationNoCrash1(module=system)': {
+        errors: false,
+        symbols: true,
+        types: true,
     },
     'labeledStatementWithLabel': {
         errors: false,
@@ -55520,10 +61520,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'returnStatementNoAsiAfterTransform': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'returnStatementNoAsiAfterTransform(target=es5)': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'returnStatementNoAsiAfterTransform(target=esnext)': {
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'returnStatements': {
         errors: true,
@@ -55677,7 +61682,7 @@ const baselines = {
     },
     'contextuallyTypeAsyncFunctionAwaitOperand': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypeAsyncFunctionReturnType': {
@@ -55866,7 +61871,7 @@ const baselines = {
         types: false,
     },
     'intersectionOfUnionNarrowing': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -56016,7 +62021,7 @@ const baselines = {
         types: false,
     },
     'literalTypes1': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -56551,7 +62556,7 @@ const baselines = {
         types: false,
     },
     'optionalMethods': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
@@ -57985,10 +63990,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'builtinIteratorReturn': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'builtinIteratorReturn(strictbuiltiniteratorreturn=false)': {
+        errors: false,
+        symbols: false,
+        types: false,
+    },
+    'builtinIteratorReturn(strictbuiltiniteratorreturn=true)': {
+        errors: false,
+        symbols: false,
+        types: false,
     },
     'circularTypeAliasForUnionWithClass': {
         errors: true,
@@ -58562,7 +64572,7 @@ const baselines = {
     },
     'covariantCallbacks': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'enumAssignability': {
@@ -58586,7 +64596,7 @@ const baselines = {
         types: false,
     },
     'intersectionIncludingPropFromGlobalAugmentation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58695,10 +64705,15 @@ const baselines = {
         symbols: true,
         types: false,
     },
-    'equalityWithtNullishCoalescingAssignment': {
-        errors: undefined,
-        symbols: undefined,
-        types: undefined,
+    'equalityWithtNullishCoalescingAssignment(strict=false)': {
+        errors: true,
+        symbols: true,
+        types: false,
+    },
+    'equalityWithtNullishCoalescingAssignment(strict=true)': {
+        errors: true,
+        symbols: true,
+        types: false,
     },
     'independentPropertyVariance': {
         errors: true,
@@ -59562,7 +65577,7 @@ const baselines = {
     },
     'unionAndIntersectionInference3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unionTypeInference': {
@@ -59621,7 +65636,7 @@ const baselines = {
         types: false,
     },
     'discriminatedUnionTypes3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

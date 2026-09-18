@@ -57,6 +57,14 @@ See dedicated section below for details.
 ### Program
 The `Program` struct owns the source code buffers and ASTs of all loaded files, manages imports, etc.
 
+### CompilerOptions
+`CompilerOptions` ([src/compiler_options.h](src/compiler_options.h)) is what tsc calls the same: every boolean option (one X-macro list, with which ones belong to the `strict` family), `target`, `module`, `moduleResolution`, `jsx`, `moduleDetection` and `lib`. `compiler_options_set(options, "strictNullChecks", "false")` takes names and values as they're written in a tsconfig, on the command line (`tttt --target es2020 --strictNullChecks false`) or in a test's `// @target: es2020`; `compiler_options_resolve()` then applies tsc's dependent defaults (`strict` to its family, `module` from `target`, `moduleResolution` from `module`, `useDefineForClassFields` from `target`...), so every field holds the effective value. `compiler_options_lib_files()` gives the standard library files to load: the `lib` list, else the default library of the target (`lib.d.ts`, `lib.es6.d.ts`, `lib.es2016.full.d.ts`...).
+
+Each `Program` owns one (`program_options()`, change it before loading files). Code that parses, resolves names or checks reads the current program's through the global `compiler_options()`, which `program.c` sets around each phase. Most options are parsed but not acted on yet.
+
+### Test configurations
+A tsc test whose directives give several values for an option (`// @target: es5,es2015`, `// @strict: *`, `// @module: *,-amd`) is several tests, each with baselines named `name(option=value,other=value)`. `baseline_test_configurations()` (`src/test/baseline_test_case.c`) follows tsc's `getFileBasedTestConfigurations()`: only boolean and enum options vary (a comma in `@lib` or `@types` is a list), `*` means every value of the option, `-x` excludes one, spellings of the same value (`es6`/`es2015`) collapse, option names are sorted. The suite holds one `BaselineTestResult` per configuration; `-f someTest` matches all configurations of a test, `-f 'someTest\(target=es5\)'` one. Tests with `// @noTypesAndSymbols: true` have no `.types`/`.symbols` baselines and are compared on errors alone.
+
 ### Scope
 A lexical scope, maps identifier names to `Declaration`s.
 

@@ -65,8 +65,9 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
     comma_sep_libs = cstr_sv(&key);
     while (comma_sep_libs.size) {
         intptr_t end = csview_find_sv(comma_sep_libs, c_sv(","));
-        // A standard library file we can't read means every test using it is meaningless, so don't limp on
-        try (SourceFile* lib, program_load_stdlib(program, csview_slice(comma_sep_libs, 0, end), &lib)) or_panic;
+        // A test can ask for a library that doesn't exist (tsc reports TS6046 and carries on without it). The
+        // default libraries do exist, so a test can't end up without its globals because of this
+        try (SourceFile* lib, program_load_stdlib(program, csview_slice(comma_sep_libs, 0, end), &lib)) or_log(info);
         ignore lib;
         if (end == c_NPOS) break;
         comma_sep_libs = csview_slice(comma_sep_libs, end + 1, INTPTR_MAX);
@@ -121,7 +122,170 @@ static bool tag_equals(csview tag, const char* str) {
         }
         str++;
     }
+    return *str == 0;
+}
+
+typedef struct Variation {
+    csview key;
+    VecCStr values;
+} Variation;
+
+static void variation_drop(Variation* me) {
+    vec_cstr_drop(&my values);
+}
+
+#define g_class_key Variation, variation
+#define g_no_clone
+#include <cleat/generic/vec.h>
+
+static bool sv_equals_ignore_case(csview a, csview b) {
+    if (a.size != b.size) return false;
+    for (isize i = 0; i < a.size; i++) {
+        if (tolower((unsigned char)a.buf[i]) != tolower((unsigned char)b.buf[i])) return false;
+    }
     return true;
+}
+
+// The id of a value, so that es6 and es2015 count as the same thing. Unknown values are only equal to themselves
+static int value_id(csview value, const char* const* known, int const* known_ids, isize known_count, int fallback) {
+    for (isize k = 0; k < known_count; k++) {
+        if (csview_equals(value, known[k])) return known_ids[k];
+    }
+    return fallback;
+}
+
+// tsc's splitVaryBySettingValue(): the values an option varies over, empty if it's a plain setting
+static VecCStr split_vary_by_value(csview key, csview text) {
+    enum { MAX_VALUES = 32 };
+    const char* known[MAX_VALUES];
+    int known_ids[MAX_VALUES];
+    isize known_count = compiler_option_values(key, known, known_ids, MAX_VALUES);
+    VecCStr includes = {0};
+    VecCStr excludes = {0};
+    VecCStr ret = {0};
+    bool star = false;
+    while (text.size) {
+        isize end = csview_find_sv(text, c_sv(","));
+        cstr value = cstr_from_sv(csview_trim_whitespace(csview_slice(text, 0, end)));
+        cstr_lowercase(&value);
+        if (!cstr_size(&value)) {
+            cstr_drop(&value);
+        } else if (cstr_equals(&value, "*")) {
+            star = true;
+            cstr_drop(&value);
+        } else if (*cstr_str(&value) == '-' || *cstr_str(&value) == '!') {
+            cstr_erase(&value, 0, 1);
+            vec_cstr_push(&excludes, value);
+        } else {
+            vec_cstr_push(&includes, value);
+        }
+        if (end == c_NPOS) break;
+        text = csview_slice(text, end + 1, INTPTR_MAX);
+    }
+
+    if (vec_cstr_size(&includes) > 1 || star || vec_cstr_size(&excludes)) {
+        enum { MAX_VARIATIONS = 64 };
+        int ids[MAX_VARIATIONS];
+        int unknown_id = -1;
+        for_each (i, vec_cstr, &includes) {
+            int id = value_id(cstr_sv(i), known, known_ids, known_count, unknown_id--);
+            bool seen = false;
+            for_each (j, vec_cstr, &ret) {
+                if (cstr_eq(i, j) || ids[j_index] == id) seen = true;
+            }
+            if (!seen && vec_cstr_size(&ret) < MAX_VARIATIONS) {
+                ids[vec_cstr_size(&ret)] = id;
+                vec_cstr_push(&ret, cstr_clone(*i));
+            }
+        }
+        if (star) {
+            for (isize k = 0; k < known_count; k++) {
+                bool seen = false;
+                for_each (j, vec_cstr, &ret) {
+                    if (cstr_equals(j, known[k]) || ids[j_index] == known_ids[k]) seen = true;
+                }
+                if (!seen && vec_cstr_size(&ret) < MAX_VARIATIONS) {
+                    ids[vec_cstr_size(&ret)] = known_ids[k];
+                    vec_cstr_push(&ret, cstr_from(known[k]));
+                }
+            }
+        }
+        for_each (i, vec_cstr, &excludes) {
+            int id = value_id(cstr_sv(i), known, known_ids, known_count, -1000000);
+            for (isize j = vec_cstr_size(&ret) - 1; j >= 0; j--) {
+                if (cstr_eq(i, vec_cstr_at(&ret, j)) || ids[j] == id) {
+                    vec_cstr_erase_n(&ret, j, 1);
+                    memmove(&ids[j], &ids[j + 1], sizeof(int) * (size_t)(vec_cstr_size(&ret) - j));
+                }
+            }
+        }
+    }
+    vec_cstr_drop(&includes);
+    vec_cstr_drop(&excludes);
+    return ret;
+}
+
+static void push_configurations(VecVariation const* variations, isize offset, cstr const* prefix, VecCStr* out) {
+    if (offset >= vec_variation_size(variations)) {
+        vec_cstr_push(out, cstr_clone(*prefix));
+        return;
+    }
+    Variation const* variation = vec_variation_at(variations, offset);
+    for_each (i, vec_cstr, &variation->values) {
+        cstr next = cstr_d(*prefix, cstr_size(prefix) ? "," : "", variation->key, "=", *i);
+        // Keys are compared case insensitively, but tsc names the baseline after the lowercased one
+        cstr_lowercase(&next);
+        push_configurations(variations, offset + 1, &next, out);
+        cstr_drop(&next);
+    }
+}
+
+void baseline_test_configurations(csview test_source, VecCStr* out) {
+    test_source = csview_from_range(file_start_excluding_bom(test_source.buf), csview_end_ptr(test_source));
+    VecVariation variations = {0};
+    for_each (line, lines_sv, test_source) {
+        csview key, value;
+        if (!parse_tag(line, &key, &value) || !compiler_option_varies(key)) continue;
+        // A repeated option replaces the earlier one
+        for (isize i = vec_variation_size(&variations) - 1; i >= 0; i--) {
+            if (sv_equals_ignore_case(vec_variation_at(&variations, i)->key, key)) {
+                variation_drop(vec_variation_at_mut(&variations, i));
+                vec_variation_erase_n(&variations, i, 1);
+            }
+        }
+        VecCStr values = split_vary_by_value(key, value);
+        if (vec_cstr_size(&values)) {
+            // Sorted by option name, which is how tsc names the configuration
+            isize at = 0;
+            while (at < vec_variation_size(&variations)) {
+                csview other = vec_variation_at(&variations, at)->key;
+                cstr a = cstr_from_sv(key), b = cstr_from_sv(other);
+                cstr_lowercase(&a);
+                cstr_lowercase(&b);
+                bool before = cstr_cmp(&a, &b) < 0;
+                c_drop(cstr, &a, &b);
+                if (before) break;
+                at++;
+            }
+            vec_variation_insert_n(&variations, at, &(Variation){ .key = key, .values = values }, 1);
+        } else {
+            vec_cstr_drop(&values);
+        }
+    }
+    cstr prefix = cstr_null;
+    push_configurations(&variations, 0, &prefix, out);
+    vec_variation_drop(&variations);
+}
+
+// A harness directive that is a compiler option (or one of the harness's own that we honour)
+static void apply_setting(BaselineTestCase* me, csview key, csview value) {
+    if (tag_equals(key, "notypesandsymbols")) {
+        my no_types_and_symbols = tag_equals(value, "true");
+        return;
+    }
+    // Unknown options are overwhelmingly emit options. A bad value is something tsc's harness refuses to run, which
+    // doesn't happen in tests that have baselines
+    ignore compiler_options_set(program_options(my program), key, value);
 }
 
 // Takes ownership of contents. Only records the file once there's actually something behind it in the mock
@@ -139,7 +303,7 @@ static_failable add_virtual_source_file(BaselineTestCase* me, csview virtual_pat
     return ok;
 }
 
-static_failable load_test_source(BaselineTestCase* me) {
+static_failable load_test_source(BaselineTestCase* me, csview config) {
     cstr unparsed_contents = cstr_null;
     cstr source_contents = cstr_null;
 
@@ -164,12 +328,8 @@ static_failable load_test_source(BaselineTestCase* me) {
                 }
                 has_line = false;
                 current_filename = tag_value;
-            } else if (tag_equals(tag_key, "strict") && tag_equals(tag_value, "true")) {
-                error_config_enable_strict(&my error_ctx->config);
-            } else if (tag_equals(tag_key, "noimplicitany") && tag_equals(tag_value, "true")) {
-                my error_ctx->config.no_implicit_any = true;
-            } else if (tag_equals(tag_key, "lib")) {
-                my lib_list = cstr_from_sv(tag_value);
+            } else {
+                apply_setting(me, tag_key, tag_value);
             }
         } else {
             cstr_append_sv(&source_contents, i);
@@ -186,6 +346,19 @@ static_failable load_test_source(BaselineTestCase* me) {
         cstr_drop(&unparsed_contents);
     }
     cstr_drop(&unparsed_contents);
+
+    // The configuration's values replace the "es5,es2015" the directives above left behind
+    while (config.size) {
+        isize end = csview_find_sv(config, c_sv(","));
+        csview pair = csview_slice(config, 0, end);
+        isize eq = csview_find_sv(pair, c_sv("="));
+        check(eq != c_NPOS);
+        apply_setting(me, csview_slice(pair, 0, eq), csview_slice(pair, eq + 1, INTPTR_MAX));
+        if (end == c_NPOS) break;
+        config = csview_slice(config, end + 1, INTPTR_MAX);
+    }
+    compiler_options_resolve(program_options(my program));
+    cstr_take(&my lib_list, compiler_options_lib_files(program_options(my program)));
 
     my did_run = true;
     return ok;
@@ -310,7 +483,13 @@ static bool path_is_script(csview path) {
     return false;
 }
 
-BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_path, bool noisy, bool show_logs) {
+BaselineTestCase run_baseline_test_case(
+    BaselineTestCache* cache,
+    csview source_path,
+    csview config,
+    bool noisy,
+    bool show_logs
+) {
     // A quiet test case shouldn't print the log_error()s the checker emits for constructs it can't handle yet
     LogLevel prev_threshold = logger_config.threshold;
     if (!noisy && !show_logs) {
@@ -325,13 +504,12 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         .source_path = source_path,
         .error_ctx = errs,
         .fs = fs,
-        .lib_list = cstr_lit("default"),
         .program = program,
         .noisy = noisy,
     };
 
     // A test we can't read or unpack just doesn't run; did_run stays false and the result is reported as such
-    try (load_test_source(&ret)) if_err (e) {
+    try (load_test_source(&ret, config)) if_err (e) {
         if (noisy) error_base_eprintln(e);
     }
 
@@ -362,13 +540,13 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         program_make_current(program); // The traversal below looks at types either way
     }
 
-    set_error_config(&errs->config);
+    set_compiler_options(program_options(program));
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         block_compile_test_info(&i->source->ast, &ret);
     }
-    clear_error_config();
+    clear_compiler_options();
 
     process_errors(&ret);
 

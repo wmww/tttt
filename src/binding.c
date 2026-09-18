@@ -139,7 +139,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
         case BINDING_IDENTIFIER:
             if (my declaration.get) {
                 Type const* type = type_resolve(binding_get_effective_type(me));
-                if (type_is_self_referential(type) && get_error_config()->no_implicit_any) {
+                if (type_is_self_referential(type) && compiler_options()->no_implicit_any) {
                     error_ctx_error_d(errs, my content_span, 7022,
                         "'", my content_span, "' implicitly has type '", type,
                         "' because it does not have a type annotation and is referenced directly or indirectly in "

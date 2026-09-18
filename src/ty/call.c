@@ -89,7 +89,7 @@ static Args collect_args(Checker* me, CallExpr const* call) {
 }
 
 static Ty const* with_undefined(Checker* me, Ty const* type) {
-    if (!get_error_config()->strict_null_checks) return type;
+    if (!compiler_options()->strict_null_checks) return type;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
@@ -566,7 +566,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallExpr const* cal
             error_ctx_error_d(errs, call->callable.outer_span, 2507, "Type '", rendered, "' is not a constructor function type.");
             cstr_drop(&rendered);
         } else if (call->uses_new && other_count) {
-            if (get_error_config()->no_implicit_any) {
+            if (compiler_options()->no_implicit_any) {
                 error_ctx_error_d(errs, call_span, 7009,
                     "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
             }
