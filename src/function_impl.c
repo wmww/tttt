@@ -7,6 +7,7 @@
 #include "several_types.h"
 
 void function_arg_drop(FunctionArg* me) {
+    vec_expr_drop(&my decorators);
     initialized_binding_drop(&my initializer);
 }
 
@@ -35,6 +36,11 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
     my lazy_type.tag = LAZY_TYPE_FUNCTION;
     if (my is_async) {
         my promise_decl = scope_stack_get_type(names, c_sv("Promise"));
+    }
+    for_each (i, vec_function_arg, &my args) {
+        for_each (decorator, vec_expr, &i->decorators) {
+            expr_lookup_names(decorator, names, errs);
+        }
     }
 
     // Handle generics (includes adding names)
@@ -166,6 +172,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             if (get_error_config()->no_implicit_any) {
                 binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
             }
+        }
+        for_each (decorator, vec_expr, &i->decorators) {
+            expr_typecheck(decorator, errs);
         }
         initialized_binding_typecheck(&i->initializer, errs);
     }

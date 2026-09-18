@@ -14,6 +14,7 @@ typedef struct FunctionArg {
     bool explicit_optional;
     Span rest_span;
     bool rest;
+    VecExpr decorators; // TODO: only checked as expressions
 } FunctionArg;
 
 void function_arg_drop(FunctionArg* me);

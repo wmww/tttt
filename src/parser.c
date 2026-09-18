@@ -118,6 +118,7 @@ static bool parse_number(Parser* parent, double* ret);
 static bool parse_string(Parser* parent, cstr* ret);
 static bool parse_template(Parser* parent, VecExpr* ret);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
+static bool parse_decorators(Parser* parent, VecExpr* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
@@ -569,6 +570,12 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
 
                 case '#': case '*':
                     if (!is_member) {
+                        goto loop_end;
+                    }
+                    break;
+
+                case '@': // `export @decorator class`
+                    if (is_member) {
                         goto loop_end;
                     }
                     break;
@@ -1542,6 +1549,8 @@ static bool parse_function_args(
                 bool rest = false;
                 Span rest_span = span_null;
                 Anchor arg_start = anchor(&p);
+                VecExpr decorators = {0};
+                ignore parse_decorators(&p, &decorators);
 
                 ModifierList modifier_list;
                 parse_modifier_list(&p, true, &modifier_list);
@@ -1559,6 +1568,7 @@ static bool parse_function_args(
                     initializer.binding.tag = BINDING_IDENTIFIER;
                     initializer.binding.content_span = span_make(p.shared->source, p.pos - 4, p.pos);
                 } else {
+                    vec_expr_drop(&decorators);
                     goto drop_and_fail;
                 }
                 hop_whitespace(&p);
@@ -1584,6 +1594,7 @@ static bool parse_function_args(
                     .initializer = initializer,
                     .explicit_optional = explicit_optional,
                     .rest = rest,
+                    .decorators = decorators,
                 });
 
                 if (p.pos == before_param) {
@@ -2256,7 +2267,26 @@ static bool parse_index_or_expr_interface_member(
     return parse_success(&p);
 }
 
+static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
+
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+
+    VecExpr decorators = {0};
+    if (!is_type) {
+        ignore parse_decorators(&p, &decorators);
+    }
+    if (!parse_class_item_inner(&p, is_type, is_abstract, ret)) {
+        vec_expr_drop(&decorators);
+        return parse_fail(&p);
+    }
+    ret->decorators = decorators;
+    ret->span = span_from(a);
+    return parse_success(&p);
+}
+
+static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -2462,6 +2492,9 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    VecExpr decorators = {0};
+    ignore parse_decorators(&p, &decorators);
+
     bool is_abstract = false;
     if (hop_start_if_ends_on_word_break(&p, "abstract")) {
         hop_whitespace(&p);
@@ -2469,11 +2502,13 @@ static bool parse_class_decl(Parser* parent, ClassDecl* ret) {
     }
 
     if (!hop_start_if_ends_on_word_break(&p, "class")) {
+        vec_expr_drop(&decorators);
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
     *ret = (ClassDecl){
+        .decorators = decorators,
         .is_abstract = is_abstract,
         .extends = expr_implicit_any_no_span,
     };
@@ -3247,6 +3282,27 @@ static bool parse_template(Parser* parent, VecExpr* ret) {
     }
 
     *ret = substitutions;
+    return parse_success(&p);
+}
+
+// Zero or more decorators (`@a @b.c(d)`), fails if there are none. Whitespace after them is hopped
+static bool parse_decorators(Parser* parent, VecExpr* ret) {
+    if (*parent->pos != '@') {
+        return false;
+    }
+    Parser p = parser(parent);
+    *ret = vec_expr_init();
+    while (hop_char(&p, '@')) {
+        hop_whitespace(&p);
+        // Member accesses and calls, anything more has to be in parentheses
+        ExprCtx ctx = expr_ctx_null;
+        ctx.reject_operators = true;
+        Expr expr;
+        if (expect_expr(&p, ctx, &expr)) {
+            vec_expr_push(ret, expr);
+        }
+        hop_whitespace(&p);
+    }
     return parse_success(&p);
 }
 
@@ -4652,8 +4708,16 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         Block block;
     } parsed;
 
+    // Decorators can come before `export`, the ones after it are handled by parse_class_decl()
+    VecExpr decorators = {0};
+    Span decorators_span = span_null;
+    if (parse_decorators(&p, &decorators)) {
+        decorators_span = span_from(a);
+    }
+
     ModifierList modifiers;
     if (!parse_modifier_list(&p, false, &modifiers)) {
+        vec_expr_drop(&decorators);
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -4763,7 +4827,23 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         };
     } else {
         modifier_list_drop(&modifiers);
+        vec_expr_drop(&decorators);
         return parse_fail(&p);
+    }
+
+    if (!vec_expr_is_empty(&decorators)) {
+        if (ret->tag == STATEMENT_DECL_CLASS) {
+            // These come before any that parse_class_decl() found after `export`
+            for_each (i, vec_expr, &ret->decl.class->decorators) {
+                vec_expr_push(&decorators, *i);
+            }
+            ret->decl.class->decorators.size = 0; // The elements were moved
+            vec_expr_drop(&ret->decl.class->decorators);
+            ret->decl.class->decorators = decorators;
+        } else {
+            parse_error(&p, decorators_span, 1206, "Decorators are not valid here.");
+            vec_expr_drop(&decorators);
+        }
     }
 
     modifier_list_drop(&modifiers);

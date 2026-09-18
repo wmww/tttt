@@ -20,6 +20,7 @@ typedef struct ClassItem {
     } tag;
     AccessModifier access;
     Span span;
+    VecExpr decorators; // TODO: only checked as expressions, not as decorators of this member
     union {
         struct {
             Span name_span;
@@ -79,6 +80,7 @@ typedef struct ClassDecl {
     Span name;
     bool is_abstract;
     bool has_typechecked;
+    VecExpr decorators; // TODO: only checked as expressions, not as decorators of this class
     Generic generic;
     Expr extends;
     VecType implements;

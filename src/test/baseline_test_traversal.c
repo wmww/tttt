@@ -247,6 +247,9 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     }
     generic_compile_test_info(&my generic, ctx);
     for_each (i, vec_function_arg, &my args) {
+        for_each (decorator, vec_expr, &i->decorators) {
+            expr_compile_test_info(decorator, ctx);
+        }
         initialized_binding_compile_test_info(&i->initializer, ctx);
     }
     if (my ret_explicit && !my is_constructor) {
@@ -363,6 +366,9 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
 }
 
 void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span class_name, BaselineTestCase* ctx) {
+    for_each (i, vec_expr, &my decorators) {
+        expr_compile_test_info(i, ctx);
+    }
     switch(my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_compile_test_info(&my constructor.func, ctx);
@@ -425,6 +431,9 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
 }
 
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
+    for_each (i, vec_expr, &my decorators) {
+        expr_compile_test_info(i, ctx);
+    }
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(my declaration.get),

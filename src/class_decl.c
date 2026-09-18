@@ -7,6 +7,7 @@
 #include "error.h"
 
 void class_item_drop(ClassItem* me) {
+    vec_expr_drop(&my decorators);
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_drop(&my constructor.func);
@@ -90,6 +91,7 @@ Type class_item_get_type(ClassItem* me) {
 }
 
 void class_decl_drop(ClassDecl* me) {
+    vec_expr_drop(&my decorators);
     generic_drop(&my generic);
     expr_drop(&my extends);
     vec_type_drop(&my implements);
@@ -103,6 +105,9 @@ void class_decl_drop(ClassDecl* me) {
 }
 
 void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
+    for_each (i, vec_expr, &my decorators) {
+        expr_lookup_names(i, names, errs);
+    }
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_lookup_names(&my constructor.func, false, names, errs);
@@ -171,6 +176,10 @@ static void class_members_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCt
 void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_CLASS_INSTANCE;
     my class_type.tag = LAZY_TYPE_CLASS_CLASS;
+
+    for_each (i, vec_expr, &my decorators) {
+        expr_lookup_names(i, names, errs);
+    }
 
     Scope generic_scope = scope_init(errs);
     scope_push_generic_to_stack(&generic_scope, &my generic, names);
@@ -383,6 +392,15 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         return;
     }
     my has_typechecked = true;
+
+    for_each (i, vec_expr, &my decorators) {
+        expr_typecheck(i, errs);
+    }
+    for_each (i, vec_class_item, &my items) {
+        for_each (decorator, vec_expr, &i->decorators) {
+            expr_typecheck(decorator, errs);
+        }
+    }
 
     generic_typecheck(&my generic, errs);
 

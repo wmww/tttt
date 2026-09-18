@@ -264,10 +264,12 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_FUNCTION: {
-            Scope tmp_scope = scope_init(errs);
-            function_impl_add_names(my function, &tmp_scope, false);
-            scope_drop(&tmp_scope);
+            // A function expression's name is only visible inside it
+            Scope name_scope = scope_init(errs);
+            function_impl_add_names(my function, &name_scope, false);
+            scope_push_to_stack(&name_scope, names);
             function_impl_lookup_names(my function, !span_valid(my function->arrow_span), names, errs);
+            scope_drop(&name_scope);
         }   break;
 
         case EXPR_OBJECT:
@@ -289,8 +291,8 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
             Scope class_name_scope = scope_init(errs);
             class_decl_add_names(my class_decl, &class_name_scope, false);
             scope_push_to_stack(&class_name_scope, names);
-            scope_drop(&class_name_scope);
             class_decl_lookup_names(my class_decl, names, errs);
+            scope_drop(&class_name_scope);
         }   break;
 
         case EXPR_SPREAD:

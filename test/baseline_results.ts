@@ -3457,7 +3457,7 @@ const baselines = {
     },
     'classBlockScoping': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'classCannotExtendVar': {
@@ -3537,8 +3537,8 @@ const baselines = {
     },
     'classExpressionWithDecorator1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'classExpressionWithResolutionOfNamespaceOfSameName01': {
         errors: true,
@@ -3546,32 +3546,32 @@ const baselines = {
         types: true,
     },
     'classExpressionWithStaticProperties1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classExpressionWithStaticProperties2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'classExpressionWithStaticProperties3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'classExpressionWithStaticPropertiesES61': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classExpressionWithStaticPropertiesES62': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'classExpressionWithStaticPropertiesES63': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4686,8 +4686,8 @@ const baselines = {
         types: false,
     },
     'commentOnDecoratedClassDeclaration': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'commentOnElidedModule1': {
@@ -6472,7 +6472,7 @@ const baselines = {
     },
     'contextuallyTypedParametersOptionalInJSDoc': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypedParametersWithInitializers1': {
@@ -6497,7 +6497,7 @@ const baselines = {
     },
     'contextuallyTypedParametersWithQuestionToken': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextuallyTypedSymbolNamedProperties': {
@@ -8787,17 +8787,17 @@ const baselines = {
     },
     'decoratorInJsFile': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorInJsFile1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataConditionalType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataElidedImport': {
@@ -8811,48 +8811,48 @@ const baselines = {
         types: undefined,
     },
     'decoratorMetadataForMethodWithNoReturnTypeAnnotation01': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataGenericTypeVariable': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadataGenericTypeVariableDefault': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadataGenericTypeVariableInScope': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadataNoLibIsolatedModulesTypes': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadataNoStrictNull': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataOnInferredType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataPromise': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataRestParameterWithImportedType': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataTypeOnlyExport': {
@@ -8862,41 +8862,41 @@ const baselines = {
     },
     'decoratorMetadataTypeOnlyImport': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataWithConstructorType': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8906,28 +8906,28 @@ const baselines = {
         types: false,
     },
     'decoratorMetadataWithImportDeclarationNameCollision8': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorReferenceOnOtherProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorReferences': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorWithNegativeLiteralTypeNoCrash': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorWithUnderscoreMethod': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorsOnComputedProperties': {
@@ -10391,12 +10391,12 @@ const baselines = {
         types: undefined,
     },
     'emitDecoratorMetadata_object': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'emitDecoratorMetadata_restArgs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12142,7 +12142,7 @@ const baselines = {
     },
     'experimentalDecoratorMetadataUnresolvedTypeObjectInEmit': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'explicitAnyAfterSpreadNoImplicitAnyError': {
@@ -13496,9 +13496,9 @@ const baselines = {
         types: false,
     },
     'functionExpressionReturningItself': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'functionExpressionShadowedByParams': {
         errors: false,
@@ -13511,9 +13511,9 @@ const baselines = {
         types: false,
     },
     'functionExpressionWithResolutionOfTypeOfSameName01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'functionExpressionWithResolutionOfTypeOfSameName02': {
         errors: true,
@@ -15551,8 +15551,8 @@ const baselines = {
         types: false,
     },
     'importHelpers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'importHelpersAmd': {
@@ -15586,8 +15586,8 @@ const baselines = {
         types: false,
     },
     'importHelpersInIsolatedModules': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'importHelpersNoEmitHelpersExportDefault': {
@@ -15612,7 +15612,7 @@ const baselines = {
     },
     'importHelpersNoModule': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importHelpersOutFile': {
@@ -18141,7 +18141,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsGlobalFileConstFunctionNamed': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18307,7 +18307,7 @@ const baselines = {
     },
     'jsFileCompilationDecoratorSyntax': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsFileCompilationDuplicateFunctionImplementation': {
@@ -19757,41 +19757,41 @@ const baselines = {
     },
     'metadataOfClassFromAlias': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'metadataOfClassFromAlias2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'metadataOfClassFromModule': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'metadataOfEventAlias': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'metadataOfStringLiteral': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'metadataOfUnion': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'metadataOfUnionWithNull': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'metadataReferencedWithinFilteredUnion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20571,8 +20571,8 @@ const baselines = {
         types: undefined,
     },
     'modulePreserveImportHelpers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'modulePreserveTopLevelAwait1': {
@@ -21156,9 +21156,9 @@ const baselines = {
         types: true,
     },
     'namedFunctionExpressionCall': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'namedFunctionExpressionCallErrors': {
         errors: true,
@@ -21931,8 +21931,8 @@ const baselines = {
         types: true,
     },
     'noEmitHelpers2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'noEmitOnError': {
@@ -24152,7 +24152,7 @@ const baselines = {
     },
     'potentiallyUncalledDecorators': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'predicateSemantics': {
@@ -25342,7 +25342,7 @@ const baselines = {
     },
     'recursiveNamedLambdaCall': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'recursiveObjectLiteral': {
@@ -26676,7 +26676,7 @@ const baselines = {
         types: false,
     },
     'sourceMapValidationDecorators': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -28381,8 +28381,8 @@ const baselines = {
         types: false,
     },
     'targetEs6DecoratorMetadataImportNotElided': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'targetTypeArgs': {
@@ -28481,8 +28481,8 @@ const baselines = {
         types: false,
     },
     'templateLiteralsAndDecoratorMetadata': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'templateLiteralsInTypes': {
@@ -28931,8 +28931,8 @@ const baselines = {
         types: false,
     },
     'tslibReExportHelpers': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'tslibReExportHelpers2': {
@@ -32147,7 +32147,7 @@ const baselines = {
     },
     'asyncAwaitNestedClasses_es5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'asyncAwait_es5': {
@@ -33251,8 +33251,8 @@ const baselines = {
         types: undefined,
     },
     'classStaticBlock27': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'classStaticBlock28': {
@@ -34377,7 +34377,7 @@ const baselines = {
     },
     'privateNamesAndDecorators': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNamesAndFields': {
@@ -35451,48 +35451,48 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassAccessor1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassAccessor8': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'constructableDecoratorOnClass01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnClassConstructor1': {
@@ -35506,23 +35506,23 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassConstructor3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnClassConstructor4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassConstructorParameter1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassConstructorParameter4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassConstructorParameter5': {
@@ -35531,63 +35531,63 @@ const baselines = {
         types: undefined,
     },
     'decoratedBlockScopedClass1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratedBlockScopedClass2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratedBlockScopedClass3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratedClassExportsCommonJS1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratedClassExportsCommonJS2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratedClassExportsSystem1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratedClassExportsSystem2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratedClassFromExternalModule': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorChecksFunctionBodies': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorInstantiateModulesInFunctionBodies': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass3': {
@@ -35596,33 +35596,33 @@ const baselines = {
         types: false,
     },
     'decoratorOnClass4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass9': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod10': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod11': {
@@ -35632,7 +35632,7 @@ const baselines = {
     },
     'decoratorOnClassMethod12': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod13': {
@@ -35641,28 +35641,28 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassMethod14': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod15': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod16': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod17': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'decoratorOnClassMethod18': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod19': {
@@ -35671,13 +35671,13 @@ const baselines = {
         types: undefined,
     },
     'decoratorOnClassMethod2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethod4': {
@@ -35702,7 +35702,7 @@ const baselines = {
     },
     'decoratorOnClassMethod8': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethodOverload1': {
@@ -35711,18 +35711,18 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassMethodOverload2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnClassMethodParameter1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethodParameter2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassMethodParameter3': {
@@ -35732,57 +35732,57 @@ const baselines = {
     },
     'decoratorOnClassMethodThisParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty10': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty11': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty12': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty13': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnClassProperty7': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorCallGeneric': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorInAmbientContext': {
@@ -35796,18 +35796,18 @@ const baselines = {
         types: false,
     },
     'decoratorMetadata': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataWithTypeOnlyImport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorMetadataWithTypeOnlyImport2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnArrowFunction': {
@@ -35837,7 +35837,7 @@ const baselines = {
     },
     'decoratorOnFunctionParameter': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'decoratorOnImportEquals1': {
@@ -35867,12 +35867,12 @@ const baselines = {
     },
     'decoratorOnVar': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'legacyDecorators-contextualTypes': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'missingDecoratorType': {
@@ -38361,62 +38361,62 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassAccessor1.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnClass1.es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass2.es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass3.es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass4.es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'decoratorOnClass5.es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass6.es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass7.es6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'decoratorOnClass8.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnClassMethod1.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnClassMethodParameter1.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnClassProperty1.es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39641,8 +39641,8 @@ const baselines = {
         types: true,
     },
     'decoratedDefaultExportsGetExportedAmd': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'defaultExportsGetExportedAmd': {
@@ -39661,8 +39661,8 @@ const baselines = {
         types: true,
     },
     'decoratedDefaultExportsGetExportedCommonjs': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'defaultExportsGetExportedCommonjs': {
@@ -39676,8 +39676,8 @@ const baselines = {
         types: true,
     },
     'decoratedDefaultExportsGetExportedSystem': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'defaultExportsGetExportedSystem': {
@@ -39706,8 +39706,8 @@ const baselines = {
         types: true,
     },
     'decoratedDefaultExportsGetExportedUmd': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'defaultExportsGetExportedUmd': {
@@ -40916,14 +40916,14 @@ const baselines = {
         types: false,
     },
     'templateStringWithEmbeddedFunctionExpression': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateStringWithEmbeddedFunctionExpressionES6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateStringWithEmbeddedInOperator': {
         errors: true,
@@ -41797,7 +41797,7 @@ const baselines = {
     },
     'generatorTypeCheck39': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck4': {
@@ -41906,8 +41906,8 @@ const baselines = {
         types: false,
     },
     'generatorTypeCheck59': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck6': {
@@ -41921,8 +41921,8 @@ const baselines = {
         types: false,
     },
     'generatorTypeCheck61': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck62': {
@@ -42256,13 +42256,13 @@ const baselines = {
         types: undefined,
     },
     'esDecorators-classDeclaration-commonjs-classNamespaceMerge': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'esDecorators-classDeclaration-commonjs': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'esDecorators-classDeclaration-exportModifier.2': {
@@ -42662,7 +42662,7 @@ const baselines = {
     },
     'esDecorators-arguments': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'esDecorators-contextualTypes.2': {
@@ -42671,8 +42671,8 @@ const baselines = {
         types: false,
     },
     'esDecorators-contextualTypes': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'esDecorators-decoratorExpression.1': {
@@ -42696,7 +42696,7 @@ const baselines = {
         types: undefined,
     },
     'esDecorators-preservesThis': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -44676,8 +44676,8 @@ const baselines = {
         types: true,
     },
     'es6modulekindWithES5Target': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'es6modulekindWithES5Target10': {
@@ -44686,8 +44686,8 @@ const baselines = {
         types: false,
     },
     'es6modulekindWithES5Target11': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'es6modulekindWithES5Target12': {
@@ -44701,8 +44701,8 @@ const baselines = {
         types: true,
     },
     'es6modulekindWithES5Target3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'es6modulekindWithES5Target4': {
@@ -44746,8 +44746,8 @@ const baselines = {
         types: true,
     },
     'esnextmodulekindWithES5Target': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'esnextmodulekindWithES5Target10': {
@@ -44756,8 +44756,8 @@ const baselines = {
         types: false,
     },
     'esnextmodulekindWithES5Target11': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'esnextmodulekindWithES5Target12': {
@@ -44771,8 +44771,8 @@ const baselines = {
         types: true,
     },
     'esnextmodulekindWithES5Target3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'esnextmodulekindWithES5Target4': {
@@ -57877,7 +57877,7 @@ const baselines = {
     },
     'readonlyArraysAndTuples2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restTupleElements1': {
@@ -57947,7 +57947,7 @@ const baselines = {
     },
     'wideningTuples2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'wideningTuples3': {
