@@ -8,8 +8,8 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, first insights session)
 - ~17k LoC of C in `src/` (parser 4.2k, type.c 1.9k, display 1.3k, expr/statement ~0.9k each). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: 1084 / 11962 tests fully pass (829 before the parser-gaps sessions, 987 after the first). Per
-  component: errors 4396, symbols 5939, types 2146 pass (of 11236 that run; the other 726 are explained in
+- `./fasttest.sh`: 1100 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
+  3). Per component: errors 4553, symbols 5939, types 2149 pass (of 11236 that run; the other 726 are explained in
   `measurements.md`).
 - The test harness only honours `@filename`, `@strict: true`, `@noImplicitAny: true` and `@lib`. Every other
   compiler option (target, module, strictNullChecks individually, jsx, allowJs, multi-value options like
@@ -24,11 +24,15 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
-- Type core migration (plan 02): **stages 1 and 2 of 5 done.** `src/ty/` has the interned, arena-allocated `Ty` core
-  (identity, lazy members, mapper instantiation, lowering from the AST, tsc-style printer) running in shadow mode
-  over the whole suite: no crashes, 0.4% rendering mismatches against the legacy display (mostly the new core being
-  right), 73 us per program. The legacy checker still produces every result, but its `LazyType` memos now live in the per-`Program` `Checker`
-  (stage 2), so the AST is read-only while checking, bar the `has_cache` fields of legacy type operators.
+- Type core migration (plan 02): **stages 1-3 of 5 done.** `src/ty/` has the interned, arena-allocated `Ty` core
+  (identity, lazy members, mapper instantiation, lowering from the AST, tsc-style printer), the per-`Program`
+  `Checker` owns all checker state, and since stage 3 **every type relation runs on the new core** (id-keyed
+  persistent caches, maybe-stack, deep-nesting check, measured variances, conditional types with `infer`,
+  elaboration chains). The recursive-generics blow-up is gone (31k depth-limit hits -> 0, suite 8.3 s -> 5.6 s).
+  Types are still *evaluated* by the legacy checker and lowered at every relation call; that bridge
+  (`LowerCtx.transient`, see `hacks.md`) is the main piece of scaffolding now, and stage 4 removes the need for it.
+  A correct relation also stopped forgiving the legacy checker's weak spots (inference, contextual typing,
+  narrowing): expect error-noise from those areas until they're rebuilt on `Ty`.
 
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
@@ -47,8 +51,8 @@ skim, plan 03 covers them:
    `symbols`/`types` baseline printing tractable. Here, generic instantiation is clone-and-substitute
    (`generic_degenericize_type`, `replace_named_types_with`), and ownership is a manual discipline with ~90
    `type_clone` call sites.
-2. **The relation cache is keyed by a string rendering of both types** (`type_pair_cache.h`, `hash_key` display
-   mode). That is a symptom of (1), and is hot-path string building - the opposite of beating tsgo.
+2. ~~The relation cache is keyed by a string rendering of both types~~ **Fixed by plan 02 stage 3**: relations run
+   on `Ty` with id-keyed caches; `type_pair_cache.h` and the `hash_key` display mode are deleted.
 3. **No control flow analysis at all.** No narrowing by typeof/instanceof/truthiness/discriminants/assignment, no
    reachability, no definite assignment. A huge share of real-world TS and of the test suite depends on it. It
    needs a flow graph (or equivalent) built at bind time, plus per-reference-per-flow-node caching - which in turn

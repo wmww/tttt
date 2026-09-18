@@ -1,9 +1,6 @@
 # Hacks
 Suboptimal-but-working code. Prefer function names over line numbers.
 
-- `type_pair_cache.h`: relation cache keyed by a string rendering of both types (`hash_key_display`). Slow and
-  fragile (two distinct types that print the same collide). Worse: it lives in `TypeCtx`, which is created per
-  top-level `type_extends` call, so it only breaks cycles and never caches across queries. Goes away in plan 02 stage 3.
 - `IndexedType`/`KeyofType`/`TernaryType.has_cache/cached`: the last checker state that is written into AST-owned
   `Type`s during typechecking, including the lib AST the harness shares between test programs (3 tests still leave
   net allocations behind in it: `excessPropertyCheckWithEmptyObject`, `intersectionsOfLargeUnions`,
@@ -24,7 +21,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   temporary); the AST's own slots are dropped by `checker_drop`, which `program_drop` runs before dropping the AST.
   Dropping an AST while *another* program's checker is current would reset nothing (different slots), so it's safe,
   but the rule is implicit.
-- `type_pair_cache_entry_update`: uses a key whose ownership was already handed to the map ("hacky but it works").
 - `baseline_test_case.c: load_test_source`: compiler option directives handled as ad-hoc string compares; almost
   all options ignored.
 - `program.c`: `.js` import path handling by suffix check - not real module resolution.
@@ -45,18 +41,14 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   registered anywhere, so `import ... from "m"` still reports TS2307. Needs a program-level ambient module table
   (module resolution work). Their `"m"` name line is also missing from the symbols/types baselines.
 - `Interface.namespace_scope`: namespace value types print as `typeof A.B` via a borrowed `Scope*` stuffed into the
-  structural interface; without it, display (and the string-keyed relation cache) recursed forever on
-  `namespace A { export var a = A }`. Any other structural walk over such a type (eg `type_extends`) is still only
-  saved by the recursion depth limit. Type identity in the new type core is the real fix.
+  structural interface; without it, display recursed forever on `namespace A { export var a = A }`. Relations go
+  through the new core now, where a namespace is a declared type by scope. Dies with the legacy types.
 - `parse_jump_target` / `Statement.jump_label`: labels are parsed and shown in the types baseline, but never checked
   (TS1116 unknown label, TS1107 crossing function boundary, TS7028 unused label, duplicate labels). `inside_label`
   in `BlockTypecheckCtx` just permits any labeled `break` inside any labeled statement.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
 - `EnumDecl.is_const`: recorded, nothing uses it.
-- `type_extends_internal`: recursion depth limit lowered 400 -> 100 purely to stop recursive generics (`Either<L, A>`
-  style classes) from eating 38 GB: each level clones-and-substitutes bigger types and renders them to strings for the
-  cache key. Returns `true` (assignable) when hit, 31k times per suite run. Not a fix; the type core redesign is.
 - `object_expr_evaluate_type`: computed keys become a named member if the key type is a string/number literal, a
   `[x: string]`/`[x: number]` index signature if it's string/number/any, and are **silently left out** otherwise
   (unique symbols, unions of literals). Accessor pairs are merged by name; a setter-only property is writable `any`-ish
@@ -98,7 +90,64 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
 
-## New type core (`src/ty/`, plan 02). Everything here is about stage-1 scaffolding or a known gap
+## Relations bridge (plan 02 stage 3): legacy checker -> `ty/relate.c`
+- `type_extends` / `type_overlaps` / `check_assignable_or_error_internal` (`lower_for_relation`): both sides are
+  lowered on every call, since expressions still evaluate to legacy types. Whatever is passed may be a temporary that
+  gets freed, hence `LowerCtx.transient`: `ty_structural_from_legacy` lowers such object types eagerly and interns them
+  by shape instead of by node, keeping pointers only to what `legacy_stable_view` vouches for (parsed nodes, memos of
+  slotted non-identifier LazyTypes, via arena copies of the `TYPE_LAZY` wrapper). The rule "parsed or slotted = outlives
+  the checker" is implicit and unverified beyond valgrind runs. Builds members in the arena before knowing whether
+  the shape already exists (garbage per call). Overloads inside a temporary keep only the first signature. All of
+  this dies when expressions evaluate to `Ty` (stage 4b).
+- `check_assignable_or_error_internal`: the head line of TS2322/TS2345 is still the legacy rendering of the legacy
+  types (with `type_abstract_literals`), the elaboration lines under it come from `ty_display`. `TyDisplay.widen_literals`
+  imitates the abstraction for temporaries. A source that lowers to `any` is let through even to `never`, because the
+  legacy checker says `any` for whatever it can't type (missing initializer...).
+- `legacy_infer_extends` (+`_more`, `type_contains_inferred`): the old structural relation survives privately in
+  `type.c` for one job, resolving legacy conditional types that contain `infer` (the results are needed as legacy
+  types). No cache; cycles are cut by a coarse (declaration, declaration) in-progress list that assumes "extends",
+  plus the old depth limit. Conditional types without `infer` pick their branch with the new relation. Dies in 4b.
+- `TY_RELATION_ASSIGNABLE_STRICT_NULLS` / `type_extends_strict_nulls`: what the legacy operator checks in `expr.c`
+  mean by "extends number" (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently
+  (TS18050, never emitted here).
+- `type_composite_internal`: union/intersection simplification of legacy types runs the new strict-subtype relation
+  pairwise per added member (lowering both each time). Quadratic; `ty_union` itself still has no subtype reduction.
+- `generic_infer_callable_types` / `inference_gave_up`: a type parameter whose inference ran into a "not yet
+  implemented" shape (or a named generic like `Box<T>`) becomes `any` instead of `unknown`, so that the (now
+  correct) relation doesn't turn every weak inference into a TS2345/TS2322.
+- `callable_type_typecheck` TS2370: skipped for `...args: infer A` by looking at the written node.
+
+## New type core (`src/ty/`, plan 02). Everything here is about scaffolding or a known gap
+- `relate.c` gaps: no excess property checks / freshness, no weak type check, no private/protected/nominal class
+  rules, no discriminated-union decomposition of the source, no optionality of parameters (`undefined` isn't added
+  under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are),
+  `this` types. `compare_signatures`: generic source signatures are unified positionally with same-arity generic
+  targets, else erased to `any` (tsc instantiates the source in the context of the target; needs inference).
+  Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
+- `get_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the same for arrays and
+  tuples). `VARIANCE_UNRELIABLE` is set from a checker-wide flag whenever a deferred type or mapped type is compared
+  while *any* variance is being measured; cached sub-results don't set it. No alias variances: instantiated
+  aliases of object types compare structurally (the maybe-cache keeps that finite).
+- Relation cache keys are plain (source id, target id); tsc's key postfix for in-scope type parameters and
+  intersection state isn't there. `RelationState.overflow` (100 deep) reports through `instantiation_limit_hit`,
+  which only `check_assignable_or_error_internal` turns into TS2589.
+- Enums: still the nominal placeholder. `is_simple_related` lets members of one enum assign to each other (no
+  declaration widening yet) and treats a member without initializer (NaN placeholder value) as equal to any number
+  literal. `enum_has_kind` asks the legacy structural type whether an enum is numeric.
+- `ty_conditional_resolve`: without a permissive instantiation, a failed check with type variables nested in either
+  side stays deferred (tsc would pick the false branch if it fails even with them replaced by `any`). `infer X extends
+  C` constraints aren't checked. `infer_from`: no priorities, no contravariant candidates (union of everything),
+  union targets infer to every member. An `infer` in rest position gets its implied `unknown[]` constraint by
+  mutating the type parameter's state (`imply_rest_constraint`, and up front in `lower` for TYPE_TERNARY).
+- `TyCondBranch` / `ty_deferred_reference`: conditional branches and array/tuple nodes are only lazy when the node
+  syntactically reaches the alias being resolved (`node_reaches_alias_in_flight*`); tsc defers by position. A named
+  generic reference to the alias in flight outside of those (`type T = Foo<T>` is an error in tsc, but `type T =
+  { a: T } | Foo<T>`-style through other aliases isn't always) still becomes the error type.
+- `expand_mapped`: mapped types expand to properties/index signatures once the key type is a union of literals and
+  primitives. No `as` clauses, no array/tuple homomorphism, `-?` doesn't strip `undefined`, modifiers come from
+  `MappedInfo.modifiers_type` only when the key type was written as `keyof T`.
+- `class_base_type`: inherited class members, reached by `container_of` from the instance LazyType to the `ClassDecl`
+  and only for `extends Name` / `extends Name<Args>`. The static side inherits nothing yet.
 - `ty/shadow.c` and the `ty_shadow_record_*` hooks (`type_typecheck`, `*_decl_typecheck`, `program_typecheck`): the
   only thing that runs the new core today. Global recording state, one program at a time. Deleted in stage 5.
 - `legacy_entry_interface_decl`: `container_of` from a Declaration's merge list entry (a `TYPE_LAZY` whose LazyType
@@ -113,9 +162,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `lower_legacy_resolution`: `typeof x` and binding-derived indexed types lower whatever the legacy checker resolved
   them to. Must never be used for type operators (conditional/keyof/indexed): forcing the legacy checker to resolve
   one nobody used blew the stack in `recursiveConditionalTypes`.
-- `ty_conditional`: never resolves (needs relations + inference, stage 3), not even for non-generic operands; no
-  distribution over unions. `ty_keyof` of primitives and `ty_indexed` on anything but plain props / index signatures /
-  tuple and array elements stay deferred as well.
+- `ty_keyof` of primitives and `ty_indexed` on anything but plain props / index signatures / tuple and array
+  elements stay deferred.
 - `enum_member_type`: enum members without an initializer have no value in the legacy checker, so they're literal
   types with a NaN placeholder value (identity by member declaration still holds). `TY_DECLARED_ENUM` is a nominal
   stand-in; tsc's enum type is the union of its member literals (matters for `E | E.A` reduction, printing runs of
@@ -134,12 +182,11 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   as mentioned, harmless), and gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys and
   anything the legacy checker evaluated rather than parsed. `TyMapper` is always flat (no composed/merged forms yet,
   inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint; shadow mode sets it everywhere.
-- `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones.
+- `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones. Return types
+  are lazier than the rest (`signature_return_type`), because they're often the legacy checker's inferred return type.
 - `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
   types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
 - `qualified_name`: declared types always print with their full namespace path (what tsc does in error messages);
   tsc's `.types` baselines qualify only as far as needed from the enclosing declaration. Needs symbols (plan 03).
-- `ty_get_prop`: linear scan. `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without
-  strictNullChecks, no fresh/regular literal pairs. Deferred references inside their own alias
-  (`type Json = string | Json[]`) hit the in-flight check and become the error type instead of tsc's deferred type
-  reference. No unique symbol types. TS2589/TS2456 are only flags/TODOs.
+- `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks, no fresh/regular
+  literal pairs. No unique symbol types. TS2456 is only a TODO.

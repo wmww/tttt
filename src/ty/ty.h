@@ -15,6 +15,7 @@ typedef struct Prop Prop;
 typedef struct Signature Signature;
 typedef struct Members Members;
 typedef struct TyMapper TyMapper;
+typedef struct TyCondBranch TyCondBranch;
 typedef struct GenericItem GenericItem;
 typedef struct Program Program;
 
@@ -136,6 +137,12 @@ typedef enum LazyState {
 // Where lowering happens: inherited by everything lowered lazily from inside an object type
 typedef struct LowerCtx {
     bool generic; // some type parameter is in scope, so anonymous object types could mention one
+    // The legacy tree being lowered may be freed while the checker lives (a clone or temporary made during checking,
+    // stage 3-4 scaffolding): nothing may keep a pointer into it, so object types are lowered eagerly and interned by
+    // structure instead of by node. Parsed nodes and the memos of slotted LazyTypes are stable again. See lower.c
+    bool transient;
+    bool method; // the node being lowered is the type of a method (its signatures compare parameters bivariantly)
+    bool in_alias; // directly inside a type alias that is being resolved: array/tuple nodes may need to be deferred
 } LowerCtx;
 
 // The mutable, lazily resolved part of an object type. Everything else about a Ty is immutable once published.
@@ -151,6 +158,7 @@ typedef struct TyParamState {
     Ty const* constraint; // null if unconstrained
     LazyState fallback_state;
     Ty const* fallback;
+    bool is_infer; // declared by `infer X` in the extends type of a conditional type
 } TyParamState;
 
 struct Ty {
@@ -186,7 +194,11 @@ struct Ty {
         } declared;
         struct {
             Ty const* target; // TY_DECLARED
-            TyList args;
+            TyList args; // Don't read directly, use ty_reference_args(): empty until resolved if `deferred` is set
+            // A deferred reference (tsc's deferred type reference): an array or tuple node inside the type alias that
+            // is being resolved, `type Json = string | Json[]`. Identity is (node, mapper), arguments resolve on
+            // first use
+            struct TyDeferredRef* deferred;
             TyObjectState* state;
         } reference;
         struct {
@@ -215,11 +227,30 @@ struct Ty {
         struct {
             Ty const* check;
             Ty const* extends;
-            Ty const* if_true;
-            Ty const* if_false;
+            // Don't read the branches directly, use ty_conditional_branch(): a branch that mentions the type alias
+            // being resolved (`type R<T> = T extends [infer H, ...infer Rest] ? R<Rest> : []`) is a node to lower on
+            // first use, plus the mapper it has been instantiated with since
+            TyCondBranch* branches; // [0] false, [1] true
+            bool distributive; // the check type was written as a naked type parameter
         } conditional;
     };
 };
+
+struct TyCondBranch {
+    Ty const* type; // null until lowered if `node` is set
+    Type const* node;
+    LowerCtx ctx;
+    TyMapper const* mapper;
+    LazyState state;
+};
+
+typedef struct TyDeferredRef {
+    Type const* node; // TYPE_ARRAY or TYPE_TUPLE
+    LowerCtx ctx;
+    TyMapper const* mapper; // may be null
+    LazyState state;
+    TyList args;
+} TyDeferredRef;
 
 typedef enum PropFlags {
     PROP_OPTIONAL = 1 << 0,
@@ -246,6 +277,7 @@ struct Prop {
 typedef enum SignatureFlags {
     SIGNATURE_CONSTRUCT = 1 << 0,
     SIGNATURE_ABSTRACT  = 1 << 1,
+    SIGNATURE_METHOD    = 1 << 2, // declared with method syntax: parameters are bivariant even under strictFunctionTypes
 } SignatureFlags;
 
 typedef struct SigParam {
@@ -267,6 +299,10 @@ struct Signature {
     SigParam const* params;
     u32 param_count;
     u32 min_args;
+    // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
+    // that the legacy checker may be in the middle of evaluating
+    Type const* ret_node;
+    LazyState ret_state;
     Ty const* ret;
 };
 
@@ -282,6 +318,7 @@ typedef struct MappedInfo {
     Ty const* constraint;
     Ty const* name_type; // `as` clause, may be null
     Ty const* template;
+    Ty const* modifiers_type; // `T` of a homomorphic `[K in keyof T]`: where optional/readonly come from. May be null
     signed char readonly; // -1 remove, +1 add
     signed char optional;
 } MappedInfo;
@@ -289,6 +326,7 @@ typedef struct MappedInfo {
 struct Members {
     Prop* const* props; // declaration order
     u32 prop_count;
+    Prop* const* props_by_name; // sorted by name atom address, for lookup. Null for small tables
     Signature* const* call;
     u32 call_count;
     Signature* const* construct;
@@ -305,10 +343,49 @@ struct TyMapper {
     Ty const* const* targets;
 };
 
+typedef enum TyVariance {
+    VARIANCE_INVARIANT     = 0,
+    VARIANCE_COVARIANT     = 1 << 0,
+    VARIANCE_CONTRAVARIANT = 1 << 1,
+    VARIANCE_BIVARIANT     = VARIANCE_COVARIANT | VARIANCE_CONTRAVARIANT,
+    VARIANCE_INDEPENDENT   = 1 << 2,
+    VARIANCE_UNRELIABLE    = 1 << 3, // Measured through something that isn't simply structural: fall back to structure
+} TyVariance;
+
 typedef struct DeclLinks {
     LazyState declared_state;
     Ty const* declared_type;
 } DeclLinks;
+
+typedef enum TyRelation {
+    TY_RELATION_ASSIGNABLE,
+    TY_RELATION_COMPARABLE,
+    // Assignable, except that null and undefined are never assignable to other types, whatever strictNullChecks says.
+    // HACK(stage 4b): what the legacy operator checks mean by "extends number"
+    TY_RELATION_ASSIGNABLE_STRICT_NULLS,
+    // What union (subtype) reduction uses: `any` is only a subtype of `any`/`unknown`, and a type that lacks an
+    // optional property of the target isn't a subtype of it
+    TY_RELATION_STRICT_SUBTYPE,
+    TY_RELATION_COUNT,
+} TyRelation;
+
+// u64 -> u8 open addressing map, key (source id << 32 | target id)
+typedef struct RelationCache {
+    u64* keys;
+    unsigned char* values;
+    u32 cap;
+    u32 len;
+} RelationCache;
+
+// One line of an explanation of why a relation doesn't hold, outermost first
+typedef struct TyReportLine {
+    unsigned ts_code;
+    cstr message;
+} TyReportLine;
+static inline void ty_report_line_drop(TyReportLine* me) { cstr_drop(&my message); }
+static inline TyReportLine ty_report_line_clone(TyReportLine me) { me.message = cstr_clone(me.message); return me; }
+#define g_class_key TyReportLine, ty_report_line
+#include <cleat/generic/vec.h>
 
 typedef enum TyIntrinsic {
     // Creation order copies tsc's, since union members print in id order
@@ -342,9 +419,15 @@ struct Checker {
     InternTable links;  // Declaration -> DeclLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;
+    Ty const* global_types[8]; // GlobalType in relate.c: String, Number... looked up on first use
+    bool global_types_resolved[8];
     u32 instantiation_depth;
     u32 instantiation_count;
-    bool instantiation_limit_hit; // TODO(stage 3): report TS2589 where this gets set
+    bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589
+    RelationCache relations[TY_RELATION_COUNT];
+    struct RelationState* relating; // The relation check in progress, if any (relate.c)
+    u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
+    bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
     // --shadow-types bookkeeping, see shadow.c
     struct ShadowState* shadow;
 };
@@ -379,13 +462,22 @@ Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
 Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index);
-Ty const* ty_conditional(Checker* me, Ty const* check, Ty const* extends, Ty const* if_true, Ty const* if_false);
+Ty const* ty_conditional(
+    Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
+    bool distributive
+);
+Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
+static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
+    return ty_cond_branch_type(me, &conditional->conditional.branches[which]);
+}
 
 // members.c
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 Ty const* prop_type(Checker* me, Prop const* prop);
 void signature_resolve(Checker* me, Signature const* sig);
+Ty const* signature_return_type(Checker* me, Signature const* sig);
+TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained
 Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
 
@@ -401,14 +493,31 @@ Ty const* ty_declared_type_of(Checker* me, Declaration const* decl);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
 Ty const* ty_anonymous_from_node(Checker* me, Type const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
 
+// relate.c
+bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation);
+// Why source isn't related to target, outermost line first. The first line is the natural head of the error: TS2322
+// "Type 'S' is not assignable to type 'T'." unless something more specific replaces it (TS2741 and friends)
+void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out);
+Ty const* ty_widened_literal(Checker* me, Ty const* ty);
+void relation_cache_drop(RelationCache* me);
+// conditional.c
+// Null while the conditional type has to stay deferred
+Ty const* ty_conditional_resolve(
+    Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false
+);
+
 // ty_display.c
 // The old display's `underline` mode underlines a type's whole rendering, so the `.types` traversal can do that from
 // the string length when it switches over (stage 4); no display mode needed here.
 typedef struct TyDisplay {
     cstr* target;
     u32 depth;
+    // Literal types inside object types that came from expressions print as their primitive: tsc widens the
+    // properties of an object literal when it types it, the legacy checker only when it reports. HACK(stage 4b)
+    bool widen_literals;
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
+void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
 
 // shadow.c

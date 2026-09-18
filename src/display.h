@@ -90,15 +90,7 @@ typedef struct Display {
     bool nested : 1;
     bool underline : 1;
     bool underline_active : 1;
-    bool hash_key : 1;
 } Display;
-
-static inline Display hash_key_display(cstr* target) {
-    return (Display) {
-        .target = target,
-        .hash_key = true,
-    };
-}
 
 static inline Display debug_display(cstr* target) {
     return (Display) {
@@ -143,7 +135,7 @@ static inline void display_newline(Display d) {
     if (d.debug) {
         display_lit(d, "\n");
         display_repeated(d, indent_string, d.indent);
-    } else if (d.parsed && !d.hash_key) {
+    } else if (d.parsed) {
         display_repeated(d, indent_string, d.indent);
     } else {
         display_lit(d, " ");

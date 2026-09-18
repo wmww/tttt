@@ -31,6 +31,11 @@ enum {
     KEY_ALIAS_INSTANCE, // (alias Declaration, argument ids) -> Ty
     KEY_NODE,           // TYPE_INTERFACE/TYPE_CALLABLE node -> Ty
     KEY_NAMESPACE,      // Scope -> Ty
+    KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
+    KEY_STABLE_WRAPPER, // LazyType -> arena copy of a TYPE_LAZY wrapper, see legacy_stable_view()
+    KEY_STRUCTURAL,     // Shape of a temporary legacy object type -> Ty, see ty_structural_from_legacy()
+    KEY_VARIANCES,      // declared type id -> variance array
+    KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
 };
 
 // Doesn't insert, unlike intern_slot()
@@ -85,4 +90,7 @@ static inline InterfaceDecl const* legacy_entry_interface_decl(Type const* entry
     return nullptr;
 }
 
+Type const* legacy_stable_view(Checker* me, Type const* type, u64* identity);
+Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx);
+Ty const* ty_deferred_reference(Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper);
 Ty const* ty_anonymous_from_overloads(Checker* me, Type const* const* overloads, u32 count, LowerCtx ctx);

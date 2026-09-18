@@ -245,7 +245,33 @@ longer written to during tests; delete the "run test twice if net allocations" h
 *Validate:* pass counts identical to before the stage (this is a pure refactor); valgrind clean; suite wall time not
 worse than +20%.
 
-**Stage 3 - relations on the new core.** Port `type_extends`, `type_overlaps` (→ comparable), `type_composite`
+**Stage 3 - DONE (2026-09-18).** 1100 full / errors 4553 / symbols 5939 / types 2149, suite 5.6 s, the depth-limit
+`log_error`s are gone, repro test at startup cost, bench typecheck +2% (noise). Details in `measurements.md`, shortcuts
+in `hacks.md` ("Relations bridge" and the `relate.c` entries). What later stages should know:
+- `src/ty/relate.c` (assignable, comparable, strict-subtype and a strict-nulls variant; per-relation id-keyed caches
+  on the checker, maybe-stack, deep-nesting check, measured variances with marker type parameters, reporting as a
+  second run) and `src/ty/conditional.c` (conditional resolution, `infer` inference; distribution is in
+  `instantiate.c`). `TTTT_DEBUG_RELATE=1` logs every top-level relation query, `TTTT_DUMP_VARIANCES=1` the variances.
+- **The bridge was the hard part, not the relation.** Legacy callers pass temporaries that get freed, and stage 1
+  keyed anonymous types by node address. `LowerCtx.transient` + `ty_structural_from_legacy` + `legacy_stable_view`
+  handle that (see hacks.md). Stage 4 should shrink the set of places that pass temporaries quickly; every
+  `type_clone`d type that reaches a relation costs an eager structural lowering.
+- The legacy relation is *not* fully deleted: `legacy_infer_extends` stays private in `type.c` for legacy conditional
+  types with `infer` (their results must be legacy types; building a `ty_to_legacy` was judged worse). It lost its
+  string cache (`type_pair_cache.h` and the `hash_key` display mode are deleted) and immediately went exponential
+  (`inferTypes1`: 75 s, 9 GB) until it got a coarse in-progress list. It dies when type operators evaluate in the new
+  core (4b). `TYPE_NEW` still doesn't exist; nothing needed it yet.
+- Done as planned in stage 1's notes: deferred array/tuple references (`type Json = string | Json[]`). Also needed
+  and not planned: lazy conditional branches (`TyCondBranch`, for recursive conditional aliases), lazy signature
+  return types, mapped type expansion to properties, inherited class members, sorted property tables.
+- A correct relation exposes the legacy checker: 41 test components regressed because weak inference / missing
+  contextual typing / missing narrowing used to be forgiven. Two blanket mitigations went in (`inference_gave_up` ->
+  `any`, `any` source always assignable); the rest is for 4b and later plans. Expect the same effect again whenever
+  a legacy approximation is replaced by the real rule.
+- The head line of assignability errors is still rendered by the legacy display. Switching it to `ty_display` needs
+  expression types to be widened/fresh like tsc's first (4b).
+
+**Stage 3 as planned - relations on the new core.** Port `type_extends`, `type_overlaps` (→ comparable), `type_composite`
 simplification and `check_assignable_or_error_internal` to `is_related` over `Ty` (lower both sides). Persistent
 caches, maybe-set, deep-nesting check, variances, TS2589. Elaboration chain for the common cases (property, argument,
 union member) since the lowering now knows `List<string>`'s name. Delete `type_pair_cache.h` and the `hash_key` display

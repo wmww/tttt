@@ -97,7 +97,10 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
         type_typecheck(&i->type, errs);
 
         if (i->source->rest) {
-            if (!type_extends_array(&i->type)) {
+            // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
+            Type const* written = &i->type;
+            while (written->tag == TYPE_REF) written = written->ref;
+            if (written->tag != TYPE_INFERRED && !type_extends_array(&i->type)) {
                 error_ctx_error_d(
                     errs,
                     i->source->span,

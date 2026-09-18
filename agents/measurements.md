@@ -2,6 +2,33 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 3 (relations on the new core)
+Suite: **1100 full (1084), errors 4553 (4396), symbols 5939 (=), types 2149 (2146)**; suite wall **5.6 s (8.3 s)**.
+- `log_error` lines 38 933 -> 7 590; "Max type recursion depth exceeded (type_extends_internal)" 31k -> 0 (one
+  `index_type_evaluate_type_internal` depth hit is left). What's left is led by the legacy generic inference
+  "not yet implemented" family (5.4k) and invalid-span errors.
+- Recursive generics repro (`varianceProblingAndZeroOrderIndexSignatureRelationsAlign`): 0.68 s / 222 MB -> not
+  measurable above harness startup (0.07 s / 50 MB, same as `2dArrays`).
+- Spurious TS2322: 1812 in 581 tests -> 1024 in 371; missing TS2322 1542 in 535 -> 1323 in 500. Spurious TS2345 1240
+  in 306 -> see `./failstats.py --code TS2345`. Elaboration chains (`Types of property 'x' are incompatible.`, TS2741/
+  TS2739/TS2740 heads, parameter/return lines, variance-based type argument lines) are where most of the +157
+  errors-component passes come from.
+- 41 test components regressed (list with `./fasttest.sh --summary` against the saved results of ec5fbe5; none of
+  them a full pass). Sampled causes: the old relation said yes where the legacy checker hands it garbage - weak generic
+  inference (`unknown`/unsubstituted type parameters), no contextual typing / literal freshness (`Box<0>` vs
+  `Box<number>`, `{ x: string }` against `"lit"`), no narrowing (`assert<0>(a)` in a `switch`), no discriminated
+  union decomposition, elaboration that tsc attaches to the object literal property instead. Those are 4b's problems.
+- Shadow mode (`TTTT_SHADOW_TYPES=1`) still runs the whole suite without crashing: 1072 mismatch lines. New in there:
+  ~250 union *order* differences nested in other types (`(Derived2 | Derived1)[]`): relations now lower types during
+  checking, so creation order follows check order rather than the order the shadow pass used to impose. Expected
+  residue until evaluation order is tsc's (stage 4).
+- Bench: typecheck phase 127.5 ms vs 124.7 ms for ec5fbe5 measured back to back (best of 5; +2%, within noise, total
+  0.68 s, RSS 846 MB vs 838). stdlib-only typecheck 73 ms for both. The relation itself is ~1.4% of the bench run,
+  lowering ~1%: the corpus is assignment-light, and the legacy evaluation around it is unchanged.
+- valgrind clean on ~280 tests mid-session and 759 at the end (assignmentCompat*, recursive*,
+  conditionalType*, inferTypes*, variance*, mappedType*, enum*, tuple*, unionType*, intersectionType*, circular*,
+  genericClass*, typeAlias*, class[A-E]*, derivedClass*, subtyp*, indexSignature*, keyof*, comparisonOperator*).
+
 ## 2026-09-18, type core stage 2 (LazyType memos in the Checker)
 Pure refactor. Suite: 1084 full, errors 4396, symbols 5939, types 2146 - identical; wall 8.29 s (8.27 s before).
 `log_error` lines 39187 -> 38933 with the same distribution: the harness reruns a test when it leaves net allocations

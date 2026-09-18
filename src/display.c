@@ -68,27 +68,6 @@ impl_display_no_drop(BriefType, brief_type) {
 
 #define display_finish_underline() display_set_underline(false)
 
-static inline void display_pointer(Display d, void* ptr) {
-#define BITS_TO_CHAR(shift) (((uintptr_t)ptr >> shift * 6) & 0b01111111) | 0b01000000
-    char c[] = {
-        '(',
-        BITS_TO_CHAR(0),
-        BITS_TO_CHAR(1),
-        BITS_TO_CHAR(2),
-        BITS_TO_CHAR(3),
-        BITS_TO_CHAR(4),
-        BITS_TO_CHAR(5),
-        BITS_TO_CHAR(6),
-        BITS_TO_CHAR(7),
-        BITS_TO_CHAR(8),
-        BITS_TO_CHAR(9),
-        BITS_TO_CHAR(10),
-        ')',
-    };
-#undef BITS_TO_CHAR
-    display_sv(d, csview_from_n(c, sizeof(c)));
-}
-
 static void display_string_literal(Display d, csview sv) {
     display_lit(d, "\"");
     for (intptr_t i = 0; i < sv.size; i++) {
@@ -281,22 +260,16 @@ static void display_identifier_type(Display d, IdentifierType* me) {
         display_lit(d, "typeof ");
     }
 
-    if (!d.hash_key || d.debug) {
-        for_each (i, vec_span, &my namespaces) {
-            display_colored_span(d, color_type, *i);
-            display_lit(d, ".");
-        }
-        if (my decl_ref && span_valid(my decl_ref->name)) {
-            display_colored_span(d, color_type, my decl_ref->name);
-        } else if (span_valid(my name)) {
-            display_colored_span(d, color_type, my name);
-        } else {
-            display_colored(d, color_type, "(empty)");
-        }
+    for_each (i, vec_span, &my namespaces) {
+        display_colored_span(d, color_type, *i);
+        display_lit(d, ".");
     }
-
-    if (d.hash_key) {
-        display_pointer(d, (void*)my decl_ref);
+    if (my decl_ref && span_valid(my decl_ref->name)) {
+        display_colored_span(d, color_type, my decl_ref->name);
+    } else if (span_valid(my name)) {
+        display_colored_span(d, color_type, my name);
+    } else {
+        display_colored(d, color_type, "(empty)");
     }
 
     if (!vec_spanned_type_is_empty(&my generic_params)) {
@@ -322,10 +295,6 @@ static void display_inferred_type(Display d, InferredType* me) {
         display_lit(d, "infer ");
     }
     display_colored_span(d, color_type, my name);
-
-    if (d.hash_key) {
-        display_pointer(d, (void*)my declaration_ref);
-    }
 
     if (d.debug) {
         if (!my declaration_ref) {
@@ -452,9 +421,6 @@ static void display_interface(Display d, Interface const* me) {
             }
             display_colored_span(d, color_type, *i);
         }
-        if (d.hash_key) {
-            display_pointer(d, (void*)my namespace_scope);
-        }
         return;
     }
     if (!d.debug &&
@@ -539,12 +505,6 @@ static void display_ternary_type(Display d, TernaryType* me) {
 
 void display_type(Display d, Type const* me) {
     display_set_underline(true);
-
-    if (d.hash_key) {
-        // PERF: use an entirely different type serialization system for hashes that's faster and more compact
-        char c[] = {'(', my tag + 'A', ':'};
-        display_sv(d, csview_from_n(c, sizeof(c)));
-    }
 
     switch (my tag) {
         case TYPE_ANY: display_colored(d, color_type, "any"); break;
@@ -685,10 +645,6 @@ void display_type(Display d, Type const* me) {
 
     if (d.debug && type_is_self_referential(me)) {
         display_colored(d, color_error, " /* self-referential */");
-    }
-
-    if (d.hash_key) {
-        display_lit(d, ")");
     }
 
     display_finish_underline();

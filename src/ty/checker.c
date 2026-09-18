@@ -220,6 +220,7 @@ void checker_drop(Checker* me) {
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);
+    for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
     arena_drop(&my arena);
     free(me);
 }
@@ -345,7 +346,7 @@ static Ty const* intern_composite(
 }
 
 // Only the cheap reductions: flatten, dedupe, absorb any/unknown/never, drop literals next to their primitive.
-// Subtype reduction is a separate operation (TODO(stage 3), it needs relations).
+// Subtype reduction is a separate operation (TODO, the legacy type_composite() does its own through the relation).
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
@@ -715,7 +716,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
             double n = index->literal.value.number;
             TupleShape const* shape = target->declared.tuple;
             if (n >= 0 && n < shape->arity && n == (u32)n && !(shape->flags[(u32)n] & TUPLE_ELEMENT_REST)) {
-                Ty const* element = object->reference.args.data[(u32)n];
+                Ty const* element = ty_reference_args(me, object).data[(u32)n];
                 if (shape->flags[(u32)n] & TUPLE_ELEMENT_OPTIONAL) {
                     Ty const* parts[2] = { element, my intrinsics[TY_UNDEFINED] };
                     return ty_union(me, parts, 2, nullptr, (TyList){0});
@@ -727,7 +728,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         if ((target == my array_target || target == my readonly_array_target) &&
             (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL))
         ) {
-            return object->reference.args.data[0];
+            return ty_reference_args(me, object).data[0];
         }
     }
 
@@ -775,20 +776,53 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
     return ret;
 }
 
-// TODO(stage 3): resolving a conditional type needs relations (and inference for `infer`), so until then every
-// conditional type stays deferred, generic or not. Distribution over unions is missing for the same reason.
-Ty const* ty_conditional(Checker* me, Ty const* check_type, Ty const* extends, Ty const* if_true, Ty const* if_false) {
-    u64 key[5] = { KEY_CONDITIONAL, check_type->id, extends->id, if_true->id, if_false->id };
+Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
+    if (!branch->node || branch->state == LAZY_STATE_DONE) return branch->type;
+    if (branch->state == LAZY_STATE_IN_FLIGHT) return ty_intrinsic(me, TY_ERROR);
+    branch->state = LAZY_STATE_IN_FLIGHT;
+    branch->type = ty_instantiate(me, ty_from_legacy(me, branch->node, branch->ctx), branch->mapper);
+    branch->state = LAZY_STATE_DONE;
+    return branch->type;
+}
+
+static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
+    if (!branch->node) {
+        key[0] = branch->type->id;
+        key[1] = 0;
+        return 2;
+    }
+    u32 count = 0;
+    key[count++] = (u64)(uintptr_t)branch->node;
+    key[count++] = branch->mapper ? branch->mapper->len : 0;
+    for (u32 i = 0; branch->mapper && i < branch->mapper->len && count + 2 <= 24; i++) {
+        key[count++] = branch->mapper->sources[i]->id;
+        key[count++] = branch->mapper->targets[i]->id;
+    }
+    return count;
+}
+
+// Resolves right away unless the check type is generic (conditional.c)
+Ty const* ty_conditional(
+    Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
+    bool distributive
+) {
+    Ty const* resolved = ty_conditional_resolve(me, check_type, extends, if_true, if_false);
+    if (resolved) return resolved;
+    u64 key[4 + 24 + 24] = { KEY_CONDITIONAL, check_type->id, extends->id, distributive };
+    u32 count = 4;
+    count += cond_branch_key(key + count, if_true);
+    count += cond_branch_key(key + count, if_false);
+    u32 flags = check_type->flags | extends->flags | TYF_COULD_CONTAIN_TYPE_VARIABLES;
     Ty* fresh;
-    Ty const* ret = intern_deferred(
-        me, key, 5, TY_CONDITIONAL,
-        check_type->flags | extends->flags | if_true->flags | if_false->flags, &fresh
-    );
+    Ty const* ret = intern_deferred(me, key, count, TY_CONDITIONAL, flags, &fresh);
     if (fresh) {
         fresh->conditional.check = check_type;
         fresh->conditional.extends = extends;
-        fresh->conditional.if_true = if_true;
-        fresh->conditional.if_false = if_false;
+        TyCondBranch* branches = arena_new_n(&my arena, TyCondBranch, 2);
+        branches[0] = *if_false;
+        branches[1] = *if_true;
+        fresh->conditional.branches = branches;
+        fresh->conditional.distributive = distributive;
     }
     return ret;
 }

@@ -17,6 +17,61 @@ TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets) {
     return ret;
 }
 
+// inner, then outer: what inner maps to gets instantiated by outer, and outer's own mappings are carried along
+static TyMapper const* compose_mappers(Checker* me, TyMapper const* inner, TyMapper const* outer) {
+    if (!inner || !inner->len) return outer;
+    u32 cap = inner->len + outer->len;
+    Ty const** pairs = malloc(sizeof(Ty const*) * cap * 2);
+    Ty const** sources = pairs;
+    Ty const** targets = pairs + cap;
+    u32 len = 0;
+    for (u32 i = 0; i < inner->len; i++) {
+        sources[len] = inner->sources[i];
+        targets[len++] = ty_instantiate(me, inner->targets[i], outer);
+    }
+    for (u32 i = 0; i < outer->len; i++) {
+        bool shadowed = false;
+        for (u32 j = 0; j < inner->len; j++) shadowed |= inner->sources[j] == outer->sources[i];
+        if (!shadowed) {
+            sources[len] = outer->sources[i];
+            targets[len++] = outer->targets[i];
+        }
+    }
+    TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+    free(pairs);
+    return ret;
+}
+
+// The mapper with one more (or one replaced) mapping
+static TyMapper const* mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target) {
+    u32 cap = mapper->len + 1;
+    Ty const** pairs = malloc(sizeof(Ty const*) * cap * 2);
+    Ty const** sources = pairs;
+    Ty const** targets = pairs + cap;
+    u32 len = 0;
+    for (u32 i = 0; i < mapper->len; i++) {
+        if (mapper->sources[i] == source) continue;
+        sources[len] = mapper->sources[i];
+        targets[len++] = mapper->targets[i];
+    }
+    sources[len] = source;
+    targets[len++] = target;
+    TyMapper const* ret = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+    free(pairs);
+    return ret;
+}
+
+static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
+    TyCondBranch ret = *branch;
+    if (branch->node && branch->state != LAZY_STATE_DONE) {
+        ret.mapper = compose_mappers(me, branch->mapper, mapper);
+        ret.state = LAZY_STATE_NOT_STARTED;
+    } else {
+        ret = (TyCondBranch){ .type = ty_instantiate(me, branch->type, mapper) };
+    }
+    return ret;
+}
+
 static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper, Ty const** buf, u32 buf_len) {
     // Returns the list itself if nothing changed. buf must hold list.len entries
     check(list.len <= buf_len);
@@ -138,6 +193,19 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             return ty;
 
         case TY_REFERENCE: {
+            if (ty->reference.deferred) {
+                TyDeferredRef const* deferred = ty->reference.deferred;
+                if (deferred->state == LAZY_STATE_DONE) {
+                    // Resolved by now, so it can become an ordinary reference
+                    TyList args = deferred->args;
+                    Ty const** buf = args.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * args.len);
+                    TyList mapped = instantiate_list(me, args, mapper, buf, args.len);
+                    Ty const* ret = mapped.data == args.data ? ty : ty_reference(me, ty->reference.target, mapped);
+                    if (buf != stack_buf) free(buf);
+                    return ret;
+                }
+                return ty_deferred_reference(me, deferred->node, deferred->ctx, compose_mappers(me, deferred->mapper, mapper));
+            }
             TyList args = ty->reference.args;
             Ty const** buf = args.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * args.len);
             TyList mapped = instantiate_list(me, args, mapper, buf, args.len);
@@ -177,14 +245,38 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                 ty_instantiate(me, ty->indexed.index, mapper)
             );
 
-        case TY_CONDITIONAL:
+        case TY_CONDITIONAL: {
+            Ty const* check_type = ty_instantiate(me, ty->conditional.check, mapper);
+            if (ty->conditional.distributive && ty->conditional.check->kind == TY_TYPE_PARAM &&
+                check_type != ty->conditional.check
+            ) {
+                // Distribution: the whole conditional type is instantiated once per member, with the check type
+                // parameter mapped to that member everywhere
+                if (check_type->flags & TYF_NEVER) return check_type;
+                if (check_type->kind == TY_UNION) {
+                    TyList members = check_type->composite.types;
+                    Ty const** results = malloc(sizeof(Ty const*) * members.len);
+                    for (u32 i = 0; i < members.len; i++) {
+                        TyMapper const* member_mapper = mapper_with(me, mapper, ty->conditional.check, members.data[i]);
+                        TyCondBranch if_true = instantiate_branch(me, &ty->conditional.branches[1], member_mapper);
+                        TyCondBranch if_false = instantiate_branch(me, &ty->conditional.branches[0], member_mapper);
+                        results[i] = ty_conditional(
+                            me, members.data[i], ty_instantiate(me, ty->conditional.extends, member_mapper),
+                            &if_true, &if_false, true
+                        );
+                    }
+                    Ty const* ret = ty_union(me, results, members.len, nullptr, (TyList){0});
+                    free(results);
+                    return ret;
+                }
+            }
+            TyCondBranch if_true = instantiate_branch(me, &ty->conditional.branches[1], mapper);
+            TyCondBranch if_false = instantiate_branch(me, &ty->conditional.branches[0], mapper);
             return ty_conditional(
-                me,
-                ty_instantiate(me, ty->conditional.check, mapper),
-                ty_instantiate(me, ty->conditional.extends, mapper),
-                ty_instantiate(me, ty->conditional.if_true, mapper),
-                ty_instantiate(me, ty->conditional.if_false, mapper)
+                me, check_type, ty_instantiate(me, ty->conditional.extends, mapper), &if_true, &if_false,
+                ty->conditional.distributive
             );
+        }
     }
     impossible;
 }
@@ -192,7 +284,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
 Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
     if (!mapper || !mapper->len || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
     if (my instantiation_depth >= MAX_INSTANTIATION_DEPTH || my instantiation_count >= MAX_INSTANTIATION_COUNT) {
-        // TODO(stage 3): TS2589 "Type instantiation is excessively deep and possibly infinite." at the current node
+        // Whoever reports errors next turns the flag into TS2589 (check_assignable_or_error_internal, for now)
         my instantiation_limit_hit = true;
         return ty_intrinsic(me, TY_ERROR);
     }

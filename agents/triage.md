@@ -83,3 +83,18 @@ Uninvestigated items. Triage sessions drain this.
 - `type Phantom<T> = {}`: `Phantom<string>` and `Phantom<number>` are one `Ty` printing as `Phantom<T>`, because
   instantiating a node that mentions no type parameter returns the node's type, alias arguments and all. tsc gives
   each its own alias arguments. Cosmetic until something prints it.
+
+- (stage 3) `./release/tttt file.ts` without `-q` prints the parsed AST before typechecking; `display_expr` evaluates
+  expression types for that, and with no current checker `lazy_type_evaluate` aborts (seen on `inferTypes1.ts`).
+  Either make the debug display not evaluate, or `program_make_current()` before printing.
+- (stage 3) Union member order: relations now lower types in check order, which moved ~250 shadow-mode renderings
+  like `(Derived1 | Derived2)[]` to `(Derived2 | Derived1)[]`. Not visible in baselines yet (the traversal still
+  prints legacy types) but will be in stage 4. tsc's order is type creation order; find out which operation of ours
+  creates `Derived2` first (probably the structural check of an array literal's best common type).
+- (stage 3) `unionRelationshipCheckPasses`: `{ foo?: number | undefined }` -> `{ foo?: undefined } | { foo: number }`
+  needs tsc's discriminated-union decomposition of the source (`typeRelatedToDiscriminatedType`).
+- (stage 3) Object literal elaboration: tsc reports a mismatching property of an object *literal* at the property
+  (`t1.ts(2,14): Type 'string' is not assignable to type 'number'` + related TS6500), we report the whole
+  assignment with a chain. Needs expression-level elaboration (`elaborateError`), after 4b.
+- (stage 3) TS18050 ("The value 'null' cannot be used here", 680 missing in 38 tests) is what tsc says for null/
+  undefined operands; `expr.c` operator checks use `type_extends_strict_nulls` + TS2365 instead.

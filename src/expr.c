@@ -98,7 +98,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         if (generic && i < vec_generic_item_size(&generic->items)) {
             SpannedType const* arg = vec_spanned_type_at(&my params, i);
             GenericItem const* item = vec_generic_item_at(&generic->items, i);
-            if (item->extends_explicit && !type_extends(&arg->type, &item->extends)) {
+            if (item->extends_explicit && !type_satisfies_constraint(generic, &my params, i)) {
                 Type abstracted = type_clone(arg->type);
                 type_abstract_literals(&abstracted);
                 error_ctx_error_d(errs, vec_spanned_type_at(&my params, i)->span, 2344,
@@ -343,8 +343,8 @@ static Type binary_op_evaluate_type(
 ) {
     switch (op) {
         case BINARY_OP_PLUS: {
-            const bool left_extends_string = type_extends(left, &type_string);
-            const bool right_extends_string = type_extends(right, &type_string);
+            const bool left_extends_string = type_extends_strict_nulls(left, &type_string);
+            const bool right_extends_string = type_extends_strict_nulls(right, &type_string);
             if (left_extends_string || right_extends_string) {
                 if ((left_extends_string && type_resolve(left)->tag != TYPE_ANY) ||
                     (right_extends_string && type_resolve(right)->tag != TYPE_ANY)
@@ -353,7 +353,7 @@ static Type binary_op_evaluate_type(
                 } else {
                     return type_any;
                 }
-            } else if (type_extends(left, &type_number) && type_extends(right, &type_number)) {
+            } else if (type_extends_strict_nulls(left, &type_number) && type_extends_strict_nulls(right, &type_number)) {
                 return type_number;
             } else {
                 return type_any;
@@ -433,8 +433,8 @@ static void binary_op_typecheck(
     switch (op) {
         case BINARY_OP_PLUS:
             // PERF: we also do this checks when evaluating the type, shouldn't need to duplicate them
-            if (type_extends(left, &type_string) || type_extends(right, &type_string)) {
-            } else if (type_extends(left, &type_number) && type_extends(right, &type_number)) {
+            if (type_extends_strict_nulls(left, &type_string) || type_extends_strict_nulls(right, &type_string)) {
+            } else if (type_extends_strict_nulls(left, &type_number) && type_extends_strict_nulls(right, &type_number)) {
             } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
                 error_ctx_error_d(errs, expr->inner_span, 2365,
@@ -453,7 +453,7 @@ static void binary_op_typecheck(
         case BINARY_OP_AND:
         case BINARY_OP_XOR:
         case BINARY_OP_OR:
-            if (!type_extends(left, &type_number)) {
+            if (!type_extends_strict_nulls(left, &type_number)) {
                 error_ctx_error_d(
                     errs,
                     expr->binary_op->left.outer_span,
@@ -461,7 +461,7 @@ static void binary_op_typecheck(
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            if (!type_extends(right, &type_number)) {
+            if (!type_extends_strict_nulls(right, &type_number)) {
                 error_ctx_error_d(
                     errs,
                     expr->binary_op->right.outer_span,

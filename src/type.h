@@ -257,6 +257,9 @@ Type const* type_resolve(Type const* me);
 Type const* type_resolve_one_layer(Type const* me); // Returns nullptr if nothing to resolve
 Type const* type_resolve_until_identifier(Type const* me);
 bool type_extends(Type const* sub, Type const* super);
+// Like type_extends(), but null and undefined only extend themselves (and any/unknown/void) even without
+// strictNullChecks. What operators mean by "is a number"
+bool type_extends_strict_nulls(Type const* sub, Type const* super);
 bool type_overlaps(Type const* a, Type const* b);
 bool type_extends_array(Type const* sub);
 intptr_t type_min_numeric_index(Type const* me); // returns 0 if numeric indexes unsupported on this type
@@ -296,6 +299,9 @@ static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedTy
 static inline Type const* generic_param_at(VecSpannedType const* params, intptr_t i) {
     return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_any;
 }
+
+// Whether type argument `index` satisfies the constraint of its type parameter, given all the arguments
+bool type_satisfies_constraint(Generic const* generic, VecSpannedType const* args, intptr_t index);
 
 typedef enum KeywordIdentifier {
     KEYWORD_IDENTIFIER_NONE = 0,

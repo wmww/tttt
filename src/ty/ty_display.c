@@ -80,7 +80,14 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params) {
 }
 
 // `(a: A, b?: B, ...rest: C[])` followed by `separator` and the return type
+static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
+
+void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
+    display_signature(me, d, sig, ": ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
+}
+
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
+    d.widen_literals = false;
     signature_resolve(me, sig);
     if (with_new) {
         if (sig->flags & SIGNATURE_ABSTRACT) out_lit(d, "abstract ");
@@ -99,7 +106,7 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
-    ty_display(me, d, sig->ret ? sig->ret : ty_intrinsic(me, TY_ANY));
+    ty_display(me, d, signature_return_type(me, sig));
 }
 
 static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
@@ -265,6 +272,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
 
+    // Widening only reaches through the structure of expression types (temporaries lowered from the legacy checker)
+    if (d.widen_literals && !(ty->kind == TY_LITERAL || ty->kind == TY_UNION ||
+        (ty->kind == TY_ANONYMOUS && !ty->anonymous.node && !ty->anonymous.target))
+    ) {
+        d.widen_literals = false;
+    }
+
     if (ty->alias) {
         out(d, ty->alias->name.sv);
         if (ty->alias_args.len) {
@@ -281,6 +295,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             break;
 
         case TY_LITERAL:
+            if (d.widen_literals && !ty->literal.enum_member) {
+                ty_display(me, (TyDisplay){ .target = d.target, .depth = d.depth }, ty_widened_literal(me, ty));
+                break;
+            }
             if (ty->literal.enum_member) {
                 out(d, atom_sv(ty->literal.enum_name));
             } else if (ty->literal.string) {
@@ -323,7 +341,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_REFERENCE: {
             Ty const* target = ty->reference.target;
-            TyList args = ty->reference.args;
+            TyList args = ty_reference_args(me, ty);
             if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) {
                 display_tuple(me, d, target->declared.tuple, args);
             } else if (target == my array_target || target == my readonly_array_target) {
@@ -374,9 +392,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             out_lit(d, " extends ");
             display_parenthesized_if(me, d, ty->conditional.extends, ty->conditional.extends->kind == TY_CONDITIONAL);
             out_lit(d, " ? ");
-            ty_display(me, d, ty->conditional.if_true);
+            ty_display(me, d, ty_conditional_branch(me, ty, true));
             out_lit(d, " : ");
-            ty_display(me, d, ty->conditional.if_false);
+            ty_display(me, d, ty_conditional_branch(me, ty, false));
             break;
     }
 }
