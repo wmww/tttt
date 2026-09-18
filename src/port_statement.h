@@ -29,6 +29,7 @@ typedef struct PortItem {
         PORT_IMPORT_DEFAULT,    // import foo from './abc'
         PORT_IMPORT_GATHER,     // import * as foo from './abc'
         PORT_IMPORT_SPECIFIC,   // import {foo as bar} from './abc'
+        PORT_IMPORT_ALIAS,      // import foo = a.b.c (`import foo = require('./abc')` is a PORT_IMPORT_GATHER)
         PORT_EXPORT_SPECIFIC,   // export {foo as bar}
         PORT_EXPORT_AS_NAMESPACE, // export as namespace foo (this doesn't seem to do anything??)
         PORT_REEXPORT_GATHER,   // export * as foo from './abc'
@@ -40,6 +41,10 @@ typedef struct PortItem {
     Span full_span; // Span of declaration
     bool type_only; // Has the "type" keyword for the main import
     Span source_name; // Only used for _SPECIFIC ports
+    VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
+    VecDeclarationCPtr alias_path_decls; // What each item of alias_path resolved to, shorter if resolution failed
+    bool alias_conflict; // An alias who's name was already taken, which is fine if the target turns out to have no value
+    bool export_import; // `export import foo = ...`
     SourceFile* source_file; // File to import from, set by import_statement_set_source_file()
     bool error_reported; // Set and used by Scope
     ArcDeclaration declaration; // Set by Scope
@@ -60,6 +65,7 @@ static inline bool port_item_is_export(PortItem const* me) {
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
         case PORT_IMPORT_SPECIFIC:
+        case PORT_IMPORT_ALIAS:
             break;
     }
     return false;
@@ -84,3 +90,4 @@ typedef struct PortStatement {
 void port_statement_drop(PortStatement* me);
 void port_statement_assign_source(PortStatement* me, SourceFile* source);
 void port_statement_add_names(PortStatement* me, Scope* scope);
+void port_statement_resolve_names(PortStatement* me, ScopeStack* names, ErrorCtx* errs);

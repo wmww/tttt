@@ -542,7 +542,9 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             expr_lookup_names(&my expr, names, errs);
             break;
 
-        case STATEMENT_IMPORT_EXPORT: break;
+        case STATEMENT_IMPORT_EXPORT:
+            port_statement_resolve_names(my import_export, names, errs);
+            break;
 
         case STATEMENT_DECL_VARIABLE:
             variable_statement_resolve_names(&my decl.variable, names, errs);

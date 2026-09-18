@@ -263,6 +263,44 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
             baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
             break;
 
+        case PORT_IMPORT_ALIAS:
+            if (!my main.declaration.get) {
+                baseline_test_case_add_type(ctx, my main.decl_name, &type_any);
+            } else if (!my main.declaration.get->value_tag) {
+                // tsc shows aliases of pure types as any
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = vec_span_clone(my main.declaration.get->declarations),
+                    .span = my main.decl_name,
+                    .name = my main.declaration.get->name,
+                });
+                baseline_test_case_add_type(ctx, my main.decl_name, &type_any);
+            } else {
+                baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
+            }
+            for_each (i, vec_span, &my main.alias_path) {
+                if (i_index >= vec_declaration_cptr_size(&my main.alias_path_decls)) {
+                    baseline_test_case_add_type(ctx, *i, &type_any);
+                    continue;
+                }
+                Declaration const* decl = *vec_declaration_cptr_at(&my main.alias_path_decls, i_index);
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = vec_span_clone(decl->declarations),
+                    .span = *i,
+                    .name = decl->name,
+                });
+                if (decl->type_tag && !decl->namespace_tag) {
+                    Type t = type_identifier(c_new(IdentifierType, {
+                        .name = decl->name,
+                        .decl_ref = decl,
+                    }));
+                    baseline_test_case_add_type(ctx, *i, &t);
+                    type_drop(&t);
+                } else {
+                    baseline_test_case_add_type(ctx, *i, &decl->value_type);
+                }
+            }
+            break;
+
         default: break;
     }
     for_each (i, vec_port_item, &my items) {

@@ -162,6 +162,8 @@ def main():
     os.makedirs(OUT, exist_ok=True)
 
     if args.syntax:
+        if not args.no_run:
+            run_harness(args.filter)
         return syntax_gaps(args.n)
 
     exit_code = 0

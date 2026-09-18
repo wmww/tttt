@@ -135,6 +135,24 @@ static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
 void scope_add_port(Scope* me, PortItem* item) {
     check(!my current_scope_stack);
 
+    if (item->tag == PORT_IMPORT_ALIAS) {
+        // Filled in by port_statement_resolve_names()
+        if (hmap_arc_declaration_get(&my declarations, item->decl_name.sv)) {
+            item->alias_conflict = true;
+            return;
+        }
+        add_placeholder_for_failed_import(me, item);
+        if (item->export_import && my export_scope) {
+            hmap_arc_declaration_insert(
+                &my export_scope->declarations,
+                cstr_from_sv(item->decl_name.sv),
+                arc_declaration_clone(item->declaration)
+            );
+        }
+        item->declaration.get->exported = item->export_import;
+        return;
+    }
+
     if (!item->source_file) {
         item->error_reported = true;
         add_placeholder_for_failed_import(me, item);
@@ -164,7 +182,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             scope_init_declaration(me, &item->declaration, (DeclProps){
                 .name = item->decl_name,
                 .full = item->full_span,
-                .exported = port_item_is_export(item),
+                .exported = port_item_is_export(item) || item->export_import,
                 .tag = DECLARATION_NAMESPACE_WITH_VALUE,
                 .value_type = type_identifier(c_new(IdentifierType, {
                     .name = item->decl_name,
@@ -192,6 +210,9 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_REEXPORT_SPLAT:
             vec_port_item_ptr_push(&my wildcard_reexports, item);
             break;
+
+        case PORT_IMPORT_ALIAS:
+            impossible;
     }
 }
 
@@ -247,6 +268,7 @@ static void process_port(Scope* me, PortItem* item) {
         case PORT_EXPORT_AS_NAMESPACE:
         case PORT_REEXPORT_GATHER:
         case PORT_REEXPORT_SPLAT:
+        case PORT_IMPORT_ALIAS:
             add_placeholder_for_failed_import(me, item);
             return;
 

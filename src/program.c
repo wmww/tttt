@@ -280,8 +280,10 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
             break;
 
         case STATEMENT_IMPORT_EXPORT: {
-            source_file_set_module_true(source, my errs);
             PortStatement* port = statement->import_export;
+            if (port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) {
+                source_file_set_module_true(source, my errs);
+            }
             SourceFile* imported = nullptr;
             if (!port->requires_target) {
                 imported = source;

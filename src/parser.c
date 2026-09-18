@@ -3112,6 +3112,86 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
     return parse_success(&p);
 }
 
+// Parses what comes after the import keyword in `import a = require("b")` and `import a = b.c`
+static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStatement* statement) {
+    Parser p = parser(parent);
+
+    bool type_only = false;
+    Span name;
+    if (!parse_identifier(&p, &name)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    if (span_equals(name, "type") && *p.pos != '=') {
+        type_only = true;
+        if (!parse_identifier(&p, &name)) {
+            return parse_fail(&p);
+        }
+        hop_whitespace(&p);
+    }
+    if (!hop_char(&p, '=') || *p.pos == '=' || *p.pos == '>') {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+
+    statement->main.decl_name = name;
+    statement->main.type_only = type_only;
+
+    Parser require_p = parser(&p);
+    bool is_require = false;
+    if (hop_start_if_ends_on_word_break(&require_p, "require")) {
+        hop_whitespace(&require_p);
+        if (hop_char(&require_p, '(')) {
+            is_require = true;
+            hop_whitespace(&require_p);
+            Anchor path_anchor = anchor(&require_p);
+            Value path;
+            if (parse_literal(&require_p, &path)) {
+                if (path.tag == VALUE_STRING) {
+                    statement->target_path = cstr_move(&path.string);
+                    statement->target_path_span = span_from(path_anchor);
+                } else {
+                    parse_error(&require_p, span_from(path_anchor), 1141, "String literal expected.");
+                }
+                value_drop(&path);
+            } else {
+                parse_error(&require_p, span_from_token(&require_p), 1141, "String literal expected.");
+            }
+            hop_whitespace(&require_p);
+            expect_char(&require_p, ')');
+        }
+    }
+
+    if (is_require) {
+        parse_success(&require_p);
+        statement->main.tag = PORT_IMPORT_GATHER;
+        statement->requires_target = true;
+    } else {
+        parse_fail(&require_p);
+        statement->main.tag = PORT_IMPORT_ALIAS;
+        statement->main.alias_path = vec_span_init();
+        while (true) {
+            Span part;
+            if (!parse_identifier(&p, &part)) {
+                parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                break;
+            }
+            vec_span_push(&statement->main.alias_path, part);
+            Parser dot = parser(&p);
+            hop_whitespace(&dot);
+            if (!hop_char(&dot, '.')) {
+                parse_fail(&dot);
+                break;
+            }
+            hop_whitespace(&dot);
+            parse_success(&dot);
+        }
+    }
+
+    statement->main.full_span = span_from(statement_start);
+    return parse_success(&p);
+}
+
 static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -3126,6 +3206,22 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     }
     statement.keyword_span = span_from(a);
     hop_whitespace(&p);
+
+    if (is_export) {
+        // `export import a = b.c`
+        Parser import_p = parser(&p);
+        if (hop_start_if_ends_on_word_break(&import_p, "import")) {
+            hop_whitespace(&import_p);
+            if (parse_import_equals(&import_p, a, &statement)) {
+                statement.main.export_import = true;
+                parse_success(&import_p);
+                goto done;
+            }
+        }
+        parse_fail(&import_p);
+    } else if (parse_import_equals(&p, a, &statement)) {
+        goto done;
+    }
 
     a = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "type")) {
@@ -3211,6 +3307,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
 
     statement.main.full_span = span_from(a);
 
+done:
     *ret = (Statement){
         .tag = STATEMENT_IMPORT_EXPORT,
         .import_export = c_new(PortStatement, statement),

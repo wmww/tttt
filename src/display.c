@@ -1027,6 +1027,17 @@ static void display_port_statement(Display d, PortStatement const* me) {
             display_colored_span(d, color_name, my main.decl_name);
             break;
 
+        case PORT_IMPORT_ALIAS:
+            display_colored_span(d, color_name, my main.decl_name);
+            display_lit(d, " = ");
+            for_each (i, vec_span, &my main.alias_path) {
+                if (i_index != 0) {
+                    display_lit(d, ".");
+                }
+                display_colored_span(d, color_name, *i);
+            }
+            break;
+
         case PORT_IMPORT_SPECIFIC:
         case PORT_EXPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC:
