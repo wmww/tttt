@@ -159,6 +159,9 @@ void expr_drop(Expr* me) {
             free(my spread);
             break;
 
+        case EXPR_REGEX:
+            break;
+
         case EXPR_TEMPLATE:
             if (my template_->tag) {
                 expr_drop(my template_->tag);
@@ -264,6 +267,9 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_SPREAD:
             expr_lookup_names(my spread, names, errs);
+            break;
+
+        case EXPR_REGEX:
             break;
 
         case EXPR_TEMPLATE:
@@ -575,6 +581,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_SPREAD:
             expr_typecheck(my spread, errs);
+            break;
+
+        case EXPR_REGEX:
             break;
 
         case EXPR_TEMPLATE:

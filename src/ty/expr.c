@@ -1022,6 +1022,8 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_ARRAY: return check_array(me, expr, ctx);
         case EXPR_CLASS_DECL: return ty_value_type_of(me, expr->class_decl->declaration.get);
 
+        case EXPR_REGEX: return ty_global_regexp_type(me);
+
         case EXPR_TEMPLATE: {
             if (!expr->template_->tag) return ty_intrinsic(me, TY_STRING);
             // TODO: a tagged template is a call (overloads, generics, argument checks). For now only the return type

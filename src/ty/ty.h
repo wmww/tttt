@@ -486,8 +486,8 @@ struct Checker {
     InternTable links;  // Declaration -> DeclLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;
-    Ty const* global_types[8]; // GlobalType in relate.c: String, Number... looked up on first use
-    bool global_types_resolved[8];
+    Ty const* global_types[9]; // GlobalType in relate.c: String, Number... looked up on first use
+    bool global_types_resolved[9];
     u32 instantiation_depth;
     u32 instantiation_count;
     bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589

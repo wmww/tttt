@@ -138,6 +138,7 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
 
 // relate.c
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
+Ty const* ty_global_regexp_type(Checker* me);
 typedef struct FoundProp {
     Ty const* type;
     u32 flags;

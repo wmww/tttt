@@ -35,6 +35,7 @@ typedef enum GlobalType {
     GLOBAL_BIGINT,
     GLOBAL_FUNCTION,
     GLOBAL_OBJECT,
+    GLOBAL_REGEXP,
     GLOBAL_EMPTY_OBJECT, // Not a global: the `{}` type
 } GlobalType;
 
@@ -109,7 +110,7 @@ static u64 relation_key(Ty const* source, Ty const* target) {
 // Globals
 
 static Ty const* global_type(Checker* me, GlobalType which) {
-    static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object" };
+    static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp" };
     if (!my global_types_resolved[which]) {
         my global_types_resolved[which] = true;
         if (which == GLOBAL_EMPTY_OBJECT) {
@@ -131,6 +132,12 @@ static Ty const* global_type(Checker* me, GlobalType which) {
         }
     }
     return my global_types[which];
+}
+
+// The type of a regular expression literal
+Ty const* ty_global_regexp_type(Checker* me) {
+    Ty const* regexp = global_type(me, GLOBAL_REGEXP);
+    return regexp ? regexp : ty_intrinsic(me, TY_ANY);
 }
 
 static bool is_array_target(Checker* me, Ty const* target) {

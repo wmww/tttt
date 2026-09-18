@@ -28,12 +28,10 @@ const char* span_line_start(Span me) {
     } else if (!me.source) {
         return me.sv.buf;
     } else {
+        // A span that starts on a newline character belongs to the line that newline ends
         const char* pos = span_start_ptr(me);
-        while (pos > source_file_start(me.source) && *pos != '\n') {
+        while (pos > source_file_start(me.source) && *(pos - 1) != '\n') {
             pos--;
-        }
-        if (*pos == '\n') {
-            pos++;
         }
         return pos;
     }

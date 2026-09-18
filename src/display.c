@@ -986,6 +986,10 @@ void display_expr(Display d, Expr const* me) {
             display_lit(d, "]");
         }   break;
 
+        case EXPR_REGEX:
+            display_sv(d, my inner_span.sv);
+            break;
+
         case EXPR_TEMPLATE:
             if (my template_->tag) {
                 display_expr(d, my template_->tag);

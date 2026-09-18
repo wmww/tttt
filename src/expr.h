@@ -54,6 +54,7 @@ typedef struct Expr {
         EXPR_ARRAY,
         EXPR_CLASS_DECL,
         EXPR_SPREAD, // `...a`, only appears directly in array literals and call arguments
+        EXPR_REGEX, // `/a+/g`, the span is all there is to it
         EXPR_TEMPLATE, // Template literal with substitutions and/or a tag. Plain `abc` is a string EXPR_LITERAL
     } tag;
     union {
@@ -136,6 +137,10 @@ static inline Expr expr_spread(Span span, Expr* operand) {
 
 static inline Expr expr_template(Span span, TemplateExpr* template_) {
     return (Expr){ .tag = EXPR_TEMPLATE, .template_ = template_, EXPR_DEFAULT(span) };
+}
+
+static inline Expr expr_regex(Span span) {
+    return (Expr){ .tag = EXPR_REGEX, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_undefined(Span span) {

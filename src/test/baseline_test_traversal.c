@@ -711,6 +711,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             expr_compile_test_info(my spread, ctx);
             break;
 
+        case EXPR_REGEX:
+            break;
+
         case EXPR_TEMPLATE:
             if (my template_->tag) {
                 expr_compile_test_info(my template_->tag, ctx);

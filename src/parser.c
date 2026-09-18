@@ -3023,6 +3023,39 @@ static bool parse_string(Parser* parent, cstr* ret) {
     return parse_success(&p);
 }
 
+// A regular expression literal. Only called where an expression may start, which is what makes the `/` not a division
+// (tsc rescans the slash token in the same situation)
+static bool parse_regex(Parser* parent) {
+    Parser p = parser(parent);
+
+    if (*p.pos != '/' || p.pos[1] == '/' || p.pos[1] == '*') {
+        return parse_fail(&p);
+    }
+    p.pos++;
+    bool in_class = false;
+    while (in_class || *p.pos != '/') {
+        switch (*p.pos) {
+            case '\0': case '\n': case '\r':
+                return parse_fail(&p); // TODO: TS1161 Unterminated regular expression literal
+            case '\\':
+                if (p.pos[1] && p.pos[1] != '\n') {
+                    p.pos++;
+                }
+                break;
+            case '[': in_class = true; break;
+            case ']': in_class = false; break;
+            default: break;
+        }
+        p.pos++;
+    }
+    p.pos++;
+    while (is_identifier_char(*p.pos)) {
+        p.pos++;
+    }
+
+    return parse_success(&p);
+}
+
 static bool parse_type_compat_literal(Parser* parent, Value* ret) {
     Parser p = parser(parent);
 
@@ -3384,6 +3417,8 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         }));
     } else if (parse_literal(&p, &ret->literal)) {
         ret->tag = EXPR_LITERAL;
+    } else if (parse_regex(&p)) {
+        *ret = expr_regex(span_from(a));
     } else if (parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
     } else if (parse_array(&p, &ret->array)) {
