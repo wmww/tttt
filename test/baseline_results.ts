@@ -1867,7 +1867,7 @@ const baselines = {
     },
     'assignmentToInstantiationExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'assignmentToObject': {
@@ -3058,22 +3058,22 @@ const baselines = {
     'chainedAssignment1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'chainedAssignment2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'chainedAssignment3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'chainedAssignmentChecking': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'chainedCallsWithTypeParameterConstrainedToOtherTypeParameter': {
         errors: false,
@@ -7681,7 +7681,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitCrossFileCopiedGeneratedImportType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8521,7 +8521,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitTopLevelNodeFromCrossFile2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8666,7 +8666,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitWithInvalidPackageJsonTypings': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8786,7 +8786,7 @@ const baselines = {
         types: false,
     },
     'declarationsForInferredTypeFromOtherFile': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -9626,7 +9626,7 @@ const baselines = {
         types: false,
     },
     'discriminantsAndPrimitives': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16506,7 +16506,7 @@ const baselines = {
         types: false,
     },
     'importTypeTypeofClassStaticLookup': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -16517,8 +16517,8 @@ const baselines = {
     },
     'importUsedAsTypeWithErrors': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importUsedInExtendsList1': {
         errors: true,
@@ -16526,7 +16526,7 @@ const baselines = {
         types: false,
     },
     'importUsedInGenericImportResolves': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20582,8 +20582,8 @@ const baselines = {
     },
     'metadataImportType': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'metadataOfClassFromAlias': {
         errors: true,
@@ -21611,7 +21611,7 @@ const baselines = {
         types: false,
     },
     'moduleResolutionWithRequireAndImport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22506,7 +22506,7 @@ const baselines = {
         types: false,
     },
     'nestedGenericConditionalTypeWithGenericImportType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23087,7 +23087,7 @@ const baselines = {
     },
     'noImplicitSymbolToString': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noImplicitThisBigThis': {
@@ -23661,39 +23661,39 @@ const baselines = {
         types: true,
     },
     'numericUnderscoredSeparator(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericUnderscoredSeparator(target=es2016)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericUnderscoredSeparator(target=es2017)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericUnderscoredSeparator(target=es2018)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericUnderscoredSeparator(target=es2019)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericUnderscoredSeparator(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericUnderscoredSeparator(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectAssignLikeNonUnionResult': {
         errors: true,
@@ -24552,7 +24552,7 @@ const baselines = {
     },
     'overshifts': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'paramPropertiesInSignatures': {
@@ -28286,7 +28286,7 @@ const baselines = {
         types: false,
     },
     'spuriousCircularityOnTypeImport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -29346,7 +29346,7 @@ const baselines = {
         types: false,
     },
     'taggedTemplateStringWithSymbolExpression01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30981,7 +30981,7 @@ const baselines = {
         types: false,
     },
     'typeofImportInstantiationExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31167,7 +31167,7 @@ const baselines = {
     },
     'undefinedAssignableToGenericMappedIntersection': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'undefinedInferentialTyping': {
@@ -37186,7 +37186,7 @@ const baselines = {
         types: false,
     },
     'controlFlowTruthiness': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -44658,22 +44658,22 @@ const baselines = {
     'emitExponentiationOperator1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitExponentiationOperator2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitExponentiationOperator3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitExponentiationOperator4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitExponentiationOperatorInTempalteString4': {
         errors: true,
@@ -44733,7 +44733,7 @@ const baselines = {
     'exponentiationOperatorSyntaxError1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorSyntaxError2': {
         errors: false,
@@ -44768,7 +44768,7 @@ const baselines = {
     'exponentiationOperatorWithNew': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exponentiationOperatorWithNullValueAndInvalidOperands': {
         errors: false,
@@ -49102,12 +49102,12 @@ const baselines = {
     },
     'typeOnlyESMImportFromCJS(module=node18)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeOnlyESMImportFromCJS(module=nodenext)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeQuery': {
@@ -52351,7 +52351,7 @@ const baselines = {
         types: false,
     },
     'resolutionModeImportType1(moduleresolution=bundler)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53151,17 +53151,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmit(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmit(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmit(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -53316,17 +53316,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmit1(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModulesImportTypeModeDeclarationEmit1(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModulesImportTypeModeDeclarationEmit1(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -54001,9 +54001,9 @@ const baselines = {
         types: false,
     },
     'parser.numericSeparators.binary': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.binaryNegative': {
         errors: false,
@@ -54011,17 +54011,17 @@ const baselines = {
         types: false,
     },
     'parser.numericSeparators.decimal(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parser.numericSeparators.decimal(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parser.numericSeparators.decimal(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54031,9 +54031,9 @@ const baselines = {
         types: false,
     },
     'parser.numericSeparators.hex': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.hexNegative': {
         errors: false,
@@ -54041,9 +54041,9 @@ const baselines = {
         types: false,
     },
     'parser.numericSeparators.octal': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.numericSeparators.octalNegative': {
         errors: false,
@@ -61791,7 +61791,7 @@ const baselines = {
         types: false,
     },
     'importTypeAmdBundleRewrite': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -64236,7 +64236,7 @@ const baselines = {
         types: false,
     },
     'typeParameterConstModifiersWithIntersection': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

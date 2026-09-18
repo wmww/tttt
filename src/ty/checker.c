@@ -415,10 +415,79 @@ static u32 primitive_family(Ty const* t) {
     return t->flags & (TYF_ES_SYMBOL | TYF_VOID | TYF_UNDEFINED | TYF_NULL);
 }
 
+static bool is_primitive_union(Ty const* t) {
+    if (t->kind != TY_UNION) return false;
+    for (u32 i = 0; i < t->composite.types.len; i++) {
+        if (!primitive_family(t->composite.types.data[i])) return false;
+    }
+    return true;
+}
+
+static bool union_contains(Ty const* u, Ty const* t) {
+    for (u32 i = 0; i < u->composite.types.len; i++) {
+        if (u->composite.types.data[i] == t) return true;
+    }
+    return false;
+}
+
+// `("a" | "b") & ("b" | "c")` is `"b"`: unions of primitives are intersected as sets rather than distributed over, which
+// would be a cross product (`keyof (A | B | C | ...)` is such an intersection). All but the first of them leave `buf`,
+// the first is replaced by the result
+static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
+    u32 first = buf->len;
+    u32 count = 0;
+    for (u32 i = 0; i < buf->len; i++) {
+        if (!is_primitive_union(buf->data[i])) continue;
+        if (!count++) first = i;
+    }
+    if (count < 2) return;
+
+    Ty const** unions = malloc(sizeof(Ty const*) * count);
+    u32 out = 0;
+    count = 0;
+    for (u32 i = 0; i < buf->len; i++) {
+        if (is_primitive_union(buf->data[i])) {
+            unions[count++] = buf->data[i];
+            if (i != first) continue;
+        }
+        buf->data[out++] = buf->data[i];
+    }
+    buf->len = out;
+
+    TyBuf result = {0};
+    for (u32 u = 0; u < count; u++) {
+        TyList members = unions[u]->composite.types;
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* t = members.data[i];
+            bool everywhere = true;
+            for (u32 other = 0; other < count && everywhere; other++) {
+                if (union_contains(unions[other], t)) continue;
+                // A literal is also matched by its primitive: `("a" | 1) & (string | 2)` keeps "a"
+                u32 family = t->kind == TY_LITERAL ? primitive_family(t) : 0;
+                Ty const* primitive =
+                    family == TYF_STRING ? my intrinsics[TY_STRING] :
+                    family == TYF_NUMBER ? my intrinsics[TY_NUMBER] :
+                    family == TYF_BIGINT ? my intrinsics[TY_BIGINT] : nullptr;
+                everywhere = primitive && union_contains(unions[other], primitive);
+            }
+            if (everywhere) ty_buf_push(&result, t);
+        }
+    }
+    buf->data[first] = ty_union(me, result.data, result.len, nullptr, (TyList){0});
+    ty_buf_drop(&result);
+    free(unions);
+}
+
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_INTERSECTION, types, len);
+    intersect_unions_of_primitives(me, &buf);
+    if (buf.len == 1) {
+        Ty const* only = buf.data[0];
+        ty_buf_drop(&buf);
+        return only;
+    }
 
     u32 includes = 0;
     bool includes_error = false;

@@ -28,7 +28,7 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run(['./release/tttt', '-q', *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        proc = subprocess.run(['./release/tttt', '-q', '--keep-going', '--all-errors', *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
@@ -66,7 +66,7 @@ def main():
     print(f'{status}, wall {wall:.2f}s, peak RSS {rss} MB, {sum(codes.values())} diagnostics in {len(files)} files '
           f'(full output: /tmp/realworld.txt)')
     for l in lines:
-        if l.startswith('  time:') or 'panic' in l.lower() or 'invalid pointer' in l or 'error:' in l:
+        if l.startswith('  time:') or 'panic' in l.lower() or 'invalid pointer' in l or re.search(r'\.c:\d+: error:', l):
             print('  ' + l.strip()[:200])
     print('\nby code:')
     for code, n in codes.most_common(args.n):

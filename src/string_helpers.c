@@ -6,7 +6,7 @@
 
 // Parses an unsigned number in the string between start and end, returns one char after last char parsed, or
 // null if it failed to parse anything
-static const char* unsigned_string_to_double(const char* start, const char* end, char base, double* ret) {
+static const char* unsigned_string_to_double(const char* start, const char* end, char base, bool separators, double* ret) {
     double tmp = 0;
     const char* p = start;
     for (; P_VALID(p, end); p++) {
@@ -18,6 +18,8 @@ static const char* unsigned_string_to_double(const char* start, const char* end,
         }
         if (digit < base) {
             tmp = digit + tmp * base;
+        } else if (*p == '_' && separators && p != start) {
+            // Numeric separator. TODO: TS6188/TS6189 for misplaced ones
         } else {
             break;
         }
@@ -53,6 +55,7 @@ const char* string_to_double(
     const char* end,
     bool allow_alternate_bases,
     bool leading_zero_octal,
+    bool separators,
     double* ret
 ) {
     bool value_neg = false;
@@ -71,7 +74,7 @@ const char* string_to_double(
         if (base_indicator_end) {
             p = base_indicator_end;
             double value = 0;
-            const char* num_end = unsigned_string_to_double(p, end, base, &value);
+            const char* num_end = unsigned_string_to_double(p, end, base, separators, &value);
             *ret = value_neg ? -value : value;
             if (num_end) {
                 return num_end;
@@ -85,15 +88,17 @@ const char* string_to_double(
     double decimal_part_value = 0;
     intptr_t decimal_part_len = 0;
     double whole_part_value = 0;
-    const char* whole_part_end = unsigned_string_to_double(p, end, 10, &whole_part_value);
+    const char* whole_part_end = unsigned_string_to_double(p, end, 10, separators, &whole_part_value);
     if (whole_part_end) {
         p = whole_part_end;
     }
     if (P_VALID(p, end) && *p == '.') {
         p++;
-        const char* decimal_part_end = unsigned_string_to_double(p, end, 10, &decimal_part_value);
+        const char* decimal_part_end = unsigned_string_to_double(p, end, 10, separators, &decimal_part_value);
         if (decimal_part_end) {
-            decimal_part_len = decimal_part_end - p;
+            for (const char* digit = p; digit < decimal_part_end; digit++) {
+                decimal_part_len += *digit != '_';
+            }
             p = decimal_part_end;
         }
     }
@@ -110,7 +115,7 @@ const char* string_to_double(
             exp_neg = true;
             exp_p++;
         }
-        const char* exponent_end = unsigned_string_to_double(exp_p, end, 10, &exponent_value);
+        const char* exponent_end = unsigned_string_to_double(exp_p, end, 10, separators, &exponent_value);
         if (exponent_end) {
             p = exponent_end;
             if (exp_neg) exponent_value *= -1;

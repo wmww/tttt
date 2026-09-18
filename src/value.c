@@ -42,7 +42,7 @@ static double string_to_num(csview sv) {
     sv = csview_trim_whitespace(sv);
     double ret;
     const char* end = csview_end_ptr(sv);
-    if (string_to_double(sv.buf, end, true, false, &ret) == end) {
+    if (string_to_double(sv.buf, end, true, false, false, &ret) == end) {
         return ret;
     } else {
         return NAN;

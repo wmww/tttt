@@ -19,6 +19,7 @@ const char* string_to_double(
     const char* end,
     bool allow_alternate_bases,
     bool leading_zero_octal,
+    bool separators, // `1_000`, as in source code
     double* ret
 );
 

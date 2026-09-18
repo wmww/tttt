@@ -679,6 +679,22 @@ static bool parse_generic_decl_item(Parser* parent, GenericItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
+    // Modifiers: `const T`, `in T`, `out T`, `in out T`. TODO: variance annotations and const type parameters are
+    // parsed and dropped
+    while (true) {
+        Parser modifier_p = parser(&p);
+        if ((hop_start_if_ends_on_word_break(&modifier_p, "in") ||
+             hop_start_if_ends_on_word_break(&modifier_p, "out") ||
+             hop_start_if_ends_on_word_break(&modifier_p, "const")) &&
+            (hop_whitespace(&modifier_p), is_identifier_start_char(*modifier_p.pos))
+        ) {
+            parse_success(&modifier_p);
+        } else {
+            parse_fail(&modifier_p);
+            break;
+        }
+    }
+
     Span name;
     if (!parse_identifier(&p, &name)) {
         return parse_fail(&p);
@@ -1025,6 +1041,59 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     return parse_success(&p);
 }
 
+// `import("./a")`, `import("./a").B.C<T>`, `typeof import("./a")`
+// HACK: not in the AST, the caller makes it `any`. Resolving it wants module symbols (plan 04), and the file has to be
+// loaded from wherever the type appears (program_handle_statement() only looks at toplevel import statements)
+static bool parse_import_type(Parser* parent) {
+    Parser p = parser(parent);
+
+    if (hop_start_if_ends_on_word_break(&p, "typeof")) {
+        hop_whitespace(&p);
+    }
+    if (!hop_start_if_ends_on_word_break(&p, "import")) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    if (!hop_char(&p, '(')) {
+        return parse_fail(&p);
+    }
+    hop_whitespace(&p);
+    cstr path = cstr_null;
+    if (!parse_string(&p, &path)) {
+        parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
+    }
+    cstr_drop(&path);
+    hop_whitespace(&p);
+    if (hop_char(&p, ',')) {
+        // Import attributes: `{ with: { "resolution-mode": "import" } }`
+        hop_whitespace(&p);
+        TypeNode attributes;
+        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &attributes)) {
+            type_drop(&attributes);
+        }
+        hop_whitespace(&p);
+    }
+    expect_char(&p, ')');
+
+    const char* end = p.pos;
+    hop_whitespace(&p);
+    while (hop_char(&p, '.')) {
+        hop_whitespace(&p);
+        Span name;
+        expect_identifier(&p, &name);
+        end = p.pos;
+        hop_whitespace(&p);
+    }
+    VecSpannedType generic_params;
+    if (p.whitespace != WHITESPACE_NEWLINE && parse_generic_params(&p, false, &generic_params)) {
+        vec_spanned_type_drop(&generic_params);
+        end = p.pos;
+    }
+    p.pos = end;
+
+    return parse_success(&p);
+}
+
 static bool parse_unique_symbol_type(Parser* parent) {
     Parser p = parser(parent);
 
@@ -1094,6 +1163,8 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         *ret = type_keyof(c_new(KeyofType, {
             .interface = parsed.type,
         }));
+    } else if (parse_import_type(&p)) {
+        *ret = type_any;
     } else if (hop_start_if_ends_on_word_break(&p, "typeof")) {
         hop_whitespace(&p);
         Expr expr;
@@ -1513,6 +1584,37 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     return parse_success(&p);
 }
 
+// `x is T`, `this is T`, `asserts x`, `asserts x is T` as a return type
+// TODO: predicates aren't in the AST yet (narrowing, plan 05), this gives the `boolean` or `void` the function returns
+static bool parse_type_predicate(Parser* parent, TypeNode* ret) {
+    Parser p = parser(parent);
+
+    Span name;
+    if (!parse_identifier_or_keyword(&p, &name)) {
+        return parse_fail(&p);
+    }
+    hop_whitespace_full(&p, true, false);
+    bool asserts = false;
+    if (span_equals(name, "asserts") && !starts_with_followed_by_word_break(&p, "is")) {
+        if (!parse_identifier_or_keyword(&p, &name)) {
+            return parse_fail(&p);
+        }
+        asserts = true;
+        hop_whitespace_full(&p, true, false);
+    }
+    if (hop_start_if_ends_on_word_break(&p, "is")) {
+        hop_whitespace(&p);
+        TypeNode t;
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
+        type_drop(&t);
+    } else if (!asserts) {
+        return parse_fail(&p);
+    }
+
+    *ret = asserts ? type_void : type_boolean;
+    return parse_success(&p);
+}
+
 static bool parse_function_args(
     Parser* parent,
     bool parse_abstract_and_new,
@@ -1664,33 +1766,13 @@ static bool parse_function_args(
 
     if (parse_ret_type) {
         Anchor ret_a = anchor(&p);
-        if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
+        if (parse_type_predicate(&p, &ret->ret)) {
+            ret->ret_span = span_from(ret_a);
+            ret->ret_explicit = true;
+        } else if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
             hop_whitespace(&p);
-            if (p.whitespace != WHITESPACE_NEWLINE && ret->ret.tag == TYPE_IDENTIFIER) {
-                if (hop_start_if_ends_on_word_break(&p, "is")) {
-                    hop_whitespace(&p);
-                    TypeNode t;
-                    expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
-                    type_drop(&t);
-                    type_drop(&ret->ret);
-                    ret->ret = type_boolean;
-                } else if (span_equals(ret->ret.identifier->name, "asserts")) {
-                    Span param;
-                    if (parse_identifier(&p, &param)) {
-                        hop_whitespace(&p);
-                        if (hop_start_if_ends_on_word_break(&p, "is")) {
-                            hop_whitespace(&p);
-                            TypeNode t;
-                            expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
-                            type_drop(&t);
-                        }
-                        type_drop(&ret->ret);
-                        ret->ret = type_void;
-                    }
-                }
-            }
         } else {
             goto drop_and_fail;
         }
@@ -2870,7 +2952,9 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     hop_whitespace(&p);
 
     Expr right;
-    ctx.min_precedence = precedence;
+    // Assignments and `**` are right associative: `a = b ??= c`
+    bool right_associative = precedence == binary_op_get_precedence(BINARY_OP_EQUAL) || op == BINARY_OP_STAR_STAR;
+    ctx.min_precedence = right_associative ? precedence - 1 : precedence;
     expect_expr(&p, ctx, &right);
 
     *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right.outer_span), c_new(BinaryOpExpr, {
@@ -2988,7 +3072,7 @@ static bool parse_number(Parser* parent, double* ret) {
     if (!is_number_start_char(*parent->pos)) {
         return false;
     }
-    const char* end = string_to_double(parent->pos, nullptr, true, true, ret);
+    const char* end = string_to_double(parent->pos, nullptr, true, true, true, ret);
     if (end) {
         parent->pos = end;
         if (*parent->pos == 'e' || *parent->pos == 'E') {
@@ -4148,6 +4232,18 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
         }
         const char* end_of_initialization = p.pos;
         hop_whitespace(&p);
+
+        // `let x!: T`. TODO: keep it for definite assignment analysis (plan 05), and TS1263/TS1264 when it's misplaced
+        if (*p.pos == '!' && p.whitespace != WHITESPACE_NEWLINE) {
+            Parser bang_p = parser(&p);
+            bang_p.pos++;
+            hop_whitespace(&bang_p);
+            if (*bang_p.pos == ':') {
+                parse_success(&bang_p);
+            } else {
+                parse_fail(&bang_p);
+            }
+        }
 
         if (parse_binding_type_or_set_to_default(&p, &initializer.binding)) {
             end_of_initialization = p.pos;

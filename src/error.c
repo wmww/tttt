@@ -87,8 +87,10 @@ void error_ctx_drop(ErrorCtx* me) {
     vec_error_drop(&my errors);
 }
 
+intptr_t print_error_ctx_max_display = 5000;
+
 void print_error_ctx(ErrorCtx const* me) {
-    const intptr_t max_display = 5000;
+    const intptr_t max_display = print_error_ctx_max_display;
     intptr_t displayed = 0;
     for_each (i, vec_error, &my errors) {
         println(debug_d(i), "\n");

@@ -43,6 +43,7 @@ typedef struct ErrorCtx {
 
 static inline ErrorCtx error_ctx_init() { return (ErrorCtx){0}; }
 void error_ctx_drop(ErrorCtx* me);
+extern intptr_t print_error_ctx_max_display; // tttt --all-errors lifts it
 void print_error_ctx(ErrorCtx const* me);
 bool error_ctx_empty(ErrorCtx const* me);
 void error_ctx_clear(ErrorCtx* me);

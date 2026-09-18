@@ -190,6 +190,7 @@ int main(int argc, const char** argv) {
                 "  --time        print how long each phase took to stderr\n"
                 "  --no-lib      don't load the standard library\n"
                 "  --keep-going  typecheck even after parse or name errors\n"
+                "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
                 "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
                 "                --noImplicitAny... (strict is on by default, a boolean without a value means true)"
             );
@@ -200,6 +201,8 @@ int main(int argc, const char** argv) {
             opts.time = true;
         } else if (streq(argv[i], "--keep-going")) {
             opts.keep_going = true;
+        } else if (streq(argv[i], "--all-errors")) {
+            print_error_ctx_max_display = INTPTR_MAX;
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {
