@@ -304,6 +304,42 @@ Details in `measurements.md`, shortcuts in `hacks.md` ("Legacy code consuming th
   properties were read as `T & undefined`; atoms clustered in their hash table (+70% typecheck time on the bench until
   the hash got a finalizer - `hmap_arc_declaration` lookups may have the same problem, see triage).
 
+**Stage 4b - split in three (insights, 2026-09-18).** 4a showed flips are cheap when done one kind of thing at a
+time, and that the pain is wherever a *weak legacy algorithm* meets precise `Ty` inputs. So 4b is three sessions, each
+leaving the suite runnable and pass counts at or above the previous session's:
+- **4b1 - calls and property access.** Call resolution on `Signature`s (overload selection, arity, spread/rest,
+  optional params, `new`), property/element access on `ty_members` (`index_type_evaluate_type*`, `type_all_keys`),
+  and generic inference. **Deviation from "keep its current feature level": don't port `generic_infer_callable_types`.**
+  It only understands bare type parameters; porting it means writing the same code twice. Write inference on `Ty`
+  the way tsc observably does it: walk source/target structurally (`infer_from` in `conditional.c` is the seed; share
+  it), collect candidates per type parameter with covariant/contravariant positions, pick union-of-candidates /
+  common supertype, fall back to the constraint then `unknown`, check the result against the constraint, literal
+  widening unless the constraint is primitive-ish. Out of scope for 4b1: the second pass for context-sensitive
+  arguments (needs contextual typing in 4b3; leave the seam: inference takes an "already inferred" mapper), return
+  type inference from contextual type, priorities beyond what tests demand. Legacy expression code keeps calling in
+  through `TYPE_NEW` at the seam: arguments are lowered, the result comes back as `TYPE_NEW`. Remove the
+  `inference_gave_up -> any` mitigation if the numbers allow. *Validate:* the 13 components lost in 4a are back;
+  errors >= 4590, full >= 1115; failstats "not implemented: inference" `log_error`s gone.
+- **4b2 - type aliases and type operators.** `identifier_type_evaluate_type` -> `ty_from_identifier_type` for aliases,
+  so every written type evaluates in the new core: `keyof`, indexed access, conditional, mapped, `typeof`. Deletes
+  `legacy_infer_extends`, the `has_cache/cached` AST writes (and with them, check whether the harness "run twice"
+  workaround can go), the type-side callers of `generic_degenericize_type`/`replace_named_types_with`. Deferred
+  types can no longer be viewed as `any`: the legacy view needs an honest answer for them (usually: the constraint).
+  *Validate:* `grep legacy_infer_extends src` empty; types >= previous; no AST writes during checking (valgrind on the
+  3 tests named in hacks.md).
+- **4b3 - expressions, statements, bindings, functions, namespaces.** The rest of "Stage 4 as planned" below. Shape it
+  for what comes next rather than transliterating: one `check_expr(expr, contextual Ty)` entry point (contextual typing
+  of function expressions, object/array literals and the context-sensitive inference pass hang off it), fresh vs
+  regular literal types with widening at declarations (then the error head line can move to `ty_display` and the
+  `is_simple_related` enum hack can go), and a single function through which every identifier *reference* gets its type
+  (plan 03's narrowing replaces its body). Harness fidelity runs before this session so `CompilerOptions`
+  (`strictNullChecks` etc.) exists as a struct the new expression code can read instead of ad-hoc bools. The test
+  traversal switches to `ty_display`. *Validate:* `LowerCtx.transient` and `ty_structural_from_legacy` have no callers;
+  all counts >= previous.
+
+If 4b1 finds that calls can't be cut from expressions at a `TYPE_NEW` seam without more scaffolding than it's worth,
+merge 4b1 into 4b3 and say so; 4b2 is independent of both.
+
 **Stage 4 as planned - type evaluation produces `Ty`.** Flip `LazyType` slots and every `*_evaluate_type`
 (`expr.c`, `statement.c`, `binding.c`, `function_impl.c`, `class_decl.c`, `enum_decl.c`, `interface_decl.c`,
 `scope_evaluate_value_interface`, `merged_type_evaluate_type`) to return `Ty const*`, file by file, using `TYPE_NEW`

@@ -5,8 +5,8 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-18, first insights session)
-- ~17k LoC of C in `src/` (parser 4.2k, type.c 1.9k, display 1.3k, expr/statement ~0.9k each). Inherited from a
+## State (2026-09-18, second insights session)
+- ~22k LoC of C in `src/` (parser 5.0k, new core `src/ty/` 6.4k, legacy type.c 1.9k, display 1.4k, expr 1.2k). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
 - `./fasttest.sh`: 1115 / 11962 tests fully pass (829 before the parser-gaps sessions, 1084 before type core stage
   3, 1100 before 4a). Per component: errors 4590, symbols 5974, types 2183 pass (of 11236 that run; the other 726 are
@@ -75,7 +75,19 @@ runnable throughout (`plans/02-type-core.md`).** Expect the pass count to stall 
 acceptable. Do not grind out test passes on top of the old representation in the meantime, beyond work that is
 independent of it (parser, harness, tooling, module resolution). The main risk is the temporary `TYPE_NEW` bridge
 between old and new representations costing more than it saves; 4a's experience says it doesn't (three flips, a
-handful of fixes each, pass counts up), and there's a short insights checkpoint before 4b.
+handful of fixes each, pass counts up).
+
+**Checkpoint after 4a (second insights session): the design is surviving contact.** Every stage raised pass counts
+instead of stalling them, the suite got 2x faster, `log_error` noise fell 40%, and nothing in `Ty` itself had to be
+redesigned; what each stage *added* unplanned (deferred references, lazy branches, enum values, decl links) was
+missing capability, not a wrong shape. The recurring pattern across stages 3 and 4a is different: **each time a real
+rule replaces a legacy approximation, the remaining legacy approximations stop being forgiven**, and the temptation
+is a blanket mitigation (`inference_gave_up -> any`, `any` source always assignable, deferred types viewed as `any`).
+Those are fine as scaffolding but must not outlive stage 5, and they're the reason **4b is split in three and does
+not port legacy algorithms that are known to be too weak** (call inference is rewritten on `Ty`, not transliterated;
+expressions get a contextual-type parameter and literal freshness from the start). Transliterating weak code onto the
+new core would be the "almost works" trap. `hacks.md` has doubled during the migration; most of it is labelled
+scaffolding, and stage 5 must actually prune it - the insights session after stage 5 should audit that.
 
 ## Risks / concerns
 - Test-chasing: 11k tests invite special-casing message text. Prefer fixes that move whole categories.
@@ -84,14 +96,16 @@ handful of fixes each, pass counts up), and there's a short insights checkpoint 
   tree design cannot. Keep this in mind when designing ids.
 - Perf claims without measurement. Get a benchmark early; keep it running in CI-ish fashion per session.
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
-  must not preclude per-file parallel parse/bind and ideally sharded checking. Plan 01 must address this.
+  must not preclude per-file parallel parse/bind and ideally sharded checking (plan 02 §3 covers the type core;
+  plan 03 must cover bind).
 - JS files, JSX, JSDoc, tsconfig/project handling, module resolution (node16/bundler), declaration emit: all
   absent. Declaration/JS emit is out of scope for now (typechecker only, `--noEmit` semantics).
 - readme.md still says development is halted; update when convenient.
 
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
-2. Type core redesign: ~~plan~~ done, execute `plans/02-type-core.md` stages 1-5.
+2. Type core redesign: ~~plan~~, ~~stages 1-4a~~ done; 4b1 (calls + inference), 4b2 (aliases + type operators),
+   4b3 (expressions), 5 (delete the old world). Harness fidelity slots in before 4b3 so `CompilerOptions` exists.
 3. Persistent symbols + binder-time flow graph, then narrowing.
 4. Harness fidelity (compiler options, multi-config tests), module resolution.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
