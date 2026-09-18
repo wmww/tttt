@@ -1,0 +1,278 @@
+#!/usr/bin/env bash
+# claude-go — run one headless Claude Code session (prompt: "go!") and print a
+# live, colourful trace of what it does. Exits when the session ends.
+set -uo pipefail
+
+prompt='go!'
+model='fable'
+runs=1
+quiet=''
+workdir=''
+extra=()
+
+function usage {
+  cat <<'EOF'
+usage: claude-go [options] [-- extra claude args...]
+
+Runs a headless Claude Code session and streams a readable trace of it.
+Permissions are skipped (--dangerously-skip-permissions): the agent runs
+unattended, so only point it at somewhere you are happy for it to act freely.
+
+  -p, --prompt TEXT   prompt to send          (default: "go!")
+  -m, --model NAME    model alias or id       (default: fable)
+  -C, --dir DIR       run the session in DIR  (default: cwd)
+  -n, --runs N        run N sessions back to back, stop on the first failure
+  -q, --quiet         hide thinking and tool-result previews
+  -h, --help          this
+
+Anything after `--` is passed straight through to `claude`.
+Exit status is the session's: 0 if it finished cleanly, non-zero otherwise.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p|--prompt) prompt="${2:?--prompt needs a value}"; shift 2 ;;
+    -m|--model)  model="${2:?--model needs a value}";   shift 2 ;;
+    -C|--dir)    workdir="${2:?--dir needs a value}";   shift 2 ;;
+    -n|--runs)   runs="${2:?--runs needs a value}";     shift 2 ;;
+    -q|--quiet)  quiet=1; shift ;;
+    -h|--help)   usage; exit 0 ;;
+    --)          shift; extra=("$@"); break ;;
+    *)           printf 'claude-go: unknown option %s\n\n' "$1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+command -v claude >/dev/null 2>&1 || { echo "claude-go: no 'claude' on PATH" >&2; exit 127; }
+command -v jq     >/dev/null 2>&1 || { echo "claude-go: needs jq to decode the event stream" >&2; exit 127; }
+[[ "$runs" =~ ^[0-9]+$ && "$runs" -ge 1 ]] || { echo "claude-go: --runs wants a positive integer" >&2; exit 2; }
+
+if [[ -n "$workdir" ]]; then
+  cd "$workdir" || exit 1
+fi
+
+# Colour is opt-out: NO_COLOR, or stdout is not a terminal.
+if [[ -n "${NO_COLOR:-}" || ! -t 1 ]]; then colour=0; else colour=1; fi
+
+width="$( { tput cols; } 2>/dev/null || echo 100 )"
+[[ "$width" =~ ^[0-9]+$ ]] || width=100
+(( width > 110 )) && width=110
+(( width < 40  )) && width=40
+
+cwd="$PWD"
+branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '')"
+
+# ---------------------------------------------------------------- presentation
+
+# jq boils each stream-json event down to at most one record; awk owns colour,
+# wrapping and the summary. Record layout, unit-separated:
+#
+#   ELAPSED ␟ KIND ␟ LABEL ␟ DEPTH ␟ BODY
+#
+# Hard line breaks inside BODY travel as \x01 so one record stays one line.
+JQ_FILTER='
+  def us: "";
+  def flat: tostring | gsub("\r"; "") | gsub("\n"; "") | gsub("\t"; " ");
+  def clip($n): if (length > $n) then (.[0:$n] + "…") else . end;
+  def rel: tostring | if startswith($cwd + "/") then .[($cwd|length)+1:] else . end;
+  def emit($kind; $label; $body):
+    ((now - ($t0|tonumber)) | floor | tostring) + us + $kind + us + $label + us
+    + (if (.parent_tool_use_id // null) != null then "1" else "0" end) + us + ($body | flat);
+
+  def result_text:
+    if   (.content | type) == "string" then .content
+    elif (.content | type) == "array"  then ([.content[] | .text? // empty] | join("\n"))
+    else (.content | tostring) end;
+
+  # A one-glance summary of what each tool was actually asked to do.
+  def tool_body:
+    . as $t | (.input // {}) as $i |
+    if   $t.name == "Bash"       then ($i.command // $i.description // "")
+    elif $t.name == "BashOutput" then ("shell " + ($i.bash_id // "" | tostring))
+    elif ($t.name | test("^(Read|Edit|Write|MultiEdit|NotebookEdit)$"))
+                                 then (($i.file_path // $i.notebook_path // "") | rel)
+    elif ($t.name | test("^(Glob|Grep)$"))
+                                 then (($i.pattern // "") + (if $i.path then "   in " + ($i.path | rel) else "" end))
+    elif ($t.name | test("^(Task|Agent)$"))
+                                 then (($i.description // $i.subagent_type // "") + " — " + ($i.prompt // "" | clip(160)))
+    elif $t.name == "WebFetch"   then (($i.url // "") + " — " + ($i.prompt // "" | clip(100)))
+    elif $t.name == "WebSearch"  then ($i.query // "")
+    elif $t.name == "ToolSearch" then ($i.query // "")
+    elif $t.name == "Skill"      then (($i.skill // "") + " " + ($i.args // ""))
+    elif $t.name == "TodoWrite"  then ([$i.todos[]? | select(.status == "in_progress") | .content] | join("; "))
+    else ($i | tostring | clip(200)) end;
+
+  if .type == "system" and .subtype == "init" then
+    emit("init"; (.model // "?");
+         ((.tools | length | tostring) + " tools · "
+          + (.mcp_servers | length | tostring) + " mcp · " + (.session_id // "")))
+
+  elif .type == "assistant" then
+    .message.content[]?
+    | if .type == "text" then
+        ((.text // "") | tostring) as $x | select($x | test("\\S")) | emit("text"; ""; $x)
+      elif .type == "thinking" then
+        ((.thinking // "") | tostring) as $x | select($x | test("\\S")) | emit("think"; ""; ($x | clip(600)))
+      elif .type == "tool_use" then
+        emit("tool"; .name; (tool_body | clip(400)))
+      else empty end
+
+  elif .type == "user" then
+    .message.content[]?
+    | select(.type == "tool_result")
+    # Errors keep their shape; successes collapse to one dim line of context.
+    | if .is_error == true then emit("error"; ""; (result_text | clip(600)))
+      else emit("okres"; ""; (result_text | gsub("[ \t]*\n[ \t]*"; " ⏎ ") | clip(180))) end
+
+  elif .type == "result" then
+    emit((if .is_error then "fail" else "done" end);
+         ((.num_turns // 0 | tostring) + " turns · "
+          + (((.duration_ms // 0) / 1000) | floor | tostring) + "s · $"
+          + ((((.total_cost_usd // 0) * 1000) | round / 1000) | tostring)
+          + (if (.usage.output_tokens // 0) > 0
+             then " · " + (.usage.output_tokens | tostring) + " out-tok" else "" end));
+         (.result // .subtype // ""))
+  else empty end
+'
+
+AWK_FORMATTER='
+function c(code, s) { return colour ? "\033[" code "m" s "\033[0m" : s }
+function pad(s, n,   r) { r = s; while (length(r) < n) r = r " "; return r }
+function blank(n,   s) { s = ""; while (length(s) < n) s = s " "; return s }
+function clock(sec) { return sprintf("%02d:%02d", int(sec / 60), sec % 60) }
+
+# Word-wraps body text under a fixed-width gutter, so long output reads like
+# prose instead of one runaway line. vis is the gutter length once the escape
+# codes inside it are discounted.
+function emit(gutter, vis, body, code,   avail, i, n, hard, words, w, word, line, first) {
+  avail = width - vis
+  if (avail < 20) avail = 20
+  n = split(body, hard, "\001")
+  first = 1
+  for (i = 1; i <= n; i++) {
+    line = ""
+    split(hard[i], words, " ")
+    for (w = 1; w in words; w++) {
+      word = words[w]
+      if (word == "") continue
+      if (line != "" && length(line) + 1 + length(word) > avail) {
+        printf "%s%s\n", first ? gutter : blank(vis), c(code, line)
+        first = 0; line = word
+      } else line = (line == "" ? word : line " " word)
+    }
+    if (line != "") { printf "%s%s\n", first ? gutter : blank(vis), c(code, line); first = 0 }
+  }
+  if (first) printf "%s\n", gutter
+}
+
+# Each tool family gets its own hue, so the shape of a session is legible from
+# across the room: blue reads, yellow writes, magenta shells, pink subagents.
+function tool_colour(name) {
+  if (name ~ /^(Read|Glob|Grep|LSP|NotebookRead|ToolSearch)$/) return "38;5;75"
+  if (name ~ /^(Edit|Write|MultiEdit|NotebookEdit)$/)          return "38;5;221"
+  if (name ~ /^(Bash|BashOutput|KillShell)$/)                  return "38;5;176"
+  if (name ~ /^(Task|Agent|Workflow|SendMessage)$/)            return "38;5;213"
+  if (name ~ /^(WebFetch|WebSearch)$/)                         return "38;5;80"
+  if (name ~ /^(Skill|TodoWrite|ExitPlanMode)$/)               return "38;5;114"
+  return "38;5;110"
+}
+function tool_glyph(name) {
+  if (name ~ /^(Read|Glob|Grep|LSP|NotebookRead|ToolSearch)$/) return "◍"
+  if (name ~ /^(Edit|Write|MultiEdit|NotebookEdit)$/)          return "✎"
+  if (name ~ /^(Bash|BashOutput|KillShell)$/)                  return "❯"
+  if (name ~ /^(Task|Agent|Workflow|SendMessage)$/)            return "✦"
+  if (name ~ /^(WebFetch|WebSearch)$/)                         return "⚓"
+  if (name ~ /^(Skill|TodoWrite|ExitPlanMode)$/)               return "◆"
+  return "·"
+}
+
+BEGIN { FS = "\037"; dim = "38;5;242"; saw_end = 0; status = 1 }
+{
+  sec = $1; kind = $2; label = $3; depth = $4 + 0; body = $5
+  stamp = c(dim, clock(sec)) "  "
+  sv    = 7                                  # visible width of the timestamp
+  ind   = depth ? "  " : ""                  # subagent work sits one step in
+  iv    = depth ? 2 : 0
+
+  if (kind == "init") {
+    printf "%s%s %s  %s\n\n", stamp, c("38;5;114", "◆"), c("1;38;5;114", label), c(dim, body)
+  }
+  else if (kind == "tool") {
+    col = tool_colour(label)
+    emit(stamp ind c(col, tool_glyph(label) " ") c("1;" col, pad(label, 12)) " ",
+         sv + iv + 2 + 12 + 1, body, dim)
+  }
+  else if (kind == "text") {
+    last_text = body
+    emit(stamp ind c("38;5;209", "│ "), sv + iv + 2, body, "38;5;252")
+  }
+  else if (kind == "think" && !quiet) {
+    emit(stamp ind c(dim, "~ "), sv + iv + 2, body, dim)
+  }
+  else if (kind == "okres" && !quiet) {
+    if (body ~ /[^ ]/) emit(stamp ind c(dim, "    ↳ "), sv + iv + 6, body, "38;5;239")
+  }
+  else if (kind == "error") {
+    emit(stamp ind c("38;5;203", "  ✗ "), sv + iv + 4, body, "38;5;203")
+  }
+  else if (kind == "done" || kind == "fail") {
+    saw_end = 1
+    ok = (kind == "done")
+    status = ok ? 0 : 1
+    col = ok ? "38;5;114" : "38;5;203"
+    printf "\n"
+    # The result echoes the final message, so only repeat it when it differs.
+    if (body ~ /[^ ]/ && body != last_text) emit(c(col, "│ "), 2, body, "38;5;252")
+    printf "%s  %s\n", c("1;" col, ok ? "■ session complete" : "■ session failed"), c(dim, label)
+  }
+  fflush()
+}
+END { exit saw_end ? status : 1 }
+'
+
+function banner {
+  local run="$1" total="$2" tag=''
+  (( total > 1 )) && tag="$(printf '  ·  run %d/%d' "$run" "$total")"
+
+  if (( colour )); then
+    local rule; printf -v rule '%*s' $((width - 2)) ''; rule="${rule// /─}"
+    printf '\033[38;5;209m╭%s╮\033[0m\n' "$rule"
+    printf '\033[38;5;209m│\033[0m \033[1;38;5;209m%s\033[0m  \033[38;5;242m%s%s\033[0m\n' \
+      'claude-go' "$(date '+%H:%M:%S')" "$tag"
+    printf '\033[38;5;209m│\033[0m \033[38;5;242m%-8s\033[0m %s\n' 'prompt' "$prompt"
+    printf '\033[38;5;209m│\033[0m \033[38;5;242m%-8s\033[0m %s%s\n' 'where' "$cwd" \
+      "${branch:+$(printf ' \033[38;5;114m(%s)\033[0m' "$branch")}"
+    printf '\033[38;5;209m│\033[0m \033[38;5;242m%-8s\033[0m %s \033[38;5;242m·\033[0m \033[38;5;203m%s\033[0m\n' \
+      'how' "$model" 'permissions skipped'
+    printf '\033[38;5;209m╰%s╯\033[0m\n\n' "$rule"
+  else
+    printf 'claude-go %s%s\n  prompt: %s\n  where:  %s %s\n  how:    %s / permissions skipped\n\n' \
+      "$(date '+%H:%M:%S')" "$tag" "$prompt" "$cwd" "$branch" "$model"
+  fi
+}
+
+# ------------------------------------------------------------------- the runs
+
+overall=0
+for (( run = 1; run <= runs; run++ )); do
+  banner "$run" "$runs"
+
+  claude --print --verbose \
+         --output-format stream-json \
+         --model "$model" \
+         --dangerously-skip-permissions \
+         "${extra[@]+"${extra[@]}"}" \
+         -- "$prompt" \
+  | jq --unbuffered -r --arg cwd "$cwd" --arg t0 "$(date +%s)" "$JQ_FILTER" \
+  | awk -v colour="$colour" -v width="$width" -v quiet="${quiet:-0}" "$AWK_FORMATTER"
+
+  rc=${PIPESTATUS[2]}
+  if (( rc != 0 )); then
+    overall=$rc
+    (( runs > 1 )) && printf '\n\033[38;5;203m■ stopping: run %d/%d did not finish cleanly\033[0m\n' "$run" "$runs"
+    break
+  fi
+  (( run < runs )) && printf '\n'
+done
+
+exit "$overall"
