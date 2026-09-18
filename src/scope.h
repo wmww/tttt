@@ -4,20 +4,20 @@
 #include "expr.h"
 #include "declaration.h"
 
-#define i_key_ssv
-#define i_val_class_names ArcDeclaration, arc_declaration
-#include "wrap_stc/hmap.h"
+#define g_pro_key SvStr, svstr
+#define g_class_val ArcDeclaration, arc_declaration
+#include <cleat/generic/hmap.h>
 
 typedef struct PortItem PortItem;
 typedef PortItem* PortItemPtr;
 typedef struct Program Program;
 
-#define i_key_ssv
-#define i_val_names PortItemPtr, port_item_ptr
-#include "wrap_stc/hmap.h"
+#define g_pro_key SvStr, svstr
+#define g_val PortItemPtr, port_item_ptr
+#include <cleat/generic/hmap.h>
 
-#define i_key_names PortItemPtr, port_item_ptr
-#include "wrap_stc/vec.h"
+#define g_key PortItemPtr, port_item_ptr
+#include <cleat/generic/vec.h>
 
 typedef struct Scope {
     ErrorCtx* errs;
@@ -26,8 +26,8 @@ typedef struct Scope {
     VecSpan namespaces;
     bool currently_adding_import; // If the current add_import() call stack has already seen this scope
                                   // Threadsafety: may have to change this system
-    HmapStrArcDeclaration declarations;
-    HmapStrPortItemPtr ports;
+    HMapArcDeclaration declarations;
+    HMapPortItemPtr ports;
     VecPortItemPtr wildcard_reexports;
     Declaration const* this_declaration;
     Declaration const* super_declaration;
@@ -90,5 +90,5 @@ Type scope_evaluate_value_interface(Scope const* me);
 Declaration const* scope_get_declaration(Scope const* me, Span name);
 
 typedef Scope const* ScopeCPtr;
-#define i_key_names ScopeCPtr, scope_cptr
-#include "wrap_stc/vec.h"
+#define g_key ScopeCPtr, scope_cptr
+#include <cleat/generic/vec.h>

@@ -67,9 +67,9 @@ static inline bool port_item_is_export(PortItem const* me) {
 
 void port_item_drop(PortItem* me);
 
-#define i_key_class_names PortItem, port_item
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key PortItem, port_item
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct PortStatement {
     Span keyword_span; // Span of "import" or "export"

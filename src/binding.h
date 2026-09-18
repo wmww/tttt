@@ -6,7 +6,7 @@
 
 typedef struct ObjectBindingItem ObjectBindingItem;
 
-wrap_forward_vec(ObjectBindingItem, object_binding_item);
+g_declare_vec(ObjectBindingItem, object_binding_item);
 
 typedef struct Binding {
     enum {
@@ -49,15 +49,15 @@ void binding_typecheck(Binding* me, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 
-#define i_key_class_names Binding, binding
-#define i_is_forward
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key Binding, binding
+#define g_declared
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
-#define i_key_class_names ObjectBindingItem, object_binding_item
-#define i_is_forward
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key ObjectBindingItem, object_binding_item
+#define g_declared
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct InitializedBinding {
     Binding binding;
@@ -72,7 +72,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names,
 Type initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 
-#define i_key_class_names InitializedBinding, initialized_binding
-#define i_no_clone
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key InitializedBinding, initialized_binding
+#define g_no_clone
+#define g_declared
+#include <cleat/generic/vec.h>

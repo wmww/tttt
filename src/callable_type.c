@@ -120,7 +120,7 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
 }
 
 static inline bool callable_type_has_rest(CallableType const* me) {
-    return !vec_callable_arg_empty(&my args) && vec_callable_arg_back(&my args)->source->rest;
+    return !vec_callable_arg_is_empty(&my args) && vec_callable_arg_back(&my args)->source->rest;
 }
 
 Type callable_type_get_arg_type(CallableType const* me, intptr_t i) {

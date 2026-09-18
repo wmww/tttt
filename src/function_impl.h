@@ -18,9 +18,9 @@ typedef struct FunctionArg {
 
 void function_arg_drop(FunctionArg* me);
 
-#define i_key_class_names FunctionArg, function_arg
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key FunctionArg, function_arg
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct FunctionImpl {
     Span name;

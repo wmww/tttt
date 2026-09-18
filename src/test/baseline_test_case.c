@@ -2,10 +2,13 @@
 #include "baseline_test_traversal.h"
 #include "mock_fs.h"
 #include "program.h"
+
 #include "source_file.h"
 #include "string_helpers.h"
 #include "error.h"
 #include "value.h"
+
+#include <cleat/filesystem.h>
 
 typedef struct LineNumberedStr {
     unsigned line;
@@ -16,10 +19,10 @@ static void line_numbered_str_drop(LineNumberedStr* me) {
     cstr_drop(&my str);
 }
 
-#define i_key_class_names LineNumberedStr, line_numbered_str
-#define i_no_clone
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key LineNumberedStr, line_numbered_str
+#define g_no_clone
+#define g_declared
+#include <cleat/generic/vec.h>
 
 BaselineTestCache baseline_test_cache_init() {
     ErrorCtx* errors = c_new(ErrorCtx, error_ctx_init());
@@ -31,11 +34,11 @@ BaselineTestCache baseline_test_cache_init() {
 void baseline_test_cache_drop(BaselineTestCache* me) {
     error_ctx_drop(my errors);
     free(my errors);
-    hmap_str_program_ptr_drop(&my libs);
+    hmap_program_ptr_drop(&my libs);
 }
 
 Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview comma_sep_libs) {
-    auto value = hmap_str_program_ptr_get(&my libs, comma_sep_libs);
+    auto value = hmap_program_ptr_get(&my libs, comma_sep_libs);
     if (value) {
         return value->second;
     }
@@ -53,12 +56,12 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
         comma_sep_libs = csview_slice(comma_sep_libs, end + 1, INTPTR_MAX);
     }
     cstr_lowercase(&key);
-    value = hmap_str_program_ptr_get(&my libs, cstr_sv(&key));
+    value = hmap_program_ptr_get(&my libs, cstr_sv(&key));
     if (value) {
         cstr_drop(&key);
         return value->second;
     }
-    Program* program = program_new(my errors, &real_fs_noisy);
+    Program* program = program_new(my errors, fs);
     comma_sep_libs = cstr_sv(&key);
     while (comma_sep_libs.size) {
         intptr_t end = csview_find_sv(comma_sep_libs, c_sv(","));
@@ -67,14 +70,14 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
         comma_sep_libs = csview_slice(comma_sep_libs, end + 1, INTPTR_MAX);
     }
     program_resolve_names(program);
-    hmap_str_program_ptr_insert(&my libs, key, program);
+    hmap_program_ptr_insert(&my libs, key, program);
     return program;
 }
 
 csview test_name_from_path(csview path) {
     csview name = basename_of(path);
     ASSERT(csview_ends_with(name, ".ts"));
-    name = csview_substr(name, 0, csview_size(name) - 3);
+    name = csview_subview(name, 0, csview_size(name) - 3);
     return name;
 }
 
@@ -129,11 +132,10 @@ static void load_test_source(BaselineTestCase* me) {
     cstr unparsed_contents = cstr_null;
     cstr source_contents = cstr_null;
 
-    if (!fs_read_entire_file(
-        my noisy ? &real_fs_noisy : &real_fs_quiet,
-        my source_path,
-        &unparsed_contents
-    )) {
+    try (fs_read_file(fs, my source_path, &unparsed_contents)) if_err (e) {
+        if (my noisy) error_base_eprintln(e);
+        current_error_destroy();
+        cstr_drop(&source_contents);
         return;
     }
 
@@ -144,9 +146,9 @@ static void load_test_source(BaselineTestCase* me) {
 
     bool has_line = false;
     csview current_filename = basename_of(my source_path);
-    c_foreach(i, lines_sv, contents_sv) {
+    for_each (i, lines_sv, contents_sv) {
         csview tag_key, tag_value;
-        if (parse_tag(i.line, &tag_key, &tag_value)) {
+        if (parse_tag(i, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
                 if (cstr_size(&source_contents)) {
                     add_virtual_source_file(me, current_filename, source_contents);
@@ -162,9 +164,9 @@ static void load_test_source(BaselineTestCase* me) {
                 my lib_list = cstr_from_sv(tag_value);
             }
         } else {
-            cstr_append_sv(&source_contents, i.line);
-            if ((has_line || csview_size(i.line)) &&
-                csview_end_ptr(i.line) < csview_end_ptr(contents_sv)
+            cstr_append_sv(&source_contents, i);
+            if ((has_line || csview_size(i)) &&
+                csview_end_ptr(i) < csview_end_ptr(contents_sv)
             ) {
                 cstr_append(&source_contents, "\r\n");
                 has_line = true;
@@ -415,11 +417,11 @@ static void render_lines_woven_with_file(
     }
     found_content_end:
 
-    c_foreach(i, lines_sv, source_contents) {
-        if (i.line.buf < end_of_content_lines) {
+    for_each (i, lines_sv, source_contents) {
+        if (i.buf < end_of_content_lines) {
             if (newline_if_next_line_non_empty && (
                     is_errors ||
-                    !line_effectively_empty(i.line)
+                    !line_effectively_empty(i)
                 )
             ) {
                 cstr_append(target, "\r\n");
@@ -427,10 +429,10 @@ static void render_lines_woven_with_file(
             cstr_append(target, line_indent);
         }
         newline_if_next_line_non_empty = false;
-        cstr_append_sv(target, i.line);
+        cstr_append_sv(target, i);
         if (!is_errors ||
             index < vec_size ||
-            csview_end_ptr(i.line) < end_of_content_lines
+            csview_end_ptr(i) < end_of_content_lines
         ) {
             cstr_append(target, "\r\n");
         }

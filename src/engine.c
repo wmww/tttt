@@ -13,8 +13,8 @@ typedef ArcObject StackFrame;
 
 static inline StackFrame stack_frame_new() { return value_object_make_empty().object; }
 
-#define i_key_class_names StackFrame, stack_frame
-#include "wrap_stc/vec.h"
+#define g_class_key StackFrame, stack_frame
+#include <cleat/generic/vec.h>
 
 typedef struct Engine {
     VecStackFrame stack;
@@ -48,7 +48,7 @@ static bool contains_only_digits(const char* str) {
 }
 
 static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
-    c_foreach_rev(i, vec_stack_frame, my stack) {
+    for (c_each_reverse(i, vec_stack_frame, my stack)) {
         Result get_result = js_object_get(i.ref->get, identifier);
         if (get_result.tag == RESULT_OK) {
             return get_result;
@@ -62,7 +62,7 @@ static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
 }
 
 static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, Value value) {
-    c_foreach_rev(i, vec_stack_frame, my stack) {
+    for (c_each_reverse(i, vec_stack_frame, my stack)) {
         if (js_object_has(i.ref->get, identifier)) {
             js_object_set(i.ref->get, cstr_from_sv(identifier), value);
             return result_ok_undefined;

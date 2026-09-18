@@ -18,10 +18,9 @@
 #include "math_helpers.h"
 #include "string_helpers.h"
 
-#define i_key uint8_t
-#define i_type vec_u8
-#include "wrap_stc/vec.h"
-typedef vec_u8 VecU8;
+#define g_type VecU8, vec_u8
+#define g_key uint8_t, u8
+#include <cleat/generic/vec.h>
 
 #define MAX_ERRORS 500 // Must be less than the max value storable in Parser.error_count
 
@@ -186,7 +185,7 @@ static bool fail_cache_register_and_check(Parser* parser, FailCacheFlag flag) {
 static void reset_fail_cache(Parser* me) {
     my shared->fail_cache_start = nullptr;
     // _clear() loops in order to drop. there's no drop work, so the loop is not required. this should be safe.
-    my shared->fail_cache._len = 0;
+    my shared->fail_cache.size = 0;
 }
 
 // Should only be called for the current active parser
@@ -767,7 +766,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         if (fail_on_error) { goto fail; }
     }
 
-    if (vec_spanned_type_empty(ret)) {
+    if (vec_spanned_type_is_empty(ret)) {
         parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
 
@@ -1488,7 +1487,7 @@ static bool parse_function_args(
                 parse_initialization_or_set_to_default(&p, expr_ctx_null, &initializer.value);
                 hop_whitespace(&p);
 
-                if (vec_function_arg_empty(&ret->args) && initializer.binding.has_explicit_type) {
+                if (vec_function_arg_is_empty(&ret->args) && initializer.binding.has_explicit_type) {
                     is_definitely_function = true;
                 }
 
@@ -1604,7 +1603,7 @@ static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionImpl* ret)
     if (parse_function_args(&p, false, false, !ctx.is_parsing_ternary, ret)) {
 
         is_definitely_function =
-            !vec_function_arg_empty(&ret->args) &&
+            !vec_function_arg_is_empty(&ret->args) &&
             vec_function_arg_at(&ret->args, 0)->initializer.binding.has_explicit_type;
 
         if (ret->ret_explicit) {
@@ -2059,7 +2058,7 @@ static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, Cla
         modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED);
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
     } else if (span_valid(name_span)) {
-        if (span_valid(name_span) && cstr_empty(&name_string)) {
+        if (span_valid(name_span) && cstr_is_empty(&name_string)) {
             name_string = cstr_from_span(name_span);
         }
 
@@ -3376,7 +3375,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
             if (span_valid(comma_span)) {
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
-            } else if (vec_initialized_binding_empty(&ret->initializers)) {
+            } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET) {
                     // let can also be a variable name, fail so we then attempt to parse it as such
                     variable_statement_drop(ret);
@@ -3472,7 +3471,7 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
         Expr condition = {0};
         Statement statement = {0};
         if (!parse_if_arm(&p, &condition, &statement)) {
-            if (vec_expr_empty(&conditions)) {
+            if (vec_expr_is_empty(&conditions)) {
                 return parse_fail(&p);
             } else if (expect_statement(&p, false, &statement)) {
                 vec_statement_push(&statements, statement);

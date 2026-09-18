@@ -2,9 +2,10 @@
 #include "baseline_test_suite.h"
 #include "baseline_test_case.h"
 #include "subprocess.h"
-#include "filesystem.h"
 #include "value.h"
 #include "result.h"
+
+#include <cleat/filesystem.h>
 
 BaselineTestResult make_baseline_test_result(cstr source_path) {
     return (BaselineTestResult){
@@ -24,11 +25,14 @@ static bool compare_outputs(
     bool show_diff_on_error
 ) {
     cstr expected = cstr_null;
-    if (fs_is_reg_file(&real_fs_quiet, path_of_expected)) {
-        if (!fs_read_entire_file(&real_fs_quiet, path_of_expected, &expected)) {
+    if (fs_is_reg_file(fs, path_of_expected)) {
+        try (fs_read_file(fs, path_of_expected, &expected)) if_err (e) {
+            // A missing or unreadable baseline just means the test component fails
             if (show_diff_on_error) {
                 printf("%.*s: %.*s could not be read\n", c_SV(test_name), c_SV(path_of_expected));
+                error_base_eprintln(e);
             }
+            current_error_destroy();
             return false;
         }
     }
@@ -85,7 +89,7 @@ void baseline_test_result_run(
 
     // It's ok if errors file doesn't exist
 
-    if (!fs_is_reg_file(&real_fs_quiet, cstr_sv(&symbols_path))) {
+    if (!fs_is_reg_file(fs, cstr_sv(&symbols_path))) {
         if (noisy) {
             fprintf(
                 stderr,
@@ -96,10 +100,10 @@ void baseline_test_result_run(
                 cstr_str(&symbols_path)
             );
         }
-        goto cleanup;
+        goto finish;
     }
 
-    if (!fs_is_reg_file(&real_fs_quiet, cstr_sv(&types_path))) {
+    if (!fs_is_reg_file(fs, cstr_sv(&types_path))) {
         if (noisy) {
             fprintf(
                 stderr,
@@ -110,7 +114,7 @@ void baseline_test_result_run(
                 cstr_str(&types_path)
             );
         }
-        goto cleanup;
+        goto finish;
     }
 
     BaselineTestCase test_case = run_baseline_test_case(&suite->cache, cstr_sv(&my source_path), noisy);
@@ -152,7 +156,7 @@ void baseline_test_result_run(
 
     baseline_test_case_drop(&test_case);
 
-cleanup:
+finish:
     c_drop(cstr,
         &errors_path,
         &symbols_path,

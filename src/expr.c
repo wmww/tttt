@@ -124,7 +124,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
             errs,
             span_between(
                 vec_spanned_type_at(&my params, 0)->span,
-                (vec_spanned_type_end(&my params).end - 1)->span
+                vec_spanned_type_back(&my params)->span
             ),
             2558,
             "Expected 0 type arguments, but got %zd.",
@@ -851,7 +851,7 @@ int binary_op_get_precedence(BinaryOp op) {
     UNREACHABLE;
 }
 
-czview binary_op_get_zv(BinaryOp op) {
+zsview binary_op_get_zv(BinaryOp op) {
     switch (op) {
         case BINARY_OP_STAR_STAR: return c_zv("**");
         case BINARY_OP_STAR: return c_zv("*");
@@ -921,7 +921,7 @@ int unary_op_get_precedence(UnaryOp op) {
     UNREACHABLE;
 }
 
-czview unary_op_get_zv(UnaryOp op) {
+zsview unary_op_get_zv(UnaryOp op) {
     switch (op) {
         case UNARY_OP_LEFT_BANG: return c_zv("!");
         case UNARY_OP_TYPEOF: return c_zv("typeof ");

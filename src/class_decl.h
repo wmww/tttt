@@ -58,9 +58,9 @@ bool class_item_is_static(ClassItem* me);
 Type class_item_field_evaluate_type(ClassItem* me);
 Type class_item_get_type(ClassItem* me);
 
-#define i_key_class_names ClassItem, class_item
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key ClassItem, class_item
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct ClassDecl {
     Span full_span;

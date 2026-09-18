@@ -49,8 +49,8 @@ static inline cstr cstr_from_span(Span me) {
     return cstr_from_sv(me.sv);
 }
 
-#define i_key_names Span, span
-#include "wrap_stc/vec.h"
+#define g_key Span, span
+#include <cleat/generic/vec.h>
 
 static inline VecSpan vec_span_single(Span span) {
     return vec_span_from_n(&span, 1);

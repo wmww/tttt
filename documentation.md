@@ -8,7 +8,7 @@ The actual typechecker, drop-in replacement for tsc. See `build/tttt --help` for
 
 Can be compiled and run with `./run.sh`. This makes a debug build and runs it under Valgrind, so won't be fast.
 
-Completely written in C. Code lives in [src](src/). The only dependency is an MIT-licensed C container library called STC (no relation to the swc-related project of the same name). It's included in this repository under [thirdparty](thirdparty/), and automatically compiled by the build system.
+Completely written in C. Code lives in [src](src/). The only dependency is [cleat](https://codeberg.org/sphi/cleat), an MIT-licensed standard library for C which comes with its own vendored copy of the STC container library (no relation to the swc-related project of the same name). It's included in this repository under [thirdparty/cleat](thirdparty/cleat/), and automatically compiled by the build system. `thirdparty/refresh.sh` re-downloads it at the pinned commit.
 
 ### baseline_tests
 Runs tttt against TypeScript's official test suite. See `build/baseline_tests --help` for usage.
@@ -77,7 +77,7 @@ tttt includes a JavaScript interpreter that evaluates an AST. It's not fast, sta
 The process of loading and typechecking TypeScript code is done in several phases
 
 ### Load from the filesystem
-The `Filesystem` abstraction allows tests to mock the filesystem, so the `Program` sees multiple files without the test runner having to write them to disk.
+Cleat's `Fs` abstraction allows tests to mock the filesystem, so the `Program` sees multiple files without the test runner having to write them to disk. The mock lives in [src/test/mock_fs.c](src/test/mock_fs.c); everything else uses the `fs` global.
 
 ### Parse
 The parser creates an AST from the source code string, see below.

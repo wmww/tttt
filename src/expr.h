@@ -19,8 +19,8 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct ScopeStack ScopeStack;
 typedef struct Expr Expr;
 
-wrap_forward_vec(ObjectExprItem, object_expr_item);
-wrap_forward_vec(Expr, expr);
+g_declare_vec(ObjectExprItem, object_expr_item);
+g_declare_vec(Expr, expr);
 
 typedef struct IdentifierExpr {
     Span name;
@@ -159,14 +159,14 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs);
 Type expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 
-#define i_key_class_names Expr, expr
-#define i_no_clone
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key Expr, expr
+#define g_no_clone
+#define g_declared
+#include <cleat/generic/vec.h>
 
-#define i_key_class_names Expr, expr
-#define i_is_forward
-#include "wrap_stc/arc.h"
+#define g_class_key Expr, expr
+#define g_declared
+#include <cleat/generic/arc.h>
 
 // Binary op
 
@@ -229,7 +229,7 @@ typedef enum BinaryOp {
 } BinaryOp;
 
 int binary_op_get_precedence(BinaryOp op);
-czview binary_op_get_zv(BinaryOp op);
+zsview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {
     BinaryOp op;
@@ -256,7 +256,7 @@ typedef enum UnaryOp {
 } UnaryOp;
 
 int unary_op_get_precedence(UnaryOp op);
-czview unary_op_get_zv(UnaryOp op);
+zsview unary_op_get_zv(UnaryOp op);
 
 typedef struct UnaryOpExpr {
     UnaryOp op;
@@ -319,8 +319,8 @@ typedef struct ObjectExprItem {
 
 void object_expr_item_drop(ObjectExprItem* me);
 
-#define i_key_class_names ObjectExprItem, object_expr_item
-#define i_opt c_no_atomic
-#define i_no_clone
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key ObjectExprItem, object_expr_item
+#define g_opt (c_no_atomic)
+#define g_no_clone
+#define g_declared
+#include <cleat/generic/vec.h>

@@ -7,8 +7,8 @@ typedef struct Type Type;
 typedef struct CallExpr CallExpr;
 typedef struct Declaration Declaration;
 typedef struct ErrorCtx ErrorCtx;
-wrap_forward_vec(InterfaceMember, interface_member);
-wrap_forward_vec(Type, type);
+g_declare_vec(InterfaceMember, interface_member);
+g_declare_vec(Type, type);
 
 typedef struct Interface {
     VecInterfaceMember members;

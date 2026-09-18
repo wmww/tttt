@@ -1,0 +1,71 @@
+# STC [UTF8](../include/stc/utf8.h): string functionality
+![String](pics/string.jpg)
+
+This contains low-level utf8 functions which are used by [cstr](cstr_api.md) (string), [csview](csview_api.md) (string-view), and [zsview](zsview_api.md) (zero-terminated string-view). A utf8 codepoint is often
+referred to as a ***rune***, and can be 1 to 4 bytes long.
+
+## Header file
+
+This header file is rarely needed alone. It is included by all the string/view types mentioned above.
+
+```c++
+#include <stc/utf8.h>
+```
+## Methods
+```c++
+isize_t         cutf8_count(const char *s);                      // number of utf8 runes in s
+isize_t         cutf8_count_n(const char *s, isize_t nbytes);    // number of utf8 runes within n bytes
+isize_t         cutf8_to_index(const char* s, isize_t u8pos);    // from utf8 pos to byte index
+int             cutf8_chr_size(const char* s);                   // utf8 character size: 1-4 bytes
+const char*     cutf8_at(const char *s, isize_t u8pos);          // return the char* at u8pos
+csview          cutf8_subview(const char* s, isize_t u8pos, isize_t u8len); // return a csview as the span
+
+bool            cutf8_valid(const char* s);
+bool            cutf8_valid_n(const char* s, isize_t nbytes);
+uint32_t        cutf8_decode(cutf8_decode_t *d, uint8_t byte);    // decode next byte to utf8, returns state.
+int             cutf8_encode(char *out, uint32_t codepoint);     // encode unicode cp to out. returns nbytes.
+uint32_t        cutf8_peek(const char* s);                       // codepoint value at character pos s
+uint32_t        cutf8_peek_at(const char* s, isize_t u8offset);  // codepoint at utf8 offset (may be negative)
+int             cutf8_icmp(const char* s1, const char* s2);      // case-insensitive char* comparison
+int             cutf8_icmp_sv(csview s1, csview s2);             // case-insensitive csview comparison
+
+uint32_t        cutf8_casefold(uint32_t c);                      // fold to a non-unique lowercase char.
+uint32_t        cutf8_tolower(uint32_t c);
+uint32_t        cutf8_toupper(uint32_t c);
+
+bool            cutf8_isalpha(uint32_t c);
+bool            cutf8_isalnum(uint32_t c);
+bool            cutf8_isword(uint32_t c);
+bool            cutf8_iscased(uint32_t c);
+bool            cutf8_isblank(uint32_t c);
+bool            cutf8_isspace(uint32_t c);
+bool            cutf8_isupper(uint32_t c);
+bool            cutf8_islower(uint32_t c);
+bool            cutf8_isgroup(int group, uint32_t c);
+```
+
+## Example: UTF8 iteration and case conversion
+```c++
+#include <stc/cstr.h>
+#include <stc/zsview.h>
+
+int main(void)
+{
+    zsview say = c_zv("Liberté, égalité, fraternité.");
+    printf("%s\n", zs.str);
+
+    for (c_each(i, zsview, say))
+        printf(c_svfmt " ", c_svarg(i.chr));
+    puts("");
+
+    cstr upper = cstr_toupper_sv(zsview_sv(say));
+    printf("%s\n", cstr_str(&upper));
+    cstr_drop(&upper);
+}
+```
+Output:
+```
+Liberté, égalité, fraternité.
+L i b e r t é ,   é g a l i t é ,   f r a t e r n i t é .
+LIBERTÉ, ÉGALITÉ, FRATERNITÉ.
+```

@@ -1,11 +1,9 @@
 #include "mock_fs.h"
 #include "string_helpers.h"
 
-static const char* mock_cwd = "/";
-
 typedef struct MockFsNode MockFsNode;
 
-wrap_forward_hmap_str(MockFsNode, mock_fs_node);
+g_declare_hmap(SvStr, MockFsNode, mock_fs_node);
 
 typedef struct MockFsNode {
     enum {
@@ -14,17 +12,17 @@ typedef struct MockFsNode {
     } tag;
     union {
         cstr file;
-        HmapStrMockFsNode dir;
+        HMapMockFsNode dir;
     };
 } MockFsNode;
 
 void mock_fs_node_drop(MockFsNode* me);
 
-#define i_val_class_names MockFsNode, mock_fs_node
-#define i_key_ssv
-#define i_is_forward
-#define i_no_clone
-#include "wrap_stc/hmap.h"
+#define g_pro_key SvStr, svstr
+#define g_class_val MockFsNode, mock_fs_node
+#define g_declared
+#define g_no_clone
+#include <cleat/generic/hmap.h>
 
 void mock_fs_node_drop(MockFsNode* me) {
     switch (my tag) {
@@ -33,7 +31,7 @@ void mock_fs_node_drop(MockFsNode* me) {
             break;
 
         case MOCK_FS_NODE_DIR:
-            hmap_str_mock_fs_node_drop(&my dir);
+            hmap_mock_fs_node_drop(&my dir);
             break;
     }
 }
@@ -56,7 +54,7 @@ static inline MockFsNode* mock_fs_dir_add(MockFsNode* me, cstr name, MockFsNode 
     if (my tag != MOCK_FS_NODE_DIR) {
         NONFATAL("Mock fs: tried to add node to non-directory");
     }
-    auto result = hmap_str_mock_fs_node_insert(&my dir, name, node);
+    auto result = hmap_mock_fs_node_insert(&my dir, name, node);
     if (result.inserted) {
         return &result.ref->second;
     } else {
@@ -68,11 +66,13 @@ static inline MockFsNode* mock_fs_dir_add(MockFsNode* me, cstr name, MockFsNode 
 typedef struct MockFs {
     Fs super;
     MockFsNode root;
+    // Always an absolute path, starts out as the filesystem root
+    cstr cwd;
 } MockFs;
 
 static inline MockFsNode* lookup_node(MockFs const* me, csview path, bool create_dirs) {
     // TODO: refactor to use csview more
-    cstr absolute = fs_absolute_path_of(&my super, path);
+    cstr absolute = absolute_path_of(cstr_sv(&my cwd), path.size ? path : c_sv("."));
     MockFsNode* ret = c_const_cast(MockFsNode*, &my root);
     const char* remaining = cstr_str(&absolute);
     while (remaining && ret) {
@@ -90,12 +90,11 @@ static inline MockFsNode* lookup_node(MockFs const* me, csview path, bool create
             remaining = nullptr;
         }
         if (segment.size) {
-            auto value = hmap_str_mock_fs_node_get_mut(&ret->dir, segment);
+            auto value = hmap_mock_fs_node_get_mut(&ret->dir, segment);
             if (value) {
                 ret = &value->second;
             } else if (create_dirs) {
-                auto result = hmap_str_mock_fs_node_insert(&ret->dir, cstr_from_sv(segment), mock_fs_dir());
-                segment = (csview){0};
+                auto result = hmap_mock_fs_node_insert(&ret->dir, cstr_from_sv(segment), mock_fs_dir());
                 ret = &result.ref->second;
             } else {
                 ret = nullptr;
@@ -104,6 +103,36 @@ static inline MockFsNode* lookup_node(MockFs const* me, csview path, bool create
     }
     cstr_drop(&absolute);
     return ret;
+}
+
+// Takes ownership of contents. Overwrites the file if it already exists, creates parent directories as needed
+static_failable mock_fs_set_file(MockFs* me, csview path, cstr contents) {
+    csview name = basename_of(path);
+    if (!name.size) {
+        cstr_drop(&contents);
+        return err_fmt("%.*s: not a valid file path", c_SV(path));
+    }
+    MockFsNode* dir = lookup_node(me, dirname_of(path), true);
+    if (!dir || dir->tag != MOCK_FS_NODE_DIR) {
+        cstr_drop(&contents);
+        return err_fmt("%.*s: parent directory could not be created", c_SV(path));
+    }
+    auto existing = hmap_mock_fs_node_get_mut(&dir->dir, name);
+    if (existing) {
+        if (existing->second.tag != MOCK_FS_NODE_FILE) {
+            cstr_drop(&contents);
+            return err_fmt("%.*s: is a directory", c_SV(path));
+        }
+        cstr_take(&existing->second.file, contents);
+    } else {
+        hmap_mock_fs_node_insert(&dir->dir, cstr_from_sv(name), mock_fs_file(contents));
+    }
+    return ok;
+}
+
+static bool mock_fs_exists(Fs const* super, csview path) {
+    MockFs const* me = c_container_of(super, MockFs, super);
+    return lookup_node(me, path, false) != nullptr;
 }
 
 static bool mock_fs_is_reg_file(Fs const* super, csview path) {
@@ -118,61 +147,152 @@ static bool mock_fs_is_directory(Fs const* super, csview path) {
     return node && node->tag == MOCK_FS_NODE_DIR;
 }
 
-static bool mock_fs_for_each_item_in_dir(
-    Fs const* super,
-    csview dir_path,
-    void (*callback)(void* data, csview dir_path, csview name),
-    void* data
-) {
+typedef struct MockFsListdirIterImpl {
+    FsListdirIterImpl super;
+    hmap_mock_fs_node_iter iter;
+    cstr path;
+} MockFsListdirIterImpl;
+
+static void mock_fs_listdir_drop(FsListdirIter* me) {
+    if (!my ref) return;
+    MockFsListdirIterImpl* impl = (MockFsListdirIterImpl*)my ref;
+    cstr_drop(&impl->path);
+    free(impl);
+    my ref = nullptr;
+}
+
+// Fills in the current item from the map iterator, or ends iteration if the map iterator is done
+static void mock_fs_listdir_update(FsListdirIter* me) {
+    MockFsListdirIterImpl* impl = (MockFsListdirIterImpl*)my ref;
+    if (!impl->iter.ref) {
+        mock_fs_listdir_drop(me);
+        return;
+    }
+    my ref->current.name = cstr_sv(&impl->iter.ref->first);
+    cstr_take(&impl->path, cstr_from_fmt(
+        "%.*s%c%.*s",
+        c_SV(my ref->current.dir),
+        path_sep,
+        c_SV(my ref->current.name)
+    ));
+    my ref->current.path = cstr_sv(&impl->path);
+}
+
+static void mock_fs_listdir_next(FsListdirIter* me) {
+    if (!my ref) return;
+    MockFsListdirIterImpl* impl = (MockFsListdirIterImpl*)my ref;
+    hmap_mock_fs_node_next(&impl->iter);
+    mock_fs_listdir_update(me);
+}
+
+static FsListdirIter mock_fs_start_listdir(Fs const* super, csview dir_path) {
     MockFs const* me = c_container_of(super, MockFs, super);
     MockFsNode const* node = lookup_node(me, dir_path, false);
     if (!node || node->tag != MOCK_FS_NODE_DIR) {
-        return false;
+        return (FsListdirIter){0};
     }
-    c_foreach(i, hmap_str_mock_fs_node, node->dir) {
-        callback(data, dir_path, cstr_sv(&i.ref->first));
-    }
-    return true;
+    FsListdirIter ret = {
+        .ref = &c_new(MockFsListdirIterImpl, {
+            .super = {
+                .next = mock_fs_listdir_next,
+                .drop = mock_fs_listdir_drop,
+                .current.dir = dir_path,
+            },
+            .iter = hmap_mock_fs_node_begin(&node->dir),
+            .path = cstr_null,
+        })->super,
+    };
+    mock_fs_listdir_update(&ret);
+    return ret;
 }
 
-csview mock_fs_get_cwd(Fs const* super) {
-    ignore super;
-    return csview_from(mock_cwd);
+static_failable mock_fs_get_cwd(Fs const* super, returns cstr) {
+    MockFs const* me = c_container_of(super, MockFs, super);
+    return ok(cstr_clone(my cwd));
 }
 
-static bool mock_fs_read_entire_file(Fs const* super, csview path, cstr* ret) {
+static_failable mock_fs_change_cwd(Fs const* super, csview path) {
+    MockFs* me = c_container_of(super, MockFs, super);
+    MockFsNode const* node = lookup_node(me, path, false);
+    if (!node || node->tag != MOCK_FS_NODE_DIR) {
+        return err_fmt("%.*s: no such directory", c_SV(path));
+    }
+    cstr_take(&my cwd, absolute_path_of(cstr_sv(&my cwd), path.size ? path : c_sv(".")));
+    return ok;
+}
+
+static_failable mock_fs_read_file(Fs const* super, csview path, returns cstr) {
     MockFs const* me = c_container_of(super, MockFs, super);
     MockFsNode const* node = lookup_node(me, path, false);
-    if (!node || node->tag != MOCK_FS_NODE_FILE) {
-        return false;
+    if (!node) {
+        return err_fmt("%.*s: no such file", c_SV(path));
     }
-    *ret = cstr_clone(node->file);
-    return true;
+    if (node->tag != MOCK_FS_NODE_FILE) {
+        return err_fmt("%.*s: not a file", c_SV(path));
+    }
+    return ok(cstr_clone(node->file));
 }
 
-static bool mock_fs_write_entire_file(Fs const* super, csview path, csview contents) {
+static_failable mock_fs_write_file(Fs const* super, csview path, csview contents) {
     MockFs* me = c_container_of(super, MockFs, super);
-    mock_fs_create_file(me, path, cstr_from_sv(contents));
-    return true;
+    return mock_fs_set_file(me, path, cstr_from_sv(contents));
+}
+
+static_failable mock_fs_remove(Fs const* super, csview path, bool recursive) {
+    MockFs* me = c_container_of(super, MockFs, super);
+    csview name = basename_of(path);
+    MockFsNode* parent = name.size ? lookup_node(me, dirname_of(path), false) : nullptr;
+    auto item = parent && parent->tag == MOCK_FS_NODE_DIR
+        ? hmap_mock_fs_node_get_mut(&parent->dir, name)
+        : nullptr;
+    if (!item) {
+        return err_fmt("%.*s: no such file or directory", c_SV(path));
+    }
+    if (item->second.tag == MOCK_FS_NODE_DIR &&
+        !recursive &&
+        !hmap_mock_fs_node_is_empty(&item->second.dir)
+    ) {
+        return err_fmt("%.*s: directory not empty", c_SV(path));
+    }
+    // Drops the node (and, for a directory, everything under it) along with its key
+    hmap_mock_fs_node_erase(&parent->dir, name);
+    return ok;
+}
+
+static_failable mock_fs_mkdir(Fs const* super, csview path) {
+    MockFs* me = c_container_of(super, MockFs, super);
+    MockFsNode const* node = lookup_node(me, path, true);
+    if (!node) {
+        return err_fmt("%.*s: could not create directory", c_SV(path));
+    }
+    if (node->tag != MOCK_FS_NODE_DIR) {
+        return err_fmt("%.*s: exists and is not a directory", c_SV(path));
+    }
+    return ok;
 }
 
 MockFs* mock_fs_new() {
     return c_new(MockFs, {
         .super = {
+            .exists = mock_fs_exists,
             .is_reg_file = mock_fs_is_reg_file,
             .is_directory = mock_fs_is_directory,
-            .for_each_item_in_dir = mock_fs_for_each_item_in_dir,
+            .start_listdir = mock_fs_start_listdir,
             .get_cwd = mock_fs_get_cwd,
-            .read_entire_file = mock_fs_read_entire_file,
-            .write_entire_file = mock_fs_write_entire_file,
-            .debug_on_fail = false,
+            .change_cwd = mock_fs_change_cwd,
+            .read_file = mock_fs_read_file,
+            .write_file = mock_fs_write_file,
+            .remove = mock_fs_remove,
+            .mkdir = mock_fs_mkdir,
         },
         .root = mock_fs_dir(),
+        .cwd = cstr_from_n(&path_sep, 1),
     });
 }
 
 void mock_fs_destroy(MockFs* me) {
     mock_fs_node_drop(&my root);
+    cstr_drop(&my cwd);
     free(me);
 }
 

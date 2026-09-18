@@ -35,7 +35,7 @@ void scope_stack_push_scope(ScopeStack* me, Scope const* scope) {
 
 // Declared and used exclusivly by scope.c
 void scope_stack_pop_scope(ScopeStack* me, Scope const* scope) {
-    PANIC_IF(vec_scope_cptr_empty(&my stack), "Tried to pop too many scopes");
+    PANIC_IF(vec_scope_cptr_is_empty(&my stack), "Tried to pop too many scopes");
     PANIC_IF(
         *vec_scope_cptr_back(&my stack) != scope,
         "Tried to pop incorrect scope, %zd scopes on the stack",
@@ -44,7 +44,7 @@ void scope_stack_pop_scope(ScopeStack* me, Scope const* scope) {
 }
 
 bool scope_stack_has_function(ScopeStack* me) {
-    c_foreach_rev(i, vec_scope_cptr, my stack) {
+    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
         if ((*i.ref)->is_function) {
             return true;
         }
@@ -53,8 +53,8 @@ bool scope_stack_has_function(ScopeStack* me) {
 }
 
 Declaration const* scope_stack_get_value(ScopeStack const* me, csview name) {
-    c_foreach_rev(i, vec_scope_cptr, my stack) {
-        auto result = hmap_str_arc_declaration_get(&(*i.ref)->declarations, name);
+    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
+        auto result = hmap_arc_declaration_get(&(*i.ref)->declarations, name);
         if (result && result->second.get->value_tag) {
             return result->second.get;
         }
@@ -63,8 +63,8 @@ Declaration const* scope_stack_get_value(ScopeStack const* me, csview name) {
 }
 
 Declaration const* scope_stack_get_type(ScopeStack const* me, csview name) {
-    c_foreach_rev(i, vec_scope_cptr, my stack) {
-        auto result = hmap_str_arc_declaration_get(&(*i.ref)->declarations, name);
+    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
+        auto result = hmap_arc_declaration_get(&(*i.ref)->declarations, name);
         if (result && result->second.get->type_tag) {
             return result->second.get;
         }
@@ -73,8 +73,8 @@ Declaration const* scope_stack_get_type(ScopeStack const* me, csview name) {
 }
 
 Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name) {
-    c_foreach_rev(i, vec_scope_cptr, my stack) {
-        auto result = hmap_str_arc_declaration_get(&(*i.ref)->declarations, name);
+    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
+        auto result = hmap_arc_declaration_get(&(*i.ref)->declarations, name);
         if (result && result->second.get->namespace_tag) {
             return result->second.get;
         }
@@ -83,7 +83,7 @@ Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name) 
 }
 
 Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifier keyword, bool type_else_value) {
-    c_foreach_rev(i, vec_scope_cptr, my stack) {
+    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
         Declaration const* decl = nullptr;
         switch (keyword) {
             case KEYWORD_IDENTIFIER_THIS: decl = (*i.ref)->this_declaration; break;

@@ -14,8 +14,8 @@ typedef struct CallableArg {
 void callable_arg_drop(CallableArg* me);
 CallableArg callable_arg_clone(CallableArg me);
 
-#define i_key_class_names CallableArg, callable_arg
-#include "wrap_stc/vec.h"
+#define g_class_key CallableArg, callable_arg
+#include <cleat/generic/vec.h>
 
 typedef struct CallableType {
     Generic generic;

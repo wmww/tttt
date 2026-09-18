@@ -121,11 +121,11 @@ bool declaration_test_mergable(Declaration const* me, DeclProps const* props, Er
 // If called multiple times attempts to merge declarations, does not check if merging is allowed, scope.c does that
 void declaration_init(Declaration* me, DeclProps props);
 
-#define i_key_class_names Declaration, declaration
-#define i_opt c_no_atomic
-#define i_is_forward
-#include "wrap_stc/arc.h"
+#define g_class_key Declaration, declaration
+#define g_opt (c_no_atomic)
+#define g_declared
+#include <cleat/generic/arc.h>
 
-#define i_key_names DeclarationCPtr, declaration_cptr
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_key DeclarationCPtr, declaration_cptr
+#define g_declared
+#include <cleat/generic/vec.h>

@@ -7,7 +7,7 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct SourceFile SourceFile;
 typedef struct Fs Fs;
 typedef struct Scope Scope;
-typedef struct arc_js_object ArcObject;
+typedef union arc_js_object ArcObject;
 
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);

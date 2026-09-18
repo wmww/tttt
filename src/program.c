@@ -1,26 +1,26 @@
 #include "program.h"
 #include "parser.h"
 #include "block.h"
-#include "filesystem.h"
+#include <cleat/filesystem.h>
 #include "error.h"
 #include "statement.h"
 #include "port_statement.h"
 #include "source_file.h"
 #include "scope_stack.h"
 
-#define i_key_class_names SourceFile, source_file
-#define i_no_clone
-#include "wrap_stc/box.h"
+#define g_class_key SourceFile, source_file
+#define g_no_clone
+#include <cleat/generic/box.h>
 
 // Keep source files in a box so new ones can be added without invalidating old pointers
-#define i_key_ssv
-#define i_val_class_names BoxSourceFile, box_source_file
-#define i_no_clone
-#include "wrap_stc/hmap.h"
+#define g_pro_key SvStr, svstr
+#define g_class_val BoxSourceFile, box_source_file
+#define g_no_clone
+#include <cleat/generic/hmap.h>
 
 typedef SourceFile* SourceFilePtr;
-#define i_key_names SourceFilePtr, source_file_ptr
-#include "wrap_stc/vec.h"
+#define g_key SourceFilePtr, source_file_ptr
+#include <cleat/generic/vec.h>
 
 static const csview lib_path = c_sv_const_init("thirdparty/lib");
 
@@ -59,7 +59,7 @@ typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs;
     Scope global_scope;
-    HmapStrBoxSourceFile source_files_map;
+    HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
 } Program;
 
@@ -181,7 +181,7 @@ static bool get_node_modules_dir(Fs const* fs, csview path, cstr* ret) {
         cstr_resize(&str, start_len, '_');
         cstr_resize(&str, basename_of(cstr_sv(&str)).buf - cstr_str(&str), '_');
         if (cstr_size(&str) <= 2 && (
-                cstr_empty(&str) ||
+                cstr_is_empty(&str) ||
                 cstr_equals(&str, ".") ||
                 cstr_equals(&str, "..") ||
                 (cstr_size(&str) == 1 && *cstr_str(&str) == path_sep)
@@ -239,7 +239,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
 
 static void program_drop(Program* me) {
     scope_drop(&my global_scope);
-    hmap_str_box_source_file_drop(&my source_files_map);
+    hmap_box_source_file_drop(&my source_files_map);
     vec_source_file_ptr_drop(&my source_files_ordered);
 }
 
@@ -335,9 +335,13 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
-    cstr canonical_path = relative_path_of(fs_get_cwd(my fs), path);
+    cstr cwd = cstr_null;
+    // Not being able to determine our own working directory isn't something we can carry on from
+    try (fs_get_cwd(my fs, &cwd)) or_panic;
+    cstr canonical_path = relative_path_of(cstr_sv(&cwd), path);
+    cstr_drop(&cwd);
 
-    auto cached_source = hmap_str_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
+    auto cached_source = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
     if (cached_source) {
         // A source file is already created for this path
         cstr_drop(&canonical_path);
@@ -346,7 +350,10 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     // No source file is created for this path, load it
     cstr contents;
-    if (!fs_read_entire_file(my fs, cstr_sv(&canonical_path), &contents)) {
+    try (fs_read_file(my fs, cstr_sv(&canonical_path), &contents)) if_err (e) {
+        // Not worth reporting: the caller turns a null return into a TypeScript "file not found" error
+        ignore e;
+        current_error_destroy();
         cstr_drop(&canonical_path);
         return nullptr;
     }
@@ -368,7 +375,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     parse_file(source_file, my errs);
 
-    hmap_str_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
+    hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
 
     c_foreach(i, vec_statement, source_file->ast.statements) {
         program_handle_statement(me, source_file, i.ref);
@@ -463,5 +470,5 @@ void program_typecheck(Program* me) {
 }
 
 intptr_t program_get_file_count(Program const* me) {
-    return hmap_str_box_source_file_size(&my source_files_map);
+    return hmap_box_source_file_size(&my source_files_map);
 }

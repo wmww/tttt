@@ -5,12 +5,10 @@
 
 #include "stc/cregex.h"
 
-#define i_key_class_names BaselineTestResult, baseline_test_result
-#define i_no_clone
-#define i_more
-#define i_cmp(a, b) cstr_cmp(&a->source_path, &b->source_path)
-#include "wrap_stc/vec.h"
-#include "wrap_stc/quicksort.h"
+#define g_class_key BaselineTestResult, baseline_test_result
+#define g_no_clone
+#define g_cmp(a, b) cstr_cmp(&a->source_path, &b->source_path)
+#include <cleat/generic/vec.h>
 
 typedef struct BaselineTestSuite {
     csview tests_dir;
@@ -27,10 +25,10 @@ void baseline_test_suite_drop(BaselineTestSuite* me);
 void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show_errs, bool show_syms, bool show_typs);
 void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path);
 
-#define i_key_class_names BaselineTestSuite, baseline_test_suite
-#define i_no_clone
-#define i_no_hash
-#include "wrap_stc/box.h"
+#define g_class_key BaselineTestSuite, baseline_test_suite
+#define g_no_clone
+#define g_no_hash
+#include <cleat/generic/box.h>
 
 BoxBaselineTestSuite load_baseline_test_suite(
     csview tests_dir,

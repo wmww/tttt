@@ -2,32 +2,12 @@
 
 #include "prelude.h"
 
-// cstr_vfmt seems to be a private API, but including the declaration works. Linking may break on STC update.
-intptr_t cstr_vfmt(cstr* me, intptr_t start, const char* fmt, va_list args);
-
-char* cstr_into_owned_ptr(cstr me);
-
-typedef struct lines_sv_iter {
-    bool ref;
-    csview line;
-    csview remaining;
-} lines_sv_iter;
-
-lines_sv_iter lines_sv_begin(csview* sv);
-void lines_sv_next(lines_sv_iter* me);
-
-#define lines_cstr_iter lines_sv_iter
-#define lines_cstr_next lines_sv_next
-lines_sv_iter lines_cstr_begin(cstr* str);
+// Most of what used to live here now comes from cleat (cstr_into_owned_ptr(), the lines_sv/lines_cstr iterators,
+// csview_trim_whitespace(), csview_end_ptr(), csview_from_range()). What's left is either TypeScript-specific or
+// otherwise not worth pushing upstream yet.
 
 static inline bool streq(const char* a, const char* b) {
     return (a == b || (a && b && strcmp(a, b) == 0));
-}
-
-csview csview_trim_whitespace(csview sv);
-static inline const char* csview_end_ptr(csview sv) { return sv.buf + sv.size; }
-static inline csview csview_from_range(const char* start, const char* end) {
-    return csview_from_n(start, end - start);
 }
 
 // Parses a double from the string start. Does not access string beyond end. If end is null assumes start is

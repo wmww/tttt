@@ -30,7 +30,7 @@ const Type type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINED };
 
 typedef struct TypeCtx {
     unsigned recursion_level;
-    HsetDeclarationCPtr currently_resolving;
+    HSetDeclarationCPtr currently_resolving;
     TypePairCache extends_results;
 } TypeCtx;
 
@@ -53,7 +53,7 @@ Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b) {
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
         vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
-        b.composite._len = 0; // fine, becuse the other vec now owns the data
+        b.composite.size = 0; // fine, becuse the other vec now owns the data
         type_drop(&b);
         return a;
     } else if (a.tag == tag) {
@@ -507,7 +507,7 @@ static inline Type const* type_resolve_ternary_type(TypeCtx* ctx, TernaryType* m
         VecTypeRefinement refinements = {0};
         Type const* ret;
         if (type_extends_internal(ctx, &my maybe_sub, &my maybe_super, &refinements)) {
-            if (!vec_type_refinement_empty(&refinements)) {
+            if (!vec_type_refinement_is_empty(&refinements)) {
                 my cached = type_clone(my if_true);
                 my has_cache = true;
                 replace_named_types_with(&my cached, &refinements);
@@ -1139,7 +1139,7 @@ static inline intptr_t type_get_numeric_index_bound(Type const* me, bool get_max
 
         case TYPE_TUPLE: {
             intptr_t ret = vec_tuple_element_size(&my tuple.elements);
-            if (!vec_tuple_element_empty(&my tuple.elements) && vec_tuple_element_back(&my tuple.elements)->rest) {
+            if (!vec_tuple_element_is_empty(&my tuple.elements) && vec_tuple_element_back(&my tuple.elements)->rest) {
                 ret--;
                 ret += type_get_numeric_index_bound(&vec_tuple_element_back(&my tuple.elements)->type, get_max);
             }
@@ -1235,7 +1235,7 @@ void type_abstract_literals(Type* me) {
 
                 case VALUE_OBJECT: /*{
                     Interface interface = {0};
-                    c_foreach(i, hmap_str_object_item, my value.object.get->items) {
+                    c_foreach(i, hmap_object_item, my value.object.get->items) {
                         InterfaceMember member = interface_member_make(
                             span_null,
                             false,

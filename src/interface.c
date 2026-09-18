@@ -74,7 +74,7 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
         }
         switch (needle->key.tag) {
             case INTERFACE_KEY_NAME:
-                if (cstr_equals_s(&needle->key.name_string, i.ref->key.name_string)) {
+                if (cstr_eq(&needle->key.name_string, &i.ref->key.name_string)) {
                     return i.ref - haystack->data;
                 } else {
                     break;
@@ -116,7 +116,7 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
             vec_interface_member_push(target, *new_member.ref);
         }
     }
-    source._len = 0;
+    source.size = 0;
     vec_interface_member_drop(&source);
 }
 

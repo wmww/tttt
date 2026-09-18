@@ -15,20 +15,29 @@ You will use scripts to help you run tests, but some scripts and options are mor
 Tests are split into three test components, errors, symbols and types. A test component passes if tttt is able to annotate the input code the exact same ways as tsc. In the test output ` - ` marks a passing test component and `ERR`/`SYM`/`TYP` marks a failing one. In the diffs you get from failing tests, removed lines are lines tttt erroneously produced, and added lines are lines tttt failed to produce.
 
 ## Code Guidelines
-tttt uses the [STC](https://github.com/stclib/STC/tree/09790f024ad29fca6fe60528461eeb589d4a917b) library for containers in C, with some patches on top of it. This library uses some macro magic to support typesafe containers like the STL in C++. Refer to the documentation [here](https://raw.githubusercontent.com/stclib/STC/09790f024ad29fca6fe60528461eeb589d4a917b/README.md) for details.
+tttt uses [cleat](https://codeberg.org/sphi/cleat) as its standard library, vendored at [thirdparty/cleat](thirdparty/cleat/). Cleat provides containers, strings, error handling, logging, filesystem access and subprocesses, and comes with its own vendored copy of the [STC](https://github.com/stclib/STC) container library. Cleat's own documentation is in [thirdparty/cleat/docs](thirdparty/cleat/docs/) and STC's is in [thirdparty/cleat/stc/docs](thirdparty/cleat/stc/docs/). The ones you'll want most often are:
 
-A number of useful things are provided by `src/prelude.h`, including
-- `#define my me->`: This allows writing `my foo.bar` instead of `me->foo.bar` in functions that take a pointer argument `me`. This is the preferred style for method-like functions (`me`/`my` is used instead of `this` or `self`)
-- `PANIC("message %s %d", str, num);`: Immediately aborts the program with a message to stderr, if running under Valgrind a stack trace is printed to stderr as well
+- [generic.md](thirdparty/cleat/docs/generic.md): containers (`VecFoo`/`vec_foo_*`, `HMapFoo`/`hmap_foo_*`, `ArcFoo`, `BoxFoo`, ...). A container is instantiated by `#define`ing `g_key`/`g_class_key`/`g_pro_key` (and `g_val`/`g_class_val`/`g_pro_val` for maps) and then `#include <cleat/generic/vec.h>`
+- [error_handling.md](thirdparty/cleat/docs/error_handling.md): `failable` functions, `try (...) bubble`, `ok`/`err`, `returns`
+- [filesystem.md](thirdparty/cleat/docs/filesystem.md): the `Fs` interface and the `fs` global
+- [iterators_and_for_each.md](thirdparty/cleat/docs/iterators_and_for_each.md): `for_each`/`for_each_kv`
+
+Cleat wraps every STC knob we need as a `g_*` macro, so raw `i_*` macros shouldn't appear in `src/`. If you hit one that isn't wrapped, prefer adding it to cleat over reaching past the wrapper.
+
+Note that `g_pro_key CStr, cstr` keys a container by `cstr` but looks it up by `const char*`, which is no good for most of our strings: they're `csview`s into a source file and so aren't null terminated. Use `g_pro_key SvStr, svstr` instead, which is the same `cstr` storage with `csview` as the lookup type.
+
+`src/prelude.h` pulls in `cleat.h` and is included directly or indirectly in all files. Between them you get, among other things:
+- `#define my me->` (from cleat): This allows writing `my foo.bar` instead of `me->foo.bar` in functions that take a pointer argument `me`. This is the preferred style for method-like functions (`me`/`my` is used instead of `this` or `self`)
+- `PANIC("message %s %d", str, num);`: Immediately aborts the program with a message to stderr, if running under Valgrind a stack trace is printed to stderr as well. Implemented on top of cleat's logger, so it also gets a clickable source link. Cleat's own `panic_str()`/`check()`/`impossible` do much the same thing but without printf formatting; prefer the macros below, which the codebase already uses everywhere
 - `ASSERT(condition)`: Panics if condition is false, used for sanity checks
 - `UNREACHABLE`: Panics if hit, used in places control flow should never hit
 - `NONFATAL("message %s %d", str, num)`: Used for recoverable errors that do not require aborting, but should nonetheless never happen once the program is complete
 - `PRINT_DBG("message %s %d", str, num)`: Can be used for print debugging
 
-There's other stuff there, but those are the main things you need to be aware of. `prelude.h` is included directly or indirectly in all files.
+There's other stuff there, but those are the main things you need to be aware of.
 
 ## Project Structure
-Feel free to change code in `src/` as much as you want, you can always revert it with git. Do not change code in `thirdparty/`, but you can look at it or anything you can find to understand what's going on. In particular `thirdparty/tsc/` may be enlightening, as this is what we're reimplementing.
+Feel free to change code in `src/` as much as you want, you can always revert it with git. Do not change code in `thirdparty/`, but you can look at it or anything you can find to understand what's going on; if a vendored library genuinely needs a fix, add a `thirdparty/*patch.txt` alongside the existing ones so `thirdparty/refresh.sh` reapplies it after a re-download. In particular `thirdparty/tsc/` may be enlightening, as this is what we're reimplementing.
 
 Refer to `documentation.md` for a description of the overall architecture of the C code base in `src/`.
 

@@ -1,0 +1,139 @@
+# STC [stack](../include/stc/stack.h): Stack
+![Stack](pics/stack.jpg)
+
+The **stack** is a container that gives the programmer the functionality of a stack - specifically,
+a LIFO (last-in, first-out) data structure. The stack pushes and pops the element from the back of
+the container, known as the top of the stack. A stack may be defined ***inplace***, i.e. with a
+fixed size on the stack by specifying `i_capacity CAP`.
+
+See the c++ class [std::stack](https://en.cppreference.com/w/cpp/container/stack) for a functional description.
+
+## Header file and declaration
+
+```c++
+#define T <ct>, <kt>[, (<opt>)[, <CAP>]] // shorthand for defining stack name, i_key, and i_opt
+// <CAP>: If given, stack becomes an inplace stack using runtime stack memory only with CAP capacity.
+// Common <opt> traits:
+//   c_compare_key - Key type <kt> is a comparable typedef'ed type. Auto-enables c_use_compare.
+//                Binds <kt>_cmp(), <kt>_eq() "member" function names.
+//   c_class_key - Additionally binds <kt>_clone() and <kt>_drop() function names.
+//                E.g., if <kt> is any STC container, c_class_key trait should be specified.
+//   c_pro_key   - "Pro" key type, use e.g. for built-in `cstr`, `zsview`, `rc`, `arc`, `box` as keys.
+//                These support conversion to/from a "raw" input type (such as const char*) when
+//                using <ct>_emplace*() functions, and may do optimized lookups via the raw type.
+//   c_use_eq   - Enable equality <kt>_eq() for _find() and <ct>_eq() for the container itself.
+//                Uses operator '==' unless *c_compare/class/pro*_key was also specified.
+//   c_use_cmp  - Enable 3-way comparison <kt>_cmp() function for _sort().
+//                Uses operators '<', '>' unless *c_compare/class/pro*_key was also specified.
+//   c_use_compare - Shorthand for (c_use_cmp | c_use_eq).
+//
+// To enable multiple traits, specify e.g. (c_class_key | c_use_cmp) as <opt>.
+
+// Alternative to defining T:
+#define i_key <kt>       // Key type. Container type name <ct> defaults to stack_<kt>.
+
+// Override/define when not the <opt> traits are specified:
+#define i_cmp <fn>       // Three-way compare two i_keyraw*
+#define i_less <fn>      // Less comparison. Alternative to i_cmp
+#define i_eq <fn>        // Equality comparison. Implicitly defined with i_cmp, but not with i_less.
+#define i_keydrop <fn>   // Destroy-element function - defaults to empty destruct
+#define i_keyclone <fn>  // Required if i_keydrop is defined
+
+#include <stc/stack.h>
+```
+- Defining either `i_use_cmp`, `i_less` or `i_cmp` enables sort(), binary_search() and lower_bound().
+- **emplace**-functions are only available when `i_keyraw` is explicitly or implicitly defined (e.g. via c_pro_key).
+- In the following, `X` is the value of `i_key` unless `T` is defined.
+
+## Methods
+
+```c++
+stack_X         stack_X_init(void);
+stack_X         stack_X_with_capacity(isize_t cap);
+stack_X         stack_X_with_size(isize_t size, i_keyraw rawval);
+stack_X         stack_X_with_size_uninit(isize_t size);
+
+stack_X         stack_X_clone(stack_X st);
+void            stack_X_copy(stack_X* self, const stack_X* other);
+stack_X         stack_X_move(stack_X* self);                                    // move
+void            stack_X_take(stack_X* self, stack_X unowned);                   // take ownership of unowned
+void            stack_X_drop(const stack_X* self);                              // destructor
+
+void            stack_X_clear(stack_X* self);
+bool            stack_X_reserve(stack_X* self, isize_t n);
+void            stack_X_shrink_to_fit(stack_X* self);
+
+isize_t         stack_X_size(const stack_X* self);
+isize_t         stack_X_capacity(const stack_X* self);
+bool            stack_X_is_empty(const stack_X* self);
+
+bool            stack_X_contains(const vec_X* self, i_keyraw raw);
+stack_X_iter    stack_X_find(const stack_X* self, i_keyraw raw);                 // requires c_use_cmp flag in decl.
+stack_X_iter    stack_X_find_in(stack_X_iter i1, stack_X_iter i2, i_keyraw raw); // return stack_X_end() if not found
+
+const i_key*    stack_X_at(const stack_X* self, isize_t idx);
+const i_key*    stack_X_top(const stack_X* self);
+const i_key*    stack_X_front(const stack_X* self);
+const i_key*    stack_X_back(const stack_X* self);
+
+i_key*          stack_X_at_mut(stack_X* self, isize_t idx);
+i_key*          stack_X_top_mut(stack_X* self);
+i_key*          stack_X_front_mut(stack_X* self);
+i_key*          stack_X_back_mut(stack_X* self);
+
+i_key*          stack_X_push(stack_X* self, i_key value);
+i_key*          stack_X_emplace(stack_X* self, i_keyraw raw);
+i_key*          stack_X_append_uninit(stack_X* self, isize_t n);
+
+void            stack_X_pop(stack_X* self);                                     // destroy last element
+i_key           stack_X_pull(stack_X* self);                                    // move out last element
+
+// Requires either i_use_cmp, i_cmp or i_less defined:
+void            stack_X_sort(stack_X* self);                                    // quicksort from sort.h
+isize_t         stack_X_lower_bound(const stack_X* self, const i_keyraw raw);   // return c_NPOS if not found
+isize_t         stack_X_binary_search(const stack_X* self, const i_keyraw raw); // return c_NPOS if not found
+
+stack_X_iter    stack_X_begin(const stack_X* self);
+stack_X_iter    stack_X_end(const stack_X* self);
+void            stack_X_next(stack_X_iter* it);
+
+bool            stack_X_eq(const stack_X* c1, const stack_X* c2); // require i_eq/i_cmp/i_less.
+i_key           stack_X_value_clone(const stack_X* self, i_key value);
+i_keyraw        stack_X_value_toraw(const vec_X_value* pval);
+void            stack_X_value_drop(vec_X_value* pval);
+```
+
+## Types
+
+| Type name          | Type definition                     | Used to represent...        |
+|:-------------------|:------------------------------------|:----------------------------|
+| `stack_X`          | `struct { stack_value *data; ... }` | The stack type             |
+| `stack_X_value`    | `i_key`                             | The stack element type     |
+| `stack_X_raw`      | `i_keyraw`                          | stack raw value type       |
+| `stack_X_iter`     | `struct { stack_value *ref; }`      | stack iterator             |
+
+## Example
+```c++
+#define T IStack, int
+#include <stc/stack.h>
+
+#include <stdio.h>
+
+int main(void) {
+    IStack stk = {0};
+
+    for (int i=0; i < 100; ++i)
+        IStack_push(&stk, i*i);
+
+    for (int i=0; i < 90; ++i)
+        IStack_pop(&stk);
+
+    printf("top: %d\n", *IStack_top(&stk));
+
+    IStack_drop(&stk);
+}
+```
+Output:
+```
+top: 81
+```

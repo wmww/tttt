@@ -1,48 +1,38 @@
 #include "prelude.h"
-#include "display.h"
 
-#ifdef INCLUDE_VALGRIND
-#include <valgrind/valgrind.h>
-#endif
-
-#ifdef DEBUG_ALLOCATOR
+#ifdef DEBUG_ALLOCATOR_ACTIVE
 intptr_t debug_allocation_count = 0;
-#endif // DEBUG_ALLOCATOR
+#endif
 
 int nonfatal_inhibit_count = 0;
 
-static inline const char* remove_file_prefix(const char* file) {
-    const char* prefix = "../src/";
-    const char* trimmed = file;
-    while (*prefix && *prefix == *trimmed) {
-        prefix++;
-        trimmed++;
-    }
-    if (*prefix) {
-        return file;
-    } else {
-        return trimmed;
-    }
+// The macros below all used to print file:line, and cleat's logger doesn't by default
+__attribute__((constructor))
+static void configure_logger() {
+    logger_config.file_line = true;
 }
 
+// Formats fmt/va into a fresh DisplayCtx. cleat's logger takes ownership of the context and drops it
+static DisplayCtx vformat_display(const char* fmt, va_list va) {
+    DisplayCtx d = logger_config.display_ctx;
+    cstr_vfmt(&d.target, 0, fmt, va);
+    return d;
+}
+
+// Calls the logger directly rather than going through log_debug()/log_error(), which deliberately bypasses
+// logger_config.threshold: NONFATAL() and PRINT_DBG() have always printed unconditionally, and raising the threshold
+// to suit them would also turn on cleat's own debug logging (run_subproc() announcing every command, say)
+static void log_at_level(LogLevel level, const char* label, const char* file, int line, const char* fmt, va_list va) {
+    logger_config.func(&logger_config, csview_from(file), line, level, csview_from(label), vformat_display(fmt, va));
+}
+
+// Same thing cleat's panic() does, but with printf-style formatting. Never returns
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) {
-    file = remove_file_prefix(file);
-    fprintf(
-        stderr,
-        "%s%s:%d %s%s: %s",
-        color_path, file, line,
-        color_error, error_type,
-        color_normal
-    );
     va_list va;
     va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
+    DisplayCtx d = vformat_display(fmt, va);
     va_end(va);
-    fprintf(stderr, "\n");
-#ifdef INCLUDE_VALGRIND
-    VALGRIND_PRINTF_BACKTRACE("");
-#endif
-    exit(1);
+    default_log_fatal_abort(csview_from(file), line, csview_from(error_type), d);
 }
 
 #define DEBUG_CSTRS_CAP 20
@@ -80,37 +70,17 @@ static inline void clear_debug_cstrs() {
 }
 
 void nonfatal_internal(const char* error_type, const char* file, int line, const char* fmt, ...) {
-    file = remove_file_prefix(file);
-    fprintf(
-        stderr,
-        "%s%s:%d %s%s: %s",
-        color_path, file, line,
-        color_error, error_type,
-        color_normal
-    );
     va_list va;
     va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
+    log_at_level(LOG_LEVEL_ERROR, error_type, file, line, fmt, va);
     va_end(va);
-    fprintf(stderr, "\n");
     clear_debug_cstrs();
-#ifdef INCLUDE_VALGRIND
-    VALGRIND_PRINTF_BACKTRACE("");
-#endif
 }
 
 void print_debug_internal(const char* file, int line, const char* fmt, ...) {
-    file = remove_file_prefix(file);
-    fprintf(
-        stderr,
-        "%s%s:%d %sdebug: %s",
-        color_path, file, line,
-        color_implicit, color_normal
-    );
     va_list va;
     va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
+    log_at_level(LOG_LEVEL_DEBUG, "debug", file, line, fmt, va);
     va_end(va);
-    fprintf(stderr, "\n");
     clear_debug_cstrs();
 }

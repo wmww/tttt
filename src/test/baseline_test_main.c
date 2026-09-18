@@ -1,6 +1,7 @@
 #include "baseline_test_suite.h"
-#include "filesystem.h"
 #include "string_helpers.h"
+
+#include <cleat/filesystem.h>
 
 csview const default_tests_dir = c_sv_const_init("thirdparty/tsc/tests");
 csview tests_dir = default_tests_dir;
@@ -83,11 +84,11 @@ static bool parse_args(int argc, const char** argv) {
         }
     }
 
-    if (!fs_is_directory(&real_fs_noisy, tests_dir)) {
+    if (!fs_is_directory(fs, tests_dir)) {
         fprintf(stderr, "%s%.*s is not a directory%s\n", color_error, c_SV(tests_dir), color_normal);
         return false;
     }
-    if (!fs_is_reg_file(&real_fs_noisy,results_path)) {
+    if (!fs_is_reg_file(fs, results_path)) {
         fprintf(stderr, "%s%.*s is not a file%s\n", color_error, c_SV(results_path), color_normal);
         return false;
     }

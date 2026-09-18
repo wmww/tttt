@@ -32,8 +32,8 @@ extern const csview indent_string;
 typedef struct Declaration Declaration;
 typedef Declaration const* DeclarationCPtr;
 
-#define i_key_names DeclarationCPtr, declaration_cptr
-#include "wrap_stc/hset.h"
+#define g_key DeclarationCPtr, declaration_cptr
+#include <cleat/generic/hset.h>
 
 typedef struct DisplayUnderlineTarget {
     cstr target;

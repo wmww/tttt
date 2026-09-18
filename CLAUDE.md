@@ -9,6 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `./filetest.sh path/to/file.ts -d` - Test arbitrary file with diff
 
 ## Code Style Guidelines
+- [cleat](https://codeberg.org/sphi/cleat) (vendored at `thirdparty/cleat/`) is the standard library: containers, strings, error handling, logging, filesystem, subprocesses. Its docs are in `thirdparty/cleat/docs/`, STC's in `thirdparty/cleat/stc/docs/`. Never edit `thirdparty/`; if a vendored fix is needed, add a `*patch.txt` next to the others and `thirdparty/refresh.sh` will reapply it
+- Containers are instantiated with cleat's `g_*` macros (`g_key`, `g_class_key`, `g_pro_key`, `g_val`, ...) followed by `#include <cleat/generic/vec.h>`. Don't use raw STC `i_*` macros. For a `cstr` key looked up by `csview` rather than `const char*`, use `g_pro_key SvStr, svstr`
 - Use struct-oriented programming with `my foo` for member access (aliased to `me->` by macros)
 - Function naming: `[module]_[action]` (e.g., `type_drop`, `error_ctx_init`)
 - Memory management: Always call appropriate `*_drop` functions for cleanup

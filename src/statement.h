@@ -166,10 +166,10 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs);
 Type statement_evaluate_return_type(Statement* me);
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
-#define i_key_class_names Statement, statement
-#define i_is_forward
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key Statement, statement
+#define g_declared
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 // Source directive statement (the XML thingys defined at the top level)
 
@@ -213,7 +213,7 @@ typedef struct ForEachLoopStatement {
     Statement body;
 } ForEachLoopStatement;
 
-czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me);
+zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me);
 Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me);
 
 // Switch statement
@@ -229,9 +229,9 @@ typedef struct SwitchCase {
 
 void switch_case_drop(SwitchCase* me);
 
-#define i_key_class_names SwitchCase, switch_case
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key SwitchCase, switch_case
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct SwitchStatement {
     Expr needle;

@@ -144,7 +144,7 @@ void print_error_ctx(ErrorCtx const* me) {
 }
 
 bool error_ctx_empty(ErrorCtx const* me) {
-    return vec_error_empty(&my errors);
+    return vec_error_is_empty(&my errors);
 }
 
 void error_ctx_clear(ErrorCtx* me) {

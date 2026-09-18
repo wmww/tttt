@@ -8,18 +8,17 @@
 
 typedef struct Type Type;
 
-#define i_key_ssv
-#define i_val bool
-#define i_type hmap_str_bool
-#include "wrap_stc/hmap.h"
-typedef hmap_str_bool HmapStrBool;
+#define g_pro_key SvStr, svstr
+#define g_type HMapBool, hmap_bool
+#define g_val bool, bool
+#include <cleat/generic/hmap.h>
 
 typedef struct TypePairCache {
-    HmapStrBool hmap;
+    HMapBool hmap;
 } TypePairCache;
 
 static inline void type_pair_cache_drop(TypePairCache* me) {
-    hmap_str_bool_drop(&my hmap);
+    hmap_bool_drop(&my hmap);
 }
 
 typedef struct TypePairCacheEntry {
@@ -56,7 +55,7 @@ static inline TypePairCacheEntry type_pair_cache_entry_make(
 
 static inline bool type_pair_cache_entry_insert(TypePairCacheEntry* me) {
     // Owndership of the key is passed in here (which means key may point to freed memory if result.inserted is false)
-    auto result = hmap_str_bool_insert(&my cache->hmap, my key, my result);
+    auto result = hmap_bool_insert(&my cache->hmap, my key, my result);
     my key_needs_drop = false;
     if (!result.inserted) {
         my result = result.ref->second;
@@ -70,7 +69,7 @@ static inline void type_pair_cache_entry_update(TypePairCacheEntry* me, bool res
     }
     my result = result;
     // key may not have ownership over its data anymore, but can still be used. This is hacky but it works
-    auto value = hmap_str_bool_get_mut(&my cache->hmap, cstr_sv(&my key));
+    auto value = hmap_bool_get_mut(&my cache->hmap, cstr_sv(&my key));
     ASSERT(value);
     value->second = result;
 }

@@ -1,0 +1,280 @@
+/* MIT License
+ *
+ * Copyright (c) 2026 Tyge Løvset
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+// csview is a non-zero-terminated string view.
+
+#ifndef STC_CSVIEW_H_INCLUDED
+#define STC_CSVIEW_H_INCLUDED
+
+#include "common.h"
+#include "types.h"
+#include "priv/utf8_prv.h"
+
+// [deprecated]:
+#define c_token(...) c_each_split(__VA_ARGS__)
+#define csview_token(...) csview_split(__VA_ARGS__)
+
+#define             csview_init() c_sv_1("")
+#define             csview_drop(p) c_default_drop(p)
+#define             csview_clone(sv) c_default_clone(sv)
+
+csview_iter         csview_advance(csview_iter it, isize_t u8pos);
+csview              csview_subview_pro(csview sv, isize_t pos, isize_t n);
+csview              csview_split(csview sv, const char* separator, isize_t* pos);
+csview              csview_strtok(csview sv, const char* delimiters, isize_t* pos);
+csview              csview_u8_subview(csview sv, isize_t u8pos, isize_t u8len);
+csview              csview_u8_tail(csview sv, isize_t u8len);
+csview_iter         csview_u8_at(csview sv, isize_t u8pos);
+
+STC_INLINE csview   csview_from(const char* str)
+    { return c_literal(csview){str, c_strlen(str)}; }
+STC_INLINE csview   csview_from_n(const char* str, isize_t n)
+    { return c_literal(csview){str, n}; }
+
+STC_INLINE void     csview_clear(csview* self) { *self = csview_init(); }
+STC_INLINE isize_t  csview_size(csview sv) { return sv.size; }
+STC_INLINE bool     csview_is_empty(csview sv) { return sv.size == 0; }
+
+STC_INLINE bool csview_equals_sv(csview sv1, csview sv2)
+    { return sv1.size == sv2.size && !c_memcmp(sv1.buf, sv2.buf, sv1.size); }
+
+STC_INLINE bool csview_equals(csview sv, const char* str)
+    { return csview_equals_sv(sv, c_sv_2(str, c_strlen(str))); }
+
+STC_INLINE size_t csview_hash(const csview *self)
+    { return c_basehash_n(self->buf, self->size); }
+
+STC_INLINE isize_t csview_find_sv(csview sv, csview search) {
+    char* res = c_strnstrn(sv.buf, sv.size, search.buf, search.size);
+    return res ? (res - sv.buf) : c_NPOS;
+}
+
+STC_INLINE isize_t csview_find(csview sv, const char* str)
+    { return csview_find_sv(sv, c_sv_2(str, c_strlen(str))); }
+
+STC_INLINE bool csview_contains(csview sv, const char* str)
+    { return csview_find(sv, str) != c_NPOS; }
+
+STC_INLINE bool csview_starts_with(csview sv, const char* str) {
+    isize_t n = c_strlen(str);
+    return n <= sv.size && !c_memcmp(sv.buf, str, n);
+}
+
+STC_INLINE bool csview_ends_with(csview sv, const char* str) {
+    isize_t n = c_strlen(str);
+    return n <= sv.size && !c_memcmp(sv.buf + sv.size - n, str, n);
+}
+
+STC_INLINE csview csview_subview(csview sv, isize_t pos, isize_t len) {
+    c_assert(((size_t)pos <= (size_t)sv.size) & (len >= 0));
+    if (pos + len > sv.size) len = sv.size - pos;
+    sv.buf += pos, sv.size = len;
+    return sv;
+}
+
+STC_INLINE csview csview_slice(csview sv, isize_t p1, isize_t p2) {
+    c_assert(((size_t)p1 <= (size_t)p2) & ((size_t)p1 <= (size_t)sv.size));
+    if (p2 > sv.size) p2 = sv.size;
+    sv.buf += p1, sv.size = p2 - p1;
+    return sv;
+}
+
+STC_INLINE csview csview_trim_start(csview sv)
+    { while (sv.size && *sv.buf <= ' ') ++sv.buf, --sv.size; return sv; }
+
+STC_INLINE csview csview_trim_end(csview sv)
+    { while (sv.size && sv.buf[sv.size - 1] <= ' ') --sv.size; return sv; }
+
+STC_INLINE csview csview_trim(csview sv)
+    { return csview_trim_end(csview_trim_start(sv)); }
+
+STC_INLINE csview csview_tail(csview sv, isize_t len)
+    { return csview_subview(sv, sv.size - len, len); }
+
+/* utf8 iterator */
+STC_INLINE csview_iter csview_begin(const csview* self) {
+    csview_iter it = {.u8={{self->buf}, self->buf + self->size}};
+    if (it.ref == it.u8.end) it.ref = NULL;
+    else it.u8.chr.size = cutf8_decode_codepoint(&it.u8.dec, it.ref, it.u8.end);
+    return it;
+}
+
+STC_INLINE csview_iter csview_end(const csview* self) {
+    (void)self; csview_iter it = {0}; return it;
+}
+
+STC_INLINE void csview_next(csview_iter* it) {
+    it->ref += it->chr.size;
+    if (it->ref == it->u8.end) it->ref = NULL;
+    else it->chr.size = cutf8_decode_codepoint(&it->u8.dec, it->ref, it->u8.end);
+}
+
+STC_INLINE uint32_t csview_codepoint(const csview_iter* it)
+    { return it->u8.dec.codep; }
+
+
+/* utf8 */
+STC_INLINE csview csview_u8_from(const char* str, isize_t u8pos, isize_t u8len)
+    { return cutf8_subview(str, u8pos, u8len); }
+
+STC_INLINE isize_t csview_u8_size(csview sv)
+    { return cutf8_count_n(sv.buf, sv.size); }
+
+STC_INLINE bool csview_u8_valid(csview sv) // requires linking with utf8 symbols
+    { return cutf8_valid_n(sv.buf, sv.size); }
+
+#define c_each_split_sv(it, separator, sv) \
+    struct { csview input, token; const char* sep; isize_t pos; } \
+    it = {.input=sv, .sep=separator} ; \
+    it.pos < it.input.size && (it.token = csview_split(it.input, it.sep, &it.pos), 1) ;
+
+#define c_each_strtok_sv(it, delimiters, sv) \
+    struct { csview input, token; const char* delims; isize_t pos; } \
+    it = {.input=sv, .delims=delimiters} ; \
+    it.pos < it.input.size && (it.token = csview_strtok(it.input, it.delims, &it.pos), 1) ;
+
+#define c_each_split(it, separator, str) \
+    c_each_split_sv(it, separator, csview_from(str))
+
+#define c_each_strtok(it, delimiters, str) \
+    c_each_strtok_sv(it, delimiters, csview_from(str))
+
+
+/* ---- Container helper functions ---- */
+
+STC_INLINE int csview_cmp(const csview* x, const csview* y) {
+    isize_t n = x->size < y->size ? x->size : y->size;
+    int c = c_memcmp(x->buf, y->buf, n);
+    return c ? c : c_default_cmp(&x->size, &y->size);
+}
+
+STC_INLINE bool csview_eq(const csview* x, const csview* y)
+    { return x->size == y->size && !c_memcmp(x->buf, y->buf, x->size); }
+
+/* ---- case insensitive ---- */
+
+STC_INLINE bool csview_iequals_sv(csview sv1, csview sv2)
+    { return sv1.size == sv2.size && !cutf8_icmp_sv(sv1, sv2); }
+
+STC_INLINE bool csview_iequals(csview sv, const char* str)
+    { return csview_iequals_sv(sv, c_sv(str, c_strlen(str))); }
+
+STC_INLINE bool csview_ieq(const csview* x, const csview* y)
+    { return csview_iequals_sv(*x, *y); }
+
+STC_INLINE int csview_icmp(const csview* x, const csview* y)
+    { return cutf8_icmp_sv(*x, *y); }
+
+STC_INLINE bool csview_istarts_with(csview sv, const char* str) {
+    isize_t n = c_strlen(str);
+    return n <= sv.size && !cutf8_icmp_sv(sv, c_sv(str, n));
+}
+
+STC_INLINE bool csview_iends_with(csview sv, const char* str) {
+    isize_t n = c_strlen(str);
+    return n <= sv.size && !cutf8_icmp(sv.buf + sv.size - n, str);
+}
+#endif // STC_CSVIEW_H_INCLUDED
+
+/* -------------------------- IMPLEMENTATION ------------------------- */
+#if (defined STC_IMPLEMENT || defined i_implement) && !defined STC_CSVIEW_IMPLEMENT
+#define STC_CSVIEW_IMPLEMENT
+
+csview_iter csview_advance(csview_iter it, isize_t u8pos) {
+    int inc = 1;
+    if (u8pos < 0) u8pos = -u8pos, inc = -1;
+    while (u8pos && it.ref != it.u8.end)
+        u8pos -= (*(it.ref += inc) & 0xC0) != 0x80;
+    if (it.ref == it.u8.end) it.ref = NULL;
+    else it.chr.size = cutf8_decode_codepoint(&it.u8.dec, it.ref, it.u8.end);
+    return it;
+}
+
+csview csview_subview_pro(csview sv, isize_t pos, isize_t len) {
+    if (pos < 0) {
+        pos += sv.size;
+        if (pos < 0) pos = 0;
+    }
+    if (pos > sv.size) pos = sv.size;
+    if (pos + len > sv.size) len = sv.size - pos;
+    sv.buf += pos, sv.size = len;
+    return sv;
+}
+
+csview csview_split(csview sv, const char* sep, isize_t* pos) {
+    if (*pos >= sv.size) return c_sv("");
+    isize_t sep_size = c_strlen(sep);
+    csview in = {sv.buf + *pos, sv.size - *pos};
+    const char* res = c_strnstrn(in.buf, in.size, sep, sep_size);
+    if (res) { in.size = res - in.buf; *pos += in.size + sep_size; }
+    else *pos = c_NPOS;
+    return in;
+}
+
+csview csview_strtok(csview sv, const char* delims, isize_t* pos) {
+    if (*pos >= sv.size) return c_sv("");
+    cutf8_decode_t dec = {0};
+    csview in = {sv.buf + *pos, sv.size - *pos};
+    for (c_each(i, csview, in)) {
+        for (const char *m = delims; *m; ++m) {
+            if (cutf8_decode(&dec, (uint8_t)*m) == cutf8_ACCEPT && i.u8.dec.codep == dec.codep) {
+                in.size = i.chr.buf - in.buf;
+                *pos += in.size + i.chr.size;
+                return in;
+            }
+        }
+    }
+    *pos = c_NPOS;
+    return in;
+}
+
+csview csview_u8_subview(csview sv, isize_t u8pos, isize_t u8len) {
+    const char* s, *end = &sv.buf[sv.size];
+    while ((u8pos > 0) & (sv.buf != end))
+        u8pos -= (*++sv.buf & 0xC0) != 0x80;
+    s = sv.buf;
+    while ((u8len > 0) & (s != end))
+        u8len -= (*++s & 0xC0) != 0x80;
+    sv.size = s - sv.buf; return sv;
+}
+
+csview csview_u8_tail(csview sv, isize_t u8len) {
+    const char* p = &sv.buf[sv.size];
+    while (u8len && p != sv.buf)
+        u8len -= (*--p & 0xC0) != 0x80;
+    sv.size -= p - sv.buf, sv.buf = p;
+    return sv;
+}
+
+csview_iter csview_u8_at(csview sv, isize_t u8pos) {
+    csview_iter it = {.u8={sv, sv.buf + sv.size}};
+    while ((u8pos > 0) & (it.ref != it.u8.end))
+        u8pos -= (*++it.ref & 0xC0) != 0x80;
+    c_assert(u8pos == 0);
+    it.chr.size = cutf8_decode_codepoint(&it.u8.dec, it.ref, it.u8.end);
+    return it;
+}
+#endif // IMPLEMENT
+
+#if defined i_import
+#include "priv/utf8_prv.c"
+#endif

@@ -22,10 +22,10 @@ typedef struct LazyType LazyType;
 typedef struct Declaration Declaration;
 typedef Declaration const* DeclarationCPtr;
 
-wrap_forward_arc(Expr, expr);
-wrap_forward_arc(Declaration, declaration);
-wrap_forward_vec(DeclarationCPtr, declaration_cptr);
-wrap_forward_vec(TupleElement, tuple_element);
+g_declare_arc(Expr, expr);
+g_declare_arc(Declaration, declaration);
+g_declare_vec(DeclarationCPtr, declaration_cptr);
+g_declare_vec(TupleElement, tuple_element);
 
 typedef struct Type {
     enum {
@@ -279,9 +279,9 @@ void type_error_if_not_assignable(Type const* source, Type const* target, Span t
 Type type_call_evaluate_type(Type const* me, CallExpr const* call);
 void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs);
 
-#define i_key_class_names Type, type
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key Type, type
+#define g_declared
+#include <cleat/generic/vec.h>
 
 typedef struct SpannedType {
     Span span;
@@ -291,8 +291,8 @@ static inline SpannedType spanned_type(Span span, Type type) { return (SpannedTy
 static inline void spanned_type_drop(SpannedType* me) { type_drop(&my type); }
 static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedType){.span = me.span, .type = type_clone(me.type)}; }
 
-#define i_key_class_names SpannedType, spanned_type
-#include "wrap_stc/vec.h"
+#define g_class_key SpannedType, spanned_type
+#include <cleat/generic/vec.h>
 
 static inline Type const* generic_param_at(VecSpannedType const* params, intptr_t i) {
     return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_any;

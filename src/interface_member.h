@@ -81,6 +81,6 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
 bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index);
 bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super);
 
-#define i_key_class_names InterfaceMember, interface_member
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key InterfaceMember, interface_member
+#define g_declared
+#include <cleat/generic/vec.h>

@@ -1,16 +1,22 @@
 #pragma once
 
+// PERF: make this optional (it's always on in debug mode, but it hardly slows us down so it's nice to have in release
+// mode sometimes). Has to come before any STC/cleat header, see debug_allocator.h.
+#define DEBUG_ALLOCATOR
+
+#if defined DEBUG_BUILD || defined DEBUG_ALLOCATOR
+#include "debug_allocator.h"
+#endif
+
 #include <stdio.h>
 
-#include <stc/cstr.h>
-#include <stc/csview.h>
-#include <stc/czview.h>
-#include <stc/types.h>
-#include "wrap_stc/forward.h"
+// cleat.h pulls in cleat's types, string helpers, common macros, display, log, failable and generic/types headers,
+// plus STC's common/csview/cstr. See thirdparty/cleat/readme.md
+#include <cleat.h>
+#include <stc/zsview.h>
 
-#define my me->
-#define ignore (void)
-
+// PANIC()/ASSERT()/NONFATAL()/PRINT_DBG() are thin printf-style wrappers around cleat's logger. They predate cleat's
+// panic()/check()/log_*() and are used throughout the codebase, so they're kept as-is for now.
 __attribute__((noreturn))
 void panic_internal(const char* error_type, const char* file, int line, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 #define PANIC(...) panic_internal("panic", __FILE__, __LINE__, __VA_ARGS__)
@@ -26,19 +32,7 @@ void print_debug_internal(const char* file, int line, const char* fmt, ...) __at
 #define NONFATAL(...) do { if (nonfatal_inhibit_count == 0) nonfatal_internal("nonfatal", __FILE__, __LINE__, __VA_ARGS__); } while (false)
 #define PRINT_DBG(...) { if (nonfatal_inhibit_count == 0) print_debug_internal(__FILE__, __LINE__, __VA_ARGS__); } while (false)
 
-
-#define cstr_append_lit(str, lit) cstr_append_sv(str, c_sv(lit))
-#define c_sv_const_init(str) {str, c_litstrlen(str)}
-
 #define MUST_USE __attribute__((warn_unused_result))
-
-// PERF: make this optional (it's always on in debug mode, but it hardly slows us down so it's nice to have in release
-// mode sometimes. At time of writing it's only useful for identifying which test of many has a leak)
-#define DEBUG_ALLOCATOR
-
-#if defined DEBUG_BUILD || defined DEBUG_ALLOCATOR
-#include "debug_allocator.h"
-#endif
 
 // These are used in debugging, DBG should not appear in committed code. Other debugging logic can be tagged with // DBG
 #define PANIC_DBG PANIC("AAaaa");

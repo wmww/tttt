@@ -22,17 +22,17 @@ typedef struct SymbolValue {
 static inline void symbol_value_drop(SymbolValue* me) {
     cstr_drop(&my str);
 }
-#define i_key_class_names SymbolValue, symbol_value
-#define i_opt c_no_atomic
-#include "wrap_stc/arc.h"
+#define g_class_key SymbolValue, symbol_value
+#define g_opt (c_no_atomic)
+#include <cleat/generic/arc.h>
 
-wrap_forward_hmap_str(ObjectItem, object_item);
-wrap_forward_arc(JsObject, js_object);
-wrap_forward_arc(JsArray, js_array);
-wrap_forward_arc(JsFuncValue, js_func_value);
-wrap_forward_arc(NativeFuncValue, native_func_value);
-wrap_forward_vec(Binding, binding);
-wrap_forward_vec(InitializedBinding, initialized_binding);
+g_declare_hmap(SvStr, ObjectItem, object_item);
+g_declare_arc(JsObject, js_object);
+g_declare_arc(JsArray, js_array);
+g_declare_arc(JsFuncValue, js_func_value);
+g_declare_arc(NativeFuncValue, native_func_value);
+g_declare_vec(Binding, binding);
+g_declare_vec(InitializedBinding, initialized_binding);
 
 typedef struct Value {
     enum {
@@ -108,18 +108,16 @@ typedef struct ObjectItemInit {
     Value value;
 } ObjectItemInit;
 
-#define i_key_names ObjectItemRef, object_item_ref
-#define i_more
+#define g_key ObjectItemRef, object_item_ref
 // TODO: make positive numeric keys go first
-#define i_cmp(a, b) c_default_cmp(&a->item->position, &b->item->position)
-#include "wrap_stc/vec.h"
-#include "wrap_stc/quicksort.h"
+#define g_cmp(a, b) c_default_cmp(&a->item->position, &b->item->position)
+#include <cleat/generic/vec.h>
 
 void object_item_drop(ObjectItem* me);
 ObjectItem object_item_clone(ObjectItem me);
 
 typedef struct JsObject {
-    HmapStrObjectItem items;
+    HMapObjectItem items;
     int total_inserted;
 } JsObject;
 
@@ -134,19 +132,19 @@ void js_object_set(JsObject* me, cstr key, Value val);
 Result js_object_get(JsObject const* me, csview key);
 bool js_object_has(JsObject* me, csview key);
 
-#define i_key_ssv
-#define i_val_class_names ObjectItem, object_item
-#define i_is_forward
-#include "wrap_stc/hmap.h"
+#define g_pro_key SvStr, svstr
+#define g_class_val ObjectItem, object_item
+#define g_declared
+#include <cleat/generic/hmap.h>
 
-#define i_key_class_names JsObject, js_object
-#define i_opt c_no_atomic
-#define i_is_forward
-#define i_no_hash
-#include "wrap_stc/arc.h"
+#define g_class_key JsObject, js_object
+#define g_opt (c_no_atomic)
+#define g_declared
+#define g_no_hash
+#include <cleat/generic/arc.h>
 
-#define i_key_class_names Value, value
-#include "wrap_stc/vec.h"
+#define g_class_key Value, value
+#include <cleat/generic/vec.h>
 
 // Array
 
@@ -158,11 +156,11 @@ typedef struct JsArray {
 void js_array_drop(JsArray* me);
 JsArray js_array_clone(JsArray me);
 
-#define i_key_class_names JsArray, js_array
-#define i_opt c_no_atomic
-#define i_is_forward
-#define i_no_hash
-#include "wrap_stc/arc.h"
+#define g_class_key JsArray, js_array
+#define g_opt (c_no_atomic)
+#define g_declared
+#define g_no_hash
+#include <cleat/generic/arc.h>
 
 // JsFunc
 
@@ -172,11 +170,11 @@ typedef struct JsFuncValue {
 
 void js_func_value_drop(JsFuncValue* me);
 
-#define i_key_class_names JsFuncValue, js_func_value
-#define i_opt c_no_atomic
-#define i_is_forward
-#define i_no_hash
-#include "wrap_stc/arc.h"
+#define g_class_key JsFuncValue, js_func_value
+#define g_opt (c_no_atomic)
+#define g_declared
+#define g_no_hash
+#include <cleat/generic/arc.h>
 
 // NativeFunc
 
@@ -188,11 +186,11 @@ typedef struct NativeFuncValue {
 
 void native_func_value_drop(NativeFuncValue* me);
 
-#define i_key_class_names NativeFuncValue, native_func_value
-#define i_opt c_no_atomic
-#define i_is_forward
-#define i_no_hash
-#include "wrap_stc/arc.h"
+#define g_class_key NativeFuncValue, native_func_value
+#define g_opt (c_no_atomic)
+#define g_declared
+#define g_no_hash
+#include <cleat/generic/arc.h>
 
 // Builders
 
@@ -205,11 +203,11 @@ static inline Value value_string(cstr value) { return (Value){ .tag = VALUE_STRI
 
 static inline Value value_object_from_n(ObjectItemInit* items, int n) {
     JsObject data = {
-        .items = hmap_str_object_item_init(),
+        .items = hmap_object_item_init(),
         .total_inserted = n,
     };
     for (int i = 0; i < n; i++) {
-        hmap_str_object_item_insert_or_assign(
+        hmap_object_item_insert_or_assign(
             &data.items,
             cstr_from(items[i].name),
             (ObjectItem){

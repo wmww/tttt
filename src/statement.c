@@ -170,7 +170,7 @@ void namespace_decl_typecheck(NamespaceDecl* me, ErrorCtx* errs) {
 
 // If statements
 
-czview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
+zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     switch (my keyword) {
         case FOR_EACH_LOOP_OF: return c_zv("of");
         case FOR_EACH_LOOP_IN: return c_zv("in");
@@ -683,7 +683,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                 case FOR_EACH_LOOP_IN:
                     switch (my for_each_loop->variable.tag) {
                         case FOR_EACH_LOOP_STATEMENT:
-                            if (!vec_initialized_binding_empty(&my for_each_loop->variable.statement.initializers) &&
+                            if (!vec_initialized_binding_is_empty(&my for_each_loop->variable.statement.initializers) &&
                                 my for_each_loop->variable.statement.initializers.data->binding.tag != BINDING_IDENTIFIER
                             ) {
                                 error_ctx_error(

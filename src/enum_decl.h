@@ -12,9 +12,9 @@ typedef struct EnumCase {
 } EnumCase;
 
 void enum_case_drop(EnumCase* me);
-#define i_key_class_names EnumCase, enum_case
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key EnumCase, enum_case
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct EnumDecl {
     Span name;

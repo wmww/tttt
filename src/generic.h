@@ -7,8 +7,8 @@ typedef struct TypeRefinement {
     Type const* refined;
 } TypeRefinement;
 
-#define i_key_names TypeRefinement, type_refinement
-#include "wrap_stc/vec.h"
+#define g_key TypeRefinement, type_refinement
+#include <cleat/generic/vec.h>
 
 typedef struct vec_expr VecExpr;
 
@@ -26,15 +26,15 @@ typedef struct GenericItem {
 void generic_item_drop(GenericItem* me);
 GenericItem generic_item_clone(GenericItem me);
 
-#define i_key_class_names GenericItem, generic_item
-#include "wrap_stc/vec.h"
+#define g_class_key GenericItem, generic_item
+#include <cleat/generic/vec.h>
 
 typedef struct Generic {
     VecGenericItem items;
 } Generic;
 
 static inline bool generic_empty(Generic const* me) {
-    return !me || vec_generic_item_empty(&my items);
+    return !me || vec_generic_item_is_empty(&my items);
 }
 
 void generic_drop(Generic* me);

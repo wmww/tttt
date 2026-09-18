@@ -1,5 +1,6 @@
 #include "baseline_test_case.h"
-#include "filesystem.h"
+
+#include <cleat/filesystem.h>
 
 #ifndef DEBUG_ALLOCATOR
 #error debug allocator should be enabled for diffapp runner builds
@@ -8,7 +9,7 @@
 int main(int argc, const char** argv) {
     ASSERT(argc == 2);
     csview test_path = csview_from(argv[1]);
-    if (!fs_is_reg_file(&real_fs_noisy, test_path)) {
+    if (!fs_is_reg_file(fs, test_path)) {
         PANIC("%.*s is not a file", c_SV(test_path));
     }
 

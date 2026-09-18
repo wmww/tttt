@@ -283,7 +283,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
         display_pointer(d, (void*)my decl_ref);
     }
 
-    if (!vec_spanned_type_empty(&my generic_params)) {
+    if (!vec_spanned_type_is_empty(&my generic_params)) {
         display_lit(d, "<");
         c_foreach(i, vec_spanned_type, my generic_params) {
             display_type(d, &i.ref->type);
@@ -472,7 +472,7 @@ static void display_interface(Display d, Interface const* me) {
     }
     d.indent--;
 
-    if (!vec_interface_member_empty(&my members)) {
+    if (!vec_interface_member_is_empty(&my members)) {
         display_newline(d);
     }
     display_lit(d, "}");
@@ -703,7 +703,7 @@ static void display_class_decl(Display d, ClassDecl const* me) {
         display_expr(d, &my extends);
         display_lit(d, " ");
     }
-    if (!vec_type_empty(&my implements)) {
+    if (!vec_type_is_empty(&my implements)) {
         display_lit(d, "implements ");
         c_foreach(i, vec_type, my implements) {
             display_type(d, i.ref);
@@ -834,7 +834,7 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_BINARY_OP: {
             display_expr(d, &my binary_op->left);
             display_lit(d, " ");
-            display_sv(d, czview_sv(binary_op_get_zv(my binary_op->op)));
+            display_sv(d, zsview_sv(binary_op_get_zv(my binary_op->op)));
             display_lit(d, " ");
             display_expr(d, &my binary_op->right);
         }   break;
@@ -842,11 +842,11 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_UNARY_OP: {
             UnaryOp op = my unary_op->op;
             if (op < UNARY_OP_MIN_RIGHT_HAND_OP) {
-                display_sv(d, czview_sv(unary_op_get_zv(op)));
+                display_sv(d, zsview_sv(unary_op_get_zv(op)));
             }
             display_expr(d, &my unary_op->expr);
             if (op >= UNARY_OP_MIN_RIGHT_HAND_OP) {
-                display_sv(d, czview_sv(unary_op_get_zv(op)));
+                display_sv(d, zsview_sv(unary_op_get_zv(op)));
             }
         }   break;
 
@@ -901,7 +901,7 @@ void display_expr(Display d, Expr const* me) {
                 display_lit(d, "new ");
             }
             display_expr(d, &my call->callable);
-            if (vec_expr_empty(&my call->args)) {
+            if (vec_expr_is_empty(&my call->args)) {
                 display_lit(d, "()");
             } else {
                 display_lit(d, "(");
@@ -1078,7 +1078,7 @@ static void display_interface_decl(Display d, InterfaceDecl const* me) {
     display_lit(d, "interface ");
     display_colored_span(d, color_name, my name);
     display_generic(d, &my generic);
-    if (!vec_spanned_type_empty(&my extends)) {
+    if (!vec_spanned_type_is_empty(&my extends)) {
         display_lit(d, " extends ");
         c_foreach(i, vec_spanned_type, my extends) {
             display_type(d, &i.ref->type);
@@ -1166,7 +1166,7 @@ void display_statement(Display d, Statement const* me) {
                     break;
             }
             display_lit(d, " ");
-            display_sv(d, czview_sv(for_each_loop_statement_keyword_str(my for_each_loop)));
+            display_sv(d, zsview_sv(for_each_loop_statement_keyword_str(my for_each_loop)));
             display_lit(d, " ");
             display_expr(d, &my for_each_loop->iterable);
             display_lit(d, ") ");
@@ -1203,7 +1203,7 @@ void display_statement(Display d, Statement const* me) {
             display_lit(d, "try ");
             display_block(d, &my try_catch->try_block);
             if (my try_catch->catch_var.tag != BINDING_NOOP ||
-                !vec_statement_empty(&my try_catch->catch_block.statements)
+                !vec_statement_is_empty(&my try_catch->catch_block.statements)
             ) {
                 display_lit(d, " catch ");
                 if (my try_catch->catch_var.tag != BINDING_NOOP) {
@@ -1213,7 +1213,7 @@ void display_statement(Display d, Statement const* me) {
                 }
                 display_block(d, &my try_catch->catch_block);
             }
-            if (!vec_statement_empty(&my try_catch->finally_block.statements)) {
+            if (!vec_statement_is_empty(&my try_catch->finally_block.statements)) {
                 display_lit(d, " finally ");
                 display_block(d, &my try_catch->finally_block);
             }

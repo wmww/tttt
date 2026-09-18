@@ -7,7 +7,7 @@ typedef struct Type Type;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct ScopeStack ScopeStack;
 
-wrap_forward_vec(Statement, statement);
+g_declare_vec(Statement, statement);
 
 typedef struct BlockTypecheckCtx {
     Type const* specified_return;

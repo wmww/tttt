@@ -13,8 +13,8 @@ void scope_drop(Scope* me) {
         scope_stack_pop_scope(my current_scope_stack, me);
     }
     vec_span_drop(&my namespaces);
-    hmap_str_arc_declaration_drop(&my declarations);
-    hmap_str_port_item_ptr_drop(&my ports);
+    hmap_arc_declaration_drop(&my declarations);
+    hmap_port_item_ptr_drop(&my ports);
     vec_port_item_ptr_drop(&my wildcard_reexports);
     lazy_type_drop(&my value_interface);
     if (my export_scope) {
@@ -25,8 +25,8 @@ void scope_drop(Scope* me) {
 
 Scope scope_clone(Scope me) {
     me.namespaces = vec_span_clone(me.namespaces);
-    me.declarations = hmap_str_arc_declaration_clone(me.declarations);
-    me.ports = hmap_str_port_item_ptr_clone(me.ports);
+    me.declarations = hmap_arc_declaration_clone(me.declarations);
+    me.ports = hmap_port_item_ptr_clone(me.ports);
     me.wildcard_reexports = vec_port_item_ptr_clone(me.wildcard_reexports);
     me.current_scope_stack = nullptr;
     if (me.export_scope) {
@@ -58,9 +58,9 @@ void scope_pop_from_stack(Scope* me) {
 }
 
 void scope_copy_declarations_from(Scope* me, Scope const* source) {
-    c_foreach(i, hmap_str_arc_declaration, source->declarations) {
+    c_foreach(i, hmap_arc_declaration, source->declarations) {
         i.ref->second.get->shared_between_scopes = true;
-        hmap_str_arc_declaration_insert(
+        hmap_arc_declaration_insert(
             &my declarations,
             cstr_clone(i.ref->first),
             arc_declaration_clone(i.ref->second)
@@ -74,7 +74,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
         NONFATAL("Declaration %.*s acquired multiple times", c_SPAN(ret->get->name));
         arc_declaration_drop(ret);
     }
-    auto existing = hmap_str_arc_declaration_get(&my declarations, props.name.sv);
+    auto existing = hmap_arc_declaration_get(&my declarations, props.name.sv);
     bool mergable = false;
     if (existing) {
         mergable = declaration_test_mergable(existing->second.get, &props, my errs);
@@ -83,7 +83,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
         if (existing->second.get->shared_between_scopes) {
             *ret = arc_declaration_make(*existing->second.get);
             declaration_clone_in_place(ret->get); // clears shared_between_scopes
-            hmap_str_arc_declaration_insert_or_assign(
+            hmap_arc_declaration_insert_or_assign(
                 &my declarations,
                 cstr_clone(existing->first),
                 arc_declaration_clone(*ret)
@@ -97,7 +97,7 @@ void scope_init_declaration(Scope* me, ArcDeclaration* ret, DeclProps props) {
             .namespaces = vec_span_clone(my namespaces),
         });
         if (!existing) {
-            hmap_str_arc_declaration_insert(
+            hmap_arc_declaration_insert(
                 &my declarations,
                 cstr_from_span(props.name),
                 arc_declaration_clone(*ret)
@@ -123,7 +123,7 @@ static void add_placeholder_for_failed_import(Scope* me, PortItem* item) {
         .type_tag = DECLARATION_NAMESPACE_WITH_VALUE,
         .namespace_tag = DECLARATION_NAMESPACE_WITH_VALUE,
     });
-    if (!hmap_str_arc_declaration_insert(
+    if (!hmap_arc_declaration_insert(
         &my declarations,
         cstr_from_sv(item->decl_name.sv),
         arc_declaration_clone(item->declaration)
@@ -184,7 +184,7 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_EXPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
-            auto result = hmap_str_port_item_ptr_insert(
+            auto result = hmap_port_item_ptr_insert(
                 &my ports,
                 cstr_from_span(item->decl_name),
                 item
@@ -210,12 +210,12 @@ static Declaration const* find_declaration_in_exports(Scope const* me, csview na
     Scope const* search_scope = search_exports ? my export_scope : me;
     ASSERT(search_scope);
 
-    auto decl_result = hmap_str_arc_declaration_get(&search_scope->declarations, name);
+    auto decl_result = hmap_arc_declaration_get(&search_scope->declarations, name);
     if (decl_result) {
         return decl_result->second.get;
     }
 
-    auto import_result = hmap_str_port_item_ptr_get(&my ports, name);
+    auto import_result = hmap_port_item_ptr_get(&my ports, name);
     if (import_result && port_item_is_export(import_result->second)) {
         Scope* next = source_file_get_scope_if_module(import_result->second->source_file);
         ASSERT(next);
@@ -290,8 +290,8 @@ static void process_port(Scope* me, PortItem* item) {
         bool is_export = port_item_is_export(item);
         item->declaration.get->exported = is_export;
         ASSERT(my export_scope);
-        HmapStrArcDeclaration* declarations = is_export ? &my export_scope->declarations : &my declarations;
-        if (!hmap_str_arc_declaration_insert(
+        HMapArcDeclaration* declarations = is_export ? &my export_scope->declarations : &my declarations;
+        if (!hmap_arc_declaration_insert(
             declarations,
             cstr_from_sv(item->decl_name.sv),
             arc_declaration_clone(item->declaration)
@@ -319,14 +319,14 @@ static void process_port(Scope* me, PortItem* item) {
 }
 
 void scope_process_imports(Scope* me) {
-    c_foreach(i, hmap_str_port_item_ptr, my ports) {
+    c_foreach(i, hmap_port_item_ptr, my ports) {
         process_port(me, i.ref->second);
     }
 }
 
 Type scope_evaluate_value_interface(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_str_arc_declaration, my declarations) {
+    c_foreach(i, hmap_arc_declaration, my declarations) {
         if (i.ref->second.get->value_tag) {
             InterfaceMember member = interface_member_make(
                 span_null, // Declaration

@@ -24,8 +24,8 @@ typedef struct SpannedModifier {
     Span span;
 } SpannedModifier;
 
-#define i_key_names SpannedModifier, spanned_modifier
-#include "wrap_stc/vec.h"
+#define g_key SpannedModifier, spanned_modifier
+#include <cleat/generic/vec.h>
 
 typedef struct ModifierList {
     VecSpannedModifier spanned;

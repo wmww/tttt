@@ -27,7 +27,6 @@ core_files = files(
     'declaration.c',
     'scope.c',
     'scope_stack.c',
-    'filesystem.c',
     'engine.c',
     'string_helpers.c',
 )

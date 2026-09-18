@@ -1,37 +1,24 @@
 #include "baseline_test_suite.h"
 #include "baseline_test_case.h"
 #include "baseline_test_result.h"
-#include "filesystem.h"
 #include "program.h"
 #include "engine.h"
 #include "value.h"
 #include "result.h"
-#include "subprocess.h"
 
+#include <cleat/filesystem.h>
+#include <cleat/subproc.h>
 #include "stc/cregex.h"
-#include <errno.h>
 #include <linux/limits.h>
 
-#define i_key BaselineTestResult const*
-#define i_type vec_baseline_test_result_c_ptr
-#include "wrap_stc/vec.h"
-typedef vec_baseline_test_result_c_ptr VecBaselineTestResultCPtr;
+typedef BaselineTestResult const* BaselineTestResultCPtr;
+#define g_key BaselineTestResultCPtr, baseline_test_result_c_ptr
+#include <cleat/generic/vec.h>
 
 static bool test_passes_filter(BaselineTestSuite* me, csview name) {
     if (my has_filter) {
-        // This is a little convoluted. The stc regex library seems to have limited support for csviews. There's a
-        // function that matches with them, but it doesn't support flag and, based on reading the code it looks
-        // broken. We use a similar strategy to it here, but hopefully more correct and with flag support.
-
-        // So it seems the only way the library *can* support non-null terminated input is with the CREG_STARTEND flag,
-        // which seems to repurpose the first element in the matches array as an input. This is great, except now we
-        // must supply a matches array. since the length which will be used is determined solely by the number of
-        // capture groups in the user-supplied pattern, we have a potential buffer overrun issue. instead of dynamically
-        // allocating an array, we simply have one reasonably big and panic if it's not big enough.
-        csview matches[40];
-        if (cregex_captures(&my filter) + 1 >= c_arraylen(matches)) PANIC("Too many capture groups in filter");
-        matches[0] = name;
-        return cregex_find(&my filter, name.buf, matches, CREG_STARTEND | CREG_FULLMATCH) == CREG_OK;
+        // A null matches array is fine, we only care if the whole name matches and not about capture groups
+        return cregex_match_sv(&my filter, name, nullptr, CREG_FULLMATCH) == CREG_OK;
     } else {
         return true;
     }
@@ -46,31 +33,29 @@ static void show_collected_test_counts(BaselineTestSuite* me) {
     );
 }
 
-static void load_path(void* data, csview dir_path, csview name) {
-    BaselineTestSuite* me = data;
-    cstr full_path = cstr_from_fmt("%.*s/%.*s", c_SV(dir_path), c_SV(name));
+// Recursively collects every .ts file below the given directory. Directories that can't be listed are silently
+// skipped, as was the case before (listdir has no way to report an error anyway)
+static void load_dir(BaselineTestSuite* me, csview dir_path) {
+    for_each (item, fs_listdir, fs, dir_path) {
+        if (fs_is_directory(fs, item.path)) {
+            load_dir(me, item.path);
+        } else if (fs_is_reg_file(fs, item.path) && csview_ends_with(item.path, ".ts")) {
+            vec_baseline_test_result_push(
+                &my results,
+                make_baseline_test_result(cstr_from_sv(item.path))
+            );
 
-    if (fs_is_directory(&real_fs_quiet, cstr_sv(&full_path))) {
-        fs_for_each_item_in_dir(&real_fs_quiet, cstr_sv(&full_path), load_path, me);
-        cstr_drop(&full_path);
-    } else if (fs_is_reg_file(&real_fs_quiet, cstr_sv(&full_path)) && cstr_ends_with(&full_path, ".ts")) {
-        vec_baseline_test_result_push(
-            &my results,
-            make_baseline_test_result(full_path)
-        );
-
-        if (vec_baseline_test_result_size(&my results) % 100 == 0) {
-            show_collected_test_counts(me);
+            if (vec_baseline_test_result_size(&my results) % 100 == 0) {
+                show_collected_test_counts(me);
+            }
         }
-    } else {
-        cstr_drop(&full_path);
     }
 }
 
 static void load_subdir(BaselineTestSuite* me, csview subdir) {
     cstr full_dir = cstr_from_fmt("%.*s/cases/%.*s", c_SV(my tests_dir), c_SV(subdir));
-    if (fs_is_directory(&real_fs_quiet, cstr_sv(&full_dir))) {
-        fs_for_each_item_in_dir(&real_fs_quiet, cstr_sv(&full_dir), load_path, me);
+    if (fs_is_directory(fs, cstr_sv(&full_dir))) {
+        load_dir(me, cstr_sv(&full_dir));
     } else {
         fprintf(stderr, "%s%s is not a directory%s\n", color_error, cstr_str(&full_dir), color_normal);
     }
@@ -307,14 +292,23 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
 
     cstr_append_fmt(&results, "}\n");
 
-    fs_write_entire_file(&real_fs_noisy, results_path, cstr_sv(&results));
+    bool saved = true;
+    try (fs_write_file(fs, results_path, cstr_sv(&results))) if_err (e) {
+        error_base_eprintln(e);
+        saved = false;
+    }
+    cstr_drop(&results);
 
-    printf("%sSaving done%s\n", color_good, color_normal);
+    if (saved) {
+        printf("%sSaving done%s\n", color_good, color_normal);
+    } else {
+        printf("%sSaving failed%s\n", color_error, color_normal);
+    }
 }
 
 static void load_saved_results(BaselineTestSuite* me, csview results_path) {
     ErrorCtx errs = error_ctx_init();
-    Program* program = program_new(&errs, &real_fs_quiet);
+    Program* program = program_new(&errs, fs);
 
     SourceFile const* results_source = program_load(program, results_path);
     // Don't bother typechecking
@@ -345,25 +339,23 @@ static void load_saved_results(BaselineTestSuite* me, csview results_path) {
 }
 
 static cstr get_git_hash_of_repo(csview repo_path) {
-    PATH_FROM_CSVIEW(repo_str, repo_path, {
+    fs_path_from_csview(repo_str, repo_path, {
         PANIC("Invalid repo path %.*s", c_SV(repo_path));
     });
-    const char* args[] = {
-        "git",
-        "-C",
-        repo_str,
-        "rev-parse",
-        "HEAD",
-        nullptr,
-    };
-    cstr out_str = cstr_null, err_str = cstr_null;
-    if (run_subprocess_get_output(args, &out_str, &err_str) == 0) {
+    cstr out_str = cstr_null;
+    int exit_code = 0;
+    // git's stderr is swallowed and a nonzero exit code just means we don't know the commit (the tests directory may
+    // not be a git repo at all), but failing to run git in the first place is worth reporting
+    try (run_subproc((SubprocArgs){
+        .cmd = {"git", "-C", repo_str, "rev-parse", "HEAD"},
+        .stdout = &out_str,
+        .exit_code = &exit_code,
+    })) or_log(error);
+    if (exit_code == 0) {
         if (cstr_size(&out_str)) cstr_resize(&out_str, cstr_size(&out_str) - 1, ' '); // strip trailing newline
-        cstr_drop(&err_str);
         return out_str;
     } else {
         cstr_drop(&out_str);
-        cstr_drop(&err_str);
         return cstr_null;
     }
 }
@@ -377,7 +369,7 @@ BoxBaselineTestSuite load_baseline_test_suite(
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
         .has_filter = filter_re != nullptr,
-        .filter = filter_re ? cregex_from(filter_re, CREG_ICASE) : cregex_init(),
+        .filter = filter_re ? cregex_make(filter_re, CREG_ICASE) : (cregex){0},
         .cache = baseline_test_cache_init(),
     });
     ASSERT(!ret.get->filter.error);
@@ -392,6 +384,6 @@ BoxBaselineTestSuite load_baseline_test_suite(
     show_collected_test_counts(ret.get);
     printf("\n");
     if (!summary_only) printf("%sSorting tests...%s\n", color_status, color_normal);
-    vec_baseline_test_result_quicksort(&ret.get->results);
+    vec_baseline_test_result_sort(&ret.get->results);
     return ret;
 }

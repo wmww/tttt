@@ -6,7 +6,7 @@
 typedef struct Error Error;
 typedef struct Program Program;
 
-wrap_forward_vec(Error, error);
+g_declare_vec(Error, error);
 
 typedef enum ErrorPhase {
     ERROR_PHASE_UNKOWN = 0,
@@ -31,9 +31,9 @@ void error_sub_error_s(Error* me, Span span, unsigned ts_code, cstr message);
 /// noop if me is null
 void error_sub_error(Error* me, Span span, unsigned ts_code, const char* fmt, ...) __attribute__((format (printf, 4, 5)));
 
-#define i_key_class_names Error, error
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key Error, error
+#define g_declared
+#include <cleat/generic/vec.h>
 
 typedef struct ErrorConfig {
     bool allow_unreachable_code : 1;

@@ -55,7 +55,7 @@ bool value_to_boolean(Value const* me) {
         case VALUE_NULL: return false;
         case VALUE_BOOLEAN: return my boolean;
         case VALUE_NUMBER: return !isnan(my number) && my number != 0;
-        case VALUE_STRING: return !cstr_empty(&my string);
+        case VALUE_STRING: return !cstr_is_empty(&my string);
         case VALUE_SYMBOL: return true;
         case VALUE_BIGINT: return my number != 0;
         case VALUE_OBJECT: return true;
@@ -211,28 +211,28 @@ ObjectItem object_item_clone(ObjectItem me) {
 }
 
 void js_object_drop(JsObject* me) {
-    hmap_str_object_item_drop(&my items);
+    hmap_object_item_drop(&my items);
 }
 
 JsObject js_object_clone(JsObject me) {
-    me.items = hmap_str_object_item_clone(me.items);
+    me.items = hmap_object_item_clone(me.items);
     return me;
 }
 
 VecObjectItemRef js_object_sorted_items(JsObject* me) {
     VecObjectItemRef ret = vec_object_item_ref_with_capacity(my total_inserted);
-    c_foreach(i, hmap_str_object_item, my items) {
+    c_foreach(i, hmap_object_item, my items) {
         vec_object_item_ref_push(&ret, (ObjectItemRef){
             .name = &i.ref->first,
             .item = &i.ref->second,
         });
     }
-    vec_object_item_ref_quicksort(&ret);
+    vec_object_item_ref_sort(&ret);
     return ret;
 }
 
 void js_object_set(JsObject* me, cstr key, Value val) {
-    hmap_str_object_item_insert_or_assign(&my items, key, (ObjectItem){
+    hmap_object_item_insert_or_assign(&my items, key, (ObjectItem){
         .value = val,
         .position = my total_inserted,
     });
@@ -240,7 +240,7 @@ void js_object_set(JsObject* me, cstr key, Value val) {
 }
 
 Result js_object_get(JsObject const* me, csview key) {
-    auto value = hmap_str_object_item_get(&my items, key);
+    auto value = hmap_object_item_get(&my items, key);
     if (value) {
         return result_ok(value_clone(value->second.value));
     } else {
@@ -249,7 +249,7 @@ Result js_object_get(JsObject const* me, csview key) {
 }
 
 bool js_object_has(JsObject* me, csview key) {
-    return hmap_str_object_item_get(&my items, key) != nullptr;
+    return hmap_object_item_get(&my items, key) != nullptr;
 }
 
 void js_array_drop(JsArray* me) {

@@ -5,7 +5,7 @@
 #include "display.h"
 #include "source_file.h"
 #include "string_helpers.h"
-#include "filesystem.h"
+#include <cleat/filesystem.h>
 
 int main(int argc, const char** argv) {
     if (argc > 2) {
@@ -24,7 +24,7 @@ int main(int argc, const char** argv) {
 
     ErrorCtx errs = error_ctx_init();
     error_config_enable_strict(&errs.config);
-    Program* program = program_new(&errs, &real_fs_quiet);
+    Program* program = program_new(&errs, fs);
     int ret = 0;
     intptr_t parse_errors = 0;
     intptr_t name_errors = 0;

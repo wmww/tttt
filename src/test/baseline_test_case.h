@@ -12,18 +12,18 @@ typedef struct JsObject JsObject;
 typedef struct BaselineTestSuite BaselineTestSuite;
 typedef struct LineNumberedStr LineNumberedStr;
 
-wrap_forward_vec(LineNumberedStr, line_numbered_str);
+g_declare_vec(LineNumberedStr, line_numbered_str);
 
 typedef Program* ProgramPtr;
-#define i_key_ssv
-#define i_val_names ProgramPtr, program_ptr
-#define i_no_clone
-#define i_valdrop(program) program_destroy(*program)
-#include "wrap_stc/hmap.h"
+#define g_pro_key SvStr, svstr
+#define g_val ProgramPtr, program_ptr
+#define g_no_clone
+#define g_valdrop(program) program_destroy(*program)
+#include <cleat/generic/hmap.h>
 
 typedef struct BaselineTestCache {
     ErrorCtx* errors;
-    HmapStrProgramPtr libs;
+    HMapProgramPtr libs;
 } BaselineTestCache;
 
 BaselineTestCache baseline_test_cache_init();
@@ -45,9 +45,9 @@ typedef struct BaselineTestFile {
 
 void baseline_test_file_drop(BaselineTestFile* me);
 
-#define i_key_class_names BaselineTestFile, baseline_test_file
-#define i_no_clone
-#include "wrap_stc/vec.h"
+#define g_class_key BaselineTestFile, baseline_test_file
+#define g_no_clone
+#include <cleat/generic/vec.h>
 
 typedef struct BaselineTestCase {
     csview source_path; // Not owned, path to real file on disk that may describe several virtual files

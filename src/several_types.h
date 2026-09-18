@@ -59,9 +59,9 @@ typedef struct TupleElement {
 static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }
 static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type_clone(me.type); return me; }
 
-#define i_key_class_names TupleElement, tuple_element
-#define i_is_forward
-#include "wrap_stc/vec.h"
+#define g_class_key TupleElement, tuple_element
+#define g_declared
+#include <cleat/generic/vec.h>
 
 // Index
 
