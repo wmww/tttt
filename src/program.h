@@ -13,11 +13,12 @@ Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.
-// Can be called multiple times. Returns nullptr if path is not found
-SourceFile* program_load(Program* me, csview path);
+// Can be called multiple times. Fails if path can't be read; problems inside the file are reported through the
+// program's ErrorCtx instead
+failable program_load(Program* me, csview path, returns SourceFile*);
 
 // Loads the standard library file based on the name (such as es5 or es2015.collection)
-SourceFile* program_load_stdlib(Program* me, csview name);
+failable program_load_stdlib(Program* me, csview name, returns SourceFile*);
 
 // Add all declarations from other program to this one. Must be called after resolving names on other and before
 // resolving names on me. me must not be used after other is destroyed

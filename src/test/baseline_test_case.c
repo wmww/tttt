@@ -65,7 +65,9 @@ Program* baseline_test_cache_get_program_with_libs(BaselineTestCache* me, csview
     comma_sep_libs = cstr_sv(&key);
     while (comma_sep_libs.size) {
         intptr_t end = csview_find_sv(comma_sep_libs, c_sv(","));
-        program_load_stdlib(program, csview_slice(comma_sep_libs, 0, end));
+        // A standard library file we can't read means every test using it is meaningless, so don't limp on
+        try (SourceFile* lib, program_load_stdlib(program, csview_slice(comma_sep_libs, 0, end), &lib)) or_panic;
+        ignore lib;
         if (end == c_NPOS) break;
         comma_sep_libs = csview_slice(comma_sep_libs, end + 1, INTPTR_MAX);
     }
@@ -121,23 +123,26 @@ static bool tag_equals(csview tag, const char* str) {
     return true;
 }
 
-static void add_virtual_source_file(BaselineTestCase* me, csview virtual_path, cstr contents) {
-    mock_fs_create_file(my fs, virtual_path, contents);
+// Takes ownership of contents. Only records the file once there's actually something behind it in the mock
+// filesystem, so a failure here can't leave us with a BaselineTestFile pointing at nothing
+static_failable add_virtual_source_file(BaselineTestCase* me, csview virtual_path, cstr contents) {
+    if (fs_exists(mock_fs_get_fs(my fs), virtual_path)) {
+        // A handful of tsc tests repeat a // @Filename:, in which case the first copy of the file wins
+        cstr_drop(&contents);
+    } else {
+        try (mock_fs_create_file(my fs, virtual_path, contents)) bubble;
+    }
     vec_baseline_test_file_push(&my files, (BaselineTestFile){
         .path = cstr_from_sv(virtual_path),
     });
+    return ok;
 }
 
-static void load_test_source(BaselineTestCase* me) {
+static_failable load_test_source(BaselineTestCase* me) {
     cstr unparsed_contents = cstr_null;
     cstr source_contents = cstr_null;
 
-    try (fs_read_file(fs, my source_path, &unparsed_contents)) if_err (e) {
-        if (my noisy) error_base_eprintln(e);
-        current_error_destroy();
-        cstr_drop(&source_contents);
-        return;
-    }
+    try (fs_read_file(fs, my source_path, &unparsed_contents)) bubble;
 
     csview contents_sv = csview_from_range(
         file_start_excluding_bom(cstr_str(&unparsed_contents)),
@@ -151,7 +156,9 @@ static void load_test_source(BaselineTestCase* me) {
         if (parse_tag(i, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
                 if (cstr_size(&source_contents)) {
-                    add_virtual_source_file(me, current_filename, source_contents);
+                    try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
+                        cstr_drop(&unparsed_contents);
+                    }
                     source_contents = cstr_null;
                 }
                 has_line = false;
@@ -174,10 +181,13 @@ static void load_test_source(BaselineTestCase* me) {
         }
     }
 
-    add_virtual_source_file(me, current_filename, source_contents);
+    try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
+        cstr_drop(&unparsed_contents);
+    }
     cstr_drop(&unparsed_contents);
 
     my did_run = true;
+    return ok;
 }
 
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
@@ -317,13 +327,17 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
         .noisy = noisy,
     };
 
-    load_test_source(&ret);
+    // A test we can't read or unpack just doesn't run; did_run stays false and the result is reported as such
+    try (load_test_source(&ret)) if_err (e) {
+        if (noisy) error_base_eprintln(e);
+    }
 
     Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
     program_copy_globals_from(program, lib_program);
 
     for_each (i, vec_baseline_test_file, &ret.files) {
-        SourceFile* source = program_load(program, cstr_sv(&i->path));
+        // These were all just written into our mock filesystem, so failing to load one is a bug on our end
+        try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         source->display_path_override = cstr_str(&i->path);
         i->source = source;
     }

@@ -52,14 +52,16 @@ static void load_dir(BaselineTestSuite* me, csview dir_path) {
     }
 }
 
-static void load_subdir(BaselineTestSuite* me, csview subdir) {
+static_failable load_subdir(BaselineTestSuite* me, csview subdir) {
     cstr full_dir = cstr_from_fmt("%.*s/cases/%.*s", c_SV(my tests_dir), c_SV(subdir));
-    if (fs_is_directory(fs, cstr_sv(&full_dir))) {
-        load_dir(me, cstr_sv(&full_dir));
-    } else {
-        fprintf(stderr, "%s%s is not a directory%s\n", color_error, cstr_str(&full_dir), color_normal);
+    if (!fs_is_directory(fs, cstr_sv(&full_dir))) {
+        FailableResult ret = err_fmt("%s is not a directory", cstr_str(&full_dir));
+        cstr_drop(&full_dir);
+        return ret;
     }
+    load_dir(me, cstr_sv(&full_dir));
     cstr_drop(&full_dir);
+    return ok;
 }
 
 void baseline_test_suite_drop(BaselineTestSuite* me) {
@@ -306,16 +308,24 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
     }
 }
 
-static void load_saved_results(BaselineTestSuite* me, csview results_path) {
+static void destroy_program(Program* program, ErrorCtx* errs) {
+    program_destroy(program);
+    error_ctx_drop(errs);
+}
+
+static_failable load_saved_results(BaselineTestSuite* me, csview results_path) {
     ErrorCtx errs = error_ctx_init();
     Program* program = program_new(&errs, fs);
 
-    SourceFile const* results_source = program_load(program, results_path);
+    try (SourceFile* results_source, program_load(program, results_path, &results_source)) cleanup {
+        destroy_program(program, &errs);
+    }
     // Don't bother typechecking
 
     if (!error_ctx_empty(&errs)) {
         print_error_ctx(&errs);
-        PANIC("Failed to load saved results");
+        destroy_program(program, &errs);
+        return err_fmt("Failed to load saved results from %.*s", c_SV(results_path));
     }
 
     ArcObject root = arc_js_object_make((JsObject){0});
@@ -334,8 +344,8 @@ static void load_saved_results(BaselineTestSuite* me, csview results_path) {
     result_drop(&prev_commit_result);
     result_drop(&baselines_result);
     arc_js_object_drop(&root);
-    program_destroy(program);
-    error_ctx_drop(&errs);
+    destroy_program(program, &errs);
+    return ok;
 }
 
 static cstr get_git_hash_of_repo(csview repo_path) {
@@ -360,11 +370,33 @@ static cstr get_git_hash_of_repo(csview repo_path) {
     }
 }
 
-BoxBaselineTestSuite load_baseline_test_suite(
+// cregex reports compile failures as a negative code in the `error` field, which on its own tells the user nothing
+static const char* cregex_error_str(int error) {
+    switch (error) {
+        case CREG_OK: return "no error";
+        case CREG_NOMATCH: return "no match";
+        case CREG_MATCHERROR: return "match error";
+        case CREG_OUTOFMEMORY: return "out of memory";
+        case CREG_UNMATCHEDLEFTPARENTHESIS: return "unmatched '('";
+        case CREG_UNMATCHEDRIGHTPARENTHESIS: return "unmatched ')'";
+        case CREG_TOOMANYSUBEXPRESSIONS: return "too many subexpressions";
+        case CREG_TOOMANYCHARACTERCLASSES: return "too many character classes";
+        case CREG_MALFORMEDCHARACTERCLASS: return "malformed character class";
+        case CREG_MISSINGOPERAND: return "missing operand";
+        case CREG_UNKNOWNOPERATOR: return "unknown operator";
+        case CREG_OPERANDSTACKOVERFLOW: return "operand stack overflow";
+        case CREG_OPERATORSTACKOVERFLOW: return "operator stack overflow";
+        case CREG_OPERATORSTACKUNDERFLOW: return "operator stack underflow";
+        default: return "unknown error";
+    }
+}
+
+failable load_baseline_test_suite(
     csview tests_dir,
     const char* filter_re,
     csview results_path,
-    bool summary_only
+    bool summary_only,
+    returns BoxBaselineTestSuite
 ) {
     BoxBaselineTestSuite ret = box_baseline_test_suite_make((BaselineTestSuite){
         .tests_dir = tests_dir,
@@ -372,18 +404,33 @@ BoxBaselineTestSuite load_baseline_test_suite(
         .filter = filter_re ? cregex_make(filter_re, CREG_ICASE) : (cregex){0},
         .cache = baseline_test_cache_init(),
     });
-    ASSERT(!ret.get->filter.error);
+
+    if (ret.get->filter.error) {
+        FailableResult failed = err_fmt(
+            "Invalid filter regex '%s': %s", filter_re, cregex_error_str(ret.get->filter.error));
+        box_baseline_test_suite_drop(&ret);
+        return failed;
+    }
 
     if (!summary_only) printf("%sLoading saved results...%s\n", color_status, color_normal);
-    load_saved_results(ret.get, results_path);
+    try (load_saved_results(ret.get, results_path)) cleanup {
+        box_baseline_test_suite_drop(&ret);
+    }
 
     if (!summary_only) printf("%sCollecting tests...%s\n", color_status, color_normal);
     ret.get->typescript_commit = get_git_hash_of_repo(tests_dir);
-    load_subdir(ret.get, c_sv("conformance"));
-    load_subdir(ret.get, c_sv("compiler"));
+
+    // Collect both problems before giving up, so a botched --dir doesn't have to be fixed one message at a time
+    FailableResult dirs_result = {0};
+    try (load_subdir(ret.get, c_sv("conformance"))) or_collect_into (&dirs_result);
+    try (load_subdir(ret.get, c_sv("compiler"))) or_collect_into (&dirs_result);
+    try (dirs_result) cleanup {
+        box_baseline_test_suite_drop(&ret);
+    }
+
     show_collected_test_counts(ret.get);
     printf("\n");
     if (!summary_only) printf("%sSorting tests...%s\n", color_status, color_normal);
     vec_baseline_test_result_sort(&ret.get->results);
-    return ret;
+    return ok(ret);
 }

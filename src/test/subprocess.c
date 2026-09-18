@@ -6,39 +6,38 @@
 
 #include "subprocess.h"
 
-static bool write_sv(int fd, csview sv) {
+static_failable write_sv(int fd, csview sv) {
     if (write(fd, sv.buf, csview_size(sv)) < csview_size(sv)) {
-        fprintf(stderr, "failed to write to pipe: %s\n", strerror(errno));
-        return false;
+        return err_fmt("failed to write to pipe: %s", strerror(errno));
     }
-    return true;
+    return ok;
 }
 
-void run_diff_subprocess(csview a, csview b) {
-    int a_pipe[2] = {-1, -1};
-    int b_pipe[2] = {-1, -1};
-    cstr a_arg = cstr_null;
-    cstr b_arg = cstr_null;
+static void close_fd(int* fd) {
+    if (*fd >= 0) {
+        close(*fd);
+        *fd = -1;
+    }
+}
 
+// Does the actual work of run_diff_subprocess(). The pipes are owned by the caller, which closes whichever ends are
+// still open however this ends up returning
+static_failable run_diff(csview a, csview b, int a_pipe[2], int b_pipe[2]) {
     if (pipe(a_pipe) < 0 || pipe(b_pipe) < 0) {
-        fprintf(stderr, "failed to open pipe: %s\n", strerror(errno));
-        goto finish;
+        return err_fmt("failed to open pipe: %s", strerror(errno));
     }
 
     // NOTE: this will deadlock if either string is bigger than the pipe buffer (64KB by default). Test outputs have
     // stayed well under that so far.
-    if (!write_sv(a_pipe[1], a) || !write_sv(b_pipe[1], b)) {
-        goto finish;
-    }
+    try (write_sv(a_pipe[1], a)) bubble;
+    try (write_sv(b_pipe[1], b)) bubble;
 
-    close(a_pipe[1]);
-    a_pipe[1] = -1;
-    close(b_pipe[1]);
-    b_pipe[1] = -1;
+    close_fd(&a_pipe[1]);
+    close_fd(&b_pipe[1]);
 
     // The read ends of the pipes are inherited by the subprocess, which reads them through /dev/fd
-    a_arg = cstr_from_fmt("/dev/fd/%d", a_pipe[0]);
-    b_arg = cstr_from_fmt("/dev/fd/%d", b_pipe[0]);
+    cstr a_arg = cstr_from_fmt("/dev/fd/%d", a_pipe[0]);
+    cstr b_arg = cstr_from_fmt("/dev/fd/%d", b_pipe[0]);
 
     try (run_subproc((SubprocArgs){
         // Other commands that have been handy here:
@@ -46,13 +45,22 @@ void run_diff_subprocess(csview a, csview b) {
         // .cmd = {"byteviewer", "-hex", "-ascii", "-utf8", "-width", "24", "-file", cstr_str(&b_arg)},
         .cmd = {"diff", "--color=always", "--unified=100", cstr_str(&a_arg), cstr_str(&b_arg)},
         .output_passthrough = true,
-    })) or_log(error);
+    })) cleanup {
+        c_drop(cstr, &a_arg, &b_arg);
+    }
 
-finish:
-    if (a_pipe[0] >= 0) close(a_pipe[0]);
-    if (a_pipe[1] >= 0) close(a_pipe[1]);
-    if (b_pipe[0] >= 0) close(b_pipe[0]);
-    if (b_pipe[1] >= 0) close(b_pipe[1]);
-    cstr_drop(&a_arg);
-    cstr_drop(&b_arg);
+    c_drop(cstr, &a_arg, &b_arg);
+    return ok;
+}
+
+void run_diff_subprocess(csview a, csview b) {
+    int a_pipe[2] = {-1, -1};
+    int b_pipe[2] = {-1, -1};
+
+    try (run_diff(a, b, a_pipe, b_pipe)) or_log(error);
+
+    close_fd(&a_pipe[0]);
+    close_fd(&a_pipe[1]);
+    close_fd(&b_pipe[0]);
+    close_fd(&b_pipe[1]);
 }

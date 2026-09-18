@@ -50,19 +50,6 @@ static inline MockFsNode mock_fs_dir() {
     };
 }
 
-static inline MockFsNode* mock_fs_dir_add(MockFsNode* me, cstr name, MockFsNode node) {
-    if (my tag != MOCK_FS_NODE_DIR) {
-        NONFATAL("Mock fs: tried to add node to non-directory");
-    }
-    auto result = hmap_mock_fs_node_insert(&my dir, name, node);
-    if (result.inserted) {
-        return &result.ref->second;
-    } else {
-        NONFATAL("Mock fs: tried to add node where existing node already is");
-        return nullptr;
-    }
-}
-
 typedef struct MockFs {
     Fs super;
     MockFsNode root;
@@ -296,15 +283,22 @@ void mock_fs_destroy(MockFs* me) {
     free(me);
 }
 
-void mock_fs_create_file(MockFs* me, csview path, cstr contents) {
-    csview dir_path = dirname_of(path);
+failable mock_fs_create_file(MockFs* me, csview path, cstr contents) {
     csview filename = basename_of(path);
-    MockFsNode* dir = lookup_node(me, dir_path, true);
-    if (dir) {
-        mock_fs_dir_add(dir, cstr_from_sv(filename), mock_fs_file(contents));
-    } else {
+    if (!filename.size) {
         cstr_drop(&contents);
+        return err_fmt("%.*s: not a valid file path", c_SV(path));
     }
+    MockFsNode* dir = lookup_node(me, dirname_of(path), true);
+    if (!dir || dir->tag != MOCK_FS_NODE_DIR) {
+        cstr_drop(&contents);
+        return err_fmt("%.*s: parent directory could not be created", c_SV(path));
+    }
+    auto result = hmap_mock_fs_node_insert(&dir->dir, cstr_from_sv(filename), mock_fs_file(contents));
+    if (!result.inserted) {
+        return err_fmt("%.*s: already exists", c_SV(path));
+    }
+    return ok;
 }
 
 Fs const* mock_fs_get_fs(MockFs const* me) {

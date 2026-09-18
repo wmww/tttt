@@ -387,29 +387,34 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     return source_file;
 }
 
-SourceFile* program_load(Program* me, csview path) {
+failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     set_error_config(&my errs->config);
 
     // Add the source file to the program
     SourceFile* main_source = program_add_source_idempotent(me, path);
-    if (!main_source) {
-        PANIC_IF(my loading_stdlib, "Failed to load standard library file %.*s", c_SV(path));
-        error_ctx_error(my errs, span_null, 6053, "File '%.*s' not found.", c_SV(path));
-        // Continue with null
-    }
 
     clear_error_config();
-    return main_source;
+
+    // An unreadable entry point isn't a TypeScript-level diagnostic: it has no span to attach to, so error_ctx_error()
+    // would just drop it. Report it to our caller instead.
+    if (!main_source) {
+        return err_fmt("File '%.*s' not found.", c_SV(path));
+    }
+
+    return ok(main_source);
 }
 
-SourceFile* program_load_stdlib(Program* me, csview name) {
+failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     my loading_stdlib = true;
     cstr path = cstr_from_fmt("%.*s/%.*s.d.ts", c_SV(lib_path), c_SV(name));
-    SourceFile* source = program_load(me, cstr_sv(&path));
+    try (SourceFile* source, program_load(me, cstr_sv(&path), &source)) cleanup {
+        my loading_stdlib = false;
+        cstr_drop(&path);
+    }
     my loading_stdlib = false;
     cstr_drop(&path);
-    return source;
+    return ok(source);
 }
 
 void program_copy_globals_from(Program* me, Program const* other) {

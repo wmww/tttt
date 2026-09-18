@@ -30,9 +30,12 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
 #define g_no_hash
 #include <cleat/generic/box.h>
 
-BoxBaselineTestSuite load_baseline_test_suite(
+// Compiles the filter, loads the previous run's results and collects every test below tests_dir. Fails if the filter
+// isn't a valid regex, the saved results can't be read, or the test directories aren't there
+failable load_baseline_test_suite(
     csview tests_dir,
     const char* filter_re,
     csview results_path,
-    bool summary_only
+    bool summary_only,
+    returns BoxBaselineTestSuite
 );
