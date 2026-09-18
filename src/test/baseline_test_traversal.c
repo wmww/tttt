@@ -740,6 +740,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_CLASS_DECL:
             class_decl_compile_test_info(my class_decl, true, ctx);
             break;
+
+        case EXPR_SPREAD:
+            expr_compile_test_info(my spread, ctx);
+            break;
     }
 }
 

@@ -3,6 +3,8 @@
 #include "expr.h"
 #include "scope.h"
 #include "error.h"
+#include "callable_type.h"
+#include "function_impl.h"
 
 void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
@@ -88,7 +90,13 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             Type const* key_type = type_resolve(expr_get_type(my key.expr.ref));
             if (key_type->tag != TYPE_VALUE) {
                 if (is_in_class) {
-                    if (my is_method) {
+                    if (my is_method &&
+                        my type.tag == TYPE_CALLABLE &&
+                        my type.callable->owned_function_impl &&
+                        my type.callable->owned_function_impl->has_body
+                    ) {
+                        // Only overload signatures are restricted, a method with a body can have any key
+                    } else if (my is_method) {
                         error_ctx_error_d(errs, my key.span, 1168,
                             "A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                     } else {

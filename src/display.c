@@ -997,6 +997,11 @@ void display_expr(Display d, Expr const* me) {
             display_lit(d, "]");
         }   break;
 
+        case EXPR_SPREAD:
+            display_lit(d, "...");
+            display_expr(d, my spread);
+            break;
+
         case EXPR_CLASS_DECL:
             display_class_decl(d, my class_decl);
             break;

@@ -1804,7 +1804,18 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             intptr_t max_args = callable_type_max_arg_count(callable);
             bool check_types_against_callable = true;
 
-            if (call_arg_count < min_args || call_arg_count > max_args) {
+            // TODO: a spread argument stands for an unknown number of arguments, so nothing is checked from it onwards
+            intptr_t first_spread = INTPTR_MAX;
+            for_each (i, vec_expr, &call->args) {
+                if (i->tag == EXPR_SPREAD) {
+                    first_spread = i_index;
+                    break;
+                }
+            }
+
+            if (first_spread != INTPTR_MAX) {
+                // Can't know how many arguments there are
+            } else if (call_arg_count < min_args || call_arg_count > max_args) {
                 check_types_against_callable = false;
 
                 Span span = call->callable.inner_span;
@@ -1836,6 +1847,10 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 
             for_each (i, vec_expr, &call->args) {
                 intptr_t index = i_index;
+                if (index >= first_spread) {
+                    check_types_against_callable = false;
+                    break;
+                }
                 // Don't report errors, errors inside argument expressions are reported elsewhere
                 if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
                     CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);

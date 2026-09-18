@@ -194,6 +194,11 @@ void expr_drop(Expr* me) {
             class_decl_drop(my class_decl);
             free(my class_decl);
             break;
+
+        case EXPR_SPREAD:
+            expr_drop(my spread);
+            free(my spread);
+            break;
     }
     lazy_type_drop(&my lazy_type);
 }
@@ -277,6 +282,10 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
             scope_drop(&class_name_scope);
             class_decl_lookup_names(my class_decl, names, errs);
         }   break;
+
+        case EXPR_SPREAD:
+            expr_lookup_names(my spread, names, errs);
+            break;
     }
 }
 
@@ -758,6 +767,16 @@ Type expr_evaluate_type(Expr const* me) {
 
         case EXPR_CLASS_DECL:
             return type_refcopy(&my class_decl->declaration.get->value_type);
+
+        case EXPR_SPREAD: {
+            // The type of each spread element. TODO: tuples and iterables, which are `any` for now
+            Type const* operand = type_resolve(expr_get_type(my spread));
+            if (operand->tag == TYPE_ARRAY) {
+                return type_clone(*operand->array.element);
+            } else {
+                return type_any;
+            }
+        }
     }
     impossible;
 }
@@ -868,6 +887,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CLASS_DECL:
             class_decl_typecheck(my class_decl, errs);
+            break;
+
+        case EXPR_SPREAD:
+            expr_typecheck(my spread, errs);
             break;
     }
 }

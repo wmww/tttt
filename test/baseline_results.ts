@@ -1838,7 +1838,7 @@ const baselines = {
     'assignmentRestElementWithErrorSourceType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentStricterConstraints': {
         errors: false,
@@ -3362,7 +3362,7 @@ const baselines = {
     },
     'circularInlineMappedGenericTupleTypeNoCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'circularInstantiationExpression': {
@@ -3866,7 +3866,7 @@ const baselines = {
         types: undefined,
     },
     'classNonUniqueSymbolMethodHasSymbolIndexer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -7571,7 +7571,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitComputedNamesInaccessible': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8406,7 +8406,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitSimpleComputedNames1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -12062,7 +12062,7 @@ const baselines = {
     },
     'excessivelyLargeTupleSpread': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exhaustiveSwitchCheckCircularity': {
@@ -18081,7 +18081,7 @@ const baselines = {
         types: undefined,
     },
     'iteratorsAndStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -18581,12 +18581,12 @@ const baselines = {
         types: false,
     },
     'jsFileFunctionOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'jsFileFunctionOverloads2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -19446,8 +19446,8 @@ const baselines = {
         types: false,
     },
     'mappedTypeGenericInstantiationPreservesHomomorphism': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'mappedTypeGenericInstantiationPreservesInlineForm': {
@@ -21731,7 +21731,7 @@ const baselines = {
         types: true,
     },
     'newLexicalEnvironmentForConvertedLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22047,7 +22047,7 @@ const baselines = {
     },
     'noImplicitAnyLoopCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'noImplicitAnyMissingGetAccessor': {
@@ -25371,7 +25371,7 @@ const baselines = {
         types: false,
     },
     'recursiveReverseMappedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -26042,7 +26042,7 @@ const baselines = {
     },
     'restTypeRetainsMappyness': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restUnion': {
@@ -26293,7 +26293,7 @@ const baselines = {
     'selfReferencingSpreadInLoop': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'selfReferencingTypeReferenceInference': {
         errors: true,
@@ -26457,7 +26457,7 @@ const baselines = {
     },
     'signatureCombiningRestParameters1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'signatureCombiningRestParameters2': {
@@ -27136,7 +27136,7 @@ const baselines = {
         types: false,
     },
     'spreadBooleanRespectsFreshness': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27926,12 +27926,12 @@ const baselines = {
         types: false,
     },
     'superPropertyAccessInComputedPropertiesOfNestedType_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superPropertyAccessInComputedPropertiesOfNestedType_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31641,12 +31641,12 @@ const baselines = {
         types: false,
     },
     'ES5SymbolProperty3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'ES5SymbolProperty4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31661,7 +31661,7 @@ const baselines = {
         types: false,
     },
     'ES5SymbolProperty7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33912,7 +33912,7 @@ const baselines = {
     },
     'privateNameAccessorsCallExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNameAccessorssDerivedClasses': {
@@ -34057,7 +34057,7 @@ const baselines = {
     },
     'privateNameFieldCallExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNameFieldClassExpression': {
@@ -34262,7 +34262,7 @@ const baselines = {
     },
     'privateNameStaticAccessorsCallExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNameStaticAccessorssDerivedClasses': {
@@ -34292,7 +34292,7 @@ const baselines = {
     },
     'privateNameStaticFieldCallExpression': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'privateNameStaticFieldClassExpression': {
@@ -36047,7 +36047,7 @@ const baselines = {
     },
     'importCallExpressionGrammarError': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'importCallExpressionInAMD1': {
@@ -37021,12 +37021,12 @@ const baselines = {
         types: false,
     },
     'symbolProperty48': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'symbolProperty49': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -37681,12 +37681,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNames13_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames13_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -37711,12 +37711,12 @@ const baselines = {
         types: false,
     },
     'computedPropertyNames16_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNames16_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38266,22 +38266,22 @@ const baselines = {
         types: true,
     },
     'computedPropertyNamesDeclarationEmit1_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNamesDeclarationEmit1_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNamesDeclarationEmit2_ES5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'computedPropertyNamesDeclarationEmit2_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38992,7 +38992,7 @@ const baselines = {
     },
     'iterableArrayPattern24': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern25': {
@@ -39012,7 +39012,7 @@ const baselines = {
     },
     'iterableArrayPattern28': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'iterableArrayPattern29': {
@@ -39147,7 +39147,7 @@ const baselines = {
     },
     'restElementWithAssignmentPattern2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restElementWithAssignmentPattern3': {
@@ -39157,7 +39157,7 @@ const baselines = {
     },
     'restElementWithAssignmentPattern4': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restElementWithAssignmentPattern5': {
@@ -39183,7 +39183,7 @@ const baselines = {
     'restElementWithInitializer2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithNullInitializer': {
         errors: false,
@@ -39606,7 +39606,7 @@ const baselines = {
         types: false,
     },
     'MemberFunctionDeclaration3_es6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39982,7 +39982,7 @@ const baselines = {
     },
     'readonlyRestParameters': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectLiteralShorthandProperties': {
@@ -43372,7 +43372,7 @@ const baselines = {
     },
     'callOverload': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callWithMissingVoid': {
@@ -43392,12 +43392,12 @@ const baselines = {
     },
     'callWithSpread2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callWithSpread3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callWithSpread4': {
@@ -43407,7 +43407,7 @@ const baselines = {
     },
     'callWithSpread5': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'callWithSpreadES6': {
@@ -43861,12 +43861,12 @@ const baselines = {
         types: false,
     },
     'superSymbolIndexedAccess5': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'superSymbolIndexedAccess6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52956,7 +52956,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53021,7 +53021,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName24': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57152,7 +57152,7 @@ const baselines = {
     },
     'genericRestParameters3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectRest': {
@@ -57862,7 +57862,7 @@ const baselines = {
     },
     'partiallyNamedTuples3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'optionalTupleElements1': {

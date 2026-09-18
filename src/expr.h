@@ -52,6 +52,7 @@ typedef struct Expr {
         EXPR_OBJECT,
         EXPR_ARRAY,
         EXPR_CLASS_DECL,
+        EXPR_SPREAD, // `...a`, only appears directly in array literals and call arguments
     } tag;
     union {
         Declaration const* this_or_super;
@@ -68,6 +69,7 @@ typedef struct Expr {
         ObjectExpr object;
         VecExpr array;
         ClassDecl* class_decl;
+        Expr* spread;
     };
     LazyType lazy_type;
 } Expr;
@@ -123,6 +125,10 @@ static inline Expr expr_object(Span span, ObjectExpr object) {
 
 static inline Expr expr_class_decl(Span span, ClassDecl* class_decl) {
     return (Expr){ .tag = EXPR_CLASS_DECL, .class_decl = class_decl, EXPR_DEFAULT(span) };
+}
+
+static inline Expr expr_spread(Span span, Expr* operand) {
+    return (Expr){ .tag = EXPR_SPREAD, .spread = operand, EXPR_DEFAULT(span) };
 }
 
 static inline Expr expr_undefined(Span span) {

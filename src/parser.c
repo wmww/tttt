@@ -1975,6 +1975,23 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
     return parse_success(&p);
 }
 
+// An expression that may be a spread (`...a`), for array literals and call arguments
+static bool parse_expr_or_spread(Parser* parent, Expr* ret) {
+    if (!(parent->pos[0] == '.' && parent->pos[1] == '.' && parent->pos[2] == '.')) {
+        return parse_expr(parent, expr_ctx_null, ret);
+    }
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    p.pos += 3;
+    hop_whitespace(&p);
+    Expr operand;
+    if (!expect_expr(&p, expr_ctx_null, &operand)) {
+        return parse_fail(&p);
+    }
+    *ret = expr_spread(span_from(a), c_new(Expr, operand));
+    return parse_success(&p);
+}
+
 static bool parse_array(Parser* parent, VecExpr* ret) {
     Parser p = parser(parent);
     *ret = vec_expr_init();
@@ -1986,7 +2003,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 
     while (*p.pos && *p.pos != ']') {
         Expr expr;
-        if (parse_expr(&p, expr_ctx_null, &expr)) {
+        if (parse_expr_or_spread(&p, &expr)) {
             vec_expr_push(ret, expr);
         } else if (*p.pos == ',') {
             vec_expr_push(ret, expr_undefined(span_from_pos(&p)));
@@ -2492,7 +2509,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
     *args = vec_expr_init();
     while (*p.pos && *p.pos != ')') {
         Expr arg = {0};
-        if (expect_expr(&p, expr_ctx_null, &arg)) {
+        if (parse_expr_or_spread(&p, &arg) || expect_expr(&p, expr_ctx_null, &arg)) {
             vec_expr_push(args, arg);
         } else {
             while (*p.pos && *p.pos != ')' && *p.pos != ',') {
