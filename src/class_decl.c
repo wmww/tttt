@@ -1,4 +1,5 @@
 #include "class_decl.h"
+#include "ty/ty.h"
 #include "scope_stack.h"
 #include "statement.h"
 #include "interface_member.h"
@@ -388,6 +389,8 @@ Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
+    ty_shadow_record_declaration(my declaration.get);
+    ty_shadow_record_declaration(&my typeof_declaration);
     if (my has_typechecked) {
         return;
     }

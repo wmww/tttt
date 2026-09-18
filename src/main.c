@@ -1,3 +1,4 @@
+#include "ty/ty.h"
 #include "type.h"
 #include "program.h"
 #include "engine.h"
@@ -155,7 +156,9 @@ int main(int argc, const char** argv) {
                 "  -q, --quiet   only print diagnostics and the summary\n"
                 "  --time        print how long each phase took to stderr\n"
                 "  --no-lib      don't load the standard library\n"
-                "  --keep-going  typecheck even after parse or name errors"
+                "  --keep-going  typecheck even after parse or name errors\n"
+                "  --shadow-types  also lower every type to the new type core and report where it disagrees\n"
+                "                (same as TTTT_SHADOW_TYPES=1, TTTT_SHADOW_STATS=1 adds a summary line)"
             );
             return 0;
         } else if (streq(argv[i], "--quiet") || streq(argv[i], "-q")) {
@@ -164,6 +167,8 @@ int main(int argc, const char** argv) {
             opts.time = true;
         } else if (streq(argv[i], "--keep-going")) {
             opts.keep_going = true;
+        } else if (streq(argv[i], "--shadow-types")) {
+            ty_shadow_set_enabled(true);
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else {

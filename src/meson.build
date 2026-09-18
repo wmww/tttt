@@ -29,6 +29,12 @@ core_files = files(
     'scope_stack.c',
     'engine.c',
     'string_helpers.c',
+    'ty/checker.c',
+    'ty/members.c',
+    'ty/instantiate.c',
+    'ty/lower.c',
+    'ty/ty_display.c',
+    'ty/shadow.c',
 )
 
 main_files = core_files + files('main.c')

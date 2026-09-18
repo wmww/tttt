@@ -1,4 +1,5 @@
 #include "statement.h"
+#include "ty/ty.h"
 #include "port_statement.h"
 #include "error.h"
 #include "scope_stack.h"
@@ -90,6 +91,7 @@ void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
+    ty_shadow_record_declaration(my declaration.get);
     generic_typecheck(&my generic, errs);
     type_typecheck(&my type, errs);
 }

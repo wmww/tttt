@@ -24,6 +24,7 @@ void lazy_type_evaluate(LazyType* me) {
         my is_self_referential = true;
     }
     my evaluation_started = true;
+    my origin = my tag;
 
     Type result = {0};
     switch (my tag) {

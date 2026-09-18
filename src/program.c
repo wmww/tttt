@@ -7,6 +7,7 @@
 #include "port_statement.h"
 #include "source_file.h"
 #include "scope_stack.h"
+#include "ty/ty.h"
 
 #define g_class_key SourceFile, source_file
 #define g_no_clone
@@ -459,10 +460,15 @@ void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_RESOLVING_NAMES, PROGRAM_PHASE_NAMES_RESOLVED);
 }
 
+Scope const* program_get_global_scope(Program const* me) {
+    return &my global_scope;
+}
+
 void program_typecheck(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_NAMES_RESOLVED, PROGRAM_PHASE_TYPECHECKING);
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_error_config(&my errs->config);
+    ty_shadow_begin(me);
 
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
@@ -470,6 +476,8 @@ void program_typecheck(Program* me) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
     }
+
+    ty_shadow_finish(me);
 
     clear_error_config();
     my errs->phase = ERROR_PHASE_UNKOWN;

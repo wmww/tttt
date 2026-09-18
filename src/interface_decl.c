@@ -1,4 +1,5 @@
 #include "interface_decl.h"
+#include "ty/ty.h"
 #include "error.h"
 #include "interface_member.h"
 #include "interface.h"
@@ -63,6 +64,7 @@ Type interface_decl_evaluate_type(InterfaceDecl* me) {
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
+    ty_shadow_record_declaration(my declaration.get);
     generic_typecheck(&my generic, errs);
 
     check(my type.tag == TYPE_INTERFACE);

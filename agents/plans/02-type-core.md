@@ -189,7 +189,31 @@ symbols 5939, types 2146**; bench 0.600 s / 790 MB; repro test 0.68 s.
 Each stage: `./fasttest.sh --summary`, `./failstats.py` (watch `log_error` totals), valgrind (`./test.sh -f`) on
 ~50 tests touching the changed area, update `measurements.md` if numbers moved, update `hacks.md`/`documentation.md`.
 
-**Stage 1 - core + lowering + printer, shadow mode (new code ~1.5k lines, nothing switched).**
+**Stage 1 - DONE (2026-09-18).** `src/ty/` is ~2.2k lines; results in `measurements.md`, shortcuts in the "New type
+core" section of `hacks.md`, overview in `documentation.md`. What later stages should know:
+- The design held. Deviations from §2: one `InternTable` type with `u64[]` keys for everything instead of a table per
+  kind; `Checker.links` is that same table rather than an `HMapDeclLinks`; no `LazySlots` yet (stage 2); conditional
+  types are interned by operand ids, not root + mapper; enums are a nominal `TY_DECLARED_ENUM` placeholder; no
+  fresh literal types; `TyDisplay` has no underline mode (the legacy one underlines a type's whole rendering, the
+  traversal can do that from the string length).
+- There is no Declaration -> AST node link in the legacy code. Stage 1 gets by with `LazyType.origin` +
+  `container_of` (`legacy_entry_interface_decl`), and reads class/enum/namespace members off the legacy structural
+  type. Stage 2 should give declarations a real link to their nodes when it touches `LazyType` anyway; stage 4a
+  needs it for classes and enums.
+- **Must do in stage 3 before relations are trusted: deferred type references.** `type Json = string | Json[]` hits
+  the alias in-flight check while lowering `Json[]`, so the union's member is `any[]` (the alias prints fine, which
+  hides it). tsc makes array/tuple/reference nodes inside a declaration that's being resolved *deferred*: identity by
+  (node, mapper), type arguments resolved on first use. Same laziness as `Prop`, applied to reference arguments.
+- Forcing the legacy checker to resolve type operators it never resolved itself is unsafe (stack overflow in
+  `recursiveConditionalTypes`), so lowering only asks it for expression types. Every conditional type stays deferred
+  until stage 3 gives it relations + `infer` inference; `deeplyNestedConditionalTypes` hits the instantiation depth
+  limit until then.
+- `intern_slot()` pointers are invalidated by the next insert into the same table; this already caused one
+  use-after-free. Stage 3's relation caches should use get/put, not slots.
+- Things that turned out to matter for printing parity: namespace qualification needs symbol accessibility (plan 03,
+  3.5k nodes differ only by that), `{ new(): T }` parses as a method named `new` (parser bug, triage).
+
+**Stage 1 as planned - core + lowering + printer, shadow mode (new code ~1.5k lines, nothing switched).**
 `src/ty/`: arena, `Checker`, `Ty`, intern tables, intrinsics, literals, unions/intersections, type params, declared
 object types + references + anonymous objects with lazy members, `Signature`, `Prop`, `TyMapper` + `instantiate`,
 `ty_from_node`, `ty_display`. Decl links keyed by `Declaration*`. Hook: a `--shadow-types` flag (and harness env var)

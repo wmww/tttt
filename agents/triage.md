@@ -71,3 +71,15 @@ Uninvestigated items. Triage sessions drain this.
 - No `perf` on the dev box; callgrind works (`valgrind --tool=callgrind ./release/tttt -q files...`, then
   `callgrind_annotate [--inclusive=yes]`). Inclusive numbers for recursive functions are inflated. Worth a
   `./profile.sh` wrapper if more sessions need it.
+- Parser: construct signatures in type literals/interfaces (`{ new (x: string): C }`, `{ new(): T }`) parse as a method
+  named `new` (seen via `--shadow-types`). Optional/rest *named* tuple elements (`[a: string, b?: number,
+  ...rest: boolean[]]`) are parse errors. A leading `&`/`|` in a type becomes an `any`/`never` operand
+  (`parse_type`), which every consumer has to know to skip.
+- `Declaration` pointer stability: references hold `decl_ref` from lookup time, while lib declarations are
+  copy-on-write (`shared_between_scopes`) and import aliases are copies (`port_item_resolve_alias`). The new core keys
+  declared types by `Declaration*`, so a copied declaration is a *different type* with the same name. Check whether
+  that happens for types in practice (import of an interface, then compare with the original); plan 03 should make
+  it impossible.
+- `type Phantom<T> = {}`: `Phantom<string>` and `Phantom<number>` are one `Ty` printing as `Phantom<T>`, because
+  instantiating a node that mentions no type parameter returns the node's type, alias arguments and all. tsc gives
+  each its own alias arguments. Cosmetic until something prints it.

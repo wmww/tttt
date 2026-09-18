@@ -24,6 +24,11 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
+- Type core migration (plan 02): **stage 1 of 5 done.** `src/ty/` has the interned, arena-allocated `Ty` core
+  (identity, lazy members, mapper instantiation, lowering from the AST, tsc-style printer) running in shadow mode
+  over the whole suite: no crashes, 0.4% rendering mismatches against the legacy display (mostly the new core being
+  right), 73 us per program. Nothing is switched over yet; the legacy checker still produces every result.
+
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
 (no tokenizer, fail cache for the ambiguous cases), an AST of plain structs, a name resolution phase using a

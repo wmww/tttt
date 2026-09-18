@@ -13,6 +13,7 @@
 #include "error.h"
 #include "math_helpers.h"
 #include "type_pair_cache.h"
+#include "ty/ty.h"
 
 // How an index shows up in a "Property 'x' does not exist" message: a string literal index shows its value, anything
 // else shows its type
@@ -403,6 +404,7 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
 }
 
 void type_typecheck(Type const* me, ErrorCtx* errs) {
+    ty_shadow_record_node(me);
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:

@@ -1,4 +1,5 @@
 #include "enum_decl.h"
+#include "ty/ty.h"
 #include "scope.h"
 #include "several_types.h"
 #include "interface_member.h"
@@ -106,6 +107,8 @@ Type enum_decl_evaluate_interface_type(EnumDecl* me) {
 }
 
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
+    ty_shadow_record_declaration(my declaration.get);
+    ty_shadow_record_declaration(&my typeof_declaration);
     for_each (i, vec_enum_case, &my cases) {
         expr_typecheck(&i->value, errs);
     }

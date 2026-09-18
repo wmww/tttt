@@ -79,3 +79,49 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   (escapes not processed); enum member types still print as `E.b c` rather than `(typeof E)["b c"]`.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
+
+## New type core (`src/ty/`, plan 02). Everything here is about stage-1 scaffolding or a known gap
+- `ty/shadow.c` and the `ty_shadow_record_*` hooks (`type_typecheck`, `*_decl_typecheck`, `program_typecheck`): the
+  only thing that runs the new core today. Global recording state, one program at a time. Deleted in stage 5.
+- `LazyType.origin` / `lazy_type_origin`: remembers the tag a LazyType had before it became `LAZY_TYPE_EVALUATED`, so
+  `legacy_entry_interface_decl` can `container_of` from a Declaration's merge list back to its `InterfaceDecl`.
+  There is no proper Declaration -> AST node link. Stage 2 (slots) or plan 03 (symbols) should give one.
+- `ty_internal.h: legacy_skip_wrappers`, `legacy_expr_type`, `resolve_declared_members`: const-cast the AST to call
+  `lazy_type_get` (checker state still lives in the AST until stage 2).
+- `resolve_declared_members`: only interfaces get their members from their own declarations (+ bases through a
+  mapper). Class instance/static sides, enum objects and namespaces take the members of the structural type the
+  legacy checker evaluated (`type_resolve` on the entry). Inherited class members, `this`, accessibility modifiers
+  etc. are therefore whatever the legacy type says. Stage 4a.
+- `lower_legacy_resolution`: `typeof x` and binding-derived indexed types lower whatever the legacy checker resolved
+  them to. Must never be used for type operators (conditional/keyof/indexed): forcing the legacy checker to resolve
+  one nobody used blew the stack in `recursiveConditionalTypes`.
+- `ty_conditional`: never resolves (needs relations + inference, stage 3), not even for non-generic operands; no
+  distribution over unions. `ty_keyof` of primitives and `ty_indexed` on anything but plain props / index signatures /
+  tuple and array elements stay deferred as well.
+- `enum_member_type`: enum members without an initializer have no value in the legacy checker, so they're literal
+  types with a NaN placeholder value (identity by member declaration still holds). `TY_DECLARED_ENUM` is a nominal
+  stand-in; tsc's enum type is the union of its member literals (matters for `E | E.A` reduction, printing runs of
+  members as the enum). `ty_declared_type_of` reaches the member from `EnumCase.typeof_declaration` by `container_of`.
+- `registered_type_param`: `infer X` and mapped-type keys are `DECLARATION_TYPE` declarations, indistinguishable
+  from aliases unless the conditional/mapped type that introduces them was lowered first (true whenever lowering
+  starts from the enclosing declaration or annotation, which is the only way they're in scope).
+- `lower_identifier`: `this` types and a bare generic class name inside its own body lower to the class applied to
+  its own type parameters; there is no `this` type parameter yet. The `object` keyword is recognised by being a
+  builtin declaration named "object".
+- `lower` (composites): skips the `any` placeholder `parse_type` makes for a leading `&`.
+- `lower_tuple`: rest elements keep the written type (`...T[]` holds `T[]`), tsc holds the element type. Tuple
+  targets have no members yet (`length`, numeric props, array methods).
+- `collect_free_params` / `Ty.anonymous.free_params`: which outer type parameters an anonymous type's node mentions,
+  found by walking the node when the type is created. Doesn't track scopes (a signature's own type parameters count
+  as mentioned, harmless), and gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys and
+  anything the legacy checker evaluated rather than parsed. `TyMapper` is always flat (no composed/merged forms yet,
+  inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint; shadow mode sets it everywhere.
+- `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones.
+- `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
+  types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
+- `qualified_name`: declared types always print with their full namespace path (what tsc does in error messages);
+  tsc's `.types` baselines qualify only as far as needed from the enclosing declaration. Needs symbols (plan 03).
+- `ty_get_prop`: linear scan. `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without
+  strictNullChecks, no fresh/regular literal pairs. Deferred references inside their own alias
+  (`type Json = string | Json[]`) hit the in-flight check and become the error type instead of tsc's deferred type
+  reference. No unique symbol types. TS2589/TS2456 are only flags/TODOs.

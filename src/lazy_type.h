@@ -26,6 +26,9 @@ typedef struct LazyType {
         LAZY_TYPE_MERGED,
         LAZY_TYPE_SCOPE_VALUE_INTERFACE,
     } tag;
+    // What tag was before evaluation replaced it with LAZY_TYPE_EVALUATED, so the new type core can still find the AST
+    // node a declared type came from. Goes away when LazyType becomes a slot (plan 02 stage 2)
+    unsigned char origin;
     bool evaluation_started;
     bool is_self_referential;
     Type evaluated; // Should be {0} when tag is not LAZY_TYPE_EVALUATED
@@ -58,6 +61,10 @@ static inline LazyType lazy_type_clone(LazyType me) {
     return me;
 }
 */
+
+static inline int lazy_type_origin(LazyType const* me) {
+    return my tag == LAZY_TYPE_EVALUATED ? my origin : (int)my tag;
+}
 
 static inline LazyType lazy_type_preeval(Type type) {
     return (LazyType){

@@ -2,6 +2,36 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 1 (shadow mode)
+`TTTT_SHADOW_TYPES=1 TTTT_SHADOW_STATS=1 ./release/baseline_tests --summary --dump /tmp/dump 2>err.txt` (the env vars
+work with `./failstats.py` and `./test.sh` too; mismatches are `log_error`s, so failstats groups them). With the flag
+off the suite is unchanged: 1084 full passes, same wall time.
+
+- Whole suite, 10 076 programs: 229 569 recorded type nodes + 27 710 declarations lowered, members of every
+  declaration resolved, everything printed. **No crashes, valgrind clean on 430 tests** (recursive*, mappedType*,
+  intersectionType*, conditionalType*, infer*, keyof*, indexedAccess*, genericClass*, typeAlias*, enum*...).
+  328 522 types created, 74.5 MB arena in total (7.4 KB and 33 types per program), **0.74 s for the whole shadow pass
+  across the suite** (73 us per program, which includes rendering every node with the legacy display to compare).
+  Suite wall time 8.3 s -> 9.3 s with the flag on.
+- Of 149 885 comparable nodes (no aliases/type operators/`typeof` inside, where the new core prints differently on
+  purpose): **~590 mismatches (0.4%)**, plus 539 that differ only in union member order and 3 509 only in namespace
+  qualification (both expected, see `hacks.md: qualified_name`). What they are, from sampling:
+  - the new core reducing where the legacy display echoes syntax: `string & number` -> `never`, `"a" & string` ->
+    `"a"`, `A & (B | C)` distributed, duplicate union members/properties removed, `true | false` -> `boolean`,
+    unions nested in other types reordered (the order-only check is top level only). ~60%, new core is right.
+  - legacy display quirks: function types in unions without parentheses, `?` missing on optional methods, property
+    names that need quotes printed bare. New core is right.
+  - parse error recovery leftovers (`typeof (empty)`, `Promise<(empty)>`): garbage in, different garbage out.
+  - real gaps (in `triage.md`/`hacks.md`): construct signatures in type literals parse as a method called `new`
+    (parser), `{ 2.5: B }` prints as `"2.5"`, file-module namespace values print as `typeof ` with no name.
+- Probes (`--shadow-types` with `TTTT_SHADOW_DUMP=1` prints every node's type id and rendering):
+  `List<string>` lowered twice is one id; `Box<Box<number>>["v"]["v"]` resolves to `number` through two lazy
+  instantiations; a 1500-literal union alias used 4 times: whole shadow pass 2.4 ms (3005 nodes, 1518 types, 289 KB);
+  `varianceProblingAndZeroOrderIndexSignatureRelationsAlign` (the recursive generics repro): whole shadow pass
+  0.11 ms, 142 types, 35 KB - the legacy checker still takes 0.8 s on it, that's stage 3's target.
+- `deeplyNestedConditionalTypes` hits the instantiation depth limit (100): conditional types never resolve yet, so
+  instantiating a 100-deep conditional chain instantiates all of it. Expected to go away with stage 3.
+
 ## 2026-09-18, after the second parser gaps session (working tree on top of 5aba5cc)
 
 ### Takeaways

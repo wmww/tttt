@@ -30,5 +30,7 @@ void program_resolve_names(Program* me);
 // Typechecks the loaded file and all imports, does not typecheck libraries loaded with program_load_lib()
 void program_typecheck(Program* me);
 
+Scope const* program_get_global_scope(Program const* me);
+
 // Returns the number of source files loaded or imported
 intptr_t program_get_file_count(Program const* me);
