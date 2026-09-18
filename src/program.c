@@ -489,7 +489,6 @@ void program_typecheck(Program* me) {
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_compiler_options(&my options);
     program_make_current(me);
-    ty_shadow_begin(me);
 
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
@@ -497,8 +496,6 @@ void program_typecheck(Program* me) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
     }
-
-    ty_shadow_finish(me);
 
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;

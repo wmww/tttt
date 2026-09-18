@@ -261,27 +261,6 @@ static Ty const* alias_instance(Checker* me, Declaration const* decl, Ty const* 
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
-bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl) {
-    switch (decl->type_tag) {
-        case DECLARATION_ENUM:
-        case DECLARATION_ENUM_CASE:
-        case DECLARATION_ENUM_CASE_TYPE:
-        case DECLARATION_CLASS:
-        case DECLARATION_INTERFACE:
-            return true;
-        case DECLARATION_TYPE:
-            // Type aliases. `infer X` and mapped type keys are DECLARATION_TYPE too, they go the same way: lowering
-            // knows them as type parameters
-            return !decl->is_typeof;
-        default:
-            return false;
-    }
-}
-
-Ty const* ty_from_identifier_type(Checker* me, IdentifierType const* identifier) {
-    return lower_identifier(me, identifier, (LowerCtx){ .generic = true });
-}
-
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     Declaration const* decl = identifier->decl_ref;
     if (!decl) {
@@ -486,7 +465,6 @@ static void collect_free_params(Checker* me, Type const* node, FreeParams* out) 
 
         case TYPE_TYPEOF:
         case TYPE_LAZY:
-        case TYPE_NEW:
             // Not syntax: the type of an expression, which could be about any type parameter in scope
             out->unknown = true;
             break;
@@ -774,14 +752,13 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     return deferred->args;
 }
 
-// What the legacy checker resolves a node to. Null if it doesn't. HACK(stage 4): only for what needs expression types
-// (`typeof x`, destructuring), which the legacy checker has evaluated anyway by the time anything gets lowered. It
-// must not be used for type operators: the legacy checker never evaluates the ones nobody uses, and blows the stack
-// on some when made to (recursiveConditionalTypes)
-static Ty const* lower_legacy_resolution(Checker* me, Type const* node, LowerCtx ctx) {
-    Type const* resolved = type_resolve_one_layer(node);
-    if (!resolved || resolved == node) return nullptr;
-    return ty_from_legacy(me, resolved, ctx);
+// The type a destructuring binding takes out of its initializer: a property or element access
+static Ty const* lower_binding_access(Checker* me, IndexedType const* indexed, LowerCtx ctx) {
+    Ty const* object = ty_from_legacy(me, &indexed->interface, ctx);
+    // TODO: iterables. No TS2339-style errors from here either
+    if (indexed->array_only && !ty_extends_array(me, object)) return ty_intrinsic(me, TY_ANY);
+    Ty const* ret = ty_access(me, object, ty_from_legacy(me, &indexed->index, ctx));
+    return ret ? ret : ty_intrinsic(me, TY_ANY);
 }
 
 static bool is_naked_type_param_node(Checker* me, Type const* node) {
@@ -854,10 +831,7 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
             return lower_tuple(me, node, ctx);
 
         case TYPE_INDEXED: {
-            if (node->indexed->is_from_binding) {
-                Ty const* resolved = lower_legacy_resolution(me, node, ctx);
-                return resolved ? resolved : ty_intrinsic(me, TY_ERROR);
-            }
+            if (node->indexed->is_from_binding) return lower_binding_access(me, node->indexed, ctx);
             Ty const* ret = ty_indexed(
                 me,
                 ty_from_legacy(me, &node->indexed->interface, ctx),
@@ -869,10 +843,9 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         case TYPE_KEYOF:
             return ty_keyof(me, ty_from_legacy(me, &node->keyof->interface, ctx));
 
-        case TYPE_TYPEOF: {
-            Ty const* resolved = lower_legacy_resolution(me, node, ctx);
-            return resolved ? resolved : ty_intrinsic(me, TY_ERROR);
-        }
+        case TYPE_TYPEOF:
+            // TODO: `typeof x` of an identifier is its declared type, not the narrowed one (plan 03)
+            return ty_expr_type(me, node->typeof_->expr);
 
         case TYPE_TERNARY: {
             // The extends type goes before the branches, it's what declares the `infer` type parameters
@@ -925,13 +898,10 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         }
 
         case TYPE_LAZY:
-            return lower(me, lazy_type_get((LazyType*)node->lazy), outer_ctx, alias, alias_args);
+            return lazy_type_get((LazyType*)node->lazy);
 
         case TYPE_REF:
             return lower(me, node->ref, outer_ctx, alias, alias_args);
-
-        case TYPE_NEW:
-            return type_new_ty(me, node);
     }
     impossible;
 }

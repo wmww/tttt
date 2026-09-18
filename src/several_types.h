@@ -14,19 +14,14 @@ typedef struct IdentifierType {
     KeywordIdentifier keyword;
     Declaration const* decl_ref;
     VecSpannedType generic_params;
-    LazyType type; // May contain a copy of the type with the generic parameters swapped in or a reference
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);
 IdentifierType identifier_type_clone(IdentifierType me);
 void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs);
-Type identifier_type_evaluate_type(IdentifierType* me);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
 static inline Type type_identifier(IdentifierType* identifier) {
-    if (identifier->type.tag != LAZY_TYPE_EVALUATED) {
-        lazy_type_bind(&identifier->type, LAZY_TYPE_IDENTIFIER_TYPE);
-    }
     return (Type){
         .tag = TYPE_IDENTIFIER,
         .identifier = identifier,

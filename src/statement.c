@@ -91,7 +91,6 @@ void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
 }
 
 void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
-    ty_shadow_record_declaration(my declaration.get);
     generic_typecheck(&my generic, errs);
     type_typecheck(&my type, errs);
 }
@@ -186,47 +185,26 @@ zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     impossible;
 }
 
-Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
-    Type iterable_owned = {0};
-    Type const* iterable_type = type_resolve(lazy_type_get(&my iterable.lazy_type));
-
-    Type var_type = type_any;
+Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
+    Checker* checker = current_checker;
+    Ty const* iterable = ty_expr_type(checker, &my iterable);
+    if (iterable == ty_intrinsic(checker, TY_ERROR)) return iterable; // Self-referential
     switch (my keyword) {
         case FOR_EACH_LOOP_IN:
-            switch (iterable_type->tag) {
-                case TYPE_ANY:
-                    var_type = iterable_type->any.self_referential_error ? type_self_referential_error : type_string;
-                    break;
-
-                case TYPE_INTERFACE:
-                case TYPE_CALLABLE:
-                    // TODO: there def needs to be more nuance in this check
-                    // TODO: maybe do keyof and then index of the returned union?
-                    var_type = type_string;
-                    break;
-
-                case TYPE_ARRAY:
-                case TYPE_TUPLE:
-                    var_type = type_string;
-                    break;
-
-                default:
-                    var_type = type_string;
-                    break;
-            }
-            break;
+            // TODO: `Extract<keyof T, string>` for a type parameter
+            return ty_intrinsic(checker, TY_STRING);
 
         case FOR_EACH_LOOP_OF:
-            if (type_is_self_referential(iterable_type)) {
-                var_type = type_self_referential_error;
-            } else if (type_extends_array(iterable_type) || type_extends(iterable_type, &type_string)) {
-                var_type = index_type_evaluate_type(iterable_type, &type_number);
+            // TODO: iterables
+            if (ty_extends_array(checker, iterable) ||
+                ty_is_related(checker, iterable, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE)
+            ) {
+                Ty const* element = ty_access(checker, iterable, ty_intrinsic(checker, TY_NUMBER));
+                if (element) return element;
             }
-            break;
+            return ty_intrinsic(checker, TY_ANY);
     }
-
-    type_drop(&iterable_owned);
-    return var_type;
+    impossible;
 }
 
 // Statements
@@ -701,7 +679,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         }
 
         case STATEMENT_FOR_EACH_LOOP: {
-            Type const* iterable_type = type_resolve(lazy_type_get(&my for_each_loop->iterable.lazy_type));
+            Checker* checker = current_checker;
+            Ty const* iterable_type = ty_expr_type(checker, &my for_each_loop->iterable);
 
             switch (my for_each_loop->keyword) {
                 case FOR_EACH_LOOP_IN:
@@ -733,24 +712,18 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                             break;
                     }
 
-                    switch (iterable_type->tag) {
-                        case TYPE_ANY:
-                        case TYPE_INTERFACE:
-                        case TYPE_CALLABLE:
-                        case TYPE_ARRAY:
-                        case TYPE_TUPLE:
-                            break;
-
-                        default: {
-                            error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2407,
-                                "The right-hand side of a 'for...in' statement must be of type 'any', an object type "
-                                "or a type parameter, but here has type '", iterable_type, "'.");
-                        }   break;
+                    // TODO: type parameters are fine too, the apparent type is what counts
+                    if (!(iterable_type->flags & (TYF_ANY | TYF_OBJECT | TYF_NON_PRIMITIVE | TYF_TYPE_PARAM))) {
+                        error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2407,
+                            "The right-hand side of a 'for...in' statement must be of type 'any', an object type "
+                            "or a type parameter, but here has type '", iterable_type, "'.");
                     }
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    if (!type_extends_array(iterable_type) && !type_extends(iterable_type, &type_string)) {
+                    if (!ty_extends_array(checker, iterable_type) &&
+                        !ty_is_related(checker, iterable_type, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE)
+                    ) {
                         error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2495,
                             "Type '", iterable_type, "' is not an array type or a string type.");
                     }
@@ -766,7 +739,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
                 case FOR_EACH_LOOP_EXPR:
                     expr_typecheck(&my for_each_loop->variable.expr, errs);
-                    type_error_if_not_assignable(
+                    ty_check_assignable(
+                        checker,
                         lazy_type_get(&my for_each_loop->var_type),
                         expr_get_type(&my for_each_loop->variable.expr),
                         my for_each_loop->variable.expr.outer_span,
@@ -782,14 +756,14 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
         case STATEMENT_SWITCH: {
             expr_typecheck(&my switch_->needle, errs);
-            Type const* needle_type = expr_get_type(&my switch_->needle);
+            Ty const* needle_type = expr_get_type(&my switch_->needle);
             intptr_t default_count = 0;
             ctx.break_allowed = true;
             for_each (i, vec_switch_case, &my switch_->cases) {
                 if (i->is_pattern) {
                     expr_typecheck(&i->pattern, errs);
-                    Type const* pattern_type = expr_get_type(&i->pattern);
-                    if (!type_overlaps(needle_type, pattern_type)) {
+                    Ty const* pattern_type = expr_get_type(&i->pattern);
+                    if (!ty_is_comparable_either_way(current_checker, needle_type, pattern_type)) {
                         error_ctx_error_d(errs, i->pattern.outer_span, 2678,
                             "Type '", pattern_type, "' is not comparable to type '", needle_type, "'.");
                     }
@@ -843,11 +817,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
             if (ctx.specified_return) {
-                type_error_if_not_assignable(
-                    expr_get_type(&my expr),
-                    ctx.specified_return,
-                    my expr.outer_span,
-                    errs
+                ty_check_assignable(
+                    current_checker, expr_get_type(&my expr), ty_of_node(ctx.specified_return), my expr.outer_span, errs
                 );
             }
             break;

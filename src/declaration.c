@@ -10,7 +10,7 @@ void merged_type_add(MergedType* me, Type t) {
             break;
 
         case LAZY_TYPE_EVALUATED:
-            vec_type_push(&my merge_list, my lazy.memo.evaluated);
+            vec_type_push(&my merge_list, my lazy.preevaluated);
             my lazy = lazy_type_init(LAZY_TYPE_MERGED);
             // fallthrough
 
@@ -25,20 +25,18 @@ void merged_type_add(MergedType* me, Type t) {
 MergedType merged_type_clone(MergedType me) {
     me.merge_list = vec_type_clone(me.merge_list);
     if (me.lazy.tag == LAZY_TYPE_EVALUATED) {
-        me.lazy.memo.evaluated = type_clone(me.lazy.memo.evaluated);
+        me.lazy.preevaluated = type_clone(me.lazy.preevaluated);
     } else if (me.lazy.tag == LAZY_TYPE_MERGED) {
         me.lazy = lazy_type_init(LAZY_TYPE_MERGED); // The clone is a different type and needs its own slot
     }
     return me;
 }
 
-Type merged_type_evaluate_type(MergedType* me) {
-    if (my declared_owner && ty_declaration_is_evaluated_by_new_core(my declared_owner)) {
-        return type_new(ty_declared_type_of(current_checker, my declared_owner));
-    }
-    if (my value_owner) return type_new(ty_merged_value_type(current_checker, my value_owner));
+Ty const* merged_type_evaluate_type(MergedType* me) {
+    if (my declared_owner) return ty_declared_type_of(current_checker, my declared_owner);
+    if (my value_owner) return ty_merged_value_type(current_checker, my value_owner);
     log_error("merged type without an owner");
-    return type_any;
+    return ty_intrinsic(current_checker, TY_ERROR);
 }
 
 void merged_type_drop(MergedType* me) {

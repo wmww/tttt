@@ -32,7 +32,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
 void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
-            baseline_test_case_add_type(ctx, my content_span, &type_undefined);
+            baseline_test_case_add_type_node(ctx, my content_span, &type_undefined);
             break;
 
         case BINDING_IDENTIFIER:
@@ -79,12 +79,12 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .span = my key.span,
                 .name_is_value = my key.name_is_value,
             });
-            baseline_test_case_add_type(ctx, my key.span, &my type);
+            baseline_test_case_add_type_node(ctx, my key.span, &my type);
             break;
 
         case INTERFACE_KEY_INDEX:
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.index.name });
-            baseline_test_case_add_type(ctx, my key.index.name, &my key.index.type);
+            baseline_test_case_add_type_node(ctx, my key.index.name, &my key.index.type);
             type_compile_test_info(&my key.index.type, ctx);
             break;
 
@@ -96,7 +96,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .name = my key.expr.ref->outer_span,
                 .name_is_value = true,
             });
-            baseline_test_case_add_type(ctx, my key.span, &my type);
+            baseline_test_case_add_type_node(ctx, my key.span, &my type);
             expr_compile_test_info(my key.expr.ref, ctx);
             break;
 
@@ -153,7 +153,7 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
                     *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
                     nullptr;
-                baseline_test_case_add_type(ctx, *i, &type_any);
+                baseline_test_case_add_type_node(ctx, *i, &type_any);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),
                     .allow_declaration_empty = true,
@@ -232,15 +232,12 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             }
             break;
 
-        case TYPE_LAZY:
-            type_compile_test_info(lazy_type_get(my lazy), ctx);
-            break;
+        case TYPE_LAZY: break; // Not syntax
 
         case TYPE_REF:
             type_compile_test_info(my ref, ctx);
             break;
 
-        case TYPE_NEW: break; // Not syntax
     }
 }
 
@@ -274,7 +271,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
 
         case PORT_IMPORT_ALIAS:
             if (!my main.declaration.get) {
-                baseline_test_case_add_type(ctx, my main.decl_name, &type_any);
+                baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
             } else if (!my main.declaration.get->value_tag) {
                 // tsc shows aliases of pure types as any
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -282,13 +279,13 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = my main.decl_name,
                     .name = my main.declaration.get->name,
                 });
-                baseline_test_case_add_type(ctx, my main.decl_name, &type_any);
+                baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
             } else {
                 baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
             }
             for_each (i, vec_span, &my main.alias_path) {
                 if (i_index >= vec_declaration_cptr_size(&my main.alias_path_decls)) {
-                    baseline_test_case_add_type(ctx, *i, &type_any);
+                    baseline_test_case_add_type_node(ctx, *i, &type_any);
                     continue;
                 }
                 Declaration const* decl = *vec_declaration_cptr_at(&my main.alias_path_decls, i_index);
@@ -302,10 +299,10 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                         .name = decl->name,
                         .decl_ref = decl,
                     }));
-                    baseline_test_case_add_type(ctx, *i, &t);
+                    baseline_test_case_add_type_node(ctx, *i, &t);
                     type_drop(&t);
                 } else {
-                    baseline_test_case_add_type(ctx, *i, &decl->value_type);
+                    baseline_test_case_add_type_node(ctx, *i, &decl->value_type);
                 }
             }
             break;
@@ -322,13 +319,13 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = i->source_name,
                 });
             }
-            baseline_test_case_add_type(ctx, i->source_name, &declaration->value_type);
+            baseline_test_case_add_type_node(ctx, i->source_name, &declaration->value_type);
         }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_clone(declaration->declarations),
             .span = i->decl_name,
         });
-        baseline_test_case_add_type(ctx, i->decl_name, &declaration->value_type);
+        baseline_test_case_add_type_node(ctx, i->decl_name, &declaration->value_type);
     }
 }
 
@@ -343,11 +340,10 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         .declarations = vec_span_single(my full_span),
         .span = my name,
     });
-    Type t = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-    }));
-    baseline_test_case_add_type(ctx, my name, &t);
-    type_drop(&t);
+    baseline_test_case_add_type(
+        ctx, my name,
+        my declaration.get ? ty_declared_type_of(current_checker, my declaration.get) : ty_unresolved(current_checker, my name.sv)
+    );
     for_each (i, vec_enum_case, &my cases) {
         //baseline_test_case_add_declaration(ctx, i->name, i->declaration.get);
         Span span = i->full_name;
@@ -360,7 +356,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
             .name_is_value = i->name_is_value,
         });
         if (declaration->value_tag) {
-            baseline_test_case_add_type(ctx, span, &declaration->value_type);
+            baseline_test_case_add_type_node(ctx, span, &declaration->value_type);
         }
         if (i->value.tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(&i->value, ctx);
@@ -399,7 +395,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .name_is_value = my method.name_is_value,
             });
             Type t = class_item_get_type(me);
-            baseline_test_case_add_type(ctx, my method.name_span, &t);
+            baseline_test_case_add_type_node(ctx, my method.name_span, &t);
             type_drop(&t);
             function_impl_compile_test_info(&my method.func, ctx);
         }   break;
@@ -412,7 +408,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .name_is_value = my field.name_is_value,
             });
             Type t = class_item_get_type(me);
-            baseline_test_case_add_type(ctx, my field.name_span, &t);
+            baseline_test_case_add_type_node(ctx, my field.name_span, &t);
             type_drop(&t);
 
             if (my field.has_explicit_type) {
@@ -443,9 +439,9 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             .span = my name,
         });
         if (is_expr) {
-            baseline_test_case_add_type(ctx, my name, &my declaration.get->value_type);
+            baseline_test_case_add_type_node(ctx, my name, &my declaration.get->value_type);
         } else {
-            baseline_test_case_add_type(ctx, my name, &my instance_identifier_type);
+            baseline_test_case_add_type_node(ctx, my name, &my instance_identifier_type);
         }
     }
     generic_compile_test_info(&my generic, ctx);
@@ -457,10 +453,10 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         ) {
             if (my extends.tag != EXPR_GENERIC_PARAMS) {
                 Members const* statics = ty_members(current_checker, extends_type);
-                Type instance = type_new(
-                    statics->construct_count ? signature_return_type(current_checker, statics->construct[0]) : extends_type
-                );
-                baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &instance);
+                Ty const* instance = statics->construct_count ?
+                    signature_return_type(current_checker, statics->construct[0]) :
+                    extends_type;
+                baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, instance);
             }
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
@@ -481,10 +477,10 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         .span = my name,
     });
     // The declared type as the new core knows it, which carries the alias name where tsc would
-    Type declared = current_checker && my declaration.get ?
-        type_new(ty_declared_type_of(current_checker, my declaration.get)) :
-        type_any;
-    baseline_test_case_add_type(ctx, my name, &declared);
+    baseline_test_case_add_type(
+        ctx, my name,
+        my declaration.get ? ty_declared_type_of(current_checker, my declaration.get) : ty_intrinsic(current_checker, TY_ANY)
+    );
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(&my type, ctx);
 }
@@ -510,18 +506,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             .span = my name,
         });
         if (my declaration.get->value_tag) {
-            Declaration d = {0};
-            declaration_init(&d, (DeclProps){
-                .tag = DECLARATION_TYPE,
-                .is_typeof = true,
-            });
-            Type t = type_identifier(c_new(IdentifierType, {
-                .name = my name,
-                .decl_ref = &d,
-            }));
-            baseline_test_case_add_type(ctx, my name, &t);
-            type_drop(&t);
-            declaration_drop(&d);
+            baseline_test_case_add_type_node(ctx, my name, &my declaration.get->value_type);
         }
     }
     block_compile_test_info(&my contents, ctx);
@@ -566,49 +551,52 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
-            Type const* expr_t_resolved = type_resolve(expr_get_type(&my property->expr));
-            Type const* prop_t = type_resolve(expr_get_type(&my property->prop));
-
-            if (expr_t_resolved->tag == TYPE_INTERFACE &&
-                prop_t->tag == TYPE_VALUE &&
-                prop_t->value.tag == VALUE_STRING
-            ) {
-                for_each (i, vec_interface_member, &expr_t_resolved->interface.members) {
-                    if (i->key.tag == INTERFACE_KEY_NAME &&
-                        cstr_eq(&i->key.name_string, &prop_t->value.string)
-                    ) {
-                        VecSpan namespaces = vec_span_init();
-                        if (i->origin_interface) {
-                            namespaces = vec_span_clone(i->origin_interface->namespaces);
-                            vec_span_push(&namespaces, i->origin_interface->name);
-                        }
-                        if (my property->form == PROPERTY_EXPR_DOT) {
-                            baseline_test_case_add_symbol(ctx, (BaselineSym){
-                                .declarations = vec_span_clone(i->declarations),
-                                .allow_declaration_empty = true,
-                                .namespaces = vec_span_clone(namespaces),
-                                .span = my outer_span,
-                                .name = span_valid(i->key.span) ? i->key.span : my property->prop.outer_span,
-                                .name_is_value = i->key.name_is_value,
-                            });
-                        }
-                        expr_compile_test_info(&my property->expr, ctx);
-                        has_compiled_expr_info = true;
-                        // tsc has no line for the name in a private name access (`a.#b`)
-                        if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(my property->prop.outer_span.sv, "#")) {
-                            baseline_test_case_add_symbol(ctx, (BaselineSym){
-                                .declarations = vec_span_clone(i->declarations),
-                                .allow_declaration_empty = true,
-                                .namespaces = vec_span_clone(namespaces),
-                                .span = my property->prop.outer_span,
-                                .name = i->key.span,
-                                .name_is_value = i->key.name_is_value,
-                            });
-                        }
-                        vec_span_drop(&namespaces);
-                        break;
-                    }
+            // The symbol of the property, if the object's type has one by that name
+            Checker* checker = current_checker;
+            Ty const* object = ty_expr_type(checker, &my property->expr);
+            Ty const* key = ty_expr_type(checker, &my property->prop);
+            if (object->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+                Ty const* constraint = ty_base_constraint(checker, object);
+                if (constraint) object = constraint;
+            }
+            Prop const* prop = (object->flags & TYF_OBJECT) && (key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL) ?
+                ty_get_prop(checker, object, key->literal.string) :
+                nullptr;
+            if (prop) {
+                Prop const* root = prop;
+                while (root->target && !root->decl_span_count) root = root->target;
+                VecSpan declarations = vec_span_init();
+                for (u32 j = 0; j < root->decl_span_count; j++) vec_span_push(&declarations, root->decl_spans[j]);
+                VecSpan namespaces = vec_span_init();
+                if (prop->parent) {
+                    namespaces = vec_span_clone(prop->parent->namespaces);
+                    vec_span_push(&namespaces, prop->parent->name);
                 }
+                if (my property->form == PROPERTY_EXPR_DOT) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = vec_span_clone(declarations),
+                        .allow_declaration_empty = true,
+                        .namespaces = vec_span_clone(namespaces),
+                        .span = my outer_span,
+                        .name = span_valid(root->name_span) ? root->name_span : my property->prop.outer_span,
+                        .name_is_value = root->name_is_value,
+                    });
+                }
+                expr_compile_test_info(&my property->expr, ctx);
+                has_compiled_expr_info = true;
+                // tsc has no line for the name in a private name access (`a.#b`)
+                if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(my property->prop.outer_span.sv, "#")) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = vec_span_clone(declarations),
+                        .allow_declaration_empty = true,
+                        .namespaces = vec_span_clone(namespaces),
+                        .span = my property->prop.outer_span,
+                        .name = root->name_span,
+                        .name_is_value = root->name_is_value,
+                    });
+                }
+                vec_span_drop(&namespaces);
+                vec_span_drop(&declarations);
             }
 
             if (!has_compiled_expr_info) {
@@ -618,7 +606,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (my property->form == PROPERTY_EXPR_BRACKET) {
                 expr_compile_test_info(&my property->prop, ctx);
             } else if (!csview_starts_with(my property->prop.outer_span.sv, "#")) {
-                baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type(me));
+                baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type((Expr*)me));
             }
         }   break;
 
@@ -684,8 +672,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             .name = i->name_span,
                         });
                     }
-                    Type t = type_new(ty_object_literal_member_type(current_checker, me, i));
-                    baseline_test_case_add_type(ctx, i->name_span, &t);
+                    baseline_test_case_add_type(ctx, i->name_span, ty_object_literal_member_type(current_checker, me, i));
                 }
                 if (i->computed_key) {
                     expr_compile_test_info(i->computed_key, ctx);
@@ -730,9 +717,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (vec_expr_is_empty(&my template_->substitutions)) {
                     // Don't clone the string, and don't drop the type
                     Type t = type_value(value_string(my template_->plain_string));
-                    baseline_test_case_add_type(ctx, my template_->template_span, &t);
+                    baseline_test_case_add_type_node(ctx, my template_->template_span, &t);
                 } else {
-                    baseline_test_case_add_type(ctx, my template_->template_span, &type_string);
+                    baseline_test_case_add_type_node(ctx, my template_->template_span, &type_string);
                 }
             }
             for_each (i, vec_expr, &my template_->substitutions) {
@@ -758,12 +745,12 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             ctx,
             my outer_span,
             my inner_span,
-            &my identifier.decl_ref->value_type
+            ty_of_node(&my identifier.decl_ref->value_type)
         );
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
-        Type t = type_array((Type*)&type_undefined, false);
-        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, &t);
-        // Don't drop, since we didn't allocate
+        Checker* checker = current_checker;
+        Ty const* undefined_array = ty_array(checker, ty_intrinsic(checker, TY_UNDEFINED), false);
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, undefined_array);
     } else if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
     } else if (my tag == EXPR_GENERIC_PARAMS) {
     } else {
@@ -776,11 +763,11 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     if (span_valid(my jump_label)) {
         // Both labels and the targets of break and continue are shown as any
-        baseline_test_case_add_type(ctx, my jump_label, &type_any);
+        baseline_test_case_add_type_node(ctx, my jump_label, &type_any);
     }
     switch (my tag) {
         case STATEMENT_LABELED:
-            baseline_test_case_add_type(ctx, my labeled.name, &type_any);
+            baseline_test_case_add_type_node(ctx, my labeled.name, &type_any);
             statement_compile_test_info(my labeled.body, ctx);
             break;
 

@@ -31,7 +31,7 @@ typedef struct IdentifierExpr {
 
 void identifier_expr_drop(IdentifierExpr* me);
 void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs);
-Type identifier_expr_evaluate_type(IdentifierExpr const* me);
+Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me);
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
 
 typedef struct Expr {
@@ -158,7 +158,7 @@ static inline bool expr_is_perenthisized(Expr const* me) {
 }
 
 // Should only be used in the typecheck phase
-static inline Type const* expr_get_type(Expr* me) {
+static inline Ty const* expr_get_type(Expr* me) {
     return lazy_type_get(&my lazy_type);
 }
 
@@ -169,7 +169,7 @@ extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
 void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs);
-Type expr_evaluate_type(Expr const* me); // Should only be used by LazyType
+Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 
 #define g_class_key Expr, expr

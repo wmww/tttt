@@ -33,9 +33,3 @@ void callable_type_drop(CallableType* me);
 CallableType callable_type_clone(CallableType me);
 void callable_type_resolve_names(CallableType* me, ScopeStack* names, ErrorCtx* errs);
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs);
-
-// Returned type should be dropped before me is dropped or moved
-Type callable_type_get_arg_type(CallableType const* me, intptr_t i);
-intptr_t callable_type_min_arg_count(CallableType const* me);
-// Returns INTPTR_MAX if unbounded
-intptr_t callable_type_max_arg_count(CallableType const* me);

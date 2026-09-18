@@ -33,11 +33,9 @@ core_files = files(
     'ty/checker.c',
     'ty/members.c',
     'ty/enums.c',
-    'ty/legacy_view.c',
     'ty/instantiate.c',
     'ty/lower.c',
     'ty/ty_display.c',
-    'ty/shadow.c',
     'ty/relate.c',
     'ty/conditional.c',
     'ty/infer.c',
@@ -45,6 +43,7 @@ core_files = files(
     'ty/access.c',
     'ty/expr.c',
     'ty/function.c',
+    'ty/check.c',
 )
 
 main_files = core_files + files('main.c')

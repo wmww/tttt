@@ -41,6 +41,14 @@ const csview indent_string = c_sv_const_init("    ");
 
 impl_display_no_drop(Span, span) { return debuggable_sv_display(me.sv, d); }
 
+impl_display_no_drop(Ty const*, ty_d) {
+    if (!current_checker) return debuggable_sv_display(c_sv("(type)"), d);
+    cstr rendered = ty_to_cstr(current_checker, me);
+    d = debuggable_sv_display(cstr_sv(&rendered), d);
+    cstr_drop(&rendered);
+    return d;
+}
+
 // The bridges that let AST nodes appear directly in cleat display sequences, see declare_ast_display()
 impl_ast_display(Value, value)
 impl_ast_display(InterfaceMember, interface_member)
@@ -412,18 +420,17 @@ void display_interface_member(Display d, InterfaceMember const* me) {
     }
 }
 
+// A semantic type inside the rendering of syntax
+static void display_ty(Display d, Ty const* ty) {
+    cstr rendered = ty_to_cstr(current_checker, ty);
+    display_color(d, color_type);
+    display_sv(d, cstr_sv(&rendered));
+    display_normal(d);
+    cstr_drop(&rendered);
+}
+
 static void display_interface(Display d, Interface const* me) {
     d = display_set_parsed(d, my parsed);
-    if (my namespace_scope) {
-        display_lit(d, "typeof ");
-        for_each (i, vec_span, &my namespace_scope->namespaces) {
-            if (i_index != 0) {
-                display_lit(d, ".");
-            }
-            display_colored_span(d, color_type, *i);
-        }
-        return;
-    }
     if (!d.debug &&
         vec_interface_member_size(&my members) == 1 &&
         my members.data->key.tag == INTERFACE_KEY_CALLABLE
@@ -478,9 +485,10 @@ static void display_interface(Display d, Interface const* me) {
 
 static void display_indexed_type(Display d, IndexedType* me) {
     if (my is_from_binding) {
-        Type t = type_indexed(me);
-        display_type(d, type_resolve_one_layer(&t));
-        // Didn't allocate, don't drop
+        // A destructuring binding
+        display_type(d, &my interface);
+        display_lit(d, ".");
+        display_type(d, &my index);
     } else {
         display_type(d, &my interface);
         display_lit(d, "[");
@@ -650,7 +658,11 @@ static void display_type_inner(Display d, Type const* me) {
 
         case TYPE_LAZY:
             if (d.debug) display_colored(d, color_implicit, "(~> ");
-            display_type(d, lazy_type_get(my lazy));
+            if (current_checker) {
+                display_ty(d, lazy_type_get(my lazy));
+            } else {
+                display_colored(d, color_implicit, "?");
+            }
             if (d.debug) display_colored(d, color_implicit, ")");
             break;
 
@@ -660,20 +672,6 @@ static void display_type_inner(Display d, Type const* me) {
             if (d.debug) display_colored(d, color_implicit, ")");
             break;
 
-        case TYPE_NEW: {
-            cstr rendered = cstr_null;
-            if (current_checker) {
-                // Underlining is what the `.types` baseline traversal does
-                TyDisplay ty_d = { .target = &rendered, .unqualified_names = d.underline };
-                ty_display(current_checker, ty_d, type_new_ty(current_checker, me));
-            } else {
-                cstr_append_lit(&rendered, "(type)");
-            }
-            display_color(d, color_type);
-            display_sv(d, cstr_sv(&rendered));
-            display_normal(d);
-            cstr_drop(&rendered);
-        }   break;
     }
 
     if (d.debug && type_is_self_referential(me)) {
@@ -828,17 +826,10 @@ void display_expr(Display d, Expr const* me) {
                     display_implicit_peren = true;
                 }
                 display_colored(d, color_implicit, "<");
-                LazyMemo* state = lazy_type_state_peek((LazyType*)&my lazy_type);
-                if (my lazy_type.tag == LAZY_TYPE_EVALUATED) {
-                    display_type(d, &my lazy_type.memo.evaluated);
-                } else if (state && state->done) {
-                    display_type(d, &state->evaluated);
-                } else if (!current_lazy_slots) {
+                if (!current_checker) {
                     display_colored(d, color_implicit, "?"); // Nothing can be evaluated before there's a checker
                 } else {
-                    Type t = expr_evaluate_type(me);
-                    display_type(d, &t);
-                    type_drop(&t);
+                    display_ty(d, ty_expr_type(current_checker, me));
                 }
                 display_colored(d, color_implicit, ">");
                 break;

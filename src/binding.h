@@ -69,7 +69,7 @@ typedef struct InitializedBinding {
 void initialized_binding_drop(InitializedBinding* me);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
 void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names, ErrorCtx* errs);
-Type initialized_binding_evaluate_assigned_type(InitializedBinding* me);
+Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 
 #define g_class_key InitializedBinding, initialized_binding

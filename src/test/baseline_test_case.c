@@ -7,6 +7,8 @@
 #include "string_helpers.h"
 #include "error.h"
 #include "value.h"
+#include "ty/ty.h"
+#include "several_types.h"
 
 #include <cleat/filesystem.h>
 
@@ -856,16 +858,8 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
     }
 }
 
-void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type) {
-    baseline_test_case_add_type_recursive(me, span, span, type);
-}
-
-void baseline_test_case_add_type_recursive(
-    BaselineTestCase* me,
-    Span outer_span,
-    Span inner_span,
-    Type const* type
-) {
+// One `>text : type` line plus its underline per parenthesization level of the expression
+static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered) {
     const char* outer_start = span_start_ptr(outer_span);
     const char* outer_last = span_end_ptr(outer_span) - 1;
     const char* inner_start = span_start_ptr(inner_span);
@@ -883,29 +877,62 @@ void baseline_test_case_add_type_recursive(
     outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
 
     intptr_t line = span_line_index(outer_span);
-    DisplayUnderlineTarget target = {
-        .target = cstr_lit(">"),
-        .underline = cstr_lit(">"),
-        .chars = {' ', '^'},
-    };
-    append_span_contents_without_newlines(&target.target, outer_span);
-    cstr_resize(&target.underline, cstr_size(&target.target), ' ');
-    cstr_append_lit(&target.target, " : ");
-    cstr_append_lit(&target.underline, " : ");
-    display_type(underline_display(&target), type);
-    cstr_append_lit(&target.target, "\r\n");
-    cstr_append_s(&target.target, target.underline);
-    cstr_drop(&target.underline);
+    cstr target = cstr_lit(">");
+    append_span_contents_without_newlines(&target, outer_span);
+    cstr underline = cstr_lit(">");
+    cstr_resize(&underline, cstr_size(&target), ' ');
+    cstr_append_lit(&target, " : ");
+    cstr_append_lit(&underline, " : ");
+    cstr_append_sv(&target, rendered);
+    cstr_resize(&underline, cstr_size(&underline) + rendered.size, '^');
+    cstr_append_lit(&target, "\r\n");
+    cstr_append_s(&target, underline);
+    cstr_drop(&underline);
     BaselineTestFile* test_file = find_file(me, outer_span.source);
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
-        .str = target.target,
+        .str = target,
     });
     if (!base_case) {
         outer_span.sv.buf++;
         outer_span.sv.size -= 2;
-        baseline_test_case_add_type_recursive(me, outer_span, inner_span, type);
+        add_type_rendered(me, outer_span, inner_span, rendered);
     }
+}
+
+void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
+    // TODO(plan 03): names are qualified as far as needed from where they're printed, which needs symbols
+    cstr rendered = cstr_null;
+    ty_display(current_checker, (TyDisplay){ .target = &rendered, .unqualified_names = true }, type);
+    add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered));
+    cstr_drop(&rendered);
+}
+
+void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type) {
+    baseline_test_case_add_type_recursive(me, span, span, type);
+}
+
+void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, Type const* node) {
+    for (;;) {
+        if (node->tag == TYPE_REF) {
+            node = node->ref;
+        } else if (node->tag == TYPE_LAZY && node->lazy->tag == LAZY_TYPE_EVALUATED) {
+            node = &node->lazy->preevaluated;
+        } else {
+            break;
+        }
+    }
+    if (node->tag != TYPE_IDENTIFIER) {
+        baseline_test_case_add_type(me, span, ty_of_node(node));
+        return;
+    }
+    // HACK: a written type shows as written. Qualified names (`X.Y.Z`) come out the way tsc prints them more often
+    // that way than by always or never qualifying; the real rule needs symbol accessibility (plan 03)
+    cstr rendered = cstr_null;
+    Display d = { .target = &rendered };
+    display_type(d, node);
+    add_type_rendered(me, span, span, cstr_sv(&rendered));
+    cstr_drop(&rendered);
 }
 
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
@@ -920,8 +947,8 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declara
         .name = declaration->name,
     });
     if (declaration->value_tag) {
-        baseline_test_case_add_type(me, span, &declaration->value_type);
+        baseline_test_case_add_type_node(me, span, &declaration->value_type);
     } else if (declaration->type_tag) {
-        baseline_test_case_add_type(me, span, &declaration->declared_type);
+        baseline_test_case_add_type_node(me, span, &declaration->declared_type);
     }
 }

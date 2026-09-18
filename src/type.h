@@ -20,6 +20,7 @@ typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
 typedef struct LazyType LazyType;
 typedef struct Declaration Declaration;
+typedef struct Ty Ty; // A semantic type, see ty/ty.h
 typedef Declaration const* DeclarationCPtr;
 
 g_declare_arc(Expr, expr);
@@ -53,9 +54,6 @@ typedef struct Type {
         TYPE_INTERSECTION,
         TYPE_LAZY,
         TYPE_REF,
-        // A semantic type of the new core (ty/ty.h) carried by legacy code, plan 02 stage 4 scaffolding. Owns nothing.
-        // type_resolve() gives a one-layer legacy view of it (ty/legacy_view.c) whose children are TYPE_NEW again
-        TYPE_NEW,
     } tag;
     bool parsed : 1;
     union {
@@ -83,11 +81,6 @@ typedef struct Type {
         VecType composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         LazyType* lazy;
         Type const* ref;
-        struct {
-            struct Ty const* ty; // Null if one of the lazy forms below hasn't been asked for its type yet
-            struct Prop const* prop; // The type of this property
-            struct Signature const* ret_of; // The return type of this signature
-        } new_;
     };
 } Type;
 
@@ -104,7 +97,6 @@ extern const Type type_symbol;
 extern const Type type_bigint;
 extern const Type type_null;
 extern const Type type_undefined;
-#undef TYPE_NEW_DECL
 
 static inline Type type_value(Value value) {
     return (Type){
@@ -193,13 +185,6 @@ static inline Type type_lazy(LazyType* lazy) {
     };
 }
 
-static inline Type type_new(struct Ty const* ty) {
-    return (Type){
-        .tag = TYPE_NEW,
-        .new_.ty = ty,
-    };
-}
-
 static inline Type type_ref_always(Type const* ref) {
     return (Type){
         .tag = TYPE_REF,
@@ -221,7 +206,6 @@ static inline Type type_refcopy(Type const* ref) {
         case TYPE_BIGINT:
         case TYPE_LAZY:
         case TYPE_REF:
-        case TYPE_NEW:
             return *ref;
 
         case TYPE_VALUE:
@@ -247,8 +231,6 @@ static inline bool type_is_self_referential(Type const* me) {
 }
 
 Type type_composite_without_simplify(typeof((Type){}.tag) tag, Type a, Type b);
-Type type_composite(typeof((Type){}.tag) tag, Type a, Type b);
-void composite_type_simplify(Type* me);
 static inline Type type_composite_base(typeof((Type){}.tag) tag) {
     switch (tag) {
         case TYPE_UNION:        return (Type){.tag = TYPE_NEVER};
@@ -269,34 +251,6 @@ static inline Type type_move(Type* me) {
 
 void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs);
 void type_typecheck(Type const* me, ErrorCtx* errs);
-Type const* type_resolve(Type const* me);
-Type const* type_resolve_one_layer(Type const* me); // Returns nullptr if nothing to resolve
-Type const* type_resolve_until_identifier(Type const* me);
-// Resolves until it finds a type of the new core (TYPE_NEW), null if there's a legacy structural type first
-Type const* type_resolve_to_new(Type const* me);
-bool type_extends(Type const* sub, Type const* super);
-// Like type_extends(), but null and undefined only extend themselves (and any/unknown/void) even without
-// strictNullChecks. What operators mean by "is a number"
-bool type_extends_strict_nulls(Type const* sub, Type const* super);
-bool type_overlaps(Type const* a, Type const* b);
-bool type_extends_array(Type const* sub);
-intptr_t type_min_numeric_index(Type const* me); // returns 0 if numeric indexes unsupported on this type
-intptr_t type_max_numeric_index(Type const* me); // returns INTPTR_MAX if unbounded, -1 if unsupported
-signed char type_is_trivially_truthy(Type const* me); // returns 1 if always truthy, 0 if always falsey and -1 both
-void type_abstract_literals(Type* me); // {a: 7} -> {a: number}
-void type_remove_null_and_undefined(Type* me); // T | null | undefined -> T
-
-Type index_type_evaluate_type(Type const* me, Type const* index);
-void index_type_typecheck(
-    Type const* me,
-    Type const* index,
-    Span indexed_span,
-    Span index_span,
-    bool error_if_not_found,
-    ErrorCtx* errs
-);
-void type_error_if_not_assignable(Type const* source, Type const* target, Span target_span, ErrorCtx* errs);
-
 #define g_class_key Type, type
 #define g_declared
 #include <cleat/generic/vec.h>
@@ -315,9 +269,6 @@ static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedTy
 static inline Type const* generic_param_at(VecSpannedType const* params, intptr_t i) {
     return i < vec_spanned_type_size(params) ? &vec_spanned_type_at(params, i)->type : &type_any;
 }
-
-// Whether type argument `index` satisfies the constraint of its type parameter, given all the arguments
-bool type_satisfies_constraint(Generic const* generic, VecSpannedType const* args, intptr_t index);
 
 typedef enum KeywordIdentifier {
     KEYWORD_IDENTIFIER_NONE = 0,

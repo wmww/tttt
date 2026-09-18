@@ -67,8 +67,8 @@ typedef struct ClassItem {
 
 void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
-Type class_item_field_evaluate_type(ClassItem* me);
-Type class_item_accessor_evaluate_type(ClassItem* me);
+Ty const* class_item_field_evaluate_type(ClassItem* me);
+Ty const* class_item_accessor_evaluate_type(ClassItem* me);
 Type class_item_get_type(ClassItem* me);
 
 #define g_class_key ClassItem, class_item
@@ -90,11 +90,10 @@ typedef struct ClassDecl {
     Declaration typeof_declaration;
     ArcDeclaration declaration;
     Type instance_identifier_type;
-    VecType miscellaneous_owned_types;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported);
 void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs);
-Type class_decl_evaluate_type(ClassDecl* me, bool resolve_instance);
+Ty const* class_decl_evaluate_type(ClassDecl* me, bool resolve_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

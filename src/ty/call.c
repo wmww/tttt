@@ -435,7 +435,7 @@ static Span report_unfit_argument(Checker* me, Candidate const* candidate, Args*
         Arg const* arg = &args->data[index];
         bool is_rest_tuple = arg_type != arg->type;
         span = is_rest_tuple ? span_of_args(args, (u32)index, args->len - 1) : arg->expr->outer_span;
-        type_report_unfit_argument(nullptr, arg_type, param_type, span, errs);
+        ty_report_unfit_argument(me, arg_type, param_type, span, errs);
     }
     free(shape.types);
     return span;

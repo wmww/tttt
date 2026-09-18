@@ -2,14 +2,6 @@
 
 #include "type.h"
 
-typedef struct TypeRefinement {
-    Declaration const* target;
-    Type const* refined;
-} TypeRefinement;
-
-#define g_key TypeRefinement, type_refinement
-#include <cleat/generic/vec.h>
-
 typedef struct vec_expr VecExpr;
 
 typedef struct GenericItem {
@@ -41,6 +33,4 @@ void generic_drop(Generic* me);
 Generic generic_clone(Generic me);
 void generic_add_names(Generic const* me, Scope* scope);
 void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs);
-void replace_named_types_with(Type* t, VecTypeRefinement const* refinements);
-Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* generic_params);
 void generic_typecheck(Generic const* me, ErrorCtx* errs);

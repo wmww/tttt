@@ -13,7 +13,7 @@ typedef struct MergedType {
 
 void merged_type_add(MergedType* me, Type t);
 MergedType merged_type_clone(MergedType me);
-Type merged_type_evaluate_type(MergedType* me);
+Ty const* merged_type_evaluate_type(MergedType* me);
 void merged_type_drop(MergedType* me);
 
 typedef enum DeclarationTag {

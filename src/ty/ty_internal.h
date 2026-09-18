@@ -58,7 +58,7 @@ static inline DeclEntries legacy_declaration_entries(Declaration const* decl) {
     if (vec_type_size(&merged->merge_list)) {
         return (DeclEntries){ .data = merged->merge_list.data, .len = (u32)vec_type_size(&merged->merge_list) };
     } else if (merged->lazy.tag == LAZY_TYPE_EVALUATED) {
-        return (DeclEntries){ .data = &merged->lazy.memo.evaluated, .len = 1 };
+        return (DeclEntries){ .data = &merged->lazy.preevaluated, .len = 1 };
     } else {
         return (DeclEntries){0};
     }
@@ -70,21 +70,18 @@ static inline Type const* legacy_skip_refs(Type const* type) {
     return type;
 }
 
-// Follows TYPE_REF and TYPE_LAZY. The legacy memo lives in the AST, hence the const cast (until stage 2)
-static inline Type const* legacy_skip_wrappers(Type const* type) {
+// Follows TYPE_REF and the LazyTypes that stand for a written type (LAZY_TYPE_EVALUATED: a declaration with a single
+// entry), which never evaluates anything either
+static inline Type const* legacy_skip_to_syntax(Type const* type) {
     for (;;) {
         if (type->tag == TYPE_REF) {
             type = type->ref;
-        } else if (type->tag == TYPE_LAZY) {
-            type = lazy_type_get((LazyType*)type->lazy);
+        } else if (type->tag == TYPE_LAZY && type->lazy->tag == LAZY_TYPE_EVALUATED) {
+            type = &type->lazy->preevaluated;
         } else {
             return type;
         }
     }
-}
-
-static inline Type const* legacy_expr_type(Expr const* expr) {
-    return lazy_type_get((LazyType*)&expr->lazy_type);
 }
 
 // alias_of: the deferred reference this is an instantiation of, if it goes by an alias name (null otherwise)
@@ -93,7 +90,6 @@ Ty const* ty_deferred_reference(
 );
 Ty const* ty_anonymous_from_overloads(Checker* me, Type const* const* overloads, u32 count, LowerCtx ctx);
 
-Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper); // legacy_view.c
 
 // infer.c: type inference, shared by generic calls (call.c) and `infer X` in conditional types (conditional.c)
 

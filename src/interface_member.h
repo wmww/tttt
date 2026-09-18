@@ -78,8 +78,6 @@ InterfaceMember interface_member_clone(InterfaceMember me);
 void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, ErrorCtx* errs);
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs);
 
-bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index);
-bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super);
 
 #define g_class_key InterfaceMember, interface_member
 #define g_declared

@@ -12,15 +12,12 @@ void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
     vec_declaration_cptr_drop(&my namespace_decls);
     vec_spanned_type_drop(&my generic_params);
-    lazy_type_drop(&my type);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     me.namespaces = vec_span_clone(me.namespaces);
     me.namespace_decls = vec_declaration_cptr_clone(me.namespace_decls);
     me.generic_params = vec_spanned_type_clone(me.generic_params);
-    // PERF: perhaps this should clone the type if already evaluated?
-    me.type = lazy_type_init_inline(LAZY_TYPE_IDENTIFIER_TYPE);
     return me;
 }
 
@@ -98,15 +95,6 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
     for_each (i, vec_spanned_type, &my generic_params) {
         type_lookup_names(&i->type, names, errs);
     }
-}
-
-Type identifier_type_evaluate_type(IdentifierType* me) {
-    if (my decl_ref && ty_declaration_is_evaluated_by_new_core(my decl_ref)) {
-        return type_new(ty_from_identifier_type(current_checker, me));
-    }
-    // What's left for the legacy checker: type parameters (known by their constraint) and the `typeof` declarations of
-    // namespace imports, neither of which is generic
-    return my decl_ref ? type_refcopy(&my decl_ref->declared_type) : type_any;
 }
 
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {

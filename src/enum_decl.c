@@ -88,17 +88,15 @@ void enum_decl_lookup_names(EnumDecl* me, ScopeStack* names, ErrorCtx* errs) {
 }
 
 // Enums are evaluated by the new type core (ty/enums.c)
-Type enum_decl_evaluate_instance_type(EnumDecl* me) {
-    return my declaration.get ? type_new(ty_declared_type_of(current_checker, my declaration.get)) : type_any;
+Ty const* enum_decl_evaluate_instance_type(EnumDecl* me) {
+    return my declaration.get ? ty_declared_type_of(current_checker, my declaration.get) : ty_intrinsic(current_checker, TY_ANY);
 }
 
-Type enum_decl_evaluate_interface_type(EnumDecl* me) {
-    return type_new(ty_declared_type_of(current_checker, &my typeof_declaration));
+Ty const* enum_decl_evaluate_interface_type(EnumDecl* me) {
+    return ty_declared_type_of(current_checker, &my typeof_declaration);
 }
 
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
-    ty_shadow_record_declaration(my declaration.get);
-    ty_shadow_record_declaration(&my typeof_declaration);
     for_each (i, vec_enum_case, &my cases) {
         expr_typecheck(&i->value, errs);
     }

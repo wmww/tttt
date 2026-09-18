@@ -498,10 +498,6 @@ struct Checker {
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
-    Type** views; // Ty id -> legacy view, see legacy_view.c
-    u32 views_len;
-    // --shadow-types bookkeeping, see shadow.c
-    struct ShadowState* shadow;
 };
 
 // checker.c
@@ -576,19 +572,6 @@ void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
 Ty const* ty_anonymous_from_node(Checker* me, Type const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
 
-// legacy_view.c: legacy code carrying and consuming `Ty` (TYPE_NEW), plan 02 stage 4 scaffolding
-Ty const* type_new_ty(Checker* me, Type const* type_new); // The Ty of a TYPE_NEW, resolving its lazy forms
-void ty_legacy_views_drop(Checker* me);
-Type const* ty_legacy_wrapper(Checker* me, Ty const* ty); // A TYPE_NEW for the type that lives as long as the checker
-Type const* ty_legacy_view(Checker* me, Ty const* ty); // One structural layer as a legacy type, owned by the checker
-Ty const* ty_instantiate_with_refinements(Checker* me, Ty const* ty, VecTypeRefinement const* refinements);
-static inline Type type_new_prop(Prop const* prop) { return (Type){ .tag = TYPE_NEW, .new_.prop = prop }; }
-static inline Type type_new_return(Signature const* sig) { return (Type){ .tag = TYPE_NEW, .new_.ret_of = sig }; }
-
-// Which declarations' types the legacy checker gets from the new core (as TYPE_NEW) instead of evaluating them itself
-bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl);
-Ty const* ty_from_identifier_type(Checker* me, IdentifierType const* identifier); // An identifier type evaluated by legacy code
-
 // enums.c
 Ty const* ty_resolve_enum(Checker* me, Declaration const* decl); // Only ty_declared_type_of() should call this
 Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
@@ -656,13 +639,23 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
 bool ty_extends_array(Checker* me, Ty const* ty); // Assignable to `readonly any[]`
 
+// check.c: what the statement/expression walk checks, with tsc's errors
+void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2345
+bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
+Ty const* ty_of_node(Type const* node); // A written type, by the current checker
+// `object[index]` / `object.name`: TS2538, TS2493, TS2339...
+void ty_check_property_access(
+    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool error_if_not_found,
+    ErrorCtx* errs
+);
+bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
+
 // call.c
 // `contextual`: the contextual type of the call expression (return type inference), may be null
 Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
 void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
-// type.c: the legacy error head with the new core's elaboration. `legacy_source` may be null
-void type_report_unfit_argument(Type const* legacy_source, Ty const* source, Ty const* target, Span span, ErrorCtx* errs);
 
 // ty_display.c
 // The old display's `underline` mode underlines a type's whole rendering, so the `.types` traversal can do that from
@@ -684,11 +677,3 @@ typedef struct TyDisplay {
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
-
-// shadow.c
-bool ty_shadow_enabled(void);
-void ty_shadow_set_enabled(bool enabled);
-void ty_shadow_record_node(Type const* node);
-void ty_shadow_record_declaration(Declaration const* decl);
-void ty_shadow_begin(Program* program);
-void ty_shadow_finish(Program* program);

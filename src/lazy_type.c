@@ -7,6 +7,7 @@
 #include "enum_decl.h"
 #include "interface_decl.h"
 #include "scope.h"
+#include "ty/ty.h"
 
 thread_local LazySlots* current_lazy_slots;
 
@@ -18,7 +19,6 @@ u32 lazy_slot_new(void) {
 }
 
 static LazyMemo* lazy_type_state(LazyType* me) {
-    if (my slot == LAZY_SLOT_INLINE) return &my memo;
     panic_if(!my slot, "LazyType with tag ", (i32)my tag, " was never given a slot");
     panic_if(!current_lazy_slots, "LazyType evaluated without a current checker");
     LazyMemo*** dir = &current_lazy_slots->top[my slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
@@ -40,9 +40,6 @@ void lazy_slots_drop(LazySlots* me) {
         for (size_t j = 0; j < (1 << LAZY_DIR_BITS); j++) {
             LazyMemo* page = my top[i][j];
             if (!page) continue;
-            for (size_t k = 0; k < (1 << LAZY_PAGE_BITS); k++) {
-                type_drop(&page[k].evaluated);
-            }
             free(page);
         }
         free(my top[i]);
@@ -51,29 +48,27 @@ void lazy_slots_drop(LazySlots* me) {
 }
 
 void lazy_type_drop(LazyType* me) {
-    if (my tag == LAZY_TYPE_EVALUATED || my slot == LAZY_SLOT_INLINE) {
-        type_drop(&my memo.evaluated);
+    if (my tag == LAZY_TYPE_EVALUATED) {
+        type_drop(&my preevaluated);
     } else if (my slot) {
         // Dropped while a checker is around: this LazyType was made during typechecking, and nothing will ask for its
-        // slot again. Slots of the AST are dropped along with their checker instead, which is gone before the AST is
+        // slot again. Slots of the AST die with their checker instead, which is gone before the AST is
         LazyMemo* state = lazy_type_state_peek(me);
-        if (state) {
-            type_drop(&state->evaluated);
-            *state = (LazyMemo){0};
-        }
+        if (state) *state = (LazyMemo){0};
     }
 }
 
-void lazy_type_set(LazyType* me, Type result, void const* context) {
+void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
     LazyMemo* state = lazy_type_state(me);
-    type_drop(&state->evaluated);
     state->evaluated = result;
     state->context = context;
     state->evaluation_started = true;
     state->done = true;
 }
 
-Type const* lazy_type_evaluate(LazyType* me) {
+Ty const* lazy_type_evaluate(LazyType* me) {
+    if (my tag == LAZY_TYPE_EVALUATED) return ty_from_node(current_checker, &my preevaluated, (LowerCtx){ .generic = true });
+
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
 
@@ -84,14 +79,14 @@ Type const* lazy_type_evaluate(LazyType* me) {
             // means we have hit every other LazyType at least twice, which means we've marked them all self-referential
             // and so we can now safely bail.
             state->done = true;
-            state->evaluated = type_self_referential_error;
-            return &state->evaluated;
+            state->evaluated = ty_intrinsic(current_checker, TY_ERROR);
+            return state->evaluated;
         }
         state->is_self_referential = true;
     }
     state->evaluation_started = true;
 
-    Type result = {0};
+    Ty const* result = nullptr;
     switch (my tag) {
         case LAZY_TYPE_UNINITIALIZED: panic("LazyType is uninitialized");
         case LAZY_TYPE_EVALUATED: panic("lazy_type_evaluate() called when already evaluated");
@@ -140,10 +135,6 @@ Type const* lazy_type_evaluate(LazyType* me) {
             result = interface_decl_evaluate_type(c_container_of(me, InterfaceDecl, lazy_type));
             break;
 
-        case LAZY_TYPE_IDENTIFIER_TYPE:
-            result = identifier_type_evaluate_type(c_container_of(me, IdentifierType, type));
-            break;
-
         case LAZY_TYPE_MERGED:
             result = merged_type_evaluate_type(c_container_of(me, MergedType, lazy));
             break;
@@ -153,21 +144,10 @@ Type const* lazy_type_evaluate(LazyType* me) {
             break;
     }
 
-    // This MUST be before the done check
-    Type const* resolved = type_resolve_until_identifier(&result);
-
     if (!state->done) {
         // The calls this function made didn't decide that we're self-referential, result is valid
-        if (resolved == &result) {
-            // Moved rather than cloned: the new type core may already know nodes inside it by address
-            state->evaluated = result;
-            result = (Type){0};
-        } else {
-            state->evaluated = type_clone(*resolved);
-        }
+        state->evaluated = result;
         state->done = true;
     }
-
-    type_drop(&result);
-    return &state->evaluated;
+    return state->evaluated;
 }

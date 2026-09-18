@@ -126,12 +126,7 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 void binding_typecheck(Binding* me, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_typecheck(&my explicit_type, errs);
-        type_error_if_not_assignable(
-            &my assigned_type,
-            &my explicit_type,
-            my content_span,
-            errs
-        );
+        ty_check_assignable(current_checker, ty_of_node(&my assigned_type), ty_of_node(&my explicit_type), my content_span, errs);
     }
 
     switch (my tag) {
@@ -139,20 +134,21 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 
         case BINDING_IDENTIFIER:
             if (my declaration.get) {
-                Type const* type = type_resolve(binding_get_effective_type(me));
-                if (type_is_self_referential(type) && compiler_options()->no_implicit_any) {
+                Ty const* type = ty_of_node(binding_get_effective_type(me));
+                if ((type->flags & TYF_ERROR) && type == ty_intrinsic(current_checker, TY_ERROR) &&
+                    compiler_options()->no_implicit_any
+                ) {
                     error_ctx_error_d(errs, my content_span, 7022,
-                        "'", my content_span, "' implicitly has type '", type,
-                        "' because it does not have a type annotation and is referenced directly or indirectly in "
+                        "'", my content_span, "' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in "
                         "its own initializer.");
                 }
             }
             break;
 
         case BINDING_ARRAY:
-            if (!type_extends_array(binding_get_effective_type(me))) {
+            if (!ty_extends_array(current_checker, ty_of_node(binding_get_effective_type(me)))) {
                 error_ctx_error_d(errs, my content_span, 2461,
-                    "Type '", binding_get_effective_type(me), "' is not an array type.");
+                    "Type '", ty_of_node(binding_get_effective_type(me)), "' is not an array type.");
             }
             for_each (i, vec_binding, &my array) {
                 binding_typecheck(i, errs);
@@ -200,18 +196,18 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     return ty_check_expr(checker, &my value, contextual);
 }
 
-Type initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
+Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Checker* checker = current_checker;
     if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type) {
         // A parameter of a function expression gets its type from the contextual signature
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
-        if (contextual) return type_new(contextual);
+        if (contextual) return contextual;
     }
     Ty const* ret = initialized_binding_check_value(me);
     if (!my binding.has_explicit_type) {
         ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
     }
-    return type_new(ret);
+    return ret;
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {

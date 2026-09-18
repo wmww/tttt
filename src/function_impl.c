@@ -132,8 +132,8 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
     return outer;
 }
 
-Type function_impl_evaluate_type(FunctionImpl* me) {
-    return type_new(ty_function_type(current_checker, me));
+Ty const* function_impl_evaluate_type(FunctionImpl* me) {
+    return ty_function_type(current_checker, me);
 }
 
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {

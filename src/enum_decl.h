@@ -36,6 +36,6 @@ struct EnumDecl {
 void enum_decl_drop(EnumDecl* me);
 void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported);
 void enum_decl_lookup_names(EnumDecl* me, ScopeStack* names, ErrorCtx* errs);
-Type enum_decl_evaluate_instance_type(EnumDecl* me);
-Type enum_decl_evaluate_interface_type(EnumDecl* me);
+Ty const* enum_decl_evaluate_instance_type(EnumDecl* me);
+Ty const* enum_decl_evaluate_interface_type(EnumDecl* me);
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs);

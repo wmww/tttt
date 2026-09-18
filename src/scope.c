@@ -330,8 +330,8 @@ void scope_process_imports(Scope* me) {
     }
 }
 
-Type scope_evaluate_value_interface(Scope const* me) {
-    return type_new(ty_namespace_type(current_checker, me));
+Ty const* scope_evaluate_value_interface(Scope const* me) {
+    return ty_namespace_type(current_checker, me);
 }
 
 Declaration const* scope_get_declaration(Scope const* me, Span name) {

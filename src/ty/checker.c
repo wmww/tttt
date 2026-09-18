@@ -225,7 +225,6 @@ void checker_drop(Checker* me) {
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
     lazy_slots_drop(&my lazy);
-    ty_legacy_views_drop(me);
     free(my atoms.entries);
     free(my types.entries);
     free(my links.entries);

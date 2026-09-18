@@ -97,11 +97,11 @@ static Signature* signature_from_function(Checker* me, FunctionImpl const* funct
 }
 
 static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Type const* type, LowerCtx ctx) {
-    Type const* callable = legacy_skip_wrappers(type);
+    Type const* callable = legacy_skip_refs(type);
     Signature* sig;
-    if (callable->tag == TYPE_NEW) {
+    if (callable->tag == TYPE_LAZY) {
         // The type of a function (an overload of a method)
-        Ty const* ty = type_new_ty(me, callable);
+        Ty const* ty = lazy_type_get((LazyType*)callable->lazy);
         if (ty->kind != TY_ANONYMOUS || !ty->anonymous.function) return nullptr;
         sig = signature_from_function(me, ty->anonymous.function, ctx);
     } else if (callable->tag == TYPE_CALLABLE) {
@@ -139,7 +139,7 @@ static void builder_add_interface_member(
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
                     // TODO(stage 4): unique symbol keys (`[Symbol.iterator]`) are silently left out
-                    Ty const* key = ty_from_legacy(me, legacy_expr_type(i->key.expr.ref), ctx);
+                    Ty const* key = ty_expr_type(me, i->key.expr.ref);
                     if (key->flags & TYF_STRING_LITERAL) {
                         name = key->literal.string;
                     } else if (key->flags & TYF_NUMBER_LITERAL) {
@@ -152,7 +152,7 @@ static void builder_add_interface_member(
                     }
                 }
                 bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
-                    legacy_skip_wrappers(&i->type)->tag == TYPE_CALLABLE;
+                    legacy_skip_refs(&i->type)->tag == TYPE_CALLABLE;
                 Prop* existing = builder_find_prop(builder, name);
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
@@ -1093,7 +1093,7 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
         Type const* node = state->constraint_node;
         if (state->item) {
             node = state->item->extends_explicit ? &state->item->extends : nullptr;
-        } else if (node && legacy_skip_wrappers(node)->tag == TYPE_ANY) {
+        } else if (node && legacy_skip_to_syntax(node)->tag == TYPE_ANY) {
             node = nullptr; // An absent constraint is stored as `any`
         }
         state->constraint = node ? ty_from_legacy(me, node, (LowerCtx){ .generic = true }) : nullptr;

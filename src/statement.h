@@ -222,7 +222,7 @@ typedef struct ForEachLoopStatement {
 } ForEachLoopStatement;
 
 zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me);
-Type for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me);
+Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me);
 
 // Switch statement
 

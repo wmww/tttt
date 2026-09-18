@@ -9,6 +9,7 @@ typedef struct Expr Expr;
 typedef struct Statement Statement;
 typedef struct Block Block;
 typedef struct Error Error;
+typedef struct Ty Ty;
 
 // An ANSI escape code. Displayable through both tttt's Display (below) and cleat's DisplayCtx; in either case nothing
 // is emitted unless the target has color enabled.
@@ -192,6 +193,8 @@ declare_ast_display(Block, block)
 declare_ast_display(Error, error)
 
 declare_display(Span, span);
+// A semantic type as tsc prints it in messages (by the current checker)
+declare_display(Ty const*, ty_d);
 
 // Wrap a Type in a display sequence to get the truncated debug form: brief_d() is to debug_d() what a summary is to
 // the whole tree, handy for logging a type that could be enormous
@@ -210,6 +213,7 @@ declare_display(BriefType, brief_type);
     AnsiColor: ansi_color_display, \
     RepeatedD: repeated_d_display, \
     Span: span_display, \
+    Ty const*: ty_d_display, \
     BriefType: brief_type_display, \
     AST_DISPLAY_ENTRIES(Value, value), \
     AST_DISPLAY_ENTRIES(InterfaceMember, interface_member), \

@@ -100,6 +100,7 @@ typedef struct BaselineSym {
 // These are used by traversial to assemble the test case data while the test is being run. After the test has completed
 // (and run_baseline_test_case() has returned) these should no longer be called.
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data);
-void baseline_test_case_add_type(BaselineTestCase* me, Span span, Type const* type);
-void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Type const* type);
+void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type);
+void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, Type const* node); // A written type
+void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type);
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration);

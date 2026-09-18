@@ -59,12 +59,10 @@ static bool kind_uses_context(Expr const* expr) {
     }
 }
 
-static Ty const* memo_type(Checker* me, LazyMemo const* memo) {
-    return ty_from_legacy(me, &memo->evaluated, expr_lower_ctx);
-}
-
 Ty const* ty_expr_type(Checker* me, Expr const* expr) {
-    return ty_from_legacy(me, legacy_expr_type(expr), expr_lower_ctx);
+    LazyType* lazy = (LazyType*)&expr->lazy_type;
+    if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return ty_compute_expr_without_context(me, expr); // implicit any and friends
+    return lazy_type_get(lazy); // Detects cycles
 }
 
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
@@ -72,11 +70,11 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
     if (memo && memo->done && !ctx.is_const) {
-        if (!ctx.contextual || memo->context == ctx.contextual || !kind_uses_context(expr)) return memo_type(me, memo);
+        if (!ctx.contextual || memo->context == ctx.contextual || !kind_uses_context(expr)) return memo->evaluated;
     }
     if (!ctx.contextual && !ctx.is_const) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
     Ty const* ret = compute(me, expr, ctx);
-    lazy_type_set(lazy, type_new(ret), ctx.contextual);
+    lazy_type_set(lazy, ret, ctx.contextual);
     return ret;
 }
 
@@ -364,10 +362,6 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
     Signature const* sig = contextual_signature(me, contextual, function, 0);
     if (!sig) return;
     *intern_slot(me, &my links, done_key, 2) = sig;
-    // The function's own type may already have been asked for; then its parameters are what they are
-    LazyMemo* memo = lazy_type_state_peek((LazyType*)&function->lazy_type);
-    if (memo && memo->evaluation_started) return;
-
     u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
@@ -899,6 +893,48 @@ static bool is_const_assertion(AsTypeExpr const* as_type) {
         vec_span_is_empty(&type->identifier->namespaces);
 }
 
+// `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures. Returns the
+// type itself if the mapper isn't about any of them
+static Ty const* apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    Members const* members = ty_members(me, ty);
+    bool relevant = false;
+    for (u32 pass = 0; pass < 2 && !relevant; pass++) {
+        u32 sig_count = pass ? members->construct_count : members->call_count;
+        Signature* const* sigs = pass ? members->construct : members->call;
+        for (u32 i = 0; i < sig_count && !relevant; i++) {
+            signature_resolve(me, sigs[i]);
+            for (u32 j = 0; j < sigs[i]->type_params.len; j++) {
+                for (u32 k = 0; k < mapper->len; k++) relevant |= mapper->sources[k] == sigs[i]->type_params.data[j];
+            }
+        }
+    }
+    if (!relevant) return ty;
+    u32 count = 3 + mapper->len * 2;
+    u64* key = malloc(sizeof(u64) * count);
+    key[0] = KEY_ANONYMOUS_INSTANCE;
+    key[1] = ty->id;
+    key[2] = UINT64_MAX; // Not a type id: tells these apart from ordinary instantiations
+    u32 flags = TYF_OBJECT | (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    for (u32 i = 0; i < mapper->len; i++) {
+        key[3 + i * 2] = mapper->sources[i]->id;
+        key[4 + i * 2] = mapper->targets[i]->id;
+        flags |= mapper->targets[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+    }
+    Ty const* ret = intern_get(&my types, key, count);
+    if (!ret) {
+        Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
+        fresh->anonymous.target = ty;
+        fresh->anonymous.mapper = mapper;
+        fresh->anonymous.applies_type_args = true;
+        fresh->anonymous.free_params_unknown = true;
+        fresh->anonymous.state = arena_new(&my arena, TyObjectState);
+        *intern_slot(me, &my types, key, count) = fresh;
+        ret = fresh;
+    }
+    free(key);
+    return ret;
+}
+
 Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
     Members const* members = ty_members(me, ty_apparent_type(me, ty));
     Ty const* sources[64];
@@ -924,7 +960,7 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
     }
     if (!len) return ty;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
-    return ty_apply_type_arguments_mapper(me, ty, mapper);
+    return apply_type_arguments_mapper(me, ty, mapper);
 }
 
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
@@ -979,8 +1015,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_FUNCTION: {
             if (ctx.contextual) assign_contextual_signature(me, expr->function, ctx.contextual);
-            Type lazy = type_lazy(&expr->function->lazy_type);
-            return ty_from_legacy(me, &lazy, expr_lower_ctx);
+            return ty_function_type(me, expr->function);
         }
 
         case EXPR_OBJECT: return check_object(me, expr, ctx);

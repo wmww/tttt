@@ -43,37 +43,18 @@ void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx*
     scope_drop(&generic_scope);
 }
 
-Type interface_decl_evaluate_type(InterfaceDecl* me) {
-    check(my type.tag == TYPE_INTERFACE);
+Ty const* interface_decl_evaluate_type(InterfaceDecl* me) {
     // Interfaces are evaluated by the new type core (ty/members.c)
-    if (my declaration.get) return type_new(ty_declared_type_of(current_checker, my declaration.get));
-
-    for_each (i, vec_interface_member, &my type.interface.members) {
-        i->origin_interface = my declaration.get;
-    }
-
-    VecType types = vec_type_init();
-
-    vec_type_push(&types, type_clone(my type));
-
-    for_each (extends, vec_spanned_type, &my extends) {
-        Type t;
-        if (interface_try_from_type(&extends->type, &t)) {
-            vec_type_push(&types, t);
-        }
-    }
-
-    return interface_from_merged_interfaces(types);
+    if (my declaration.get) return ty_declared_type_of(current_checker, my declaration.get);
+    return ty_from_node(current_checker, &my type, (LowerCtx){ .generic = true });
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
-    ty_shadow_record_declaration(my declaration.get);
     generic_typecheck(&my generic, errs);
 
     check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {
         type_typecheck(&extends->type, errs);
-        Type const* resolved = type_resolve(&extends->type);
         if (extends->type.tag != TYPE_IDENTIFIER) {
             error_ctx_error_d(
                 errs,
@@ -81,29 +62,9 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
                 2499,
                 "An interface can only extend an identifier/qualified-name with optional type arguments."
             );
-        } else if (resolved->tag != TYPE_INTERFACE) {
-            /*
-            error_ctx_error_d(
-                errs,
-                extends->span,
-                2312,
-                "An interface can only extend an object type or intersection of object types with statically known members."
-            );
-            */
-        } else {
-            /*
-            if (!type_extends(&i.ref->type, &my type)) {
-                error_ctx_error_d(
-                    errs, my name, 2430,
-                    "Interface '", my name, "' incorrectly extends interface '",
-                    i.ref->type.identifier->name, "'."
-                );
-            }
-            */
         }
-        //my effective_type = type_composite(my effective_type, type_clone(extends->type), TYPE_INTERSECTION);
+        // TODO: TS2312 (not an object type), TS2430 (incorrectly extends)
     }
 
     type_typecheck(&my type, errs);
-    interface_typecheck_members_against(&my type.interface, my declaration.get, errs);
 }

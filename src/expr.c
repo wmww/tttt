@@ -38,8 +38,8 @@ void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCt
     }
 }
 
-Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
-    return type_new(ty_identifier_reference_type(current_checker, me));
+Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me) {
+    return ty_identifier_reference_type(current_checker, me);
 }
 
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
@@ -47,41 +47,19 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     ignore errs;
 }
 
-static Generic const* generic_params_get_generic(GenericParamsExpr* me) {
-    Type const* expr_type = type_resolve(expr_get_type(&my expr));
-    if (expr_type->tag == TYPE_CALLABLE) {
-        return &expr_type->callable->generic;
-    } else if (expr_type->tag == TYPE_INTERFACE) {
-        for_each (i, vec_interface_member, &expr_type->interface.members) {
-            if (i->key.tag == INTERFACE_KEY_CALLABLE) {
-                check(i->type.tag == TYPE_CALLABLE);
-                return &i->type.callable->generic;
-            }
-        }
-    }
-    return nullptr;
-}
-
+// `f<A, B>` outside of a call (there the type arguments are the call's business, ty/call.c)
 void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     for_each (i, vec_spanned_type, &my params) {
         type_typecheck(&i->type, errs);
     }
-    Generic const* generic = generic_params_get_generic(me);
-    for (intptr_t i = 0; i < vec_spanned_type_size(&my params); i++) {
-        if (generic && i < vec_generic_item_size(&generic->items)) {
-            SpannedType const* arg = vec_spanned_type_at(&my params, i);
-            GenericItem const* item = vec_generic_item_at(&generic->items, i);
-            if (item->extends_explicit && !type_satisfies_constraint(generic, &my params, i)) {
-                Type abstracted = type_clone(arg->type);
-                type_abstract_literals(&abstracted);
-                error_ctx_error_d(errs, vec_spanned_type_at(&my params, i)->span, 2344,
-                    "Type '", &abstracted, "' does not satisfy the constraint '", &item->extends, "'.");
-                type_drop(&abstracted);
-            }
-        }
-    }
-    if (type_resolve(expr_get_type(&my expr))->tag == TYPE_ANY) {
-    } else if (generic_empty(generic)) {
+    Checker* checker = current_checker;
+    Ty const* callee = ty_expr_type(checker, &my expr);
+    if (callee->flags & TYF_ANY) return;
+    // TODO: every signature that takes this many type arguments, like ty_apply_type_arguments()
+    Members const* members = ty_members(checker, callee);
+    Signature const* sig = members->call_count ? members->call[0] : members->construct_count ? members->construct[0] : nullptr;
+    if (sig) signature_resolve(checker, sig);
+    if (!sig || !sig->type_params.len) {
         error_ctx_error_d(
             errs,
             span_between(
@@ -91,6 +69,14 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
             2558,
             "Expected 0 type arguments, but got ", vec_spanned_type_size(&my params), "."
         );
+        return;
+    }
+    for (u32 i = 0; i < sig->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
+        Ty const* constraint = ty_param_constraint(checker, sig->type_params.data[i]);
+        if (!constraint || ty_type_argument_satisfies_constraint(checker, sig->type_params, &my params, i)) continue;
+        SpannedType const* arg = vec_spanned_type_at(&my params, i);
+        error_ctx_error_d(errs, arg->span, 2344,
+            "Type '", ty_widened_literal(checker, ty_of_node(&arg->type)), "' does not satisfy the constraint '", constraint, "'.");
     }
 }
 
@@ -316,18 +302,23 @@ static BinaryOp binary_op_without_assignment(BinaryOp op) {
     }
 }
 
+static bool extends_strict_nulls(Ty const* source, TyIntrinsic target) {
+    Checker* checker = current_checker;
+    return ty_is_related(checker, source, ty_intrinsic(checker, target), TY_RELATION_ASSIGNABLE_STRICT_NULLS);
+}
+
 static void binary_op_typecheck(
-    Type const* left,
+    Ty const* left,
     BinaryOp op,
-    Type const* right,
+    Ty const* right,
     Expr const* expr,
     ErrorCtx* errs
 ) {
     switch (op) {
         case BINARY_OP_PLUS:
             // PERF: we also do this checks when evaluating the type, shouldn't need to duplicate them
-            if (type_extends_strict_nulls(left, &type_string) || type_extends_strict_nulls(right, &type_string)) {
-            } else if (type_extends_strict_nulls(left, &type_number) && type_extends_strict_nulls(right, &type_number)) {
+            if (extends_strict_nulls(left, TY_STRING) || extends_strict_nulls(right, TY_STRING)) {
+            } else if (extends_strict_nulls(left, TY_NUMBER) && extends_strict_nulls(right, TY_NUMBER)) {
             } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
                 error_ctx_error_d(errs, expr->inner_span, 2365,
@@ -346,7 +337,7 @@ static void binary_op_typecheck(
         case BINARY_OP_AND:
         case BINARY_OP_XOR:
         case BINARY_OP_OR:
-            if (!type_extends_strict_nulls(left, &type_number)) {
+            if (!extends_strict_nulls(left, TY_NUMBER)) {
                 error_ctx_error_d(
                     errs,
                     expr->binary_op->left.outer_span,
@@ -354,7 +345,7 @@ static void binary_op_typecheck(
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type."
                 );
             }
-            if (!type_extends_strict_nulls(right, &type_number)) {
+            if (!extends_strict_nulls(right, TY_NUMBER)) {
                 error_ctx_error_d(
                     errs,
                     expr->binary_op->right.outer_span,
@@ -368,9 +359,10 @@ static void binary_op_typecheck(
             switch (expr->binary_op->left.tag) {
                 case EXPR_IDENTIFIER:
                     if (expr->binary_op->left.identifier.decl_ref) {
-                        type_error_if_not_assignable(
+                        ty_check_assignable(
+                            current_checker,
                             right,
-                            &expr->binary_op->left.identifier.decl_ref->value_type,
+                            ty_value_type_of(current_checker, expr->binary_op->left.identifier.decl_ref),
                             expr->binary_op->left.outer_span,
                             errs
                         );
@@ -396,7 +388,7 @@ static void binary_op_typecheck(
         case BINARY_OP_TRIPLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_NOT_EQUAL:
-            if (!type_overlaps(left, right)) {
+            if (!ty_is_comparable_either_way(current_checker, left, right)) {
                 error_ctx_error_d(errs, expr->outer_span, 2367,
                     "This comparison appears to be unintentional because the types '", left,
                     "' and '", right, "' have no overlap.");
@@ -443,9 +435,9 @@ static void binary_op_typecheck(
     }
 }
 
-Type expr_evaluate_type(Expr const* me) {
+Ty const* expr_evaluate_type(Expr const* me) {
     // Nobody checked this expression with a contextual type first, see ty/expr.c
-    return type_new(ty_compute_expr_without_context(current_checker, me));
+    return ty_compute_expr_without_context(current_checker, me);
 }
 
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
@@ -498,15 +490,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_PROPERTY: {
             expr_typecheck(&my property->expr, errs);
             expr_typecheck(&my property->prop, errs);
-            Type to_drop = {0};
-            Type const* expr_type = expr_get_type(&my property->expr);
-            if (my property->optional_chain) {
-                to_drop = type_clone(*expr_type);
-                type_remove_null_and_undefined(&to_drop);
-                expr_type = &to_drop;
-            }
+            Ty const* expr_type = expr_get_type(&my property->expr);
+            if (my property->optional_chain) expr_type = ty_non_nullable(current_checker, expr_type);
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
-            index_type_typecheck(
+            ty_check_property_access(
+                current_checker,
                 expr_type,
                 expr_get_type(&my property->prop),
                 my property->expr.outer_span,
@@ -514,7 +502,6 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 error_if_not_found,
                 errs
             );
-            type_drop(&to_drop);
         }   break;
 
         case EXPR_GENERIC_PARAMS: generic_params_expr_typecheck(my generic_params, errs); break;
@@ -525,13 +512,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             expr_typecheck(&my as_type->expr, errs);
             type_typecheck(&my as_type->type, errs);
             if (my as_type->is_satisfies) {
-                Type const* source = expr_get_type(&my as_type->expr);
-                if (!type_extends(source, &my as_type->type)) {
-                    Type shown = type_clone(*source);
-                    type_abstract_literals(&shown);
+                Checker* checker = current_checker;
+                Ty const* source = expr_get_type(&my as_type->expr);
+                Ty const* target = ty_of_node(&my as_type->type);
+                if (!ty_is_related(checker, source, target, TY_RELATION_ASSIGNABLE)) {
+                    cstr shown = ty_report_source_cstr(checker, source, target);
                     error_ctx_error_d(errs, my as_type->keyword_span, 1360,
-                        "Type '", (Type const*)&shown, "' does not satisfy the expected type '", &my as_type->type, "'.");
-                    type_drop(&shown);
+                        "Type '", shown, "' does not satisfy the expected type '", target, "'.");
+                    cstr_drop(&shown);
                 }
             }
             break;

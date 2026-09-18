@@ -5,6 +5,7 @@
 #include "error.h"
 #include "callable_type.h"
 #include "function_impl.h"
+#include "ty/ty.h"
 
 void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
@@ -87,9 +88,9 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
 
         case INTERFACE_KEY_EXPR:
-            Type const* key_type = type_resolve(expr_get_type(my key.expr.ref));
+            Ty const* key_type = expr_get_type(my key.expr.ref);
             // `unique symbol` is parsed as plain symbol, and an any key is never an error
-            if (key_type->tag != TYPE_VALUE && key_type->tag != TYPE_ANY && key_type->tag != TYPE_SYMBOL) {
+            if (!(key_type->flags & (TYF_LITERAL | TYF_ENUM | TYF_NULLABLE | TYF_ANY | TYF_ES_SYMBOL))) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&
@@ -120,40 +121,4 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
         case INTERFACE_KEY_CALLABLE: break;
     }
     type_typecheck(&my type, errs);
-}
-
-bool interface_member_key_overlaps(InterfaceMember const* me, Type const* index) {
-    switch (my key.tag) {
-        case INTERFACE_KEY_NAME: {
-            // Don't clone the string, and don't drop it the type. Hacky but safe.
-            Type key = type_value(value_string(my key.name_string));
-            return type_extends(&key, index);
-        }
-
-        case INTERFACE_KEY_INDEX:
-            return type_overlaps(&my key.index.type, index);
-
-        case INTERFACE_KEY_EXPR:
-        case INTERFACE_KEY_MAPPED:
-        case INTERFACE_KEY_CALLABLE:
-            // TODO
-            return false;
-    }
-    impossible;
-}
-
-bool interface_key_extends(InterfaceMember const* sub, InterfaceMember const* super) {
-    if (sub->key.tag == INTERFACE_KEY_CALLABLE && super->key.tag == INTERFACE_KEY_CALLABLE) {
-        return true;
-    } else if (sub->key.tag == INTERFACE_KEY_NAME &&
-        super->key.tag == INTERFACE_KEY_NAME &&
-        cstr_eq(&sub->key.name_string, &super->key.name_string)
-    ) {
-        return true;
-    } else if (sub->key.tag == INTERFACE_KEY_INDEX && super->key.tag == INTERFACE_KEY_INDEX) {
-        return type_extends(&sub->key.index.type, &super->key.index.type);
-    } else {
-        // TODO
-        return false;
-    }
 }
