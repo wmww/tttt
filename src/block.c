@@ -2,6 +2,7 @@
 #include "statement.h"
 #include "scope_stack.h"
 #include "error.h"
+#include "ty/ty.h"
 
 void block_drop(Block* me) {
     vec_statement_drop(&my statements);
@@ -27,12 +28,10 @@ void block_resolve_names(Block const* me, ScopeStack* names, ErrorCtx* errs) {
     scope_drop(&scope);
 }
 
-Type block_evaluate_return_type(Block* me) {
-    Type ret = type_composite_base(TYPE_UNION);
+void block_collect_return_types(Block const* me, TyBuf* out) {
     for_each (i, vec_statement, &my statements) {
-        ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i));
+        statement_collect_return_types(i, out);
     }
-    return ret;
 }
 
 void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {

@@ -52,73 +52,7 @@ void callable_type_resolve_names(CallableType* me, ScopeStack* names, ErrorCtx* 
 }
 
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
-    generic_typecheck(&my generic, errs);
-
-    bool found_optional = false;
-    bool required_after_optional = false;
-    bool rest_not_last = false;
-    for_each (i, vec_callable_arg, &my args) {
-        if (my owned_function_impl && i->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
-            error_ctx_error_d(
-                errs,
-                i->source->initializer.value.outer_span,
-                2371,
-                "A parameter initializer is only allowed in a function or constructor implementation."
-            );
-        }
-
-        if (i->source->rest && i_index != vec_callable_arg_size(&my args) - 1 && !rest_not_last) {
-            rest_not_last = true;
-            error_ctx_error_d(
-                errs,
-                i->source->rest_span,
-                1014,
-                "A rest parameter must be last in a parameter list."
-            );
-        }
-
-        if (i->source->rest) {
-        } else if (i->source->explicit_optional) {
-            found_optional = true;
-        } else if (
-            found_optional &&
-            !i->optional &&
-            !required_after_optional
-        ) {
-            required_after_optional = true;
-            error_ctx_error_d(
-                errs,
-                i->source->initializer.binding.content_span,
-                1016,
-                "A required parameter cannot follow an optional parameter."
-            );
-        }
-
-        type_typecheck(&i->type, errs);
-
-        if (i->source->rest) {
-            // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
-            Type const* written = &i->type;
-            while (written->tag == TYPE_REF) written = written->ref;
-            if (written->tag != TYPE_INFERRED && !type_extends_array(&i->type)) {
-                error_ctx_error_d(
-                    errs,
-                    i->source->span,
-                    2370,
-                    "A rest parameter must be of an array type."
-                );
-            }
-            if (i->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
-                error_ctx_error_d(
-                    errs,
-                    i->source->initializer.binding.content_span,
-                    1048,
-                    "A rest parameter cannot have an initializer."
-                );
-            }
-        }
-    }
-
+    if (my owned_function_impl) function_impl_typecheck_signature(my owned_function_impl, true, errs);
     type_typecheck(&my ret, errs);
 }
 

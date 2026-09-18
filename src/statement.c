@@ -601,53 +601,44 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
     }
 }
 
-Type statement_evaluate_return_type(Statement* me) {
+void statement_collect_return_types(Statement const* me, TyBuf* out) {
     switch (my tag) {
-        case STATEMENT_BLOCK: return block_evaluate_return_type(&my block);
+        case STATEMENT_BLOCK: block_collect_return_types(&my block, out); break;
 
-        case STATEMENT_IF_ELSE: {
-            Type ret = type_composite_base(TYPE_UNION);
+        case STATEMENT_IF_ELSE:
             for_each (i, vec_statement, &my if_else.statements) {
-                ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i));
+                statement_collect_return_types(i, out);
             }
-            return ret;
-        }
+            break;
 
         case STATEMENT_FOR_LOOP:
-            return type_composite(
-                TYPE_UNION,
-                statement_evaluate_return_type(&my for_loop->initialization),
-                statement_evaluate_return_type(&my for_loop->body)
-            );
+            statement_collect_return_types(&my for_loop->initialization, out);
+            statement_collect_return_types(&my for_loop->body, out);
+            break;
 
         case STATEMENT_FOR_EACH_LOOP:
-            return statement_evaluate_return_type(&my for_each_loop->body);
+            statement_collect_return_types(&my for_each_loop->body, out);
+            break;
 
-        case STATEMENT_SWITCH: {
-            Type ret = type_composite_base(TYPE_UNION);
+        case STATEMENT_SWITCH:
             for_each (i, vec_switch_case, &my switch_->cases) {
                 for_each (j, vec_statement, &i->statements) {
-                    ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(j));
+                    statement_collect_return_types(j, out);
                 }
             }
-            return ret;
-        }
+            break;
 
         case STATEMENT_TRY_CATCH:
-            return type_composite(
-                TYPE_UNION,
-                type_composite(
-                    TYPE_UNION,
-                    block_evaluate_return_type(&my try_catch->try_block),
-                    block_evaluate_return_type(&my try_catch->catch_block)
-                ),
-                block_evaluate_return_type(&my try_catch->finally_block)
-            );
+            block_collect_return_types(&my try_catch->try_block, out);
+            block_collect_return_types(&my try_catch->catch_block, out);
+            block_collect_return_types(&my try_catch->finally_block, out);
+            break;
 
         case STATEMENT_RETURN_EXPR:
-            return type_new(ty_check_expr(current_checker, &my expr, current_checker->return_context));
+            ty_buf_push(out, ty_check_expr(current_checker, &my expr, current_checker->return_context));
+            break;
 
-        case STATEMENT_LABELED: return statement_evaluate_return_type(my labeled.body);
+        case STATEMENT_LABELED: statement_collect_return_types(my labeled.body, out); break;
 
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
@@ -663,9 +654,9 @@ Type statement_evaluate_return_type(Statement* me) {
         case STATEMENT_DECL_CLASS:
         case STATEMENT_DECL_TYPE:
         case STATEMENT_DECL_INTERFACE:
-        case STATEMENT_DECL_NAMESPACE: return type_never;
+        case STATEMENT_DECL_NAMESPACE:
+            break;
     }
-    impossible;
 }
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {

@@ -118,9 +118,7 @@ Type function_impl_into_type(FunctionImpl me) {
     return type;
 }
 
-// What return expressions are contextually typed by: the return type annotation, else the contextual signature's.
-// Returns the enclosing function's, to be put back
-static Ty const* function_impl_enter_return_context(FunctionImpl* me) {
+Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
     Checker* checker = current_checker;
     Ty const* outer = checker->return_context;
     if (my is_async || my is_generator) {
@@ -135,53 +133,63 @@ static Ty const* function_impl_enter_return_context(FunctionImpl* me) {
 }
 
 Type function_impl_evaluate_type(FunctionImpl* me) {
-    Type result = function_impl_make_callable_sans_inferred_ret(me);
+    return type_new(ty_function_type(current_checker, me));
+}
 
-    if (!my ret_explicit && my has_body) {
-        Type ret_type;
-        if (my evaluating_ret) {
-            ret_type = type_self_referential_error;
-        } else {
-            my evaluating_ret = true;
-            Ty const* outer_context = function_impl_enter_return_context(me);
-            ret_type = block_evaluate_return_type(&my body);
-            current_checker->return_context = outer_context;
-            my evaluating_ret = false;
+void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
+    generic_typecheck(&my generic, errs);
+
+    bool found_optional = false;
+    bool required_after_optional = false;
+    bool rest_not_last = false;
+    for_each (i, vec_function_arg, &my args) {
+        bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        if (is_type && has_initializer) {
+            error_ctx_error_d(
+                errs,
+                i->initializer.value.outer_span,
+                2371,
+                "A parameter initializer is only allowed in a function or constructor implementation."
+            );
         }
 
-        type_drop(&result.callable->ret);
-        if (my is_generator) {
-            // TODO: Generator<TYield, TReturn, TNext>/AsyncGenerator<...> inferred from the yields and returns
-            result.callable->ret = type_any;
-        } else if (ret_type.tag == TYPE_NEVER) {
-            // This will need to be improved
-            result.callable->ret = type_void;
-        } else {
+        if (i->rest && i_index != vec_function_arg_size(&my args) - 1 && !rest_not_last) {
+            rest_not_last = true;
+            error_ctx_error_d(errs, i->rest_span, 1014, "A rest parameter must be last in a parameter list.");
+        }
+
+        if (i->rest) {
+        } else if (i->explicit_optional) {
+            found_optional = true;
+        } else if (found_optional && !has_initializer && !required_after_optional) {
+            required_after_optional = true;
+            error_ctx_error_d(
+                errs,
+                i->initializer.binding.content_span,
+                1016,
+                "A required parameter cannot follow an optional parameter."
+            );
+        }
+
+        if (i->rest) {
+            // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
+            Type const* written = binding_get_effective_type(&i->initializer.binding);
             Checker* checker = current_checker;
-            Ty const* returned = ty_from_legacy(checker, &ret_type, (LowerCtx){ .generic = true });
-            result.callable->ret = type_new(ty_widened_return_type(checker, returned, ty_contextual_return_type(checker, me)));
-        }
-
-        if (my is_async && !my is_generator) {
-            // TODO: should be Promise<Awaited<T>>, returning a promise from an async function gives a nested one here
-            if (my promise_decl) {
-                VecSpannedType params = vec_spanned_type_init();
-                vec_spanned_type_push(&params, spanned_type(span_null, type_move(&result.callable->ret)));
-                result.callable->ret = type_identifier(c_new(IdentifierType, {
-                    .name = my promise_decl->name,
-                    .decl_ref = my promise_decl,
-                    .generic_params = params,
-                }));
-            } else {
-                type_drop(&result.callable->ret);
-                result.callable->ret = type_any;
+            if (written->tag != TYPE_INFERRED &&
+                !ty_extends_array(checker, ty_from_legacy(checker, written, (LowerCtx){ .generic = true }))
+            ) {
+                error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");
+            }
+            if (has_initializer) {
+                error_ctx_error_d(
+                    errs,
+                    i->initializer.binding.content_span,
+                    1048,
+                    "A rest parameter cannot have an initializer."
+                );
             }
         }
-
-        type_drop(&ret_type);
     }
-
-    return result;
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
@@ -199,7 +207,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         initialized_binding_typecheck(&i->initializer, errs);
     }
 
-    type_typecheck(lazy_type_get(&my lazy_type), errs);
+    function_impl_typecheck_signature(me, false, errs);
 
     if (my newline_before_arrow) {
         error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");

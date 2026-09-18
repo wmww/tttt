@@ -38,6 +38,8 @@ enum {
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
+    KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
+    KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
 };
 

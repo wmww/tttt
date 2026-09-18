@@ -322,7 +322,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_LITERAL:
             if (d.widen_literals && !ty->literal.enum_decl) {
-                ty_display(me, (TyDisplay){ .target = d.target, .depth = d.depth }, ty_widened_literal(me, ty));
+                ty_display(me, (TyDisplay){ .target = d.target, .depth = d.depth, .visiting = d.visiting }, ty_widened_literal(me, ty));
                 break;
             }
             if (ty->literal.enum_decl) {
@@ -388,9 +388,19 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
         }   break;
 
-        case TY_ANONYMOUS:
+        case TY_ANONYMOUS: {
+            // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
+            // (`function f() { return f }` is `() => any`)
+            for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+                if (i->ty == ty) {
+                    out_lit(d, "any");
+                    return;
+                }
+            }
+            TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
+            d.visiting = &visit;
             display_structure(me, d, ty);
-            break;
+        }   break;
 
         case TY_UNION:
             display_union(me, d, ty);

@@ -112,6 +112,7 @@ void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
 
         case CLASS_ITEM_METHOD:
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
+            my method.func.is_method = !my method.accessor;
             function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 

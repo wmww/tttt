@@ -66,6 +66,38 @@ typedef struct TyList {
     u32 len;
 } TyList;
 
+// A growable list of types for building unions and the like. Zero-initialize, drop when done
+typedef struct TyBuf TyBuf;
+struct TyBuf {
+    Ty const** data;
+    u32 len;
+    u32 cap;
+    Ty const* inline_data[16];
+};
+
+static inline void ty_buf_push(TyBuf* me, Ty const* ty) {
+    if (!my data) {
+        my data = my inline_data;
+        my cap = c_arraylen(my inline_data);
+    }
+    if (my len == my cap) {
+        my cap *= 2;
+        if (my data == my inline_data) {
+            my data = malloc(sizeof(Ty const*) * my cap);
+            panic_if(!my data, "out of memory");
+            memcpy(my data, my inline_data, sizeof(my inline_data));
+        } else {
+            my data = realloc(my data, sizeof(Ty const*) * my cap);
+            panic_if(!my data, "out of memory");
+        }
+    }
+    my data[my len++] = ty;
+}
+
+static inline void ty_buf_drop(TyBuf* me) {
+    if (my data != my inline_data) free(my data);
+}
+
 typedef enum TyKind {
     TY_INTRINSIC,
     TY_LITERAL,
@@ -208,7 +240,10 @@ struct Ty {
             TyObjectState* state;
         } reference;
         struct {
-            Type const* node; // TYPE_INTERFACE or TYPE_CALLABLE. Null for instantiations
+            Type const* node; // TYPE_INTERFACE or TYPE_CALLABLE. Null for instantiations and functions
+            // The type of a function declaration/expression, method, accessor or constructor: one signature, read
+            // straight off the FunctionImpl (the return type is inferred from its body if it isn't annotated)
+            FunctionImpl const* function;
             Type const* const* overloads; // If set, the type of an overloaded method: TYPE_CALLABLEs, node is the first
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
@@ -310,10 +345,9 @@ typedef struct SigParam {
 
 struct Signature {
     u32 flags;
+    // Exactly one source: a function type node, a function (see Ty.anonymous.function), or a target to instantiate
     CallableType const* node;
-    // Instead of `node`: a legacy type (the LazyType of a constructor, in an arena wrapper) that evaluates to the
-    // callable when the signature is resolved
-    Type const* lazy_node;
+    FunctionImpl const* function;
     // Construct signatures of a class: the type parameters are the class's and the return type is its instance type,
     // whatever `node` or `target` say
     Ty const* class_instance;
@@ -610,6 +644,12 @@ typedef struct ObjectLiteralProp {
 } ObjectLiteralProp;
 Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count);
 
+// function.c
+Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
+// The return type of a function: its annotation, else inferred from the `return`s of its body
+Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
+bool ty_extends_array(Checker* me, Ty const* ty); // Assignable to `readonly any[]`
+
 // call.c
 // `contextual`: the contextual type of the call expression (return type inference), may be null
 Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
@@ -621,9 +661,15 @@ void type_report_unfit_argument(Type const* legacy_source, Ty const* source, Ty 
 // ty_display.c
 // The old display's `underline` mode underlines a type's whole rendering, so the `.types` traversal can do that from
 // the string length when it switches over (stage 4); no display mode needed here.
+typedef struct TyDisplayVisit {
+    Ty const* ty;
+    struct TyDisplayVisit const* outer;
+} TyDisplayVisit;
+
 typedef struct TyDisplay {
     cstr* target;
     u32 depth;
+    TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
     // Literal types inside object types that came from expressions print as their primitive: tsc widens the
     // properties of an object literal when it types it, the legacy checker only when it reports. HACK(stage 4b)
     bool widen_literals;

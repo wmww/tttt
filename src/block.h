@@ -25,5 +25,7 @@ void block_drop(Block* me);
 void block_add_names(Block const* me, Scope* scope);
 void block_lookup_names(Block const* me, ScopeStack* names, ErrorCtx* errs);
 void block_resolve_names(Block const* me, ScopeStack* names, ErrorCtx* errs);
-Type block_evaluate_return_type(Block* me);
+// The types of the `return` expressions inside (nested functions excluded), checked with Checker.return_context
+typedef struct TyBuf TyBuf;
+void block_collect_return_types(Block const* me, TyBuf* out);
 void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs);

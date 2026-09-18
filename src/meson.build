@@ -44,6 +44,7 @@ core_files = files(
     'ty/call.c',
     'ty/access.c',
     'ty/expr.c',
+    'ty/function.c',
 )
 
 main_files = core_files + files('main.c')

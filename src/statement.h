@@ -170,7 +170,7 @@ static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(S
 void statement_drop(Statement* me);
 void statement_add_names(Statement* me, Scope* scope);
 void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs);
-Type statement_evaluate_return_type(Statement* me);
+void statement_collect_return_types(Statement const* me, TyBuf* out);
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 #define g_class_key Statement, statement

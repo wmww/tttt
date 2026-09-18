@@ -86,10 +86,29 @@ static Signature* signature_from_node(Checker* me, CallableType const* node, Low
     return ret;
 }
 
+static Signature* signature_from_function(Checker* me, FunctionImpl const* function, LowerCtx ctx) {
+    Signature* ret = arena_new(&my arena, Signature);
+    ret->function = function;
+    ret->ctx = ctx;
+    if (function->is_constructor) ret->flags |= SIGNATURE_CONSTRUCT;
+    if (function->is_abstract_constructor) ret->flags |= SIGNATURE_ABSTRACT;
+    if (ctx.method) ret->flags |= SIGNATURE_METHOD;
+    return ret;
+}
+
 static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Type const* type, LowerCtx ctx) {
     Type const* callable = legacy_skip_wrappers(type);
-    if (callable->tag != TYPE_CALLABLE) return nullptr;
-    Signature* sig = signature_from_node(me, callable->callable, ctx);
+    Signature* sig;
+    if (callable->tag == TYPE_NEW) {
+        // The type of a function (an overload of a method)
+        Ty const* ty = type_new_ty(me, callable);
+        if (ty->kind != TY_ANONYMOUS || !ty->anonymous.function) return nullptr;
+        sig = signature_from_function(me, ty->anonymous.function, ctx);
+    } else if (callable->tag == TYPE_CALLABLE) {
+        sig = signature_from_node(me, callable->callable, ctx);
+    } else {
+        return nullptr;
+    }
     if (sig->flags & SIGNATURE_CONSTRUCT) {
         builder_push(builder, construct, sig);
     } else {
@@ -457,7 +476,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     for_each (i, vec_class_item, &class_decl->items) {
         if (i->tag != CLASS_ITEM_CONSTRUCTOR || (has_overloads && i->constructor.func.has_body)) continue;
         Signature* sig = class_construct_signature(me, class_decl, instance);
-        sig->lazy_node = arena_lazy_wrapper(me, &i->constructor.func.lazy_type);
+        sig->function = &i->constructor.func;
         sig->name_span = i->constructor.name_span;
         sig->decl_span = i->constructor.func.full_span;
         builder_push(builder, construct, sig);
@@ -747,7 +766,14 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                 return resolve_instantiated_members(me, ty->anonymous.target, ty->anonymous.mapper, ty->anonymous.applies_type_args);
             }
             MembersBuilder builder = {0};
-            if (ty->anonymous.overload_count) {
+            if (ty->anonymous.function) {
+                Signature* sig = signature_from_function(me, ty->anonymous.function, ty->anonymous.ctx);
+                if (sig->flags & SIGNATURE_CONSTRUCT) {
+                    builder_push(&builder, construct, sig);
+                } else {
+                    builder_push(&builder, call, sig);
+                }
+            } else if (ty->anonymous.overload_count) {
                 for (u32 i = 0; i < ty->anonymous.overload_count; i++) {
                     builder_add_callable(me, &builder, ty->anonymous.overloads[i], ty->anonymous.ctx);
                 }
@@ -859,8 +885,33 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         sig->params = params;
         sig->param_count = target->param_count;
         sig->min_args = target->min_args;
-    } else if (!sig->node && sig->lazy_node && legacy_skip_wrappers(sig->lazy_node)->tag == TYPE_CALLABLE) {
-        sig->node = legacy_skip_wrappers(sig->lazy_node)->callable;
+    }
+    if (!sig->target && sig->function) {
+        FunctionImpl const* function = sig->function;
+        sig->type_params = ty_type_params_of(me, &function->generic);
+        LowerCtx ctx = sig->ctx;
+        ctx.generic = true;
+        ctx.method = false;
+        u32 count = (u32)vec_function_arg_size(&function->args);
+        SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
+        bool counting_required = true;
+        for_each (i, vec_function_arg, &function->args) {
+            SigParam* param = &params[i_index];
+            param->name = checker_atom(me, i->initializer.binding.content_span.sv);
+            param->rest = i->rest;
+            param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+            param->type = ty_from_legacy(me, binding_get_effective_type(&i->initializer.binding), ctx);
+            if (param->optional || param->rest) counting_required = false;
+            if (counting_required) sig->min_args++;
+        }
+        if (count && params[0].name == checker_atom(me, c_sv("this"))) {
+            // `this: T` is about how the function is called, not an argument. TODO: check the receiver against it
+            if (sig->min_args && !params[0].optional) sig->min_args--;
+            params++;
+            count--;
+        }
+        sig->params = params;
+        sig->param_count = count;
     }
     if (!sig->target && sig->node) {
         CallableType const* node = sig->node;
@@ -919,6 +970,8 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     Ty const* ret;
     if (sig->target) {
         ret = ty_instantiate(me, signature_return_type(me, sig->target), sig->mapper);
+    } else if (sig->function) {
+        ret = ty_function_return_type(me, sig->function);
     } else if (sig->ret_node) {
         LowerCtx ctx = sig->ctx;
         ctx.generic |= sig->type_params.len > 0;

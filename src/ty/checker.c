@@ -316,35 +316,6 @@ Ty const* ty_string_literal(Checker* me, csview sv) {
 
 // Unions and intersections
 
-typedef struct TyBuf {
-    Ty const** data;
-    u32 len;
-    u32 cap;
-    Ty const* inline_data[16];
-} TyBuf;
-
-static void ty_buf_push(TyBuf* me, Ty const* ty) {
-    if (!my data) {
-        my data = my inline_data;
-        my cap = c_arraylen(my inline_data);
-    }
-    if (my len == my cap) {
-        my cap *= 2;
-        if (my data == my inline_data) {
-            my data = malloc(sizeof(Ty const*) * my cap);
-            memcpy(my data, my inline_data, sizeof(my inline_data));
-        } else {
-            my data = realloc(my data, sizeof(Ty const*) * my cap);
-        }
-        panic_if(!my data, "out of memory");
-    }
-    my data[my len++] = ty;
-}
-
-static void ty_buf_drop(TyBuf* me) {
-    if (my data != my inline_data) free(my data);
-}
-
 static int ty_cmp_id(void const* a, void const* b) {
     u32 a_id = (*(Ty const* const*)a)->id;
     u32 b_id = (*(Ty const* const*)b)->id;
