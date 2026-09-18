@@ -3873,11 +3873,18 @@ static bool parse_throw(Parser* parent, Expr* ret) {
     return parse_success(&p);
 }
 
+static bool parse_block(Parser* parent, bool toplevel, Block* ret);
+
+// Handles `namespace A {}`, the legacy spelling `module A {}`, dotted names (`namespace A.B {}`, which become nested
+// exported namespaces) and ambient external modules (`declare module "a" {}` and the body-less `declare module "a";`)
 static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
-    if (!hop_start_if_ends_on_word_break(&p, "namespace")) {
+    bool is_module_keyword = false;
+    if (hop_start_if_ends_on_word_break(&p, "module")) {
+        is_module_keyword = true;
+    } else if (!hop_start_if_ends_on_word_break(&p, "namespace")) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -3888,29 +3895,96 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
 
     *ret = (NamespaceDecl){0};
 
-    if (!parse_identifier(&p, &ret->name)) {
+    VecSpan names = vec_span_init();
+    Span name;
+    if (parse_identifier(&p, &name)) {
+        vec_span_push(&names, name);
+        while (true) {
+            Parser dot = parser(&p);
+            hop_whitespace(&dot);
+            if (!hop_char(&dot, '.')) {
+                parse_fail(&dot);
+                break;
+            }
+            hop_whitespace(&dot);
+            if (!parse_identifier(&dot, &name)) {
+                parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
+                parse_success(&dot);
+                break;
+            }
+            vec_span_push(&names, name);
+            parse_success(&dot);
+        }
+    } else {
+        vec_span_drop(&names);
         Value val;
-        Anchor a = anchor(&p);
-        if (*p.pos == '{') {
-            parse_error(&p, span_from_token(&p), 1437, "Scope must be given a name.");
+        Anchor name_anchor = anchor(&p);
+        if (is_module_keyword && *p.pos != '"' && *p.pos != '\'') {
+            // `module` is only a contextual keyword, tsc parses `module {}` as an expression followed by a block
+            return parse_fail(&p);
+        } else if (*p.pos == '{') {
+            parse_error(&p, span_from_token(&p), 1437, "Namespace must be given a name.");
+            ret->name = span_from(name_anchor);
         } else if (parse_literal(&p, &val)) {
-            if (val.tag == VALUE_STRING) {
-                parse_error(&p, span_from(a), 1003, "Identifier expected.");
+            bool is_string = val.tag == VALUE_STRING;
+            if (is_string && is_module_keyword) {
+                ret->is_ambient_module = true;
+                ret->name = span_from(name_anchor);
+                value_drop(&val);
+                hop_whitespace(&p);
+                if (!parse_block(&p, true, &ret->contents)) {
+                    // `declare module "a";` is a shorthand ambient module
+                    ret->contents = (Block){0};
+                }
+                ret->full_span = span_from(a);
+                return parse_success(&p);
+            } else if (is_string) {
+                parse_error(&p, span_from(name_anchor), 1003, "Identifier expected.");
             } else {
-                parse_error(&p, span_from(a), 2819, "Scope name cannot be '", &val, "'.");
+                parse_error(&p, span_from(name_anchor), 2819, "Namespace name cannot be '", &val, "'.");
             }
             value_drop(&val);
             return parse_success(&p);
         } else {
             return parse_fail(&p);
         }
+        names = vec_span_init();
     }
     hop_whitespace(&p);
 
-    if (!parse_block(&p, true, &ret->contents)) {
-        ret->contents = (Block){0};
+    Block contents;
+    if (!parse_block(&p, true, &contents)) {
+        if (is_module_keyword && vec_span_size(&names) == 1 && *p.pos != '.') {
+            // `module` is only a contextual keyword, this is probably an expression such as `module = 5`
+            vec_span_drop(&names);
+            return parse_fail(&p);
+        }
+        contents = (Block){0};
         expected_token_error(&p, "{");
     }
+
+    // Build dotted names inside out
+    for (isize i = vec_span_size(&names) - 1; i > 0; i--) {
+        Span inner_name = *vec_span_at(&names, i);
+        NamespaceDecl inner = {
+            .name = inner_name,
+            .full_span = span_make(p.shared->source, span_start_ptr(inner_name), p.pos),
+            .contents = contents,
+        };
+        contents = (Block){0};
+        vec_statement_push(&contents.statements, (Statement){
+            .tag = STATEMENT_DECL_NAMESPACE,
+            .decl = {
+                .props = { .exported = DECL_EXPORTED_YES },
+                .namespace = inner,
+            },
+        });
+    }
+    if (vec_span_size(&names)) {
+        ret->name = *vec_span_at(&names, 0);
+    }
+    ret->contents = contents;
+    vec_span_drop(&names);
 
     ret->full_span = span_from(a);
     return parse_success(&p);

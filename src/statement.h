@@ -62,6 +62,7 @@ typedef struct NamespaceDecl {
     Span name;
     Span full_span;
     bool is_global;
+    bool is_ambient_module; // `declare module "name" {}`, name is the string literal including quotes
     Block contents;
     Scope inner_scope;
     Scope* global_scope; // Set only if global

@@ -13,6 +13,7 @@ void interface_drop(Interface* me) {
 Interface interface_clone(Interface me) {
     return (Interface) {
         .members = vec_interface_member_clone(me.members),
+        .namespace_scope = me.namespace_scope,
     };
 }
 
@@ -122,14 +123,19 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
 
 Type interface_from_merged_interfaces(VecType types) {
     VecInterfaceMember members = vec_interface_member_init();
+    struct Scope const* namespace_scope = nullptr;
     for_each (i, vec_type, &types) {
         check(i->tag == TYPE_INTERFACE);
+        if (i->interface.namespace_scope) {
+            namespace_scope = i->interface.namespace_scope;
+        }
         push_interface_members_to(&members, i->interface.members);
         i->interface.members = vec_interface_member_init();
     }
     vec_type_drop(&types);
     return type_interface((Interface){
         .members = members,
+        .namespace_scope = namespace_scope,
     });
 }
 

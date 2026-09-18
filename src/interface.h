@@ -12,6 +12,9 @@ g_declare_vec(Type, type);
 
 typedef struct Interface {
     VecInterfaceMember members;
+    // Borrowed, set if this is the value side of a namespace. Such types can contain themselves (`namespace A { export
+    // var a = A }`), so they are displayed by name (`typeof A`) rather than by structure
+    struct Scope const* namespace_scope;
     bool parsed : 1;
 } Interface;
 

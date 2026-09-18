@@ -146,6 +146,11 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         my value_type = type_lazy(&my inner_scope.value_interface);
     }
 
+    if (my is_ambient_module) {
+        // TODO: ambient modules should be registered with the program so imports can resolve to them
+        return;
+    }
+
     scope_init_declaration(scope, &my declaration, (DeclProps){
         .name = my name,
         .full = my full_span,

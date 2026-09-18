@@ -327,7 +327,8 @@ Type scope_evaluate_value_interface(Scope const* me) {
         }
     }
     return type_interface((Interface){
-        .members = members
+        .members = members,
+        .namespace_scope = vec_span_is_empty(&my namespaces) ? nullptr : me,
     });
 }
 

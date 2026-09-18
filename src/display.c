@@ -444,6 +444,19 @@ void display_interface_member(Display d, InterfaceMember const* me) {
 
 static void display_interface(Display d, Interface const* me) {
     d = display_set_parsed(d, my parsed);
+    if (my namespace_scope) {
+        display_lit(d, "typeof ");
+        for_each (i, vec_span, &my namespace_scope->namespaces) {
+            if (i_index != 0) {
+                display_lit(d, ".");
+            }
+            display_colored_span(d, color_type, *i);
+        }
+        if (d.hash_key) {
+            display_pointer(d, (void*)my namespace_scope);
+        }
+        return;
+    }
     if (!d.debug &&
         vec_interface_member_size(&my members) == 1 &&
         my members.data->key.tag == INTERFACE_KEY_CALLABLE
