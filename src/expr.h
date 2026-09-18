@@ -327,6 +327,7 @@ typedef struct TernaryExpr {
 typedef struct CallExpr {
     bool uses_new;
     bool is_extends;
+    bool optional_chain; // `f?.()`
     Expr callable;
     // PERF: types of each argument should be cached
     VecExpr args;

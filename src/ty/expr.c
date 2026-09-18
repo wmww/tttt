@@ -966,7 +966,9 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
-    return ty_call_return_type(me, ty_expr_type(me, callee), call, ctx.contextual);
+    Ty const* callee_type = ty_expr_type(me, callee);
+    if (call->optional_chain) callee_type = ty_non_nullable(me, callee_type);
+    return ty_call_return_type(me, callee_type, call, ctx.contextual);
 }
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
@@ -979,6 +981,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_PROPERTY: {
             Ty const* object = ty_expr_type(me, &expr->property->expr);
+            if (expr->property->optional_chain) object = ty_non_nullable(me, object);
             Ty const* ret = ty_access(me, object, ty_expr_type(me, &expr->property->prop));
             return ret ? ret : any_type(me);
         }

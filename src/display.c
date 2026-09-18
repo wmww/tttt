@@ -882,6 +882,9 @@ void display_expr(Display d, Expr const* me) {
                     break;
 
                 case PROPERTY_EXPR_BRACKET:
+                    if (my property->optional_chain) {
+                        display_lit(d, ".");
+                    }
                     display_lit(d, "[");
                     display_expr(d, &my property->prop);
                     display_lit(d, "]");
@@ -923,6 +926,9 @@ void display_expr(Display d, Expr const* me) {
                 display_lit(d, "new ");
             }
             display_expr(d, &my call->callable);
+            if (my call->optional_chain) {
+                display_lit(d, "?.");
+            }
             if (vec_expr_is_empty(&my call->args)) {
                 display_lit(d, "()");
             } else {

@@ -2696,6 +2696,9 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
     if (!hop_char(&p, '.')) {
         return parse_fail(&p);
     }
+    if (optional_chain && *p.pos >= '0' && *p.pos <= '9') {
+        return parse_fail(&p); // `a ? .5 : b`
+    }
     hop_whitespace(&p);
 
     Span prop;
@@ -3106,11 +3109,19 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         VecSpannedType generic_params;
     } parsed;
 
+    // `f?.(x)` and `a?.[i]`. `a?.b` is parse_dot_prop()'s, and `a ? .5 : b` is a ternary
+    bool optional_chain = false;
+    if (p.pos[0] == '?' && p.pos[1] == '.' && (p.pos[2] == '(' || p.pos[2] == '[')) {
+        optional_chain = true;
+        p.pos += 2;
+    }
+
     if (new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
         *left_and_ret = expr_call(
             span_from(a),
             c_new(CallExpr, {
                 .uses_new = false,
+                .optional_chain = optional_chain,
                 .callable = *left_and_ret,
                 .args = parsed.args,
             })
@@ -3157,9 +3168,13 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .expr = *left_and_ret,
                 .prop = parsed.expr_a,
                 .form = PROPERTY_EXPR_BRACKET,
+                .optional_chain = optional_chain,
             })
         );
         return parse_success(&p);
+    }
+    if (optional_chain) {
+        return parse_fail(&p);
     }
 
     Span as_type_span;
@@ -4115,7 +4130,9 @@ static bool parse_if_arm(Parser* parent, Expr* condition, Statement* statement) 
     }
     hop_whitespace(&p);
 
-    expect_expr(&p, expr_ctx_null, condition);
+    if (expect_expr(&p, expr_ctx_null, condition)) {
+        parse_comma_ops_right_side(&p, condition);
+    }
     hop_whitespace(&p);
 
     if (!hop_char(&p, ')')) {
@@ -4147,11 +4164,19 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
 
         vec_expr_push(&conditions, condition);
         vec_statement_push(&statements, statement);
-        hop_whitespace(&p);
 
-        if (!hop_start_if_ends_on_word_break(&p, "else")) {
+        // `if (a) b; else c;`: the `;` that ends the arm's statement doesn't end the if (statement terminators are
+        // otherwise left to parse_append_statement_sequence())
+        Parser else_p = parser(&p);
+        hop_whitespace(&else_p);
+        if (hop_char(&else_p, ';')) {
+            hop_whitespace(&else_p);
+        }
+        if (!hop_start_if_ends_on_word_break(&else_p, "else")) {
+            parse_fail(&else_p);
             break;
         }
+        parse_success(&else_p);
         hop_whitespace(&p);
     }
 
@@ -4447,7 +4472,9 @@ static bool parse_switch_case(Parser* parent, SwitchCase* ret) {
             .statements = {0},
         };
 
-        expect_expr(&p, expr_ctx_null, &ret->pattern);
+        if (expect_expr(&p, expr_ctx_null, &ret->pattern)) {
+            parse_comma_ops_right_side(&p, &ret->pattern);
+        }
         hop_whitespace(&p);
 
         expect_char(&p, ':');
@@ -4486,7 +4513,9 @@ static bool parse_switch_statement(Parser* parent, Statement* ret) {
     expect_char(&p, '(');
     hop_whitespace(&p);
 
-    expect_expr(&p, expr_ctx_null, &switch_.needle);
+    if (expect_expr(&p, expr_ctx_null, &switch_.needle)) {
+        parse_comma_ops_right_side(&p, &switch_.needle);
+    }
     hop_whitespace(&p);
 
     expect_char(&p, ')');
@@ -4590,7 +4619,9 @@ static bool parse_return(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, expr_ctx_null, ret)) {
+    if (parse_expr(&p, expr_ctx_null, ret)) {
+        parse_comma_ops_right_side(&p, ret);
+    } else {
         *ret = expr_undefined(span_from(a));
     }
 
@@ -4606,7 +4637,9 @@ static bool parse_throw(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    if (!parse_expr(&p, expr_ctx_null, ret)) {
+    if (parse_expr(&p, expr_ctx_null, ret)) {
+        parse_comma_ops_right_side(&p, ret);
+    } else {
         *ret = expr_undefined(span_from(a));
     }
 
