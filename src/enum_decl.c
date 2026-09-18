@@ -21,27 +21,27 @@ void enum_decl_drop(EnumDecl* me) {
 void enum_decl_add_names(EnumDecl* me, Scope* scope, bool exported) {
     my namespace = scope_init_namespace(my name, scope, scope->errs);
 
-    c_foreach(i, vec_enum_case, my cases) {
-        declaration_init(&i.ref->typeof_declaration, (DeclProps){
-            .name = i.ref->name,
-            .full = i.ref->name,
+    for_each (i, vec_enum_case, &my cases) {
+        declaration_init(&i->typeof_declaration, (DeclProps){
+            .name = i->name,
+            .full = i->name,
             .tag = DECLARATION_ENUM_CASE_TYPE,
-            .declared_type = type_lazy(&i.ref->value.lazy_type),
+            .declared_type = type_lazy(&i->value.lazy_type),
         });
 
-        scope_init_declaration(&my namespace, &i.ref->declaration, (DeclProps) {
-            .name = i.ref->name,
-            .full = i.ref->name,
+        scope_init_declaration(&my namespace, &i->declaration, (DeclProps) {
+            .name = i->name,
+            .full = i->name,
             .tag = DECLARATION_ENUM_CASE,
             .value_type = type_identifier(c_new(IdentifierType, {
                 .namespaces = vec_span_single(my name),
-                .name = i.ref->name,
-                .decl_ref = &i.ref->typeof_declaration,
+                .name = i->name,
+                .decl_ref = &i->typeof_declaration,
             })),
             .declared_type = type_identifier(c_new(IdentifierType, {
                 .namespaces = vec_span_single(my name),
-                .name = i.ref->name,
-                .decl_ref = &i.ref->typeof_declaration,
+                .name = i->name,
+                .decl_ref = &i->typeof_declaration,
             })),
         });
     }
@@ -73,31 +73,31 @@ void enum_decl_lookup_names(EnumDecl* me, ScopeStack* names, ErrorCtx* errs) {
     my instance_type.tag = LAZY_TYPE_ENUM_INSTANCE;
     my interface_type.tag = LAZY_TYPE_ENUM_INTERFACE;
 
-    c_foreach(i, vec_enum_case, my cases) {
-        expr_lookup_names(&i.ref->value, names, errs);
+    for_each (i, vec_enum_case, &my cases) {
+        expr_lookup_names(&i->value, names, errs);
     }
 }
 
 Type enum_decl_evaluate_instance_type(EnumDecl* me) {
     Type ret = type_never;
-    c_foreach(i, vec_enum_case, my cases) {
-        ret = type_composite(TYPE_UNION, ret, type_clone(*expr_get_type(&i.ref->value)));
+    for_each (i, vec_enum_case, &my cases) {
+        ret = type_composite(TYPE_UNION, ret, type_clone(*expr_get_type(&i->value)));
     }
     return ret;
 }
 
 Type enum_decl_evaluate_interface_type(EnumDecl* me) {
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, vec_enum_case, my cases) {
+    for_each (i, vec_enum_case, &my cases) {
         vec_interface_member_push(&members, interface_member_make(
-            i.ref->name,
+            i->name,
             my declaration.get,
             true,
             false,
-            cstr_from_span(i.ref->name),
-            i.ref->name,
+            cstr_from_span(i->name),
+            i->name,
             false,
-            type_refcopy(&i.ref->declaration.get->value_type)
+            type_refcopy(&i->declaration.get->value_type)
         ));
     }
     return type_interface((Interface){
@@ -106,7 +106,7 @@ Type enum_decl_evaluate_interface_type(EnumDecl* me) {
 }
 
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
-    c_foreach(i, vec_enum_case, my cases) {
-        expr_typecheck(&i.ref->value, errs);
+    for_each (i, vec_enum_case, &my cases) {
+        expr_typecheck(&i->value, errs);
     }
 }

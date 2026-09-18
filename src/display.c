@@ -117,11 +117,11 @@ void display_value(Display d, Value const* me) {
             if (size > 1) {
                 display_lit(d, "{");
                 d.indent++;
-                c_foreach(i, vec_object_item_ref, items) {
+                for_each (i, vec_object_item_ref, &items) {
                     display_newline(d);
-                    display_s(d, *i.ref->name);
+                    display_s(d, *i->name);
                     display_lit(d, ": ");
-                    display_value(d, &i.ref->item->value);
+                    display_value(d, &i->item->value);
                     display_color(d, color_value);
                     display_lit(d, ",");
                 }
@@ -146,9 +146,9 @@ void display_value(Display d, Value const* me) {
             int size = vec_value_size(&value->vec);
             if (size > 1) {
                 d.indent++;
-                c_foreach(i, vec_value, value->vec) {
+                for_each (i, vec_value, &value->vec) {
                     display_newline(d);
-                    display_value(d, i.ref);
+                    display_value(d, i);
                     display_color(d, color_value);
                     display_lit(d, ",");
                 }
@@ -191,24 +191,24 @@ static void display_binding_content(Display d, Binding const* me) {
 
         case BINDING_ARRAY:
             display_lit(d, "[");
-            c_foreach(i, vec_binding, my array) {
-                display_binding_content(d, i.ref);
-                if (i.ref != i.end - 1) {
+            for_each (i, vec_binding, &my array) {
+                if (i_index != 0) {
                     display_lit(d, ", ");
                 }
+                display_binding_content(d, i);
             }
             display_lit(d, "]");
             break;
 
         case BINDING_OBJECT:
             display_lit(d, "{ ");
-            c_foreach(i, vec_object_binding_item, my object) {
-                display_value(d, &i.ref->source);
-                display_lit(d, ": ");
-                display_binding_content(d, &i.ref->target);
-                if (i.ref != i.end - 1) {
+            for_each (i, vec_object_binding_item, &my object) {
+                if (i_index != 0) {
                     display_lit(d, ", ");
                 }
+                display_value(d, &i->source);
+                display_lit(d, ": ");
+                display_binding_content(d, &i->target);
             }
             display_lit(d, " }");
             break;
@@ -237,24 +237,24 @@ static void display_generic(Display d, Generic const* me) {
         return;
     }
     display_lit(d, "<");
-    c_foreach(i, vec_generic_item, my items) {
-        display_colored_span(d, color_type, i.ref->name);
+    for_each (i, vec_generic_item, &my items) {
+        if (i_index != 0) {
+            display_lit(d, ", ");
+        }
+        display_colored_span(d, color_type, i->name);
 
-        if (i.ref->extends_explicit) {
-            if (i.ref->extends.tag == TYPE_ANY) {
+        if (i->extends_explicit) {
+            if (i->extends.tag == TYPE_ANY) {
                 display_lit(d, " extends unknown");
             } else {
                 display_lit(d, " extends ");
-                display_type(d, &i.ref->extends);
+                display_type(d, &i->extends);
             }
         }
 
-        if (i.ref->fallback_explicit) {
+        if (i->fallback_explicit) {
             display_lit(d, " = ");
-            display_type(d, &i.ref->fallback);
-        }
-        if (i.ref < i.end - 1) {
-            display_lit(d, ", ");
+            display_type(d, &i->fallback);
         }
     }
     display_lit(d, ">");
@@ -266,8 +266,8 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (!d.hash_key || d.debug) {
-        c_foreach(i, vec_span, my namespaces) {
-            display_colored_span(d, color_type, *i.ref);
+        for_each (i, vec_span, &my namespaces) {
+            display_colored_span(d, color_type, *i);
             display_lit(d, ".");
         }
         if (my decl_ref && span_valid(my decl_ref->name)) {
@@ -285,11 +285,11 @@ static void display_identifier_type(Display d, IdentifierType* me) {
 
     if (!vec_spanned_type_is_empty(&my generic_params)) {
         display_lit(d, "<");
-        c_foreach(i, vec_spanned_type, my generic_params) {
-            display_type(d, &i.ref->type);
-            if (i.ref != i.end - 1) {
+        for_each (i, vec_spanned_type, &my generic_params) {
+            if (i_index != 0) {
                 display_lit(d, ", ");
             }
+            display_type(d, &i->type);
         }
         display_lit(d, ">");
     }
@@ -328,19 +328,19 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     }
     display_generic(d, &my generic);
     display_lit(d, "(");
-    c_foreach(i, vec_callable_arg, my args) {
-        if (i.ref->source->rest) {
+    for_each (i, vec_callable_arg, &my args) {
+        if (i_index != 0) {
+            display_lit(d, ", ");
+        }
+        if (i->source->rest) {
             display_lit(d, "...");
         }
-        display_binding_content(d, &i.ref->source->initializer.binding);
-        if (i.ref->optional) {
+        display_binding_content(d, &i->source->initializer.binding);
+        if (i->optional) {
             display_lit(d, "?");
         }
         display_lit(d, ": ");
-        display_type(d, &i.ref->type);
-        if (i.ref != i.end - 1) {
-            display_lit(d, ", ");
-        }
+        display_type(d, &i->type);
     }
     display_lit(d, ")");
 
@@ -455,18 +455,18 @@ static void display_interface(Display d, Interface const* me) {
 
     display_lit(d, "{");
     d.indent++;
-    c_foreach(i, vec_interface_member, my members) {
-        if (i.ref->key.tag != INTERFACE_KEY_NAME) {
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag != INTERFACE_KEY_NAME) {
             d = display_set_parsed(d, false);
             display_newline(d);
-            display_interface_member(d, i.ref);
+            display_interface_member(d, i);
             display_lit(d, ";");
         }
     }
-    c_foreach(i, vec_interface_member, my members) {
-        if (i.ref->key.tag == INTERFACE_KEY_NAME) {
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag == INTERFACE_KEY_NAME) {
             display_newline(d);
-            display_interface_member(d, i.ref);
+            display_interface_member(d, i);
             display_lit(d, ";");
         }
     }
@@ -565,28 +565,28 @@ void display_type(Display d, Type const* me) {
                 display_lit(d, "readonly ");
             }
             display_lit(d, "[");
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                if (i.ref->rest) {
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                if (i_index != 0) {
+                    display_lit(d, ", ");
+                }
+
+                if (i->rest) {
                     display_lit(d, "...");
                 }
 
-                if (i.ref->readonly) {
+                if (i->readonly) {
                     display_lit(d, "readonly ");
                 }
 
-                if (span_valid(i.ref->maybe_name)) {
-                    display_span(d, i.ref->maybe_name);
+                if (span_valid(i->maybe_name)) {
+                    display_span(d, i->maybe_name);
                     display_lit(d, ": ");
                 }
 
-                display_type(d, &i.ref->type);
+                display_type(d, &i->type);
 
-                if (i.ref->optional) {
+                if (i->optional) {
                     display_lit(d, "?");
-                }
-
-                if (i.ref != i.end - 1) {
-                    display_lit(d, ", ");
                 }
             }
             display_lit(d, "]");
@@ -610,8 +610,8 @@ void display_type(Display d, Type const* me) {
             }
 
             intptr_t count = 0;
-            c_foreach(i, vec_type, my composite) {
-                if (!d.debug && i.ref->tag == type_composite_base(my tag).tag) continue;
+            for_each (i, vec_type, &my composite) {
+                if (!d.debug && i->tag == type_composite_base(my tag).tag) continue;
 
                 if (count > 0) {
                     my tag == TYPE_UNION ?
@@ -626,9 +626,9 @@ void display_type(Display d, Type const* me) {
                     break;
                 }
 
-                bool display_peren = i.ref->tag == TYPE_CALLABLE;
+                bool display_peren = i->tag == TYPE_CALLABLE;
                 if (display_peren) display_lit(d, "(");
-                display_type(d, i.ref);
+                display_type(d, i);
                 if (display_peren) display_lit(d, ")");
                 count++;
             }
@@ -664,14 +664,14 @@ void display_type(Display d, Type const* me) {
 static void display_function_impl(Display d, FunctionImpl const* me, bool include_arrow) {
     display_generic(d, &my generic);
     display_lit(d, "(");
-    c_foreach(i, vec_function_arg, my args) {
-        if (i.ref->rest) {
-            display_lit(d, "...");
-        }
-        display_initialized_binding(d, &i.ref->initializer);
-        if (i.ref != i.end - 1) {
+    for_each (i, vec_function_arg, &my args) {
+        if (i_index != 0) {
             display_lit(d, ", ");
         }
+        if (i->rest) {
+            display_lit(d, "...");
+        }
+        display_initialized_binding(d, &i->initializer);
     }
     display_lit(d, ")");
     if (my ret_explicit) {
@@ -705,68 +705,68 @@ static void display_class_decl(Display d, ClassDecl const* me) {
     }
     if (!vec_type_is_empty(&my implements)) {
         display_lit(d, "implements ");
-        c_foreach(i, vec_type, my implements) {
-            display_type(d, i.ref);
+        for_each (i, vec_type, &my implements) {
+            display_type(d, i);
             display_lit(d, ", ");
         }
     }
     display_lit(d, "{");
     d.indent++;
-    c_foreach(i, vec_class_item, my items) {
+    for_each (i, vec_class_item, &my items) {
         display_newline(d);
-        switch (i.ref->tag) {
+        switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
                 display_colored(d, color_name, "constructor");
-                display_function_impl(d, &i.ref->constructor.func, false);
+                display_function_impl(d, &i->constructor.func, false);
                 break;
 
             case CLASS_ITEM_METHOD:
-                if (i.ref->method.is_static) {
+                if (i->method.is_static) {
                     display_lit(d, "static ");
                 }
-                if (i.ref->method.is_abstract) {
+                if (i->method.is_abstract) {
                     display_lit(d, "abstract ");
                 }
                 display_color(d, color_name);
-                display_s(d, i.ref->method.name_string);
+                display_s(d, i->method.name_string);
                 display_normal(d);
-                if (i.ref->method.is_optional) {
+                if (i->method.is_optional) {
                     display_lit(d, "?");
                 }
-                display_function_impl(d, &i.ref->method.func, false);
+                display_function_impl(d, &i->method.func, false);
                 break;
 
             case CLASS_ITEM_FIELD:
-                if (i.ref->field.is_static) {
+                if (i->field.is_static) {
                     display_lit(d, "static ");
                 }
-                if (i.ref->field.is_abstract) {
+                if (i->field.is_abstract) {
                     display_lit(d, "abstract ");
                 }
-                if (i.ref->field.is_readonly) {
+                if (i->field.is_readonly) {
                     display_lit(d, "readonly ");
                 }
                 display_color(d, color_name);
-                display_s(d, i.ref->field.name_string);
+                display_s(d, i->field.name_string);
                 display_normal(d);
-                if (i.ref->field.is_optional) {
+                if (i->field.is_optional) {
                     display_lit(d, "?");
                 }
-                if (i.ref->field.has_explicit_type) {
+                if (i->field.has_explicit_type) {
                     display_lit(d, ": ");
-                    display_type(d, &i.ref->field.explicit_type);
+                    display_type(d, &i->field.explicit_type);
                 }
                 display_lit(d, " = ");
-                display_expr(d, &i.ref->field.value);
+                display_expr(d, &i->field.value);
                 break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
-                display_interface_member(d, &i.ref->interface_memeber);
+                display_interface_member(d, &i->interface_memeber);
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:
                 display_lit(d, "static ");
-                display_block(d, &i.ref->static_block);
+                display_block(d, &i->static_block);
                 break;
         }
     }
@@ -873,11 +873,11 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_GENERIC_PARAMS:
             display_expr(d, &my generic_params->expr);
             display_lit(d, "<");
-            c_foreach(i, vec_spanned_type, my generic_params->params) {
-                display_type(d, &i.ref->type);
-                if (i.ref != i.end - 1) {
+            for_each (i, vec_spanned_type, &my generic_params->params) {
+                if (i_index != 0) {
                     display_lit(d, ", ");
                 }
+                display_type(d, &i->type);
             }
             display_lit(d, ">");
             break;
@@ -906,11 +906,11 @@ void display_expr(Display d, Expr const* me) {
             } else {
                 display_lit(d, "(");
                 d.indent++;
-                c_foreach(i, vec_expr, my call->args) {
-                    display_expr(d, i.ref);
-                    if (i.ref < i.end - 1) {
+                for_each (i, vec_expr, &my call->args) {
+                    if (i_index != 0) {
                         display_lit(d, ", ");
                     }
+                    display_expr(d, i);
                 }
                 d.indent--;
                 display_lit(d, ")");
@@ -924,11 +924,11 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_OBJECT: {
             display_lit(d, "{");
             d.indent++;
-            c_foreach(i, vec_object_expr_item, my object) {
+            for_each (i, vec_object_expr_item, &my object) {
                 display_newline(d);
-                display_s(d, i.ref->name_string);
+                display_s(d, i->name_string);
                 display_lit(d, ": ");
-                display_expr(d, &i.ref->value);
+                display_expr(d, &i->value);
                 display_lit(d, ",");
             }
             d.indent--;
@@ -939,9 +939,9 @@ void display_expr(Display d, Expr const* me) {
         case EXPR_ARRAY: {
             display_lit(d, "[");
             d.indent++;
-            c_foreach(i, vec_expr, my array) {
+            for_each (i, vec_expr, &my array) {
                 display_newline(d);
-                display_expr(d, i.ref);
+                display_expr(d, i);
                 display_lit(d, ",");
             }
             d.indent--;
@@ -1007,17 +1007,17 @@ static void display_port_statement(Display d, PortStatement const* me) {
 
     if (vec_port_item_size(&my items)) {
         display_lit(d, "{");
-        c_foreach(i, vec_port_item, my items) {
-            if (i.ref->type_only) {
+        for_each (i, vec_port_item, &my items) {
+            if (i_index != 0) {
+                display_lit(d, ", ");
+            }
+            if (i->type_only) {
                 display_lit(d, "type ");
             }
-            display_colored_span(d, color_name, i.ref->source_name);
-            if (span_cmp(i.ref->decl_name, i.ref->source_name) != 0) {
+            display_colored_span(d, color_name, i->source_name);
+            if (span_cmp(i->decl_name, i->source_name) != 0) {
                 display_lit(d, " as ");
-                display_colored_span(d, color_name, i.ref->decl_name);
-            }
-            if (i.ref != i.end - 1) {
-                display_lit(d, ", ");
+                display_colored_span(d, color_name, i->decl_name);
             }
         }
         display_lit(d, "}");
@@ -1039,11 +1039,11 @@ static void display_variable_statement(Display d, VariableStatement const* me) {
         case VAR_INIT_LET: display_lit(d, "let "); break;
         case VAR_INIT_CONST: display_lit(d, "const "); break;
     }
-    c_foreach(i, vec_initialized_binding, my initializers) {
-        display_initialized_binding(d, i.ref);
-        if (i.ref != i.end - 1) {
+    for_each (i, vec_initialized_binding, &my initializers) {
+        if (i_index != 0) {
             display_lit(d, ", ");
         }
+        display_initialized_binding(d, i);
     }
 }
 
@@ -1052,12 +1052,12 @@ static void display_enum_decl(Display d, EnumDecl const* me) {
     display_colored_span(d, color_name, my name);
     display_lit(d, " {");
     d.indent++;
-    c_foreach(i, vec_enum_case, my cases) {
+    for_each (i, vec_enum_case, &my cases) {
         display_newline(d);
-        display_colored_span(d, color_name, i.ref->name);
-        if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
+        display_colored_span(d, color_name, i->name);
+        if (i->value.tag != EXPR_IMPLICIT_ANY) {
             display_lit(d, " = ");
-            display_expr(d, &i.ref->value);
+            display_expr(d, &i->value);
         }
         display_lit(d, ",");
     }
@@ -1080,11 +1080,11 @@ static void display_interface_decl(Display d, InterfaceDecl const* me) {
     display_generic(d, &my generic);
     if (!vec_spanned_type_is_empty(&my extends)) {
         display_lit(d, " extends ");
-        c_foreach(i, vec_spanned_type, my extends) {
-            display_type(d, &i.ref->type);
-            if (i.ref != i.end - 1) {
+        for_each (i, vec_spanned_type, &my extends) {
+            if (i_index != 0) {
                 display_lit(d, ", ");
             }
+            display_type(d, &i->type);
         }
     }
     display_lit(d, " ");
@@ -1178,19 +1178,19 @@ void display_statement(Display d, Statement const* me) {
             display_expr(d, &my switch_->needle);
             display_lit(d, ") {");
             d.indent++;
-            c_foreach(i, vec_switch_case, my switch_->cases) {
+            for_each (i, vec_switch_case, &my switch_->cases) {
                 display_newline(d);
-                if (i.ref->is_pattern) {
+                if (i->is_pattern) {
                     display_lit(d, "case ");
-                    display_expr(d, &i.ref->pattern);
+                    display_expr(d, &i->pattern);
                     display_lit(d, ":");
                 } else {
                     display_lit(d, "default:");
                 }
                 d.indent++;
-                c_foreach(j, vec_statement, i.ref->statements) {
+                for_each (j, vec_statement, &i->statements) {
                     display_newline(d);
-                    display_statement(d, j.ref);
+                    display_statement(d, j);
                 }
                 d.indent--;
             }
@@ -1275,9 +1275,9 @@ void display_statement(Display d, Statement const* me) {
 void display_block(Display d, Block const* me) {
     display_lit(d, "{");
     d.indent++;
-    c_foreach(i, vec_statement, my statements) {
+    for_each (i, vec_statement, &my statements) {
         display_newline(d);
-        display_statement(d, i.ref);
+        display_statement(d, i);
     }
     d.indent--;
     display_newline(d);

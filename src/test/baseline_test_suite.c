@@ -120,9 +120,9 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
 
     if (!summary_only) printf("%sRunning tests...%s\n\n", color_status, color_normal);
 
-    c_foreach(i, vec_baseline_test_result, my results) {
-        intptr_t index = i.ref - my results.data;
-        csview name = test_name_from_path(cstr_sv(&i.ref->source_path));
+    for_each (i, vec_baseline_test_result, &my results) {
+        intptr_t index = i_index;
+        csview name = test_name_from_path(cstr_sv(&i->source_path));
         if (!test_passes_filter(me, name)) {
             continue;
         }
@@ -134,7 +134,7 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             fflush(stdout);
 
             if (show_errs || show_syms || show_typs) {
-                printf("- Testing %s\n", cstr_str(&i.ref->source_path));
+                printf("- Testing %s\n", cstr_str(&i->source_path));
             }
         }
 
@@ -145,26 +145,26 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
         debug_allocation_count = 0;
 #endif
 
-        baseline_test_result_run(i.ref, me, prev_obj, show_errs, show_syms, show_typs);
+        baseline_test_result_run(i, me, prev_obj, show_errs, show_syms, show_typs);
 
 #ifdef DEBUG_ALLOCATOR
         if (debug_allocation_count != 0) {
             // Run again in case the "leaked" memory was actually added to the cache. This lowers the chance we'll catch
             // flaky tests but those don't seem too much of a problem
             debug_allocation_count = 0;
-            baseline_test_result_run(i.ref, me, prev_obj, false, false, false);
+            baseline_test_result_run(i, me, prev_obj, false, false, false);
             if (debug_allocation_count != 0) {
                 printf(" %s %zd net allocations! %s\n",
                     color_highlighted_error, debug_allocation_count, color_normal);
-                vec_baseline_test_result_c_ptr_push(&memory_issues, i.ref);
+                vec_baseline_test_result_c_ptr_push(&memory_issues, i);
             }
         }
 #endif
 
         result_drop(&prev_result);
 
-        bool is_pass = baseline_test_result_is_pass(i.ref);
-        bool is_change = is_pass != baseline_test_result_was_pass(i.ref);
+        bool is_pass = baseline_test_result_is_pass(i);
+        bool is_change = is_pass != baseline_test_result_was_pass(i);
         if (is_pass) {
             passed++;
             new_passed += is_change ? 1 : 0;
@@ -173,17 +173,17 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             new_failed += is_change ? 1 : 0;
         }
 
-        if (baseline_test_result_has_new_pass(i.ref)) {
-            vec_baseline_test_result_c_ptr_push(&newly_passed, i.ref);
+        if (baseline_test_result_has_new_pass(i)) {
+            vec_baseline_test_result_c_ptr_push(&newly_passed, i);
         }
 
-        if (baseline_test_result_has_new_fail(i.ref)) {
-            vec_baseline_test_result_c_ptr_push(&newly_failed, i.ref);
+        if (baseline_test_result_has_new_fail(i)) {
+            vec_baseline_test_result_c_ptr_push(&newly_failed, i);
         }
 
         if (!summary_only) {
             cstr_clear(&display);
-            append_test_result_to_cstr(&display, i.ref, true);
+            append_test_result_to_cstr(&display, i, true);
             printf("\r%s\n", cstr_str(&display));
         }
     }
@@ -206,10 +206,10 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             color_good, newly_passed_size, color_normal, newly_passed_size == 1 ? "" : "s"
         );
 
-        c_foreach(i, vec_baseline_test_result_c_ptr, newly_passed) {
+        for_each (i, vec_baseline_test_result_c_ptr, &newly_passed) {
             cstr_clear(&display);
-            append_test_result_to_cstr(&display, *i.ref, false);
-            printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i.ref)->source_path));
+            append_test_result_to_cstr(&display, *i, false);
+            printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i)->source_path));
         }
         printf("\n");
     }
@@ -221,10 +221,10 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             color_error, newly_failed_size, color_normal, newly_failed_size == 1 ? "" : "s"
         );
 
-        c_foreach(i, vec_baseline_test_result_c_ptr, newly_failed) {
+        for_each (i, vec_baseline_test_result_c_ptr, &newly_failed) {
             cstr_clear(&display);
-            append_test_result_to_cstr(&display, *i.ref, false);
-            printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i.ref)->source_path));
+            append_test_result_to_cstr(&display, *i, false);
+            printf("%s (%s)\n", cstr_str(&display), cstr_str(&(*i)->source_path));
         }
         printf("\n");
     }
@@ -236,9 +236,9 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
             color_highlighted_error, memory_issues_size, memory_issues_size == 1 ? "" : "s", color_normal
         );
 
-        c_foreach(i, vec_baseline_test_result_c_ptr, memory_issues) {
+        for_each (i, vec_baseline_test_result_c_ptr, &memory_issues) {
             cstr_clear(&display);
-            append_test_result_to_cstr(&display, *i.ref, false);
+            append_test_result_to_cstr(&display, *i, false);
             printf("%s\n", cstr_str(&display));
         }
         printf("\n");
@@ -280,13 +280,13 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
     cstr_append_fmt(&results, "const tsCommit = \"%s\"\n", cstr_str(&my typescript_commit));
     cstr_append_fmt(&results, "const baselines = {\n");
 
-    c_foreach(i, vec_baseline_test_result, my results) {
-        csview name = test_name_from_path(cstr_sv(&i.ref->source_path));
+    for_each (i, vec_baseline_test_result, &my results) {
+        csview name = test_name_from_path(cstr_sv(&i->source_path));
         ASSERT(!csview_contains(name, "\\") && !csview_contains(name, "'"));
         cstr_append_fmt(&results, "    '%.*s': {\n", c_SV(name));
-        cstr_append_fmt(&results, "        errors: %s,\n", result_element_to_str(i.ref->did_run, i.ref->errors_passed));
-        cstr_append_fmt(&results, "        symbols: %s,\n", result_element_to_str(i.ref->did_run, i.ref->symbols_passed));
-        cstr_append_fmt(&results, "        types: %s,\n", result_element_to_str(i.ref->did_run, i.ref->types_passed));
+        cstr_append_fmt(&results, "        errors: %s,\n", result_element_to_str(i->did_run, i->errors_passed));
+        cstr_append_fmt(&results, "        symbols: %s,\n", result_element_to_str(i->did_run, i->symbols_passed));
+        cstr_append_fmt(&results, "        types: %s,\n", result_element_to_str(i->did_run, i->types_passed));
         cstr_append_fmt(&results, "    },\n");
     }
 

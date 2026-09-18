@@ -32,21 +32,21 @@ Generic generic_clone(Generic me) {
 }
 
 void generic_add_names(Generic const* me, Scope* scope) {
-    c_foreach(i, vec_generic_item, my items) {
-        scope_init_declaration(scope, &i.ref->owned_declaration, (DeclProps){
-            .name = i.ref->name,
-            .full = i.ref->name,
+    for_each (i, vec_generic_item, &my items) {
+        scope_init_declaration(scope, &i->owned_declaration, (DeclProps){
+            .name = i->name,
+            .full = i->name,
             .tag = DECLARATION_GENERIC_TYPE,
-            .declared_type = type_refcopy(&i.ref->extends),
+            .declared_type = type_refcopy(&i->extends),
         });
-        i.ref->declaration_ref = i.ref->owned_declaration.get;
+        i->declaration_ref = i->owned_declaration.get;
     }
 }
 
 void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_generic_item, my items) {
-        type_lookup_names(&i.ref->extends, names, errs);
-        type_lookup_names(&i.ref->fallback, names, errs);
+    for_each (i, vec_generic_item, &my items) {
+        type_lookup_names(&i->extends, names, errs);
+        type_lookup_names(&i->fallback, names, errs);
     }
 }
 
@@ -69,9 +69,9 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
 
         case TYPE_IDENTIFIER:
             if (my identifier->decl_ref) {
-                c_foreach(i, vec_type_refinement, *results) {
-                    if (i.ref->target == my identifier->decl_ref) {
-                        i.ref->refined = arg;
+                for_each (i, vec_type_refinement, results) {
+                    if (i->target == my identifier->decl_ref) {
+                        i->refined = arg;
                         break;
                     }
                 }
@@ -112,17 +112,17 @@ static void collect_generic_candidates(Type const* me, Type const* arg, VecTypeR
 }
 
 static inline void generic_replace_named_types_with(Generic* me, VecTypeRefinement const* refinements) {
-    c_foreach(i, vec_generic_item, my items) {
+    for_each (i, vec_generic_item, &my items) {
         // Is this needed?
-        // replace_named_types_with(&i.ref->extends, refinements);
-        replace_named_types_with(&i.ref->fallback, refinements);
+        // replace_named_types_with(&i->extends, refinements);
+        replace_named_types_with(&i->fallback, refinements);
     }
 }
 
 static inline void callable_replace_named_types_with(CallableType* me, VecTypeRefinement const* refinements) {
     generic_replace_named_types_with(&my generic, refinements);
-    c_foreach(i, vec_callable_arg, my args) {
-        replace_named_types_with(&i.ref->type, refinements);
+    for_each (i, vec_callable_arg, &my args) {
+        replace_named_types_with(&i->type, refinements);
     }
     replace_named_types_with(&my ret, refinements);
 }
@@ -142,14 +142,14 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_IDENTIFIER:
-            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
-                replace_named_types_with(&i.ref->type, refinements);
+            for_each (i, vec_spanned_type, &my identifier->generic_params) {
+                replace_named_types_with(&i->type, refinements);
             }
             if (my identifier->decl_ref) {
                 Type const* refinement = nullptr;
-                c_foreach(i, vec_type_refinement, *refinements) {
-                    if (i.ref->target == my identifier->decl_ref) {
-                        refinement = i.ref->refined;
+                for_each (i, vec_type_refinement, refinements) {
+                    if (i->target == my identifier->decl_ref) {
+                        refinement = i->refined;
                         break;
                     }
                 }
@@ -168,18 +168,18 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, my interface.members) {
-                switch(i.ref->key.tag) {
+            for_each (i, vec_interface_member, &my interface.members) {
+                switch(i->key.tag) {
                     case INTERFACE_KEY_NAME: break;
-                    case INTERFACE_KEY_INDEX: replace_named_types_with(&i.ref->key.index.type, refinements); break;
+                    case INTERFACE_KEY_INDEX: replace_named_types_with(&i->key.index.type, refinements); break;
                     case INTERFACE_KEY_EXPR: break;
                     case INTERFACE_KEY_MAPPED:
-                        replace_named_types_with(&i.ref->key.mapped.in_type, refinements);
-                        replace_named_types_with(&i.ref->key.mapped.as_type, refinements);
+                        replace_named_types_with(&i->key.mapped.in_type, refinements);
+                        replace_named_types_with(&i->key.mapped.as_type, refinements);
                         break;
                     case INTERFACE_KEY_CALLABLE: break;
                 }
-                replace_named_types_with(&i.ref->type, refinements);
+                replace_named_types_with(&i->type, refinements);
             }
             return;
 
@@ -188,8 +188,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
             return;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                replace_named_types_with(&i.ref->type, refinements);
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                replace_named_types_with(&i->type, refinements);
             }
             return;
 
@@ -228,8 +228,8 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                replace_named_types_with(i.ref, refinements);
+            for_each (i, vec_type, &my composite) {
+                replace_named_types_with(i, refinements);
             }
             return;
 
@@ -248,15 +248,15 @@ void replace_named_types_with(Type* me, VecTypeRefinement const* refinements) {
 
 Type generic_degenericize_type(Generic const* me, Type t, VecSpannedType const* generic_params) {
     VecTypeRefinement refinements = vec_type_refinement_with_capacity(vec_generic_item_size(&my items));
-    c_foreach(i, vec_generic_item, my items) {
-        intptr_t index = i.ref - my items.data;
-        if (i.ref->declaration_ref) {
+    for_each (i, vec_generic_item, &my items) {
+        intptr_t index = i_index;
+        if (i->declaration_ref) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->declaration_ref,
+                .target = i->declaration_ref,
                 .refined = generic_param_at(generic_params, index),
             });
         } else {
-            NONFATAL("Generic %.*s type is null", c_SPAN(i.ref->name));
+            NONFATAL("Generic %.*s type is null", c_SPAN(i->name));
         }
     }
     replace_named_types_with(&t, &refinements);
@@ -268,19 +268,19 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
     int call_arg_count = vec_expr_size(args);
     int callable_arg_count = vec_callable_arg_size(&callable->args);
     VecTypeRefinement refinements = {0};
-    c_foreach(i, vec_generic_item, my items) {
-        if (i.ref->declaration_ref) {
+    for_each (i, vec_generic_item, &my items) {
+        if (i->declaration_ref) {
             vec_type_refinement_push(&refinements, (TypeRefinement){
-                .target = i.ref->declaration_ref,
+                .target = i->declaration_ref,
                 .refined = &type_unknown,
             });
         } else {
-            NONFATAL("Generic %.*s type is null", c_SPAN(i.ref->name));
+            NONFATAL("Generic %.*s type is null", c_SPAN(i->name));
         }
     }
     VecType arg_types = {0};
-    c_foreach(i, vec_expr, *args) {
-        vec_type_push(&arg_types, type_refcopy(expr_get_type(i.ref)));
+    for_each (i, vec_expr, args) {
+        vec_type_push(&arg_types, type_refcopy(expr_get_type(i)));
     }
     for (int i = 0; i < callable_arg_count && i < call_arg_count; i++) {
         collect_generic_candidates(
@@ -301,16 +301,16 @@ CallableType generic_infer_callable_types(Generic const* me, CallableType* calla
 
 void generic_typecheck(Generic const* me, ErrorCtx* errs) {
     bool found_optional = false;
-    c_foreach(i, vec_generic_item, my items) {
-        type_typecheck(&i.ref->extends, errs);
-        type_typecheck(&i.ref->fallback, errs);
-        if (found_optional && !i.ref->fallback_explicit) {
+    for_each (i, vec_generic_item, &my items) {
+        type_typecheck(&i->extends, errs);
+        type_typecheck(&i->fallback, errs);
+        if (found_optional && !i->fallback_explicit) {
             error_ctx_error(
-                errs, i.ref->full_span, 2706,
+                errs, i->full_span, 2706,
                 "Required type parameters may not follow optional type parameters."
             );
         }
-        if (i.ref->fallback_explicit) {
+        if (i->fallback_explicit) {
             found_optional = true;
         }
     }

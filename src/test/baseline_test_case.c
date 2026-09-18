@@ -182,9 +182,9 @@ static void load_test_source(BaselineTestCase* me) {
 
 static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* source) {
     PANIC_IF(!source, "Tests detected span with null source");
-    c_foreach(i, vec_baseline_test_file, my files) {
-        if (i.ref->source == source) {
-            return i.ref;
+    for_each (i, vec_baseline_test_file, &my files) {
+        if (i->source == source) {
+            return i;
         }
     }
     PANIC("failed to find test for source file %s", cstr_str(&source->canonical_path));
@@ -248,8 +248,8 @@ static void format_error_tree(
     }
 
     // Traverse down the tree handling sub-errors and related errors
-    c_foreach(related, vec_error, error->sub_errors) {
-        format_error_tree(global_target, file_target, toplevel, related.ref, current_source, indent_level + 1);
+    for_each (related, vec_error, &error->sub_errors) {
+        format_error_tree(global_target, file_target, toplevel, related, current_source, indent_level + 1);
     }
 }
 
@@ -261,38 +261,38 @@ static void process_errors(BaselineTestCase* me) {
     SourceFile const* current_source = nullptr;
     BaselineTestFile* current_test_file = nullptr;
 
-    c_foreach(error, vec_error, my error_ctx->errors) {
-        if (!span_valid(error.ref->span)) {
+    for_each (error, vec_error, &my error_ctx->errors) {
+        if (!span_valid(error->span)) {
             continue;
         }
 
-        if (error.ref->span.source != current_source) {
-            current_source = error.ref->span.source;
+        if (error->span.source != current_source) {
+            current_source = error->span.source;
             current_test_file = find_file(me, current_source);
         }
 
         ASSERT(current_test_file);
 
-        unsigned line = span_line_index(error.ref->span);
-        unsigned col = span_col_index(error.ref->span);
+        unsigned line = span_line_index(error->span);
+        unsigned col = span_col_index(error->span);
 
         LineNumberedStr item = {
             .line = line,
             .str = cstr_null,
         };
 
-        if (span_valid(error.ref->span)) {
+        if (span_valid(error->span)) {
             for (unsigned j = 0; j < col + 4; j++) {
                 cstr_append_lit(&item.str, " ");
             }
-            for (unsigned j = 0; j < error.ref->span.sv.size; j++) {
+            for (unsigned j = 0; j < error->span.sv.size; j++) {
                 cstr_append_lit(&item.str, "~");
             }
         } else {
             cstr_append(&item.str, "<NO SPAN>");
         }
 
-        format_error_tree(&my formatted_errors, &item.str, error.ref, error.ref, current_source, 0);
+        format_error_tree(&my formatted_errors, &item.str, error, error, current_source, 0);
 
         vec_line_numbered_str_push(&current_test_file->errors, item);
         current_test_file->error_count++;
@@ -322,10 +322,10 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
     program_copy_globals_from(program, lib_program);
 
-    c_foreach(i, vec_baseline_test_file, ret.files) {
-        SourceFile* source = program_load(program, cstr_sv(&i.ref->path));
-        source->display_path_override = cstr_str(&i.ref->path);
-        i.ref->source = source;
+    for_each (i, vec_baseline_test_file, &ret.files) {
+        SourceFile* source = program_load(program, cstr_sv(&i->path));
+        source->display_path_override = cstr_str(&i->path);
+        i->source = source;
     }
 
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors, but name errors are
@@ -339,9 +339,9 @@ BaselineTestCase run_baseline_test_case(BaselineTestCache* cache, csview source_
     }
 
     set_error_config(&errs->config);
-    c_foreach(i, vec_baseline_test_file, ret.files) {
+    for_each (i, vec_baseline_test_file, &ret.files) {
         // PERF: perhaps mark the file as "current" so we don't have to look it up
-        block_compile_test_info(&i.ref->source->ast, &ret);
+        block_compile_test_info(&i->source->ast, &ret);
     }
     clear_error_config();
 
@@ -475,49 +475,49 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     cstr_append_s(target, my formatted_errors);
     cstr_append_lit(target, "\r\n");
 
-    c_foreach(i, vec_baseline_test_file, my files) {
+    for_each (i, vec_baseline_test_file, &my files) {
         cstr_append_fmt(
             target,
             "\r\n==== %s (%ld errors) ====\r\n",
-            cstr_str(&i.ref->path),
-            i.ref->error_count
+            cstr_str(&i->path),
+            i->error_count
         );
 
         render_lines_woven_with_file(
             target,
-            cstr_str(&i.ref->path),
+            cstr_str(&i->path),
             true,
-            cstr_sv(&i.ref->source->contents),
-            &i.ref->errors,
-            i.ref == vec_baseline_test_file_back(&my files)
+            cstr_sv(&i->source->contents),
+            &i->errors,
+            i == vec_baseline_test_file_back(&my files)
         );
     }
 }
 
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_fmt(target, "//// [%.*s] ////\r\n\r\n", c_SV(relative_test_path(my source_path)));
-    c_foreach(i, vec_baseline_test_file, my files) {
+    for_each (i, vec_baseline_test_file, &my files) {
         render_lines_woven_with_file(
             target,
-            cstr_str(&i.ref->path),
+            cstr_str(&i->path),
             false,
-            cstr_sv(&i.ref->source->contents),
-            &i.ref->symbols,
-            i.ref == vec_baseline_test_file_back(&my files)
+            cstr_sv(&i->source->contents),
+            &i->symbols,
+            i == vec_baseline_test_file_back(&my files)
         );
     }
 }
 
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
     cstr_append_fmt(target, "//// [%.*s] ////\r\n\r\n", c_SV(relative_test_path(my source_path)));
-    c_foreach(i, vec_baseline_test_file, my files) {
+    for_each (i, vec_baseline_test_file, &my files) {
         render_lines_woven_with_file(
             target,
-            cstr_str(&i.ref->path),
+            cstr_str(&i->path),
             false,
-            cstr_sv(&i.ref->source->contents),
-            &i.ref->types,
-            i.ref == vec_baseline_test_file_back(&my files)
+            cstr_sv(&i->source->contents),
+            &i->types,
+            i == vec_baseline_test_file_back(&my files)
         );
     }
 }
@@ -605,12 +605,12 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     cstr text = cstr_from_fmt(">%.*s : Symbol(", c_SPAN(data.span));
 
     bool has_namespace = false;
-    c_foreach(i, vec_span, data.namespaces) {
-        if (span_valid(*i.ref)) {
+    for_each (i, vec_span, &data.namespaces) {
+        if (span_valid(*i)) {
             if (has_namespace) {
                 cstr_append_lit(&text, ".");
             }
-            cstr_append_span(&text, *i.ref);
+            cstr_append_span(&text, *i);
             has_namespace = true;
         }
     }
@@ -627,9 +627,9 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     }
 
     bool found_decl = false;
-    c_foreach(i, vec_span, data.declarations) {
-        if (span_valid(*i.ref)) {
-            append_decl(&text, *i.ref);
+    for_each (i, vec_span, &data.declarations) {
+        if (span_valid(*i)) {
+            append_decl(&text, *i);
             found_decl = true;
         }
     }

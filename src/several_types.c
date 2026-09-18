@@ -43,8 +43,8 @@ static Declaration const* get_declaration_from_namespace(
 
 static cstr identifier_type_make_name_str(IdentifierType const* me) {
     cstr ret = cstr_null;
-    c_foreach(i, vec_span, my namespaces) {
-        cstr_append_span(&ret, *i.ref);
+    for_each (i, vec_span, &my namespaces) {
+        cstr_append_span(&ret, *i);
         cstr_append_lit(&ret, ".");
     }
     cstr_append_span(&ret, my name);
@@ -57,18 +57,18 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
     if (vec_span_size(&my namespaces)) {
         Scope const* namespace = nullptr;
         Span prev_name = span_null;
-        c_foreach(i, vec_span, my namespaces) {
+        for_each (i, vec_span, &my namespaces) {
             Declaration const* decl;
-            if (i.ref == my namespaces.data /* First namespaces */) {
-                decl = scope_stack_get_namespace(names, i.ref->sv);
+            if (i == my namespaces.data /* First namespaces */) {
+                decl = scope_stack_get_namespace(names, i->sv);
                 if (!decl) {
-                    error_ctx_error(errs, *i.ref, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i.ref));
+                    error_ctx_error(errs, *i, 2503, "Cannot find namespace '%.*s'.", c_SPAN(*i));
                 }
             } else /* Subsequent namespaces */ {
-                decl = get_declaration_from_namespace(namespace, prev_name, *i.ref, true, errs);
+                decl = get_declaration_from_namespace(namespace, prev_name, *i, true, errs);
             }
             namespace = decl ? decl->namespace :nullptr;
-            prev_name = *i.ref;
+            prev_name = *i;
             if (!decl) {
                 break;
             }
@@ -102,8 +102,8 @@ void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCt
         cstr_drop(&name_str);
     }
 
-    c_foreach(i, vec_spanned_type, my generic_params) {
-        type_lookup_names(&i.ref->type, names, errs);
+    for_each (i, vec_spanned_type, &my generic_params) {
+        type_lookup_names(&i->type, names, errs);
     }
 }
 
@@ -125,8 +125,8 @@ Type identifier_type_evaluate_type(IdentifierType* me) {
 }
 
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
-    c_foreach(i, vec_spanned_type, my generic_params) {
-        type_typecheck(&i.ref->type, errs);
+    for_each (i, vec_spanned_type, &my generic_params) {
+        type_typecheck(&i->type, errs);
     }
     if (my decl_ref) {
         /*

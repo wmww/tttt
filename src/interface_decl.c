@@ -29,8 +29,8 @@ void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx*
     my lazy_type.tag = LAZY_TYPE_INTERFACE_DECL;
     Scope generic_scope = scope_init(errs);
     scope_push_generic_to_stack(&generic_scope, &my generic, names);
-    c_foreach(i, vec_spanned_type, my extends) {
-        type_lookup_names(&i.ref->type, names, errs);
+    for_each (i, vec_spanned_type, &my extends) {
+        type_lookup_names(&i->type, names, errs);
     }
     Scope block_scope = scope_init(errs);
 
@@ -44,17 +44,17 @@ void interface_decl_lookup_names(InterfaceDecl* me, ScopeStack* names, ErrorCtx*
 Type interface_decl_evaluate_type(InterfaceDecl* me) {
     ASSERT(my type.tag == TYPE_INTERFACE);
 
-    c_foreach(i, vec_interface_member, my type.interface.members) {
-        i.ref->origin_interface = my declaration.get;
+    for_each (i, vec_interface_member, &my type.interface.members) {
+        i->origin_interface = my declaration.get;
     }
 
     VecType types = vec_type_init();
 
     vec_type_push(&types, type_clone(my type));
 
-    c_foreach(extends, vec_spanned_type, my extends) {
+    for_each (extends, vec_spanned_type, &my extends) {
         Type t;
-        if (interface_try_from_type(&extends.ref->type, &t)) {
+        if (interface_try_from_type(&extends->type, &t)) {
             vec_type_push(&types, t);
         }
     }
@@ -66,13 +66,13 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
 
     ASSERT(my type.tag == TYPE_INTERFACE);
-    c_foreach(extends, vec_spanned_type, my extends) {
-        type_typecheck(&extends.ref->type, errs);
-        Type const* resolved = type_resolve(&extends.ref->type);
-        if (extends.ref->type.tag != TYPE_IDENTIFIER) {
+    for_each (extends, vec_spanned_type, &my extends) {
+        type_typecheck(&extends->type, errs);
+        Type const* resolved = type_resolve(&extends->type);
+        if (extends->type.tag != TYPE_IDENTIFIER) {
             error_ctx_error(
                 errs,
-                extends.ref->span,
+                extends->span,
                 2499,
                 "An interface can only extend an identifier/qualified-name with optional type arguments."
             );
@@ -80,7 +80,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             /*
             error_ctx_error(
                 errs,
-                extends.ref->span,
+                extends->span,
                 2312,
                 "An interface can only extend an object type or intersection of object types with statically known members."
             );
@@ -99,7 +99,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             }
             */
         }
-        //my effective_type = type_composite(my effective_type, type_clone(extends.ref->type), TYPE_INTERSECTION);
+        //my effective_type = type_composite(my effective_type, type_clone(extends->type), TYPE_INTERSECTION);
     }
 
     type_typecheck(&my type, errs);

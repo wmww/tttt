@@ -44,8 +44,8 @@ void scope_stack_pop_scope(ScopeStack* me, Scope const* scope) {
 }
 
 bool scope_stack_has_function(ScopeStack* me) {
-    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
-        if ((*i.ref)->is_function) {
+    for_each_reverse (i, vec_scope_cptr, &my stack) {
+        if ((*i)->is_function) {
             return true;
         }
     }
@@ -53,8 +53,8 @@ bool scope_stack_has_function(ScopeStack* me) {
 }
 
 Declaration const* scope_stack_get_value(ScopeStack const* me, csview name) {
-    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
-        auto result = hmap_arc_declaration_get(&(*i.ref)->declarations, name);
+    for_each_reverse (i, vec_scope_cptr, &my stack) {
+        auto result = hmap_arc_declaration_get(&(*i)->declarations, name);
         if (result && result->second.get->value_tag) {
             return result->second.get;
         }
@@ -63,8 +63,8 @@ Declaration const* scope_stack_get_value(ScopeStack const* me, csview name) {
 }
 
 Declaration const* scope_stack_get_type(ScopeStack const* me, csview name) {
-    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
-        auto result = hmap_arc_declaration_get(&(*i.ref)->declarations, name);
+    for_each_reverse (i, vec_scope_cptr, &my stack) {
+        auto result = hmap_arc_declaration_get(&(*i)->declarations, name);
         if (result && result->second.get->type_tag) {
             return result->second.get;
         }
@@ -73,8 +73,8 @@ Declaration const* scope_stack_get_type(ScopeStack const* me, csview name) {
 }
 
 Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name) {
-    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
-        auto result = hmap_arc_declaration_get(&(*i.ref)->declarations, name);
+    for_each_reverse (i, vec_scope_cptr, &my stack) {
+        auto result = hmap_arc_declaration_get(&(*i)->declarations, name);
         if (result && result->second.get->namespace_tag) {
             return result->second.get;
         }
@@ -83,11 +83,11 @@ Declaration const* scope_stack_get_namespace(ScopeStack const* me, csview name) 
 }
 
 Declaration const* scope_stack_get_keyword(ScopeStack const* me, KeywordIdentifier keyword, bool type_else_value) {
-    for (c_each_reverse(i, vec_scope_cptr, my stack)) {
+    for_each_reverse (i, vec_scope_cptr, &my stack) {
         Declaration const* decl = nullptr;
         switch (keyword) {
-            case KEYWORD_IDENTIFIER_THIS: decl = (*i.ref)->this_declaration; break;
-            case KEYWORD_IDENTIFIER_SUPER: decl = (*i.ref)->super_declaration; break;
+            case KEYWORD_IDENTIFIER_THIS: decl = (*i)->this_declaration; break;
+            case KEYWORD_IDENTIFIER_SUPER: decl = (*i)->super_declaration; break;
             case KEYWORD_IDENTIFIER_NONE: break;
         }
         if (decl) {

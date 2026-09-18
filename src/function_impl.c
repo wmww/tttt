@@ -48,23 +48,23 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
     }
 
     // Loop through all arguments and add them to the scope
-    c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_add_names(&i.ref->initializer, &function_scope, (BindingAddNamesProps){
+    for_each (i, vec_function_arg, &my args) {
+        initialized_binding_add_names(&i->initializer, &function_scope, (BindingAddNamesProps){
             .abstract_literals = true,
             .is_function_arg = true,
-            .full = i.ref->span,
+            .full = i->span,
         });
-        if (i.ref->initializer.binding.tag == BINDING_IDENTIFIER &&
-            span_equals(i.ref->initializer.binding.content_span, "this")
+        if (i->initializer.binding.tag == BINDING_IDENTIFIER &&
+            span_equals(i->initializer.binding.content_span, "this")
         ) {
-            function_scope.this_declaration = i.ref->initializer.binding.declaration.get;
+            function_scope.this_declaration = i->initializer.binding.declaration.get;
         }
     }
 
     scope_push_to_stack(&function_scope, names);
     // Now that names for all arguments are added, resolve all names
-    c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_lookup_names(&i.ref->initializer, names, errs);
+    for_each (i, vec_function_arg, &my args) {
+        initialized_binding_lookup_names(&i->initializer, names, errs);
     }
     scope_pop_from_stack(&function_scope);
 
@@ -83,11 +83,11 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
 
 static Type function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me) {
     VecCallableArg args = vec_callable_arg_init();
-    c_foreach(i, vec_function_arg, my args) {
+    for_each (i, vec_function_arg, &my args) {
         vec_callable_arg_push(&args, (CallableArg){
-            .optional = i.ref->explicit_optional || i.ref->initializer.value.tag != EXPR_IMPLICIT_ANY,
-            .type = type_refcopy(binding_get_effective_type(&i.ref->initializer.binding)),
-            .source = i.ref, // Safe because FunctionImpls are always owned by the AST, and more args will not be added
+            .optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY,
+            .type = type_refcopy(binding_get_effective_type(&i->initializer.binding)),
+            .source = i, // Safe because FunctionImpls are always owned by the AST, and more args will not be added
         });
     }
     return type_callable(c_new(CallableType, {
@@ -136,15 +136,15 @@ Type function_impl_evaluate_type(FunctionImpl* me) {
 }
 
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
-    c_foreach(i, vec_function_arg, my args) {
-        if (!i.ref->initializer.binding.has_explicit_type &&
-            i.ref->initializer.value.tag == EXPR_IMPLICIT_ANY
+    for_each (i, vec_function_arg, &my args) {
+        if (!i->initializer.binding.has_explicit_type &&
+            i->initializer.value.tag == EXPR_IMPLICIT_ANY
         ) {
             if (get_error_config()->no_implicit_any) {
-                binding_add_implicit_any_type_errors(&i.ref->initializer.binding, true, errs);
+                binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
             }
         }
-        initialized_binding_typecheck(&i.ref->initializer, errs);
+        initialized_binding_typecheck(&i->initializer, errs);
     }
 
     type_typecheck(lazy_type_get(&my lazy_type), errs);

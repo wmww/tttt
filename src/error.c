@@ -64,9 +64,9 @@ void display_error(Display d, Error const* me) {
     }
 
     d.indent++;
-    c_foreach(i, vec_error, my sub_errors) {
+    for_each (i, vec_error, &my sub_errors) {
         display_lit(d, "\n");
-        display_error(d, i.ref);
+        display_error(d, i);
     }
 
     cstr_drop(&prefix);
@@ -123,8 +123,8 @@ void print_error_ctx(ErrorCtx const* me) {
     cstr str = cstr_null;
     const intptr_t max_display = 5000;
     intptr_t displayed = 0;
-    c_foreach(i, vec_error, my errors) {
-        display_error(debug_display(&str), i.ref);
+    for_each (i, vec_error, &my errors) {
+        display_error(debug_display(&str), i);
         printf("%s\n\n", cstr_str(&str));
         cstr_clear(&str);
         displayed++;

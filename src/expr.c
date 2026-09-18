@@ -76,10 +76,10 @@ static Generic const* generic_params_get_generic(GenericParamsExpr* me) {
     if (expr_type->tag == TYPE_CALLABLE) {
         return &expr_type->callable->generic;
     } else if (expr_type->tag == TYPE_INTERFACE) {
-        c_foreach(i, vec_interface_member, expr_type->interface.members) {
-            if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                ASSERT(i.ref->type.tag == TYPE_CALLABLE);
-                return &i.ref->type.callable->generic;
+        for_each (i, vec_interface_member, &expr_type->interface.members) {
+            if (i->key.tag == INTERFACE_KEY_CALLABLE) {
+                ASSERT(i->type.tag == TYPE_CALLABLE);
+                return &i->type.callable->generic;
             }
         }
     }
@@ -97,8 +97,8 @@ Type generic_params_expr_evaluate_type(GenericParamsExpr* me) {
 }
 
 void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
-    c_foreach(i, vec_spanned_type, my params) {
-        type_typecheck(&i.ref->type, errs);
+    for_each (i, vec_spanned_type, &my params) {
+        type_typecheck(&i->type, errs);
     }
     Generic const* generic = generic_params_get_generic(me);
     for (intptr_t i = 0; i < vec_spanned_type_size(&my params); i++) {
@@ -237,8 +237,8 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_GENERIC_PARAMS:
             expr_lookup_names(&my generic_params->expr, names, errs);
-            c_foreach(i, vec_spanned_type, my generic_params->params) {
-                type_lookup_names(&i.ref->type, names, errs);
+            for_each (i, vec_spanned_type, &my generic_params->params) {
+                type_lookup_names(&i->type, names, errs);
             }
             break;
 
@@ -255,8 +255,8 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_CALL:
             expr_lookup_names(&my call->callable, names, errs);
-            c_foreach(i, vec_expr, my call->args) {
-                expr_lookup_names(i.ref, names, errs);
+            for_each (i, vec_expr, &my call->args) {
+                expr_lookup_names(i, names, errs);
             }
             break;
 
@@ -268,14 +268,14 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
         }   break;
 
         case EXPR_OBJECT:
-            c_foreach(i, vec_object_expr_item, my object) {
-                expr_lookup_names(&i.ref->value, names, errs);
+            for_each (i, vec_object_expr_item, &my object) {
+                expr_lookup_names(&i->value, names, errs);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, vec_expr, my array) {
-                expr_lookup_names(i.ref, names, errs);
+            for_each (i, vec_expr, &my array) {
+                expr_lookup_names(i, names, errs);
             }
             break;
 
@@ -618,26 +618,26 @@ Type expr_evaluate_type(Expr const* me) {
 
         case EXPR_OBJECT: {
             Interface interface = {0};
-            c_foreach(i, vec_object_expr_item, my object) {
-                if (i.ref->is_spread) {
-                    Type const* type = type_resolve(expr_get_type(&i.ref->value));
+            for_each (i, vec_object_expr_item, &my object) {
+                if (i->is_spread) {
+                    Type const* type = type_resolve(expr_get_type(&i->value));
                     if (type->tag == TYPE_INTERFACE) {
-                        c_foreach(i, vec_interface_member, type->interface.members) {
-                            vec_interface_member_push(&interface.members, interface_member_clone(*i.ref));
+                        for_each (i, vec_interface_member, &type->interface.members) {
+                            vec_interface_member_push(&interface.members, interface_member_clone(*i));
                         }
                     }
                 } else {
-                    Type type = type_clone(*expr_get_type(&i.ref->value));
+                    Type type = type_clone(*expr_get_type(&i->value));
                     type_abstract_literals(&type);
                     vec_interface_member_push(
                         &interface.members,
                         interface_member_make(
-                            span_between(i.ref->name_span, i.ref->value.outer_span),
+                            span_between(i->name_span, i->value.outer_span),
                             nullptr,
                             false,
                             false,
-                            cstr_clone(i.ref->name_string),
-                            i.ref->name_span,
+                            cstr_clone(i->name_string),
+                            i->name_span,
                             false,
                             type
                         )
@@ -649,8 +649,8 @@ Type expr_evaluate_type(Expr const* me) {
 
         case EXPR_ARRAY: {
             Type index_t = type_never;
-            c_foreach(i, vec_expr, my array) {
-                Type type = type_clone(*expr_get_type(i.ref));
+            for_each (i, vec_expr, &my array) {
+                Type type = type_clone(*expr_get_type(i));
                 type_abstract_literals(&type);
                 if (type.tag != TYPE_VALUE || type.value.tag != VALUE_UNDEFINED) {
                     index_t = type_composite(TYPE_UNION, index_t, type);
@@ -749,8 +749,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_CALL: {
             expr_typecheck(&my call->callable, errs);
-            c_foreach(i, vec_expr, my call->args) {
-                expr_typecheck(i.ref, errs);
+            for_each (i, vec_expr, &my call->args) {
+                expr_typecheck(i, errs);
             }
             type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, errs);
         }   break;
@@ -760,14 +760,14 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             break;
 
         case EXPR_OBJECT:
-            c_foreach(i, vec_object_expr_item, my object) {
-                expr_typecheck(&i.ref->value, errs);
+            for_each (i, vec_object_expr_item, &my object) {
+                expr_typecheck(&i->value, errs);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, vec_expr, my array) {
-                expr_typecheck(i.ref, errs);
+            for_each (i, vec_expr, &my array) {
+                expr_typecheck(i, errs);
             }
             break;
 

@@ -58,12 +58,12 @@ void scope_pop_from_stack(Scope* me) {
 }
 
 void scope_copy_declarations_from(Scope* me, Scope const* source) {
-    c_foreach(i, hmap_arc_declaration, source->declarations) {
-        i.ref->second.get->shared_between_scopes = true;
+    for_each_kv (name, declaration, hmap_arc_declaration, &source->declarations) {
+        declaration->get->shared_between_scopes = true;
         hmap_arc_declaration_insert(
             &my declarations,
-            cstr_clone(i.ref->first),
-            arc_declaration_clone(i.ref->second)
+            cstr_clone(*name),
+            arc_declaration_clone(*declaration)
         );
     }
 }
@@ -229,8 +229,8 @@ static Declaration const* find_declaration_in_exports(Scope const* me, csview na
         return ret;
     }
 
-    c_foreach(i, vec_port_item_ptr, my wildcard_reexports) {
-        Scope* next = source_file_get_scope_if_module((*i.ref)->source_file);
+    for_each (i, vec_port_item_ptr, &my wildcard_reexports) {
+        Scope* next = source_file_get_scope_if_module((*i)->source_file);
         ASSERT(next);
         if (next->currently_adding_import) {
             // We don't want to raise an error here
@@ -319,28 +319,28 @@ static void process_port(Scope* me, PortItem* item) {
 }
 
 void scope_process_imports(Scope* me) {
-    c_foreach(i, hmap_port_item_ptr, my ports) {
-        process_port(me, i.ref->second);
+    for_each (i, hmap_port_item_ptr, &my ports) {
+        process_port(me, i->second);
     }
 }
 
 Type scope_evaluate_value_interface(Scope const* me) {
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, hmap_arc_declaration, my declarations) {
-        if (i.ref->second.get->value_tag) {
+    for_each (i, hmap_arc_declaration, &my declarations) {
+        if (i->second.get->value_tag) {
             InterfaceMember member = interface_member_make(
                 span_null, // Declaration
                 nullptr, // Interface
                 false, // readonly
                 false, // optional
-                cstr_from_span(i.ref->second.get->name),
-                i.ref->second.get->name,
+                cstr_from_span(i->second.get->name),
+                i->second.get->name,
                 false, // name is value
-                type_clone(i.ref->second.get->value_type)
+                type_clone(i->second.get->value_type)
             );
             // TODO: make this less stupid (probably by refactoring interface_member_make() to take a props struct)
             vec_span_drop(&member.declarations);
-            member.declarations = vec_span_clone(i.ref->second.get->declarations);
+            member.declarations = vec_span_clone(i->second.get->declarations);
             vec_interface_member_push(&members, member);
         }
     }

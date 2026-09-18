@@ -624,9 +624,9 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
 static void modifier_list_validate_during_parse(Parser* parent, ModifierList const* me, Span name, ModifierValidationFlags flags) {
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
     modifier_list_validate(me, name, flags, &errs);
-    c_foreach(i, vec_error, errs.errors) {
-        add_error_to_parser(parent, *i.ref);
-        *i.ref = (Error){0};
+    for_each (i, vec_error, &errs.errors) {
+        add_error_to_parser(parent, *i);
+        *i = (Error){0};
     }
     error_ctx_drop(&errs);
 }
@@ -3207,8 +3207,8 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     auto item_tag = is_export ? (
         statement.requires_target ? PORT_REEXPORT_SPECIFIC : PORT_EXPORT_SPECIFIC
     ) : PORT_IMPORT_SPECIFIC;
-    c_foreach(i, vec_port_item, statement.items) {
-        i.ref->tag = item_tag;
+    for_each (i, vec_port_item, &statement.items) {
+        i->tag = item_tag;
     }
 
     statement.main.full_span = span_from(a);
@@ -4039,9 +4039,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         };
     } else if (parse_global_block(&p, &ret->decl.namespace)) {
         if (decl_props.declared) {
-            c_foreach(i, vec_statement, ret->decl.namespace.contents.statements) {
-                if (statement_tag_is_decl(i.ref->tag)) {
-                    i.ref->decl.props.declared = true;
+            for_each (i, vec_statement, &ret->decl.namespace.contents.statements) {
+                if (statement_tag_is_decl(i->tag)) {
+                    i->decl.props.declared = true;
                 }
             }
         }
@@ -4180,9 +4180,9 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         }
     }
 
-    c_foreach(i, vec_error, shared.errors) {
-        error_ctx_append_error(errs, *i.ref);
-        *i.ref = (Error){0};
+    for_each (i, vec_error, &shared.errors) {
+        error_ctx_append_error(errs, *i);
+        *i = (Error){0};
     }
 
     parser_shared_drop(&shared);

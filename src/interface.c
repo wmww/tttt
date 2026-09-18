@@ -49,9 +49,9 @@ bool interface_try_from_type(Type const* me, Type* ret) {
 
         case TYPE_INTERSECTION: {
             VecType interfaces = vec_type_init();
-            c_foreach(i, vec_type, my composite) {
+            for_each (i, vec_type, &my composite) {
                 Type t;
-                if (!interface_try_from_type(i.ref, &t)) {
+                if (!interface_try_from_type(i, &t)) {
                     vec_type_drop(&interfaces);
                     return false;
                 }
@@ -68,14 +68,14 @@ bool interface_try_from_type(Type const* me, Type* ret) {
 
 static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceMember const* needle) {
     // PERF: do not merge interfaces this way, for obvious reasons
-    c_foreach(i, vec_interface_member, *haystack) {
-        if (i.ref->key.tag != needle->key.tag) {
+    for_each (i, vec_interface_member, haystack) {
+        if (i->key.tag != needle->key.tag) {
             continue;
         }
         switch (needle->key.tag) {
             case INTERFACE_KEY_NAME:
-                if (cstr_eq(&needle->key.name_string, &i.ref->key.name_string)) {
-                    return i.ref - haystack->data;
+                if (cstr_eq(&needle->key.name_string, &i->key.name_string)) {
+                    return i_index;
                 } else {
                     break;
                 }
@@ -83,7 +83,7 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
             case INTERFACE_KEY_INDEX:
             case INTERFACE_KEY_EXPR:
             case INTERFACE_KEY_MAPPED:
-                return i.ref - haystack->data;
+                return i_index;
 
             case INTERFACE_KEY_CALLABLE:
                 break;
@@ -93,27 +93,27 @@ static intptr_t index_of_matching(VecInterfaceMember const* haystack, InterfaceM
 }
 
 static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMember source) {
-    c_foreach(new_member, vec_interface_member, source) {
-        intptr_t matching_index = index_of_matching(target, new_member.ref);
+    for_each (new_member, vec_interface_member, &source) {
+        intptr_t matching_index = index_of_matching(target, new_member);
         InterfaceMember* matching = matching_index < 0 ?
             nullptr :
             vec_interface_member_at_mut(target, matching_index);
         if (matching) {
-            c_foreach(i, vec_span, new_member.ref->declarations) {
+            for_each (i, vec_span, &new_member->declarations) {
                 bool add = true;
-                c_foreach(j, vec_span, matching->declarations) {
-                    if (span_cmp(*i.ref, *j.ref) == 0) {
+                for_each (j, vec_span, &matching->declarations) {
+                    if (span_cmp(*i, *j) == 0) {
                         add = false;
                         break;
                     }
                 }
                 if (add) {
-                    vec_span_push(&matching->declarations, *i.ref);
+                    vec_span_push(&matching->declarations, *i);
                 }
             }
-            interface_member_drop(new_member.ref);
+            interface_member_drop(new_member);
         } else {
-            vec_interface_member_push(target, *new_member.ref);
+            vec_interface_member_push(target, *new_member);
         }
     }
     source.size = 0;
@@ -122,10 +122,10 @@ static void push_interface_members_to(VecInterfaceMember* target, VecInterfaceMe
 
 Type interface_from_merged_interfaces(VecType types) {
     VecInterfaceMember members = vec_interface_member_init();
-    c_foreach(i, vec_type, types) {
-        ASSERT(i.ref->tag == TYPE_INTERFACE);
-        push_interface_members_to(&members, i.ref->interface.members);
-        i.ref->interface.members = vec_interface_member_init();
+    for_each (i, vec_type, &types) {
+        ASSERT(i->tag == TYPE_INTERFACE);
+        push_interface_members_to(&members, i->interface.members);
+        i->interface.members = vec_interface_member_init();
     }
     vec_type_drop(&types);
     return type_interface((Interface){
@@ -134,8 +134,8 @@ Type interface_from_merged_interfaces(VecType types) {
 }
 
 void interface_typecheck(Interface const* me, ErrorCtx* errs) {
-    c_foreach(i, vec_interface_member, my members) {
-        interface_member_typecheck(i.ref, false, errs);
+    for_each (i, vec_interface_member, &my members) {
+        interface_member_typecheck(i, false, errs);
     }
 }
 
@@ -153,8 +153,8 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
         return;
     }
     VecInterfaceMember const* reference = &from_named->interface.members;
-    c_foreach(i, vec_interface_member, my members) {
-        intptr_t index = index_of_matching(reference, i.ref);
+    for_each (i, vec_interface_member, &my members) {
+        intptr_t index = index_of_matching(reference, i);
         if (index < 0) {
             continue;
         }
@@ -164,26 +164,26 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
         ignore matching;
         /*
         bool check_type = true;
-        if (vec_span_size(&i.ref->declarations) &&
+        if (vec_span_size(&i->declarations) &&
             vec_span_size(&matching->declarations) &&
-            span_cmp(*i.ref->declarations.data, *matching->declarations.data) == 0
+            span_cmp(*i->declarations.data, *matching->declarations.data) == 0
         ) {
             // If our declaration span is the first span of the matching member it's type will be from us. Don't bother
             // checking if it matches
             check_type = false;
         }
-        if (check_type && i.ref->key.tag == INTERFACE_KEY_NAME && (
-            !type_extends(&i.ref->type, &matching->type) ||
-            !type_extends(&matching->type, &i.ref->type)
+        if (check_type && i->key.tag == INTERFACE_KEY_NAME && (
+            !type_extends(&i->type, &matching->type) ||
+            !type_extends(&matching->type, &i->type)
         )) {
             cstr msg = cstr_lit("Subsequent property declarations must have the same type.  Property '");
-            cstr_append_span(&msg, i.ref->key.span);
+            cstr_append_span(&msg, i->key.span);
             cstr_append_lit(&msg, "' must be of type '");
             cstr_append_type_error_msg(&msg, &matching->type);
             cstr_append_lit(&msg, "', but here has type '");
-            cstr_append_type_error_msg(&msg, &i.ref->type);
+            cstr_append_type_error_msg(&msg, &i->type);
             cstr_append_lit(&msg, "'.");
-            Error* error = error_ctx_error_s(errs, i.ref->key.span, 2717, msg);
+            Error* error = error_ctx_error_s(errs, i->key.span, 2717, msg);
             error_related_error(
                 error,
                 matching->key.span,
@@ -191,14 +191,14 @@ void interface_typecheck_members_against(Interface* me, Declaration const* decla
                 "'%.*s' was also declared here.",
                 c_SPAN(matching->key.span)
             );
-            //type_drop(&i.ref->type);
-            //i.ref->type = type_clone(matching->type);
+            //type_drop(&i->type);
+            //i->type = type_clone(matching->type);
         }
         */
 
         // what the fuck was this here for? I have no idea
-        //vec_span_drop(&i.ref->declarations);
-        //i.ref->declarations = vec_span_clone(matching->declarations);
+        //vec_span_drop(&i->declarations);
+        //i->declarations = vec_span_clone(matching->declarations);
     }
 }
 
@@ -212,10 +212,10 @@ InterfaceMember const* interface_select_callable_overload(
 
     // Look for all callable members
     selection = nullptr;
-    c_foreach(i, vec_interface_member, my members) {
-        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag == INTERFACE_KEY_CALLABLE) {
             is_callable = true;
-            selection = selection ? nullptr : i.ref;
+            selection = selection ? nullptr : i;
             if (!selection) break;
         }
     }
@@ -231,12 +231,12 @@ InterfaceMember const* interface_select_callable_overload(
     // Look for callable members with the correct number of args
     selection = nullptr;
     intptr_t call_args = vec_expr_size(&call->args);
-    c_foreach(i, vec_interface_member, my members) {
-        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-            intptr_t min_args = callable_type_min_arg_count(i.ref->type.callable);
-            intptr_t max_args = callable_type_max_arg_count(i.ref->type.callable);
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag == INTERFACE_KEY_CALLABLE) {
+            intptr_t min_args = callable_type_min_arg_count(i->type.callable);
+            intptr_t max_args = callable_type_max_arg_count(i->type.callable);
             if (min_args <= call_args && max_args >= call_args) {
-                selection = selection ? nullptr : i.ref;
+                selection = selection ? nullptr : i;
                 if (!selection) break;
             }
         }
@@ -248,15 +248,15 @@ InterfaceMember const* interface_select_callable_overload(
 
     // Look for callable that typechecks without errors
     selection = nullptr;
-    c_foreach(i, vec_interface_member, my members) {
-        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+    for_each (i, vec_interface_member, &my members) {
+        if (i->key.tag == INTERFACE_KEY_CALLABLE) {
             ErrorCtx sub_errs = error_ctx_init();
             sub_errs.phase = ERROR_PHASE_TYPECHECK;
-            type_typecheck_call(&i.ref->type, call, span_null, &sub_errs);
+            type_typecheck_call(&i->type, call, span_null, &sub_errs);
             bool no_errors = error_ctx_empty(&sub_errs);
             error_ctx_drop(&sub_errs);
             if (no_errors) {
-                selection = i.ref;
+                selection = i;
                 break;
             }
         }

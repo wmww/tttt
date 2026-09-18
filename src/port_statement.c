@@ -16,8 +16,8 @@ void port_statement_drop(PortStatement* me) {
 
 void port_statement_assign_source(PortStatement* me, SourceFile* source) {
     my main.source_file = source;
-    c_foreach(i, vec_port_item, my items) {
-        i.ref->source_file = my main.source_file;
+    for_each (i, vec_port_item, &my items) {
+        i->source_file = my main.source_file;
     }
 }
 
@@ -44,7 +44,7 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     }
 
     scope_add_port(scope, &my main);
-    c_foreach(i, vec_port_item, my items) {
-        scope_add_port(scope, i.ref);
+    for_each (i, vec_port_item, &my items) {
+        scope_add_port(scope, i);
     }
 }

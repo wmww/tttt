@@ -31,9 +31,9 @@ MergedType merged_type_clone(MergedType me) {
 
 Type merged_type_evaluate_type(MergedType* me) {
     VecType interfaces = vec_type_init();
-    c_foreach(i, vec_type, my merge_list) {
+    for_each (i, vec_type, &my merge_list) {
         Type interface;
-        if (interface_try_from_type(i.ref, &interface)) {
+        if (interface_try_from_type(i, &interface)) {
             vec_type_push(&interfaces, interface);
         } else {
             NONFATAL("non-interface type in merge list");

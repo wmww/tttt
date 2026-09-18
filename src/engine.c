@@ -48,8 +48,8 @@ static bool contains_only_digits(const char* str) {
 }
 
 static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
-    for (c_each_reverse(i, vec_stack_frame, my stack)) {
-        Result get_result = js_object_get(i.ref->get, identifier);
+    for_each_reverse (i, vec_stack_frame, &my stack) {
+        Result get_result = js_object_get(i->get, identifier);
         if (get_result.tag == RESULT_OK) {
             return get_result;
         }
@@ -62,9 +62,9 @@ static Result MUST_USE engine_eval_identifier(Engine* me, csview identifier) {
 }
 
 static Result MUST_USE engine_assign_identifier(Engine* me, csview identifier, Value value) {
-    for (c_each_reverse(i, vec_stack_frame, my stack)) {
-        if (js_object_has(i.ref->get, identifier)) {
-            js_object_set(i.ref->get, cstr_from_sv(identifier), value);
+    for_each_reverse (i, vec_stack_frame, &my stack) {
+        if (js_object_has(i->get, identifier)) {
+            js_object_set(i->get, cstr_from_sv(identifier), value);
             return result_ok_undefined;
         }
     }
@@ -309,8 +309,8 @@ static Result MUST_USE engine_eval_call(Engine* me, CallExpr const* call_expr) {
 
     int given_arg_num = vec_expr_size(&call_expr->args);
     VecValue given_args = vec_value_with_capacity(given_arg_num);
-    c_foreach(i, vec_expr, call_expr->args) {
-        TRY_CATCH(value, engine_eval_expr(me, i.ref), res_err, {
+    for_each (i, vec_expr, &call_expr->args) {
+        TRY_CATCH(value, engine_eval_expr(me, i), res_err, {
             vec_value_drop(&given_args);
             value_drop(&callable);
             return res_err;
@@ -346,12 +346,12 @@ static Result MUST_USE engine_eval_call(Engine* me, CallExpr const* call_expr) {
 
 static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr) {
     Value ret = value_object_make_empty();
-    c_foreach(i, vec_object_expr_item, *obj_expr) {
-        TRY_CATCH(value, engine_eval_expr(me, &i.ref->value), res_err, {
+    for_each (i, vec_object_expr_item, obj_expr) {
+        TRY_CATCH(value, engine_eval_expr(me, &i->value), res_err, {
             value_drop(&ret);
             return res_err;
         });
-        js_object_set(ret.object.get, cstr_clone(i.ref->name_string), value);
+        js_object_set(ret.object.get, cstr_clone(i->name_string), value);
     }
     return result_ok(ret);
 }
@@ -359,8 +359,8 @@ static Result MUST_USE engine_eval_object(Engine* me, ObjectExpr const* obj_expr
 static Result MUST_USE engine_eval_array(Engine* me, VecExpr const* array_expr) {
     Value ret = value_array_make_empty();
     ret.array.get->vec = vec_value_with_capacity(vec_expr_size(array_expr));
-    c_foreach(i, vec_expr, *array_expr) {
-        TRY_CATCH(value, engine_eval_expr(me, i.ref), res_err, {
+    for_each (i, vec_expr, array_expr) {
+        TRY_CATCH(value, engine_eval_expr(me, i), res_err, {
             value_drop(&ret);
             return res_err;
         });
@@ -510,9 +510,9 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
 
         case STATEMENT_DECL_VARIABLE: {
             // TODO: respect keyword (let, const, var)
-            c_foreach(i, vec_initialized_binding, statement->decl.variable.initializers) {
-                TRY_THROW(value, engine_eval_expr(me, &i.ref->value));
-                TRY_THROW_DROP(engine_run_binding(me, &i.ref->binding, value));
+            for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
+                TRY_THROW(value, engine_eval_expr(me, &i->value));
+                TRY_THROW_DROP(engine_run_binding(me, &i->binding, value));
             }
             return result_ok_undefined;
         }
@@ -544,8 +544,8 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
 }
 
 static Result MUST_USE engine_run_block(Engine* me, Block const* block) {
-    c_foreach(i, vec_statement, block->statements) {
-        TRY_THROW_DROP(engine_run_statement(me, i.ref));
+    for_each (i, vec_statement, &block->statements) {
+        TRY_THROW_DROP(engine_run_statement(me, i));
     }
     return result_ok_undefined;
 }

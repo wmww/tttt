@@ -34,11 +34,11 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope, BindingAddNames
             break;
 
         case BINDING_ARRAY: {
-            c_foreach(i, vec_binding, my array) {
-                intptr_t index = i.ref - my array.data;
-                props.full = i.ref->content_span;
+            for_each (i, vec_binding, &my array) {
+                intptr_t index = i_index;
+                props.full = i->content_span;
                 binding_add_names(
-                    i.ref,
+                    i,
                     type_indexed(c_new(IndexedType, {
                         .interface = type_refcopy(binding_get_effective_type(me)),
                         .index = type_value(value_number(index)),
@@ -52,13 +52,13 @@ void binding_add_names(Binding* me, Type assigned, Scope* scope, BindingAddNames
         }   break;
 
         case BINDING_OBJECT: {
-            c_foreach(i, vec_object_binding_item, my object) {
-                props.full = i.ref->target.content_span;
+            for_each (i, vec_object_binding_item, &my object) {
+                props.full = i->target.content_span;
                 binding_add_names(
-                    &i.ref->target,
+                    &i->target,
                     type_indexed(c_new(IndexedType, {
                         .interface = type_refcopy(binding_get_effective_type(me)),
-                        .index = type_value(value_clone(i.ref->source)),
+                        .index = type_value(value_clone(i->source)),
                         .is_from_binding = true,
                     })),
                     scope,
@@ -75,14 +75,14 @@ void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs) {
         case BINDING_IDENTIFIER: break;
 
         case BINDING_ARRAY:
-            c_foreach(i, vec_binding, my array) {
-                binding_lookup_names(i.ref, names, errs);
+            for_each (i, vec_binding, &my array) {
+                binding_lookup_names(i, names, errs);
             }
             break;
 
         case BINDING_OBJECT:
-            c_foreach(i, vec_object_binding_item, my object) {
-                binding_lookup_names(&i.ref->target, names, errs);
+            for_each (i, vec_object_binding_item, &my object) {
+                binding_lookup_names(&i->target, names, errs);
             }
             break;
     }
@@ -113,14 +113,14 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
             break;
 
         case BINDING_ARRAY:
-            c_foreach(i, vec_binding, my array) {
-                binding_add_implicit_any_type_errors(i.ref, false, errs);
+            for_each (i, vec_binding, &my array) {
+                binding_add_implicit_any_type_errors(i, false, errs);
             }
             break;
 
         case BINDING_OBJECT:
-            c_foreach(i, vec_object_binding_item, my object) {
-                binding_add_implicit_any_type_errors(&i.ref->target, false, errs);
+            for_each (i, vec_object_binding_item, &my object) {
+                binding_add_implicit_any_type_errors(&i->target, false, errs);
             }
             break;
     }
@@ -161,14 +161,14 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
                 cstr_append_lit(&msg, "' is not an array type.");
                 error_ctx_error_s(errs, my content_span, 2461, msg);
             }
-            c_foreach(i, vec_binding, my array) {
-                binding_typecheck(i.ref, errs);
+            for_each (i, vec_binding, &my array) {
+                binding_typecheck(i, errs);
             }
             break;
 
         case BINDING_OBJECT:
-            c_foreach(i, vec_object_binding_item, my object) {
-                binding_typecheck(&i.ref->target, errs);
+            for_each (i, vec_object_binding_item, &my object) {
+                binding_typecheck(&i->target, errs);
             }
             break;
     }

@@ -15,8 +15,8 @@ void variable_statement_drop(VariableStatement* me) {
 }
 
 void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported) {
-    c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_add_names(i.ref, scope, (BindingAddNamesProps){
+    for_each (i, vec_initialized_binding, &my initializers) {
+        initialized_binding_add_names(i, scope, (BindingAddNamesProps){
             .abstract_literals = my keyword != VAR_INIT_CONST,
             .exported = exported,
         });
@@ -24,29 +24,29 @@ void variable_statement_add_names(VariableStatement* me, Scope* scope, bool expo
 }
 
 void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_lookup_names(i.ref, names, errs);
+    for_each (i, vec_initialized_binding, &my initializers) {
+        initialized_binding_lookup_names(i, names, errs);
     }
 }
 
 void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs) {
-    c_foreach(i, vec_initialized_binding, my initializers) {
+    for_each (i, vec_initialized_binding, &my initializers) {
         if (my keyword == VAR_INIT_CONST &&
-            i.ref->value.tag == EXPR_IMPLICIT_ANY &&
+            i->value.tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
-            error_ctx_error(errs, i.ref->binding.content_span, 1155,
+            error_ctx_error(errs, i->binding.content_span, 1155,
                 "'const' declarations must be initialized.");
         } else if (declared &&
-            i.ref->value.tag != EXPR_IMPLICIT_ANY
+            i->value.tag != EXPR_IMPLICIT_ANY
         ) {
-            if (i.ref->binding.has_explicit_type || my keyword != VAR_INIT_CONST) {
-                error_ctx_error(errs, i.ref->value.outer_span, 1039,
+            if (i->binding.has_explicit_type || my keyword != VAR_INIT_CONST) {
+                error_ctx_error(errs, i->value.outer_span, 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
-                switch (i.ref->value.tag) {
+                switch (i->value.tag) {
                     case EXPR_LITERAL:
-                        switch (i.ref->value.literal.tag) {
+                        switch (i->value.literal.tag) {
                             case VALUE_NUMBER:
                             case VALUE_STRING:
                             case VALUE_BOOLEAN:
@@ -60,12 +60,12 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
                         break;
 
                     default: bad_initializer:
-                        error_ctx_error(errs, i.ref->value.outer_span, 1254,
+                        error_ctx_error(errs, i->value.outer_span, 1254,
                             "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
             }
         }
-        initialized_binding_typecheck(i.ref, errs);
+        initialized_binding_typecheck(i, errs);
     }
 }
 
@@ -111,7 +111,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     }
 
     bool has_value = false;
-    c_foreach(i, vec_statement, my contents.statements) {
+    for_each (i, vec_statement, &my contents.statements) {
         Scope* inner_scope = &my inner_scope;
         if (my is_global) {
             if (my global_scope) {
@@ -120,15 +120,15 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 NONFATAL("Global scope not set");
             }
         }
-        statement_add_names(i.ref, inner_scope);
-        switch (i.ref->tag) {
+        statement_add_names(i, inner_scope);
+        switch (i->tag) {
             case STATEMENT_NOOP:
             case STATEMENT_DECL_TYPE:
             case STATEMENT_DECL_INTERFACE:
                 break;
 
             case STATEMENT_DECL_NAMESPACE:
-                if (i.ref->decl.namespace.declaration.get && i.ref->decl.namespace.declaration.get->value_tag) {
+                if (i->decl.namespace.declaration.get && i->decl.namespace.declaration.get->value_tag) {
                     has_value = true;
                 }
                 break;
@@ -158,8 +158,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
 
 void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs) {
     scope_push_to_stack(&my inner_scope, names);
-    c_foreach(i, vec_statement, my contents.statements) {
-        statement_resolve_names(i.ref, names, errs);
+    for_each (i, vec_statement, &my contents.statements) {
+        statement_resolve_names(i, names, errs);
     }
     scope_pop_from_stack(&my inner_scope);
 }
@@ -382,14 +382,14 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_IF_ELSE:
-            c_foreach(i, vec_expr, my if_else.conditions) {
-                expr_lookup_names(i.ref, names, errs);
+            for_each (i, vec_expr, &my if_else.conditions) {
+                expr_lookup_names(i, names, errs);
             }
-            c_foreach(i, vec_statement, my if_else.statements) {
+            for_each (i, vec_statement, &my if_else.statements) {
                 Scope branch_scope = scope_init(errs);
-                statement_add_names(i.ref, &branch_scope);
+                statement_add_names(i, &branch_scope);
                 scope_push_to_stack(&branch_scope, names);
-                statement_resolve_names(i.ref, names, errs);
+                statement_resolve_names(i, names, errs);
                 scope_drop(&branch_scope);
             }
             break;
@@ -448,22 +448,22 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
                             );
                         }
                     }
-                    c_foreach(i, vec_initialized_binding, *initializers) {
+                    for_each (i, vec_initialized_binding, initializers) {
                         // If we set has_explicit_type = false here but don't clear the type, the type will still show
                         // up in test AST traversial (as required), but will not be typechecked (as required). This
                         // is dumb but it works.
-                        i.ref->binding.has_explicit_type = false;
+                        i->binding.has_explicit_type = false;
                         binding_add_names(
-                            &i.ref->binding,
+                            &i->binding,
                             type_lazy(&my for_each_loop->var_type),
                             &loop_scope,
                             (BindingAddNamesProps){}
                         );
                     }
                     scope_push_to_stack(&loop_scope, names);
-                    c_foreach(i, vec_initialized_binding, *initializers) {
-                        binding_lookup_names(&i.ref->binding, names, errs);
-                        expr_lookup_names(&i.ref->value, names, errs);
+                    for_each (i, vec_initialized_binding, initializers) {
+                        binding_lookup_names(&i->binding, names, errs);
+                        expr_lookup_names(&i->value, names, errs);
                     }
                     scope_pop_from_stack(&loop_scope);
                     break;
@@ -487,18 +487,18 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
         case STATEMENT_SWITCH: {
             expr_lookup_names(&my switch_->needle, names, errs);
             Scope switch_scope = scope_init(errs);
-            c_foreach(i, vec_switch_case, my switch_->cases) {
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    statement_add_names(j.ref, &switch_scope);
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                for_each (j, vec_statement, &i->statements) {
+                    statement_add_names(j, &switch_scope);
                 }
             }
             scope_push_to_stack(&switch_scope, names);
-            c_foreach(i, vec_switch_case, my switch_->cases) {
-                if (i.ref->is_pattern) {
-                    expr_lookup_names(&i.ref->pattern, names, errs);
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                if (i->is_pattern) {
+                    expr_lookup_names(&i->pattern, names, errs);
                 }
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    statement_resolve_names(j.ref, names, errs);
+                for_each (j, vec_statement, &i->statements) {
+                    statement_resolve_names(j, names, errs);
                 }
             }
             scope_drop(&switch_scope);
@@ -582,8 +582,8 @@ Type statement_evaluate_return_type(Statement* me) {
 
         case STATEMENT_IF_ELSE: {
             Type ret = type_composite_base(TYPE_UNION);
-            c_foreach(i, vec_statement, my if_else.statements) {
-                ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i.ref));
+            for_each (i, vec_statement, &my if_else.statements) {
+                ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i));
             }
             return ret;
         }
@@ -600,9 +600,9 @@ Type statement_evaluate_return_type(Statement* me) {
 
         case STATEMENT_SWITCH: {
             Type ret = type_composite_base(TYPE_UNION);
-            c_foreach(i, vec_switch_case, my switch_->cases) {
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(j.ref));
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                for_each (j, vec_statement, &i->statements) {
+                    ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(j));
                 }
             }
             return ret;
@@ -656,12 +656,12 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             if (statement_size != cond_size && statement_size != cond_size + 1) {
                 PANIC("invalid if statement has %d conditions and %d statements", cond_size, statement_size);
             }
-            c_foreach(i, vec_expr, my if_else.conditions) {
+            for_each (i, vec_expr, &my if_else.conditions) {
                 // Conditions do not have to be booleans
-                expr_typecheck(i.ref, errs);
+                expr_typecheck(i, errs);
             }
-            c_foreach(i, vec_statement, my if_else.statements) {
-                statement_typecheck(i.ref, ctx, errs);
+            for_each (i, vec_statement, &my if_else.statements) {
+                statement_typecheck(i, ctx, errs);
             }
             break;
         }
@@ -738,8 +738,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
-                    c_foreach(i, vec_initialized_binding, my for_each_loop->variable.statement.initializers) {
-                        binding_typecheck(&i.ref->binding, errs);
+                    for_each (i, vec_initialized_binding, &my for_each_loop->variable.statement.initializers) {
+                        binding_typecheck(&i->binding, errs);
                     }
                     break;
 
@@ -764,31 +764,31 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             Type const* needle_type = expr_get_type(&my switch_->needle);
             intptr_t default_count = 0;
             ctx.break_allowed = true;
-            c_foreach(i, vec_switch_case, my switch_->cases) {
-                if (i.ref->is_pattern) {
-                    expr_typecheck(&i.ref->pattern, errs);
-                    Type const* pattern_type = expr_get_type(&i.ref->pattern);
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                if (i->is_pattern) {
+                    expr_typecheck(&i->pattern, errs);
+                    Type const* pattern_type = expr_get_type(&i->pattern);
                     if (!type_overlaps(needle_type, pattern_type)) {
                         cstr message = cstr_lit("Type '");
                         cstr_append_type_error_msg(&message, pattern_type);
                         cstr_append_lit(&message, "' is not comparable to type '");
                         cstr_append_type_error_msg(&message, needle_type);
                         cstr_append_lit(&message, "'.");
-                        error_ctx_error_s(errs, i.ref->pattern.outer_span, 2678, message);
+                        error_ctx_error_s(errs, i->pattern.outer_span, 2678, message);
                     }
                 } else {
                     default_count++;
                     if (default_count == 2) {
                         error_ctx_error(
                             errs,
-                            i.ref->default_span,
+                            i->default_span,
                             1113,
                             "A 'default' clause cannot appear more than once in a 'switch' statement."
                         );
                     }
                 }
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    statement_typecheck(j.ref, ctx, errs);
+                for_each (j, vec_statement, &i->statements) {
+                    statement_typecheck(j, ctx, errs);
                 }
             }
         }   break;

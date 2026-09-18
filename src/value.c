@@ -135,11 +135,11 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_ARRAY:
-            c_foreach(i, vec_value, my array.get->vec) {
-                cstr_append_value_js(target, i.ref);
-                if (i.ref < i.end - 1) {
+            for_each (i, vec_value, &my array.get->vec) {
+                if (i_index != 0) {
                     cstr_append_lit(target, ",");
                 }
+                cstr_append_value_js(target, i);
             }
             break;
 
@@ -221,10 +221,10 @@ JsObject js_object_clone(JsObject me) {
 
 VecObjectItemRef js_object_sorted_items(JsObject* me) {
     VecObjectItemRef ret = vec_object_item_ref_with_capacity(my total_inserted);
-    c_foreach(i, hmap_object_item, my items) {
+    for_each_kv (name, item, hmap_object_item, &my items) {
         vec_object_item_ref_push(&ret, (ObjectItemRef){
-            .name = &i.ref->first,
-            .item = &i.ref->second,
+            .name = name,
+            .item = item,
         });
     }
     vec_object_item_ref_sort(&ret);

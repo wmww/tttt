@@ -33,25 +33,25 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
 
     bool already_seen[MODIFIER_ENUM_CAP] = {0};
 
-    c_foreach(i, vec_spanned_modifier, my spanned) {
-        intptr_t index = i.ref - my spanned.data;
+    for_each (i, vec_spanned_modifier, &my spanned) {
+        intptr_t index = i_index;
         bool modifier_is_error = false;
 
         if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_MODIFIERS_NOT_ALLOWED)) {
-            MODIFIER_ERROR(errs, i.ref->span, 1184, "Modifiers cannot appear here.");
+            MODIFIER_ERROR(errs, i->span, 1184, "Modifiers cannot appear here.");
         }
 
-        switch (i.ref->tag) {
+        switch (i->tag) {
             case MODIFIER_READONLY:
                 if (!BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_FIELD)) {
-                    MODIFIER_ERROR(errs, i.ref->span, 1024,
+                    MODIFIER_ERROR(errs, i->span, 1024,
                         "'readonly' modifier can only appear on a property declaration or index signature.");
                 }
                 break;
 
             case MODIFIER_ABSTRACT:
                 if (!BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_ABSTRACT)) {
-                    MODIFIER_ERROR(errs, i.ref->span, 1253, "Abstract properties can only appear within an abstract class.");
+                    MODIFIER_ERROR(errs, i->span, 1253, "Abstract properties can only appear within an abstract class.");
                 }
                 break;
 
@@ -62,7 +62,7 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
             case MODIFIER_EXPORT:
             case MODIFIER_EXPORT_DEFAULT:
                 if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_FIELD | MODIFIER_VALIDATION_FLAG_METHOD)) {
-                    MODIFIER_ERROR(errs, i.ref->span, 1031,
+                    MODIFIER_ERROR(errs, i->span, 1031,
                         "'export' modifier cannot appear on class elements of this kind.");
                 }
                 break;
@@ -76,10 +76,10 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
             case MODIFIER_PROTECTED:
             case MODIFIER_PUBLIC:
                 if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_TOPLEVEL_STATEMENT)) {
-                    MODIFIER_ERROR(errs, i.ref->span, 1044,
-                        "'%.*s' modifier cannot appear on a module or namespace element.", c_SPAN(i.ref->span));
+                    MODIFIER_ERROR(errs, i->span, 1044,
+                        "'%.*s' modifier cannot appear on a module or namespace element.", c_SPAN(i->span));
                 } else if (accessibility_seen) {
-                    MODIFIER_ERROR(errs, i.ref->span, 1028, "Accessibility modifier already seen.");
+                    MODIFIER_ERROR(errs, i->span, 1028, "Accessibility modifier already seen.");
                 }
                 accessibility_seen = true;
                 break;
@@ -95,32 +95,32 @@ void modifier_list_validate(ModifierList const* me, Span name, ModifierValidatio
         }
 
         if (index &&
-            modifier_ordering[vec_spanned_modifier_at(&my spanned, index - 1)->tag] > modifier_ordering[i.ref->tag]
+            modifier_ordering[vec_spanned_modifier_at(&my spanned, index - 1)->tag] > modifier_ordering[i->tag]
         ) {
-            MODIFIER_ERROR(errs, i.ref->span, 1029,
+            MODIFIER_ERROR(errs, i->span, 1029,
                 "'%.*s' modifier must precede '%.*s' modifier.",
-                c_SPAN(i.ref->span), c_SPAN(vec_spanned_modifier_at(&my spanned, index - 1)->span));
+                c_SPAN(i->span), c_SPAN(vec_spanned_modifier_at(&my spanned, index - 1)->span));
         }
 
         if (BITFIELD_OVERLAPS(flags, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER)) {
-            switch (i.ref->tag) {
+            switch (i->tag) {
                 case MODIFIER_ABSTRACT:
                 case MODIFIER_ASYNC:
                 case MODIFIER_PRIVATE:
                 case MODIFIER_PROTECTED:
                 case MODIFIER_PUBLIC:
-                    MODIFIER_ERROR(errs, i.ref->span, 1070,
-                        "'%.*s' modifier cannot appear on a type member.", c_SPAN(i.ref->span));
+                    MODIFIER_ERROR(errs, i->span, 1070,
+                        "'%.*s' modifier cannot appear on a type member.", c_SPAN(i->span));
                     break;
 
                 default: break;
             }
         }
 
-        if (already_seen[i.ref->tag]) {
-            MODIFIER_ERROR(errs, i.ref->span, 1030, "'%.*s' modifier already seen.", c_SPAN(i.ref->span));
+        if (already_seen[i->tag]) {
+            MODIFIER_ERROR(errs, i->span, 1030, "'%.*s' modifier already seen.", c_SPAN(i->span));
         } else if (!modifier_is_error) {
-            already_seen[i.ref->tag] = true;
+            already_seen[i->tag] = true;
         }
     }
 

@@ -377,8 +377,8 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
 
-    c_foreach(i, vec_statement, source_file->ast.statements) {
-        program_handle_statement(me, source_file, i.ref);
+    for_each (i, vec_statement, &source_file->ast.statements) {
+        program_handle_statement(me, source_file, i);
     }
 
     // Add here so imports come before importing file
@@ -420,16 +420,16 @@ void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
 
-    c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
-        SourceFile* source = *i.ref;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
         block_add_names(&source->ast, source_file_get_scope_or(source, &my global_scope));
-        c_foreach(i, vec_scope_cptr, source->global_scopes) {
-            scope_copy_declarations_from(&my global_scope, *i.ref);
+        for_each (i, vec_scope_cptr, &source->global_scopes) {
+            scope_copy_declarations_from(&my global_scope, *i);
         }
     }
 
-    c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
-        SourceFile* source = *i.ref;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
         if (source->is_module) {
             scope_process_imports(&source->module_scope);
         }
@@ -438,8 +438,8 @@ void program_resolve_names(Program* me) {
     ScopeStack* names = scope_stack_new();
     scope_stack_push_scope(names, &my global_scope);
 
-    c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
-        SourceFile* source = *i.ref;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
         if (source->is_module) scope_push_to_stack(&source->module_scope, names);
         block_lookup_names(&source->ast, names, my errs);
         if (source->is_module) scope_pop_from_stack(&source->module_scope);
@@ -457,8 +457,8 @@ void program_typecheck(Program* me) {
     my errs->phase = ERROR_PHASE_TYPECHECK;
     set_error_config(&my errs->config);
 
-    c_foreach(i, vec_source_file_ptr, my source_files_ordered) {
-        SourceFile* source = *i.ref;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
         if (!source->is_stdlib) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }

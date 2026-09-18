@@ -38,10 +38,10 @@ void callable_type_resolve_names(CallableType* me, ScopeStack* names, ErrorCtx* 
 
         generic_drop(&my generic);
         my generic = generic_clone(my owned_function_impl->generic);
-        c_foreach(i, vec_callable_arg, my args) {
-            type_drop(&i.ref->type);
-            i.ref->type = type_refcopy(binding_get_effective_type(&i.ref->source->initializer.binding));
-            type_lookup_names(&i.ref->type, names, errs);
+        for_each (i, vec_callable_arg, &my args) {
+            type_drop(&i->type);
+            i->type = type_refcopy(binding_get_effective_type(&i->source->initializer.binding));
+            type_lookup_names(&i->type, names, errs);
         }
         // If me owns a FunctionImpl, that means the type was parsed as a type (not generated from an implementaiton)
         // That means it doesn't have a function body
@@ -57,58 +57,58 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     bool found_optional = false;
     bool required_after_optional = false;
     bool rest_not_last = false;
-    c_foreach(i, vec_callable_arg, my args) {
-        if (my owned_function_impl && i.ref->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
+    for_each (i, vec_callable_arg, &my args) {
+        if (my owned_function_impl && i->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
             error_ctx_error(
                 errs,
-                i.ref->source->initializer.value.outer_span,
+                i->source->initializer.value.outer_span,
                 2371,
                 "A parameter initializer is only allowed in a function or constructor implementation."
             );
         }
 
-        if (i.ref->source->rest && i.ref != i.end - 1 && !rest_not_last) {
+        if (i->source->rest && i_index != vec_callable_arg_size(&my args) - 1 && !rest_not_last) {
             rest_not_last = true;
             error_ctx_error(
                 errs,
-                i.ref->source->rest_span,
+                i->source->rest_span,
                 1014,
                 "A rest parameter must be last in a parameter list."
             );
         }
 
-        if (i.ref->source->rest) {
-        } else if (i.ref->source->explicit_optional) {
+        if (i->source->rest) {
+        } else if (i->source->explicit_optional) {
             found_optional = true;
         } else if (
             found_optional &&
-            !i.ref->optional &&
+            !i->optional &&
             !required_after_optional
         ) {
             required_after_optional = true;
             error_ctx_error(
                 errs,
-                i.ref->source->initializer.binding.content_span,
+                i->source->initializer.binding.content_span,
                 1016,
                 "A required parameter cannot follow an optional parameter."
             );
         }
 
-        type_typecheck(&i.ref->type, errs);
+        type_typecheck(&i->type, errs);
 
-        if (i.ref->source->rest) {
-            if (!type_extends_array(&i.ref->type)) {
+        if (i->source->rest) {
+            if (!type_extends_array(&i->type)) {
                 error_ctx_error(
                     errs,
-                    i.ref->source->span,
+                    i->source->span,
                     2370,
                     "A rest parameter must be of an array type."
                 );
             }
-            if (i.ref->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
+            if (i->source->initializer.value.tag != EXPR_IMPLICIT_ANY) {
                 error_ctx_error(
                     errs,
-                    i.ref->source->initializer.binding.content_span,
+                    i->source->initializer.binding.content_span,
                     1048,
                     "A rest parameter cannot have an initializer."
                 );

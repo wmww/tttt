@@ -120,9 +120,9 @@ Type type_composite(typeof((Type){}.tag) tag, Type a, Type b) {
 void composite_type_simplify(Type* me) {
     ASSERT(my tag == TYPE_UNION || my tag == TYPE_INTERSECTION);
     Type ret = type_composite_base(my tag);
-    c_foreach(i, vec_type, my composite) {
-        ret = type_composite(my tag, ret, *i.ref);
-        *i.ref = type_any;
+    for_each (i, vec_type, &my composite) {
+        ret = type_composite(my tag, ret, *i);
+        *i = type_any;
     }
     type_drop(me);
     *me = ret;
@@ -251,8 +251,8 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             break;
 
         case TYPE_IDENTIFIER:
-            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
-                type_add_inferred_names(&i.ref->type, scope);
+            for_each (i, vec_spanned_type, &my identifier->generic_params) {
+                type_add_inferred_names(&i->type, scope);
             }
             break;
 
@@ -267,15 +267,15 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             break;
 
         case TYPE_CALLABLE:
-            c_foreach(i, vec_callable_arg, my callable->args) {
-                type_add_inferred_names(&i.ref->type, scope);
+            for_each (i, vec_callable_arg, &my callable->args) {
+                type_add_inferred_names(&i->type, scope);
             }
             type_add_inferred_names(&my callable->ret, scope);
             break;
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, my interface.members) {
-                type_add_inferred_names(&i.ref->type, scope);
+            for_each (i, vec_interface_member, &my interface.members) {
+                type_add_inferred_names(&i->type, scope);
             }
             break;
 
@@ -284,8 +284,8 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_add_inferred_names(&i.ref->type, scope);
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                type_add_inferred_names(&i->type, scope);
             }
             break;
 
@@ -309,8 +309,8 @@ static void type_add_inferred_names(Type const* me, Scope* scope) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                type_add_inferred_names(i.ref, scope);
+            for_each (i, vec_type, &my composite) {
+                type_add_inferred_names(i, scope);
             }
             break;
 
@@ -341,8 +341,8 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
         case TYPE_CALLABLE: callable_type_resolve_names(my callable, names, errs); break;
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, my interface.members) {
-                interface_member_lookup_names(i.ref, names, errs);
+            for_each (i, vec_interface_member, &my interface.members) {
+                interface_member_lookup_names(i, names, errs);
             }
             break;
 
@@ -351,8 +351,8 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_lookup_names(&i.ref->type, names, errs);
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                type_lookup_names(&i->type, names, errs);
             }
             break;
 
@@ -375,8 +375,8 @@ void type_lookup_names(Type* me, ScopeStack* names, ErrorCtx* errs) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                type_lookup_names(i.ref, names, errs);
+            for_each (i, vec_type, &my composite) {
+                type_lookup_names(i, names, errs);
             }
             break;
 
@@ -406,8 +406,8 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
         case TYPE_ARRAY: type_typecheck(my array.element, errs); break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_typecheck(&i.ref->type, errs);
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                type_typecheck(&i->type, errs);
             }
             break;
 
@@ -424,8 +424,8 @@ void type_typecheck(Type const* me, ErrorCtx* errs) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                type_typecheck(i.ref, errs);
+            for_each (i, vec_type, &my composite) {
+                type_typecheck(i, errs);
             }
             break;
 
@@ -447,14 +447,14 @@ static Type type_all_keys(TypeCtx* ctx, Type const* me) {
 
         case TYPE_INTERFACE: {
             Type ret = type_never;
-            c_foreach(i, vec_interface_member, my interface.members) {
-                switch (i.ref->key.tag) {
+            for_each (i, vec_interface_member, &my interface.members) {
+                switch (i->key.tag) {
                     case INTERFACE_KEY_NAME:
                         ret = type_composite_internal(
                             ctx,
                             TYPE_UNION,
                             ret,
-                            type_value(value_string(cstr_clone(i.ref->key.name_string)))
+                            type_value(value_string(cstr_clone(i->key.name_string)))
                         );
 
                     default: break;
@@ -472,8 +472,8 @@ static Type type_all_keys(TypeCtx* ctx, Type const* me) {
         case TYPE_INTERSECTION: {
             typeof(my tag) flipped_tag = my tag == TYPE_UNION ? TYPE_INTERSECTION : TYPE_UNION;
             Type ret = type_composite_base(flipped_tag);
-            c_foreach(i, vec_type, my composite) {
-                ret = type_composite_internal(ctx, flipped_tag, ret, type_all_keys(ctx, i.ref));
+            for_each (i, vec_type, &my composite) {
+                ret = type_composite_internal(ctx, flipped_tag, ret, type_all_keys(ctx, i));
             }
             return ret;
         }
@@ -557,8 +557,8 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                Type const* resolved = type_resolve_internal(ctx, i.ref, true);
+            for_each (i, vec_type, &my composite) {
+                Type const* resolved = type_resolve_internal(ctx, i, true);
                 if (resolved->tag == (my tag == TYPE_UNION ? TYPE_ANY : TYPE_NEVER)) {
                     return resolved;
                 }
@@ -679,14 +679,14 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
         }
 
         case TYPE_UNION:
-            c_foreach(i, vec_type, sub->composite) {
-                if (!type_extends_internal(ctx, i.ref, super, refinements)) return false;
+            for_each (i, vec_type, &sub->composite) {
+                if (!type_extends_internal(ctx, i, super, refinements)) return false;
             }
             return true;
 
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, sub->composite) {
-                if (type_extends_internal(ctx, i.ref, super, refinements)) return true;
+            for_each (i, vec_type, &sub->composite) {
+                if (type_extends_internal(ctx, i, super, refinements)) return true;
             }
             return false;
 
@@ -723,11 +723,11 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
 
         case TYPE_CALLABLE:
             if (sub->tag == TYPE_INTERFACE) {
-                c_foreach(i, vec_interface_member, sub->interface.members) {
-                    if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
+                for_each (i, vec_interface_member, &sub->interface.members) {
+                    if (i->key.tag == INTERFACE_KEY_CALLABLE) {
                         if (type_extends_internal(
                             ctx,
-                            &i.ref->type,
+                            &i->type,
                             super,
                             refinements
                         )) {
@@ -759,17 +759,17 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
             }
 
         case TYPE_INTERFACE:
-            c_foreach(i, vec_interface_member, super->interface.members) {
-                switch (i.ref->key.tag) {
+            for_each (i, vec_interface_member, &super->interface.members) {
+                switch (i->key.tag) {
                     case INTERFACE_KEY_NAME: {
                         // Don't clone the string, and don't drop it the type. Hacky but safe.
-                        Type key = type_value(value_string(i.ref->key.name_string));
+                        Type key = type_value(value_string(i->key.name_string));
                         Type prop;
                         if (index_type_evaluate_type_internal(ctx, sub, &key, &prop)) {
                             // TODO: pass in refinements, but first make refinements own it's types
                             // (will fix nondistributiveConditionalTypeInfer)
-                            Type member_type = type_refcopy(&i.ref->type);
-                            if (i.ref->optional) {
+                            Type member_type = type_refcopy(&i->type);
+                            if (i->optional) {
                                 member_type = type_composite(TYPE_UNION, member_type, type_undefined);
                             }
                             bool extends = type_extends_internal(ctx, &prop, &member_type, nullptr);
@@ -799,19 +799,19 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
                 if (sub->tuple.readonly && !super->array.readonly) {
                     return false;
                 }
-                c_foreach(i, vec_tuple_element, sub->tuple.elements) {
-                    if (i.ref->rest) {
+                for_each (i, vec_tuple_element, &sub->tuple.elements) {
+                    if (i->rest) {
                         // Make sure every item in the rest tuple/array extends the array type
-                        Type elem = index_type_evaluate_type(&i.ref->type, &type_number);
+                        Type elem = index_type_evaluate_type(&i->type, &type_number);
                         bool extends = type_extends_internal(ctx, &elem, super->array.element, refinements);
                         type_drop(&elem);
                         if (!extends) return false;
                     } else {
-                        if (!type_extends_internal(ctx, &i.ref->type, super->array.element, refinements)) {
+                        if (!type_extends_internal(ctx, &i->type, super->array.element, refinements)) {
                             return false;
                         }
                     }
-                    if (i.ref->readonly && !super->array.readonly) {
+                    if (i->readonly && !super->array.readonly) {
                         return false;
                     }
                 }
@@ -855,14 +855,14 @@ static inline bool type_extends_more_internal(TypeCtx* ctx, Type const* sub, Typ
             return true;
 
         case TYPE_UNION:
-            c_foreach(i, vec_type, super->composite) {
-                if (type_extends_internal(ctx, sub, i.ref, refinements)) return true;
+            for_each (i, vec_type, &super->composite) {
+                if (type_extends_internal(ctx, sub, i, refinements)) return true;
             }
             return false;
 
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, super->composite) {
-                if (!type_extends_internal(ctx, sub, i.ref, refinements)) return false;
+            for_each (i, vec_type, &super->composite) {
+                if (!type_extends_internal(ctx, sub, i, refinements)) return false;
             }
             return true;
 
@@ -937,8 +937,8 @@ static bool composite_type_overlaps(TypeCtx* ctx, Type const* composite, Type co
     ASSERT(composite->tag == TYPE_UNION || composite->tag == TYPE_INTERSECTION);
     bool overlaps_in_all = true;
     bool overlaps_in_any = false;
-    c_foreach(i, vec_type, composite->composite) {
-        if (type_overlaps_internal(ctx, other, i.ref)) {
+    for_each (i, vec_type, &composite->composite) {
+        if (type_overlaps_internal(ctx, other, i)) {
             overlaps_in_any = true;
         } else {
             overlaps_in_all = false;
@@ -1008,9 +1008,9 @@ static inline bool type_overlaps_more_internal(TypeCtx* ctx, Type const* a, Type
                 }
 
                 case TYPE_INTERFACE:
-                    c_foreach(i, vec_interface_member, b->interface.members) {
-                        if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                            if (type_overlaps_internal(ctx, a, &i.ref->type)) {
+                    for_each (i, vec_interface_member, &b->interface.members) {
+                        if (i->key.tag == INTERFACE_KEY_CALLABLE) {
+                            if (type_overlaps_internal(ctx, a, &i->type)) {
                                 return true;
                             }
                         }
@@ -1149,8 +1149,8 @@ static inline intptr_t type_get_numeric_index_bound(Type const* me, bool get_max
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             intptr_t result = get_max ? -1 : 0;
-            c_foreach(i, vec_type, my composite) {
-                intptr_t bound = type_get_numeric_index_bound(i.ref, get_max);
+            for_each (i, vec_type, &my composite) {
+                intptr_t bound = type_get_numeric_index_bound(i, get_max);
                 if (get_max) {
                     result = iptrmin(result, bound);
                 } else {
@@ -1235,15 +1235,15 @@ void type_abstract_literals(Type* me) {
 
                 case VALUE_OBJECT: /*{
                     Interface interface = {0};
-                    c_foreach(i, hmap_object_item, my value.object.get->items) {
+                    for_each_kv (name, item, hmap_object_item, &my value.object.get->items) {
                         InterfaceMember member = interface_member_make(
                             span_null,
                             false,
                             false,
-                            cstr_clone(i.ref->first),
+                            cstr_clone(*name),
                             span_null,
                             false,
-                            type_value(value_clone(i.ref->second.value))
+                            type_value(value_clone(item->value))
                         );
                         ASSERT(member.type.tag == INTERFACE_TYPE_INSTANTIATED);
                         type_abstract_literals(&member.type.instantiated);
@@ -1268,8 +1268,8 @@ void type_abstract_literals(Type* me) {
             break;
 
         case TYPE_TUPLE: {
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_abstract_literals(&i.ref->type);
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                type_abstract_literals(&i->type);
             }
         }   break;
 
@@ -1306,8 +1306,8 @@ void type_remove_null_and_undefined(Type* me) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                type_remove_null_and_undefined(i.ref);
+            for_each (i, vec_type, &my composite) {
+                type_remove_null_and_undefined(i);
             }
             composite_type_simplify(me);
             break;
@@ -1351,9 +1351,9 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
         Type comp = type_composite_base(index->tag);
         bool found_in_all = true;
         bool found_in_any = false;
-        c_foreach(i, vec_type, index->composite) {
+        for_each (i, vec_type, &index->composite) {
             Type temp;
-            if (index_type_evaluate_type_internal(ctx, me, i.ref, &temp)) {
+            if (index_type_evaluate_type_internal(ctx, me, i, &temp)) {
                 comp = type_composite_internal(ctx, index->tag, comp, temp);
                 found_in_any = true;
             } else {
@@ -1420,10 +1420,10 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
             }
 
         case TYPE_INTERFACE: {
-            c_foreach(i, vec_interface_member, my interface.members) {
-                if (interface_member_key_overlaps(i.ref, index)) {
-                    *ret = type_clone(i.ref->type);
-                    if (i.ref->optional) {
+            for_each (i, vec_interface_member, &my interface.members) {
+                if (interface_member_key_overlaps(i, index)) {
+                    *ret = type_clone(i->type);
+                    if (i->optional) {
                         *ret = type_composite_internal(ctx, TYPE_INTERSECTION, *ret, type_undefined);
                     }
                     return true;
@@ -1446,11 +1446,11 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
             }
 
             Type comp = type_composite_base(TYPE_UNION);
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                intptr_t j = i.ref - my tuple.elements.data;
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                intptr_t j = i_index;
                 Type key = type_value(value_number(j));
                 if (type_extends(&key, index)) {
-                    comp = type_composite_internal(ctx, TYPE_UNION, comp, type_clone(i.ref->type));
+                    comp = type_composite_internal(ctx, TYPE_UNION, comp, type_clone(i->type));
                 }
             }
             *ret = comp;
@@ -1462,9 +1462,9 @@ static bool index_type_evaluate_type_internal(TypeCtx* ctx, Type const* me, Type
             Type comp = type_composite_base(my tag);
             bool found_in_all = true;
             bool found_in_any = false;
-            c_foreach(i, vec_type, my composite) {
+            for_each (i, vec_type, &my composite) {
                 Type temp;
-                if (index_type_evaluate_type_internal(ctx, i.ref, index, &temp)) {
+                if (index_type_evaluate_type_internal(ctx, i, index, &temp)) {
                     comp = type_composite_internal(ctx, my tag, comp, temp);
                     found_in_any = true;
                 } else {
@@ -1518,8 +1518,8 @@ static void index_type_typecheck_internal(
     index = type_resolve_internal(ctx, index, true);
 
     if (index->tag == TYPE_UNION || index->tag == TYPE_INTERSECTION) {
-        c_foreach(i, vec_type, index->composite) {
-            index_type_typecheck_internal(ctx, me, i.ref, indexed_span, index_span, error_if_not_found, errs);
+        for_each (i, vec_type, &index->composite) {
+            index_type_typecheck_internal(ctx, me, i, indexed_span, index_span, error_if_not_found, errs);
         }
     } else if (!type_is_simple_index_type(index)) {
         cstr msg = cstr_lit("Type '");
@@ -1592,8 +1592,8 @@ static void index_type_typecheck_internal(
 
         case TYPE_INTERFACE: {
             bool found = false;
-            c_foreach(i, vec_interface_member, my interface.members) {
-                if (interface_member_key_overlaps(i.ref, index)) {
+            for_each (i, vec_interface_member, &my interface.members) {
+                if (interface_member_key_overlaps(i, index)) {
                     found = true;
                 }
             }
@@ -1637,8 +1637,8 @@ static void index_type_typecheck_internal(
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                index_type_typecheck_internal(ctx, i.ref, index, indexed_span, index_span, error_if_not_found, errs);
+            for_each (i, vec_type, &my composite) {
+                index_type_typecheck_internal(ctx, i, index, indexed_span, index_span, error_if_not_found, errs);
             }
             break;
 
@@ -1753,11 +1753,11 @@ Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
         case TYPE_UNION:
         case TYPE_INTERSECTION: {
             Type ret = type_composite_base(my tag);
-            c_foreach(i, vec_type, my composite) {
+            for_each (i, vec_type, &my composite) {
                 ret = type_composite(
                     my tag,
                     ret,
-                    type_call_evaluate_type(i.ref, call)
+                    type_call_evaluate_type(i, call)
                 );
             }
             return ret;
@@ -1770,9 +1770,9 @@ Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
                 return type_call_evaluate_type(&overload->type, call);
             } else if (is_callable) {
                 Type ret = type_composite_base(TYPE_INTERSECTION);
-                c_foreach(i, vec_interface_member, my interface.members) {
-                    if (i.ref->key.tag == INTERFACE_KEY_CALLABLE) {
-                        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i.ref->type.callable->ret));
+                for_each (i, vec_interface_member, &my interface.members) {
+                    if (i->key.tag == INTERFACE_KEY_CALLABLE) {
+                        ret = type_composite(TYPE_INTERSECTION, ret, type_clone(i->type.callable->ret));
                     }
                 }
                 return ret;
@@ -1857,26 +1857,26 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
             Span rest_span = span_null;
             VecTupleElement rest_tuple = {0};
 
-            c_foreach(i, vec_expr, call->args) {
-                intptr_t index = i.ref - call->args.data;
+            for_each (i, vec_expr, &call->args) {
+                intptr_t index = i_index;
                 // Don't report errors, errors inside argument expressions are reported elsewhere
                 if (check_types_against_callable && index < callable_arg_count - (last_arg_rest ? 1 : 0)) {
                     CallableArg* arg = vec_callable_arg_at_mut(&callable->args, index);
                     if (!check_assignable_or_error_internal(
                         "Argument of type",
-                        expr_get_type(i.ref),
+                        expr_get_type(i),
                         "parameter of type",
                         &arg->type,
                         2345,
-                        i.ref->outer_span,
+                        i->outer_span,
                         errs
                     )) {
                         check_types_against_callable = false;
                     }
                 } else if (last_arg_rest) {
-                    rest_span = span_between(rest_span, i.ref->outer_span);
+                    rest_span = span_between(rest_span, i->outer_span);
                     vec_tuple_element_push(&rest_tuple, (TupleElement){
-                        .type = type_refcopy(expr_get_type(i.ref)),
+                        .type = type_refcopy(expr_get_type(i)),
                     });
                 }
             }
@@ -1903,8 +1903,8 @@ void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorC
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                type_typecheck_call(i.ref, call, span, errs);
+            for_each (i, vec_type, &my composite) {
+                type_typecheck_call(i, call, span, errs);
             };
             return;
 

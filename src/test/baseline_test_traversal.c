@@ -19,11 +19,11 @@ static inline VecSpan declaration_get_spans(Declaration const* me) {
 }
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
-    c_foreach(i, vec_generic_item, my items) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name });
-        type_compile_test_info(&i.ref->extends, ctx);
-        if (i.ref->fallback_explicit) {
-            type_compile_test_info(&i.ref->fallback, ctx);
+    for_each (i, vec_generic_item, &my items) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i->name });
+        type_compile_test_info(&i->extends, ctx);
+        if (i->fallback_explicit) {
+            type_compile_test_info(&i->fallback, ctx);
         }
     }
 }
@@ -39,14 +39,14 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             break;
 
         case BINDING_ARRAY:
-            c_foreach(i, vec_binding, my array) {
-                binding_content_compile_test_info(i.ref, ctx);
+            for_each (i, vec_binding, &my array) {
+                binding_content_compile_test_info(i, ctx);
             }
             break;
 
         case BINDING_OBJECT:
-            c_foreach(i, vec_object_binding_item, my object) {
-                binding_content_compile_test_info(&i.ref->target, ctx);
+            for_each (i, vec_object_binding_item, &my object) {
+                binding_content_compile_test_info(&i->target, ctx);
             }
             break;
     }
@@ -111,8 +111,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {
-    c_foreach(i, vec_interface_member, my members) {
-        interface_member_compile_test_info(i.ref, scope, ctx);
+    for_each (i, vec_interface_member, &my members) {
+        interface_member_compile_test_info(i, scope, ctx);
     }
 }
 
@@ -147,19 +147,19 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 break;
             }
             VecSpan so_far = vec_span_init();
-            c_foreach(i, vec_span, my identifier->namespaces) {
-                intptr_t index = i.ref - my identifier->namespaces.data;
+            for_each (i, vec_span, &my identifier->namespaces) {
+                intptr_t index = i_index;
                 Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
                     *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
                     nullptr;
-                baseline_test_case_add_type(ctx, *i.ref, &type_any);
+                baseline_test_case_add_type(ctx, *i, &type_any);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),
                     .allow_declaration_empty = true,
                     .namespaces = vec_span_clone(so_far),
-                    .span = *i.ref,
+                    .span = *i,
                 });
-                vec_span_push(&so_far, *i.ref);
+                vec_span_push(&so_far, *i);
             }
             vec_span_drop(&so_far);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -168,8 +168,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
             });
-            c_foreach(i, vec_spanned_type, my identifier->generic_params) {
-                type_compile_test_info(&i.ref->type, ctx);
+            for_each (i, vec_spanned_type, &my identifier->generic_params) {
+                type_compile_test_info(&i->type, ctx);
             }
             break;
 
@@ -183,10 +183,10 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
         case TYPE_CALLABLE:
             generic_compile_test_info(&my callable->generic, ctx);
-            c_foreach(i, vec_callable_arg, my callable->args) {
-                binding_content_compile_test_info(&i.ref->source->initializer.binding, ctx);
-                if (i.ref->source->initializer.binding.has_explicit_type) {
-                    type_compile_test_info(&i.ref->type, ctx);
+            for_each (i, vec_callable_arg, &my callable->args) {
+                binding_content_compile_test_info(&i->source->initializer.binding, ctx);
+                if (i->source->initializer.binding.has_explicit_type) {
+                    type_compile_test_info(&i->type, ctx);
                 }
             }
             type_compile_test_info(&my callable->ret, ctx);
@@ -199,8 +199,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_TUPLE:
-            c_foreach(i, vec_tuple_element, my tuple.elements) {
-                type_compile_test_info(&i.ref->type, ctx);
+            for_each (i, vec_tuple_element, &my tuple.elements) {
+                type_compile_test_info(&i->type, ctx);
             }
             break;
 
@@ -226,8 +226,8 @@ void type_compile_test_info(Type const* me, BaselineTestCase* ctx) {
 
         case TYPE_UNION:
         case TYPE_INTERSECTION:
-            c_foreach(i, vec_type, my composite) {
-                type_compile_test_info(i.ref, ctx);
+            for_each (i, vec_type, &my composite) {
+                type_compile_test_info(i, ctx);
             }
             break;
 
@@ -246,8 +246,8 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         baseline_test_case_add_declaration(ctx, my name, my declaration.get);
     }
     generic_compile_test_info(&my generic, ctx);
-    c_foreach(i, vec_function_arg, my args) {
-        initialized_binding_compile_test_info(&i.ref->initializer, ctx);
+    for_each (i, vec_function_arg, &my args) {
+        initialized_binding_compile_test_info(&i->initializer, ctx);
     }
     if (my ret_explicit && !my is_constructor) {
         type_compile_test_info(&my ret, ctx);
@@ -265,29 +265,29 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
 
         default: break;
     }
-    c_foreach(i, vec_port_item, my items) {
-        Declaration const* declaration = i.ref->declaration.get;
+    for_each (i, vec_port_item, &my items) {
+        Declaration const* declaration = i->declaration.get;
         if (!declaration) continue;
-        if (i.ref->decl_name.sv.buf != i.ref->source_name.sv.buf) {
-            if (i.ref->source_decl) {
+        if (i->decl_name.sv.buf != i->source_name.sv.buf) {
+            if (i->source_decl) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(i.ref->source_decl->declarations),
-                    .span = i.ref->source_name,
+                    .declarations = vec_span_clone(i->source_decl->declarations),
+                    .span = i->source_name,
                 });
             }
-            baseline_test_case_add_type(ctx, i.ref->source_name, &declaration->value_type);
+            baseline_test_case_add_type(ctx, i->source_name, &declaration->value_type);
         }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = vec_span_clone(declaration->declarations),
-            .span = i.ref->decl_name,
+            .span = i->decl_name,
         });
-        baseline_test_case_add_type(ctx, i.ref->decl_name, &declaration->value_type);
+        baseline_test_case_add_type(ctx, i->decl_name, &declaration->value_type);
     }
 }
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
-    c_foreach(i, vec_initialized_binding, my initializers) {
-        initialized_binding_compile_test_info(i.ref, ctx);
+    for_each (i, vec_initialized_binding, &my initializers) {
+        initialized_binding_compile_test_info(i, ctx);
     }
 }
 
@@ -301,10 +301,10 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     }));
     baseline_test_case_add_type(ctx, my name, &t);
     type_drop(&t);
-    c_foreach(i, vec_enum_case, my cases) {
-        //baseline_test_case_add_declaration(ctx, i.ref->name, i.ref->declaration.get);
-        Span span = i.ref->name;
-        Declaration const* declaration = i.ref->declaration.get;
+    for_each (i, vec_enum_case, &my cases) {
+        //baseline_test_case_add_declaration(ctx, i->name, i->declaration.get);
+        Span span = i->name;
+        Declaration const* declaration = i->declaration.get;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .namespaces = vec_span_single(my name),
             .declarations = vec_span_clone(declaration->declarations),
@@ -314,8 +314,8 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         if (declaration->value_tag) {
             baseline_test_case_add_type(ctx, span, &declaration->value_type);
         }
-        if (i.ref->value.tag != EXPR_IMPLICIT_ANY) {
-            expr_compile_test_info(&i.ref->value, ctx);
+        if (i->value.tag != EXPR_IMPLICIT_ANY) {
+            expr_compile_test_info(&i->value, ctx);
         }
     }
 }
@@ -399,11 +399,11 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             expr_compile_test_info(&my extends, ctx);
         }
     }
-    c_foreach(i, vec_type, my implements) {
-        type_compile_test_info(i.ref, ctx);
+    for_each (i, vec_type, &my implements) {
+        type_compile_test_info(i, ctx);
     }
-    c_foreach(i, vec_class_item, my items) {
-        class_item_compile_test_info(i.ref, my name, ctx);
+    for_each (i, vec_class_item, &my items) {
+        class_item_compile_test_info(i, my name, ctx);
     }
 }
 
@@ -440,10 +440,10 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         to_drop = type_identifier(c_new(IdentifierType, {
             .name = my name,
         }));
-        c_foreach(i, vec_generic_item, my generic.items) {
+        for_each (i, vec_generic_item, &my generic.items) {
             vec_spanned_type_push(&to_drop.identifier->generic_params, spanned_type(
-                i.ref->name,
-                type_identifier(c_new(IdentifierType, { .name = i.ref->name }))
+                i->name,
+                type_identifier(c_new(IdentifierType, { .name = i->name }))
             ));
         }
         resolved = &to_drop;
@@ -462,8 +462,8 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
         });
     }
     generic_compile_test_info(&my generic, ctx);
-    c_foreach(i, vec_spanned_type, my extends) {
-        type_compile_test_info(&i.ref->type, ctx);
+    for_each (i, vec_spanned_type, &my extends) {
+        type_compile_test_info(&i->type, ctx);
     }
     interface_compile_test_info(&my type.interface, my name, ctx);
 }
@@ -536,35 +536,35 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 prop_t->tag == TYPE_VALUE &&
                 prop_t->value.tag == VALUE_STRING
             ) {
-                c_foreach(i, vec_interface_member, expr_t_resolved->interface.members) {
-                    if (i.ref->key.tag == INTERFACE_KEY_NAME &&
-                        cstr_eq(&i.ref->key.name_string, &prop_t->value.string)
+                for_each (i, vec_interface_member, &expr_t_resolved->interface.members) {
+                    if (i->key.tag == INTERFACE_KEY_NAME &&
+                        cstr_eq(&i->key.name_string, &prop_t->value.string)
                     ) {
                         VecSpan namespaces = vec_span_init();
-                        if (i.ref->origin_interface) {
-                            namespaces = vec_span_clone(i.ref->origin_interface->namespaces);
-                            vec_span_push(&namespaces, i.ref->origin_interface->name);
+                        if (i->origin_interface) {
+                            namespaces = vec_span_clone(i->origin_interface->namespaces);
+                            vec_span_push(&namespaces, i->origin_interface->name);
                         }
                         if (my property->form == PROPERTY_EXPR_DOT) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                                .declarations = vec_span_clone(i.ref->declarations),
+                                .declarations = vec_span_clone(i->declarations),
                                 .allow_declaration_empty = true,
                                 .namespaces = vec_span_clone(namespaces),
                                 .span = my outer_span,
-                                .name = span_valid(i.ref->key.span) ? i.ref->key.span : my property->prop.outer_span,
-                                .name_is_value = i.ref->key.name_is_value,
+                                .name = span_valid(i->key.span) ? i->key.span : my property->prop.outer_span,
+                                .name_is_value = i->key.name_is_value,
                             });
                         }
                         expr_compile_test_info(&my property->expr, ctx);
                         has_compiled_expr_info = true;
                         if (my property->prop.tag == EXPR_LITERAL) {
                             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                                .declarations = vec_span_clone(i.ref->declarations),
+                                .declarations = vec_span_clone(i->declarations),
                                 .allow_declaration_empty = true,
                                 .namespaces = vec_span_clone(namespaces),
                                 .span = my property->prop.outer_span,
-                                .name = i.ref->key.span,
-                                .name_is_value = i.ref->key.name_is_value,
+                                .name = i->key.span,
+                                .name_is_value = i->key.name_is_value,
                             });
                         }
                         vec_span_drop(&namespaces);
@@ -586,8 +586,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_GENERIC_PARAMS:
             expr_compile_test_info(&my generic_params->expr, ctx);
-            c_foreach(i, vec_spanned_type, my generic_params->params) {
-                type_compile_test_info(&i.ref->type, ctx);
+            for_each (i, vec_spanned_type, &my generic_params->params) {
+                type_compile_test_info(&i->type, ctx);
             }
             break;
 
@@ -609,8 +609,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_CALL:
             expr_compile_test_info(&my call->callable, ctx);
-            c_foreach(i, vec_expr, my call->args) {
-                expr_compile_test_info(i.ref, ctx);
+            for_each (i, vec_expr, &my call->args) {
+                expr_compile_test_info(i, ctx);
             }
             break;
 
@@ -619,22 +619,22 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_OBJECT:
-            c_foreach(i, vec_object_expr_item, my object) {
-                if (!i.ref->is_spread) {
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i.ref->name_span });
-                    Type t = type_clone(*expr_get_type(&i.ref->value));
+            for_each (i, vec_object_expr_item, &my object) {
+                if (!i->is_spread) {
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = i->name_span });
+                    Type t = type_clone(*expr_get_type(&i->value));
                     type_abstract_literals(&t);
-                    baseline_test_case_add_type(ctx, i.ref->name_span, &t);
+                    baseline_test_case_add_type(ctx, i->name_span, &t);
                     type_drop(&t);
                 }
 
-                expr_compile_test_info(&i.ref->value, ctx);
+                expr_compile_test_info(&i->value, ctx);
             }
             break;
 
         case EXPR_ARRAY:
-            c_foreach(i, vec_expr, my array) {
-                expr_compile_test_info(i.ref, ctx);
+            for_each (i, vec_expr, &my array) {
+                expr_compile_test_info(i, ctx);
             }
             break;
 
@@ -645,8 +645,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 }
 
 static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
-    c_foreach(i, vec_expr, *me) {
-        if (i.ref->tag != EXPR_LITERAL || i.ref->literal.tag != VALUE_UNDEFINED) {
+    for_each (i, vec_expr, me) {
+        if (i->tag != EXPR_LITERAL || i->literal.tag != VALUE_UNDEFINED) {
             return true;
         }
     }
@@ -732,12 +732,12 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 
         case STATEMENT_SWITCH:
             expr_compile_test_info(&my switch_->needle, ctx);
-            c_foreach(i, vec_switch_case, my switch_->cases) {
-                if (i.ref->is_pattern) {
-                    expr_compile_test_info(&i.ref->pattern, ctx);
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                if (i->is_pattern) {
+                    expr_compile_test_info(&i->pattern, ctx);
                 }
-                c_foreach(j, vec_statement, i.ref->statements) {
-                    statement_compile_test_info(j.ref, ctx);
+                for_each (j, vec_statement, &i->statements) {
+                    statement_compile_test_info(j, ctx);
                 }
             }
             break;
@@ -789,7 +789,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 }
 
 void block_compile_test_info(Block const* me, BaselineTestCase* ctx) {
-    c_foreach(i, vec_statement, my statements) {
-        statement_compile_test_info(i.ref, ctx);
+    for_each (i, vec_statement, &my statements) {
+        statement_compile_test_info(i, ctx);
     }
 }

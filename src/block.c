@@ -8,14 +8,14 @@ void block_drop(Block* me) {
 }
 
 void block_add_names(Block const* me, Scope* scope) {
-    c_foreach(i, vec_statement, my statements) {
-        statement_add_names(i.ref, scope);
+    for_each (i, vec_statement, &my statements) {
+        statement_add_names(i, scope);
     }
 }
 
 void block_lookup_names(Block const* me, ScopeStack* names, ErrorCtx* errs) {
-    c_foreach(i, vec_statement, my statements) {
-        statement_resolve_names(i.ref, names, errs);
+    for_each (i, vec_statement, &my statements) {
+        statement_resolve_names(i, names, errs);
     }
 }
 
@@ -29,14 +29,14 @@ void block_resolve_names(Block const* me, ScopeStack* names, ErrorCtx* errs) {
 
 Type block_evaluate_return_type(Block* me) {
     Type ret = type_composite_base(TYPE_UNION);
-    c_foreach(i, vec_statement, my statements) {
-        ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i.ref));
+    for_each (i, vec_statement, &my statements) {
+        ret = type_composite(TYPE_UNION, ret, statement_evaluate_return_type(i));
     }
     return ret;
 }
 
 void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
-    c_foreach(i, vec_statement, my statements) {
-        statement_typecheck(i.ref, ctx, errs);
+    for_each (i, vec_statement, &my statements) {
+        statement_typecheck(i, ctx, errs);
     }
 }
