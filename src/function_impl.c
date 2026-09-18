@@ -5,6 +5,7 @@
 #include "statement.h"
 #include "error.h"
 #include "several_types.h"
+#include "ty/ty.h"
 
 void function_arg_drop(FunctionArg* me) {
     vec_expr_drop(&my decorators);
@@ -117,6 +118,22 @@ Type function_impl_into_type(FunctionImpl me) {
     return type;
 }
 
+// What return expressions are contextually typed by: the return type annotation, else the contextual signature's.
+// Returns the enclosing function's, to be put back
+static Ty const* function_impl_enter_return_context(FunctionImpl* me) {
+    Checker* checker = current_checker;
+    Ty const* outer = checker->return_context;
+    if (my is_async || my is_generator) {
+        checker->return_context = nullptr; // TODO: the awaited/yielded parts of the annotation
+    } else if (my ret_explicit) {
+        Ty const* annotated = ty_from_node(checker, &my ret, (LowerCtx){ .generic = true });
+        checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
+    } else {
+        checker->return_context = ty_contextual_return_type(checker, me);
+    }
+    return outer;
+}
+
 Type function_impl_evaluate_type(FunctionImpl* me) {
     Type result = function_impl_make_callable_sans_inferred_ret(me);
 
@@ -126,7 +143,9 @@ Type function_impl_evaluate_type(FunctionImpl* me) {
             ret_type = type_self_referential_error;
         } else {
             my evaluating_ret = true;
+            Ty const* outer_context = function_impl_enter_return_context(me);
             ret_type = block_evaluate_return_type(&my body);
+            current_checker->return_context = outer_context;
             my evaluating_ret = false;
         }
 
@@ -138,8 +157,9 @@ Type function_impl_evaluate_type(FunctionImpl* me) {
             // This will need to be improved
             result.callable->ret = type_void;
         } else {
-            result.callable->ret = type_move(&ret_type);
-            type_abstract_literals(&result.callable->ret);
+            Checker* checker = current_checker;
+            Ty const* returned = ty_from_legacy(checker, &ret_type, (LowerCtx){ .generic = true });
+            result.callable->ret = type_new(ty_widened_return_type(checker, returned, ty_contextual_return_type(checker, me)));
         }
 
         if (my is_async && !my is_generator) {
@@ -169,7 +189,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         if (!i->initializer.binding.has_explicit_type &&
             i->initializer.value.tag == EXPR_IMPLICIT_ANY
         ) {
-            if (compiler_options()->no_implicit_any) {
+            if (compiler_options()->no_implicit_any && !ty_contextual_parameter_type(current_checker, &i->initializer)) {
                 binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
             }
         }
@@ -189,5 +209,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret : &type_any,
     };
+    Ty const* outer_context = function_impl_enter_return_context(me);
     block_typecheck(&my body, ctx, errs);
+    current_checker->return_context = outer_context;
 }

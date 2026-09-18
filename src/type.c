@@ -488,7 +488,7 @@ static Type const* type_resolve_one_layer_internal(TypeCtx* ctx, Type const* me)
             // Type operators are evaluated by the new core
             return ty_legacy_wrapper(
                 current_checker,
-                ty_from_legacy(current_checker, me, (LowerCtx){ .generic = true, .transient = !my parsed })
+                ty_from_legacy(current_checker, me, (LowerCtx){ .generic = true })
             );
 
         case TYPE_TYPEOF: return &type_any;
@@ -575,7 +575,7 @@ Type const* type_resolve_until_identifier(Type const* me) {
 }
 
 static Ty const* lower_for_relation(Checker* checker, Type const* type) {
-    return ty_from_legacy(checker, type, (LowerCtx){ .generic = true, .transient = true });
+    return ty_from_legacy(checker, type, (LowerCtx){ .generic = true });
 }
 
 bool type_extends(Type const* sub, Type const* super) {
@@ -1193,19 +1193,10 @@ static bool check_assignable_or_error_internal(
     ty_explain_unrelated(checker, lowered_source, lowered_target, TY_RELATION_ASSIGNABLE, &lines);
     checker->instantiation_limit_hit = false;
 
-    Type source_abstracted = type_any;
-    if (target->tag != TYPE_VALUE) {
-        source_abstracted = type_clone(*source);
-        type_abstract_literals(&source_abstracted);
-        source = &source_abstracted;
-    }
-
-    // Rendered before the types are dropped below, which happens before the error is built
-    // HACK(stage 4): the head line is still the legacy rendering of the legacy types (it knows how expression types
-    // print, the lowered temporaries don't quite), the elaboration below it comes from the new core
-    cstr source_str = cstr_d(source);
-    cstr target_str = cstr_d(target);
-    type_drop(&source_abstracted);
+    // The head line is rendered like the elaboration under it: a literal source shows widened unless the target has
+    // room for literals
+    cstr source_str = ty_report_source_cstr(checker, lowered_source, lowered_target);
+    cstr target_str = ty_to_cstr(checker, lowered_target);
 
     isize_t first_nested = 0;
     Error* error;
@@ -1243,18 +1234,4 @@ void type_report_unfit_argument(
     check_assignable_or_error_internal(
         "Argument of type", legacy_source ? legacy_source : &new_source, "parameter of type", &new_target, 2345, span, errs
     );
-}
-
-// Calls are resolved by the new core (ty/call.c). HACK(stage 4b): the callee and the arguments are still typed by the
-// legacy checker and lowered on every call
-Type type_call_evaluate_type(Type const* me, CallExpr const* call) {
-    Checker* checker = current_checker;
-    panic_if(!checker, "call without a current checker");
-    return type_new(ty_call_return_type(checker, lower_for_relation(checker, me), call));
-}
-
-void type_typecheck_call(Type const* me, CallExpr const* call, Span span, ErrorCtx* errs) {
-    Checker* checker = current_checker;
-    panic_if(!checker, "call without a current checker");
-    ty_call_typecheck(checker, lower_for_relation(checker, me), call, span, errs);
 }

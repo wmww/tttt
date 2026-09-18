@@ -4,6 +4,7 @@
 #include "several_types.h"
 #include "display.h"
 #include "error.h"
+#include "ty/ty.h"
 
 void binding_drop(Binding* me) {
     switch (my tag) {
@@ -188,15 +189,33 @@ void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names,
     expr_lookup_names(&my value, names, errs);
 }
 
-Type initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
-    Type ret = type_clone(*expr_get_type(&my value));
-    if (!my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER && my abstract_literals) {
-        type_abstract_literals(&ret);
+// The initializer, checked with the type annotation (if any) as its contextual type
+static Ty const* initialized_binding_check_value(InitializedBinding* me) {
+    Checker* checker = current_checker;
+    Ty const* contextual = nullptr;
+    if (my binding.has_explicit_type) {
+        contextual = ty_from_node(checker, &my binding.explicit_type, (LowerCtx){ .generic = true });
+        if (contextual->flags & TYF_ANY) contextual = nullptr;
     }
-    return ret;
+    return ty_check_expr(checker, &my value, contextual);
+}
+
+Type initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
+    Checker* checker = current_checker;
+    if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type) {
+        // A parameter of a function expression gets its type from the contextual signature
+        Ty const* contextual = ty_contextual_parameter_type(checker, me);
+        if (contextual) return type_new(contextual);
+    }
+    Ty const* ret = initialized_binding_check_value(me);
+    if (!my binding.has_explicit_type) {
+        ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
+    }
+    return type_new(ret);
 }
 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
+    initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     binding_typecheck(&my binding, errs);
 }

@@ -364,6 +364,42 @@ and 5 should know:
   passed because a constraint was wrongly generic, they need reverse mapped type inference), `mappedTypeNoTypeNoCrash`,
   `noSymbolForMergeCrash`, `indexedAccessPrivateMemberOfGenericConstraint` (types; error-recovery printing).
 
+**Stage 4b3 - DONE (2026-09-18).** 1408 full / errors 5516 / symbols 7701 / types 3325 of 13165 (from 1362 / 5277 /
+7528 / 3243), suite 6.3 s, bench typecheck 132 ms (124), valgrind clean on ~190 tests. Details in `measurements.md`,
+shortcuts in `hacks.md` ("Expressions on the new core"). What stage 5 and plan 03 should know:
+- **`src/ty/expr.c`: `ty_check_expr(expr, contextual)` is the one entry point**, and every expression kind evaluates to
+  `Ty` there (the legacy `expr_evaluate_type` is a one-line delegate; the legacy binary/unary/object/array evaluators,
+  `generic_params_expr_evaluate_type`, `type_call_evaluate_type`, `type_typecheck_call` are deleted). The design
+  decision that made it fit the LazyType world: *the contextual type is pushed down by whoever knows it, before
+  anyone else asks*, and the result is the expression's memo. tsc walks up parent pointers instead; there are none
+  here, and the typecheck pass is top down anyway. Function expressions take their parameter types from the first
+  contextual signature (links keyed by parameter, read by the parameter's own LazyType), like tsc's ContextChecked.
+- `ty_identifier_reference_type()` is the single hook every identifier reference goes through (plan 03: narrowing).
+- **Validation: `LowerCtx.transient`, `ty_structural_from_legacy` and `legacy_stable_view` are deleted.** What this
+  exposed: lowering is by node address, so a legacy object type that is lowered and then freed is a dangling key.
+  One real case (class field annotated with a conditional type: `lazy_type_evaluate` cloned the result into the memo
+  and freed the original the new core had already seen) was fixed by moving instead of cloning. Stage 5 removes the
+  class of bug by removing legacy temporaries.
+- Calls: arguments are checked per candidate with the parameter type as context; generic candidates infer in two
+  passes (context-sensitive arguments second, against the parameter type instantiated with what's known, which fixes
+  those type parameters); the contextual type of the call feeds return type inference (`new Set()` assigned to a
+  `Set<string>`); **explicit type arguments** filter candidates by arity (TS2558), build the mapper instead of
+  inferring, and are checked against constraints (TS2344). `Arg.widened_without_context` (4b1's mitigation) is gone.
+- Deviation: **no fresh/regular literal pairs.** Every literal type from an expression widens at mutable locations
+  (`ty_widened_for_declaration`, tsc's `isLiteralOfContextualType` rule for properties/elements/returns). That was
+  enough to move the error head line to `ty_display` and delete the `is_simple_related` enum hack; pairs are needed for
+  `const c: 1 = 1; let x = c`, and object literal freshness (excess property checks) is a separate flag that doesn't
+  exist either. Do them together, after stage 5.
+- Not done: functions still evaluate through a legacy callable (lowered by node; contextual parameters and return
+  types reach it through links and `Checker.return_context`), return types are unioned by legacy `type_composite`,
+  namespaces are still the legacy structural value type, the `.types` traversal still goes through `display_type`
+  (which prints `TYPE_NEW` with `ty_display`, so in effect it has switched).
+- The biggest single win was a parser bug found while validating the todo's must-cover item: `new (): T` in an
+  interface parsed as a method called `new`, so `new Map<string, number>()` could never work. Worth remembering when a
+  checker feature "doesn't work" on lib types: look at what the lib parsed to.
+- 31 components regressed, all listed with causes in `measurements.md`/`hacks.md`: reverse mapped type inference,
+  inference priorities, `this: void` display, namespace import display, combined union call signatures.
+
 **Stage 4b - split in three (insights, 2026-09-18).** 4a showed flips are cheap when done one kind of thing at a
 time, and that the pain is wherever a *weak legacy algorithm* meets precise `Ty` inputs. So 4b is three sessions, each
 leaving the suite runnable and pass counts at or above the previous session's:

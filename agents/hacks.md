@@ -60,10 +60,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
 - `EnumDecl.is_const`: recorded, nothing uses it.
-- `object_expr_evaluate_type`: computed keys become a named member if the key type is a string/number literal, a
-  `[x: string]`/`[x: number]` index signature if it's string/number/any, and are **silently left out** otherwise
-  (unique symbols, unions of literals). Accessor pairs are merged by name; a setter-only property is writable `any`-ish
-  (first parameter's type). No `this` typing for object literal methods, no contextual typing of members.
 - `parse_object_item`: `{ a = 1 }` (shorthand with default, only legal in destructuring assignment) parses and throws
   the default away; `?`/`!` after a member name is swallowed without TS1162. `ObjectExprItem` methods are plain
   `EXPR_FUNCTION` values.
@@ -82,13 +78,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `await_is_operator`: decides keyword-vs-identifier from `ParserShared.in_async`/`function_depth` plus a peek at the
   next character. Top-level await never reports TS1375/TS1378 (needs module detection + `@module`/`@target`).
   Class field initialisers and parameter defaults count as "top level"/inherit the enclosing function's context.
-- `EXPR_SPREAD`: typed as the operand's element type if it's an array, else `any` (tuples, iterables, strings TODO).
-  `type_typecheck_call` stops checking argument count and types at the first spread argument (no TS2556).
-- `EXPR_TEMPLATE`: substitutions are checked as expressions and the template is `string`; a tagged template's type is
-  the tag's return type only if the tag is a plain non-generic function (no overloads, no generic inference, no
-  argument checking, no `TemplateStringsArray`), else `any`. Template literal *types* are untouched.
-- `satisfies` (`AsTypeExpr.is_satisfies`): assignability check + TS1360 only, the type doesn't contextually type the
-  expression, and the source is shown widened.
 - Decorators (`ClassDecl.decorators`, `ClassItem.decorators`, `FunctionArg.decorators`): parsed, name-resolved,
   typechecked and traversed as ordinary expressions. Nothing checks that they're valid decorators for their target
   (TS1238/TS1240/TS1241...), and `@experimentalDecorators` ordering rules (`export @dec class`, TS1206) aren't applied.
@@ -101,18 +90,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 
 
 ## Relations bridge (plan 02 stage 3): legacy checker -> `ty/relate.c`
-- `type_extends` / `type_overlaps` / `check_assignable_or_error_internal` (`lower_for_relation`): both sides are
-  lowered on every call, since expressions still evaluate to legacy types. Whatever is passed may be a temporary that
-  gets freed, hence `LowerCtx.transient`: `ty_structural_from_legacy` lowers such object types eagerly and interns them
-  by shape instead of by node, keeping pointers only to what `legacy_stable_view` vouches for (parsed nodes, memos of
-  slotted non-identifier LazyTypes, via arena copies of the `TYPE_LAZY` wrapper). The rule "parsed or slotted = outlives
-  the checker" is implicit and unverified beyond valgrind runs. Builds members in the arena before knowing whether
-  the shape already exists (garbage per call). Overloads inside a temporary keep only the first signature. All of
-  this dies when expressions evaluate to `Ty` (stage 4b).
-- `check_assignable_or_error_internal`: the head line of TS2322/TS2345 is still the legacy rendering of the legacy
-  types (with `type_abstract_literals`), the elaboration lines under it come from `ty_display`. `TyDisplay.widen_literals`
-  imitates the abstraction for temporaries. A source that lowers to `any` is let through even to `never`, because the
-  legacy checker says `any` for whatever it can't type (missing initializer...).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS` / `type_extends_strict_nulls`: what the legacy operator checks in `expr.c`
   mean by "extends number" (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently
   (TS18050, never emitted here).
@@ -137,10 +114,6 @@ as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
 - `type_resolve_internal`: `type_resolve_until_identifier()` stops at a `TYPE_NEW` (it's "named") unless it's a type
   parameter, whose view is the `TYPE_IDENTIFIER` legacy code expects. `type_resolve_to_new()` exists for
   `generic_params_expr_evaluate_type` (`Bar<T>` as a value), which needs the `Ty` behind an identifier.
-- `replace_named_types_with(TYPE_NEW)` -> `ty_instantiate_with_refinements`: legacy clone-and-substitute reaching a `Ty`
-  builds a mapper from the refinements (lowering the refined types as transients) and instantiates. For an object type
-  without type variables it tries `apply_type_arguments` instead: an instantiation expression, `Ty.anonymous.
-  applies_type_args`, signatures with `drops_mapped_type_params`. `instantiate_anonymous` never instantiates those further.
 - `ty_declaration_is_evaluated_by_new_core`: the switch that decides which declarations' types come from the new core
   (class, interface, enum, enum member, type alias incl. `infer X`/mapped keys). What `identifier_type_evaluate_type`
   still answers itself: type parameters (as their constraint) and the `typeof` declarations of namespace imports.
@@ -159,24 +132,11 @@ as `TYPE_NEW`. All of this is scaffolding for stage 4b/5.
   `TyDisplay.unqualified_names`, because always qualifying (`m1.C`) was wrong more often there. Both are guesses until
   symbols know what's accessible from where (plan 03).
 - Single-member enums: `E.x` prints as `E` (right for `.types`, wrong in error messages where tsc shows the fresh
-  literal type `E.x`). Needs fresh/regular literal types. `operatorAddNullUndefined` regressed for it.
-- `is_simple_related`: members of one enum are still related to each other, because the legacy checker doesn't widen
-  `var x = E.A` to `E`.
+  literal type `E.x`). Needs fresh/regular literal types. `operatorAddNullUndefined` regressed for it. Since 4b3
+  `ty_widened_literal` widens an enum member to its enum (inference, declarations, error messages).
 
 ## Calls, inference and property access on the new core (plan 02 stage 4b1): `ty/call.c`, `ty/infer.c`, `ty/access.c`
 The algorithms are meant to stay; what's listed is where they lean on the legacy checker or stop short of tsc.
-- `type_call_evaluate_type` / `type_typecheck_call` / `index_type_evaluate_type`: the seam. Callee, arguments, object and
-  index are legacy types lowered as transients on every call, results go back as `TYPE_NEW`. A call is resolved twice
-  (type, then errors) and nothing is cached per `CallExpr`. Goes away when expressions evaluate to `Ty` (4b3).
-- `first_unfit_argument` / `Arg.widened_without_context`: an object or array literal argument only has to be
-  *comparable* to its parameter, because the legacy checker widens the literals inside (`{ kind: "a" }` is
-  `{ kind: string }`) without looking at a contextual type. Hides real errors of the same shape. Dies with contextual
-  typing + fresh literal types (4b3). The `any` argument always fits, same as `check_assignable_or_error_internal`.
-- `infer_type_arguments` / `Arg.context_sensitive`: no second inference pass. A function expression with unannotated
-  parameters contributes only its return type (its parameters are `any` to the legacy checker, so the return type is
-  often `any` too). `InferParam.fixed` and the `fixed` mapper parameter are the seam for the real thing (4b3). No
-  inference from the contextual return type either, and the inferred type arguments don't become the contextual type
-  of anything.
 - `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no template
   literal inference, alias type arguments are only used for deferred types (there are no variances for aliases), no
   `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
@@ -188,14 +148,75 @@ The algorithms are meant to stay; what's listed is where they lean on the legacy
   against the receiver.
 - `instantiate_outer` (call.c): an instantiated generic signature shares its type parameters with its target (the TODO
   in `signature_resolve`), so constraints and defaults have to be pushed through the signature's mapper chain by hand.
-- `lower()` on a namespace node with call signatures (function/class merged with a namespace): the namespace `Ty`
-  takes its members from the legacy merged node by structure, first one seen wins. Namespaces are still legacy (4b3).
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name, as the legacy `type_awaited` does for legacy types.
 - `ty_access`: no unique symbol keys, `null`/`undefined`
   members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
   `index_type_typecheck` (TS2339 and friends) is still the legacy lookup over views, gated the way it always was.
-- `ty_structural_from_legacy`: the span of every property name is part of the structural identity now (so the
-  symbols baseline finds declarations through call results), which makes interning of temporaries less effective.
+
+## Expressions on the new core (plan 02 stage 4b3): `ty/expr.c`, contextual typing, the call passes
+`ty_check_expr(expr, contextual)` is meant to stay; what's listed is where it stops short of tsc or leans on legacy code.
+- **No fresh/regular literal type pairs.** Every literal type that comes out of an expression counts as fresh: it
+  widens at a mutable location (`ty_widened_for_declaration`, `check_for_mutable_location`), so `const c: 1 = 1; let x = c`
+  gives `number` where tsc says `1`. No object literal freshness either (no excess property checks, TS2353).
+  `widen_nullable` (null/undefined -> any without strictNullChecks) is shallow: top level and array elements only.
+- Expression memo (`check_with`, `LazyMemo.context`, `lazy_type_set`): the memo of an `Expr` is whatever the last check
+  with a contextual type produced (overload candidates and inference passes overwrite each other; the chosen candidate
+  is checked last). `kind_uses_context` decides which expressions get rechecked for a new contextual type. Correctness
+  rests on the rule "whoever knows the contextual type checks first": `expr_typecheck` evaluates the expression's own
+  type before walking into it, `initialized_binding_typecheck`/return statements/calls check with their context first.
+  An expression first reached some other way (the `.types` traversal of a program that wasn't typechecked) is typed
+  without context.
+- `Checker.return_context`: the contextual type of `return` expressions is checker state saved/restored around
+  function bodies (`function_impl_enter_return_context`), because `statement_evaluate_return_type` has no parameter
+  for it. `FunctionImpl.evaluating_ret` is still a write into the AST during checking.
+- Functions are still legacy underneath: `function_impl_evaluate_type` builds a legacy callable (memo of the function's
+  LazyType), which the new core lowers by node; contextual parameter types get in through `KEY_CONTEXT_PARAM` links read by
+  `initialized_binding_evaluate_assigned_type`. `statement_evaluate_return_type` unions return types with the legacy
+  `type_composite` (pairwise strict-subtype reduction, lowering each time). Stage 5 should give functions a real `Ty`.
+- `assign_contextual_signature`: assigned once per function expression (tsc's ContextChecked), from the first contextual
+  type that has a usable signature. A union context takes the first member signature (tsc: only if they agree), generic
+  contextual signatures aren't instantiated (their type parameters leak into the parameter types), no contextual
+  `this`, and `is_arity_smaller` is the only filter.
+- `infer_type_arguments` second pass: before each context-sensitive argument *every* type parameter that has candidates
+  is fixed (tsc fixes the ones the contextual parameter type mentions). Inference from the contextual return type only
+  happens when that type has no type variables (no outer inference context, no return mapper). Still no reverse mapped
+  types: `contravariantOnlyInferenceFromAnnotatedFunction`, `reverseMappedTypeInferenceSameSource1` and friends used to
+  pass because object literal arguments only had to be *comparable*; that mitigation is gone.
+- `resolve_call` still runs twice per call (type, then errors) and nothing is cached per `CallExpr`; argument memos make
+  the second run cheap but not free.
+- `ty_non_nullable` of a type parameter or deferred type whose constraint allows null/undefined returns the stripped
+  *constraint* (tsc: `T & {}`), which loses `T`.
+- `ty_unresolved`: an unresolved type name lowers to an error-`any` that prints as the written name (tsc does the same);
+  it's a `TY_INTRINSIC` with `TYF_ANY | TYF_ERROR`, interned by name in the literal table.
+- `check_object`: computed keys that aren't string/number literals or plain string/number/any are **left out of the
+  type** (unique symbols, unions of literals). A setter-only property takes its parameter type, no `this` typing for
+  methods, duplicate names: last one wins silently. Spread copies the apparent type's properties (no optionality
+  handling, no generic spread).
+- `check_array`: an empty array literal is `any[]` (tsc: `never[]` under strictNullChecks, evolving `any[]` for an
+  unannotated variable). Spread elements of non-arrays are `any`. Tuples only from a tuple-like contextual type or
+  `as const`.
+- `compute`: `typeof x` is `string` (tsc: the union of typeof results), untagged templates are `string` even in a const
+  context, tagged templates take the return type of a lone non-generic signature (no call resolution), `yield` is `any`,
+  arithmetic is always `number` (no bigint), `+` keeps the legacy rules (`TY_RELATION_ASSIGNABLE_STRICT_NULLS`).
+  `satisfies` contextually types its operand but the result isn't narrowed by it.
+- `ty_apply_type_arguments` (instantiation expressions): maps the type parameters of every signature that takes at
+  least that many type arguments; signatures that don't fit aren't dropped, and nothing reports TS2635.
+- `lazy_type_evaluate` moves the evaluated legacy type into the memo instead of clone + drop when it is its own
+  resolution: the new core may already have lowered nodes inside it *by address* (class field with a conditional type
+  annotation crashed under valgrind otherwise). With `LowerCtx.transient` gone, **any legacy object type
+  (TYPE_INTERFACE/TYPE_CALLABLE) that is lowered and then freed is a dangling node key**; the remaining producers of
+  such temporaries are `function_impl_into_type`, `class_decl_evaluate_structure` and legacy clones of views, none of
+  which should reach a relation. Valgrind is the only guard.
+- `check_assignable_or_error_internal`: both sides are still lowered on every call (cheap now: `TYPE_NEW` or parsed
+  nodes). The head line comes from the new core (`ty_report_source_cstr`). A source that lowers to `any` is still let
+  through even to `never`.
+- `baseline_test_traversal.c`: the `extends Base` line shows the return type of the base's first construct signature.
+  Known display regressions of this stage: a namespace import prints structurally instead of `typeof a`
+  (`elidingImportNames`), `this: void` parameters don't print (`contextualTyping24`), qualified names in the type of an
+  assignment expression (`recursiveGenericUnionType1`).
+- `is_construct_signature_start` (parser): in a type, `new` followed by `(` or `<` is a construct signature. A method
+  that is really called `new` with a type parameter list (`new<T>(): void` meaning a method) is misparsed now; tsc
+  treats that as a construct signature too.
 
 ## New type core (`src/ty/`, plan 02). Everything here is about scaffolding or a known gap
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc

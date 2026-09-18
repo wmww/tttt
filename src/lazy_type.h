@@ -8,6 +8,8 @@ typedef struct LazyMemo {
     bool is_self_referential;
     bool done;
     Type evaluated;
+    // Expressions: the contextual type `evaluated` was computed with (a Ty), see ty_check_expr()
+    void const* context;
 } LazyMemo;
 
 typedef struct LazyType {
@@ -76,6 +78,10 @@ static inline LazyMemo* lazy_type_state_peek(LazyType* me) {
 }
 
 void lazy_type_drop(LazyType* me);
+
+// Stores a result computed by someone who knows more than lazy_type_evaluate() would (the contextual type of an
+// expression). Replaces the memo if there is one
+void lazy_type_set(LazyType* me, Type result, void const* context);
 
 // Makes a LazyType that evaluates whatever contains it, according to tag
 static inline LazyType lazy_type_init(int tag) {

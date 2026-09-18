@@ -12,6 +12,12 @@
 #include "generic.h"
 
 typedef struct Ty Ty;
+typedef struct InitializedBinding InitializedBinding;
+typedef struct FunctionImpl FunctionImpl;
+typedef struct IdentifierExpr IdentifierExpr;
+typedef struct ObjectExprItem ObjectExprItem;
+typedef struct Expr Expr;
+typedef struct CallExpr CallExpr;
 typedef struct Checker Checker;
 typedef struct Prop Prop;
 typedef struct Signature Signature;
@@ -139,10 +145,6 @@ typedef enum LazyState {
 // Where lowering happens: inherited by everything lowered lazily from inside an object type
 typedef struct LowerCtx {
     bool generic; // some type parameter is in scope, so anonymous object types could mention one
-    // The legacy tree being lowered may be freed while the checker lives (a clone or temporary made during checking,
-    // stage 3-4 scaffolding): nothing may keep a pointer into it, so object types are lowered eagerly and interned by
-    // structure instead of by node. Parsed nodes and the memos of slotted LazyTypes are stable again. See lower.c
-    bool transient;
     bool method; // the node being lowered is the type of a method (its signatures compare parameters bivariantly)
     bool in_alias; // directly inside a type alias that is being resolved: array/tuple nodes may need to be deferred
 } LowerCtx;
@@ -455,6 +457,7 @@ struct Checker {
     bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
+    Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
     Type** views; // Ty id -> legacy view, see legacy_view.c
@@ -482,6 +485,7 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags);
 TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
+Ty const* ty_unresolved(Checker* me, csview name);
 Ty const* ty_literal(Checker* me, Value const* value);
 Ty const* ty_enum_literal(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* member);
 Ty const* ty_enum_computed_member(Checker* me, Declaration const* enum_decl, Declaration const* member);
@@ -556,6 +560,8 @@ bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation r
 // "Type 'S' is not assignable to type 'T'." unless something more specific replaces it (TS2741 and friends)
 void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out);
 Ty const* ty_widened_literal(Checker* me, Ty const* ty);
+// How the source of a failed relation shows in the error: widened unless the target has room for literal types
+cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target);
 void relation_cache_drop(RelationCache* me);
 // conditional.c
 // Null while the conditional type has to stay deferred
@@ -568,9 +574,46 @@ Ty const* ty_conditional_resolve(
 // property or the index isn't one that can be looked up
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
 
+// expr.c: the types of expressions. One entry point, with the contextual type (null for none) as a parameter:
+// contextual typing of function expressions, object and array literals, and the context-sensitive pass of generic
+// inference hang off it. The result is the expression's memo (its LazyType slot), so a later ty_expr_type() sees the
+// type the expression got from the parent that knew its context.
+Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual);
+Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked without a contextual type
+Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
+// Every reference to a variable, parameter, function, class... gets its type here (plan 03: narrowing goes here)
+Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier);
+Ty const* ty_value_type_of(Checker* me, Declaration const* decl);
+// What a declaration without type annotation makes of its initializer's type (tsc's getWidenedType, plus
+// getWidenedLiteralType if `literals`: mutable locations)
+Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals);
+// An inferred return type: literal types widen unless the contextual return type has room for them
+Ty const* ty_widened_return_type(Checker* me, Ty const* ty, Ty const* contextual);
+Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len);
+// The type an unannotated parameter got from the contextual signature of its function expression, null if none
+Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter);
+Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
+bool ty_expr_is_context_sensitive(Expr const* expr);
+// The type of the property an item of an object literal made (what the `.types` baseline shows at its name)
+Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item);
+// `f<A, B>` as a value: the type arguments applied to the signatures that take that many
+Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
+
+typedef struct ObjectLiteralProp {
+    Atom const* name;
+    u32 flags; // PropFlags
+    Ty const* type;
+    Span name_span;
+    Span const* decl_spans;
+    u32 decl_span_count;
+    bool name_is_value;
+} ObjectLiteralProp;
+Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count);
+
 // call.c
-Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call);
-void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Span call_span, ErrorCtx* errs);
+// `contextual`: the contextual type of the call expression (return type inference), may be null
+Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
+void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs);
 Ty const* ty_awaited(Checker* me, Ty const* ty);
 // type.c: the legacy error head with the new core's elaboration. `legacy_source` may be null
 void type_report_unfit_argument(Type const* legacy_source, Ty const* source, Ty const* target, Span span, ErrorCtx* errs);

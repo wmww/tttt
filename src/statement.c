@@ -644,7 +644,8 @@ Type statement_evaluate_return_type(Statement* me) {
                 block_evaluate_return_type(&my try_catch->finally_block)
             );
 
-        case STATEMENT_RETURN_EXPR: return type_clone(*expr_get_type(&my expr));
+        case STATEMENT_RETURN_EXPR:
+            return type_new(ty_check_expr(current_checker, &my expr, current_checker->return_context));
 
         case STATEMENT_LABELED: return statement_evaluate_return_type(my labeled.body);
 
@@ -848,6 +849,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
             break;
 
         case STATEMENT_RETURN_EXPR:
+            ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
             if (ctx.specified_return) {
                 type_error_if_not_assignable(

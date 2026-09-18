@@ -43,6 +43,7 @@ core_files = files(
     'ty/infer.c',
     'ty/call.c',
     'ty/access.c',
+    'ty/expr.c',
 )
 
 main_files = core_files + files('main.c')

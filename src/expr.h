@@ -356,7 +356,6 @@ typedef struct ObjectExprItem {
 } ObjectExprItem;
 
 void object_expr_item_drop(ObjectExprItem* me);
-Type object_expr_item_evaluate_type(ObjectExprItem* me, ObjectExpr const* object);
 
 #define g_class_key ObjectExprItem, object_expr_item
 #define g_opt (c_no_atomic)

@@ -471,13 +471,31 @@ void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target
 
 // Results
 
+// tsc's literalTypesWithSameBaseType: literals (or unions of literals) of one primitive, or members of one enum
+static bool literal_base(Ty const* ty, u32* common, Declaration const** enum_decl, bool* first) {
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!literal_base(ty->composite.types.data[i], common, enum_decl, first)) return false;
+        }
+        return ty->composite.types.len > 0;
+    }
+    if (ty->kind != TY_LITERAL) return false;
+    Declaration const* decl = ty->flags & TYF_ENUM_LITERAL ? ty->literal.enum_decl : nullptr;
+    if (!*first && decl != *enum_decl) return false;
+    *enum_decl = decl;
+    *first = false;
+    *common &= ty->flags;
+    return decl || *common != 0;
+}
+
 static bool is_literal_of_same_base(TyList types) {
     u32 common = TYF_LITERAL;
+    Declaration const* enum_decl = nullptr;
+    bool first = true;
     for (u32 i = 0; i < types.len; i++) {
-        if (types.data[i]->kind != TY_LITERAL || (types.data[i]->flags & TYF_ENUM_LITERAL)) return false;
-        common &= types.data[i]->flags;
+        if (!literal_base(types.data[i], &common, &enum_decl, &first)) return false;
     }
-    return types.len > 0 && common != 0;
+    return types.len > 0;
 }
 
 // tsc's getCommonSupertype: the leftmost candidate that every other one is a subtype of. null and undefined stay out

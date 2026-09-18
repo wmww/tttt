@@ -932,10 +932,6 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     return ret;
 }
 
-// Temporary legacy object types (LowerCtx.transient). Nothing may point into the legacy tree afterwards, so whatever
-// isn't stable (see legacy_stable_view()) is lowered right away, and the type is interned by its shape: the same
-// temporary lowered again is the same Ty. HACK(stage 4): goes away when expressions evaluate to Ty themselves
-
 typedef struct WordBuf {
     u64* data;
     u32 len, cap;
@@ -950,233 +946,49 @@ static void words_push(WordBuf* me, u64 word) {
     my data[my len++] = word;
 }
 
-// A type inside a temporary: either something stable to lower later, or lowered now
-typedef struct DetachedType {
-    Type const* stable;
-    Ty const* type;
-} DetachedType;
-
-static DetachedType detach_type(Checker* me, Type const* type, LowerCtx ctx, WordBuf* words) {
-    u64 identity;
-    DetachedType ret = { .stable = legacy_stable_view(me, type, &identity) };
-    if (ret.stable) {
-        words_push(words, 1);
-        words_push(words, identity);
-    } else {
-        ret.type = ty_from_legacy(me, type, ctx);
-        words_push(words, 0);
-        words_push(words, ret.type->id);
-    }
-    return ret;
-}
-
-static Signature* structural_signature(Checker* me, CallableType const* node, LowerCtx ctx, WordBuf* words) {
-    Signature* sig = arena_new(&my arena, Signature);
-    sig->ctx = ctx;
-    sig->ctx.transient = false;
-    if (node->is_constructor) sig->flags |= SIGNATURE_CONSTRUCT;
-    if (node->is_abstract_constructor) sig->flags |= SIGNATURE_ABSTRACT;
-    if (ctx.method) sig->flags |= SIGNATURE_METHOD;
-    ctx.method = false;
-    u32 type_param_count = (u32)vec_generic_item_size(&node->generic.items);
-    if (type_param_count) {
-        Ty const** type_params = arena_new_n(&my arena, Ty const*, type_param_count);
-        for_each (i, vec_generic_item, &node->generic.items) {
-            type_params[i_index] = i->declaration_ref ?
-                ty_type_param(me, i->declaration_ref) :
-                ty_synthetic_type_param(me, i->name.sv);
-        }
-        sig->type_params = (TyList){ .data = type_params, .len = type_param_count };
-        ctx.generic = true;
-    }
-    u32 count = (u32)vec_callable_arg_size(&node->args);
-    SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
-    bool counting_required = true;
-    words_push(words, sig->flags);
-    words_push(words, type_param_count);
-    for (u32 i = 0; i < type_param_count; i++) words_push(words, sig->type_params.data[i]->id);
-    words_push(words, count);
-    for_each (i, vec_callable_arg, &node->args) {
-        SigParam* param = &params[i_index];
-        if (i->source) {
-            param->name = checker_atom(me, i->source->initializer.binding.content_span.sv);
-            param->rest = i->source->rest;
-        } else {
-            param->name = checker_atom(me, c_sv("arg"));
-        }
-        param->optional = i->optional;
-        param->type = ty_from_legacy(me, &i->type, ctx);
-        imply_rest_constraint(me, param);
-        if (param->optional || param->rest) counting_required = false;
-        if (counting_required) sig->min_args++;
-        words_push(words, (u64)(uintptr_t)param->name);
-        words_push(words, (u64)param->optional | (u64)param->rest << 1);
-        words_push(words, param->type->id);
-    }
-    if (count && params[0].name == checker_atom(me, c_sv("this")) && vec_callable_arg_front(&node->args)->source) {
-        // `this: T` isn't an argument, see signature_resolve()
-        if (sig->min_args && !params[0].optional) sig->min_args--;
-        params++;
-        count--;
-    }
-    sig->params = params;
-    sig->param_count = count;
-    DetachedType ret = detach_type(me, &node->ret, ctx, words);
-    sig->ret_node = ret.stable;
-    if (ret.type) {
-        sig->ret = ret.type;
-        sig->ret_state = LAZY_STATE_DONE;
-    }
-    sig->state = LAZY_STATE_DONE;
-    return sig;
-}
-
-static void structural_add_callable(Checker* me, MembersBuilder* builder, Type const* type, LowerCtx ctx, WordBuf* words) {
-    Type const* callable = legacy_skip_wrappers(type);
-    if (callable->tag != TYPE_CALLABLE) return;
-    words_push(words, 2);
-    Signature* sig = structural_signature(me, callable->callable, ctx, words);
-    if (sig->flags & SIGNATURE_CONSTRUCT) {
-        builder_push(builder, construct, sig);
-    } else {
-        builder_push(builder, call, sig);
-    }
-}
-
-Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx) {
-    check(node->tag == TYPE_INTERFACE || node->tag == TYPE_CALLABLE);
-    // PERF: the members are built in the arena before it's known whether the shape exists already
-    MembersBuilder builder = {0};
+// The type of an object literal expression: properties with known types, interned by shape (names, types, and where
+// each property was written, since the symbols baseline tells two literals of one shape apart)
+Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count) {
     WordBuf words = {0};
     words_push(&words, KEY_STRUCTURAL);
-    u32 flags = TYF_OBJECT;
-    bool fully_lowered = node->tag != TYPE_CALLABLE;
-    if (node->tag == TYPE_CALLABLE) {
-        structural_add_callable(me, &builder, node, ctx, &words);
-    } else {
-        ctx.method = false;
-        for_each (i, vec_interface_member, &node->interface.members) {
-            switch (i->key.tag) {
-                case INTERFACE_KEY_NAME:
-                case INTERFACE_KEY_EXPR: {
-                    Atom const* name = nullptr;
-                    if (i->key.tag == INTERFACE_KEY_NAME) {
-                        name = checker_atom(me, cstr_sv(&i->key.name_string));
-                    } else {
-                        Ty const* key = ty_from_legacy(me, legacy_expr_type(i->key.expr.ref), ctx);
-                        if (key->flags & TYF_STRING_LITERAL) {
-                            name = key->literal.string;
-                        } else if (key->flags & TYF_NUMBER_LITERAL) {
-                            cstr rendered = cstr_null;
-                            cstr_append_value_js(&rendered, &key->literal.value);
-                            name = checker_atom(me, cstr_sv(&rendered));
-                            cstr_drop(&rendered);
-                        } else {
-                            break;
-                        }
-                    }
-                    // TODO: overloads of a method in a temporary type, only the first signature is kept
-                    if (builder_find_prop(&builder, name)) break;
-                    bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
-                        legacy_skip_wrappers(&i->type)->tag == TYPE_CALLABLE;
-                    Prop* prop = arena_new(&my arena, Prop);
-                    prop->name = name;
-                    prop->parent = i->origin_interface;
-                    if (i->optional) prop->flags |= PROP_OPTIONAL;
-                    if (i->readonly) prop->flags |= PROP_READONLY;
-                    if (is_method) prop->flags |= PROP_METHOD;
-                    prop->ctx = ctx;
-                    prop->ctx.method = is_method;
-                    // Where it was declared is part of the identity: two object literals of one shape are different
-                    // types to the symbols baseline
-                    prop->name_span = i->key.span;
-                    prop->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
-                    prop_add_decl_spans(me, prop, i->declarations.data, (u32)vec_span_size(&i->declarations));
-                    words_push(&words, 1);
-                    words_push(&words, (u64)(uintptr_t)name);
-                    words_push(&words, prop->flags);
-                    words_push(&words, (u64)(uintptr_t)i->key.span.sv.buf);
-                    DetachedType type = detach_type(me, &i->type, prop->ctx, &words);
-                    if (type.stable) {
-                        prop->node = type.stable;
-                        prop->ctx.transient = false;
-                        fully_lowered = false;
-                    } else {
-                        prop->type = type.type;
-                        prop->type_state = LAZY_STATE_DONE;
-                        flags |= type.type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
-                    }
-                    builder_push(&builder, props, prop);
-                }   break;
-
-                case INTERFACE_KEY_INDEX: {
-                    IndexInfo info = {
-                        .key = ty_from_legacy(me, &i->key.index.type, ctx),
-                        .value = ty_from_legacy(me, &i->type, ctx),
-                        .param_name = checker_atom(me, i->key.index.name.sv),
-                        .readonly = i->readonly,
-                    };
-                    flags |= (info.key->flags | info.value->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
-                    words_push(&words, 3);
-                    words_push(&words, info.key->id);
-                    words_push(&words, info.value->id);
-                    words_push(&words, (u64)(uintptr_t)info.param_name << 1 | info.readonly);
-                    builder_push(&builder, index, info);
-                }   break;
-
-                case INTERFACE_KEY_MAPPED: {
-                    LowerCtx mapped_ctx = ctx;
-                    mapped_ctx.generic = true;
-                    MappedInfo* mapped = arena_new(&my arena, MappedInfo);
-                    mapped->type_param = i->key.mapped.declaration_ref ?
-                        ty_type_param(me, i->key.mapped.declaration_ref) :
-                        ty_synthetic_type_param(me, i->key.mapped.type_name.sv);
-                    mapped->constraint = ty_from_legacy(me, &i->key.mapped.in_type, mapped_ctx);
-                    if (i->key.mapped.has_as_type) {
-                        mapped->name_type = ty_from_legacy(me, &i->key.mapped.as_type, mapped_ctx);
-                    }
-                    mapped->template = ty_from_legacy(me, &i->type, mapped_ctx);
-                    Type const* in_type = legacy_skip_refs(&i->key.mapped.in_type);
-                    if (in_type->tag == TYPE_KEYOF) {
-                        mapped->modifiers_type = ty_from_legacy(me, &in_type->keyof->interface, mapped_ctx);
-                    }
-                    mapped->readonly = i->key.mapped.readonly;
-                    mapped->optional = i->key.mapped.optional;
-                    words_push(&words, 4);
-                    words_push(&words, mapped->type_param->id);
-                    words_push(&words, mapped->constraint->id);
-                    words_push(&words, mapped->name_type ? mapped->name_type->id : 0);
-                    words_push(&words, mapped->template->id);
-                    words_push(&words, mapped->modifiers_type ? mapped->modifiers_type->id : 0);
-                    words_push(&words, (u64)(unsigned char)mapped->readonly << 8 | (unsigned char)mapped->optional);
-                    flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
-                    builder.mapped = mapped;
-                }   break;
-
-                case INTERFACE_KEY_CALLABLE:
-                    structural_add_callable(me, &builder, &i->type, ctx, &words);
-                    fully_lowered = false;
-                    break;
-            }
-        }
+    for (u32 i = 0; i < count; i++) {
+        words_push(&words, 1);
+        words_push(&words, (u64)(uintptr_t)props[i].name);
+        words_push(&words, props[i].flags);
+        words_push(&words, (u64)(uintptr_t)props[i].name_span.sv.buf);
+        words_push(&words, props[i].type->id);
     }
-    // What isn't lowered yet, and everything inside signatures, could mention type parameters. If every part was
-    // lowered right away the flags say it all
-    if (ctx.generic && !fully_lowered) flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
-
+    for (u32 i = 0; i < index_count; i++) {
+        words_push(&words, 3);
+        words_push(&words, index[i].key->id);
+        words_push(&words, index[i].value->id);
+        words_push(&words, (u64)(uintptr_t)index[i].param_name << 1 | index[i].readonly);
+    }
     Ty const* ret = intern_get(&my links, words.data, words.len);
-    if (ret) {
-        free(builder.props);
-        free(builder.call);
-        free(builder.construct);
-        free(builder.index);
-    } else {
+    if (!ret) {
+        MembersBuilder builder = {0};
+        u32 flags = TYF_OBJECT;
+        for (u32 i = 0; i < count; i++) {
+            Prop* prop = arena_new(&my arena, Prop);
+            prop->name = props[i].name;
+            prop->flags = props[i].flags;
+            prop->type = props[i].type;
+            prop->type_state = LAZY_STATE_DONE;
+            prop->name_span = props[i].name_span;
+            prop->name_is_value = props[i].name_is_value;
+            prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
+            flags |= props[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            builder_push(&builder, props, prop);
+        }
+        for (u32 i = 0; i < index_count; i++) {
+            flags |= (index[i].key->flags | index[i].value->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            builder_push(&builder, index, index[i]);
+        }
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
-        fresh->anonymous.ctx = ctx;
-        fresh->anonymous.ctx.transient = false;
+        fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
-        fresh->anonymous.state->members = expand_mapped(me, builder_finish(me, &builder));
+        fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
         *intern_slot(me, &my links, words.data, words.len) = fresh;
         ret = fresh;

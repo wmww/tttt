@@ -94,8 +94,7 @@ Uninvestigated items. Triage sessions drain this.
 - No `perf` on the dev box; callgrind works (`valgrind --tool=callgrind ./release/tttt -q files...`, then
   `callgrind_annotate [--inclusive=yes]`). Inclusive numbers for recursive functions are inflated. Worth a
   `./profile.sh` wrapper if more sessions need it.
-- Parser: construct signatures in type literals/interfaces (`{ new (x: string): C }`, `{ new(): T }`) parse as a method
-  named `new` (seen via `--shadow-types`). Optional/rest *named* tuple elements (`[a: string, b?: number,
+- Parser: optional/rest *named* tuple elements (`[a: string, b?: number,
   ...rest: boolean[]]`) are parse errors. A leading `&`/`|` in a type becomes an `any`/`never` operand
   (`parse_type`), which every consumer has to know to skip.
 - `Declaration` pointer stability: references hold `decl_ref` from lookup time, while lib declarations are
@@ -160,3 +159,8 @@ Uninvestigated items. Triage sessions drain this.
   union member *order* (`"c" | "b"` in tsc for `Exclude<"a" | "b" | "c", "a">`: literal ids follow first creation).
 - (stage 4b2) `test/baseline_results.ts` wasn't saved by the 4b1 session (3 tests showed as "newly passing" at the start
   of 4b2). Sessions should end with `./fasttest.sh -s`; consider making `--summary` say when the file is stale.
+- From type core stage 4b3 (see `hacks.md` "Expressions on the new core" for the full list): `this` types are `any`
+  (`m.set("a", 1)` on a `Map` returns `any` instead of the map: needs the `this` type parameter); the symbols
+  traversal finds no declaration for a property accessed on a primitive (`x.toFixed`, `s.length`: it looks at the legacy
+  view of the object type, which has no members for `number`/`string`); a failed type-argument-arity call returns
+  `any` where tsc still resolves a signature; reverse mapped type inference is now the loudest inference gap.

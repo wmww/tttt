@@ -149,7 +149,7 @@ static bool is_empty_tuple(Ty const* ty) {
 
 Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
     if (ty->kind == TY_LITERAL) {
-        if (ty->flags & TYF_ENUM_LITERAL) return ty;
+        if (ty->flags & TYF_ENUM_LITERAL) return ty_enum_of_member(me, ty);
         if (ty->flags & TYF_STRING_LITERAL) return ty_intrinsic(me, TY_STRING);
         if (ty->flags & TYF_NUMBER_LITERAL) return ty_intrinsic(me, TY_NUMBER);
         if (ty->flags & TYF_BIGINT_LITERAL) return ty_intrinsic(me, TY_BIGINT);
@@ -273,9 +273,6 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
         if ((sf & TYF_LITERAL) && same_literal_value(s, t) && enums_related(me, s->literal.enum_decl, t->literal.enum_decl)) {
             return true;
         }
-        // HACK(stage 4b): `var x = E.A` should have the widened type E, but the legacy checker doesn't widen enum
-        // members, so members of one enum are related to each other
-        if (s->literal.enum_decl == t->literal.enum_decl && st->relation != TY_RELATION_STRICT_SUBTYPE) return true;
     }
     if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE ||
         st->relation == TY_RELATION_ASSIGNABLE_STRICT_NULLS
@@ -325,6 +322,11 @@ static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
     cstr ret = cstr_null;
     ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen }, ty);
     return ret;
+}
+
+cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target) {
+    bool widen = !could_have_singletons(me, target);
+    return display_for_report(me, widen ? ty_widened_literal(me, source) : source, widen);
 }
 
 static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target) {

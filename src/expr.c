@@ -39,25 +39,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCt
 }
 
 Type identifier_expr_evaluate_type(IdentifierExpr const* me) {
-    if (my decl_ref) {
-        Type ret;
-        if (my keyword && my decl_ref->value_tag == DECLARATION_CLASS) {
-            ret = type_identifier(c_new(IdentifierType, {
-                .name = my decl_ref->name,
-                .decl_ref = my decl_ref,
-            }));
-        } else {
-            ret = type_refcopy(&my decl_ref->value_type);
-        }
-        return ret;
-    } else {
-        switch (my keyword) {
-            case KEYWORD_IDENTIFIER_THIS:
-                return type_undefined;
-            default: break;
-        }
-        return type_any;
-    }
+    return type_new(ty_identifier_reference_type(current_checker, me));
 }
 
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
@@ -78,19 +60,6 @@ static Generic const* generic_params_get_generic(GenericParamsExpr* me) {
         }
     }
     return nullptr;
-}
-
-Type generic_params_expr_evaluate_type(GenericParamsExpr* me) {
-    Type const* expr_type = expr_get_type(&my expr);
-    Generic const* generic = generic_params_get_generic(me);
-    if (!generic_empty(generic)) {
-        // A type of the new core is instantiated as a whole (an identifier for one would stay as it is)
-        Type const* new_type = type_resolve_to_new(expr_type);
-        if (new_type) expr_type = new_type;
-        return generic_degenericize_type(generic, type_clone(*expr_type), &my params);
-    } else {
-        return type_clone(*expr_type);
-    }
 }
 
 void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
@@ -217,6 +186,12 @@ void expr_drop(Expr* me) {
     lazy_type_drop(&my lazy_type);
 }
 
+// `x as const` / `<const>x`: `const` isn't a type name (the new core checks the same, see is_const_assertion())
+static bool as_type_is_const_assertion(AsTypeExpr const* me) {
+    return my type.tag == TYPE_IDENTIFIER && span_equals(my type.identifier->name, "const") &&
+        vec_span_is_empty(&my type.identifier->namespaces) && !vec_spanned_type_size(&my type.identifier->generic_params);
+}
+
 void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
@@ -251,7 +226,9 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_AS_TYPE:
             expr_lookup_names(&my as_type->expr, names, errs);
-            type_lookup_names(&my as_type->type, names, errs);
+            if (!as_type_is_const_assertion(my as_type)) {
+                type_lookup_names(&my as_type->type, names, errs);
+            }
             break;
 
         case EXPR_TERNARY:
@@ -337,94 +314,6 @@ static BinaryOp binary_op_without_assignment(BinaryOp op) {
             " (", (i32)op, ")"
         );
     }
-}
-
-static Type binary_op_evaluate_type(
-    Type const* left,
-    BinaryOp op,
-    Type const* right,
-    Expr const* expr
-) {
-    switch (op) {
-        case BINARY_OP_PLUS: {
-            const bool left_extends_string = type_extends_strict_nulls(left, &type_string);
-            const bool right_extends_string = type_extends_strict_nulls(right, &type_string);
-            if (left_extends_string || right_extends_string) {
-                if ((left_extends_string && type_resolve(left)->tag != TYPE_ANY) ||
-                    (right_extends_string && type_resolve(right)->tag != TYPE_ANY)
-                ) {
-                    return type_string;
-                } else {
-                    return type_any;
-                }
-            } else if (type_extends_strict_nulls(left, &type_number) && type_extends_strict_nulls(right, &type_number)) {
-                return type_number;
-            } else {
-                return type_any;
-            }
-        }
-
-        case BINARY_OP_STAR_STAR:
-        case BINARY_OP_STAR:
-        case BINARY_OP_SLASH:
-        case BINARY_OP_MOD:
-        case BINARY_OP_MINUS:
-        case BINARY_OP_LESS_LESS:
-        case BINARY_OP_GREATER_GREATER:
-        case BINARY_OP_GREATER_GREATER_GREATER:
-        case BINARY_OP_AND:
-        case BINARY_OP_XOR:
-        case BINARY_OP_OR: return type_number;
-
-        case BINARY_OP_EQUAL: return type_clone(*right);
-
-        case BINARY_OP_DOUBLE_EQUAL:
-        case BINARY_OP_TRIPLE_EQUAL:
-        case BINARY_OP_NOT_EQUAL:
-        case BINARY_OP_TRIPLE_NOT_EQUAL:
-        case BINARY_OP_LESS:
-        case BINARY_OP_GREATER:
-        case BINARY_OP_LESS_EQUAL:
-        case BINARY_OP_GREATER_EQUAL:
-        case BINARY_OP_IN:
-        case BINARY_OP_INSTANCEOF: return type_boolean;
-
-        case BINARY_OP_AND_AND:
-        case BINARY_OP_OR_OR: return type_composite(TYPE_UNION, type_clone(*left), type_clone(*right));
-
-        case BINARY_OP_PLUS_EQUAL:
-        case BINARY_OP_STAR_STAR_EQUAL:
-        case BINARY_OP_STAR_EQUAL:
-        case BINARY_OP_SLASH_EQUAL:
-        case BINARY_OP_MOD_EQUAL:
-        case BINARY_OP_MINUS_EQUAL:
-        case BINARY_OP_LESS_LESS_EQUAL:
-        case BINARY_OP_GREATER_GREATER_EQUAL:
-        case BINARY_OP_GREATER_GREATER_GREATER_EQUAL:
-        case BINARY_OP_AND_EQUAL:
-        case BINARY_OP_XOR_EQUAL:
-        case BINARY_OP_OR_EQUAL:
-        case BINARY_OP_AND_AND_EQUAL:
-        case BINARY_OP_OR_OR_EQUAL:
-        case BINARY_OP_EH_EH_EQUAL: {
-            BinaryOp without_assignment = binary_op_without_assignment(op);
-            Type a = binary_op_evaluate_type(left, without_assignment, right, expr);
-            Type b = binary_op_evaluate_type(left, BINARY_OP_EQUAL, &a, expr);
-            type_drop(&a);
-            return b;
-        }
-
-        case BINARY_OP_COMMA:
-            // TODO: throw TS2695: Left side of comma operator is unused and has no side effects.
-            return type_clone(*right);
-
-        case BINARY_OP_EH_EH: {
-            Type a = type_clone(*left);
-            type_remove_null_and_undefined(&a);
-            return type_composite(TYPE_UNION, a, type_clone(*right));
-        }
-    }
-    impossible;
 }
 
 static void binary_op_typecheck(
@@ -544,10 +433,9 @@ static void binary_op_typecheck(
         case BINARY_OP_EH_EH_EQUAL: {
             BinaryOp without_assignment = binary_op_without_assignment(op);
             binary_op_typecheck(left, without_assignment, right, expr, errs);
-            Type t = binary_op_evaluate_type(left, without_assignment, right, expr);
-            binary_op_typecheck(left, BINARY_OP_EQUAL, &t, expr, errs);
-            type_drop(&t);
-        }
+            // The expression's own type is what gets assigned
+            binary_op_typecheck(left, BINARY_OP_EQUAL, expr_get_type((Expr*)expr), expr, errs);
+        }   break;
 
         case BINARY_OP_COMMA:
         case BINARY_OP_EH_EH:
@@ -555,301 +443,15 @@ static void binary_op_typecheck(
     }
 }
 
-// The type `await` gives for a value of the given type
-// TODO: only unwraps Promise<T> and PromiseLike<T> by name, not arbitrary thenables. Should be the lib's Awaited<T>
-static Type type_awaited(Type const* type) {
-    Type const* resolved = type_resolve_until_identifier(type);
-    if (resolved->tag == TYPE_NEW) {
-        return type_new(ty_awaited(current_checker, type_new_ty(current_checker, resolved)));
-    }
-    if (resolved->tag == TYPE_IDENTIFIER &&
-        vec_span_is_empty(&resolved->identifier->namespaces) &&
-        vec_spanned_type_size(&resolved->identifier->generic_params) == 1 &&
-        (span_equals(resolved->identifier->name, "Promise") || span_equals(resolved->identifier->name, "PromiseLike"))
-    ) {
-        return type_awaited(&vec_spanned_type_front(&resolved->identifier->generic_params)->type);
-    }
-    return type_clone(*type);
-}
-
-static Type unary_op_evaluate_type(
-    UnaryOp op,
-    Expr* expr
-) {
-    switch (op) {
-        case UNARY_OP_LEFT_BANG:
-            switch (type_is_trivially_truthy(expr_get_type(expr))) {
-                case 1: return type_value(value_boolean(false));
-                case 0: return type_value(value_boolean(true));
-                default: return type_boolean;
-            }
-            break;
-
-        case UNARY_OP_TYPEOF: return type_string;
-        case UNARY_OP_VOID: return type_undefined;
-        case UNARY_OP_TILDE: return type_number;
-        case UNARY_OP_DELETE: return type_boolean;
-        case UNARY_OP_AWAIT: return type_awaited(expr_get_type(expr));
-
-        // TODO: what a yield evaluates to is decided by the generator's TNext, which needs generators to be typed
-        case UNARY_OP_YIELD:
-        case UNARY_OP_YIELD_STAR:
-            return type_any;
-
-        case UNARY_OP_PLUS:
-        case UNARY_OP_MINUS:
-            if (!expr_is_perenthisized(expr) && expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_NUMBER) {
-                return type_value(value_number(op == UNARY_OP_PLUS ? expr->literal.number : -expr->literal.number));
-            } else {
-                return type_number;
-            }
-
-        case UNARY_OP_LEFT_PLUS_PLUS:
-        case UNARY_OP_LEFT_MINUS_MINUS:
-        case UNARY_OP_RIGHT_PLUS_PLUS:
-        case UNARY_OP_RIGHT_MINUS_MINUS: return type_number;
-
-        case UNARY_OP_RIGHT_BANG: {
-            Type ret = type_clone(*expr_get_type(expr));
-            type_remove_null_and_undefined(&ret);
-            return ret;
-        }
-    }
-    impossible;
-}
-
-// The type an object literal item contributes to the object's type (not abstracted)
-Type object_expr_item_evaluate_type(ObjectExprItem* me, ObjectExpr const* object) {
-    switch (my tag) {
-        case OBJECT_ITEM_SETTER:
-            // If there's a matching getter it decides the type
-            if (!my computed_key) {
-                for_each (i, vec_object_expr_item, object) {
-                    if (i->tag == OBJECT_ITEM_GETTER && !i->computed_key && cstr_eq(&i->name_string, &my name_string)) {
-                        return object_expr_item_evaluate_type(i, object);
-                    }
-                }
-            }
-            [[fallthrough]];
-        case OBJECT_ITEM_GETTER: {
-            Type const* func = type_resolve(expr_get_type(&my value));
-            if (func->tag != TYPE_CALLABLE) {
-                return type_any;
-            } else if (my tag == OBJECT_ITEM_GETTER) {
-                return type_clone(func->callable->ret);
-            } else if (vec_callable_arg_size(&func->callable->args)) {
-                return type_clone(vec_callable_arg_front(&func->callable->args)->type);
-            } else {
-                return type_any;
-            }
-        }
-
-        default:
-            return type_clone(*expr_get_type(&my value));
-    }
-}
-
-static InterfaceMember* interface_find_named_member(Interface* me, cstr const* name) {
-    for_each (i, vec_interface_member, &my members) {
-        if (i->key.tag == INTERFACE_KEY_NAME && cstr_eq(&i->key.name_string, name)) {
-            return i;
-        }
-    }
-    return nullptr;
-}
-
-static InterfaceMember* interface_find_index_member(Interface* me, Type const* key_type) {
-    for_each (i, vec_interface_member, &my members) {
-        if (i->key.tag == INTERFACE_KEY_INDEX && i->key.index.type.tag == key_type->tag) {
-            return i;
-        }
-    }
-    return nullptr;
-}
-
-static Type object_expr_evaluate_type(ObjectExpr const* me) {
-    Interface interface = {0};
-    for_each (i, vec_object_expr_item, me) {
-        if (i->tag == OBJECT_ITEM_SPREAD) {
-            Type const* type = type_resolve(expr_get_type(&i->value));
-            if (type->tag == TYPE_INTERFACE) {
-                for_each (i, vec_interface_member, &type->interface.members) {
-                    vec_interface_member_push(&interface.members, interface_member_clone(*i));
-                }
-            }
-            continue;
-        }
-
-        Type type = object_expr_item_evaluate_type(i, me);
-        type_abstract_literals(&type);
-        Span declaration = i->span;
-        bool is_method = i->tag == OBJECT_ITEM_METHOD;
-
-        cstr name = cstr_null;
-        bool name_is_value = i->name_is_value;
-        if (i->computed_key) {
-            Type const* key_type = type_resolve(expr_get_type(i->computed_key));
-            if (key_type->tag == TYPE_VALUE &&
-                (key_type->value.tag == VALUE_STRING || key_type->value.tag == VALUE_NUMBER)
-            ) {
-                cstr_append_value_js(&name, &key_type->value);
-                name_is_value = key_type->value.tag == VALUE_NUMBER;
-            } else if (key_type->tag == TYPE_STRING || key_type->tag == TYPE_NUMBER || key_type->tag == TYPE_ANY) {
-                // A key that's only known to be some string or number becomes an index signature
-                Type const* index_key_type = key_type->tag == TYPE_NUMBER ? &type_number : &type_string;
-                InterfaceMember* existing = interface_find_index_member(&interface, index_key_type);
-                if (existing) {
-                    existing->type = type_composite(TYPE_UNION, type_move(&existing->type), type);
-                } else {
-                    vec_interface_member_push(&interface.members, (InterfaceMember){
-                        .declarations = vec_span_single(declaration),
-                        .key = {
-                            .span = i->name_span,
-                            .tag = INTERFACE_KEY_INDEX,
-                            .index = {
-                                .name = sv_make_span(c_sv("x")),
-                                .type = type_clone(*index_key_type),
-                            },
-                        },
-                        .type = type,
-                    });
-                }
-                continue;
-            } else {
-                // TODO: unique symbol keys. For now the member is left out of the type
-                type_drop(&type);
-                continue;
-            }
-        } else {
-            name = cstr_clone(i->name_string);
-        }
-
-        InterfaceMember* existing = interface_find_named_member(&interface, &name);
-        if (existing && (i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER)) {
-            // The other half of an accessor pair. The getter decides the type
-            vec_span_push(&existing->declarations, declaration);
-            if (i->tag == OBJECT_ITEM_GETTER) {
-                type_drop(&existing->type);
-                existing->type = type;
-            } else {
-                type_drop(&type);
-            }
-            cstr_drop(&name);
-            continue;
-        }
-
-        InterfaceMember member = interface_member_make(
-            declaration,
-            nullptr,
-            false,
-            false,
-            name,
-            i->name_span,
-            name_is_value,
-            type
-        );
-        member.key.name_is_member_function = is_method;
-        vec_interface_member_push(&interface.members, member);
-    }
-    return type_interface(interface);
-}
-
 Type expr_evaluate_type(Expr const* me) {
-    switch (my tag) {
-        case EXPR_IMPLICIT_ANY: return type_any;
-        case EXPR_LITERAL: return type_value(value_clone(my literal));
-        case EXPR_IDENTIFIER: return identifier_expr_evaluate_type(&my identifier);
-
-        case EXPR_BINARY_OP:
-            return binary_op_evaluate_type(
-                expr_get_type(&my binary_op->left),
-                my binary_op->op,
-                expr_get_type(&my binary_op->right),
-                me
-            );
-
-        case EXPR_UNARY_OP:
-            return unary_op_evaluate_type(my unary_op->op, &my unary_op->expr);
-
-        case EXPR_PROPERTY:
-            return index_type_evaluate_type(
-                expr_get_type(&my property->expr),
-                expr_get_type(&my property->prop)
-            );
-
-        case EXPR_GENERIC_PARAMS: return generic_params_expr_evaluate_type(my generic_params);
-
-        case EXPR_AS_TYPE:
-            if (my as_type->is_satisfies) {
-                // TODO: the type should contextually type the expression
-                return type_refcopy(expr_get_type(&my as_type->expr));
-            }
-            return type_refcopy(&my as_type->type);
-
-        case EXPR_TERNARY:
-            return type_composite(
-                TYPE_UNION,
-                type_refcopy(expr_get_type(&my ternary->yes)),
-                type_refcopy(expr_get_type(&my ternary->no))
-            );
-
-        case EXPR_CALL:
-            return type_call_evaluate_type(expr_get_type(&my call->callable), my call);
-
-        case EXPR_FUNCTION:
-            return type_lazy(&my function->lazy_type);
-
-        case EXPR_OBJECT:
-            return object_expr_evaluate_type(&my object);
-
-        case EXPR_ARRAY: {
-            Type index_t = type_never;
-            for_each (i, vec_expr, &my array) {
-                Type type = type_clone(*expr_get_type(i));
-                type_abstract_literals(&type);
-                if (type.tag != TYPE_VALUE || type.value.tag != VALUE_UNDEFINED) {
-                    index_t = type_composite(TYPE_UNION, index_t, type);
-                }
-            }
-            if (index_t.tag == TYPE_NEVER) {
-                // TODO: this should only happen if strict_null_checks is false
-                // Uh oh, are we going to need an ErrorConfig here? That might be a problem
-                index_t = type_any;
-            }
-            return type_array(c_new(Type, index_t), false);
-        }
-
-        case EXPR_CLASS_DECL:
-            return type_refcopy(&my class_decl->declaration.get->value_type);
-
-        case EXPR_TEMPLATE: {
-            if (!my template_->tag) {
-                return type_string;
-            }
-            // TODO: a tagged template is a call (overloads, generics, argument checks). For now only the return type
-            // of a plain function is used
-            Type const* tag = type_resolve(expr_get_type(my template_->tag));
-            if (tag->tag == TYPE_CALLABLE && generic_empty(&tag->callable->generic)) {
-                return type_clone(tag->callable->ret);
-            } else {
-                return type_any;
-            }
-        }
-
-        case EXPR_SPREAD: {
-            // The type of each spread element. TODO: tuples and iterables, which are `any` for now
-            Type const* operand = type_resolve(expr_get_type(my spread));
-            if (operand->tag == TYPE_ARRAY) {
-                return type_clone(*operand->array.element);
-            } else {
-                return type_any;
-            }
-        }
-    }
-    impossible;
+    // Nobody checked this expression with a contextual type first, see ty/expr.c
+    return type_new(ty_compute_expr_without_context(current_checker, me));
 }
 
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
+    // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
+    // (whoever knows this expression's contextual type has done the same before getting here)
+    expr_get_type((Expr*)me);
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
         case EXPR_LITERAL: break;
@@ -941,11 +543,23 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             break;
 
         case EXPR_CALL: {
-            expr_typecheck(&my call->callable, errs);
+            Expr const* callee = &my call->callable;
+            if (callee->tag == EXPR_GENERIC_PARAMS) {
+                // Explicit type arguments are the call's business (ty/call.c)
+                for_each (i, vec_spanned_type, &callee->generic_params->params) {
+                    type_typecheck(&i->type, errs);
+                }
+                callee = &callee->generic_params->expr;
+            }
+            expr_typecheck(callee, errs);
+            // Resolving the call gives the arguments their contextual types, so it comes before checking them
+            Checker* checker = current_checker;
+            LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
+            Ty const* contextual = memo && memo->done ? memo->context : nullptr;
+            ty_call_typecheck(checker, ty_expr_type(checker, callee), my call, contextual, my outer_span, errs);
             for_each (i, vec_expr, &my call->args) {
                 expr_typecheck(i, errs);
             }
-            type_typecheck_call(expr_get_type(&my call->callable), my call, my outer_span, errs);
         }   break;
 
         case EXPR_FUNCTION:

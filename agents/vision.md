@@ -8,7 +8,8 @@ types components) are the oracle, not the goal.
 ## State (2026-09-18, second insights session)
 - ~22k LoC of C in `src/` (parser 5.0k, new core `src/ty/` 8.0k, legacy type.c 1.9k, display 1.4k, expr 1.2k). Inherited from a
   solo human project halted in 2025, recently ported onto the cleat stdlib.
-- `./fasttest.sh`: **1362 / 13165 tests fully pass since the harness fidelity session** (the suite grew: one test per
+- `./fasttest.sh`: **1408 / 13165 tests fully pass since type core stage 4b3** (errors 5516, symbols 7701, types 3325).
+  Before that: **1362 / 13165 since the harness fidelity session** (the suite grew: one test per
   `@option: a,b` configuration, `@noTypesAndSymbols` tests run for errors only; like for like the old 11236 tests are
   still at 1137 full with errors +153, symbols +230 - `measurements.md` has the split). Before that: 1137 / 11962 (829 before the parser-gaps sessions, 1084 before type core stage
   3, 1100 before 4a, 1115 before 4b1, 1120 before 4b2). Per component: errors 4657, symbols 5981, types 2219 pass (of 11236 that run; the other 726 are
@@ -29,7 +30,13 @@ types components) are the oracle, not the goal.
   check: 5x faster than JS tsc, between single- and multi-threaded tsgo, with worse memory than either. That is
   with tttt doing far less work than they do, so there is no perf lead yet - only no evidence of a deficit.
 
-- Type core migration (plan 02): **stages 1-3, 4a, 4b1 and 4b2 done.** Since 4b2 every *written* type evaluates in the
+- Type core migration (plan 02): **stages 1-4 done (4b3 most recently), stage 5 (delete the old world) is next.** Since
+  4b3 every expression evaluates to `Ty` through one `ty_check_expr(expr, contextual)` (`ty/expr.c`): contextual typing of
+  lambdas and object/array literals, literal widening at mutable locations (no fresh/regular pairs yet), two-pass
+  generic inference, explicit type arguments, one identifier-reference hook for plan 03's narrowing. The transient
+  lowering bridge is deleted. What's still legacy: functions (a legacy callable lowered by node), return type unions,
+  namespace value types, and the `Type`-carrying plumbing (`TYPE_NEW`, views, LazyMemo) that stage 5 removes.
+  History: **stages 1-3, 4a, 4b1 and 4b2 done.** Since 4b2 every *written* type evaluates in the
   new core (aliases, `keyof`, `T[K]`, conditional, mapped); the legacy structural relation, the legacy type operator
   resolvers and the last checker writes into the AST are deleted. The flip was trivial; the session went into three
   things the new core had wrong that legacy code used to hide (conditional types needed tsc's root + mapper to
@@ -118,7 +125,7 @@ scaffolding, and stage 5 must actually prune it - the insights session after sta
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. Type core redesign: ~~plan~~, ~~stages 1-4a, 4b1 (calls + inference), 4b2 (aliases + type operators)~~ done;
-   4b3 (expressions), 5 (delete the old world). `CompilerOptions` exists (harness fidelity session).
+   ~~4b3 (expressions)~~ done; 5 (delete the old world). `CompilerOptions` exists (harness fidelity session).
 3. Persistent symbols + binder-time flow graph, then narrowing.
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; module resolution, JS files (`allowJs`/`checkJs`).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template

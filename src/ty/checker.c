@@ -271,6 +271,19 @@ static Ty const* literal_type(Checker* me, Value const* value, Declaration const
     return *slot;
 }
 
+// The type of a type name that didn't resolve: the error type, but it prints as what was written, like in tsc
+Ty const* ty_unresolved(Checker* me, csview name) {
+    Atom const* atom = checker_atom(me, name);
+    u64 key[3] = { KEY_LITERAL, UINT32_MAX - 1, (u64)(uintptr_t)atom };
+    void const** slot = intern_slot(me, &my types, key, 3);
+    if (!*slot) {
+        Ty* ret = ty_alloc(me, TY_INTRINSIC, TYF_ANY | TYF_ERROR);
+        ret->intrinsic.name = atom_sv(atom);
+        *slot = ret;
+    }
+    return *slot;
+}
+
 Ty const* ty_literal(Checker* me, Value const* value) {
     return literal_type(me, value, nullptr, nullptr);
 }
@@ -672,7 +685,9 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         ty_buf_drop(&parts);
         return ret;
     }
-    if ((operand->flags & TYF_OBJECT) && !(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+    // The property names of `List<T>` don't depend on T: only type variables and generic mapped types defer
+    bool named_object = (operand->kind == TY_REFERENCE && !ty_is_tuple(operand)) || operand->kind == TY_DECLARED;
+    if ((operand->flags & TYF_OBJECT) && (!(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || named_object)) {
         Members const* members = ty_members(me, operand);
         if (!members->mapped) {
             TyBuf parts = {0};
@@ -747,6 +762,13 @@ Ty const* ty_indexed(Checker* me, Ty const* object, Ty const* index) {
 // `x!`: the type without null and undefined. TODO: tsc intersects a type variable with `{}` under strictNullChecks
 Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     if (ty->flags & TYF_NULLABLE) return ty_intrinsic(me, TY_NEVER);
+    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        // HACK: tsc says `T & {}`. Only when the constraint allows null or undefined, and at the price of T
+        Ty const* constraint = ty_base_constraint(me, ty);
+        if (!constraint || constraint == ty) return ty;
+        Ty const* stripped = ty_non_nullable(me, constraint);
+        return stripped == constraint ? ty : stripped;
+    }
     if (ty->kind != TY_UNION) return ty;
     TyList members = ty->composite.types;
     Ty const** kept = malloc(sizeof(Ty const*) * members.len);

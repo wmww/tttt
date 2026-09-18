@@ -32,11 +32,13 @@ enum {
     KEY_NODE,           // TYPE_INTERFACE/TYPE_CALLABLE node -> Ty
     KEY_NAMESPACE,      // Scope -> Ty
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
-    KEY_STABLE_WRAPPER, // LazyType -> arena copy of a TYPE_LAZY wrapper, see legacy_stable_view()
     KEY_NEW_WRAPPER,    // Ty id -> arena TYPE_NEW, see ty_legacy_wrapper()
-    KEY_STRUCTURAL,     // Shape of a temporary legacy object type -> Ty, see ty_structural_from_legacy()
+    KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_VARIANCES,      // declared type id -> variance array
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
+    KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
+    KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
+    KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
 };
 
 // Doesn't insert, unlike intern_slot()
@@ -82,13 +84,13 @@ static inline Type const* legacy_expr_type(Expr const* expr) {
     return lazy_type_get((LazyType*)&expr->lazy_type);
 }
 
-Type const* legacy_stable_view(Checker* me, Type const* type, u64* identity);
-Ty const* ty_structural_from_legacy(Checker* me, Type const* node, LowerCtx ctx);
 // alias_of: the deferred reference this is an instantiation of, if it goes by an alias name (null otherwise)
 Ty const* ty_deferred_reference(
     Checker* me, Type const* node, LowerCtx ctx, TyMapper const* mapper, Declaration const* alias, TyList alias_args
 );
 Ty const* ty_anonymous_from_overloads(Checker* me, Type const* const* overloads, u32 count, LowerCtx ctx);
+
+Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper); // legacy_view.c
 
 // infer.c: type inference, shared by generic calls (call.c) and `infer X` in conditional types (conditional.c)
 

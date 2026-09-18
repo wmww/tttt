@@ -252,7 +252,7 @@ void ty_legacy_views_drop(Checker* me) {
 
 // `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures. Returns the
 // type itself if the mapper isn't about any of them
-static Ty const* apply_type_arguments(Checker* me, Ty const* ty, TyMapper const* mapper) {
+Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper) {
     Members const* members = ty_members(me, ty);
     bool relevant = false;
     for (u32 pass = 0; pass < 2 && !relevant; pass++) {
@@ -302,12 +302,12 @@ Ty const* ty_instantiate_with_refinements(Checker* me, Ty const* ty, VecTypeRefi
     for_each (i, vec_type_refinement, refinements) {
         if (!i->target || !i->refined) continue;
         sources[count] = ty_type_param(me, i->target);
-        targets[count] = ty_from_legacy(me, i->refined, (LowerCtx){ .generic = true, .transient = true });
+        targets[count] = ty_from_legacy(me, i->refined, (LowerCtx){ .generic = true });
         count++;
     }
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = count }, (TyList){ .data = targets, .len = count });
     free(sources);
     Ty const* ret = ty_instantiate(me, ty, mapper);
-    if (ret == ty && (ty->flags & TYF_OBJECT)) ret = apply_type_arguments(me, ty, mapper);
+    if (ret == ty && (ty->flags & TYF_OBJECT)) ret = ty_apply_type_arguments_mapper(me, ty, mapper);
     return ret;
 }

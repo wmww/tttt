@@ -450,17 +450,17 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     }
     generic_compile_test_info(&my generic, ctx);
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
-        Type const* unresolved = expr_get_type(&my extends);
-        Type const* resolved = type_resolve_until_identifier(unresolved);
-        if (resolved->tag == TYPE_IDENTIFIER &&
-            resolved->identifier->decl_ref &&
-            resolved->identifier->decl_ref->is_typeof
+        // tsc shows the instance type at the name of the base class, not `typeof Base`
+        Ty const* extends_type = ty_expr_type(current_checker, &my extends);
+        if (extends_type->kind == TY_DECLARED && extends_type->declared.kind == TY_DECLARED_CLASS_STATIC &&
+            extends_type->declared.decl
         ) {
             if (my extends.tag != EXPR_GENERIC_PARAMS) {
-                // Extremely hacky but whatever. No idea why tsc does this.
-                *(bool*)(&resolved->identifier->decl_ref->is_typeof) = false;
-                baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, resolved);
-                *(bool*)(&resolved->identifier->decl_ref->is_typeof) = true;
+                Members const* statics = ty_members(current_checker, extends_type);
+                Type instance = type_new(
+                    statics->construct_count ? signature_return_type(current_checker, statics->construct[0]) : extends_type
+                );
+                baseline_test_case_add_type_recursive(ctx, my extends.outer_span, my extends.inner_span, &instance);
             }
             expr_compile_test_info_inner(&my extends, ctx);
         } else {
@@ -567,7 +567,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
             Type const* expr_t_resolved = type_resolve(expr_get_type(&my property->expr));
-            Type const* prop_t = expr_get_type(&my property->prop);
+            Type const* prop_t = type_resolve(expr_get_type(&my property->prop));
 
             if (expr_t_resolved->tag == TYPE_INTERFACE &&
                 prop_t->tag == TYPE_VALUE &&
@@ -684,10 +684,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                             .name = i->name_span,
                         });
                     }
-                    Type t = object_expr_item_evaluate_type(i, &my object);
-                    type_abstract_literals(&t);
+                    Type t = type_new(ty_object_literal_member_type(current_checker, me, i));
                     baseline_test_case_add_type(ctx, i->name_span, &t);
-                    type_drop(&t);
                 }
                 if (i->computed_key) {
                     expr_compile_test_info(i->computed_key, ctx);

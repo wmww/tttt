@@ -50,14 +50,11 @@ bool class_item_is_static(ClassItem* me) {
 
 Type class_item_field_evaluate_type(ClassItem* me) {
     check(my tag == CLASS_ITEM_FIELD);
-    Type const* ref = my field.has_explicit_type ?
-        &my field.explicit_type :
-        lazy_type_get(&my field.value.lazy_type);
-    Type ret = type_clone(*ref);
-    if (!my field.is_readonly) {
-        type_abstract_literals(&ret);
+    Checker* checker = current_checker;
+    if (my field.has_explicit_type) {
+        return type_new(ty_from_node(checker, &my field.explicit_type, (LowerCtx){ .generic = true }));
     }
-    return ret;
+    return type_new(ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly));
 }
 
 Type class_item_accessor_evaluate_type(ClassItem* me) {
@@ -65,18 +62,17 @@ Type class_item_accessor_evaluate_type(ClassItem* me) {
     if (my method.accessor == CLASS_ACCESSOR_SET && my method.accessor_getter) {
         return type_clone(*lazy_type_get(&my method.accessor_getter->method.accessor_type));
     }
-    Type const* func = lazy_type_get(&my method.func.lazy_type);
-    if (func->tag != TYPE_CALLABLE) {
-        return type_any;
-    } else if (my method.accessor == CLASS_ACCESSOR_GET) {
-        Type ret = type_clone(func->callable->ret);
-        type_abstract_literals(&ret);
-        return ret;
-    } else if (vec_callable_arg_size(&func->callable->args)) {
-        return type_clone(vec_callable_arg_front(&func->callable->args)->type);
-    } else {
-        return type_any;
+    Checker* checker = current_checker;
+    Type lazy = type_lazy(&my method.func.lazy_type);
+    Ty const* func = ty_from_legacy(checker, &lazy, (LowerCtx){ .generic = true });
+    Members const* members = func->flags & TYF_OBJECT ? ty_members(checker, func) : nullptr;
+    if (!members || members->call_count != 1) return type_any;
+    Signature const* sig = members->call[0];
+    signature_resolve(checker, sig);
+    if (my method.accessor == CLASS_ACCESSOR_GET) {
+        return type_new(ty_widened_for_declaration(checker, signature_return_type(checker, sig), true));
     }
+    return sig->param_count ? type_new(sig->params[0].type) : type_any;
 }
 
 Type class_item_get_type(ClassItem* me) {
@@ -420,8 +416,8 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_typecheck(&my extends, errs);
-        Type const* extends_type = expr_get_type(&my extends);
-        if (extends_type->tag == TYPE_VALUE && extends_type->value.tag == VALUE_NULL) {
+        Ty const* extends_type = ty_expr_type(current_checker, &my extends);
+        if (extends_type->flags & TYF_NULL) {
         } else {
             CallExpr call_expr = {
                 .uses_new = true,
@@ -429,7 +425,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 .callable = expr_implicit_any(my extends.outer_span),
                 .args = vec_expr_init(),
             };
-            type_typecheck_call(extends_type, &call_expr, my extends.outer_span, errs);
+            ty_call_typecheck(current_checker, extends_type, &call_expr, nullptr, my extends.outer_span, errs);
         }
     }
 

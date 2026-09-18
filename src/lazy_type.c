@@ -64,6 +64,15 @@ void lazy_type_drop(LazyType* me) {
     }
 }
 
+void lazy_type_set(LazyType* me, Type result, void const* context) {
+    LazyMemo* state = lazy_type_state(me);
+    type_drop(&state->evaluated);
+    state->evaluated = result;
+    state->context = context;
+    state->evaluation_started = true;
+    state->done = true;
+}
+
 Type const* lazy_type_evaluate(LazyType* me) {
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
@@ -149,7 +158,13 @@ Type const* lazy_type_evaluate(LazyType* me) {
 
     if (!state->done) {
         // The calls this function made didn't decide that we're self-referential, result is valid
-        state->evaluated = type_clone(*resolved);
+        if (resolved == &result) {
+            // Moved rather than cloned: the new type core may already know nodes inside it by address
+            state->evaluated = result;
+            result = (Type){0};
+        } else {
+            state->evaluated = type_clone(*resolved);
+        }
         state->done = true;
     }
 

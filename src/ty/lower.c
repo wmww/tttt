@@ -272,13 +272,23 @@ bool ty_declaration_is_evaluated_by_new_core(Declaration const* decl) {
 }
 
 Ty const* ty_from_identifier_type(Checker* me, IdentifierType const* identifier) {
-    // The type arguments may be temporaries of the legacy checker
-    return lower_identifier(me, identifier, (LowerCtx){ .generic = true, .transient = true });
+    return lower_identifier(me, identifier, (LowerCtx){ .generic = true });
 }
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     Declaration const* decl = identifier->decl_ref;
-    if (!decl) return ty_intrinsic(me, TY_ERROR);
+    if (!decl) {
+        if (identifier->keyword || !span_valid(identifier->name)) return ty_intrinsic(me, TY_ERROR);
+        cstr name = cstr_null;
+        for_each (i, vec_span, &identifier->namespaces) {
+            cstr_append_sv(&name, i->sv);
+            cstr_append(&name, ".");
+        }
+        cstr_append_sv(&name, identifier->name.sv);
+        Ty const* ret = ty_unresolved(me, cstr_sv(&name));
+        cstr_drop(&name);
+        return ret;
+    }
     Ty const* args_buf[MAX_TYPE_ARGS];
 
     Ty const* param = registered_type_param(me, decl);
@@ -495,7 +505,6 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, Type const* const* no
 Ty const* ty_anonymous_from_node(Checker* me, Type const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args) {
     check(node->tag == TYPE_INTERFACE || node->tag == TYPE_CALLABLE);
     ctx.in_alias = false; // Members are resolved lazily, which is what makes recursion through them legal
-    if (ctx.transient) return ty_structural_from_legacy(me, node, ctx);
     u64 key[2] = { KEY_NODE, (u64)(uintptr_t)node };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
@@ -726,48 +735,6 @@ static Ty const* lower_legacy_resolution(Checker* me, Type const* node, LowerCtx
     return ty_from_legacy(me, resolved, ctx);
 }
 
-// A legacy type that certainly outlives the checker: a parsed node (part of the AST), or the memo of a slotted LazyType
-// that belongs to the AST or a Declaration. Returns null for anything else. `identity` is what to intern by. The
-// returned pointer is safe to keep (a TYPE_LAZY wrapper inside a temporary tree is copied into the arena)
-Type const* legacy_stable_view(Checker* me, Type const* type, u64* identity) {
-    for (u32 depth = 0; depth < 64; depth++) {
-        if (type->parsed) {
-            *identity = (u64)(uintptr_t)type;
-            return type;
-        }
-        if (type->tag == TYPE_REF) {
-            type = type->ref;
-        } else if (type->tag == TYPE_LAZY) {
-            LazyType const* lazy = type->lazy;
-            // Identifier types get made (with a slot) and dropped during checking, and lowering never needs their
-            // memo anyway
-            if (!lazy->slot || lazy->slot == LAZY_SLOT_INLINE || lazy->tag == LAZY_TYPE_EVALUATED ||
-                lazy->tag == LAZY_TYPE_IDENTIFIER_TYPE || lazy->tag == LAZY_TYPE_UNINITIALIZED
-            ) {
-                return nullptr;
-            }
-            *identity = (u64)(uintptr_t)lazy | 1;
-            u64 key[2] = { KEY_STABLE_WRAPPER, *identity };
-            Type const* wrapper = intern_get(&my links, key, 2);
-            if (!wrapper) {
-                Type* copy = arena_new(&my arena, Type);
-                *copy = *type;
-                *intern_slot(me, &my links, key, 2) = copy;
-                wrapper = copy;
-            }
-            return wrapper;
-        } else {
-            return nullptr;
-        }
-    }
-    return nullptr;
-}
-
-static bool lazy_is_stable(LazyType const* lazy) {
-    return lazy->slot && lazy->slot != LAZY_SLOT_INLINE && lazy->tag != LAZY_TYPE_EVALUATED &&
-        lazy->tag != LAZY_TYPE_IDENTIFIER_TYPE;
-}
-
 static bool is_naked_type_param_node(Checker* me, Type const* node) {
     node = legacy_skip_refs(node);
     if (node->tag != TYPE_IDENTIFIER || !node->identifier->decl_ref) return false;
@@ -778,7 +745,7 @@ static bool is_naked_type_param_node(Checker* me, Type const* node) {
 static bool node_reaches_alias_in_flight_deep(Checker* me, Type const* node);
 
 static TyCondBranch lower_branch(Checker* me, Type const* node, LowerCtx ctx) {
-    if (!ctx.transient && node_reaches_alias_in_flight_deep(me, node)) {
+    if (node_reaches_alias_in_flight_deep(me, node)) {
         ctx.in_alias = false;
         return (TyCondBranch){ .node = node, .ctx = ctx };
     }
@@ -786,7 +753,6 @@ static TyCondBranch lower_branch(Checker* me, Type const* node, LowerCtx ctx) {
 }
 
 static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declaration const* alias, TyList alias_args) {
-    if (node->parsed) outer_ctx.transient = false;
     // What the operands of this node are lowered with
     LowerCtx ctx = outer_ctx;
     ctx.method = false;
@@ -833,10 +799,11 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
                 TyObjectState* state = ret->declared.state;
                 if (has_signatures && state->members_state == LAZY_STATE_NOT_STARTED) {
                     state->members_state = LAZY_STATE_IN_FLIGHT;
-                    Interface copy = node->interface;
-                    copy.namespace_scope = nullptr;
-                    Type unnamed = { .tag = TYPE_INTERFACE, .interface = copy };
-                    state->members = ty_members(me, ty_structural_from_legacy(me, &unnamed, (LowerCtx){ .transient = true }));
+                    // The merged node is the memo of the declaration's merged type, which outlives the checker's use
+                    Type* unnamed = arena_new(&my arena, Type);
+                    *unnamed = (Type){ .tag = TYPE_INTERFACE, .interface = node->interface };
+                    unnamed->interface.namespace_scope = nullptr;
+                    state->members = ty_members(me, ty_anonymous_from_node(me, unnamed, (LowerCtx){ .generic = true }, nullptr, (TyList){0}));
                     state->members_state = LAZY_STATE_DONE;
                 }
                 return ret;
@@ -847,13 +814,13 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
             return ty_anonymous_from_node(me, node, outer_ctx, alias, alias_args);
 
         case TYPE_ARRAY:
-            if (!ctx.transient && (alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
+            if ((alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
                 return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
             return ty_array(me, ty_from_legacy(me, node->array.element, ctx), node->array.readonly);
 
         case TYPE_TUPLE:
-            if (!ctx.transient && (alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
+            if ((alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
                 return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
             }
             return lower_tuple(me, node, ctx);
@@ -930,7 +897,6 @@ static Ty const* lower(Checker* me, Type const* node, LowerCtx outer_ctx, Declar
         }
 
         case TYPE_LAZY:
-            if (lazy_is_stable(node->lazy)) outer_ctx.transient = false;
             return lower(me, lazy_type_get((LazyType*)node->lazy), outer_ctx, alias, alias_args);
 
         case TYPE_REF:

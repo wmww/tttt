@@ -2267,6 +2267,14 @@ static bool parse_index_or_expr_interface_member(
 
 static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret);
 
+// In a type: `new` directly followed by a parameter or type parameter list
+static bool is_construct_signature_start(const char* pos) {
+    if (strncmp(pos, "new", 3) != 0) return false;
+    pos += 3;
+    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
+    return *pos == '(' || *pos == '<';
+}
+
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -2316,6 +2324,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         parse_identifier_or_keyword(&p, &ignored);
         name_span = span_from(name_anchor);
         name_string = cstr_from_span(name_span);
+        name_is_value = false;
+    } else if (is_type && is_construct_signature_start(p.pos)) {
+        // `new (...): T` / `new <T>(...): T` is a construct signature, not a method called `new`
+        name_span = span_null;
+        name_string = cstr_null;
         name_is_value = false;
     } else if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
         name_span = span_null;

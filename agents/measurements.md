@@ -2,6 +2,24 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-18, type core stage 4b3 (expressions evaluate to `Ty`, contextual typing, explicit type arguments)
+Suite: **1408 full of 13165 tests** (was 1362), errors 5516 (5277), symbols 7701 (7528), types 3325 (3243).
+- Against the committed baseline: 50 tests newly pass fully, 4 stopped (`contextualTyping24`: `this: void` doesn't
+  print; `contravariantOnlyInferenceFromAnnotatedFunction`, `reverseMappedTypeInferenceSameSource1`: reverse mapped
+  type inference, used to be hidden by "object literal arguments only need to be comparable";
+  `badInferenceLowerPriorityThanGoodInference`: inference priorities). Per component 450 newly pass, 31 newly fail
+  (18 errors, 4 symbols, 9 types); the rest of the failing ones are listed in `hacks.md` ("Expressions on the new core").
+- Roughly half of the gain is one parser fix found on the way: `new (): T` / `new <T>(): T` in an interface parsed as a
+  method named `new`, so no lib constructor interface (`MapConstructor`, `PromiseConstructor`...) was constructable.
+  The rest is contextual typing (lambda parameters, literal-preserving object/array literals, tuples from context,
+  `as const`), the two-pass inference, inference from the contextual return type, and explicit type arguments.
+- `log_error` lines 2 082 -> 2 088. Bench: total 0.64 s (0.63), typecheck 132 ms (124), RSS 897 MB (874): arguments are
+  checked once per candidate now. Suite wall time 6.4 s (6.2).
+- valgrind clean on ~190 tests (`contextual*`, `genericCallWith*`, `objectLit*`, `arrayLiteral*`, `mapped*`,
+  `inferTypes*`, `promise*`, `decoratorMetadata*`...). One use-after-free was found that way, see
+  `lazy_type_evaluate` in `hacks.md`: with `LowerCtx.transient` gone, valgrind is the guard against lowering freed
+  legacy nodes.
+
 ## 2026-09-18, harness fidelity (`CompilerOptions`, multi-config tests, libs by target)
 Suite: **1362 full of 13165 tests** (was 1137 of 11962), errors 5277, symbols 7528, types 3243; suite wall 6.2 s (5.4 s).
 **The denominators changed, don't compare these with older rows directly:**
