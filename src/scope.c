@@ -267,6 +267,8 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->binder = parent->binder;
     ret->errs = parent->errs;
     ret->ambient = parent->ambient;
+    ret->flow = parent->flow;
+    if (kind == SCOPE_BLOCK) ret->function = parent->function;
     return ret;
 }
 
@@ -503,6 +505,10 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
         symbol->name_span = props.name;
         symbol->exported = props.exported;
+        if (table == &scope->locals) {
+            symbol->is_local = true;
+            symbol->function = scope->function;
+        }
     }
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full,

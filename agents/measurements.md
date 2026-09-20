@@ -2,6 +2,26 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 05 stage 1: the control flow graph (no narrowing yet)
+Suite: **1699 full of 13163** (was 1684), errors 6433 (6401), symbols 8401, types 3742 (3733); no test lost a
+component. Where it came from: binder-side TS7027/TS7028, `never`/`| undefined` in inferred return types,
+TS2355/TS2366/TS7030/TS2534/TS2378, and the harness now renders multi-line error squiggles like tsc's (+11 errors
+components on its own). Flow-named tests (`./passcount.py --match 'controlFlow|narrow|typeGuard|discriminat|
+definiteAssign|unreachable|assertion'`, 388 tests): **before 14 full / errors 187 / symbols 161 / types 23, after
+stage 1: 15 / 188 / 161 / 23** (record again after each stage).
+Still missing after stage 1 (all need types, stage 3): TS7027 in `neverReturningFunctions1` (23), `assertion*`,
+`unreachableSwitchTypeof*`, `exhaustiveSwitchStatements1`, the second error of `reachabilityChecks8`; TS2355 x19,
+TS2378 x18, TS7030 x9 (mostly functions whose end is only reachable past a call: `FLOW_REACH_UNKNOWN`).
+
+Real corpus: 7754 -> **7777 diagnostics** (TS2345 +17, TS2322 +6, TS2769 +3, TS2367 -3): inferred return types now
+have the `| undefined` of a reachable end, which callers narrow away in tsc. Expected to go with stage 2.
+
+`./bench.sh` (3 runs, same machine state, before -> after): synthetic wall 0.38 -> **0.34 s**, parse 181 -> 157 ms (the
+dead `Expr.currently_getting_type` malloc per expression is gone), **resolve names 85.7 -> 94.9 ms (+11%)**, typecheck
+75 -> 68 ms, **peak RSS 504 -> 527 MB (+4.6%)**. Real corpus wall 0.80 -> 0.70 s, parse 148 -> 121 ms, resolve 71.7 ->
+71.6 ms, typecheck 600 -> 493 ms, RSS 309 -> 311 MB. Within the plan's budget (+15% resolve, +5% RSS), RSS only
+just: `Statement.span` (16 bytes) and discarded branch labels are where to look if it matters.
+
 ## 2026-09-19, plan 04 stages 3 + 4: modules from everywhere, printing by accessibility
 Suite: **1684 full of 13163 tests** (was 1576), errors 6401 (6050), symbols 8401 (8332), types 3733 (3533). Step by
 step: module refs + ambient modules + `export =` + import types + `import()` +339 tests with a gained component / -13

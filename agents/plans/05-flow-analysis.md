@@ -185,8 +185,27 @@ tsc's types before building narrowing kinds on top.
   annotation (auto types / evolving `any`, evolving arrays `const a = []`): **out of scope**, write a triage entry with
   what tests they cost once the rest is in.
 
+## Stage 1 is done: what the next stages should know
+`documentation.md` ("Control flow") describes what exists. Notes that aren't there:
+- The builder is reached through `Scope.flow`, not a parameter; conditions / assignment targets / chain membership
+  are handed down through builder fields that `expr_lookup_names()` takes on entry. Follow that pattern for anything
+  else tsc finds through `node.parent`.
+- `FlowAssign` has one declaration kind for everything declared (`Binding*` of the identifier leaf:
+  `ty_binding_type()` already knows initializers, patterns and for-in/of); `FLOW_ASSIGN_PATTERN` carries the path.
+- **Statements have no flow pointer yet.** tsc's checker reports TS7027 from `checkSourceElement` too
+  (`node.flowNode && !isReachableFlowNode(node.flowNode)`: after `never` calls, exhaustive switches, a loop label
+  without antecedents: `reachabilityChecks8`). Stage 3 needs `Statement.flow` (set in
+  `statement_resolve_names_labeled()` when reachable) and then turns the `FLOW_REACH_UNKNOWN` answers of
+  `ty_flow_reachability()` into real ones; its consumers (`infer_return_type()`, `function_impl_check_end()`) only
+  act on certain answers today. `./failstats.py --code TS7027` lists what is waiting.
+- Closure bits on symbols exist (`is_assigned`, `is_assigned_in_closure`, `last_assignment_end`) but nothing reads
+  them. Not handled: `export { x }` of a local (tsc: assigned anywhere), class *expression* methods and static
+  blocks as part of the outer flow (see `hacks.md`).
+- `typeof x` in a type (`TypeofType`) walks its expression like any other, so the identifier has a flow node already.
+- The re-entrancy probe (stage 2) is still the first thing to do.
+
 ## Stages (one session each; save baselines and update docs every time)
-1. **Flow graph.** `flow.h`/`flow.c`, builder in the resolve walk in flow order, assignment-target and
+1. **(DONE)** **Flow graph.** `flow.h`/`flow.c`, builder in the resolve walk in flow order, assignment-target and
    `is_assigned` bits, function scopes know their `FunctionImpl`, `TTTT_DUMP_FLOW`, `IdentifierExpr` repacked, binder-side
    reachability (TS7027/7028 with the tri-state option, `FunctionImpl.end_flow`), syntactic TS2366/TS7030 and `never`
    inference where no types are needed (the typed part comes in stage 3). No narrowing yet.

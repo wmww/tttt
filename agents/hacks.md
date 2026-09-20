@@ -140,7 +140,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   per-file arenas + per-file alias lists; (3) one `ErrorCtx`.
   resolve phase: read-only on symbol tables as far as I can tell (aliases, `export *` tables and `ModuleRef`s are all
   resolved in link), but function/block scopes and their symbols are *made* during this walk, from the same shared
-  arena and symbol list; same fix as (2).
+  arena and symbol list; same fix as (2). Flow nodes (`flow.c`) come out of `Binder.arena` too. The walk also writes
+  `is_assigned`/`is_assigned_in_closure`/`last_assignment_end` on symbols, but only on `is_local` ones (declared in
+  the locals of a scope of the same file), and `Scope.flow` of a file's own persistent scopes (file, namespace, enum)
+  for the duration of the walk.
   check phase: the thread-local `current_checker`, see below.
 - Scripts declare straight into `Binder.globals` while they're walked, in file order (`SCOPE_SCRIPT`,
   `SCOPE_GLOBAL_AUGMENTATION`). The plan's contract wants a per-file "global contributions" table merged in the link
@@ -149,7 +152,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Exported and local declarations of one name live in two tables with no link between them (tsc has a local
   `exportSymbol` stub). TS2440 against an exported local is special-cased in `binder_link`; `export { b }` of a local
   that is also declared exported doesn't show the merged declarations (mergedDeclarationExports), TS2395 is missing.
-- `block_is_instantiated`: syntactic; an `export { x }` always instantiates a namespace, a const enum does too.
+- `block_is_instantiated`: syntactic; an `export { x }` always instantiates a namespace, a const enum does too
+  (for the symbol; the TS7027 rules ask without const enums unless `preserveConstEnums`).
 - `let`/`const` against a hoisted `var` of an inner block (TS2451 by tsc's checker), TS2403 (subsequent `var` of a
   different type: the first declaration gives the type), function declarations in blocks under sloppy mode: not done.
 - Class and interface *members* are not symbols (`Prop` has the identity the checker needs); duplicate member
@@ -159,6 +163,33 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `check_access`: no TS2339 on *modules* (`import * as ns; ns.missing`), only on namespaces. Members are by export
   name now so it would be honest, but it costs nodeModulesTypesVersionPackageExports x3 (module resolution picks the
   wrong file there). Drop the gate with stage 3 / package.json `exports`.
+
+## Control flow graph (`flow.c`, the builder parts of `expr.c`/`statement.c`/`function_impl.c`; plan 05)
+- `ty_flow_reachability()` answers `FLOW_REACH_UNKNOWN` for anything past a call node or a "no clause matched" switch
+  node; `infer_return_type()` and `function_impl_check_end()` only act on YES/NO. So TS2355/TS2366/TS7030/TS2378 and
+  the `| undefined` of an implicit return are missing for functions whose end comes after a call statement (most
+  functions that end in a call!) until plan 05 stage 3 types those nodes. Remove the third state then.
+- The checker half of TS7027 (tsc's `checkSourceElement`: statements whose flow node turns out unreachable) doesn't
+  exist and `Statement` has no flow pointer: see the plan's stage 1 notes.
+- No `FLOW_ARRAY_MUTATION` nodes (`x.push()`, `x[i] = v`): only evolving array types need them (out of scope).
+- Class *expression* methods are FUNCTION_IS_DECLARATION (tsc: narrowing continues outside like for object literal
+  methods); a class static block is a container of its own (tsc: inlined like an IIFE); `export { x }` doesn't mark
+  the local as assigned anywhere (tsc's `markNodeAssignments` does).
+- `expr_is_narrowable_reference()`: `a = b` counts whatever the left side is (tsc wants a left-hand side expression).
+  `expr_is_optional_chain()` re-walks the chain from the top for every link (quadratic in chain length, chains are
+  short).
+- A destructuring assignment nested in another pattern (`[[a] = [1]] = e`) gets assignment nodes from the outer
+  pattern only; tsc makes them twice.
+- `statement_is_bare_return()`: the parser represents `return;` as an `undefined` literal whose span starts with
+  `return`. A `has_value` bit on the statement would be honest.
+- An `else if` that starts unreachable code can't be reported (TS7027): `IfStatement` is a flattened chain and the
+  nested if has no `Statement`. Same for its span in `last_assignment_end`.
+- `function_impl_check_end()`: an anonymous `function` expression is reported at its parameter list (tsc: the
+  `function` keyword); async functions and generators with a return annotation are skipped (needs the awaited /
+  returned part of the annotation), as is TS7030 on bare `return;` statements (tsc's `checkReturnStatement`).
+- Body-less functions (overloads, signatures, function *types*: the libs) get a `FlowBuilder` on the stack but no
+  start node, so parameter default expressions in them have no flow nodes.
+- `Statement.span` (16 bytes per statement) exists only for TS7027 ranges and `last_assignment_end`.
 
 ## The AST-side walk and what's left of the old type world
 - `TYPE_LAZY`, `TYPE_REF`, the binding `TYPE_INDEXED`, `CallableArg`, `type_clone` and its whole family are gone:

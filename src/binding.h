@@ -53,6 +53,10 @@ typedef struct BindingAddNamesProps {
 void binding_drop(Binding* me);
 void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNamesProps props);
 void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs);
+// Control flow: an assignment node for every variable in the pattern
+void binding_flow_assign(Binding const* me, Scope* names);
+// An expression that is only evaluated sometimes (a default)
+void expr_lookup_names_initializer(Expr* me, Scope* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 void binding_typecheck(Binding* me, ErrorCtx* errs);
 
@@ -78,6 +82,7 @@ typedef struct InitializedBinding {
 void initialized_binding_drop(InitializedBinding* me);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs);
+void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs);
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 

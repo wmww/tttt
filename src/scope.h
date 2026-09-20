@@ -13,6 +13,7 @@ typedef struct Program Program;
 typedef struct Symbol Symbol;
 typedef struct Scope Scope;
 typedef struct Binder Binder;
+typedef struct FlowBuilder FlowBuilder; // flow.h
 
 // tsc's SymbolFlags, bit for bit where they exist here
 typedef enum SymbolFlags {
@@ -160,6 +161,18 @@ typedef struct Symbol {
     bool is_global_this;
     bool is_shorthand_module; // `declare module "m";`: every import from it is any
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
+
+    // Local variables and parameters (symbols one file owns), written by that file's resolve walk: what narrowing
+    // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
+    // namespace, class field initializer or static block)
+    FunctionImpl const* function;
+    bool is_local; // Declared in the locals of a scope: not a global, not an export
+    bool is_assigned; // Somewhere other than its declaration
+    bool is_definitely_assigned; // By `=`, a pattern or a for-in/of rather than only `+=` or `++`
+    bool is_assigned_in_closure; // In another function than the one it belongs to
+    // Where the last assignment ends: a closure made after that sees the narrowed type (tsc's lastAssignmentPos).
+    // Null: not assigned. Assignments in nested functions or loops count as "anywhere" (the end of the file)
+    char const* last_assignment_end;
 } Symbol;
 
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
@@ -222,6 +235,10 @@ typedef struct Scope {
     bool export_context;
     bool ambient;
     ThisRef this_ref;
+    // The resolve walk: the builder of the control flow container this scope is in (inherited by child scopes). Only
+    // valid during the walk
+    FlowBuilder* flow;
+    FunctionImpl* function; // The function this scope is in, null outside of functions
 } Scope;
 
 // Symbol pointer -> symbol pointer, open addressing

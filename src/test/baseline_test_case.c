@@ -465,28 +465,46 @@ static void process_errors(BaselineTestCase* me) {
 
         check(current_test_file);
 
+        // Like tsc's harness (iterateErrorBaseline): a squiggle under every line the error covers, the message after
+        // the last one. Lines of several errors interleave, so items are kept ordered by line
         unsigned line = span_line_index(error->span);
-        unsigned col = span_col_index(error->span);
+        const char* file_start = source_file_start(current_source);
+        const char* start = span_start_ptr(error->span);
+        const char* end = span_end_ptr(error->span);
+        const char* line_start = start;
+        while (line_start > file_start && line_start[-1] != '\n' && line_start[-1] != '\r') line_start--;
+        while (true) {
+            const char* line_end = line_start;
+            while (*line_end && *line_end != '\n' && *line_end != '\r') line_end++;
+            const char* next_line_start = line_end;
+            if (*next_line_start == '\r') next_line_start++;
+            if (*next_line_start == '\n') next_line_start++;
+            bool is_last_line = !*line_end;
 
-        LineNumberedStr item = {
-            .line = line,
-            .str = cstr_null,
-        };
-
-        if (span_valid(error->span)) {
-            for (unsigned j = 0; j < col + 4; j++) {
-                cstr_append_lit(&item.str, " ");
+            LineNumberedStr item = { .line = line, .str = cstr_null };
+            const char* squiggle_start = start > line_start ? start : line_start;
+            cstr_append_lit(&item.str, "    ");
+            for (const char* c = line_start; c < squiggle_start && c < line_end; c++) {
+                cstr_append_n(&item.str, *c == '\t' ? "\t" : " ", 1);
             }
-            for (unsigned j = 0; j < error->span.sv.size; j++) {
+            const char* squiggle_end = end < line_end ? end : line_end;
+            for (const char* c = squiggle_start; c < squiggle_end; c++) {
                 cstr_append_lit(&item.str, "~");
             }
-        } else {
-            cstr_append(&item.str, "<NO SPAN>");
+            bool finishes = is_last_line || next_line_start > end;
+            if (finishes) format_error_tree(&my formatted_errors, &item.str, error, error, current_source, 0);
+
+            vec_line_numbered_str_push(&current_test_file->errors, item);
+            LineNumberedStr* items = current_test_file->errors.data;
+            for (isize_t j = vec_line_numbered_str_size(&current_test_file->errors) - 1; j > 0 && items[j - 1].line > items[j].line; j--) {
+                LineNumberedStr swapped = items[j];
+                items[j] = items[j - 1];
+                items[j - 1] = swapped;
+            }
+            if (finishes) break;
+            line++;
+            line_start = next_line_start;
         }
-
-        format_error_tree(&my formatted_errors, &item.str, error, error, current_source, 0);
-
-        vec_line_numbered_str_push(&current_test_file->errors, item);
         current_test_file->error_count++;
     }
 }

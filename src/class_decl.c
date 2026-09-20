@@ -1,4 +1,5 @@
 #include "class_decl.h"
+#include "flow.h"
 #include "ty/ty.h"
 #include "statement.h"
 #include "interface_member.h"
@@ -102,13 +103,27 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
         case CLASS_ITEM_METHOD:
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
+            my method.func.accessor = (uint8_t)my method.accessor;
+            my method.func.member_name = my method.name_span;
             function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 
         case CLASS_ITEM_FIELD:
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
-            expr_lookup_names(&my field.value, names, errs);
+            if (my field.value.tag == EXPR_IMPLICIT_ANY) {
+                expr_lookup_names(&my field.value, names, errs);
+            } else {
+                // An initializer is a control flow container of its own
+                FlowBuilder* outer = names->flow;
+                FlowBuilder flow;
+                flow_builder_init(&flow, outer, names, nullptr, errs);
+                flow.current = flow_new_start(&flow, nullptr);
+                names->flow = &flow;
+                expr_lookup_names(&my field.value, names, errs);
+                flow_builder_finish(&flow, c_sv("field"), my field.value.outer_span);
+                names->flow = outer;
+            }
             break;
 
         case CLASS_ITEM_INTERFACE_MEMBER:
@@ -118,7 +133,8 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
         case CLASS_ITEM_STATIC_BLOCK:
             Scope* block_scope = scope_new(names, SCOPE_STATIC_BLOCK);
             block_add_names(&my static_block, block_scope);
-            block_lookup_names(&my static_block, block_scope, errs);
+            // TODO: tsc treats it like an immediately invoked function: part of the flow of what contains the class
+            block_lookup_names_container(&my static_block, true, c_sv("static block"), span_null, block_scope, errs);
             break;
     }
 }

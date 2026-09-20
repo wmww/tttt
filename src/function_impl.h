@@ -7,6 +7,7 @@
 #include "binding.h"
 #include "generic.h"
 #include "lazy_type.h"
+#include "flow.h"
 
 typedef struct FunctionArg {
     Span span;
@@ -47,11 +48,29 @@ typedef struct FunctionImpl {
     bool newline_before_arrow;
     bool has_body;
     Block body; // Initialized to empty block if has_body is false
+    // Control flow (flow.h), set by the resolve walk
+    FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
+    FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
+    FlowNode* return_flow; // Constructors: every way out
+    bool has_explicit_return; // A reachable `return`
+    bool has_bare_return; // A reachable `return;`
+    Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
+    uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
+    bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
 } FunctionImpl;
 
 void function_impl_drop(FunctionImpl* me);
 void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported);
-void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names, ErrorCtx* errs);
+typedef enum FunctionFlowKind {
+    FUNCTION_IS_DECLARATION, // Function declarations, class members, signatures: a control flow graph of their own
+    // Function expressions, arrow functions, object literal methods: narrowings of the flow they're made in can
+    // survive into them (FunctionImpl.outer_flow), and an immediately invoked one is part of that flow
+    FUNCTION_IS_EXPRESSION,
+} FunctionFlowKind;
+void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs);
+static inline void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names, ErrorCtx* errs) {
+    function_impl_lookup_names_as(me, FUNCTION_IS_DECLARATION, this_is_any, names, errs);
+}
 TypeNode function_impl_into_type(FunctionImpl me);
 Ty const* function_impl_evaluate_type(FunctionImpl* me);
 // What return expressions are contextually typed by. Returns the enclosing function's, to be put back

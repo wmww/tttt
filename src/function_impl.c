@@ -5,6 +5,7 @@
 #include "error.h"
 #include "several_types.h"
 #include "ty/ty.h"
+#include "program.h"
 
 void function_arg_drop(FunctionArg* me) {
     vec_expr_drop(&my decorators);
@@ -29,7 +30,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
     });
 }
 
-void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names, ErrorCtx* errs) {
+void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
     if (my is_async) {
         my promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
@@ -40,10 +41,31 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names
         }
     }
 
+    // A control flow container. tsc: bindContainer()
+    my is_expression = kind == FUNCTION_IS_EXPRESSION;
+    FlowBuilder* outer = names->flow;
+    bool is_iife = outer->next_function_is_iife && my has_body;
+    outer->next_function_is_iife = false;
+    FlowBuilder flow;
+    flow_builder_init(&flow, outer, names, me, errs);
+    if (is_iife) {
+        // Part of the flow around it, a `return` is a jump to the end of the body
+        flow.current = outer->current;
+        flow.dead = outer->dead;
+        flow.has_flow_effects = outer->has_flow_effects;
+    } else {
+        if (kind == FUNCTION_IS_EXPRESSION) my outer_flow = flow_builder_reference(outer, span_null);
+        // Signatures and function types (the libs are full of them) have nothing that flows
+        if (my has_body) flow.current = flow_new_start(&flow, kind == FUNCTION_IS_EXPRESSION ? me : nullptr);
+    }
+    if (is_iife || (my is_constructor && my has_body)) flow.return_target = flow_new_branch_label(&flow);
+
     // Handle generics (includes adding names)
     names = scope_new_generic(names, &my generic, errs);
 
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
+    function_scope->flow = &flow;
+    function_scope->function = me;
 
     if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY };
 
@@ -65,10 +87,25 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names
     block_add_names(&my body, function_scope);
 
     for_each (i, vec_function_arg, &my args) {
-        initialized_binding_lookup_names(&i->initializer, function_scope, errs);
+        initialized_binding_lookup_names_parameter(&i->initializer, function_scope, errs);
     }
-    block_lookup_names(&my body, function_scope, errs);
     type_lookup_names(&my ret, function_scope, errs);
+    block_lookup_names_as(&my body, true, function_scope, errs);
+
+    my end_flow = nullptr;
+    if (!flow_is_unreachable(flow.current) && my has_body) my end_flow = flow.current;
+    my has_explicit_return = flow.has_explicit_return;
+    my has_bare_return = flow.has_bare_return;
+    if (flow.return_target) {
+        flow_add_antecedent(&flow, flow.return_target, flow.current);
+        flow.current = flow_finish_label(flow.return_target);
+        if (my is_constructor) my return_flow = flow.current;
+    }
+    flow_builder_finish(&flow, c_sv("function"), span_valid(my name) ? my name : my full_span);
+    if (is_iife && !outer->dead) {
+        outer->current = flow.current;
+        outer->has_flow_effects |= flow.has_flow_effects;
+    }
 }
 
 TypeNode function_impl_into_type(FunctionImpl me) {
@@ -156,6 +193,58 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     }
 }
 
+static bool ty_maybe_void(Ty const* type) {
+    if (type->flags & TYF_VOID) return true;
+    if (type->kind != TY_UNION) return false;
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        if (type->composite.types.data[i]->flags & TYF_VOID) return true;
+    }
+    return false;
+}
+
+// tsc: checkAllCodePathsInNonVoidFunctionReturnOrThrow(). Only when it is certain that control can fall off the end
+// (ty_function_end_reachability())
+static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
+    if (!my has_body || my is_constructor || my accessor == 2) return;
+    Checker* checker = current_checker;
+    if (ty_function_end_reachability(checker, me) != FLOW_REACH_YES) return;
+
+    // What tsc reports a function-like node at: its name, the head of an arrow function, else its first token
+    Span name = span_valid(my name) ? my name : my member_name;
+    Span at = my ret_explicit ? my ret_span : name;
+    if (!span_valid(at) && span_valid(my arrow_span)) at = span_between(my args_span, my arrow_span);
+    if (!span_valid(at)) at = my args_span; // TODO: the `function` keyword
+
+    if (my accessor == 1 && !my has_explicit_return) {
+        if (span_valid(name)) error_ctx_error_d(errs, name, 2378, "A 'get' accessor must return a value.");
+        return;
+    }
+    Ty const* type = nullptr;
+    if (my ret_explicit) {
+        if (my is_async || my is_generator) return; // TODO: what the annotation says about the returned value
+        type = ty_from_node(checker, &my ret, (LowerCtx){ .generic = true });
+        if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
+    }
+    if (type && type->flags & TYF_NEVER) {
+        error_ctx_error_d(errs, at, 2534, "A function returning 'never' cannot have a reachable end point.");
+    } else if (type && !my has_explicit_return) {
+        error_ctx_error_d(errs, at, 2355,
+            "A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.");
+    } else if (type && compiler_options()->strict_null_checks &&
+        !ty_is_related(checker, ty_intrinsic(checker, TY_UNDEFINED), type, TY_RELATION_ASSIGNABLE)
+    ) {
+        error_ctx_error_d(errs, at, 2366,
+            "Function lacks ending return statement and return type does not include 'undefined'.");
+    } else if (compiler_options()->no_implicit_returns) {
+        if (!type) {
+            if (!my has_explicit_return || my is_async || my is_generator) return;
+            Ty const* inferred = ty_function_return_type(checker, me);
+            if (ty_maybe_void(inferred) || inferred->flags & (TYF_ANY | TYF_UNDEFINED)) return;
+        }
+        error_ctx_error_d(errs, at, 7030, "Not all code paths return a value.");
+    }
+}
+
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     for_each (i, vec_function_arg, &my args) {
         if (!i->initializer.binding.has_explicit_type &&
@@ -184,4 +273,5 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     Ty const* outer_context = function_impl_enter_return_context(me);
     block_typecheck(&my body, ctx, errs);
     current_checker->return_context = outer_context;
+    function_impl_check_end(me, errs);
 }

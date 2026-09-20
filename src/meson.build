@@ -26,6 +26,7 @@ core_files = files(
     'source_file.c',
     'program.c',
     'scope.c',
+    'flow.c',
     'engine.c',
     'string_helpers.c',
     'ty/checker.c',
@@ -42,6 +43,7 @@ core_files = files(
     'ty/expr.c',
     'ty/function.c',
     'ty/check.c',
+    'ty/flow.c',
 )
 
 main_files = core_files + files('main.c')

@@ -8,6 +8,7 @@
 #include "enum_decl.h"
 #include "function_impl.h"
 #include "program.h"
+#include "flow.h"
 
 // Variable initialization
 
@@ -101,12 +102,17 @@ void namespace_decl_drop(NamespaceDecl* me) {
 }
 
 // tsc's getModuleInstanceState(), syntactically: a namespace is a value if it contains more than types
-static bool block_is_instantiated(Block const* me) {
+// const_enums: whether a `const enum` counts (it does for the symbol, for unreachable code only when it is emitted)
+static bool block_is_instantiated(Block const* me, bool const_enums) {
     for_each (i, vec_statement, &my statements) {
         switch (i->tag) {
             case STATEMENT_NOOP:
             case STATEMENT_DECL_TYPE:
             case STATEMENT_DECL_INTERFACE:
+                break;
+
+            case STATEMENT_DECL_ENUM:
+                if (const_enums || !i->decl.enum_->is_const) return true;
                 break;
 
             case STATEMENT_IMPORT_EXPORT:
@@ -119,7 +125,7 @@ static bool block_is_instantiated(Block const* me) {
                 break;
 
             case STATEMENT_DECL_NAMESPACE:
-                if (i->decl.namespace.is_global || block_is_instantiated(&i->decl.namespace.contents)) return true;
+                if (i->decl.namespace.is_global || block_is_instantiated(&i->decl.namespace.contents, const_enums)) return true;
                 break;
 
             default:
@@ -156,7 +162,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             my inner_scope->container = module;
             my is_augmentation = augmentation;
         } else {
-            bool has_value = block_is_instantiated(&my contents);
+            bool has_value = block_is_instantiated(&my contents, true);
             scope_init_declaration(scope, &my symbol, (DeclProps){
                 .name = my name,
                 .full = my full_span,
@@ -176,8 +182,10 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
 }
 
 void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs) {
-    (void)names;
-    block_lookup_names(&my contents, my inner_scope, errs);
+    // The scope was made when the namespace was declared
+    my inner_scope->flow = names->flow;
+    block_lookup_names_container(&my contents, false, c_sv("namespace"), my name, my inner_scope, errs);
+    my inner_scope->flow = nullptr;
 }
 
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
@@ -515,95 +523,374 @@ void statement_add_names(Statement* me, Scope* scope) {
     }
 }
 
-void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
+// Control flow (flow.h). These follow the functions of the same names in tsc's binder
+
+// Statements that can validly be used before they appear: not part of an unreachable range
+static bool statement_is_executable(Statement const* me) {
     switch (my tag) {
-        case STATEMENT_LABELED:
-            statement_resolve_names(my labeled.body, names, errs);
+        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_TYPE:
+        case STATEMENT_DECL_INTERFACE:
+            return false;
+        case STATEMENT_DECL_NAMESPACE:
+            return block_is_instantiated(&my decl.namespace.contents, compiler_options()->preserve_const_enums);
+        case STATEMENT_DECL_ENUM:
+            return !my decl.enum_->is_const || compiler_options()->preserve_const_enums;
+        case STATEMENT_DECL_VARIABLE:
+            if (my decl.variable.keyword != VAR_INIT_VAR) return true;
+            for_each (i, vec_initialized_binding, &my decl.variable.initializers) {
+                if (i->value.tag == EXPR_IMPLICIT_ANY) return false; // `var x;` may declare a variable used above
+            }
+            return true;
+        default:
+            return true;
+    }
+}
+
+// Whether the statement is unreachable. The first statement of unreachable code is where TS7027 goes, which is an
+// error only when allowUnreachableCode is explicitly false (unset: a suggestion, which baselines don't have)
+static bool statement_check_unreachable(Statement const* me, FlowBuilder* flow, VecStatement const* list) {
+    if (!flow_is_unreachable(flow->current)) return false;
+    if (flow->current != &flow_unreachable) return true;
+    bool report;
+    switch (my tag) {
+        case STATEMENT_BLOCK: // The statements in it
+        case STATEMENT_NOOP:
+        case STATEMENT_SOURCE_DIRECTIVE:
+        case STATEMENT_DECL_FUNCTION:
+        case STATEMENT_DECL_TYPE:
+        case STATEMENT_DECL_INTERFACE:
+        case STATEMENT_IMPORT_EXPORT:
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+            report = false;
             break;
+        case STATEMENT_DECL_ENUM:
+        case STATEMENT_DECL_NAMESPACE:
+            report = statement_is_executable(me);
+            break;
+        default:
+            report = true;
+            break;
+    }
+    if (!report) return true;
+    flow->current = &flow_reported_unreachable;
+
+    CompilerOptions const* options = compiler_options();
+    bool is_error = options->is_set[COMPILER_OPTION_allow_unreachable_code] && !options->allow_unreachable_code &&
+        !flow->ambient && statement_is_executable(me);
+    if (!is_error) return true;
+    if (!list || !statement_is_executable(me)) {
+        error_ctx_error_d(flow->errs, my span, 7027, "Unreachable code detected.");
+        return true;
+    }
+    // In a block: every run of executable statements from here on
+    isize_t count = vec_statement_size(list);
+    for (isize_t i = me - vec_statement_at(list, 0); i < count; i++) {
+        if (!statement_is_executable(vec_statement_at(list, i))) continue;
+        isize_t last = i;
+        while (last + 1 < count && statement_is_executable(vec_statement_at(list, last + 1))) last++;
+        error_ctx_error_d(
+            flow->errs, span_between(vec_statement_at(list, i)->span, vec_statement_at(list, last)->span),
+            7027, "Unreachable code detected."
+        );
+        i = last;
+    }
+    return true;
+}
+
+static void statement_resolve_names_body(Statement* me, Scope* names, ErrorCtx* errs, FlowNode* break_target, FlowNode* continue_target) {
+    FlowBuilder* flow = names->flow;
+    FlowNode* saved_break = flow->break_target;
+    FlowNode* saved_continue = flow->continue_target;
+    flow->break_target = break_target;
+    flow->continue_target = continue_target;
+    statement_resolve_names(me, names, errs);
+    flow->break_target = saved_break;
+    flow->continue_target = saved_continue;
+}
+
+// `a: b: while (x) {}`: `continue a` goes where the loop continues. Takes the labels the statement was given
+static FlowNode* flow_set_continue_target(FlowBuilder* flow, u32 label_count, FlowNode* target) {
+    FlowActiveLabel* label = flow->active_labels;
+    for (u32 i = 0; i < label_count && label; i++, label = label->next) {
+        label->continue_target = target;
+    }
+    return target;
+}
+
+static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    FlowNode* then_label = flow_new_branch_label(flow);
+    FlowNode* else_label = flow_new_branch_label(flow);
+    FlowNode* post = flow_new_branch_label(flow);
+    expr_lookup_names_condition(vec_expr_at_mut(&my conditions, index), names, errs, then_label, else_label);
+    flow_set_current(flow, flow_finish_label(then_label));
+    {
+        Statement* branch = vec_statement_at_mut(&my statements, index);
+        Scope* branch_scope = scope_new(names, SCOPE_BLOCK);
+        statement_add_names(branch, branch_scope);
+        statement_resolve_names(branch, branch_scope, errs);
+    }
+    flow_add_antecedent(flow, post, flow->current);
+    flow_set_current(flow, flow_finish_label(else_label));
+    if (index + 1 < vec_expr_size(&my conditions)) {
+        // `else if`: an if statement of its own, which can be where unreachable code starts
+        // TODO: TS7027 for it (there is no Statement to hand to statement_check_unreachable())
+        if_else_resolve_names(me, index + 1, names, errs);
+    } else if (index + 1 < vec_statement_size(&my statements)) {
+        Statement* branch = vec_statement_at_mut(&my statements, index + 1);
+        Scope* branch_scope = scope_new(names, SCOPE_BLOCK);
+        statement_add_names(branch, branch_scope);
+        statement_resolve_names(branch, branch_scope, errs);
+    }
+    flow_add_antecedent(flow, post, flow->current);
+    flow_set_current(flow, flow_finish_label(post));
+}
+
+static void switch_resolve_names(SwitchStatement* me, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    FlowNode* post = flow_new_branch_label(flow);
+    expr_lookup_names(&my needle, names, errs);
+    FlowNode* saved_break = flow->break_target;
+    FlowNode* saved_pre_switch = flow->pre_switch_case_flow;
+    flow->break_target = post;
+    flow->pre_switch_case_flow = flow->current;
+
+    Scope* switch_scope = scope_new(names, SCOPE_BLOCK);
+    for_each (i, vec_switch_case, &my cases) {
+        for_each (j, vec_statement, &i->statements) {
+            statement_add_names(j, switch_scope);
+        }
+    }
+    bool is_narrowing = (my needle.tag == EXPR_LITERAL && my needle.literal.tag == VALUE_BOOLEAN && my needle.literal.boolean) ||
+        expr_is_narrowing(&my needle);
+    FlowNode* fallthrough = &flow_unreachable;
+    bool has_default = false;
+    isize_t count = vec_switch_case_size(&my cases);
+    for (isize_t i = 0; i < count; i++) {
+        isize_t clause_start = i;
+        // Clauses without statements share the next one's
+        while (!vec_statement_size(&vec_switch_case_at(&my cases, i)->statements) && i + 1 < count) {
+            if (fallthrough == &flow_unreachable) flow_set_current(flow, flow->pre_switch_case_flow);
+            SwitchCase* empty = vec_switch_case_at_mut(&my cases, i);
+            if (empty->is_pattern) {
+                FlowNode* saved = flow->current;
+                flow_set_current(flow, flow->pre_switch_case_flow);
+                expr_lookup_names(&empty->pattern, switch_scope, errs);
+                flow_set_current(flow, saved);
+            } else {
+                has_default = true;
+            }
+            i++;
+        }
+        FlowNode* pre_case = flow_new_branch_label(flow);
+        flow_add_antecedent(flow, pre_case, is_narrowing && !flow_is_unreachable(flow->pre_switch_case_flow) ?
+            flow_new_switch_clause(flow, flow->pre_switch_case_flow, me, (u32)clause_start, (u32)i + 1) :
+            flow->pre_switch_case_flow);
+        flow_add_antecedent(flow, pre_case, fallthrough);
+        flow_set_current(flow, flow_finish_label(pre_case));
+        SwitchCase* clause = vec_switch_case_at_mut(&my cases, i);
+        if (clause->is_pattern) {
+            FlowNode* saved = flow->current;
+            flow_set_current(flow, flow->pre_switch_case_flow);
+            expr_lookup_names(&clause->pattern, switch_scope, errs);
+            flow_set_current(flow, saved);
+        } else {
+            has_default = true;
+        }
+        for_each (j, vec_statement, &clause->statements) {
+            statement_resolve_names(j, switch_scope, errs);
+        }
+        fallthrough = flow->current;
+    }
+    flow_add_antecedent(flow, post, flow->current);
+    if (!has_default && !flow_is_unreachable(flow->pre_switch_case_flow)) {
+        // "No clause matched": the checker decides whether that can happen
+        flow_add_antecedent(flow, post, flow_new_switch_clause(flow, flow->pre_switch_case_flow, me, 0, 0));
+    }
+    flow->break_target = saved_break;
+    flow->pre_switch_case_flow = saved_pre_switch;
+    flow_set_current(flow, flow_finish_label(post));
+}
+
+static void try_catch_resolve_names(TryCatchStatement* me, bool has_catch, bool has_finally, Scope* names, ErrorCtx* errs) {
+    // Any code in the try block can throw, but only assignments widen what a variable may be: they are the
+    // antecedents of the exception label, which is where the catch block (or the finally block) starts
+    FlowBuilder* flow = names->flow;
+    FlowNode* saved_return = flow->return_target;
+    FlowNode* saved_exception = flow->exception_target;
+    FlowNode* normal_exit = flow_new_branch_label(flow);
+    FlowNode* return_label = flow_new_branch_label(flow);
+    FlowNode* exception_label = flow_new_branch_label(flow);
+    if (has_finally) flow->return_target = return_label;
+    flow_add_antecedent(flow, exception_label, flow->current);
+    flow->exception_target = exception_label;
+    block_resolve_names(&my try_block, names, errs);
+    flow_add_antecedent(flow, normal_exit, flow->current);
+    if (has_catch) {
+        flow_set_current(flow, flow_finish_label(exception_label));
+        // The catch block is like a second try block
+        exception_label = flow_new_branch_label(flow);
+        flow_add_antecedent(flow, exception_label, flow->current);
+        flow->exception_target = exception_label;
+
+        Scope* catch_scope = scope_new(names, SCOPE_BLOCK);
+        binding_add_names(&my catch_var, nullptr, catch_scope, (BindingAddNamesProps){});
+        binding_lookup_names(&my catch_var, catch_scope, errs);
+        block_resolve_names(&my catch_block, catch_scope, errs);
+        flow_add_antecedent(flow, normal_exit, flow->current);
+    }
+    flow->return_target = saved_return;
+    flow->exception_target = saved_exception;
+    if (!has_finally) {
+        flow_set_current(flow, flow_finish_label(normal_exit));
+        return;
+    }
+    // The finally block is reached from everywhere. Code after it only from the normal exits, a `return` target only
+    // from the returns, an outer exception target only from the exceptions: that's what the reduce labels say
+    FlowNode* finally_label = flow_new_branch_label(flow);
+    finally_label->antecedents =
+        flow_list_concat(flow, normal_exit->antecedents, exception_label->antecedents, return_label->antecedents);
+    flow_set_current(flow, finally_label);
+    block_resolve_names(&my finally_block, names, errs);
+    if (flow->dead) return;
+    if (flow_is_unreachable(flow->current)) {
+        flow->current = &flow_unreachable;
+        return;
+    }
+    if (flow->return_target && return_label->antecedents) {
+        flow_add_antecedent(flow, flow->return_target,
+            flow_new_reduce_label(flow, finally_label, return_label->antecedents, flow->current));
+    }
+    if (flow->exception_target && exception_label->antecedents) {
+        flow_add_antecedent(flow, flow->exception_target,
+            flow_new_reduce_label(flow, finally_label, exception_label->antecedents, flow->current));
+    }
+    flow->current = normal_exit->antecedents ?
+        flow_new_reduce_label(flow, finally_label, normal_exit->antecedents, flow->current) : &flow_unreachable;
+}
+
+static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs);
+
+// label_count: how many labels the statement has
+static void statement_resolve_names_reachable(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    switch (my tag) {
+        case STATEMENT_LABELED: {
+            FlowNode* post = flow_new_branch_label(flow);
+            FlowActiveLabel label = { .next = flow->active_labels, .name = my labeled.name, .break_target = post };
+            flow->active_labels = &label;
+            // A label on a label on a loop is that loop's label too
+            statement_resolve_names_labeled(my labeled.body, label_count + 1, names, errs);
+            CompilerOptions const* options = compiler_options();
+            if (!label.referenced && !flow->dead && options->is_set[COMPILER_OPTION_allow_unused_labels] &&
+                !options->allow_unused_labels
+            ) {
+                error_ctx_error_d(errs, my labeled.name, 7028, "Unused label.");
+            }
+            flow->active_labels = label.next;
+            flow_add_antecedent(flow, post, flow->current);
+            flow_set_current(flow, flow_finish_label(post));
+        }   break;
 
         case STATEMENT_BLOCK:
             block_resolve_names(&my block, names, errs);
             break;
 
         case STATEMENT_IF_ELSE:
-            for_each (i, vec_expr, &my if_else.conditions) {
-                expr_lookup_names(i, names, errs);
-            }
-            for_each (i, vec_statement, &my if_else.statements) {
-                Scope* branch_scope = scope_new(names, SCOPE_BLOCK);
-                statement_add_names(i, branch_scope);
-                statement_resolve_names(i, branch_scope, errs);
-            }
+            if_else_resolve_names(&my if_else, 0, names, errs);
             break;
 
         case STATEMENT_FOR_LOOP: {
+            ForLoopStatement* loop = my for_loop;
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
-            statement_add_names(&my for_loop->initialization, loop_scope);
-            statement_add_names(&my for_loop->body, loop_scope);
-            statement_resolve_names(&my for_loop->initialization, loop_scope, errs);
-            expr_lookup_names(&my for_loop->condition, loop_scope, errs);
-            expr_lookup_names(&my for_loop->afterthought, loop_scope, errs);
-            statement_resolve_names(&my for_loop->body, loop_scope, errs);
+            statement_add_names(&loop->initialization, loop_scope);
+            statement_add_names(&loop->body, loop_scope);
+            if (loop->is_do_while) {
+                // (Nothing in these, but every expression wants its names looked up)
+                statement_resolve_names(&loop->initialization, loop_scope, errs);
+                expr_lookup_names(&loop->afterthought, loop_scope, errs);
+                FlowNode* pre_do = flow_new_loop_label(flow);
+                FlowNode* pre_condition = flow_set_continue_target(flow, label_count, flow_new_branch_label(flow));
+                FlowNode* post = flow_new_branch_label(flow);
+                flow_add_antecedent(flow, pre_do, flow->current);
+                flow_set_current(flow, pre_do);
+                statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_condition);
+                flow_add_antecedent(flow, pre_condition, flow->current);
+                flow_set_current(flow, flow_finish_label(pre_condition));
+                expr_lookup_names_condition(&loop->condition, loop_scope, errs, pre_do, post);
+                flow_set_current(flow, flow_finish_label(post));
+                break;
+            }
+            // `while (c)` is `for (; c; )`
+            FlowNode* pre_loop = flow_set_continue_target(flow, label_count, flow_new_loop_label(flow));
+            FlowNode* pre_body = flow_new_branch_label(flow);
+            FlowNode* pre_incrementor = flow_new_branch_label(flow);
+            FlowNode* post = flow_new_branch_label(flow);
+            statement_resolve_names(&loop->initialization, loop_scope, errs);
+            flow_add_antecedent(flow, pre_loop, flow->current);
+            flow_set_current(flow, pre_loop);
+            expr_lookup_names_condition(&loop->condition, loop_scope, errs, pre_body, post);
+            flow_set_current(flow, flow_finish_label(pre_body));
+            statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_incrementor);
+            flow_add_antecedent(flow, pre_incrementor, flow->current);
+            flow_set_current(flow, flow_finish_label(pre_incrementor));
+            expr_lookup_names(&loop->afterthought, loop_scope, errs);
+            flow_add_antecedent(flow, pre_loop, flow->current);
+            flow_set_current(flow, flow_finish_label(post));
         }   break;
 
         case STATEMENT_FOR_EACH_LOOP: {
-            lazy_type_bind(&my for_each_loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
+            ForEachLoopStatement* loop = my for_each_loop;
+            lazy_type_bind(&loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
-            switch (my for_each_loop->variable.tag) {
-                case FOR_EACH_LOOP_STATEMENT:
-                    VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
-                    if (my for_each_loop->variable.statement.keyword != VAR_INIT_VAR) {
-                        for_each_loop_add_names(my for_each_loop, loop_scope);
-                    }
-                    for_each (i, vec_initialized_binding, initializers) {
-                        binding_lookup_names(&i->binding, loop_scope, errs);
-                        expr_lookup_names(&i->value, loop_scope, errs);
-                    }
-                    break;
-
-                case FOR_EACH_LOOP_EXPR:
-                    expr_lookup_names(&my for_each_loop->variable.expr, names, errs);
-                    break;
+            bool is_declaration = loop->variable.tag == FOR_EACH_LOOP_STATEMENT;
+            if (is_declaration && loop->variable.statement.keyword != VAR_INIT_VAR) {
+                for_each_loop_add_names(loop, loop_scope);
             }
-
-            expr_lookup_names(&my for_each_loop->iterable, loop_scope, errs);
-            statement_add_names(&my for_each_loop->body, loop_scope);
-            statement_resolve_names(&my for_each_loop->body, loop_scope, errs);
+            FlowNode* pre_loop = flow_set_continue_target(flow, label_count, flow_new_loop_label(flow));
+            FlowNode* post = flow_new_branch_label(flow);
+            expr_lookup_names(&loop->iterable, loop_scope, errs);
+            flow_add_antecedent(flow, pre_loop, flow->current);
+            flow_set_current(flow, pre_loop);
+            flow_add_antecedent(flow, post, flow->current);
+            if (is_declaration) {
+                for_each (i, vec_initialized_binding, &loop->variable.statement.initializers) {
+                    binding_lookup_names(&i->binding, loop_scope, errs);
+                    expr_lookup_names(&i->value, loop_scope, errs);
+                    binding_flow_assign(&i->binding, loop_scope);
+                }
+            } else {
+                flow->assignment_target = FLOW_TARGET_DEFINITE;
+                expr_lookup_names(&loop->variable.expr, names, errs);
+                expr_flow_assign_for_each(&loop->variable.expr, names, loop);
+            }
+            statement_add_names(&loop->body, loop_scope);
+            statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_loop);
+            flow_add_antecedent(flow, pre_loop, flow->current);
+            flow_set_current(flow, flow_finish_label(post));
         }   break;
 
-        case STATEMENT_SWITCH: {
-            expr_lookup_names(&my switch_->needle, names, errs);
-            Scope* switch_scope = scope_new(names, SCOPE_BLOCK);
-            for_each (i, vec_switch_case, &my switch_->cases) {
-                for_each (j, vec_statement, &i->statements) {
-                    statement_add_names(j, switch_scope);
-                }
-            }
-            for_each (i, vec_switch_case, &my switch_->cases) {
-                if (i->is_pattern) {
-                    expr_lookup_names(&i->pattern, switch_scope, errs);
-                }
-                for_each (j, vec_statement, &i->statements) {
-                    statement_resolve_names(j, switch_scope, errs);
-                }
-            }
-        }   break;
+        case STATEMENT_SWITCH:
+            switch_resolve_names(my switch_, names, errs);
+            break;
 
-        case STATEMENT_TRY_CATCH: {
-            block_resolve_names(&my try_catch->try_block, names, errs);
-
-            Scope* catch_scope = scope_new(names, SCOPE_BLOCK);
-            binding_add_names(&my try_catch->catch_var, nullptr, catch_scope, (BindingAddNamesProps){});
-            binding_lookup_names(&my try_catch->catch_var, catch_scope, errs);
-            block_resolve_names(&my try_catch->catch_block, catch_scope, errs);
-
-            block_resolve_names(&my try_catch->finally_block, names, errs);
-        }   break;
+        case STATEMENT_TRY_CATCH:
+            try_catch_resolve_names(my try_catch, my try_catch->has_catch, my try_catch->has_finally, names, errs);
+            break;
 
         case STATEMENT_EXPR:
+            expr_lookup_names_statement(&my expr, names, errs);
+            break;
+
         case STATEMENT_EXPORT_DEFAULT_EXPR:
+            expr_lookup_names(&my expr, names, errs);
+            break;
+
         case STATEMENT_THROW_EXPR:
             expr_lookup_names(&my expr, names, errs);
+            flow_set_current(flow, &flow_unreachable);
+            flow->has_flow_effects = true;
             break;
 
         case STATEMENT_RETURN_EXPR:
@@ -616,7 +903,35 @@ void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
                 );
             }
             expr_lookup_names(&my expr, names, errs);
+            if (!flow->dead) {
+                if (statement_is_bare_return(me)) flow->has_bare_return = true;
+                flow->has_explicit_return = true;
+                if (flow->return_target) flow_add_antecedent(flow, flow->return_target, flow->current);
+                flow->current = &flow_unreachable;
+                flow->has_flow_effects = true;
+            }
             break;
+
+        case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE: {
+            if (flow->dead) break;
+            bool is_break = my tag == STATEMENT_BREAK;
+            FlowNode* target = is_break ? flow->break_target : flow->continue_target;
+            if (span_valid(my jump_label)) {
+                target = nullptr;
+                for (FlowActiveLabel* i = flow->active_labels; i; i = i->next) {
+                    if (!csview_equals_sv(i->name.sv, my jump_label.sv)) continue;
+                    i->referenced = true;
+                    target = is_break ? i->break_target : i->continue_target;
+                    break;
+                }
+            }
+            if (target) {
+                flow_add_antecedent(flow, target, flow->current);
+                flow->current = &flow_unreachable;
+                flow->has_flow_effects = true;
+            }
+        }   break;
 
         case STATEMENT_IMPORT_EXPORT: // Aliases are resolved by binder_link()
             port_statement_lookup_names(my import_export, names, errs);
@@ -653,8 +968,44 @@ void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
 
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
-        case STATEMENT_BREAK:
-        case STATEMENT_CONTINUE:
+            break;
+    }
+}
+
+void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
+    statement_resolve_names_labeled(me, 0, names, errs);
+}
+
+static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    VecStatement const* list = flow->statement_list;
+    flow->statement_list = nullptr;
+    if (statement_check_unreachable(me, flow, list)) {
+        // Like tsc: nothing in unreachable code is part of the flow graph
+        bool was_dead = flow->dead;
+        flow->dead = true;
+        statement_resolve_names_reachable(me, label_count, names, errs);
+        flow->dead = was_dead;
+        return;
+    }
+    // What "the statement an assignment is in" can be (tsc: extendAssignmentPosition())
+    switch (my tag) {
+        case STATEMENT_DECL_VARIABLE:
+        case STATEMENT_EXPR:
+        case STATEMENT_IF_ELSE:
+        case STATEMENT_FOR_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_SWITCH:
+        case STATEMENT_TRY_CATCH:
+        case STATEMENT_DECL_CLASS: {
+            FlowStatementFrame frame = { flow->statements, my span };
+            flow->statements = &frame;
+            statement_resolve_names_reachable(me, label_count, names, errs);
+            flow->statements = frame.parent;
+        }   break;
+
+        default:
+            statement_resolve_names_reachable(me, label_count, names, errs);
             break;
     }
 }
@@ -693,6 +1044,7 @@ void statement_collect_return_types(Statement const* me, TyBuf* out) {
             break;
 
         case STATEMENT_RETURN_EXPR:
+            if (statement_is_bare_return(me)) break;
             ty_buf_push(out, ty_check_expr(current_checker, &my expr, current_checker->return_context));
             break;
 

@@ -9,6 +9,8 @@
 #include "interface_member.h"
 #include "several_types.h"
 #include "callable_type.h"
+#include "flow.h"
+#include "statement.h"
 #include "ty/ty.h"
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
@@ -86,7 +88,6 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
 }
 
 void expr_drop(Expr* me) {
-    free(my currently_getting_type);
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
             break;
@@ -186,8 +187,230 @@ static bool as_type_is_const_assertion(AsTypeExpr const* me) {
         vec_span_is_empty(&my type.identifier->namespaces) && !vec_spanned_type_size(&my type.identifier->generic_params);
 }
 
+// Control flow (flow.h). These follow the functions of the same names in tsc's binder
+
+static bool binary_op_is_logical(BinaryOp op) {
+    return op == BINARY_OP_AND_AND || op == BINARY_OP_OR_OR || op == BINARY_OP_EH_EH;
+}
+
+static bool binary_op_is_logical_assignment(BinaryOp op) {
+    return op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL || op == BINARY_OP_EH_EH_EQUAL;
+}
+
+static bool binary_op_is_assignment(BinaryOp op) {
+    return op >= BINARY_OP_EQUAL && op <= BINARY_OP_EH_EH_EQUAL;
+}
+
+// `a && b`, `!(a || b)`: binds its own condition nodes
+static bool expr_is_logical(Expr const* me) {
+    while (my tag == EXPR_UNARY_OP && my unary_op->op == UNARY_OP_LEFT_BANG) me = &my unary_op->expr;
+    return my tag == EXPR_BINARY_OP && binary_op_is_logical(my binary_op->op);
+}
+
+static void flow_add_conditions(FlowBuilder* flow, Expr const* me, FlowNode* true_target, FlowNode* false_target) {
+    flow_add_antecedent(flow, true_target, flow_new_condition(flow, FLOW_TRUE_CONDITION, flow->current, me));
+    flow_add_antecedent(flow, false_target, flow_new_condition(flow, FLOW_FALSE_CONDITION, flow->current, me));
+}
+
+// `true ?? x`, `true?.x`: `true` decides nothing about where control goes
+static void flow_add_nullish_conditions(FlowBuilder* flow, Expr const* me, FlowNode* true_target, FlowNode* false_target) {
+    if (my tag == EXPR_LITERAL && my literal.tag == VALUE_BOOLEAN) {
+        flow_add_antecedent(flow, true_target, flow->current);
+        flow_add_antecedent(flow, false_target, flow->current);
+    } else {
+        flow_add_conditions(flow, me, true_target, false_target);
+    }
+}
+
+void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
+    FlowBuilder* flow = names->flow;
+    flow->true_target = true_target;
+    flow->false_target = false_target;
+    expr_lookup_names(me, names, errs);
+    bool binds_its_own = expr_is_logical(me) || expr_is_optional_chain(me) ||
+        (my tag == EXPR_BINARY_OP && binary_op_is_logical_assignment(my binary_op->op));
+    if (!binds_its_own) flow_add_conditions(flow, me, true_target, false_target);
+}
+
+// A call with a dotted name as its callee may be an assertion or never return, the checker finds out
+static void flow_maybe_call(FlowBuilder* flow, Expr const* me) {
+    if (my tag != EXPR_CALL || my call->uses_new || flow->dead) return;
+    Expr const* callee = &my call->callable;
+    while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) return;
+    if (expr_is_dotted_name(callee)) flow->current = flow_new_call(flow, flow->current, me);
+}
+
+void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
+    expr_lookup_names(me, names, errs);
+    flow_maybe_call(names->flow, me);
+}
+
+static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAssign assign);
+
+// An element of an assignment pattern, which may have a default: `[a = 1] = e`
+static void flow_destructuring_target(FlowBuilder* flow, Expr const* target, FlowAssign assign, FlowPatternPath path) {
+    if (target->tag == EXPR_BINARY_OP && target->binary_op->op == BINARY_OP_EQUAL) {
+        path.default_value = &target->binary_op->right;
+        target = &target->binary_op->left;
+    }
+    FlowPatternPath* node = arena_new(flow->arena, FlowPatternPath);
+    *node = path;
+    assign.kind = FLOW_ASSIGN_PATTERN;
+    assign.path = node;
+    flow_assignment_target(flow, target, assign);
+}
+
+static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAssign assign) {
+    if (expr_is_narrowable_reference(target)) {
+        assign.target = target;
+        flow_assign(flow, assign);
+    } else if (target->tag == EXPR_ARRAY) {
+        for_each (i, vec_expr, &target->array) {
+            FlowPatternPath path = { .parent = assign.path, .pattern = target, .index = (u32)i_index };
+            if (i->tag == EXPR_SPREAD) {
+                path.kind = FLOW_PATH_REST;
+                flow_destructuring_target(flow, i->spread, assign, path);
+            } else {
+                path.kind = FLOW_PATH_ELEMENT;
+                flow_destructuring_target(flow, i, assign, path);
+            }
+        }
+    } else if (target->tag == EXPR_OBJECT) {
+        for_each (i, vec_object_expr_item, &target->object) {
+            FlowPatternPath path = { .parent = assign.path, .pattern = target, .item = i };
+            switch (i->tag) {
+                case OBJECT_ITEM_PROPERTY:
+                case OBJECT_ITEM_SHORTHAND:
+                    path.kind = FLOW_PATH_PROPERTY;
+                    flow_destructuring_target(flow, &i->value, assign, path);
+                    break;
+                case OBJECT_ITEM_SPREAD:
+                    path.kind = FLOW_PATH_REST;
+                    flow_destructuring_target(flow, &i->value, assign, path);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatement const* for_each) {
+    flow_assignment_target(names->flow, me, (FlowAssign){ .kind = FLOW_ASSIGN_FOR_EACH, .for_each = for_each });
+}
+
+// What narrowing inside closures needs to know about a local variable (tsc's markNodeAssignments())
+static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* names) {
+    Symbol* symbol = (Symbol*)my target; // Local: this file's walk owns it
+    if (!symbol || !symbol->is_local || !(symbol->flags & SYMBOL_VARIABLE)) return;
+    symbol->is_assigned = true;
+    if (my assignment_target == FLOW_TARGET_DEFINITE) symbol->is_definitely_assigned = true;
+    char const* anywhere = (char const*)UINTPTR_MAX;
+    if (symbol->last_assignment_end == anywhere) return;
+    if (names->function != symbol->function) {
+        symbol->is_assigned_in_closure = true;
+        symbol->last_assignment_end = anywhere;
+        return;
+    }
+    // The end of the outermost statement around the assignment that starts after the declaration
+    char const* end = span_end_ptr(my name);
+    char const* declared_at = span_start_ptr(symbol->name_span);
+    for (FlowStatementFrame const* i = names->flow->statements; i; i = i->parent) {
+        if (span_start_ptr(i->span) <= declared_at) break;
+        end = span_end_ptr(i->span);
+    }
+    if (end > symbol->last_assignment_end) symbol->last_assignment_end = end;
+}
+
+static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
+    FlowBuilder* flow = names->flow;
+    BinaryOp op = my binary_op->op;
+    FlowNode* pre_right = flow_new_branch_label(flow);
+    bool is_assignment = binary_op_is_logical_assignment(op);
+    if (is_assignment) flow->assignment_target = FLOW_TARGET_DEFINITE;
+    if (op == BINARY_OP_AND_AND || op == BINARY_OP_AND_AND_EQUAL) {
+        expr_lookup_names_condition(&my binary_op->left, names, errs, pre_right, false_target);
+    } else if (op == BINARY_OP_EH_EH && my binary_op->left.tag == EXPR_LITERAL) {
+        expr_lookup_names(&my binary_op->left, names, errs);
+        flow_add_nullish_conditions(flow, &my binary_op->left, true_target, pre_right);
+    } else {
+        expr_lookup_names_condition(&my binary_op->left, names, errs, true_target, pre_right);
+    }
+    flow_set_current(flow, flow_finish_label(pre_right));
+    if (is_assignment) {
+        flow->true_target = true_target;
+        flow->false_target = false_target;
+        expr_lookup_names(&my binary_op->right, names, errs);
+        flow_assignment_target(flow, &my binary_op->left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });
+        flow_add_conditions(flow, me, true_target, false_target);
+    } else if (op == BINARY_OP_EH_EH && my binary_op->right.tag == EXPR_LITERAL) {
+        expr_lookup_names(&my binary_op->right, names, errs);
+        flow_add_nullish_conditions(flow, &my binary_op->right, true_target, false_target);
+    } else {
+        expr_lookup_names_condition(&my binary_op->right, names, errs, true_target, false_target);
+    }
+}
+
+// `a?.b` is `a && a.b` as far as flow goes. `continues`: something further out continues the chain
+static void expr_lookup_names_chain(
+    Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues
+) {
+    FlowBuilder* flow = names->flow;
+    bool is_root = expr_is_optional_chain_root(me);
+    FlowNode* pre_chain = is_root ? flow_new_branch_label(flow) : nullptr;
+    Expr* object =
+        my tag == EXPR_PROPERTY ? &my property->expr :
+        my tag == EXPR_CALL ? &my call->callable : &my unary_op->expr;
+    flow->true_target = pre_chain ? pre_chain : true_target;
+    flow->false_target = false_target;
+    flow->chain_continues = !is_root;
+    expr_lookup_names(object, names, errs);
+    if (is_root) {
+        // (When the object is a chain of its own it has added the same already: so does tsc)
+        flow_add_nullish_conditions(flow, object, pre_chain, false_target);
+        flow_set_current(flow, flow_finish_label(pre_chain));
+    }
+    if (my tag == EXPR_PROPERTY) {
+        expr_lookup_names(&my property->prop, names, errs);
+    } else if (my tag == EXPR_CALL) {
+        for_each (i, vec_expr, &my call->args) {
+            expr_lookup_names(i, names, errs);
+        }
+    }
+    if (!continues) flow_add_conditions(flow, me, true_target, false_target);
+}
+
+static void expr_lookup_names_chain_flow(
+    Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues
+) {
+    FlowBuilder* flow = names->flow;
+    if (true_target) {
+        expr_lookup_names_chain(me, names, errs, true_target, false_target, continues);
+        return;
+    }
+    // Not a condition of anything
+    FlowNode* post = flow_new_branch_label(flow);
+    FlowNode* saved = flow->current;
+    bool saved_effects = flow->has_flow_effects; // tsc doesn't reset it here
+    expr_lookup_names_chain(me, names, errs, post, post, false);
+    flow_set_current(flow, flow->has_flow_effects ? flow_finish_label(post) : saved);
+    flow->has_flow_effects |= saved_effects;
+}
+
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
+
+    // What this expression is to whoever walks it: taken, so that operands only get what they are given
+    FlowBuilder* flow = names->flow;
+    FlowNode* true_target = flow->true_target;
+    FlowNode* false_target = flow->false_target;
+    bool chain_continues = flow->chain_continues;
+    uint8_t assignment_target = flow->assignment_target;
+    flow->true_target = nullptr;
+    flow->false_target = nullptr;
+    flow->chain_continues = false;
+    flow->assignment_target = FLOW_TARGET_NONE;
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
@@ -195,23 +418,110 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_IDENTIFIER:
             identifier_expr_lookup_names(&my identifier, names, errs);
+            my identifier.flow = flow_builder_reference(flow, my identifier.name);
+            my identifier.assignment_target = assignment_target;
+            if (assignment_target) identifier_mark_assigned(&my identifier, names);
             break;
 
-        case EXPR_BINARY_OP:
-            expr_lookup_names(&my binary_op->left, names, errs);
-            expr_lookup_names(&my binary_op->right, names, errs);
-            break;
+        case EXPR_BINARY_OP: {
+            BinaryOp op = my binary_op->op;
+            Expr* left = &my binary_op->left;
+            Expr* right = &my binary_op->right;
+            if (binary_op_is_logical(op) || binary_op_is_logical_assignment(op)) {
+                if (true_target) {
+                    expr_lookup_names_logical(me, names, errs, true_target, false_target);
+                } else {
+                    FlowNode* post = flow_new_branch_label(flow);
+                    FlowNode* saved = flow->current;
+                    bool saved_effects = flow->has_flow_effects;
+                    flow->has_flow_effects = false;
+                    expr_lookup_names_logical(me, names, errs, post, post);
+                    flow_set_current(flow, flow->has_flow_effects ? flow_finish_label(post) : saved);
+                    flow->has_flow_effects |= saved_effects;
+                }
+            } else if (op == BINARY_OP_EQUAL && (left->tag == EXPR_ARRAY || left->tag == EXPR_OBJECT)) {
+                // A destructuring assignment. Nested in another pattern (`[[a] = [1]] = e`) the default comes first
+                if (assignment_target) expr_lookup_names(right, names, errs);
+                flow->assignment_target = FLOW_TARGET_DEFINITE;
+                expr_lookup_names(left, names, errs);
+                if (!assignment_target) expr_lookup_names(right, names, errs);
+                // TODO: when nested, tsc makes these nodes twice (here and from the outer pattern)
+                if (!assignment_target) {
+                    flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_PATTERN, .assignment = me });
+                }
+            } else if (binary_op_is_assignment(op)) {
+                // `a = 1` as an element of a pattern is a target with a default: whoever walks the pattern assigns
+                flow->assignment_target = op == BINARY_OP_EQUAL ? FLOW_TARGET_DEFINITE : FLOW_TARGET_COMPOUND;
+                expr_lookup_names(left, names, errs);
+                expr_lookup_names(right, names, errs);
+                if (!assignment_target) {
+                    flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });
+                }
+            } else {
+                expr_lookup_names(left, names, errs);
+                if (op == BINARY_OP_COMMA) flow_maybe_call(flow, left);
+                expr_lookup_names(right, names, errs);
+                if (op == BINARY_OP_COMMA) flow_maybe_call(flow, right);
+            }
+        }   break;
 
-        case EXPR_UNARY_OP:
-            expr_lookup_names(&my unary_op->expr, names, errs);
-            break;
+        case EXPR_UNARY_OP: {
+            Expr* operand = &my unary_op->expr;
+            switch (my unary_op->op) {
+                case UNARY_OP_LEFT_BANG:
+                    flow->true_target = false_target;
+                    flow->false_target = true_target;
+                    expr_lookup_names(operand, names, errs);
+                    break;
+
+                case UNARY_OP_LEFT_PLUS_PLUS:
+                case UNARY_OP_LEFT_MINUS_MINUS:
+                case UNARY_OP_RIGHT_PLUS_PLUS:
+                case UNARY_OP_RIGHT_MINUS_MINUS:
+                    flow->assignment_target = FLOW_TARGET_COMPOUND;
+                    expr_lookup_names(operand, names, errs);
+                    flow_assignment_target(flow, operand, (FlowAssign){ .kind = FLOW_ASSIGN_UPDATE, .assignment = me });
+                    break;
+
+                case UNARY_OP_DELETE:
+                    expr_lookup_names(operand, names, errs);
+                    if (operand->tag == EXPR_PROPERTY && operand->property->form == PROPERTY_EXPR_DOT) {
+                        flow_assignment_target(flow, operand, (FlowAssign){ .kind = FLOW_ASSIGN_DELETE, .assignment = me });
+                    }
+                    break;
+
+                case UNARY_OP_RIGHT_BANG:
+                    if (expr_is_optional_chain(me)) {
+                        expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues);
+                    } else {
+                        flow->assignment_target = assignment_target; // `x! = 1`
+                        expr_lookup_names(operand, names, errs);
+                    }
+                    break;
+
+                default:
+                    expr_lookup_names(operand, names, errs);
+                    break;
+            }
+        }   break;
 
         case EXPR_PROPERTY:
-            expr_lookup_names(&my property->expr, names, errs);
-            expr_lookup_names(&my property->prop, names, errs);
+            // Also when it can't be narrowed (`f().x`): the checker finds out when it makes the reference key
+            my property->flow = flow_builder_reference(flow, my outer_span);
+            my property->assignment_target = assignment_target;
+            if (expr_is_optional_chain(me)) {
+                expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues);
+            } else {
+                expr_lookup_names(&my property->expr, names, errs);
+                expr_lookup_names(&my property->prop, names, errs);
+            }
             break;
 
         case EXPR_GENERIC_PARAMS:
+            // `f<T>` is part of the call as far as flow goes
+            flow->true_target = true_target;
+            flow->false_target = false_target;
+            flow->chain_continues = chain_continues;
             expr_lookup_names(&my generic_params->expr, names, errs);
             for_each (i, vec_spanned_type, &my generic_params->params) {
                 type_lookup_names(&i->type, names, errs);
@@ -225,18 +535,51 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             }
             break;
 
-        case EXPR_TERNARY:
-            expr_lookup_names(&my ternary->condition, names, errs);
+        case EXPR_TERNARY: {
+            FlowNode* true_label = flow_new_branch_label(flow);
+            FlowNode* false_label = flow_new_branch_label(flow);
+            FlowNode* post = flow_new_branch_label(flow);
+            FlowNode* saved = flow->current;
+            bool saved_effects = flow->has_flow_effects;
+            flow->has_flow_effects = false;
+            expr_lookup_names_condition(&my ternary->condition, names, errs, true_label, false_label);
+            flow_set_current(flow, flow_finish_label(true_label));
             expr_lookup_names(&my ternary->yes, names, errs);
+            flow_add_antecedent(flow, post, flow->current);
+            flow_set_current(flow, flow_finish_label(false_label));
             expr_lookup_names(&my ternary->no, names, errs);
-            break;
+            flow_add_antecedent(flow, post, flow->current);
+            flow_set_current(flow, flow->has_flow_effects ? flow_finish_label(post) : saved);
+            flow->has_flow_effects |= saved_effects;
+        }   break;
 
-        case EXPR_CALL:
+        case EXPR_CALL: {
+            if (expr_is_optional_chain(me)) {
+                expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues);
+                break;
+            }
+            Expr* callee = &my call->callable;
+            while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+            if (callee->tag == EXPR_FUNCTION && !my call->uses_new) {
+                // An immediately invoked function expression is part of this flow, after its arguments
+                for_each (i, vec_expr, &my call->args) {
+                    expr_lookup_names(i, names, errs);
+                }
+                flow->next_function_is_iife = !callee->function->is_async && !callee->function->is_generator;
+                expr_lookup_names(&my call->callable, names, errs);
+                flow->next_function_is_iife = false;
+                break;
+            }
             expr_lookup_names(&my call->callable, names, errs);
             for_each (i, vec_expr, &my call->args) {
                 expr_lookup_names(i, names, errs);
             }
-            break;
+            if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER &&
+                !my call->uses_new && !flow->dead
+            ) {
+                flow->current = flow_new_call(flow, flow->current, me);
+            }
+        }   break;
 
         case EXPR_FUNCTION: {
             // A function expression's name is only visible inside it
@@ -245,7 +588,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 name_scope = scope_new(names, SCOPE_BLOCK);
                 function_impl_add_names(my function, name_scope, false);
             }
-            function_impl_lookup_names(my function, !span_valid(my function->arrow_span), name_scope, errs);
+            function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !span_valid(my function->arrow_span), name_scope, errs);
         }   break;
 
         case EXPR_OBJECT:
@@ -253,12 +596,18 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->computed_key) {
                     expr_lookup_names(i->computed_key, names, errs);
                 }
+                if (i->value.tag == EXPR_FUNCTION) {
+                    i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
+                    if (i->tag != OBJECT_ITEM_PROPERTY) i->value.function->member_name = i->name_span;
+                }
+                flow->assignment_target = assignment_target; // A pattern: the values are the targets
                 expr_lookup_names(&i->value, names, errs);
             }
             break;
 
         case EXPR_ARRAY:
             for_each (i, vec_expr, &my array) {
+                flow->assignment_target = assignment_target;
                 expr_lookup_names(i, names, errs);
             }
             break;
@@ -270,6 +619,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         }   break;
 
         case EXPR_SPREAD:
+            flow->assignment_target = assignment_target;
             expr_lookup_names(my spread, names, errs);
             break;
 

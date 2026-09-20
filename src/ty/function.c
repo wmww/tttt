@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "program.h"
 #include "statement.h"
 
 // The types of functions: declarations, function expressions, methods, accessors and constructors. A function's type is
@@ -46,12 +47,23 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
         // TODO: Generator<TYield, TReturn, TNext>/AsyncGenerator<...> inferred from the yields and returns
         ret = ty_intrinsic(me, TY_ANY);
     } else {
-        ret = ty_union_subtype_reduced(me, returned.data, returned.len);
-        if (ret->flags & TYF_NEVER) {
-            // TODO: `never` for functions whose end isn't reachable (needs reachability, plan 03)
+        // tsc: checkAndAggregateReturnExpressionTypes(). Only what is certain about the end of the body counts until
+        // reachability knows about `never` calls and exhaustive switches
+        FlowReachability end = ty_function_end_reachability(me, function);
+        bool returns_nothing_somewhere = function->has_bare_return || end == FLOW_REACH_YES;
+        if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && function->is_expression) {
+            // Function expressions that can't return don't (declarations are `void`)
+            ret = ty_intrinsic(me, TY_NEVER);
+        } else if (!returned.len) {
             ret = ty_intrinsic(me, TY_VOID);
         } else {
-            ret = ty_widened_return_type(me, ret, ty_contextual_return_type(me, function));
+            if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {
+                ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
+            }
+            ret = ty_union_subtype_reduced(me, returned.data, returned.len);
+            if (!(ret->flags & TYF_NEVER)) {
+                ret = ty_widened_return_type(me, ret, ty_contextual_return_type(me, function));
+            }
         }
     }
     ty_buf_drop(&returned);

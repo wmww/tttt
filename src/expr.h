@@ -22,15 +22,21 @@ typedef struct Expr Expr;
 g_declare_vec(ObjectExprItem, object_expr_item);
 g_declare_vec(Expr, expr);
 
+typedef struct FlowNode FlowNode; // flow.h
+
 typedef struct IdentifierExpr {
     Span name;
-    KeywordIdentifier keyword;
     // What the checker goes by: the symbol that has the meaning the name is used with (aliases resolved). Cached next
     // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
     Symbol const* target;
-    ThisKind this_kind;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
     ModuleRef* module_ref; // `import("./a")`: the module, the identifier is the `import` keyword
+    // The control flow node that was current when the reference is evaluated (`this` and `super` have one too), null
+    // in unreachable code
+    FlowNode* flow;
+    uint8_t keyword; // KeywordIdentifier
+    uint8_t this_kind; // ThisKind
+    uint8_t assignment_target; // FlowAssignmentKind: the reference is being assigned to, so it has its declared type
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);
@@ -41,7 +47,6 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
     Span outer_span; // Includes parentheses
-    bool* currently_getting_type;
     enum {
         EXPR_IMPLICIT_ANY = 0,
         EXPR_LITERAL,
@@ -177,6 +182,13 @@ extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs);
+// As the condition of a statement: control goes to one of the labels
+void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target);
+// As an expression statement, where a call can be an assertion
+void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs);
+// `for (me of xs)`: what the loop assigns to (already walked)
+typedef struct ForEachLoopStatement ForEachLoopStatement;
+void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatement const* for_each);
 Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 
@@ -298,6 +310,8 @@ typedef struct PropertyExpr {
         PROPERTY_EXPR_BRACKET,
     } form;
     bool optional_chain;
+    uint8_t assignment_target; // FlowAssignmentKind
+    FlowNode* flow; // Like IdentifierExpr.flow
 } PropertyExpr;
 
 // Generic params

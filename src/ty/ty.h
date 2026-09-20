@@ -639,6 +639,17 @@ Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 cou
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
+
+// Control flow queries (ty/flow.c)
+typedef struct FlowNode FlowNode;
+typedef enum FlowReachability {
+    FLOW_REACH_NO,
+    FLOW_REACH_YES,
+    FLOW_REACH_UNKNOWN, // Depends on types the checker can't ask about yet: a call that may never return, a switch that may be exhaustive
+} FlowReachability;
+FlowReachability ty_flow_reachability(Checker* me, FlowNode const* flow); // null: no
+// Whether control can fall off the end of the function's body
+FlowReachability ty_function_end_reachability(Checker* me, FunctionImpl const* function);
 bool ty_extends_array(Checker* me, Ty const* ty); // Assignable to `readonly any[]`
 
 // check.c: what the statement/expression walk checks, with tsc's errors

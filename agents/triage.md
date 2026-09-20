@@ -221,3 +221,12 @@ Uninvestigated items. Triage sessions drain this.
   lines before the first `// @filename` as a file of their own in the errors baseline, so the errors component fails
   although the diagnostics match. The function type underline bug (`^ ^^`) shows on plain `(x: number) => number`
   too (scopingBasics probe), not only rest parameters.
+
+## From plan 05 stage 1
+- A return type annotation that is an error (`MemberName` without its type arguments, TS2314) isn't `any`, so
+  TS2355 is reported on top (genericRecursiveImplicitConstructorErrors3). tsc's `errorType` is any-like everywhere.
+- The test harness used to underline only the first line of a multi-line error; it follows tsc's
+  `iterateErrorBaseline` now. Related errors and tabs in squiggle prefixes weren't looked at again.
+- `functionsMissingReturnStatementsAndExpressions`: tttt has a TS1005 parse error at (152,24) that tsc doesn't, which
+  hides all its type errors.
+- TS 5.5 inferred type predicates (`x => typeof x === "string"`) are out of plan 05's scope.

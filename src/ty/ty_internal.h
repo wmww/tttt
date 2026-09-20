@@ -40,6 +40,7 @@ enum {
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
+    KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
 };
 
 // Doesn't insert, unlike intern_slot()

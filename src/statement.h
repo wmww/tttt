@@ -142,6 +142,7 @@ typedef struct Statement {
             };
         } decl;
     };
+    Span span; // With the `;`
     bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
     Span jump_label; // The label break and continue jump to, null if there isn't one or for other statements
 } Statement;
@@ -177,8 +178,15 @@ static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(S
 void statement_drop(Statement* me);
 void statement_add_names(Statement* me, Scope* scope);
 void statement_hoist_names(Statement* me, Scope* scope);
+// The resolve walk, which also builds the control flow graph (flow.h): statements are walked in flow order
 void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs);
+// The types of `return` expressions. `return;` has none (FunctionImpl.has_bare_return)
 void statement_collect_return_types(Statement const* me, TyBuf* out);
+static inline bool statement_is_bare_return(Statement const* me) {
+    // The parser gives `return;` an `undefined` literal that spans the keyword
+    return my tag == STATEMENT_RETURN_EXPR && my expr.tag == EXPR_LITERAL && my expr.literal.tag == VALUE_UNDEFINED &&
+        csview_starts_with(my expr.outer_span.sv, "return");
+}
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 #define g_class_key Statement, statement
@@ -261,4 +269,6 @@ typedef struct TryCatchStatement {
     Binding catch_var;
     Block catch_block;
     Block finally_block;
+    bool has_catch;
+    bool has_finally;
 } TryCatchStatement;

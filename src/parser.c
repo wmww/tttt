@@ -3567,7 +3567,6 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     FAIL_CACHE_HOOK(&p, FAIL_CACHE_EXPR);
-    ret->currently_getting_type = nullptr;
 
     union {
         FunctionImpl function;
@@ -3657,9 +3656,6 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         ret->inner_span = span_from(a);
     }
     ret->outer_span = span_from(a);
-    if (!ret->currently_getting_type) {
-        ret->currently_getting_type = c_new(bool, false);
-    }
 
     ret->lazy_type = (LazyType){0};
 
@@ -4686,6 +4682,8 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, VecSt
                 *p.pos == '}'
             ) {
             } else if (hop_char(&p, ';')) {
+                Statement* pushed = vec_statement_back_mut(ret);
+                pushed->span = span_make(p.shared->source, span_start_ptr(pushed->span), p.pos);
             } else if (*p.pos) {
                 if (statement.tag == STATEMENT_EXPR &&
                     statement.expr.tag == EXPR_IDENTIFIER &&
@@ -4852,6 +4850,8 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
         try_catch.try_block = (Block){0};
     }
 
+    try_catch.has_catch = has_catch;
+    try_catch.has_finally = has_finally;
     *ret = (Statement){
         .tag = STATEMENT_TRY_CATCH,
         .try_catch = c_new(TryCatchStatement, try_catch),
@@ -5258,6 +5258,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     if ((ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) && span_valid(label)) {
         ret->jump_label = label;
     }
+    ret->span = span_from(a);
 
     reset_fail_cache(&p);
     return parse_success(&p);

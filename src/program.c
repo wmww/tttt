@@ -473,7 +473,7 @@ void program_resolve_names(Program* me) {
     // Resolve: every identifier gets its symbol, function and block scopes are made on the way
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        block_lookup_names(&source->ast, source->scope, my errs);
+        block_lookup_names_container(&source->ast, false, c_sv("file"), span_null, source->scope, my errs);
     }
 
     clear_compiler_options();

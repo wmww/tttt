@@ -1908,7 +1908,7 @@ const baselines = {
     'asyncFunctionNoReturnType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionReturnExpressionErrorSpans': {
         errors: false,
@@ -1948,7 +1948,7 @@ const baselines = {
     'asyncIIFE': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncImportNestedYield': {
         errors: true,
@@ -2963,12 +2963,12 @@ const baselines = {
     'capturedLetConstInLoop8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'capturedLetConstInLoop8_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'capturedLetConstInLoop9': {
         errors: true,
@@ -3051,7 +3051,7 @@ const baselines = {
         types: true,
     },
     'cf': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -6041,7 +6041,7 @@ const baselines = {
         types: false,
     },
     'contextualSignature_objectLiteralMethodMayReturnNever': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8363,7 +8363,7 @@ const baselines = {
     'declarationEmitPrivateAsync': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPrivateNameCausesError': {
         errors: false,
@@ -11156,7 +11156,7 @@ const baselines = {
         types: false,
     },
     'errorOnContextuallyTypedReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -14381,7 +14381,7 @@ const baselines = {
         types: false,
     },
     'functionsWithImplicitReturnTypeAssignableToUndefined(strictnullchecks=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -15391,7 +15391,7 @@ const baselines = {
         types: false,
     },
     'getterMissingReturnError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17716,7 +17716,7 @@ const baselines = {
         types: false,
     },
     'innerTypeCheckOfLambdaArgument': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19078,7 +19078,7 @@ const baselines = {
     'jsFileCompilationBindErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFileCompilationBindMultipleDefaultExports': {
         errors: false,
@@ -20731,12 +20731,12 @@ const baselines = {
         types: true,
     },
     'missingReturnStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'missingReturnStatement1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -21286,7 +21286,7 @@ const baselines = {
         types: true,
     },
     'moduleImport': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21856,7 +21856,7 @@ const baselines = {
         types: false,
     },
     'moduleVisibilityTest2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -25941,17 +25941,17 @@ const baselines = {
         types: false,
     },
     'reachabilityChecks1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'reachabilityChecks2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'reachabilityChecks3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25961,12 +25961,12 @@ const baselines = {
         types: false,
     },
     'reachabilityChecks5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'reachabilityChecks6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -25978,7 +25978,7 @@ const baselines = {
     'reachabilityChecks8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactImportDropped': {
         errors: false,
@@ -26306,7 +26306,7 @@ const baselines = {
         types: false,
     },
     'recursiveNamedLambdaCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27081,7 +27081,7 @@ const baselines = {
         types: false,
     },
     'returnTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27256,7 +27256,7 @@ const baselines = {
         types: true,
     },
     'selfRef': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31516,7 +31516,7 @@ const baselines = {
         types: false,
     },
     'unreachableJavascriptChecked': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54056,7 +54056,7 @@ const baselines = {
         types: false,
     },
     'parserES3Accessors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54066,7 +54066,7 @@ const baselines = {
         types: false,
     },
     'parserES3Accessors3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54076,7 +54076,7 @@ const baselines = {
         types: false,
     },
     'parserAccessors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54091,7 +54091,7 @@ const baselines = {
         types: false,
     },
     'parserAccessors3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54486,7 +54486,7 @@ const baselines = {
         types: false,
     },
     'parserES5ComputedPropertyName4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -54788,7 +54788,7 @@ const baselines = {
     'parserErrorRecovery_Block2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_Block3': {
         errors: false,
@@ -55691,12 +55691,12 @@ const baselines = {
         types: false,
     },
     'parserMemberAccessor1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserMemberAccessorDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55746,12 +55746,12 @@ const baselines = {
         types: false,
     },
     'parserMemberAccessorDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserMemberAccessorDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56763,7 +56763,7 @@ const baselines = {
     'parserReturnStatement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserReturnStatement4': {
         errors: true,
@@ -57316,7 +57316,7 @@ const baselines = {
         types: false,
     },
     'parserVariableDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57391,7 +57391,7 @@ const baselines = {
         types: true,
     },
     'parserArgumentList1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57821,7 +57821,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -62571,7 +62571,7 @@ const baselines = {
         types: false,
     },
     'neverType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

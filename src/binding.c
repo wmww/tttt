@@ -1,4 +1,5 @@
 #include "binding.h"
+#include "flow.h"
 #include "scope.h"
 #include "several_types.h"
 #include "display.h"
@@ -80,10 +81,45 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     }
 
     if (my default_value) {
-        expr_lookup_names(my default_value, names, errs);
+        expr_lookup_names_initializer(my default_value, names, errs);
     }
     if (my has_explicit_type) {
         type_lookup_names(&my explicit_type, names, errs);
+    }
+}
+
+// The default of a parameter or of an element of a pattern is only evaluated sometimes (tsc: bindInitializer())
+void expr_lookup_names_initializer(Expr* me, Scope* names, ErrorCtx* errs) {
+    FlowBuilder* flow = names->flow;
+    FlowNode* entry = flow->current;
+    expr_lookup_names(me, names, errs);
+    if (flow_is_unreachable(entry) || entry == flow->current) return;
+    FlowNode* exit = flow_new_branch_label(flow);
+    flow_add_antecedent(flow, exit, entry);
+    flow_add_antecedent(flow, exit, flow->current);
+    flow_set_current(flow, flow_finish_label(exit));
+}
+
+// Every variable a declaration with an initializer (or of a for-in/of) declares is assigned there
+void binding_flow_assign(Binding const* me, Scope* names) {
+    switch (my tag) {
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            flow_assign(names->flow, (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = me });
+            break;
+
+        case BINDING_ARRAY:
+            for_each (i, vec_binding, &my array) {
+                binding_flow_assign(i, names);
+            }
+            break;
+
+        case BINDING_OBJECT:
+            for_each (i, vec_object_binding_item, &my object) {
+                binding_flow_assign(&i->target, names);
+            }
+            break;
     }
 }
 
@@ -185,6 +221,12 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names(&my value, names, errs);
+    if (my value.tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
+}
+
+void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
+    binding_lookup_names(&my binding, names, errs);
+    expr_lookup_names_initializer(&my value, names, errs);
 }
 
 // The initializer, checked with the type annotation (if any) as its contextual type

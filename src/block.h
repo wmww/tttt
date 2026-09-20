@@ -24,7 +24,12 @@ void block_drop(Block* me);
 void block_add_names(Block const* me, Scope* scope);
 // `export {}`, `export * from`, `export default x`: an ambient module with none of them exports everything
 bool block_has_export_declarations(Block const* me);
-void block_lookup_names(Block const* me, Scope* names, ErrorCtx* errs);
+// The resolve walk over the statements. is_block: a `{}` block or function body rather than the statements of a file
+// or namespace (tsc reports unreachable code differently)
+void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCtx* errs);
+// Same, as a control flow container of its own (flow.h): a file, a namespace body, a static block. `kind` and `name`
+// are for TTTT_DUMP_FLOW
+void block_lookup_names_container(Block const* me, bool is_block, csview kind, Span name, Scope* scope, ErrorCtx* errs);
 void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs);
 // The types of the `return` expressions inside (nested functions excluded), checked with Checker.return_context
 typedef struct TyBuf TyBuf;
