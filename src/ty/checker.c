@@ -385,7 +385,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
     } else if (includes & TYF_UNKNOWN) {
         ret = my intrinsics[TY_UNKNOWN_];
     } else {
-        qsort(buf.data, buf.len, sizeof(Ty const*), ty_cmp_id);
+        // The members of a union are sorted: a filtered union (narrowing) comes in sorted already
+        bool sorted = true;
+        for (u32 i = 1; i < buf.len && sorted; i++) sorted = ty_cmp_id(&buf.data[i - 1], &buf.data[i]) <= 0;
+        if (!sorted) qsort(buf.data, buf.len, sizeof(Ty const*), ty_cmp_id);
         u32 out = 0;
         for (u32 i = 0; i < buf.len; i++) {
             Ty const* t = buf.data[i];

@@ -900,7 +900,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             expr_typecheck(&my property->expr, errs);
             expr_typecheck(&my property->prop, errs);
             Ty const* expr_type = expr_get_type(&my property->expr);
-            if (my property->optional_chain) expr_type = ty_non_nullable(current_checker, expr_type);
+            // HACK: the rest of a chain (`a?.b.c`) only runs when `a?.b` did, but its type can't tell the `undefined`
+            // of the short circuit from one that `b` has itself (tsc: the optionalType marker)
+            if (my property->optional_chain || expr_is_optional_chain(&my property->expr)) {
+                expr_type = ty_non_nullable(current_checker, expr_type);
+            }
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
             ty_check_property_access(
                 current_checker,
@@ -908,6 +912,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_get_type(&my property->prop),
                 my property->expr.outer_span,
                 my property->prop.outer_span,
+                expr_is_entity_name(&my property->expr),
                 error_if_not_found,
                 errs
             );

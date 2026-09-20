@@ -263,7 +263,20 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     }
     // The name was looked up as a value, the class is the same symbol
     decl = symbol_for_meaning(decl, SYMBOL_CLASS);
-    if (!decl || decl->is_placeholder) return false;
+    if (!decl || decl->is_placeholder) {
+        // Any other expression (a mixin call, a class expression, a variable of a constructor type): what its first
+        // construct signature returns. TODO: written type arguments, the static side, several signatures
+        if (extends->tag == EXPR_IMPLICIT_ANY || written_args) return false;
+        Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
+        if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+        Members const* members = ty_members(me, constructor);
+        if (!members->construct_count) return false;
+        Ty const* constructed = signature_return_type(me, members->construct[0]);
+        if (!(constructed->flags & (TYF_OBJECT | TYF_INTERSECTION)) || (constructed->flags & TYF_ANY)) return false;
+        *instance = constructed;
+        *base_decl = nullptr;
+        return true;
+    }
     Ty const* base = ty_declared_type_of(me, decl);
     if (base->kind != TY_DECLARED) return false;
     *base_decl = decl;
@@ -402,6 +415,30 @@ static void builder_add_class_items(
                 break;
 
             case CLASS_ITEM_CONSTRUCTOR:
+                // Parameter properties: `constructor(public x: T)`
+                if (static_side) break;
+                for_each (arg, vec_function_arg, &i->constructor.func.args) {
+                    Binding const* binding = &arg->initializer.binding;
+                    if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
+                    Atom const* name = checker_atom(me, binding->content_span.sv);
+                    if (builder_find_prop(builder, name)) continue;
+                    Prop* prop = arena_new(&my arena, Prop);
+                    prop->name = name;
+                    prop->parent = parent;
+                    prop->ctx = ctx;
+                    prop->name_span = binding->content_span;
+                    prop_add_decl_spans(me, prop, &arg->span, 1);
+                    if (binding->has_explicit_type) {
+                        prop->node = &binding->explicit_type;
+                    } else {
+                        prop->lazy = &arg->initializer.lazy_type;
+                    }
+                    if (arg->explicit_optional) prop->flags |= PROP_OPTIONAL;
+                    if (arg->is_readonly_property) prop->flags |= PROP_READONLY;
+                    builder_push(builder, props, prop);
+                }
+                break;
+
             case CLASS_ITEM_STATIC_BLOCK:
                 break;
         }
@@ -464,7 +501,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     Symbol const* base_decl = nullptr;
     bool has_base = class_base(me, class_decl, ctx, &base_instance, &base_decl);
     Ty const* base_static = nullptr;
-    if (has_base) base_static = ty_static_type_of(me, base_decl);
+    if (has_base && base_decl) base_static = ty_static_type_of(me, base_decl);
     if (base_static == ty || (base_static && base_static->kind != TY_DECLARED)) base_static = nullptr;
 
     if (!has_constructor) {
@@ -583,6 +620,38 @@ static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 d
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
     if (target->kind == TY_REFERENCE) target = target->reference.target;
     return has_base_type(me, source, target, 0);
+}
+
+// Whether a class (instance or static side) has a base that class_base() can't see all the members of: an `extends`
+// expression it can't resolve, or one whose type involves a type parameter (a mixin: tsc intersects the constructed
+// type with the base constraint's). Members can be missing from such a class
+static bool has_unresolved_base(Checker* me, Ty const* ty, bool static_side, u32 depth) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    if (depth > 32 || ty->kind != TY_DECLARED) return false;
+    if (ty->declared.kind != TY_DECLARED_CLASS_INSTANCE && ty->declared.kind != TY_DECLARED_CLASS_STATIC) return false;
+    Symbol const* decl = ty->declared.symbol;
+    if (!decl) return false;
+    LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (node->kind != SYMBOL_DECL_CLASS) continue;
+        ClassDecl const* class_decl = node->node;
+        if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) continue;
+        Ty const* base = nullptr;
+        Symbol const* base_decl = nullptr;
+        if (!class_base(me, class_decl, ctx, &base, &base_decl)) return true;
+        if (!base_decl) {
+            if (static_side) return true; // Statics aren't inherited from expressions
+            if (ty_expr_type(me, &class_decl->extends)->flags & (TYF_TYPE_PARAM | TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
+        }
+        if (base != ty && has_unresolved_base(me, base, static_side, depth + 1)) return true;
+    }
+    return false;
+}
+
+bool ty_has_unresolved_base(Checker* me, Ty const* ty) {
+    Ty const* target = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
+    bool static_side = target->kind == TY_DECLARED && target->declared.kind == TY_DECLARED_CLASS_STATIC;
+    return has_unresolved_base(me, ty, static_side, 0);
 }
 
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {

@@ -23,7 +23,37 @@ void inference_drop(Inference* inf) {
         free(inf->params[i].contra);
     }
     free(inf->params);
+    free(inf->visited);
     *inf = (Inference){0};
+}
+
+// False if the pair was there already
+static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
+    u64 key = ((u64)source->id << 32) | target->id;
+    if (!key) return true;
+    if ((inf->visited_len + 1) * 2 > inf->visited_cap) {
+        u32 cap = inf->visited_cap ? inf->visited_cap * 2 : 64;
+        u64* grown = calloc(cap, sizeof(u64));
+        panic_if(!grown, "out of memory");
+        for (u32 i = 0; i < inf->visited_cap; i++) {
+            u64 old = inf->visited[i];
+            if (!old) continue;
+            u32 at = (u32)((old * 0x9E3779B97F4A7C15ull) >> 32) & (cap - 1);
+            while (grown[at]) at = (at + 1) & (cap - 1);
+            grown[at] = old;
+        }
+        free(inf->visited);
+        inf->visited = grown;
+        inf->visited_cap = cap;
+    }
+    u32 at = (u32)((key * 0x9E3779B97F4A7C15ull) >> 32) & (inf->visited_cap - 1);
+    while (inf->visited[at]) {
+        if (inf->visited[at] == key) return false;
+        at = (at + 1) & (inf->visited_cap - 1);
+    }
+    inf->visited[at] = key;
+    inf->visited_len++;
+    return true;
 }
 
 static InferParam* inference_param(Inference* inf, Ty const* ty) {
@@ -464,7 +494,9 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             Ty const* apparent = ty_apparent_type(me, source);
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) source = apparent;
         }
-        if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) infer_from_objects(me, inf, source, target);
+        if ((source->flags & (TYF_OBJECT | TYF_INTERSECTION)) && visited_add(inf, source, target)) {
+            infer_from_objects(me, inf, source, target);
+        }
     }
     inf->depth--;
 }
@@ -474,6 +506,10 @@ void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target
     inf->contravariant = false;
     inf->original_target = target;
     inf->depth = 0;
+    if (inf->visited_len) {
+        memset(inf->visited, 0, sizeof(u64) * inf->visited_cap);
+        inf->visited_len = 0;
+    }
     infer_from(me, inf, source, target);
 }
 

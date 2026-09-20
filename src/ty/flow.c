@@ -40,7 +40,6 @@ static bool is_false_expr(Expr const* expr) {
 static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_);
 
 static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, FlowLabelOverride const* overrides, bool use_cache) {
-    bool unknown = false; // Something on the way may or may not stop control
     while (true) {
         u32 flags = flow->flags;
         if (flags & FLOW_SHARED && use_cache && !overrides) {
@@ -48,7 +47,7 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
             uintptr_t cached = (uintptr_t)intern_get(&my links, key, 2);
             FlowReachability ret = cached ? (FlowReachability)(cached - 1) : reachability_walk(me, flow, overrides, false);
             if (!cached) *intern_slot(me, &my links, key, 2) = (void const*)((uintptr_t)ret + 1);
-            return ret == FLOW_REACH_YES && unknown ? FLOW_REACH_UNKNOWN : ret;
+            return ret;
         }
         use_cache = true;
         if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION)) {
@@ -70,7 +69,7 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
                 FlowReachability branch = reachability_walk(me, antecedents->items[i], overrides, true);
                 if (branch != FLOW_REACH_NO) ret = branch;
             }
-            return ret == FLOW_REACH_YES && unknown ? FLOW_REACH_UNKNOWN : ret;
+            return ret;
         } else if (flags & FLOW_LOOP_LABEL) {
             // A loop is reachable if the way to its top is
             FlowList const* antecedents = label_antecedents(flow, overrides);
@@ -84,10 +83,10 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
             FlowReduceLabel const* reduce = flow->node;
             FlowLabelOverride override = { overrides, reduce->target, reduce->antecedents };
             FlowReachability ret = reachability_walk(me, flow->antecedent, &override, true);
-            return ret == FLOW_REACH_YES && unknown ? FLOW_REACH_UNKNOWN : ret;
+            return ret;
         } else {
             if (flags & FLOW_UNREACHABLE) return FLOW_REACH_NO;
-            return unknown ? FLOW_REACH_UNKNOWN : FLOW_REACH_YES;
+            return FLOW_REACH_YES;
         }
     }
 }

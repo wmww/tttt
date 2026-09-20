@@ -1722,6 +1722,10 @@ static bool parse_function_args(
 
                 ModifierList modifier_list;
                 parse_modifier_list(&p, true, &modifier_list);
+                bool is_readonly_property = modifier_list.includes[MODIFIER_READONLY];
+                bool is_parameter_property = is_readonly_property || modifier_list.includes[MODIFIER_PUBLIC] ||
+                    modifier_list.includes[MODIFIER_PROTECTED] || modifier_list.includes[MODIFIER_PRIVATE] ||
+                    modifier_list.includes[MODIFIER_OVERRIDE];
                 modifier_list_drop(&modifier_list);
                 hop_whitespace(&p);
 
@@ -1763,6 +1767,8 @@ static bool parse_function_args(
                     .explicit_optional = explicit_optional,
                     .rest = rest,
                     .decorators = decorators,
+                    .is_parameter_property = is_parameter_property,
+                    .is_readonly_property = is_readonly_property,
                 });
 
                 if (p.pos == before_param) {

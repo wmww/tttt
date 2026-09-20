@@ -84,19 +84,17 @@ approach (fast in principle; watch error-recovery fidelity since tsc's parse err
 
 Things that were or are **foundationally wrong for the stated goal**. 1, 2 and 5 are fixed (the type core
 migration, plan 02, now deleted: see git history for the plan and `documentation.md` for the result); 3 and 4 are
-next (symbols = plan 04, flow = plan 05, see the course correction above):
+fixed too (symbols = plan 04, flow = plan 05, see the course correction above):
 1. ~~Types are value-semantic trees with no identity (clone/drop, clone-and-substitute generics)~~ **Fixed**: `Ty`.
 2. ~~The relation cache is keyed by a string rendering of both types~~ **Fixed by plan 02 stage 3**: relations run
    on `Ty` with id-keyed caches; `type_pair_cache.h` and the `hash_key` display mode are deleted.
-3. **No control flow analysis at all.** No narrowing by typeof/instanceof/truthiness/discriminants/assignment, no
-   reachability, no definite assignment. A huge share of real-world TS and of the test suite depends on it. It
-   needs a flow graph (or equivalent) built at bind time, plus per-reference-per-flow-node caching - which in turn
-   wants cheap type identity. **In progress (plan 05):** the graph exists (stage 1: built in the resolve walk,
-   tsc's node model, binder-side reachability, +11% resolve time) and so does the engine (stage 2: tsc's
-   `getFlowTypeOfReference` with loops, closures, type facts, TS2454; the real corpus went 7777 -> 3984 diagnostics,
-   typecheck +37%), and the rest of narrowing (stage 3: type predicates end to end, assertions, `never` calls, typed
-   reachability, discriminants, switch, `instanceof`, `in`; corpus 3984 -> 1626, typecheck another +15%). What the
-   corpus reports now is inference and contextual typing, not flow. Left: fallout, the profile (stage 4).
+3. ~~No control flow analysis at all~~ **Fixed by plan 05** (4 stages, plan deleted: `documentation.md` "Control
+   flow" describes the result, `hacks.md` "Narrowing" what is left out): tsc's flow graph built in the resolve walk,
+   `getFlowTypeOfReference` with loops/closures/type facts, type predicates end to end, assertions, `never` calls,
+   typed reachability, discriminants, switch, `instanceof`, `in`, TS2454. Real corpus 7777 -> 1626 diagnostics. Stage 4
+   took TS2339 / "possibly undefined" out from behind its legacy gate (corpus 1750 now: the +124 are real bugs the gate
+   hid, mostly aliased conditions and weak inference, see `triage.md`) and profiled: three algorithmic blowups (none
+   in the flow engine itself) took the corpus typecheck from 778 to **352 ms, wall 0.57 s vs tsgo 0.79 s**.
 4. ~~Scopes are discarded after name resolution; there's no persistent symbol table~~ **Fixed by plan 04 stage 1**
    (class/interface members are still not symbols, see the plan).
 5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST

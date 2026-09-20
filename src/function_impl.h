@@ -16,6 +16,9 @@ typedef struct FunctionArg {
     Span rest_span;
     bool rest;
     VecExpr decorators; // TODO: only checked as expressions
+    // `constructor(public x: T)`: also declares a property of the class
+    bool is_parameter_property;
+    bool is_readonly_property;
 } FunctionArg;
 
 void function_arg_drop(FunctionArg* me);

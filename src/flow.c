@@ -200,7 +200,7 @@ static bool binary_op_is_assignment(BinaryOp op) {
     return op >= BINARY_OP_EQUAL && op <= BINARY_OP_EH_EH_EQUAL;
 }
 
-static bool expr_is_entity_name(Expr const* me) {
+bool expr_is_entity_name(Expr const* me) {
     while (my tag == EXPR_PROPERTY && my property->form == PROPERTY_EXPR_DOT) me = &my property->expr;
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword;
 }

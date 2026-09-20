@@ -2,6 +2,18 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 05 stage 4: TS2339 ungated, parameter properties, expression bases, the profile
+Suite: **1756 full of 13163** (was 1742), errors 6561 (6536), symbols 8475, types 3816 (3814). 73 tests gained a
+component, 48 lost their errors component honestly (spurious TS2339 / TS18046-18048 the gate used to hide, see
+`triage.md`). Missing TS2339 937 -> 536, spurious 0 -> 434 in 119 tests (37 tests where it is the only difference).
+
+Real corpus: 1626 -> **1750 diagnostics** (79 TS2339, ~55 "possibly undefined"/`unknown`: real bugs, `triage.md`).
+
+`./bench.sh`: synthetic wall 0.36 s (tsgo 0.48), typecheck 86 ms, RSS 545 MB. Real corpus wall 0.98 -> **0.57 s (tsgo
+0.79, tsc 4.71)**, parse 120 ms, resolve 74 ms, **typecheck 778 -> 352 ms**, RSS 317 MB. The profile (14.6 G -> 7.2 G
+instructions) had nothing to do with the flow engine itself: N*N unions when widening enum literal unions, no visited
+set in `infer_from`, literal pairs through the full relation machinery. What is left on top is in `triage.md`.
+
 ## 2026-09-19, plan 05 stage 3: predicates, assertions, never calls, discriminants, switch, instanceof, in
 Suite: **1742 full of 13163** (was 1736), errors 6536 (6493), symbols 8475 (8409), types 3814 (3807). 111 tests gained
 a component, 3 lost one (`spreadBooleanRespectsFreshness`, `typeGuardNarrowBy(Mutable)UntypedField`: see `triage.md`).

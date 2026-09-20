@@ -160,15 +160,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   diagnostics (TS2300 in ~80 tests) still come from nowhere.
 - `symbol_table_collect` allocates; `ty_namespace_type` members and `extend_export_stars` go through it.
 - One test logs "Declaration B acquired multiple times" (a node whose names get added twice; not found yet).
-- `check_access`: no TS2339 on *modules* (`import * as ns; ns.missing`), only on namespaces. Members are by export
-  name now so it would be honest, but it costs nodeModulesTypesVersionPackageExports x3 (module resolution picks the
-  wrong file there). Drop the gate with stage 3 / package.json `exports`.
+- `check_access` reports TS2339 on modules too now (`import * as ns; ns.missing`): where module resolution picks the
+  wrong file (nodeModulesTypesVersionPackageExports) that shows as spurious TS2339 next to the TS2307s (plan 06).
 
 ## Control flow graph (`flow.c`, the builder parts of `expr.c`/`statement.c`/`function_impl.c`; plan 05)
-- `ty_flow_reachability()` answers `FLOW_REACH_UNKNOWN` for anything past a call node or a "no clause matched" switch
-  node; `infer_return_type()` and `function_impl_check_end()` only act on YES/NO. So TS2355/TS2366/TS7030/TS2378 and
-  the `| undefined` of an implicit return are missing for functions whose end comes after a call statement (most
-  functions that end in a call!) until plan 05 stage 3 types those nodes. Remove the third state then.
 - The checker half of TS7027 (tsc's `checkSourceElement`: statements whose flow node turns out unreachable) doesn't
   exist and `Statement` has no flow pointer: see the plan's stage 1 notes.
 - No `FLOW_ARRAY_MUTATION` nodes (`x.push()`, `x[i] = v`): only evolving array types need them (out of scope).
@@ -228,9 +223,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   generation number in `Checker.links`: the entries of finished generations are garbage until the checker dies.
 - `LazyMemo.hits`: expression memos allow 8 re-entrant evaluations before they answer the error type. It's a runaway
   guard, not a design: tsc has no expression-level cycle detection at all.
-- TS2339 / TS18048 on property access are still behind `noUncheckedIndexedAccess` (`check_access()`): "narrowing
-  comes first" was the reason, and narrowing is there now: stage 4 (`s.b` on a union that lacks `b` in
-  `test/probes/plan05/narrowingStage3.ts` is the one error that probe misses).
+- Aliased conditions (`const ok = x && f(x); if (ok) x.y`, tsc 4.4), narrowing by destructured discriminants
+  (`dependentDestructuredVariables`), inferred type predicates (tsc 5.5: `xs.filter(x => x !== undefined)`) and `in`
+  adding `Record<"a", unknown>` to `object`/`unknown` (`inKeywordTypeguard`) don't exist. They show as spurious
+  TS18048 / TS2339 now that property access is checked.
 
 ## The AST-side walk and what's left of the old type world
 - `TYPE_LAZY`, `TYPE_REF`, the binding `TYPE_INDEXED`, `CallableArg`, `type_clone` and its whole family are gone:
@@ -248,9 +244,20 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   are redone per query); arrays only, no iterables; an object rest is the whole object.
 - `FunctionImpl.constructed_class`: a class constructor's return type is `ty_class_instance_type()` of its class,
   set in `class_decl_lookup_names` (which also reports TS1093 and drops a written return type).
-- `ty/check.c: check_access` (TS2339 and friends): a missing property is only reported under
-  `noUncheckedIndexedAccess` and for dot access, the gate the legacy checker had. Everything is in place to report it
-  honestly (`ty_access` returning null), but it floods until narrowing and apparent types of everything are right.
+- `ty/check.c: check_access` (TS2339 and friends) is honest about unions, intersections, `null`/`undefined` and
+  `unknown` objects since plan 05 stage 4, but lets through what it knows the type core can't answer yet: **JS files**
+  (members declared by assignment: `this.x = 1`, `module.exports`, prototypes), **callables without construct
+  signatures** (expando functions, `function f() {} f.x = 1`, also in TS), **generic mapped types** (`Pick<T, K>`,
+  `Readonly<T>`: members only through the constraint) and **classes with a base `class_base()` can't fully see**
+  (`ty_has_unresolved_base()`: mixins `class extends B` with `B: T`, unresolvable `extends` expressions, the static
+  side of any expression base). Bracket access never reports a missing property. TS2550 ("do you need to change
+  your target library") and TS2551 ("did you mean") are reported as TS2339 / not at all; TS18050 never.
+- `expr_typecheck()` `EXPR_PROPERTY`: everything after the `?.` of a chain is checked against the non-nullable type
+  of its object, because the `undefined` of the short circuit isn't told apart from one the property has itself
+  (tsc: `optionalType` marker): `a?.b.c` with `b?: X` misses its TS18048.
+- `class_base()` (`ty/members.c`): an `extends` that isn't a class name is the return type of the *first* construct
+  signature of the expression's type; no written type arguments, no static side, no intersection with the base
+  constraint for mixins (hence the gate above).
   A source that is `any` is let through to anything, even `never` (`check_assignable`).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
   (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently (TS18050, never emitted here).

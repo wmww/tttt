@@ -170,8 +170,13 @@ Ty const* ty_widened_literal(Checker* me, Ty const* ty) {
         if (any_literal) {
             u32 len = ty->composite.types.len;
             Ty const** widened = malloc(sizeof(Ty const*) * len);
-            for (u32 i = 0; i < len; i++) widened[i] = ty_widened_literal(me, ty->composite.types.data[i]);
-            Ty const* ret = ty_union(me, widened, len, nullptr, (TyList){0});
+            // Members of one enum all widen to the same (possibly huge) union: once is enough
+            u32 count = 0;
+            for (u32 i = 0; i < len; i++) {
+                Ty const* part = ty_widened_literal(me, ty->composite.types.data[i]);
+                if (!count || widened[count - 1] != part) widened[count++] = part;
+            }
+            Ty const* ret = ty_union(me, widened, count, nullptr, (TyList){0});
             free(widened);
             return ret;
         }
@@ -1422,6 +1427,12 @@ static bool check_related(
     st->overflow = false;
     st->outer = my relating;
     if (!st->reporting && (source == target || is_simple_related(me, st, source, target))) return true;
+    if (!st->reporting && !is_structured(source) && !is_structured(target)) {
+        // Nothing to look into (narrowing asks this about every member of big literal unions): see is_related_to()
+        if (relation != TY_RELATION_COMPARABLE || source->kind != TY_INTRINSIC) return false;
+        Ty const* widened = ty_widened_literal(me, target);
+        return widened != target && widened == source;
+    }
     my relating = st;
     Ternary result = is_related_to(me, st, source, target, st->reporting);
     my relating = st->outer;
@@ -1447,6 +1458,19 @@ static bool check_related(
         c_drop(cstr, &source_str, &target_str);
     }
     return result != TERNARY_FALSE;
+}
+
+bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b) {
+    if (a == b) return true;
+    // Two string or number literals (enum members included) of different values never are, and discriminant
+    // narrowing asks that about every member of a union
+    u32 valued = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL;
+    if (a->kind == TY_LITERAL && b->kind == TY_LITERAL && (a->flags & valued) && (b->flags & valued) &&
+        !same_literal_value(a, b)
+    ) {
+        return false;
+    }
+    return ty_is_related(me, a, b, TY_RELATION_COMPARABLE) || ty_is_related(me, b, a, TY_RELATION_COMPARABLE);
 }
 
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation) {

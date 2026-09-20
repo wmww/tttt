@@ -2,6 +2,7 @@
 #include "scope.h"
 #include "display.h"
 #include "error.h"
+#include "source_file.h"
 
 // Checks the statement/expression walk asks of the new core, and how their errors are worded.
 
@@ -65,10 +66,6 @@ void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, S
     check_assignable(me, "Argument of type", source, "parameter of type", target, 2345, span, errs);
 }
 
-bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b) {
-    return ty_is_related(me, a, b, TY_RELATION_COMPARABLE) || ty_is_related(me, b, a, TY_RELATION_COMPARABLE);
-}
-
 Ty const* ty_of_node(TypeNode const* node) {
     return ty_from_node(current_checker, node, (LowerCtx){ .generic = true });
 }
@@ -86,18 +83,41 @@ static cstr index_name(Checker* me, Ty const* index) {
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, ErrorCtx* errs) {
     cstr name = index_name(me, index);
     cstr object_str = ty_to_cstr(me, object);
-    error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
+    Error* error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
+    if (error && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+        // Which member it is that lacks it
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            Ty const* member = object->composite.types.data[i];
+            if ((member->flags & TYF_NULLABLE) || ty_access(me, member, index)) continue;
+            cstr member_str = ty_to_cstr(me, member);
+            cstr message = cstr_null;
+            cstr_append_d(&message, DEFAULT_DISPLAY, "Property '", name, "' does not exist on type '", member_str, "'.");
+            error_sub_error_s(error, (Span){0}, TS_CODE_NONE, message);
+            cstr_drop(&member_str);
+            break;
+        }
+    }
     c_drop(cstr, &name, &object_str);
 }
 
+static bool is_js_file(SourceFile const* file) {
+    if (!file) return false;
+    csview path = file->display_path_override ? csview_from(file->display_path_override) : cstr_sv(&file->canonical_path);
+    return csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".mjs") ||
+        csview_ends_with(path, ".cjs");
+}
+
 static void check_access(
-    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool error_if_not_found,
-    u32 depth, ErrorCtx* errs
+    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
+    bool error_if_not_found, u32 depth, ErrorCtx* errs
 ) {
     if (depth > 8) return;
     if (index->kind == TY_UNION || index->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < index->composite.types.len; i++) {
-            check_access(me, object, index->composite.types.data[i], object_span, index_span, error_if_not_found, depth + 1, errs);
+            check_access(
+                me, object, index->composite.types.data[i], object_span, index_span, object_is_named,
+                error_if_not_found, depth + 1, errs
+            );
         }
         return;
     }
@@ -109,13 +129,43 @@ static void check_access(
         return;
     }
 
-    if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) {
+    if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+        // Possibly null/undefined is said once about the whole object, a missing property about the whole union
+        bool has_null = false, has_undefined = false, opaque = false;
         for (u32 i = 0; i < object->composite.types.len; i++) {
-            check_access(me, object->composite.types.data[i], index, object_span, index_span, error_if_not_found, depth + 1, errs);
+            Ty const* member = object->composite.types.data[i];
+            has_null |= (member->flags & TYF_NULL) != 0;
+            has_undefined |= (member->flags & TYF_UNDEFINED) != 0;
+            opaque |= (member->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
         }
+        if ((has_null || has_undefined) && compiler_options()->strict_null_checks) {
+            const char* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
+            if (object_is_named) {
+                error_ctx_error_d(
+                    errs, object_span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
+                    "'", object_span, "' is possibly '", what, "'."
+                );
+            } else {
+                error_ctx_error_d(
+                    errs, object_span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
+                    "Object is possibly '", what, "'."
+                );
+            }
+            return;
+        }
+        if (opaque || !error_if_not_found) return;
+        if (!ty_access(me, object, index)) report_no_property(me, object, index, 2339, index_span, errs);
         return;
     }
     if (object->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
+    if (object->flags & TYF_UNKNOWN) {
+        if (object_is_named) {
+            error_ctx_error_d(errs, object_span, 18046, "'", object_span, "' is of type 'unknown'.");
+        } else {
+            error_ctx_error_d(errs, object_span, 2571, "Object is of type 'unknown'.");
+        }
+        return;
+    }
     bool is_empty_tuple = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_TUPLE_TARGET;
     if (ty_is_tuple(object) || is_empty_tuple) {
         TupleShape const* shape = is_empty_tuple ? object->declared.tuple : object->reference.target->declared.tuple;
@@ -134,28 +184,27 @@ static void check_access(
     }
     if (ty_is_array(me, object)) return;
 
-    // HACK: a missing property is only an error under noUncheckedIndexedAccess, which is how the checker this was
-    // ported from kept the noise of everything it couldn't type yet out of the way. Narrowing (plan 03) comes first
-    // Namespaces are the exception: their members are exactly their exports
-    bool is_namespace = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
-        object->declared.namespace_symbol && !symbol_members(object->declared.namespace_symbol)->is_module;
-    if (!error_if_not_found || !(compiler_options()->no_unchecked_indexed_access || is_namespace)) return;
-    if (object->flags & TYF_NULLABLE) {
-        error_ctx_error_d(
-            errs, object_span, 18047,
-            "'", object_span, "' is possibly '", object->flags & TYF_NULL ? "null" : "undefined", "'."
-        );
-        return;
+    if (!error_if_not_found) return;
+    // HACK: no expando members yet (`function f() {} f.x = 1`, and everything JS files declare by assignment:
+    // `this.x = 1`, `module.exports.x`, prototype assignments), so callables and JS files are let through
+    if (is_js_file(index_span.source)) return;
+    if (object->flags & TYF_OBJECT) {
+        Members const* members = ty_members(me, object);
+        if (members->call_count && !members->construct_count) return;
+        // HACK: a mapped type over something generic (`Pick<T, K>`) only knows its members through its constraint
+        if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+        if (ty_has_unresolved_base(me, object)) return;
     }
+    if (object->flags & TYF_NULLABLE) return; // TODO: TS18050 (the value 'undefined' cannot be used here)
     if (ty_access(me, object, index)) return;
     report_no_property(me, object, index, 2339, index_span, errs);
 }
 
 void ty_check_property_access(
-    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool error_if_not_found,
-    ErrorCtx* errs
+    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
+    bool error_if_not_found, ErrorCtx* errs
 ) {
-    check_access(me, object, index, object_span, index_span, error_if_not_found, 0, errs);
+    check_access(me, object, index, object_span, index_span, object_is_named, error_if_not_found, 0, errs);
 }
 
 // Whether type argument `index` satisfies the constraint of its type parameter, given all the arguments

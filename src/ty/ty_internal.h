@@ -94,6 +94,11 @@ typedef struct Inference {
     u32 depth;
     Ty const* visiting_sources[INFER_MAX_DEPTH];
     Ty const* visiting_targets[INFER_MAX_DEPTH];
+    // (source id, target id) of the object pairs one infer_types() walked already (tsc's `visited`): a type graph
+    // is a DAG with a lot of sharing, and walking every path to a pair is exponential. Open addressing, 0 is empty
+    u64* visited;
+    u32 visited_cap;
+    u32 visited_len;
 } Inference;
 
 void inference_init(Inference* inf, TyList params);

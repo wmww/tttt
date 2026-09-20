@@ -129,8 +129,12 @@ static Ty const* widen_enum_literals(Checker* me, Ty const* ty) {
         if (!any) return ty;
         u32 len = ty->composite.types.len;
         Ty const** parts = malloc(sizeof(Ty const*) * len);
-        for (u32 i = 0; i < len; i++) parts[i] = widen_enum_literals(me, ty->composite.types.data[i]);
-        Ty const* ret = ty_union(me, parts, len, nullptr, (TyList){0});
+        u32 count = 0;
+        for (u32 i = 0; i < len; i++) {
+            Ty const* part = widen_enum_literals(me, ty->composite.types.data[i]);
+            if (!count || parts[count - 1] != part) parts[count++] = part; // Members of one enum are neighbours
+        }
+        Ty const* ret = ty_union(me, parts, count, nullptr, (TyList){0});
         free(parts);
         return ret;
     }

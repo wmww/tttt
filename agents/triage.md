@@ -269,3 +269,33 @@ Uninvestigated items. Triage sessions drain this.
 - Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775 / TS2776 (assertion
   callee without explicit types), TS1225 (no such parameter), inferred predicates (tsc 5.5), `x is T` where the
   function returns a non-boolean (TS2322 on return) are all missing.
+
+## Plan 05 stage 4: what ungating TS2339 / "possibly undefined" shows (all real bugs, none investigated)
+Corpus (`./realworld.py`, 1750): 79 TS2339, ~55 TS18048/TS2532/TS18046 on top of the 1626 of stage 3.
+- Aliased conditions: `const sourceFile = resolvedModule && ...; if (sourceFile) resolvedModule.x` (10 + 7 + 5...),
+  inferred predicates (`filter(f => f !== undefined)`). See `hacks.md` "Narrowing".
+- `unknown` where tsc infers a type (`s`, `prop`, `m`, `data`: ~20 TS18046; suite: intraExpressionInferences,
+  inferFromGenericFunctionReturnTypes2, mappedTypeRecursiveInference, reverseMappedUnionInference, promiseChaining).
+- The `computedOptions` mapped type in `utilities.ts` (`{ [K in keyof ...]: ... }` printed with a huge `keyof "a" &
+  keyof "b"` key type, ~25 TS2339): a homomorphic mapped type over a `satisfies`/const object doesn't resolve its keys.
+- `JsxCallLike`, `Mutable<T>`, `T & {}`, `Exclude<A, B>` objects: access on unions/aliases that should have been
+  narrowed or resolved through a constraint.
+Suite (48 tests lost their errors component, 73 gained one; `./failstats.py --code TS2339`):
+- Module augmentation / `export =` merges don't add members (moduleAugmentationsImports3/4, augmentExportEquals6_1,
+  umd-augmentation-3/4, moduleAugmentationDoes*MergeOfReexport).
+- `this` types in intersections and fluent classes (intersectionThisTypes, fluentClasses), tuple unions
+  (`sliceResultCast`: `slice` on `[a, b] | [a, b, c]`), `for-of58`, `exportEqualsDefaultProperty`.
+- TS2550 instead of TS2339 for members of newer libs (doYouNeedToChangeYourTargetLibrary*: ~80 diagnostics), TS2551.
+- Class expressions print as `''` in messages (`Property 'x' does not exist on type ''`), tsc says `(Anonymous class)`.
+- Missing TS2339 is still 536 in 231 tests: the gates in `check_access()` (JS, callables, mapped, unresolved bases),
+  bracket access (TS7053), and whatever is typed `any` by failure.
+
+## Profile of the corpus after plan 05 stage 4 (callgrind, 7.2 G instructions, typecheck 352 ms)
+Fixed in stage 4: widening a union of N enum members built an N*N union (`ty_widened_literal`), `infer_from` had no
+visited set (exponential on shared type graphs, 30%), unstructured pairs went through the whole relation machinery.
+Still on top: `is_simple_related` + `check_related` 24% (3.9 M `ty_is_comparable_either_way` from discriminant /
+equality narrowing: tsc has a key property map for unions of 10+ members, `narrow_by_discriminant()` asks every member
+every query), `ty_enum_of_member` -> `ty_declared_type_of` -> `intern_slot` 9% (4 M calls: cache the enum type on the
+member literal), `narrowed_type` 8%, `ty_union_subtype_reduced` 2.5%, `call_effects` interning 0.5%. The parser's
+`parse_fail`/`hop_start_if_ends_on_word_break` are visible again (~5%).
+

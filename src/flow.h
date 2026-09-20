@@ -218,5 +218,6 @@ bool expr_is_optional_chain_root(Expr const* me); // Has the `?.` itself
 bool expr_is_narrowing(Expr const* me); // isNarrowingExpression
 bool expr_is_narrowable_reference(Expr const* me);
 bool expr_is_dotted_name(Expr const* me);
+bool expr_is_entity_name(Expr const* me); // isEntityNameExpression: `a.b.c`, no keywords
 
 FlowList* flow_list_concat(FlowBuilder* me, FlowList const* a, FlowList const* b, FlowList const* c);

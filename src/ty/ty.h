@@ -584,6 +584,7 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 Ty const* prop_type(Checker* me, Prop const* prop);
+bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
 void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
@@ -692,7 +693,6 @@ typedef struct FlowNode FlowNode;
 typedef enum FlowReachability {
     FLOW_REACH_NO,
     FLOW_REACH_YES,
-    FLOW_REACH_UNKNOWN, // Depends on types the checker can't ask about yet: a call that may never return, a switch that may be exhaustive
 } FlowReachability;
 FlowReachability ty_flow_reachability(Checker* me, FlowNode const* flow); // null: no
 // Whether control can fall off the end of the function's body
@@ -740,8 +740,8 @@ bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker
 // `object[index]` / `object.name`: TS2538, TS2493, TS2339...
 void ty_check_property_access(
-    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool error_if_not_found,
-    ErrorCtx* errs
+    Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
+    bool error_if_not_found, ErrorCtx* errs
 );
 bool ty_type_argument_satisfies_constraint(Checker* me, TyList params, VecSpannedType const* args, u32 index);
 
