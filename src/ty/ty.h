@@ -471,6 +471,19 @@ typedef enum TyIntrinsic {
     TY_INTRINSIC_COUNT,
 } TyIntrinsic;
 
+// Control flow queries in progress (flow.c)
+typedef struct FlowLoopEntry {
+    struct FlowNode const* flow; // A loop label whose back edges are being walked
+    u32 key; // For which reference
+    TyBuf* types; // What its antecedents gave so far
+} FlowLoopEntry;
+
+typedef struct FlowSharedEntry {
+    struct FlowNode const* flow;
+    Ty const* type;
+    bool incomplete;
+} FlowSharedEntry;
+
 struct Checker {
     Program* program;
     struct Binder const* binder;
@@ -492,6 +505,20 @@ struct Checker {
     RelationCache relations[TY_RELATION_COUNT];
     struct RelationState* relating; // The relation check in progress, if any (relate.c)
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
+    // Control flow (flow.c). While flow_uncached is set expressions are evaluated without reading unfinished memos or
+    // writing any: what they evaluate to may depend on the incomplete types of a loop, see ty_flow_expr_type()
+    u32 flow_uncached;
+    u32 flow_incomplete_seen; // Counts incomplete loop types handed out
+    u32 flow_key_count; // Reference keys made
+    u32 flow_expr_generation; // Which cache ty_flow_expr_type() uses while a loop is in progress: one per back edge walk
+    u32 flow_expr_generations;
+    FlowLoopEntry* flow_loops; // The loops in progress. A self-contained evaluation (a declaration) only sees its own,
+    u32 flow_loop_start;       // from flow_loop_start on
+    u32 flow_loop_count;
+    u32 flow_loop_cap;
+    FlowSharedEntry* flow_shared; // The shared nodes the queries in progress have been through
+    u32 flow_shared_count;
+    u32 flow_shared_cap;
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
 };
@@ -651,6 +678,40 @@ FlowReachability ty_flow_reachability(Checker* me, FlowNode const* flow); // nul
 // Whether control can fall off the end of the function's body
 FlowReachability ty_function_end_reachability(Checker* me, FunctionImpl const* function);
 bool ty_extends_array(Checker* me, Ty const* ty); // Assignable to `readonly any[]`
+// The type of a reference (identifier, `this`, property access) at a flow node: `declared` narrowed by the
+// assignments and conditions on the way there. `initial`: what it is where its container starts. tsc's
+// getFlowTypeOfReference()
+Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, Ty const* initial, FlowNode const* flow);
+// The type of an expression for the flow engine: never through an unfinished memo
+Ty const* ty_flow_expr_type(Checker* me, Expr const* expr);
+// TS2454: a variable that is read where it may not have been assigned yet
+bool ty_identifier_used_before_assigned(Checker* me, IdentifierExpr const* identifier);
+// Type facts, for the operators
+Ty const* ty_truthy_part(Checker* me, Ty const* ty); // What is left of x where `x` was truthy
+Ty const* ty_non_nullish_part(Checker* me, Ty const* ty);
+Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty); // Without the members that are always falsy
+Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string, `true` -> boolean
+bool ty_can_be_truthy(Checker* me, Ty const* ty);
+bool ty_can_be_falsy(Checker* me, Ty const* ty);
+bool ty_can_be_nullish(Checker* me, Ty const* ty);
+// Declarations evaluate self-contained: not in uncached mode, and with no loop in progress (tsc's
+// checkExpressionCached()). What they evaluate to is complete and can be remembered
+typedef struct FlowIsolation {
+    u32 uncached;
+    u32 loop_start;
+    u32 expr_generation;
+} FlowIsolation;
+static inline FlowIsolation ty_flow_isolate(Checker* me) {
+    FlowIsolation saved = { my flow_uncached, my flow_loop_start, my flow_expr_generation };
+    my flow_uncached = 0;
+    my flow_loop_start = my flow_loop_count;
+    return saved;
+}
+static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
+    my flow_uncached = saved.uncached;
+    my flow_loop_start = saved.loop_start;
+    my flow_expr_generation = saved.expr_generation;
+}
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co

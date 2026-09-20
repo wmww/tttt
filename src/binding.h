@@ -24,6 +24,8 @@ typedef struct Binding {
     bool rest; // `...x` as an element of an array or object pattern
     Span element_span; // With the `...` and the default, only valid for elements of a pattern
     Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
+    bool definitely_assigned; // `let x!: T`
+    bool optional_parameter; // `x?: T` of a function: read as `T | undefined`
     bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
     Span explicit_type_span; // Only valid if has_explicit_type
     TypeNode explicit_type; // The type explicitly specified
@@ -47,6 +49,8 @@ typedef struct BindingAddNamesProps {
     bool exported;
     bool is_function_arg;
     bool function_scoped; // `var`
+    bool is_const;
+    bool is_ambient; // `declare`
     Span full;
 } BindingAddNamesProps;
 

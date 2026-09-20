@@ -500,6 +500,12 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         error_ctx_error_d(scope->errs, symbol->decls[0].name, 2434,
             "A namespace declaration cannot be located prior to a class or function with which it is merged.");
     }
+    if (props.kind == SYMBOL_DECL_VARIABLE) {
+        // (Also when it merges into something that isn't a variable: a `declare const never` and the type `never`)
+        symbol->is_const = props.is_const;
+        symbol->is_parameter = props.is_parameter;
+        symbol->is_ambient |= scope->ambient || props.is_ambient;
+    }
     if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;

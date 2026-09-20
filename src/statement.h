@@ -38,7 +38,7 @@ typedef struct VariableStatement {
 } VariableStatement;
 
 void variable_statement_drop(VariableStatement* me);
-void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported);
+void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared);
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs);
 

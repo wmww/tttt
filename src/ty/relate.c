@@ -132,6 +132,9 @@ static Ty const* global_type(Checker* me, GlobalType which) {
     return my global_types[which];
 }
 
+Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_FUNCTION); }
+Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
+
 // The type of a regular expression literal
 Ty const* ty_global_regexp_type(Checker* me) {
     Ty const* regexp = global_type(me, GLOBAL_REGEXP);

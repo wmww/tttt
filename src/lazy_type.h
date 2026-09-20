@@ -7,6 +7,7 @@ typedef struct LazyMemo {
     bool evaluation_started;
     bool is_self_referential;
     bool done;
+    unsigned char hits; // Expressions: re-entrant evaluations so far
     struct Ty const* evaluated;
     // Expressions: the contextual type `evaluated` was computed with, see ty_check_expr()
     struct Ty const* context;

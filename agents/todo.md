@@ -5,11 +5,11 @@ Plan 04 (symbols / new binder) is complete and its plan file deleted: `documenta
 "Resolve names") describes the result, `measurements.md` the numbers, `hacks.md` ("The binder") the open ends
 including the parallelism contract audit.
 
-1. **Execution x3 - `plans/05-flow-analysis.md`**, one stage per session (stage 1, the flow graph in the resolve walk,
-   is done: read the plan's "Stage 1 is done" notes; 2 the engine + basic narrowing, 3 predicates/assertions/
-   discriminants/switch/typed reachability, 4 fallout + measurement).
-   Stage 2 starts with the re-entrancy probe (expression memos vs incomplete loop types): it's the one design risk.
-   This is what the real corpus is waiting for: ~7000 of its 7754 diagnostics are missing narrowing.
+1. **Execution x2 - `plans/05-flow-analysis.md`**, one stage per session (stages 1-2 are done: read the plan's "Stage 1
+   is done" and "Stage 2 is done" notes; 3 predicates/assertions/`never` calls/discriminants/switch/instanceof/in +
+   typed reachability, 4 fallout + measurement + profile).
+   Stage 3 is what the real corpus is waiting for now: 3984 diagnostics left, 2366 of them TS2345 of the
+   `Node => Expression` kind (predicates, `node.kind ===` discriminants, `Debug.assert`).
 2. **Planning + execution - module resolution -> `plans/06-module-resolution.md`** (can run before or after plan 05,
    independent of it): `typeRoots`/`types`/`/// <reference types>`, automatic `@types` inclusion, `paths`/`baseUrl`,
    package.json `types`/`typings`/`exports`/`typesVersions`, node16/bundler rules and `.mts`/`.cts`, tsconfig in the

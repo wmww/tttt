@@ -36,6 +36,8 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
                 .node = me,
                 .is_parameter = props.is_function_arg,
                 .function_scoped = props.function_scoped,
+                .is_const = props.is_const,
+                .is_ambient = props.is_ambient,
             });
             break;
 
@@ -60,9 +62,15 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
 }
 
 void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
+    Binding const* outer_root = names->flow ? names->flow->binding_root : nullptr;
+    if (names->flow && !my parent) names->flow->binding_root = me;
     switch (my tag) {
-        case BINDING_NOOP:
-        case BINDING_IDENTIFIER: break;
+        case BINDING_NOOP: break;
+
+        case BINDING_IDENTIFIER:
+            // The flow container the variable belongs to: elsewhere it is assumed to be initialized
+            if (my symbol && !my symbol->flow_start && names->flow) my symbol->flow_start = names->flow->start;
+            break;
 
         case BINDING_ARRAY:
             for_each (i, vec_binding, &my array) {
@@ -86,6 +94,7 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_lookup_names(&my explicit_type, names, errs);
     }
+    if (names->flow && !my parent) names->flow->binding_root = outer_root;
 }
 
 // The default of a parameter or of an element of a pattern is only evaluated sometimes (tsc: bindInitializer())

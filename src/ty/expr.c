@@ -1,4 +1,7 @@
 #include "ty/ty_internal.h"
+#include "flow.h"
+#include "binding.h"
+#include "compiler_options.h"
 #include "program.h"
 #include "class_decl.h"
 #include "scope.h"
@@ -59,6 +62,11 @@ static bool kind_uses_context(Expr const* expr) {
 Ty const* ty_expr_type(Checker* me, Expr const* expr) {
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return ty_compute_expr_without_context(me, expr); // implicit any and friends
+    if (my flow_uncached) {
+        // For the flow engine (ty_flow_expr_type()): finished memos only, and nothing is remembered
+        LazyMemo* memo = lazy_type_state_peek(lazy);
+        return memo && memo->done ? memo->evaluated : ty_compute_expr_without_context(me, expr);
+    }
     return lazy_type_get(lazy); // Detects cycles
 }
 
@@ -71,6 +79,7 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     }
     if (!ctx.contextual && !ctx.is_const) return ty_expr_type(me, expr); // through the LazyType, which detects cycles
     Ty const* ret = compute(me, expr, ctx);
+    if (my flow_uncached) return ret;
     lazy_type_set(lazy, ret, ctx.contextual);
     return ret;
 }
@@ -439,6 +448,86 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     return ty_type_of_symbol(me, decl);
 }
 
+static bool includes_undefined(Ty const* ty) {
+    if (ty->flags & TYF_UNDEFINED) return true;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & TYF_UNDEFINED) return true;
+    }
+    return false;
+}
+
+static Ty const* base_type_of_literal(Checker* me, Ty const* ty) { return ty_base_type_of_literal(me, ty); }
+
+// The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
+static Ty const* identifier_flow_type(Checker* me, Expr const* expr, bool* used_before_assigned) {
+    IdentifierExpr const* identifier = &expr->identifier;
+    Ty const* type = ty_identifier_reference_type(me, identifier);
+    Symbol const* symbol = identifier->target;
+    if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
+        return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;
+    }
+    if (!symbol || identifier->keyword || !(symbol->flags & SYMBOL_VARIABLE)) return type;
+    if (identifier->assignment_target == FLOW_TARGET_DEFINITE || !identifier->flow) return type;
+    Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
+    // Where nothing says otherwise, a variable is `undefined` until something is assigned to it
+    bool assume_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
+        (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID)) || !binding || binding->definitely_assigned ||
+        identifier->assume_initialized ||
+        includes_undefined(type);
+    Ty const* initial = type;
+    if (!assume_initialized) {
+        Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+        initial = ty_union(me, types, 2, nullptr, (TyList){0});
+    }
+    Ty const* flow_type = ty_flow_type(me, expr, type, initial, identifier->flow);
+    if (!assume_initialized && includes_undefined(flow_type)) {
+        *used_before_assigned = true;
+        return type;
+    }
+    return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
+}
+
+bool ty_identifier_used_before_assigned(Checker* me, IdentifierExpr const* identifier) {
+    bool ret = false;
+    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), &ret);
+    return ret;
+}
+
+// A reference that could have a key (flow.c): names and literal keys down to an identifier or `this`. Unlike the
+// builder's expr_is_narrowable_reference() also through `?.`: `typeof a?.b === "string" ? a?.b : ""`
+static bool is_narrowable_access(Expr const* expr) {
+    while (true) {
+        switch (expr->tag) {
+            case EXPR_IDENTIFIER:
+                return expr->identifier.keyword != KEYWORD_IDENTIFIER_IMPORT;
+            case EXPR_PROPERTY: {
+                Expr const* key = &expr->property->prop;
+                if (key->tag != EXPR_LITERAL && key->tag != EXPR_IDENTIFIER) return false;
+                expr = &expr->property->expr;
+                break;
+            }
+            case EXPR_UNARY_OP:
+                if (expr->unary_op->op != UNARY_OP_RIGHT_BANG) return false;
+                expr = &expr->unary_op->expr;
+                break;
+            default:
+                return false;
+        }
+    }
+}
+
+// tsc's getFlowTypeOfAccessExpression()
+static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type) {
+    PropertyExpr const* access = expr->property;
+    if (!access->flow || access->assignment_target == FLOW_TARGET_DEFINITE) return type;
+    if (!is_narrowable_access(expr)) return type;
+    // Methods don't narrow
+    if (type->kind == TY_ANONYMOUS && type->anonymous.function && type->anonymous.function->is_method) return type;
+    Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
+    return access->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
+}
+
 // Operators
 
 static bool extends_strict_nulls(Checker* me, Ty const* source, TyIntrinsic target) {
@@ -448,23 +537,13 @@ static bool extends_strict_nulls(Checker* me, Ty const* source, TyIntrinsic targ
 static bool is_definitely_falsy(Ty const* ty) {
     if (ty->flags & (TYF_NULLABLE | TYF_VOID)) return true;
     if (ty->kind != TY_LITERAL || (ty->flags & TYF_ENUM)) return false;
+    if (ty->flags & TYF_STRING_LITERAL) return !ty->literal.string || ty->literal.string->len == 0; // (The value's string is borrowed)
     return !value_to_boolean(&ty->literal.value);
 }
 
 // The part of a type that survives `x || ...` being taken: x was truthy
 static Ty const* remove_definitely_falsy(Checker* me, Ty const* ty) {
-    if (ty->flags & TYF_BOOLEAN) return ty_intrinsic(me, TY_TRUE);
-    if (is_definitely_falsy(ty)) return ty_intrinsic(me, TY_NEVER);
-    if (ty->kind != TY_UNION) return ty;
-    TyList members = ty->composite.types;
-    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
-    u32 len = 0;
-    for (u32 i = 0; i < members.len; i++) {
-        if (!is_definitely_falsy(members.data[i])) kept[len++] = members.data[i];
-    }
-    Ty const* ret = len == members.len ? ty : ty_union(me, kept, len, nullptr, (TyList){0});
-    free(kept);
-    return ret;
+    return ty_remove_definitely_falsy(me, ty);
 }
 
 // The falsy values a type allows: what `x && ...` is when x was falsy
@@ -550,14 +629,22 @@ static Ty const* binary_result(Checker* me, Ty const* left, BinaryOp op, Ty cons
             return ty_intrinsic(me, TY_BOOLEAN);
 
         case BINARY_OP_AND_AND:
+            if (!ty_can_be_truthy(me, left)) return left;
             if (!compiler_options()->strict_null_checks) return right;
             return union_of_two(me, definitely_falsy_part(me, left), right);
 
-        case BINARY_OP_OR_OR:
-            return union_of_two(me, remove_definitely_falsy(me, left), right);
+        case BINARY_OP_OR_OR: {
+            if (!ty_can_be_falsy(me, left)) return left;
+            Ty const* types[2] = { remove_definitely_falsy(me, left), right };
 
-        case BINARY_OP_EH_EH:
-            return union_of_two(me, ty_non_nullable(me, left), right);
+            return ty_union_subtype_reduced(me, types, 2);
+        }
+
+        case BINARY_OP_EH_EH: {
+            if (!ty_can_be_nullish(me, left)) return left;
+            Ty const* types[2] = { ty_non_nullable(me, left), right };
+            return ty_union_subtype_reduced(me, types, 2);
+        }
 
         case BINARY_OP_EQUAL:
         case BINARY_OP_COMMA:
@@ -602,14 +689,17 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
     switch (unary->op) {
         case UNARY_OP_LEFT_BANG: {
             Ty const* type = ty_expr_type(me, operand);
-            // tsc doesn't look at the value of an enum member here
-            if (type->kind == TY_LITERAL && !(type->flags & TYF_ENUM_LITERAL)) {
-                return ty_intrinsic(me, value_to_boolean(&type->literal.value) ? TY_FALSE : TY_TRUE);
-            }
-            if (type->flags & TYF_NULLABLE) return ty_intrinsic(me, TY_TRUE);
-            return ty_intrinsic(me, TY_BOOLEAN);
+            bool truthy = ty_can_be_truthy(me, type);
+            bool falsy = ty_can_be_falsy(me, type);
+            return ty_intrinsic(me, truthy && !falsy ? TY_FALSE : falsy && !truthy ? TY_TRUE : TY_BOOLEAN);
         }
-        case UNARY_OP_TYPEOF: return ty_intrinsic(me, TY_STRING);
+        case UNARY_OP_TYPEOF: {
+            ty_expr_type(me, operand); // Evaluated like any operand: a circular reference through it is one
+            static char const* const names[] = { "string", "number", "bigint", "boolean", "symbol", "undefined", "object", "function" };
+            Ty const* types[c_arraylen(names)];
+            for (u32 i = 0; i < c_arraylen(names); i++) types[i] = ty_string_literal(me, csview_from(names[i]));
+            return ty_union(me, types, c_arraylen(names), nullptr, (TyList){0});
+        }
         case UNARY_OP_VOID: return ty_intrinsic(me, TY_UNDEFINED);
         case UNARY_OP_TILDE: return ty_intrinsic(me, TY_NUMBER);
         case UNARY_OP_DELETE: return ty_intrinsic(me, TY_BOOLEAN);
@@ -642,7 +732,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
 
 // Object literals
 
-static Atom const* name_of_key_type(Checker* me, Ty const* key, bool* is_number) {
+Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number) {
     if (key->kind != TY_LITERAL || (key->flags & TYF_ENUM)) return nullptr;
     if (key->flags & TYF_STRING_LITERAL) return key->literal.string;
     if (!(key->flags & TYF_NUMBER_LITERAL)) return nullptr;
@@ -727,7 +817,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (i->computed_key) {
             key_type = ty_expr_type(me, i->computed_key);
             bool is_number = false;
-            name = name_of_key_type(me, key_type, &is_number);
+            name = ty_property_name_of_key(me, key_type, &is_number);
             if (name) name_is_value = is_number;
         } else {
             name = checker_atom(me, cstr_sv(&i->name_string));
@@ -818,7 +908,7 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     Atom const* name = nullptr;
     if (item->computed_key) {
         bool is_number = false;
-        name = name_of_key_type(me, ty_expr_type(me, item->computed_key), &is_number);
+        name = ty_property_name_of_key(me, ty_expr_type(me, item->computed_key), &is_number);
     } else {
         name = checker_atom(me, cstr_sv(&item->name_string));
     }
@@ -970,27 +1060,51 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
     return apply_type_arguments_mapper(me, ty, mapper);
 }
 
+// The type of the object of `object?.x` / `object.x` (or the callee of a call) as the access sees it. `optional`: the
+// access is part of an optional chain that may have ended before it, so what it evaluates to may be undefined.
+// HACK: tsc tells the undefined of a chain that ended from an undefined the object really has (a marker type); here
+// every undefined of an object that continues a chain is taken for the former, so `a?.b.c` with an optional b passes
+static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is_root, bool* optional) {
+    Ty const* object = ty_expr_type(me, object_expr);
+    if (!compiler_options()->strict_null_checks) return is_root ? ty_non_nullable(me, object) : object;
+    if (is_root) {
+        *optional = ty_can_be_nullish(me, object) && !(object->flags & (TYF_ANY | TYF_UNKNOWN));
+        return ty_non_nullable(me, object);
+    }
+    if (expr_is_optional_chain(object_expr) && !expr_is_perenthisized(object_expr) && includes_undefined(object)) {
+        *optional = true;
+        return ty_non_nullable(me, object);
+    }
+    return object;
+}
+
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
-    Ty const* callee_type = ty_expr_type(me, callee);
-    if (call->optional_chain) callee_type = ty_non_nullable(me, callee_type);
-    return ty_call_return_type(me, callee_type, call, ctx.contextual);
+    bool optional = false;
+    Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
+    Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
+    return optional ? union_of_two(me, ret, ty_intrinsic(me, TY_UNDEFINED)) : ret;
 }
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
         case EXPR_LITERAL: return ty_literal(me, &expr->literal);
-        case EXPR_IDENTIFIER: return ty_identifier_reference_type(me, &expr->identifier);
+        case EXPR_IDENTIFIER: {
+            bool used_before_assigned = false; // Reported by the typecheck walk
+            return identifier_flow_type(me, expr, &used_before_assigned);
+        }
         case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
         case EXPR_UNARY_OP: return check_unary(me, expr->unary_op);
 
         case EXPR_PROPERTY: {
-            Ty const* object = ty_expr_type(me, &expr->property->expr);
-            if (expr->property->optional_chain) object = ty_non_nullable(me, object);
+            bool optional = false;
+            Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             Ty const* ret = ty_access(me, object, ty_expr_type(me, &expr->property->prop));
-            return ret ? ret : any_type(me);
+            if (!ret) return any_type(me);
+            ret = access_flow_type(me, expr, ret);
+            return optional ? union_of_two(me, ret, ty_intrinsic(me, TY_UNDEFINED)) : ret;
         }
 
         case EXPR_GENERIC_PARAMS: {
@@ -1008,8 +1122,10 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             AsTypeExpr const* as_type = expr->as_type;
             if (is_const_assertion(as_type)) return check_with(me, &as_type->expr, (ExprCtx){ .is_const = true });
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
-            Ty const* inner = ty_check_expr(me, &as_type->expr, type->flags & TYF_ANY ? nullptr : type);
-            return as_type->is_satisfies ? inner : type;
+            // The type of `e as T` doesn't depend on e, which is checked when the statement walk gets there (tsc defers
+            // it too): `const data = get(id) as Data` in a loop that assigns id from data isn't circular
+            if (!as_type->is_satisfies) return type;
+            return ty_check_expr(me, &as_type->expr, type->flags & TYF_ANY ? nullptr : type);
         }
 
         case EXPR_TERNARY:

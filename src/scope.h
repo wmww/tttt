@@ -166,7 +166,12 @@ typedef struct Symbol {
     // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
     // namespace, class field initializer or static block)
     FunctionImpl const* function;
+    // Variables: the start node of the flow container the (first) declaration is in, null if nothing flows there
+    struct FlowNode const* flow_start;
     bool is_local; // Declared in the locals of a scope: not a global, not an export
+    bool is_const; // A `const` variable
+    bool is_parameter;
+    bool is_ambient; // Declared in an ambient context: never "used before assigned"
     bool is_assigned; // Somewhere other than its declaration
     bool is_definitely_assigned; // By `=`, a pattern or a for-in/of rather than only `+=` or `++`
     bool is_assigned_in_closure; // In another function than the one it belongs to
@@ -208,6 +213,8 @@ typedef struct DeclProps {
     void const* node;
     bool function_scoped; // `var`
     bool is_parameter;
+    bool is_const; // `const` variable
+    bool is_ambient; // `declare`
     bool is_const_enum;
     bool is_instantiated; // Namespaces: has a value
 } DeclProps;

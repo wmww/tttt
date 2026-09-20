@@ -4306,12 +4306,13 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, VariableStatem
         const char* end_of_initialization = p.pos;
         hop_whitespace(&p);
 
-        // `let x!: T`. TODO: keep it for definite assignment analysis (plan 05), and TS1263/TS1264 when it's misplaced
+        // `let x!: T`. TODO: TS1263/TS1264 when it's misplaced
         if (*p.pos == '!' && p.whitespace != WHITESPACE_NEWLINE) {
             Parser bang_p = parser(&p);
             bang_p.pos++;
             hop_whitespace(&bang_p);
             if (*bang_p.pos == ':') {
+                initializer.binding.definitely_assigned = true;
                 parse_success(&bang_p);
             } else {
                 parse_fail(&bang_p);

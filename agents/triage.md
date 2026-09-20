@@ -230,3 +230,16 @@ Uninvestigated items. Triage sessions drain this.
 - `functionsMissingReturnStatementsAndExpressions`: tttt has a TS1005 parse error at (152,24) that tsc doesn't, which
   hides all its type errors.
 - TS 5.5 inferred type predicates (`x => typeof x === "string"`) are out of plan 05's scope.
+- (plan 05 stage 2) `Array.prototype.sort()` and friends return `this`, which is the error type here: `for (const x of
+  xs.slice().sort())` reports TS7022 on `x` (12 in the real corpus). The `this` type is a known gap; this is its most
+  visible symptom now. Also: `Array.from(map.keys())` is `unknown[]` (iterables).
+- (plan 05 stage 2) Optional parameters print as `x?: T` in signatures; tsc prints `x?: T | undefined` under
+  strictNullChecks (the probe shows it in `sort`'s `compareFn`). Inside the function they already read as
+  `T | undefined`.
+- (plan 05 stage 2) Union members print in id order and `y: "p" | "q" | 1` comes out as `1 | "p" | "q"` when the
+  literal `1` was made first: tsc's order is by id too, but its literal types are made in source order of the *type
+  node*. Look at who creates literals early (the probe's `equality` function shows it).
+- (plan 05 stage 2) The union `typeof x` evaluates to is built on first use: if `"number"` was interned before
+  `"string"` it prints in another order than tsc's (made at checker startup there). Make it in `checker_new()` if a
+  test shows it.
+

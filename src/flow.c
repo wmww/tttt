@@ -52,8 +52,9 @@ static void set_referenced(FlowNode* flow) {
     flow->flags |= flow->flags & FLOW_REFERENCED ? FLOW_SHARED : FLOW_REFERENCED;
 }
 
-FlowNode* flow_new_start(FlowBuilder* me, FunctionImpl const* function) {
-    return new_node(me, FLOW_START, nullptr, function);
+FlowNode* flow_new_start(FlowBuilder* me, FunctionImpl const* function, bool continues_outside) {
+    my start = new_node(me, FLOW_START | (continues_outside ? FLOW_CONTINUES_OUTSIDE : 0), nullptr, function);
+    return my start;
 }
 
 FlowNode* flow_new_branch_label(FlowBuilder* me) {
@@ -375,10 +376,11 @@ static void dump_node(FlowNode const* node) {
         dump_id(node->antecedent);
     }
     if (node->flags & FLOW_SHARED) print(" shared");
+    if (node->flags & FLOW_NULLISH) print(" nullish");
     if (node->flags & (FLOW_CONDITION | FLOW_CALL)) {
         print("  `", dump_text(((Expr const*)node->node)->outer_span), "`");
     } else if (node->flags & FLOW_START) {
-        if (node->node) print("  (continues outside)");
+        if (node->flags & FLOW_CONTINUES_OUTSIDE) print("  (continues outside)");
     } else if (node->flags & FLOW_SWITCH_CLAUSE) {
         FlowSwitchClause const* clause = node->node;
         print("  clauses [", clause->clause_start, ", ", clause->clause_end, ") of `switch (",

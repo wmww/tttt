@@ -1,4 +1,5 @@
 #include "several_types.h"
+#include "flow.h"
 #include "source_file.h"
 #include "ty/ty.h"
 #include "lazy_type.h"
@@ -257,7 +258,10 @@ void typeof_type_drop(TypeofType* me) {
 }
 
 void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs) {
+    bool saved = names->flow->in_type_query;
+    names->flow->in_type_query = true;
     expr_lookup_names(my expr, names, errs);
+    names->flow->in_type_query = saved;
 }
 
 void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs) {

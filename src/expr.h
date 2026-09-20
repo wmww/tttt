@@ -37,6 +37,8 @@ typedef struct IdentifierExpr {
     uint8_t keyword; // KeywordIdentifier
     uint8_t this_kind; // ThisKind
     uint8_t assignment_target; // FlowAssignmentKind: the reference is being assigned to, so it has its declared type
+    // Never "used before assigned": part of `typeof x` written as a type, or inside the binding pattern that declares it
+    bool assume_initialized;
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);

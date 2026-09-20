@@ -41,6 +41,9 @@ enum {
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
+    KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
+    KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
+    KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
 };
 
 // Doesn't insert, unlike intern_slot()
@@ -103,6 +106,10 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
 // relate.c
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* ty_global_regexp_type(Checker* me);
+Ty const* ty_global_function_type(Checker* me); // Null without a lib
+Ty const* ty_empty_object_type(Checker* me); // `{}`
+// The property name a key type stands for (a string or number literal), null if none
+Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);
 typedef struct FoundProp {
     Ty const* type;
     u32 flags;

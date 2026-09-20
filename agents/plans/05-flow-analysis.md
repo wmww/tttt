@@ -204,6 +204,36 @@ tsc's types before building narrowing kinds on top.
 - `typeof x` in a type (`TypeofType`) walks its expression like any other, so the identifier has a flow node already.
 - The re-entrancy probe (stage 2) is still the first thing to do.
 
+## Stage 2 is done: what stage 3 should know
+`documentation.md` ("Control flow": narrowing, expression memos vs loops) describes the engine, `hacks.md`
+("Narrowing") what it leaves out. Notes that aren't there:
+- The re-entrancy model held: `test/probes/plan05/loopReentrancy.ts` matches tsc (types modulo signature underlines,
+  TS7022 on `const y = x` in a loop included). Two things differed from this plan: (1) expression memos had to stop
+  being cycle detectors (an expression hit in flight evaluates again; declarations detect cycles): who asks first
+  otherwise decides whether `x` or `const y = x` gets the error type. (2) `controlFlowManyConsecutiveConditionsNoTimeout`
+  needs tsc's `flowTypeCache`: uncached evaluations are cached per back edge walk (`Checker.flow_expr_generation`),
+  permanently when no loop is in progress. The assertion "no incomplete type escapes a top-level query" is *false* in
+  tsc too (a shared node first reached through a back edge keeps its incomplete entry for the rest of the query), so
+  it isn't asserted.
+- Everything stage 3 adds has a `TODO (stage 3)` in `ty/flow.c`: `narrow_type()` (calls = predicates),
+  `narrow_by_truthiness/optionality/typeof/binary` (discriminant property access, `instanceof`, `in`, booleans),
+  `type_at_flow_node()` (call nodes: assertions and `never`; switch clauses), `type_at_branch_label()` (the bypass
+  branch of an exhaustive switch), `type_at_flow_assignment()` (unreachable assignments).
+- Builder changes made here: `FLOW_NULLISH` on the conditions of `??`/`??=` left sides and `?.` objects (tsc looks
+  at the parent), start nodes always carry their `FunctionImpl` (`FLOW_CONTINUES_OUTSIDE` is the old meaning),
+  `Symbol.flow_start` / `is_const` / `is_parameter` / `is_ambient`, `IdentifierExpr.assume_initialized` (`typeof x`
+  types, `x!`, inside the binding pattern that declares it), static blocks are inlined like IIFEs.
+- The test traversal printed the *declared* type of identifiers (`ty_identifier_reference_type()`); it prints the
+  expression's type now. If a `.types` line for an identifier looks un-narrowed, the hook is the place to look.
+- Corpus after stage 2: 3984 diagnostics. What is left of TS2345 (2366) is `Node => Expression`, `Type =>
+  TypeReference`...: predicates (`isIdentifier(node)`), discriminants (`node.kind === SyntaxKind.X`), assertions.
+  The corpus typecheck went 493 -> 678 ms with flow queries in: profile in stage 4, not before stage 3 is in.
+- Fallout already handled here (so stage 4 doesn't look for it): TS2367 never against `null`/`undefined`, TS2365/
+  TS2367 show base types when those don't relate either, `object & undefined` is `never` under strictNullChecks,
+  optional chains evaluate to `T | undefined`, optional parameters read as `T | undefined`, `typeof x` is the union
+  of the 8 literals, string literal truthiness (`is_definitely_falsy()` read a borrowed string as empty).
+- `./tscbaseline.sh file.ts [types|symbols|errors.txt]` prints what tsc says about a probe.
+
 ## Stages (one session each; save baselines and update docs every time)
 1. **(DONE)** **Flow graph.** `flow.h`/`flow.c`, builder in the resolve walk in flow order, assignment-target and
    `is_assigned` bits, function scopes know their `FunctionImpl`, `TTTT_DUMP_FLOW`, `IdentifierExpr` repacked, binder-side
@@ -212,7 +242,7 @@ tsc's types before building narrowing kinds on top.
    *Done when:* dumps of the probe's functions read right (compare a few against tsc's understanding by reasoning,
    there is no tsc dump to diff), suite pass counts don't drop, resolve time on the corpus within +15% and RSS within
    +5% (`./bench.sh`, record in `measurements.md`), valgrind clean on the probe (`./filetest.sh` without `FAST`).
-2. **The engine.** Re-entrancy probe first. `ty/flow.c` with keys, caches, labels, loops, assignments (incl.
+2. **(DONE)** **The engine.** Re-entrancy probe first. `ty/flow.c` with keys, caches, labels, loops, assignments (incl.
    declarations, destructuring, for-in/of, `++`), the type facts table (replacing the `&&`/`||`/`??` approximations),
    truthiness / equality / `typeof` narrowing, hooks for identifiers and property access, assignment targets print
    declared types, closures rule, TS2454.

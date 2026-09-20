@@ -63,6 +63,7 @@ You will use scripts to help you run tests, but some scripts and options are mor
 - `./findcrash.py [prefix]`: When the release suite dies (crash, hang, memory runaway: it runs each probe under `ulimit -v` and `timeout`), bisects on test name prefixes and prints the tests responsible
 - `TTTT_DEBUG_RELATE=1` logs every top-level type relation query (source, target, ids, result), handy with `./run.sh` or `./release/tttt` on a small file
 - `./bench.sh`: Perf benchmark against tsc and tsgo (wall time, peak RSS, tttt phase split). Rerun and update `agents/measurements.md` after perf-relevant changes
+- `./tscbaseline.sh path/to/file.ts [types|symbols|errors.txt]`: Prints what tsc says about a file (the expected side of `./filetest.sh`), handy when writing probes
 - `./run.sh path/to/file.ts`: Runs the typechecker as a user would. This produces type errors, but not the detailed information of the tests. It also doesn't run tsc against the file, so generally the test scripts are more useful
 
 Tests are split into three test components, errors, symbols and types. A test component passes if tttt is able to annotate the input code the exact same ways as tsc. In the test output ` - ` marks a passing test component and `ERR`/`SYM`/`TYP` marks a failing one. In the diffs you get from failing tests, removed lines are lines tttt erroneously produced, and added lines are lines tttt failed to produce.

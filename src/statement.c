@@ -16,12 +16,14 @@ void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }
 
-void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported) {
+void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared) {
     for_each (i, vec_initialized_binding, &my initializers) {
         initialized_binding_add_names(i, scope, (BindingAddNamesProps){
             .abstract_literals = my keyword != VAR_INIT_CONST,
             .exported = exported,
             .function_scoped = my keyword == VAR_INIT_VAR,
+            .is_const = my keyword == VAR_INIT_CONST,
+            .is_ambient = declared,
         });
     }
 }
@@ -222,6 +224,25 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             return ty_intrinsic(checker, TY_ANY);
     }
     impossible;
+}
+
+// What `for (k in x)` takes: object types and type parameters (every member of a union, some member of an
+// intersection: `T & object` is what `typeof t === "object"` makes of a T). Without strict null checks also null
+static bool for_in_accepts(Checker* checker, Ty const* ty) {
+    if (ty->flags & (TYF_ANY | TYF_OBJECT | TYF_NON_PRIMITIVE | TYF_TYPE_PARAM | TYF_DEFERRED)) return true;
+    if (ty->flags & TYF_NULLABLE) return !compiler_options()->strict_null_checks;
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!for_in_accepts(checker, ty->composite.types.data[i])) return false;
+        }
+        return ty->composite.types.len > 0;
+    }
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (for_in_accepts(checker, ty->composite.types.data[i])) return true;
+        }
+    }
+    return false;
 }
 
 // Statements
@@ -433,7 +454,7 @@ void statement_hoist_names(Statement* me, Scope* scope) {
 
         case STATEMENT_DECL_VARIABLE:
             if (my decl.variable.keyword == VAR_INIT_VAR) {
-                variable_statement_add_names(&my decl.variable, scope, my decl.props.exported);
+                variable_statement_add_names(&my decl.variable, scope, my decl.props.exported, my decl.props.declared);
             }
             break;
 
@@ -475,7 +496,7 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_DECL_VARIABLE:
             // The `var`s of nested blocks were declared by statement_hoist_names()
             if (my decl.variable.keyword == VAR_INIT_VAR && !scope_is_var_container(scope)) break;
-            variable_statement_add_names(&my decl.variable, scope, my decl.props.exported);
+            variable_statement_add_names(&my decl.variable, scope, my decl.props.exported, my decl.props.declared);
             break;
 
         case STATEMENT_DECL_FUNCTION:
@@ -1145,7 +1166,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                     }
 
                     // TODO: type parameters are fine too, the apparent type is what counts
-                    if (!(iterable_type->flags & (TYF_ANY | TYF_OBJECT | TYF_NON_PRIMITIVE | TYF_TYPE_PARAM))) {
+                    if (!for_in_accepts(current_checker, iterable_type)) {
                         error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2407,
                             "The right-hand side of a 'for...in' statement must be of type 'any', an object type "
                             "or a type parameter, but here has type '", iterable_type, "'.");

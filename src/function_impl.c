@@ -50,13 +50,14 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     flow_builder_init(&flow, outer, names, me, errs);
     if (is_iife) {
         // Part of the flow around it, a `return` is a jump to the end of the body
+        flow.start = outer->start;
         flow.current = outer->current;
         flow.dead = outer->dead;
         flow.has_flow_effects = outer->has_flow_effects;
     } else {
         if (kind == FUNCTION_IS_EXPRESSION) my outer_flow = flow_builder_reference(outer, span_null);
         // Signatures and function types (the libs are full of them) have nothing that flows
-        if (my has_body) flow.current = flow_new_start(&flow, kind == FUNCTION_IS_EXPRESSION ? me : nullptr);
+        if (my has_body) flow.current = flow_new_start(&flow, me, kind == FUNCTION_IS_EXPRESSION);
     }
     if (is_iife || (my is_constructor && my has_body)) flow.return_target = flow_new_branch_label(&flow);
 
@@ -71,6 +72,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
+        i->initializer.binding.optional_parameter = i->explicit_optional;
         initialized_binding_add_names(&i->initializer, function_scope, (BindingAddNamesProps){
             .abstract_literals = true,
             .is_function_arg = true,

@@ -231,6 +231,8 @@ void checker_drop(Checker* me) {
     free(my links.entries);
     free(my intersection_props.entries);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
+    free(my flow_loops);
+    free(my flow_shared);
     arena_drop(&my arena);
     free(me);
 }
@@ -550,6 +552,10 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
                 buf.data[kept++] = buf.data[i];
             }
             out = kept;
+        }
+        // Nothing is both an object and null or undefined
+        if (compiler_options()->strict_null_checks && (includes & TYF_NULLABLE) && (includes & (TYF_OBJECT | TYF_NON_PRIMITIVE))) {
+            is_never = true;
         }
         if (is_never) {
             ret = my intrinsics[TY_NEVER];

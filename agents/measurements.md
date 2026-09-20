@@ -2,6 +2,23 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 05 stage 2: the narrowing engine (truthiness, equality, typeof, assignments, loops, closures)
+Suite: **1736 full of 13163** (was 1699), errors 6493 (6433), symbols 8409 (8401), types 3807 (3742). 116 tests gained
+a component, 1 lost one (`typePredicatesOptionalChaining2`: optional chains now evaluate to `T | undefined`, and the
+predicate that narrows it away is stage 3). Flow-named tests (388): **30 full / errors 223 / symbols 165 / types 48**
+(stage 1: 15 / 188 / 161 / 23). Spurious TS2454: none in the suite, missing in 17 tests (assertions, IIFEs,
+try/catch destructuring...: `./failstats.py --code TS2454`).
+
+Real corpus: 7777 -> **3984 diagnostics** (TS2345 5248 -> 2366, TS2322 586 -> 248, TS2769 293 -> 157, TS2349 180 -> 75,
+TS2367 gone, TS7006 876 unchanged; new: 14 spurious TS2454 that need `never` calls / exhaustive switches, 12 TS7022
+from `this`-typed `sort()` results in for-of, which may predate this stage). The plan expected "drop by thousands":
+it did, the rest of TS2345 is predicates / discriminants / assertions (stage 3).
+
+`./bench.sh`: synthetic wall 0.34 s (unchanged), resolve 95 -> 97 ms, typecheck 68 -> 83 ms, RSS 527 -> 531 MB. Real
+corpus wall 0.70 -> **0.91 s**, resolve 71.6 -> 72.4 ms, **typecheck 493 -> 678 ms** (flow queries; half the error
+rendering is gone at the same time, so the queries cost more than the difference), RSS 311 -> 314 MB. tsgo: 0.76 s.
+Not profiled yet (stage 4, after stage 3 changes what the queries do).
+
 ## 2026-09-19, plan 05 stage 1: the control flow graph (no narrowing yet)
 Suite: **1699 full of 13163** (was 1684), errors 6433 (6401), symbols 8401, types 3742 (3733); no test lost a
 component. Where it came from: binder-side TS7027/TS7028, `never`/`| undefined` in inferred return types,

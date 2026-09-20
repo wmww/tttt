@@ -92,7 +92,9 @@ next (symbols = plan 04, flow = plan 05, see the course correction above):
    reachability, no definite assignment. A huge share of real-world TS and of the test suite depends on it. It
    needs a flow graph (or equivalent) built at bind time, plus per-reference-per-flow-node caching - which in turn
    wants cheap type identity. **In progress (plan 05):** the graph exists (stage 1: built in the resolve walk,
-   tsc's node model, binder-side reachability, +11% resolve time); nothing narrows yet.
+   tsc's node model, binder-side reachability, +11% resolve time) and so does the engine (stage 2: tsc's
+   `getFlowTypeOfReference` with loops, closures, type facts, TS2454; the real corpus went 7777 -> 3984 diagnostics,
+   typecheck +37%). Left: predicates, assertions, discriminants, switch, typed reachability (stage 3), fallout (4).
 4. ~~Scopes are discarded after name resolution; there's no persistent symbol table~~ **Fixed by plan 04 stage 1**
    (class/interface members are still not symbols, see the plan).
 5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST

@@ -90,7 +90,9 @@ Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
         case LAZY_STATE_NOT_STARTED: break;
     }
     memo->state = LAZY_STATE_IN_FLIGHT;
+    FlowIsolation isolation = ty_flow_isolate(me);
     memo->type = infer_return_type(me, function);
+    ty_flow_restore(me, isolation);
     memo->state = LAZY_STATE_DONE;
     return memo->type;
 }

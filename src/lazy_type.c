@@ -72,7 +72,14 @@ Ty const* lazy_type_evaluate(LazyType* me) {
 
     if (state->evaluation_started) {
         // We've already hit this LazyType once, therefore it's self-referential
-        if (state->is_self_referential) {
+        // Circularity is a property of declarations (that is where tsc detects and reports it). An expression on the
+        // way only has to stop a runaway: which of the two is hit first depends on who asks first, and the answer
+        // shouldn't (control flow analysis of a loop re-enters the expressions of the loop body through declarations)
+        if (my tag == LAZY_TYPE_EXPR && state->hits < 8) {
+            state->hits++;
+        } else if (!state->is_self_referential) {
+            state->is_self_referential = true;
+        } else {
             // We have hit this LazyType 3 times, which means we've hit every other LazyType in this cycle twice, which
             // means we have hit every other LazyType at least twice, which means we've marked them all self-referential
             // and so we can now safely bail.
@@ -80,9 +87,13 @@ Ty const* lazy_type_evaluate(LazyType* me) {
             state->evaluated = ty_intrinsic(current_checker, TY_ERROR);
             return state->evaluated;
         }
-        state->is_self_referential = true;
     }
     state->evaluation_started = true;
+
+    // Declarations evaluate self-contained, see ty_flow_isolate()
+    bool isolate = my tag != LAZY_TYPE_EXPR;
+    FlowIsolation isolation = {0};
+    if (isolate) isolation = ty_flow_isolate(current_checker);
 
     Ty const* result = nullptr;
     switch (my tag) {
@@ -114,6 +125,7 @@ Ty const* lazy_type_evaluate(LazyType* me) {
             break;
 
     }
+    if (isolate) ty_flow_restore(current_checker, isolation);
 
     if (!state->done) {
         // The calls this function made didn't decide that we're self-referential, result is valid

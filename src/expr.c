@@ -49,9 +49,24 @@ Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me) {
     return ty_identifier_reference_type(current_checker, me);
 }
 
+// tsc's closeEnoughKind: a type that has a good chance of being a valid operand of an arithmetic operator
+static bool plausible_operand(Ty const* ty) {
+    u32 close_enough = TYF_NUMBER | TYF_BIGINT | TYF_STRING | TYF_ANY | TYF_UNKNOWN | TYF_NUMBER_LITERAL |
+        TYF_BIGINT_LITERAL | TYF_STRING_LITERAL | TYF_ENUM;
+    if (!compiler_options()->strict_null_checks) close_enough |= TYF_NULLABLE; // Assignable to anything
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!plausible_operand(ty->composite.types.data[i])) return false;
+        }
+        return true;
+    }
+    return (ty->flags & close_enough) != 0;
+}
+
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
-    ignore me;
-    ignore errs;
+    if (ty_identifier_used_before_assigned(current_checker, me)) {
+        error_ctx_error_d(errs, my name, 2454, "Variable '", my name, "' is used before being assigned.");
+    }
 }
 
 // `f<A, B>` outside of a call (there the type arguments are the call's business, ty/call.c)
@@ -207,9 +222,15 @@ static bool expr_is_logical(Expr const* me) {
     return my tag == EXPR_BINARY_OP && binary_op_is_logical(my binary_op->op);
 }
 
+static void flow_add_conditions_flagged(
+    FlowBuilder* flow, Expr const* me, FlowNode* true_target, FlowNode* false_target, u32 flags
+) {
+    flow_add_antecedent(flow, true_target, flow_new_condition(flow, FLOW_TRUE_CONDITION | flags, flow->current, me));
+    flow_add_antecedent(flow, false_target, flow_new_condition(flow, FLOW_FALSE_CONDITION | flags, flow->current, me));
+}
+
 static void flow_add_conditions(FlowBuilder* flow, Expr const* me, FlowNode* true_target, FlowNode* false_target) {
-    flow_add_antecedent(flow, true_target, flow_new_condition(flow, FLOW_TRUE_CONDITION, flow->current, me));
-    flow_add_antecedent(flow, false_target, flow_new_condition(flow, FLOW_FALSE_CONDITION, flow->current, me));
+    flow_add_conditions_flagged(flow, me, true_target, false_target, 0);
 }
 
 // `true ?? x`, `true?.x`: `true` decides nothing about where control goes
@@ -218,18 +239,19 @@ static void flow_add_nullish_conditions(FlowBuilder* flow, Expr const* me, FlowN
         flow_add_antecedent(flow, true_target, flow->current);
         flow_add_antecedent(flow, false_target, flow->current);
     } else {
-        flow_add_conditions(flow, me, true_target, false_target);
+        flow_add_conditions_flagged(flow, me, true_target, false_target, FLOW_NULLISH);
     }
 }
 
 void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
     FlowBuilder* flow = names->flow;
+    bool nullish = flow->nullish_condition;
     flow->true_target = true_target;
     flow->false_target = false_target;
     expr_lookup_names(me, names, errs);
     bool binds_its_own = expr_is_logical(me) || expr_is_optional_chain(me) ||
         (my tag == EXPR_BINARY_OP && binary_op_is_logical_assignment(my binary_op->op));
-    if (!binds_its_own) flow_add_conditions(flow, me, true_target, false_target);
+    if (!binds_its_own) flow_add_conditions_flagged(flow, me, true_target, false_target, nullish ? FLOW_NULLISH : 0);
 }
 
 // A call with a dotted name as its callee may be an assertion or never return, the checker finds out
@@ -335,6 +357,7 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
         expr_lookup_names(&my binary_op->left, names, errs);
         flow_add_nullish_conditions(flow, &my binary_op->left, true_target, pre_right);
     } else {
+        flow->nullish_condition = op == BINARY_OP_EH_EH || op == BINARY_OP_EH_EH_EQUAL;
         expr_lookup_names_condition(&my binary_op->left, names, errs, true_target, pre_right);
     }
     flow_set_current(flow, flow_finish_label(pre_right));
@@ -354,7 +377,7 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
 
 // `a?.b` is `a && a.b` as far as flow goes. `continues`: something further out continues the chain
 static void expr_lookup_names_chain(
-    Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues
+    Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues, bool nullish
 ) {
     FlowBuilder* flow = names->flow;
     bool is_root = expr_is_optional_chain_root(me);
@@ -378,22 +401,22 @@ static void expr_lookup_names_chain(
             expr_lookup_names(i, names, errs);
         }
     }
-    if (!continues) flow_add_conditions(flow, me, true_target, false_target);
+    if (!continues) flow_add_conditions_flagged(flow, me, true_target, false_target, nullish ? FLOW_NULLISH : 0);
 }
 
 static void expr_lookup_names_chain_flow(
-    Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues
+    Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target, bool continues, bool nullish
 ) {
     FlowBuilder* flow = names->flow;
     if (true_target) {
-        expr_lookup_names_chain(me, names, errs, true_target, false_target, continues);
+        expr_lookup_names_chain(me, names, errs, true_target, false_target, continues, nullish);
         return;
     }
     // Not a condition of anything
     FlowNode* post = flow_new_branch_label(flow);
     FlowNode* saved = flow->current;
     bool saved_effects = flow->has_flow_effects; // tsc doesn't reset it here
-    expr_lookup_names_chain(me, names, errs, post, post, false);
+    expr_lookup_names_chain(me, names, errs, post, post, false, false);
     flow_set_current(flow, flow->has_flow_effects ? flow_finish_label(post) : saved);
     flow->has_flow_effects |= saved_effects;
 }
@@ -407,6 +430,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     FlowNode* false_target = flow->false_target;
     bool chain_continues = flow->chain_continues;
     uint8_t assignment_target = flow->assignment_target;
+    bool nullish_condition = flow->nullish_condition;
+    flow->nullish_condition = false;
     flow->true_target = nullptr;
     flow->false_target = nullptr;
     flow->chain_continues = false;
@@ -420,6 +445,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             identifier_expr_lookup_names(&my identifier, names, errs);
             my identifier.flow = flow_builder_reference(flow, my identifier.name);
             my identifier.assignment_target = assignment_target;
+            my identifier.assume_initialized = flow->in_type_query;
+            if (flow->binding_root && my identifier.target) {
+                // `const { a = "0", b = +a } = obj`
+                Binding const* declared = symbol_find_node(my identifier.target, SYMBOL_DECL_VARIABLE);
+                while (declared && declared->parent) declared = declared->parent;
+                if (declared == flow->binding_root) my identifier.assume_initialized = true;
+            }
             if (assignment_target) identifier_mark_assigned(&my identifier, names);
             break;
 
@@ -492,10 +524,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
                 case UNARY_OP_RIGHT_BANG:
                     if (expr_is_optional_chain(me)) {
-                        expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues);
+                        expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                     } else {
                         flow->assignment_target = assignment_target; // `x! = 1`
                         expr_lookup_names(operand, names, errs);
+                        // `x!` says x was assigned, whatever control flow thinks
+                        if (operand->tag == EXPR_IDENTIFIER) operand->identifier.assume_initialized = true;
                     }
                     break;
 
@@ -510,7 +544,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my property->flow = flow_builder_reference(flow, my outer_span);
             my property->assignment_target = assignment_target;
             if (expr_is_optional_chain(me)) {
-                expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues);
+                expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
             } else {
                 expr_lookup_names(&my property->expr, names, errs);
                 expr_lookup_names(&my property->prop, names, errs);
@@ -555,7 +589,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_CALL: {
             if (expr_is_optional_chain(me)) {
-                expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues);
+                expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                 break;
             }
             Expr* callee = &my call->callable;
@@ -681,6 +715,13 @@ static void binary_op_typecheck(
             } else if (extends_strict_nulls(left, TY_NUMBER) && extends_strict_nulls(right, TY_NUMBER)) {
             } else {
                 // TODO: it seems special handling of possibly null or undefined types is needed
+                // Shown as their base types (`false` as `boolean`) unless both could plausibly be operands
+                Ty const* left_base = ty_base_type_of_literal(current_checker, left);
+                Ty const* right_base = ty_base_type_of_literal(current_checker, right);
+                if (!plausible_operand(left_base) || !plausible_operand(right_base)) {
+                    left = left_base;
+                    right = right_base;
+                }
                 error_ctx_error_d(errs, expr->inner_span, 2365,
                     "Operator '+' cannot be applied to types '", left, "' and '", right, "'.");
             }
@@ -748,7 +789,15 @@ static void binary_op_typecheck(
         case BINARY_OP_TRIPLE_EQUAL:
         case BINARY_OP_NOT_EQUAL:
         case BINARY_OP_TRIPLE_NOT_EQUAL:
-            if (!ty_is_comparable_either_way(current_checker, left, right)) {
+            // (Anything may be compared with null and undefined: tsc's isTypeEqualityComparableTo())
+            if (!((left->flags | right->flags) & TYF_NULLABLE) && !ty_is_comparable_either_way(current_checker, left, right)) {
+                // Shown as their base types if those don't overlap either (`n == b` for a b narrowed to `false`)
+                Ty const* left_base = ty_base_type_of_literal(current_checker, left);
+                Ty const* right_base = ty_base_type_of_literal(current_checker, right);
+                if (!ty_is_comparable_either_way(current_checker, left_base, right_base)) {
+                    left = left_base;
+                    right = right_base;
+                }
                 error_ctx_error_d(errs, expr->outer_span, 2367,
                     "This comparison appears to be unintentional because the types '", left,
                     "' and '", right, "' have no overlap.");
@@ -869,6 +918,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_AS_TYPE:
             // TODO: check that type of expr overlaps with (not extends or is extended by) type. if it doesn't surface
             // TS2352: Conversion of type 'number' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+            if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {
+                // The asserted type is the contextual type of the operand, which nobody has looked at yet
+                Ty const* asserted = ty_of_node(&my as_type->type);
+                ty_check_expr(current_checker, &my as_type->expr, asserted->flags & TYF_ANY ? nullptr : asserted);
+            }
             expr_typecheck(&my as_type->expr, errs);
             type_typecheck(&my as_type->type, errs);
             if (my as_type->is_satisfies) {
@@ -904,7 +958,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             Checker* checker = current_checker;
             LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
             Ty const* contextual = memo && memo->done ? memo->context : nullptr;
-            ty_call_typecheck(checker, ty_expr_type(checker, callee), my call, contextual, my outer_span, errs);
+            Ty const* callee_type = ty_expr_type(checker, callee);
+            // `a?.b()`: the undefined of a chain that ended isn't called, see chain_object_type()
+            if (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee)) callee_type = ty_non_nullable(checker, callee_type);
+            ty_call_typecheck(checker, callee_type, my call, contextual, my outer_span, errs);
             for_each (i, vec_expr, &my call->args) {
                 expr_typecheck(i, errs);
             }

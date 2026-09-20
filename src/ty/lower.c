@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "compiler_options.h"
 #include "scope.h"
 #include "enum_decl.h"
 #include "class_decl.h"
@@ -550,8 +551,16 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
 
 static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     switch (decl->kind) {
-        case SYMBOL_DECL_VARIABLE:
-            return ty_binding_type(me, decl->node, (LowerCtx){ .generic = true });
+        case SYMBOL_DECL_VARIABLE: {
+            Binding const* binding = decl->node;
+            Ty const* type = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
+            // `x?: T` is read as `T | undefined` inside the function. TODO: tsc also shows it in the signature
+            if (binding->optional_parameter && compiler_options()->strict_null_checks && !(type->flags & TYF_ANY)) {
+                Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+                type = ty_union(me, types, 2, nullptr, (TyList){0});
+            }
+            return type;
+        }
         case SYMBOL_DECL_BUILTIN: return ty_from_node(me, decl->node, (LowerCtx){0});
         case SYMBOL_DECL_EXPR: return ty_expr_type(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);

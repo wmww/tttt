@@ -25,7 +25,7 @@ typedef struct FlowNode FlowNode;
 // tsc's FlowFlags (no array mutations: evolving array types are out of scope, see plan 05)
 typedef enum FlowFlags {
     FLOW_UNREACHABLE = 1 << 0,
-    FLOW_START = 1 << 1,           // node: FunctionImpl const* of a function expression / arrow / object literal method, else null
+    FLOW_START = 1 << 1,           // node: FunctionImpl const* if the container is a function, else null
     FLOW_BRANCH_LABEL = 1 << 2,    // antecedents
     FLOW_LOOP_LABEL = 1 << 3,      // antecedents, the first one is the way in
     FLOW_ASSIGNMENT = 1 << 4,      // node: FlowAssign const*
@@ -36,6 +36,12 @@ typedef enum FlowFlags {
     FLOW_REDUCE_LABEL = 1 << 10,   // node: FlowReduceLabel const*
     FLOW_REFERENCED = 1 << 11,     // Something has it as its antecedent
     FLOW_SHARED = 1 << 12,         // More than one thing does: worth caching in a query
+    // A condition on the left of `??` / `??=` or on the object of `?.`: "is not null or undefined" rather than
+    // "is truthy" (tsc looks at the parent of the condition's expression)
+    FLOW_NULLISH = 1 << 13,
+    // A start node of a function expression, arrow function or object literal method: narrowings of what can't have
+    // changed continue in the flow the function was made in (FunctionImpl.outer_flow)
+    FLOW_CONTINUES_OUTSIDE = 1 << 14,
 
     FLOW_LABEL = FLOW_BRANCH_LABEL | FLOW_LOOP_LABEL,
     FLOW_CONDITION = FLOW_TRUE_CONDITION | FLOW_FALSE_CONDITION,
@@ -132,6 +138,7 @@ typedef struct FlowBuilder {
     u32 depth;
     ErrorCtx* errs;
     FunctionImpl const* function; // The container if it is a function, for "assigned in a closure"
+    FlowNode* start; // Of the container (an inlined IIFE: of the flow around it)
     FlowNode* current;
     // Inside a statement that is unreachable: like tsc, nothing in there gets flow nodes, reports or counts as a
     // `return`. `current` doesn't change while it is set
@@ -150,6 +157,9 @@ typedef struct FlowBuilder {
     FlowNode* true_target;
     FlowNode* false_target;
     bool chain_continues; // The next expression is the object of an optional chain that isn't its root
+    Binding const* binding_root; // The declaration whose binding pattern is being walked
+    bool in_type_query; // Inside `typeof x` written as a type: never "used before assigned"
+    bool nullish_condition; // The next expression is a condition by being the left side of `??`: FLOW_NULLISH
     // The statement list of the Block the next statement is a direct child of (TS7027 covers runs of statements there)
     VecStatement const* statement_list;
     FlowStatementFrame const* statements;
@@ -189,7 +199,7 @@ static inline void flow_set_current(FlowBuilder* me, FlowNode* flow) {
     if (!my dead) my current = flow;
 }
 
-FlowNode* flow_new_start(FlowBuilder* me, FunctionImpl const* function);
+FlowNode* flow_new_start(FlowBuilder* me, FunctionImpl const* function, bool continues_outside);
 FlowNode* flow_new_branch_label(FlowBuilder* me);
 FlowNode* flow_new_loop_label(FlowBuilder* me);
 void flow_add_antecedent(FlowBuilder* me, FlowNode* label, FlowNode* antecedent);

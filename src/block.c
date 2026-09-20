@@ -41,11 +41,33 @@ void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCt
     }
 }
 
+// A `static {}` block of a class runs where the class is evaluated: part of the flow around it, like an IIFE
+void block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx* errs) {
+    FlowBuilder* outer = scope->flow;
+    FlowBuilder flow;
+    flow_builder_init(&flow, outer, scope, nullptr, errs);
+    flow.start = outer->start;
+    flow.current = outer->current;
+    flow.dead = outer->dead;
+    flow.has_flow_effects = outer->has_flow_effects;
+    flow.return_target = flow_new_branch_label(&flow);
+    scope->flow = &flow;
+    block_lookup_names_as(me, true, scope, errs);
+    flow_add_antecedent(&flow, flow.return_target, flow.current);
+    flow.current = flow_finish_label(flow.return_target);
+    flow_builder_finish(&flow, c_sv("static block"), span_null);
+    scope->flow = outer;
+    if (!outer->dead) {
+        outer->current = flow.current;
+        outer->has_flow_effects |= flow.has_flow_effects;
+    }
+}
+
 void block_lookup_names_container(Block const* me, bool is_block, csview kind, Span name, Scope* scope, ErrorCtx* errs) {
     FlowBuilder* outer = scope->flow;
     FlowBuilder flow;
     flow_builder_init(&flow, outer, scope, nullptr, errs);
-    flow.current = flow_new_start(&flow, nullptr);
+    flow.current = flow_new_start(&flow, nullptr, false);
     scope->flow = &flow;
     block_lookup_names_as(me, is_block, scope, errs);
     flow_builder_finish(&flow, kind, name);

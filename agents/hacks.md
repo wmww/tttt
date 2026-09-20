@@ -173,8 +173,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   exist and `Statement` has no flow pointer: see the plan's stage 1 notes.
 - No `FLOW_ARRAY_MUTATION` nodes (`x.push()`, `x[i] = v`): only evolving array types need them (out of scope).
 - Class *expression* methods are FUNCTION_IS_DECLARATION (tsc: narrowing continues outside like for object literal
-  methods); a class static block is a container of its own (tsc: inlined like an IIFE); `export { x }` doesn't mark
-  the local as assigned anywhere (tsc's `markNodeAssignments` does).
+  methods); `export { x }` doesn't mark the local as assigned anywhere (tsc's `markNodeAssignments` does).
 - `expr_is_narrowable_reference()`: `a = b` counts whatever the left side is (tsc wants a left-hand side expression).
   `expr_is_optional_chain()` re-walks the chain from the top for every link (quadratic in chain length, chains are
   short).
@@ -190,6 +189,34 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Body-less functions (overloads, signatures, function *types*: the libs) get a `FlowBuilder` on the stack but no
   start node, so parameter default expressions in them have no flow nodes.
 - `Statement.span` (16 bytes per statement) exists only for TS7027 ranges and `last_assignment_end`.
+
+## Narrowing (`ty/flow.c`, the hooks in `ty/expr.c`; plan 05 stage 2)
+- Not there yet (stage 3, marked `TODO (stage 3)` in `flow.c`): type predicates and assertion calls (call nodes are
+  skipped), `never` calls and typed reachability, discriminant properties, `switch` clauses (skipped: no narrowing
+  by case, no exhaustiveness), `instanceof`, `in`, `x.constructor === C`, comparisons with `true`/`false`, aliased
+  conditions (`const ok = typeof x === "string"`), assignment nodes in code that a `never` call made unreachable.
+- `chain_object_type()` (`ty/expr.c`): tsc marks the `undefined` of an optional chain that ended with a marker type
+  and strips only that when the chain continues. Here every `undefined` of an object that continues a chain is taken
+  for the marker, so `a?.b.c` with an optional `b` isn't an error. Wants an `optional` intrinsic that prints as
+  `undefined`.
+- `remove_nullable_by_intersection()`: tsc intersects with `{} | null` / `{} | undefined` when the other nullable is
+  still possible; here always with `{}`.
+- No `getNarrowableTypeForReference()` (substituting constraints for generic references in narrowable positions), no
+  `x!` rule of `getFlowTypeOfReference()` (declared type when the narrowed type has nothing non-nullish left), no
+  auto types (`let x;`, evolving arrays), no TS2563 at flow depth 2000 (the query answers the error type silently).
+- `pattern_path_type()`: the assigned type of a target in a destructuring *assignment* is looked up with `ty_access()`
+  by index / name; rest elements, computed keys and iterables fall back to the declared type (no narrowing).
+- The "outer variable is assumed initialized" rule is decided when the walk reaches a start node
+  (`Symbol.flow_start` vs the node, `FlowQuery.left_container`), not up front like tsc: same answers, but an inlined
+  IIFE's locals belong to the flow around it, which is what tsc says too.
+- Optional parameters read as `T | undefined` inside the function (`value_entry_type()`), but signatures still show
+  and relate `x?: T` without it (tsc prints `x?: T | undefined` under strictNullChecks).
+- `ty_flow_expr_type()` results computed while a loop is in progress are cached per back edge walk under a
+  generation number in `Checker.links`: the entries of finished generations are garbage until the checker dies.
+- `LazyMemo.hits`: expression memos allow 8 re-entrant evaluations before they answer the error type. It's a runaway
+  guard, not a design: tsc has no expression-level cycle detection at all.
+- TS2339 / TS18048 on property access are still behind `noUncheckedIndexedAccess` (`check_access()`): "narrowing
+  comes first" was the reason, revisit after stage 3.
 
 ## The AST-side walk and what's left of the old type world
 - `TYPE_LAZY`, `TYPE_REF`, the binding `TYPE_INDEXED`, `CallableArg`, `type_clone` and its whole family are gone:
@@ -223,8 +250,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `ty_function_return_type`: `void` when there's no `return` (tsc: `never` if the end isn't reachable), generators are
   `any`, async wraps in `Promise<T>` without awaiting `T`. A function whose return type is being inferred further up
   the stack is `any` without TS7023.
-- `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x` (it used to be `any`). tsc takes the *declared*
-  type of an identifier, not the narrowed one; no difference until narrowing exists.
+- `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x`, narrowed like any reference (tsc narrows type
+  queries too, but only identifiers and property paths exist there).
 - `baseline_test_case_add_symbol_value`: an enum member shows as `E.x` by hand (wants fresh literal types). The
   "written type shows as written" hack is gone (plan 04 stage 3: `out_symbol_name()`, names by accessibility from
   `TyDisplay.enclosing`); removing it uncovered what it hid in 10 tests: unresolved qualified names and `this` types

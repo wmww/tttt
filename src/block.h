@@ -30,6 +30,7 @@ void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCt
 // Same, as a control flow container of its own (flow.h): a file, a namespace body, a static block. `kind` and `name`
 // are for TTTT_DUMP_FLOW
 void block_lookup_names_container(Block const* me, bool is_block, csview kind, Span name, Scope* scope, ErrorCtx* errs);
+void block_lookup_names_inline_container(Block const* me, Scope* scope, ErrorCtx* errs);
 void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs);
 // The types of the `return` expressions inside (nested functions excluded), checked with Checker.return_context
 typedef struct TyBuf TyBuf;
