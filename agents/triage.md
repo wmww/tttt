@@ -69,12 +69,14 @@ Uninvestigated items. Triage sessions drain this.
   `override`/TS4112+, overloads of `*()`-style nameless members (error recovery), TS1161 for an unterminated regex
   (`parse_regex` just fails), TS6188/6189 misplaced numeric separators, TS1263/1264 misplaced `let x!`.
 - **Real corpus, first look at the 9.8k checker diagnostics** (`./realworld.py`, plan 03). Not investigated beyond this:
-  - ~4000 of the 6840 TS2345 are "Argument of type 'Identifier' is not assignable to parameter of type 'Node' ...
-    missing baseURI, childNodes": in some files the `Node`/`Symbol`/`Type` imported from the `_namespaces/ts.ts`
-    barrel (`export *` of 60 files that all import the barrel back) resolves to the *global* DOM/lib type. A 3-file
-    repro of the cycle (`/tmp`-sized: types.ts, barrel, util.ts importing through the barrel) does NOT reproduce it,
-    so it depends on load order / depth in the real graph. Binder bug: **plan 04 input, and the first thing to look
-    at once plan 04 lands** (or the first thing its planner should reproduce).
+  - ~4000 of the 6840 TS2345 ("'Identifier' is not assignable to 'Node' ... missing baseURI"): **root cause found**
+    (plan 04 planning): `utilities.ts` imports `Node`/`Symbol`/`Type`... *and* declares `function Node(...)` etc; the
+    copy-based binder reports a false TS2440 and drops the import, so the type `Node` falls through to the DOM's.
+    Not a cycle. Repro `test/probes/plan04/aliasMergesWithLocalValue.ts`, fixed by plan 04 stage 1. Recount all the
+    rows below after it lands.
+  - Corpus name errors that aren't the binder's: a mapped type's `as` clause can't see its key parameter
+    (`[K in T as K["kind"]]`, TS2304 x5 in parser.ts/utilities.ts/visitorPublic.ts); `typeof X[K]` in a type argument
+    parses `X[K]` as a value access (scanner.ts:299, TS2693).
   - 896 TS7006 (parameter implicitly any): contextual typing of callbacks not reaching (probably the same `Node`
     mixup killing overload resolution first, recount after).
   - 565 TS2769 / 179 TS2349 / 38 TS2558: overload resolution and calls on unions.

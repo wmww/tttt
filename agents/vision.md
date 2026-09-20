@@ -16,7 +16,8 @@ types components) are the oracle, not the goal.
   literals, `?.()`, `else` after `b;`, the comma operator, real destructuring patterns, right-associative assignment
   and a dozen small things; the checker needed `keyof` of a union not to be a cross product, and its first real
   profile found two silly hot spots worth 3x (line numbers of diagnostics, properties of intersections). ~40% of the type errors are
-  one binder bug (an imported `Node` resolving to the DOM `Node`), most of the rest is missing narrowing: the two
+  one binder bug (an imported `Node` merged with a local `function Node` is dropped, so the type resolves to the DOM
+  `Node`; `plans/04-symbols.md`), most of the rest is missing narrowing: the two
   plans that were next anyway.
 - **The type core migration is finished.** Every type is a `Ty` (`src/ty/`): interned, arena-allocated, id-carrying,
   lazily resolved members, mapper instantiation, tsc-shaped relations (id-keyed caches, maybe-stack, variances),
