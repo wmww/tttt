@@ -69,7 +69,7 @@ void class_item_drop(ClassItem* me);
 bool class_item_is_static(ClassItem* me);
 Ty const* class_item_field_evaluate_type(ClassItem* me);
 Ty const* class_item_accessor_evaluate_type(ClassItem* me);
-TypeNode class_item_get_type(ClassItem* me);
+Ty const* class_item_get_type(ClassItem* me);
 
 #define g_class_key ClassItem, class_item
 #define g_no_clone
@@ -86,7 +86,6 @@ typedef struct ClassDecl {
     VecTypeNode implements;
     VecClassItem items;
     Symbol* symbol;
-    TypeNode instance_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

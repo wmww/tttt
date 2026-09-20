@@ -93,9 +93,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 ## The binder (`scope.c`, plan 04 done)
 - Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the
   meaning the name is used with, aliases resolved). The plan wanted one pointer plus an accessor; `target` is that
-  accessor's result cached at resolve time, so that checking never walks alias chains. `GenericItem`,
-  `InferredType` and mapped keys keep `owned_symbol` + `symbol_ref` because their clones (`generic_clone`) refer to
-  the original's type parameter.
+  accessor's result cached at resolve time, so that checking never walks alias chains.
 - `binder_redirect` / `Binder.overlays`: a program that adds to a symbol of the shared lib program gets a clone in its
   overlay table (`clone_parent_symbol`, nothing is written to the frozen original), and the checker maps symbols
   through the redirect at its entry points (`canonical()` in `ty/lower.c`: `ty_declared_type_of`,
@@ -163,25 +161,21 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   wrong file there). Drop the gate with stage 3 / package.json `exports`.
 
 ## The AST-side walk and what's left of the old type world
-- **`TYPE_LAZY` / `TYPE_REF` / binding `TYPE_INDEXED` are still `TypeNode` tags**, but no longer how a declaration
-  finds its type (plan 04 stage 2: `Declaration`, `MergedType`, `DeclHandle`, the `typeof_declaration` twins and the
-  per-declaration LazyTypes are gone; `ty_type_of_symbol`/`ty_declared_type_of` switch on `Symbol.decls`). What is
-  left are three AST-internal links, each a refactor of its own:
-  1. `Binding.assigned_type`: `type_lazy(&initialized_binding.lazy_type)` / the for-each `var_type`, and for a
-     destructuring element a `TYPE_INDEXED { is_from_binding }` over the parent pattern's type (`binding_add_names`,
-     lowered by `lower_binding_access`). Wants a parent pointer on `Binding` and a `ty_binding_type(binding)`.
-  2. A function seen as a `CallableType` (`function_impl_lookup_names`, `callable_type_resolve_names`): parameter
-     types are `type_refcopy` of the binding's effective type, the return type a `TYPE_REF`; a constructor's return
-     type is a `TYPE_REF` to `ClassDecl.instance_identifier_type`. Goes with the `CallableType { FunctionImpl* }`
-     item below.
-  3. Class members as `Prop.node`: `class_item_type_node` makes a `type_lazy` of the member's function/field/accessor
-     LazyType (`members.c` wraps accessors the same way). Wants a `Prop` source per class item kind, like
-     `Prop.symbol` for namespace members.
-- `CallableType` (`TYPE_CALLABLE`) still has its own `generic`/`args`/`ret` next to the `FunctionImpl` it owns, filled
-  in by `callable_type_resolve_names`. `Signature.node` reads those, `Signature.function` reads a `FunctionImpl`
-  directly: two ways to resolve a signature where `CallableType { FunctionImpl* }` would leave one.
-- `type_clone` survives for `generic_clone` and `callable_type_clone`. A cloned `IdentifierType`/`CallableType` is
-  lowered like an original, keyed by its own address (a second anonymous `Ty` for the same written type).
+- `TYPE_LAZY`, `TYPE_REF`, the binding `TYPE_INDEXED`, `CallableArg`, `type_clone` and its whole family are gone:
+  `TypeNode` is syntax only. Leftovers of that world: `owned_symbol` + `symbol_ref` on `GenericItem`/`InferredType`/
+  mapped keys and `key.expr.owned` + `ref` on interface members only existed for clones, one pointer each would do;
+  `LAZY_TYPE_FUNCTION` memoises `ty_function_type()`, which is interned already (the LazyType could go, its users
+  are `value_entry_type`, `class_item_get_type` and the test traversal).
+- `signature_resolve`: a method signature *written as a type* (`FunctionImpl.is_type`, `ctx.method`) lowers its
+  parameter types with `ctx.method` still set, so a callback parameter of an interface method is itself a "method"
+  signature (bivariant parameters) wherever that type ends up. This was an accident of the old `CallableType` path
+  and stands in for tsc's rule (callbacks of a bivariantly compared signature are compared bivariantly, `Callback`
+  check mode in compareSignaturesRelated). Without it `Array<X>` -> `ReadonlyArray<Y>` fails in
+  `nonInferrableTypePropagation2`. Class methods (not `is_type`) don't get it. The honest fix is in `relate.c`.
+- `ty_binding_assigned_type`: not memoised per binding (the root's LazyType is, the accesses down a nested pattern
+  are redone per query); arrays only, no iterables; an object rest is the whole object.
+- `FunctionImpl.constructed_class`: a class constructor's return type is `ty_class_instance_type()` of its class,
+  set in `class_decl_lookup_names` (which also reports TS1093 and drops a written return type).
 - `ty/check.c: check_access` (TS2339 and friends): a missing property is only reported under
   `noUncheckedIndexedAccess` and for dot access, the gate the legacy checker had. Everything is in place to report it
   honestly (`ty_access` returning null), but it floods until narrowing and apparent types of everything are right.
@@ -287,8 +281,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.
 - `builder_add_class_items`: no parameter properties (`constructor(public x)`, the parser doesn't even keep the
   modifier), no `this` type parameter, no accessibility (private/protected are ordinary members), computed member names
-  only if the item has a `name_string`. Field and accessor types come from their LazyTypes through arena `TYPE_LAZY`
-  wrapper nodes (`arena_lazy_wrapper`), because `Prop.node` is the only lazy source a property has.
+  only if the item has a `name_string`.
 - `ty_resolve_enum` / `evaluate` (enums.c): no template literals or `const` variable references in initializers, members
   of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
@@ -346,7 +339,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `collect_free_params` / `Ty.anonymous.free_params`: which outer type parameters an anonymous type's node mentions,
   found by walking the node when the type is created. Parameters declared inside the node (signatures, mapped keys,
   `infer`) are taken out at the end rather than tracked by scope, and it gives up (`free_params_unknown`, = assume all) on `typeof`, `this`, computed keys,
-  `TYPE_LAZY` links, and for every function and merged value type (a body can mention any type parameter in scope). `TyMapper` is always flat (no composed/merged forms yet,
+  parameters with initializers, and for every function and merged value type (a body can mention any type parameter in scope). `TyMapper` is always flat (no composed/merged forms yet,
   inference will want them). `LowerCtx.generic` is only a "don't bother walking" hint.
 - `signature_resolve` (instantiated): keeps the target's type parameters instead of making fresh ones. Return types
   are lazier than the rest (`signature_return_type`), because they're often inferred from a body that is being checked.

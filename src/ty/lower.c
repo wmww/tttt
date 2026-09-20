@@ -8,9 +8,7 @@
 #include <math.h>
 
 // Lowering: syntax (`TypeNode`) to semantic types (`Ty`), and what symbols are as types (ty_declared_type_of()) and as
-// values (ty_type_of_symbol()). Besides what the parser makes, nodes include the links the AST keeps to what gives a
-// binding, parameter or class member its type: TYPE_REF (another node), TYPE_LAZY (the LazyType of an expression,
-// binding, function...) and the TYPE_INDEXED of a destructuring binding (hacks.md).
+// values (ty_type_of_symbol()). Nodes are syntax only: what the parser made.
 
 static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
@@ -315,6 +313,7 @@ static void free_params_add(FreeParams* out, Ty const* param) {
 }
 
 static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* out);
+static void collect_free_params_of_function(Checker* me, FunctionImpl const* function, FreeParams* out);
 
 static void collect_free_params_of_generic(Checker* me, Generic const* generic, FreeParams* out) {
     for_each (i, vec_generic_item, &generic->items) {
@@ -360,11 +359,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             break;
 
         case TYPE_CALLABLE:
-            collect_free_params_of_generic(me, &node->callable->generic, out);
-            for_each (i, vec_callable_arg, &node->callable->args) {
-                collect_free_params(me, &i->type, out);
-            }
-            collect_free_params(me, &node->callable->ret, out);
+            collect_free_params_of_function(me, node->callable->function, out);
             break;
 
         case TYPE_INTERFACE:
@@ -402,7 +397,6 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             break;
 
         case TYPE_INDEXED:
-            if (node->indexed->is_from_binding) out->unknown = true;
             collect_free_params(me, &node->indexed->interface, out);
             collect_free_params(me, &node->indexed->index, out);
             break;
@@ -425,22 +419,27 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             }
             break;
 
-        case TYPE_REF:
-            collect_free_params(me, node->ref, out);
-            break;
-
         case TYPE_TYPEOF:
-        case TYPE_LAZY:
             // Not syntax: the type of an expression, which could be about any type parameter in scope
             out->unknown = true;
             break;
     }
 }
 
-static void anonymous_set_free_params(Checker* me, Ty* ty, TypeNode const* const* nodes, u32 count) {
-    if (!ty->anonymous.ctx.generic) return; // No type parameter in scope, nothing to find
-    FreeParams found = {0};
-    for (u32 i = 0; i < count; i++) collect_free_params(me, nodes[i], &found);
+// A signature written as a type, or an overload signature. A parameter without a type is `any`
+static void collect_free_params_of_function(Checker* me, FunctionImpl const* function, FreeParams* out) {
+    collect_free_params_of_generic(me, &function->generic, out);
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->initializer.binding.has_explicit_type) collect_free_params(me, &i->initializer.binding.explicit_type, out);
+        // Not syntax: the type of an expression, which could be about any type parameter in scope
+        if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) out->unknown = true;
+    }
+    if (function->has_body && !function->ret_explicit) out->unknown = true;
+    collect_free_params(me, &function->ret, out);
+}
+
+// Only when some type parameter is in scope (ctx.generic), otherwise there's nothing to find
+static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found) {
     u32 kept = 0;
     for (u32 i = 0; i < found.len; i++) {
         bool bound = false;
@@ -466,25 +465,32 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
     ret->alias = alias;
     ret->alias_args = alias_args;
-    anonymous_set_free_params(me, ret, &node, 1);
+    if (ctx.generic) {
+        FreeParams found = {0};
+        collect_free_params(me, node, &found);
+        anonymous_set_free_params(me, ret, found);
+    }
     // Collecting can intern type parameters, so the slot is looked up again
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
 
-Ty const* ty_anonymous_from_overloads(Checker* me, TypeNode const* const* overloads, u32 count, LowerCtx ctx) {
+Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* overloads, u32 count, LowerCtx ctx) {
     ctx.in_alias = false;
     u64 key[2] = { KEY_NODE, (u64)(uintptr_t)overloads };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
 
     Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT);
-    ret->anonymous.node = overloads[0];
     ret->anonymous.overloads = overloads;
     ret->anonymous.overload_count = count;
     ret->anonymous.ctx = ctx;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
-    anonymous_set_free_params(me, ret, overloads, count);
+    if (ctx.generic) {
+        FreeParams found = {0};
+        for (u32 i = 0; i < count; i++) collect_free_params_of_function(me, overloads[i], &found);
+        anonymous_set_free_params(me, ret, found);
+    }
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
@@ -545,7 +551,7 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
 static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     switch (decl->kind) {
         case SYMBOL_DECL_VARIABLE:
-            return ty_from_node(me, binding_get_effective_type(decl->node), (LowerCtx){ .generic = true });
+            return ty_binding_type(me, decl->node, (LowerCtx){ .generic = true });
         case SYMBOL_DECL_BUILTIN: return ty_from_node(me, decl->node, (LowerCtx){0});
         case SYMBOL_DECL_EXPR: return ty_expr_type(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
@@ -704,14 +710,12 @@ static bool node_reaches_alias_in_flight(Checker* me, TypeNode const* node, u32 
                 if (node_reaches_alias_in_flight(me, i, depth + 1)) return true;
             }
             return false;
-        case TYPE_REF: return node_reaches_alias_in_flight(me, node->ref, depth + 1);
         default: return false;
     }
 }
 
 static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node) {
     if (node_reaches_alias_in_flight(me, node, 0)) return true;
-    node = node_skip_refs(node);
     switch (node->tag) {
         case TYPE_TERNARY:
             return node_reaches_alias_in_flight_deep(me, &node->ternary->maybe_sub) ||
@@ -830,32 +834,45 @@ static Ty const* without_undefined(Checker* me, Ty const* ty) {
     return ret;
 }
 
-// The type a destructuring binding takes out of its initializer: a property or element access
-static Ty const* lower_binding_access(Checker* me, IndexedType const* indexed, LowerCtx ctx) {
-    Ty const* object = ty_from_node(me, &indexed->interface, ctx);
+// What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
+// of what its pattern is assigned
+Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
+    Binding const* parent = binding->parent;
+    if (!parent) return binding->source ? lazy_type_get(binding->source) : ty_intrinsic(me, TY_ANY);
+    Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
+    bool in_array = parent->tag == BINDING_ARRAY;
     // TODO: iterables. No TS2339-style errors from here either
-    if (indexed->array_only && !ty_extends_array(me, object)) return ty_intrinsic(me, TY_ANY);
+    if (in_array && !ty_extends_array(me, object)) return ty_intrinsic(me, TY_ANY);
     Ty const* ret;
-    if (indexed->rest && indexed->array_only) {
-        ret = binding_rest_elements(me, object, (u32)indexed->index.value.number);
-    } else if (indexed->rest) {
+    if (binding->rest && in_array) {
+        ret = binding_rest_elements(me, object, binding->parent_index);
+    } else if (binding->rest) {
         ret = object; // TODO: without the properties the pattern names, methods and accessors (tsc's getRestType())
+    } else if (in_array) {
+        Value index = value_number(binding->parent_index);
+        ret = ty_access(me, object, ty_literal(me, &index));
     } else {
-        ret = ty_access(me, object, ty_from_node(me, &indexed->index, ctx));
+        ObjectBindingItem const* item = binding->parent_item;
+        ret = ty_access(me, object, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
-    if (indexed->default_value) {
+    if (binding->default_value) {
         // `[x = 1]`: undefined is replaced by the default
         Ty const* types[2] = { without_undefined(me, ret), nullptr };
         // Not ty_check_expr() with types[0] as the contextual type: only the uncontextual path detects `[x = x]`
-        types[1] = ty_widened_for_declaration(me, ty_expr_type(me, indexed->default_value), true);
+        types[1] = ty_widened_for_declaration(me, ty_expr_type(me, binding->default_value), true);
         ret = ret->flags & TYF_ANY ? ret : ty_union(me, types, 2, nullptr, (TyList){0});
     }
     return ret;
 }
 
+// The type of a binding: what is written, else what is assigned. `ctx` is what a written type is lowered with
+Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx) {
+    if (binding->has_explicit_type) return ty_from_node(me, &binding->explicit_type, ctx);
+    return ty_binding_assigned_type(me, binding);
+}
+
 static bool is_naked_type_param_node(TypeNode const* node) {
-    node = node_skip_refs(node);
     if (node->tag != TYPE_IDENTIFIER || !node->identifier->target) return false;
     Symbol const* decl = node->identifier->target;
     return (decl->flags & SYMBOL_TYPE_PARAMETER) != 0;
@@ -922,7 +939,6 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             return lower_tuple(me, node, ctx);
 
         case TYPE_INDEXED: {
-            if (node->indexed->is_from_binding) return lower_binding_access(me, node->indexed, ctx);
             Ty const* ret = ty_indexed(
                 me,
                 ty_from_node(me, &node->indexed->interface, ctx),
@@ -944,11 +960,12 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             inner.generic = true;
             // `F extends (...args: infer A) => any`: an `infer` type in rest position is implicitly constrained to
             // `unknown[]`. Set up front, the signature itself is only resolved when somebody looks at it
-            TypeNode const* extends_node = node_skip_refs(&node->ternary->maybe_super);
+            TypeNode const* extends_node = &node->ternary->maybe_super;
             if (extends_node->tag == TYPE_CALLABLE) {
-                for_each (i, vec_callable_arg, &extends_node->callable->args) {
-                    TypeNode const* arg_type = node_skip_refs(&i->type);
-                    if (!i->source || !i->source->rest || arg_type->tag != TYPE_INFERRED) continue;
+                for_each (i, vec_function_arg, &extends_node->callable->function->args) {
+                    Binding const* binding = &i->initializer.binding;
+                    if (!i->rest || !binding->has_explicit_type || binding->explicit_type.tag != TYPE_INFERRED) continue;
+                    TypeNode const* arg_type = &binding->explicit_type;
                     if (!arg_type->inferred->symbol_ref) continue;
                     Ty const* param = ty_type_param(me, arg_type->inferred->symbol_ref);
                     if (!ty_param_constraint(me, param)) {
@@ -988,11 +1005,6 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             return ret;
         }
 
-        case TYPE_LAZY:
-            return lazy_type_get((LazyType*)node->lazy);
-
-        case TYPE_REF:
-            return lower(me, node->ref, outer_ctx, alias, alias_args);
     }
     impossible;
 }

@@ -16,5 +16,4 @@ typedef struct Interface {
 } Interface;
 
 void interface_drop(Interface* me);
-Interface interface_clone(Interface me);
 void interface_typecheck(Interface const* me, ErrorCtx* errs);

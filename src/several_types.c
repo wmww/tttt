@@ -14,13 +14,6 @@ void identifier_type_drop(IdentifierType* me) {
     vec_spanned_type_drop(&my generic_params);
 }
 
-IdentifierType identifier_type_clone(IdentifierType me) {
-    me.namespaces = vec_span_clone(me.namespaces);
-    me.namespace_symbols = vec_symbol_cptr_clone(me.namespace_symbols);
-    me.generic_params = vec_spanned_type_clone(me.generic_params);
-    return me;
-}
-
 // Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
 static Symbol const* get_symbol_from_namespace(
     Symbol const* namespace,
@@ -223,28 +216,11 @@ void inferred_type_drop(InferredType* me) {
     type_drop(&my extends);
 }
 
-InferredType inferred_type_clone(InferredType me) {
-    me.extends = type_clone(me.extends);
-    me.owned_symbol = nullptr;
-    return me;
-}
-
 // Indexed
 
 void indexed_type_drop(IndexedType* me) {
     type_drop(&my interface);
     type_drop(&my index);
-}
-
-IndexedType indexed_type_clone(IndexedType me) {
-    return (IndexedType){
-        .interface = type_clone(me.interface),
-        .index = type_clone(me.index),
-        .is_from_binding = me.is_from_binding,
-        .array_only = me.array_only,
-        .rest = me.rest,
-        .default_value = me.default_value,
-    };
 }
 
 void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs) {
@@ -261,12 +237,6 @@ void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs) {
 
 void keyof_type_drop(KeyofType* me) {
     type_drop(&my interface);
-}
-
-KeyofType keyof_type_clone(KeyofType me) {
-    return (KeyofType){
-        .interface = type_clone(me.interface),
-    };
 }
 
 void keyof_type_lookup_names(KeyofType* me, Scope* names, ErrorCtx* errs) {
@@ -286,11 +256,6 @@ void typeof_type_drop(TypeofType* me) {
     }
 }
 
-TypeofType typeof_type_clone(TypeofType me) {
-    me.owns_expr = false;
-    return me;
-}
-
 void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs) {
     expr_lookup_names(my expr, names, errs);
 }
@@ -308,11 +273,3 @@ void ternary_type_drop(TernaryType* me) {
     type_drop(&my if_false);
 }
 
-TernaryType ternary_type_clone(TernaryType me) {
-    return (TernaryType) {
-        .maybe_sub = type_clone(me.maybe_sub),
-        .maybe_super = type_clone(me.maybe_super),
-        .if_true = type_clone(me.if_true),
-        .if_false = type_clone(me.if_false),
-    };
-}

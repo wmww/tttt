@@ -13,15 +13,14 @@ void binding_drop(Binding* me) {
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
     type_drop(&my explicit_type);
-    type_drop(&my assigned_type);
     if (my default_value) {
         expr_drop(my default_value);
         free(my default_value);
     }
 }
 
-void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddNamesProps props) {
-    my assigned_type = assigned;
+void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNamesProps props) {
+    my source = source;
 
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -39,43 +38,23 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
             });
             break;
 
-        case BINDING_ARRAY: {
+        case BINDING_ARRAY:
             for_each (i, vec_binding, &my array) {
-                intptr_t index = i_index;
                 props.full = span_valid(i->element_span) ? i->element_span : i->content_span;
-                binding_add_names(
-                    i,
-                    type_indexed(c_new(IndexedType, {
-                        .interface = type_refcopy(binding_get_effective_type(me)),
-                        .index = type_value(value_number(index)),
-                        .is_from_binding = true,
-                        .array_only = true,
-                        .rest = i->rest,
-                        .default_value = i->default_value,
-                    })),
-                    scope,
-                    props
-                );
+                i->parent = me;
+                i->parent_index = (u32)i_index;
+                binding_add_names(i, nullptr, scope, props);
             }
-        }   break;
+            break;
 
-        case BINDING_OBJECT: {
+        case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
                 props.full = i->target.rest ? i->target.element_span : i->target.content_span;
-                binding_add_names(
-                    &i->target,
-                    type_indexed(c_new(IndexedType, {
-                        .interface = type_refcopy(binding_get_effective_type(me)),
-                        .index = i->computed_key ? type_lazy(&i->computed_key->lazy_type) : type_value(value_clone(i->source)),
-                        .is_from_binding = true,
-                        .rest = i->target.rest,
-                        .default_value = i->target.default_value,
-                    })),
-                    scope,
-                    props
-                );
+                i->target.parent = me;
+                i->target.parent_item = i;
+                binding_add_names(&i->target, nullptr, scope, props);
             }
-        }   break;
+            break;
     }
 }
 
@@ -106,11 +85,6 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_lookup_names(&my explicit_type, names, errs);
     }
-    type_lookup_names(&my assigned_type, names, errs);
-}
-
-TypeNode const* binding_get_effective_type(Binding const* me) {
-    return my has_explicit_type ? &my explicit_type : &my assigned_type;
 }
 
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
@@ -141,7 +115,9 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 void binding_typecheck(Binding* me, ErrorCtx* errs) {
     if (my has_explicit_type) {
         type_typecheck(&my explicit_type, errs);
-        ty_check_assignable(current_checker, ty_of_node(&my assigned_type), ty_of_node(&my explicit_type), my content_span, errs);
+        ty_check_assignable(
+            current_checker, ty_binding_assigned_type(current_checker, me), ty_of_node(&my explicit_type), my content_span, errs
+        );
     }
 
     if (my default_value) {
@@ -153,7 +129,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 
         case BINDING_IDENTIFIER:
             if (my symbol) {
-                Ty const* type = ty_of_node(binding_get_effective_type(me));
+                Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
                 if ((type->flags & TYF_ERROR) && type == ty_intrinsic(current_checker, TY_ERROR) &&
                     compiler_options()->no_implicit_any
                 ) {
@@ -165,9 +141,9 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
             break;
 
         case BINDING_ARRAY:
-            if (!ty_extends_array(current_checker, ty_of_node(binding_get_effective_type(me)))) {
-                error_ctx_error_d(errs, my content_span, 2461,
-                    "Type '", ty_of_node(binding_get_effective_type(me)), "' is not an array type.");
+            Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
+            if (!ty_extends_array(current_checker, type)) {
+                error_ctx_error_d(errs, my content_span, 2461, "Type '", type, "' is not an array type.");
             }
             for_each (i, vec_binding, &my array) {
                 binding_typecheck(i, errs);
@@ -203,7 +179,7 @@ void initialized_binding_drop(InitializedBinding* me) {
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_INITIALIZED_BINDING);
     my abstract_literals = props.abstract_literals;
-    binding_add_names(&my binding, type_lazy(&my lazy_type), scope, props);
+    binding_add_names(&my binding, &my lazy_type, scope, props);
 }
 
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs) {

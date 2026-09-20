@@ -76,16 +76,6 @@ static void imply_rest_constraint(Checker* me, SigParam const* param) {
     state->constraint_state = LAZY_STATE_DONE;
 }
 
-static Signature* signature_from_node(Checker* me, CallableType const* node, LowerCtx ctx) {
-    Signature* ret = arena_new(&my arena, Signature);
-    ret->node = node;
-    ret->ctx = ctx;
-    if (node->is_constructor) ret->flags |= SIGNATURE_CONSTRUCT;
-    if (node->is_abstract_constructor) ret->flags |= SIGNATURE_ABSTRACT;
-    if (ctx.method) ret->flags |= SIGNATURE_METHOD;
-    return ret;
-}
-
 static Signature* signature_from_function(Checker* me, FunctionImpl const* function, LowerCtx ctx) {
     Signature* ret = arena_new(&my arena, Signature);
     ret->function = function;
@@ -96,19 +86,8 @@ static Signature* signature_from_function(Checker* me, FunctionImpl const* funct
     return ret;
 }
 
-static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, TypeNode const* type, LowerCtx ctx) {
-    TypeNode const* callable = node_skip_refs(type);
-    Signature* sig;
-    if (callable->tag == TYPE_LAZY) {
-        // The type of a function (an overload of a method)
-        Ty const* ty = lazy_type_get((LazyType*)callable->lazy);
-        if (ty->kind != TY_ANONYMOUS || !ty->anonymous.function) return nullptr;
-        sig = signature_from_function(me, ty->anonymous.function, ctx);
-    } else if (callable->tag == TYPE_CALLABLE) {
-        sig = signature_from_node(me, callable->callable, ctx);
-    } else {
-        return nullptr;
-    }
+static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, FunctionImpl const* function, LowerCtx ctx) {
+    Signature* sig = signature_from_function(me, function, ctx);
     if (sig->flags & SIGNATURE_CONSTRUCT) {
         builder_push(builder, construct, sig);
     } else {
@@ -152,20 +131,20 @@ static void builder_add_interface_member(
                     }
                 }
                 bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
-                    node_skip_refs(&i->type)->tag == TYPE_CALLABLE;
+                    i->type.tag == TYPE_CALLABLE;
                 Prop* existing = builder_find_prop(builder, name);
                 if (existing) {
                     // Overloads are separate members in the legacy interface and one method with several signatures here
                     if (is_method && (existing->flags & PROP_METHOD) && existing->node) {
                         u32 count = existing->overload_count ? existing->overload_count : 1;
-                        TypeNode const** nodes = arena_new_n(&my arena, TypeNode const*, count + 1);
+                        FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, count + 1);
                         if (existing->overload_count) {
-                            memcpy(nodes, existing->overloads, sizeof(TypeNode const*) * count);
+                            memcpy(functions, existing->overloads, sizeof(FunctionImpl const*) * count);
                         } else {
-                            nodes[0] = existing->node;
+                            functions[0] = existing->node->callable->function;
                         }
-                        nodes[count] = &i->type;
-                        existing->overloads = nodes;
+                        functions[count] = i->type.callable->function;
+                        existing->overloads = functions;
                         existing->overload_count = count + 1;
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     }
@@ -209,7 +188,7 @@ static void builder_add_interface_member(
                     mapped->name_type = ty_from_node(me, &i->key.mapped.as_type, mapped_ctx);
                 }
                 mapped->template = ty_from_node(me, &i->type, mapped_ctx);
-                TypeNode const* in_type = node_skip_refs(&i->key.mapped.in_type);
+                TypeNode const* in_type = &i->key.mapped.in_type;
                 if (in_type->tag == TYPE_KEYOF) {
                     mapped->modifiers_type = ty_from_node(me, &in_type->keyof->interface, mapped_ctx);
                 }
@@ -219,7 +198,8 @@ static void builder_add_interface_member(
             }   break;
 
             case INTERFACE_KEY_CALLABLE: {
-                Signature* sig = builder_add_callable(me, builder, &i->type, ctx);
+                Signature* sig = i->type.tag == TYPE_CALLABLE ?
+                    builder_add_callable(me, builder, i->type.callable->function, ctx) : nullptr;
                 if (sig) {
                     sig->name_span = i->key.span;
                     if (vec_span_size(&i->declarations)) sig->decl_span = *vec_span_at(&i->declarations, 0);
@@ -256,12 +236,6 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
 }
 
 // Classes
-
-static TypeNode const* arena_lazy_wrapper(Checker* me, LazyType const* lazy) {
-    TypeNode* wrapper = arena_new(&my arena, TypeNode);
-    *wrapper = type_lazy((LazyType*)lazy);
-    return wrapper;
-}
 
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: only `extends Name` / `extends Name<Args>` / `extends A.B.Name`; tsc takes the return type of
@@ -313,8 +287,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
 }
 
 static Prop* builder_add_class_prop(
-    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, TypeNode const* node, LowerCtx ctx,
-    ClassItem const* item
+    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
 ) {
     Atom const* name = checker_atom(me, cstr_sv(name_string));
     Prop* existing = builder_find_prop(builder, name);
@@ -322,7 +295,6 @@ static Prop* builder_add_class_prop(
     Prop* prop = arena_new(&my arena, Prop);
     prop->name = name;
     prop->parent = parent;
-    prop->node = node;
     prop->ctx = ctx;
     prop->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
     prop->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
@@ -339,11 +311,13 @@ static void builder_add_class_items(
         switch (i->tag) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.is_static != static_side) break;
-                TypeNode const* node = i->field.has_explicit_type ?
-                    &i->field.explicit_type :
-                    arena_lazy_wrapper(me, &i->field.lazy_type);
-                Prop* prop = builder_add_class_prop(me, builder, &i->field.name_string, parent, node, ctx, i);
+                Prop* prop = builder_add_class_prop(me, builder, &i->field.name_string, parent, ctx, i);
                 if (!prop) break;
+                if (i->field.has_explicit_type) {
+                    prop->node = &i->field.explicit_type;
+                } else {
+                    prop->lazy = &i->field.lazy_type;
+                }
                 if (i->field.is_optional) prop->flags |= PROP_OPTIONAL;
                 if (i->field.is_readonly) prop->flags |= PROP_READONLY;
             }   break;
@@ -352,9 +326,9 @@ static void builder_add_class_items(
                 if (i->method.is_static != static_side) break;
                 if (i->method.accessor) {
                     if (i->method.accessor_first != i) break; // The second half of a get/set pair
-                    TypeNode const* node = arena_lazy_wrapper(me, &i->method.accessor_type);
-                    Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, node, ctx, i);
+                    Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, ctx, i);
                     if (!prop) break;
+                    prop->lazy = &i->method.accessor_type;
                     bool has_setter = false;
                     for_each (other, vec_class_item, &class_decl->items) {
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor_first != i) continue;
@@ -387,7 +361,7 @@ static void builder_add_class_items(
                         }
                     }
                     if (abstract_only) has_overloads = false;
-                    TypeNode const** nodes = arena_new_n(&my arena, TypeNode const*, visible);
+                    FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, visible);
                     u32 count = 0;
                     for_each (other, vec_class_item, &class_decl->items) {
                         if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
@@ -396,7 +370,7 @@ static void builder_add_class_items(
                             continue;
                         }
                         if (has_overloads && other->method.func.has_body) continue;
-                        nodes[count++] = arena_lazy_wrapper(me, &other->method.func.lazy_type);
+                        functions[count++] = &other->method.func;
                     }
                     Span* spans = arena_new_n(&my arena, Span, visible);
                     u32 span_count = 0;
@@ -410,13 +384,14 @@ static void builder_add_class_items(
                     if (!count) break;
                     LowerCtx method_ctx = ctx;
                     method_ctx.method = true;
-                    Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, nodes[0], method_ctx, i);
+                    Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, method_ctx, i);
                     if (!prop) break;
+                    prop->function = functions[0];
                     prop->flags |= PROP_METHOD;
                     prop_add_decl_spans(me, prop, spans, span_count);
                     if (i->method.is_optional) prop->flags |= PROP_OPTIONAL;
                     if (count > 1) {
-                        prop->overloads = nodes;
+                        prop->overloads = functions;
                         prop->overload_count = count;
                     }
                 }
@@ -822,7 +797,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                     builder_add_callable(me, &builder, ty->anonymous.overloads[i], ty->anonymous.ctx);
                 }
             } else if (ty->anonymous.node->tag == TYPE_CALLABLE) {
-                builder_add_callable(me, &builder, ty->anonymous.node, ty->anonymous.ctx);
+                builder_add_callable(me, &builder, ty->anonymous.node->callable->function, ty->anonymous.ctx);
             } else {
                 check(ty->anonymous.node->tag == TYPE_INTERFACE);
                 builder_add_interface(me, &builder, &ty->anonymous.node->interface, ty->anonymous.ctx, nullptr);
@@ -896,6 +871,10 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_anonymous_from_overloads(me, prop->overloads, prop->overload_count, prop->ctx);
     } else if (prop->symbol) {
         type = ty_type_of_symbol(me, prop->symbol);
+    } else if (prop->function) {
+        type = ty_function_type(me, prop->function);
+    } else if (prop->lazy) {
+        type = lazy_type_get((LazyType*)prop->lazy);
     } else {
         type = ty_from_node(me, prop->node, prop->ctx);
     }
@@ -936,8 +915,11 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         FunctionImpl const* function = sig->function;
         sig->type_params = ty_type_params_of(me, &function->generic);
         LowerCtx ctx = sig->ctx;
-        ctx.generic = true;
-        ctx.method = false;
+        // A function can be anywhere, a function type is lowered knowing whether some type parameter is in scope
+        ctx.generic |= !function->is_type || sig->type_params.len > 0;
+        // HACK: a method signature written as a type lowers its parameter types as methods too, which stands in for
+        // tsc comparing the callback parameters of a bivariantly compared signature bivariantly (hacks.md)
+        if (!function->is_type) ctx.method = false;
         u32 count = (u32)vec_function_arg_size(&function->args);
         SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
         bool counting_required = true;
@@ -946,7 +928,8 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
             param->rest = i->rest;
             param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
-            param->type = ty_from_node(me, binding_get_effective_type(&i->initializer.binding), ctx);
+            param->type = ty_binding_type(me, &i->initializer.binding, ctx);
+            if (function->is_type) imply_rest_constraint(me, param);
             if (param->optional || param->rest) counting_required = false;
             if (counting_required) sig->min_args++;
         }
@@ -958,38 +941,6 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         }
         sig->params = params;
         sig->param_count = count;
-    }
-    if (!sig->target && sig->node) {
-        CallableType const* node = sig->node;
-        sig->type_params = ty_type_params_of(me, &node->generic);
-        LowerCtx ctx = sig->ctx;
-        ctx.generic |= sig->type_params.len > 0;
-        u32 count = (u32)vec_callable_arg_size(&node->args);
-        SigParam* params = arena_new_n(&my arena, SigParam, count);
-        bool counting_required = true;
-        for_each (i, vec_callable_arg, &node->args) {
-            SigParam* param = &params[i_index];
-            if (i->source) {
-                param->name = checker_atom(me, i->source->initializer.binding.content_span.sv);
-                param->rest = i->source->rest;
-            } else {
-                param->name = checker_atom(me, c_sv("arg"));
-            }
-            param->optional = i->optional;
-            param->type = ty_from_node(me, &i->type, ctx);
-            imply_rest_constraint(me, param);
-            if (param->optional || param->rest) counting_required = false;
-            if (counting_required) sig->min_args++;
-        }
-        if (count && params[0].name == checker_atom(me, c_sv("this")) && vec_callable_arg_front(&node->args)->source) {
-            // `this: T` is about how the function is called, not an argument. TODO: check the receiver against it
-            if (sig->min_args && !params[0].optional) sig->min_args--;
-            params++;
-            count--;
-        }
-        sig->params = params;
-        sig->param_count = count;
-        sig->ret_node = &node->ret;
     }
     if (sig->class_instance) {
         sig->type_params = sig->class_type_params;
@@ -1016,13 +967,13 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     Ty const* ret;
     if (sig->target) {
         ret = ty_instantiate(me, signature_return_type(me, sig->target), sig->mapper);
-    } else if (sig->function) {
-        ret = ty_function_return_type(me, sig->function);
-    } else if (sig->ret_node) {
+    } else if (sig->function && sig->function->is_type) {
         LowerCtx ctx = sig->ctx;
         ctx.generic |= sig->type_params.len > 0;
         ctx.method = false;
-        ret = ty_from_node(me, sig->ret_node, ctx);
+        ret = ty_from_node(me, &sig->function->ret, ctx);
+    } else if (sig->function) {
+        ret = ty_function_return_type(me, sig->function);
     } else {
         ret = ty_intrinsic(me, TY_ANY);
     }

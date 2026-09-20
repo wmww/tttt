@@ -38,6 +38,8 @@ typedef struct FunctionImpl {
     bool is_generator;
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
+    Symbol const* constructed_class; // The constructor of a class: what it returns
+    bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
     LazyType lazy_type;
     Symbol* symbol;
     Span arrow_span;

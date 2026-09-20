@@ -59,8 +59,6 @@ void type_drop(TypeNode* me) {
         case TYPE_STRING:
         case TYPE_SYMBOL:
         case TYPE_BIGINT:
-        case TYPE_LAZY:
-        case TYPE_REF:
             break;
 
         case TYPE_VALUE:
@@ -123,35 +121,6 @@ void type_drop(TypeNode* me) {
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
-TypeNode type_clone(TypeNode me) {
-    switch (me.tag) {
-        case TYPE_ANY:
-        case TYPE_UNKNOWN:
-        case TYPE_NEVER:
-        case TYPE_VOID:
-        case TYPE_BOOLEAN:
-        case TYPE_NUMBER:
-        case TYPE_STRING:
-        case TYPE_SYMBOL:
-        case TYPE_BIGINT:
-        case TYPE_LAZY:
-        case TYPE_REF: return me;
-        case TYPE_VALUE: return type_value(value_clone(me.value));
-        case TYPE_IDENTIFIER: return type_identifier(c_new(IdentifierType, identifier_type_clone(*me.identifier)));
-        case TYPE_INFERRED: return type_inferred(c_new(InferredType, inferred_type_clone(*me.inferred)));
-        case TYPE_CALLABLE: return type_callable(c_new(CallableType, callable_type_clone(*me.callable)));
-        case TYPE_INTERFACE: return type_interface(interface_clone(me.interface));
-        case TYPE_ARRAY: return type_array(c_new(TypeNode, type_clone(*me.array.element)), me.array.readonly);
-        case TYPE_TUPLE: return type_tuple(vec_tuple_element_clone(me.tuple.elements), me.tuple.readonly);
-        case TYPE_INDEXED: return type_indexed(c_new(IndexedType, indexed_type_clone(*me.indexed)));
-        case TYPE_KEYOF: return type_keyof(c_new(KeyofType, keyof_type_clone(*me.keyof)));
-        case TYPE_TYPEOF: return type_typeof(c_new(TypeofType, typeof_type_clone(*me.typeof_)));
-        case TYPE_TERNARY: return type_ternary(c_new(TernaryType, ternary_type_clone(*me.ternary)));
-        case TYPE_UNION: case TYPE_INTERSECTION: return (TypeNode){.tag = me.tag, .composite = vec_type_clone(me.composite)};
-    }
-    impossible;
-}
-
 static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
     switch (my tag) {
         case TYPE_ANY:
@@ -183,10 +152,12 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
             break;
 
         case TYPE_CALLABLE:
-            for_each (i, vec_callable_arg, &my callable->args) {
-                type_add_inferred_names(&i->type, scope);
+            for_each (i, vec_function_arg, &my callable->function->args) {
+                if (i->initializer.binding.has_explicit_type) {
+                    type_add_inferred_names(&i->initializer.binding.explicit_type, scope);
+                }
             }
-            type_add_inferred_names(&my callable->ret, scope);
+            type_add_inferred_names(&my callable->function->ret, scope);
             break;
 
         case TYPE_INTERFACE:
@@ -230,11 +201,6 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
             }
             break;
 
-        case TYPE_LAZY: break;
-
-        case TYPE_REF:
-            type_add_inferred_names(my ref, scope);
-            break;
     }
 }
 
@@ -293,9 +259,6 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
                 type_lookup_names(i, names, errs);
             }
             break;
-
-        case TYPE_LAZY: // Resolving names is the responsibility of the LazyType owner
-        case TYPE_REF: break;
     }
 }
 
@@ -341,10 +304,6 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             for_each (i, vec_type, &my composite) {
                 type_typecheck(i, errs);
             }
-            break;
-
-        case TYPE_LAZY: // Typechecking is the responsibility of the LazyType owner
-        case TYPE_REF:
             break;
     }
 }

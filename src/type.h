@@ -67,8 +67,6 @@ typedef struct TypeNode {
         TYPE_TERNARY,
         TYPE_UNION,
         TYPE_INTERSECTION,
-        TYPE_LAZY,
-        TYPE_REF,
     } tag;
     bool parsed : 1;
     union {
@@ -94,8 +92,6 @@ typedef struct TypeNode {
         TypeofType* typeof_;
         TernaryType* ternary;
         VecTypeNode composite; // used for both TYPE_UNION and TYPE_INTERSECTION
-        LazyType* lazy;
-        TypeNode const* ref;
     };
 } TypeNode;
 
@@ -193,54 +189,6 @@ static inline TypeNode type_ternary(TernaryType* ternary) {
 
 // type_composite() and type_composite_without_simplify() declared below
 
-static inline TypeNode type_lazy(LazyType* lazy) {
-    return (TypeNode){
-        .tag = TYPE_LAZY,
-        .lazy = lazy,
-    };
-}
-
-static inline TypeNode type_ref_always(TypeNode const* ref) {
-    return (TypeNode){
-        .tag = TYPE_REF,
-        .ref = ref,
-    };
-}
-
-// Either clones or refs, whichevers cheaper (result never needs to be dropped)
-static inline TypeNode type_refcopy(TypeNode const* ref) {
-    switch (ref->tag) {
-        case TYPE_ANY:
-        case TYPE_UNKNOWN:
-        case TYPE_NEVER:
-        case TYPE_VOID:
-        case TYPE_BOOLEAN:
-        case TYPE_NUMBER:
-        case TYPE_STRING:
-        case TYPE_SYMBOL:
-        case TYPE_BIGINT:
-        case TYPE_LAZY:
-        case TYPE_REF:
-            return *ref;
-
-        case TYPE_VALUE:
-        case TYPE_IDENTIFIER:
-        case TYPE_INFERRED:
-        case TYPE_CALLABLE:
-        case TYPE_INTERFACE:
-        case TYPE_ARRAY:
-        case TYPE_TUPLE:
-        case TYPE_INDEXED:
-        case TYPE_KEYOF:
-        case TYPE_TYPEOF:
-        case TYPE_TERNARY:
-        case TYPE_INTERSECTION:
-        case TYPE_UNION:
-            break;
-    }
-    return type_ref_always(ref);
-}
-
 static inline bool type_is_self_referential(TypeNode const* me) {
     return my tag == TYPE_ANY && my any.self_referential_error;
 }
@@ -256,8 +204,6 @@ static inline TypeNode type_composite_base(typeof((TypeNode){}.tag) tag) {
 
 // PERF: should type_drop() be inlined?
 void type_drop(TypeNode* me);
-// PERF: should type_clone() be inlined?
-TypeNode type_clone(TypeNode me);
 static inline TypeNode type_move(TypeNode* me) {
     TypeNode ret = *me;
     my tag = TYPE_ANY;
@@ -267,6 +213,7 @@ static inline TypeNode type_move(TypeNode* me) {
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
 void type_typecheck(TypeNode const* me, ErrorCtx* errs);
 #define g_class_key TypeNode, type
+#define g_no_clone
 #define g_declared
 #include <cleat/generic/vec.h>
 
@@ -280,9 +227,9 @@ typedef struct SpannedType {
 } SpannedType;
 static inline SpannedType spanned_type(Span span, TypeNode type) { return (SpannedType){span, type}; }
 static inline void spanned_type_drop(SpannedType* me) { type_drop(&my type); }
-static inline SpannedType spanned_type_clone(SpannedType me) { return (SpannedType){.span = me.span, .type = type_clone(me.type)}; }
 
 #define g_class_key SpannedType, spanned_type
+#define g_no_clone
 #include <cleat/generic/vec.h>
 
 static inline TypeNode const* generic_param_at(VecSpannedType const* params, intptr_t i) {

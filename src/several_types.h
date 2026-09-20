@@ -29,7 +29,6 @@ typedef struct IdentifierType {
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);
-IdentifierType identifier_type_clone(IdentifierType me);
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
@@ -51,7 +50,6 @@ typedef struct InferredType {
 } InferredType;
 
 void inferred_type_drop(InferredType* me);
-InferredType inferred_type_clone(InferredType me);
 
 // Tuple
 
@@ -64,9 +62,9 @@ typedef struct TupleElement {
 } TupleElement;
 
 static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }
-static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type_clone(me.type); return me; }
 
 #define g_class_key TupleElement, tuple_element
+#define g_no_clone
 #define g_declared
 #include <cleat/generic/vec.h>
 
@@ -75,15 +73,9 @@ static inline TupleElement tuple_element_clone(TupleElement me) { me.type = type
 typedef struct IndexedType {
     TypeNode interface;
     TypeNode index;
-    bool is_from_binding;
-    bool array_only;
-    // Only for is_from_binding:
-    bool rest; // `[a, ...x]`: everything from index on. `{ a, ...x }`: the object (index is meaningless)
-    Expr* default_value; // Not owned (the Binding's): `[x = 1]`
 } IndexedType;
 
 void indexed_type_drop(IndexedType* me);
-IndexedType indexed_type_clone(IndexedType me);
 void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs);
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs);
 
@@ -94,7 +86,6 @@ typedef struct KeyofType {
 } KeyofType;
 
 void keyof_type_drop(KeyofType* me);
-KeyofType keyof_type_clone(KeyofType me);
 void keyof_type_lookup_names(KeyofType* me, Scope* names, ErrorCtx* errs);
 void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 
@@ -106,7 +97,6 @@ typedef struct TypeofType {
 } TypeofType;
 
 void typeof_type_drop(TypeofType* me);
-TypeofType typeof_type_clone(TypeofType me);
 void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs);
 void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs);
 
@@ -120,4 +110,3 @@ typedef struct TernaryType {
 } TernaryType;
 
 void ternary_type_drop(TernaryType* me);
-TernaryType ternary_type_clone(TernaryType me);

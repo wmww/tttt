@@ -238,7 +238,7 @@ static void display_binding(Display d, Binding const* me) {
     display_binding_content(d, me);
     if (my has_explicit_type) {
         display_lit(d, ": ");
-        display_type(d, binding_get_effective_type(me));
+        display_type(d, &my explicit_type);
     }
     // If it has an implicit type that will get displayed with the binding content
 }
@@ -323,7 +323,7 @@ static void display_inferred_type(Display d, InferredType* me) {
     }
 }
 
-static void display_callable(Display d, CallableType* me, bool is_interface_member_function) {
+static void display_callable(Display d, FunctionImpl const* me, bool is_interface_member_function) {
     d = display_set_parsed(d, true);
     if (my is_abstract_constructor) {
         display_lit(d, "abstract ");
@@ -333,19 +333,21 @@ static void display_callable(Display d, CallableType* me, bool is_interface_memb
     }
     display_generic(d, &my generic);
     display_lit(d, "(");
-    for_each (i, vec_callable_arg, &my args) {
+    for_each (i, vec_function_arg, &my args) {
         if (i_index != 0) {
             display_lit(d, ", ");
         }
-        if (i->source->rest) {
+        if (i->rest) {
             display_lit(d, "...");
         }
-        display_binding_content(d, &i->source->initializer.binding);
-        if (i->optional) {
+        display_binding_content(d, &i->initializer.binding);
+        if (i->explicit_optional) {
             display_lit(d, "?");
         }
-        display_lit(d, ": ");
-        display_type(d, &i->type);
+        if (i->initializer.binding.has_explicit_type) {
+            display_lit(d, ": ");
+            display_type(d, &i->initializer.binding.explicit_type);
+        }
     }
     display_lit(d, ")");
 
@@ -418,10 +420,10 @@ void display_interface_member(Display d, InterfaceMember const* me) {
         my key.name_is_member_function &&
         my type.tag == TYPE_CALLABLE
     ) {
-        display_callable(d, my type.callable, true);
+        display_callable(d, my type.callable->function, true);
     } else if (my key.tag == INTERFACE_KEY_CALLABLE) {
         check(my type.tag == TYPE_CALLABLE);
-        display_callable(d, my type.callable, true);
+        display_callable(d, my type.callable->function, true);
     } else {
         if (my optional) {
             display_lit(d, "?");
@@ -495,17 +497,10 @@ static void display_interface(Display d, Interface const* me) {
 }
 
 static void display_indexed_type(Display d, IndexedType* me) {
-    if (my is_from_binding) {
-        // A destructuring binding
-        display_type(d, &my interface);
-        display_lit(d, ".");
-        display_type(d, &my index);
-    } else {
-        display_type(d, &my interface);
-        display_lit(d, "[");
-        display_type(d, &my index);
-        display_lit(d, "]");
-    }
+    display_type(d, &my interface);
+    display_lit(d, "[");
+    display_type(d, &my index);
+    display_lit(d, "]");
 }
 
 static void display_keyof_type(Display d, KeyofType* me) {
@@ -564,7 +559,7 @@ static void display_type_inner(Display d, TypeNode const* me) {
 
         case TYPE_IDENTIFIER: display_identifier_type(d, my identifier); break;
         case TYPE_INFERRED: display_inferred_type(d, my inferred); break;
-        case TYPE_CALLABLE: display_callable(d, my callable, false); break;
+        case TYPE_CALLABLE: display_callable(d, my callable->function, false); break;
         case TYPE_INTERFACE: display_interface(d, &my interface); break;
 
         case TYPE_ARRAY: {
@@ -666,23 +661,6 @@ static void display_type_inner(Display d, TypeNode const* me) {
                 display_colored(d, color_implicit, ")");
             }
             break;
-
-        case TYPE_LAZY:
-            if (d.debug) display_colored(d, color_implicit, "(~> ");
-            if (current_checker) {
-                display_ty(d, lazy_type_get(my lazy));
-            } else {
-                display_colored(d, color_implicit, "?");
-            }
-            if (d.debug) display_colored(d, color_implicit, ")");
-            break;
-
-        case TYPE_REF:
-            if (d.debug) display_colored(d, color_implicit, "(-> ");
-            display_type(d, my ref);
-            if (d.debug) display_colored(d, color_implicit, ")");
-            break;
-
     }
 
     if (d.debug && type_is_self_referential(me)) {

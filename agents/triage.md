@@ -181,8 +181,8 @@ Uninvestigated items. Triage sessions drain this.
     missing property now that `typeof` is real. Look at how the static side of a class reached through
     `import x = require()` relates to the same class reached through another import (declaration copies, see
     `canonical_declaration` and `port_item_resolve_alias` in `hacks.md`).
-  - `CallableType` could shrink to `{ FunctionImpl* }` (see `hacks.md`), which would delete `CallableArg`, one of the two
-    signature resolution paths in `signature_resolve`, and `callable_type_resolve_names`' copying.
+  - Nodes aren't cloned any more: collapse `owned_symbol`/`symbol_ref` (`GenericItem`, `InferredType`, mapped keys) and
+    `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION` (`hacks.md`).
   - `display.c`'s syntax printer is only needed for debug output and for written type *names* in the `.types` traversal
     now. `DISPLAY_TYPE_MAX_DEPTH`, `BriefType` and the underline mode (`DisplayUnderlineTarget`) may be dead.
   - `engine.c` (the JS interpreter) still builds; is anything using it?

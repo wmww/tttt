@@ -373,7 +373,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
     // Widening only reaches through the structure of expression types (temporaries lowered from the legacy checker)
     if (d.widen_literals && !(ty->kind == TY_LITERAL || ty->kind == TY_UNION ||
-        (ty->kind == TY_ANONYMOUS && !ty->anonymous.node && !ty->anonymous.target))
+        (ty->kind == TY_ANONYMOUS && !ty->anonymous.node && !ty->anonymous.overload_count && !ty->anonymous.target))
     ) {
         d.widen_literals = false;
     }

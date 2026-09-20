@@ -27,7 +27,12 @@ typedef struct Binding {
     bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
     Span explicit_type_span; // Only valid if has_explicit_type
     TypeNode explicit_type; // The type explicitly specified
-    TypeNode assigned_type; // Not meaningful until binding_add_names() is called
+    // Where the type comes from when there's no explicit type, see ty_binding_type(). Set by binding_add_names()
+    struct Binding const* parent; // The pattern this is an element of, null for the root of a pattern
+    ObjectBindingItem const* parent_item; // If parent is an object pattern
+    u32 parent_index; // If parent is an array pattern
+    // Root only: the type of what is assigned (the initializer, the elements of a for..of). Null: any (a catch variable)
+    LazyType* source;
 } Binding;
 
 typedef struct ObjectBindingItem {
@@ -46,8 +51,7 @@ typedef struct BindingAddNamesProps {
 } BindingAddNamesProps;
 
 void binding_drop(Binding* me);
-void binding_add_names(Binding* me, TypeNode input, Scope* scope, BindingAddNamesProps props);
-TypeNode const* binding_get_effective_type(Binding const* me); // Only valid after binding_add_names() is called
+void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNamesProps props);
 void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 void binding_typecheck(Binding* me, ErrorCtx* errs);

@@ -45,17 +45,11 @@ enum {
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);
 
-// Follows TYPE_REF only, which never evaluates anything
-static inline TypeNode const* node_skip_refs(TypeNode const* type) {
-    while (type->tag == TYPE_REF) type = type->ref;
-    return type;
-}
-
 // alias_of: the deferred reference this is an instantiation of, if it goes by an alias name (null otherwise)
 Ty const* ty_deferred_reference(
     Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Symbol const* alias, TyList alias_args
 );
-Ty const* ty_anonymous_from_overloads(Checker* me, TypeNode const* const* overloads, u32 count, LowerCtx ctx);
+Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* overloads, u32 count, LowerCtx ctx);
 
 
 // infer.c: type inference, shared by generic calls (call.c) and `infer X` in conditional types (conditional.c)

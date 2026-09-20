@@ -70,14 +70,14 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     return sig->param_count ? sig->params[0].type : ty_intrinsic(checker, TY_ANY);
 }
 
-TypeNode class_item_get_type(ClassItem* me) {
+Ty const* class_item_get_type(ClassItem* me) {
     switch (my tag) {
-        case CLASS_ITEM_CONSTRUCTOR: return type_lazy(&my constructor.func.lazy_type);
+        case CLASS_ITEM_CONSTRUCTOR: return lazy_type_get(&my constructor.func.lazy_type);
         case CLASS_ITEM_METHOD:
-            return type_lazy(my method.accessor ? &my method.accessor_type : &my method.func.lazy_type);
-        case CLASS_ITEM_FIELD: return type_lazy(&my field.lazy_type);
-        case CLASS_ITEM_INTERFACE_MEMBER: return type_refcopy(&my interface_memeber.type);
-        case CLASS_ITEM_STATIC_BLOCK: return type_never;
+            return lazy_type_get(my method.accessor ? &my method.accessor_type : &my method.func.lazy_type);
+        case CLASS_ITEM_FIELD: return lazy_type_get(&my field.lazy_type);
+        case CLASS_ITEM_INTERFACE_MEMBER: return ty_of_node(&my interface_memeber.type);
+        case CLASS_ITEM_STATIC_BLOCK: return ty_intrinsic(current_checker, TY_NEVER);
     }
     impossible;
 }
@@ -88,7 +88,6 @@ void class_decl_drop(ClassDecl* me) {
     expr_drop(&my extends);
     vec_type_drop(&my implements);
     vec_class_item_drop(&my items);
-    type_drop(&my instance_identifier_type);
 }
 
 void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
@@ -152,20 +151,6 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 
     names = scope_new_generic(names, &my generic, errs);
 
-    VecSpannedType generic_params = vec_spanned_type_init();
-    for_each (i, vec_generic_item, &my generic.items) {
-        // Is it the fallback type, always any or something else? unclear.
-        vec_spanned_type_push(&generic_params, spanned_type(i->name, type_identifier(c_new(IdentifierType, {
-            .name = i->name,
-            .target = i->symbol_ref,
-        }))));
-    }
-    my instance_identifier_type = type_identifier(c_new(IdentifierType, {
-        .name = my name,
-        .target = my symbol,
-        .generic_params = generic_params,
-    }));
-
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
             if (i->constructor.func.ret_explicit) {
@@ -178,8 +163,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                 type_drop(&i->constructor.func.ret);
             }
             check(i->constructor.func.ret.tag == TYPE_ANY);
-            i->constructor.func.ret_explicit = true;
-            i->constructor.func.ret = type_ref_always(&my instance_identifier_type);
+            i->constructor.func.ret_explicit = false;
+            i->constructor.func.constructed_class = my symbol;
         }
     }
 

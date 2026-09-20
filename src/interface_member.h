@@ -74,11 +74,10 @@ static inline InterfaceMember interface_member_make(
 }
 
 void interface_member_drop(InterfaceMember* me);
-InterfaceMember interface_member_clone(InterfaceMember me);
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs);
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs);
 
-
 #define g_class_key InterfaceMember, interface_member
+#define g_no_clone
 #define g_declared
 #include <cleat/generic/vec.h>

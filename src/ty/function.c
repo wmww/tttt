@@ -59,7 +59,14 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     return ret;
 }
 
+Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
+    Ty const* declared = ty_declared_type_of(me, class_symbol);
+    if (declared->kind != TY_DECLARED || !declared->declared.type_params.len) return declared;
+    return ty_reference(me, declared, declared->declared.type_params);
+}
+
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
+    if (function->constructed_class) return ty_class_instance_type(me, function->constructed_class);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
     u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
     void const** slot = intern_slot(me, &my links, key, 2);

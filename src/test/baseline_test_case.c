@@ -959,7 +959,6 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type
 }
 
 void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode const* node) {
-    while (node->tag == TYPE_REF) node = node->ref;
     baseline_test_case_add_type(me, span, ty_of_node(node));
 }
 

@@ -365,7 +365,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         // up in test AST traversial (as required), but will not be typechecked (as required). This
         // is dumb but it works.
         i->binding.has_explicit_type = false;
-        binding_add_names(&i->binding, type_lazy(&my var_type), scope, (BindingAddNamesProps){
+        binding_add_names(&i->binding, &my var_type, scope, (BindingAddNamesProps){
             .function_scoped = my variable.statement.keyword == VAR_INIT_VAR,
         });
     }
@@ -593,7 +593,7 @@ void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
             Scope* catch_scope = scope_new(names, SCOPE_BLOCK);
-            binding_add_names(&my try_catch->catch_var, type_any, catch_scope, (BindingAddNamesProps){});
+            binding_add_names(&my try_catch->catch_var, nullptr, catch_scope, (BindingAddNamesProps){});
             binding_lookup_names(&my try_catch->catch_var, catch_scope, errs);
             block_resolve_names(&my try_catch->catch_block, catch_scope, errs);
 

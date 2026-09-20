@@ -27,23 +27,6 @@ void interface_member_drop(InterfaceMember* me) {
     type_drop(&my type);
 }
 
-InterfaceMember interface_member_clone(InterfaceMember me) {
-    me.declarations = vec_span_clone(me.declarations);
-    switch (me.key.tag) {
-        case INTERFACE_KEY_NAME: me.key.name_string = cstr_clone(me.key.name_string); break;
-        case INTERFACE_KEY_INDEX: me.key.index.type = type_clone(me.key.index.type); break;
-        case INTERFACE_KEY_EXPR: me.key.expr.owned = nullptr; break;
-        case INTERFACE_KEY_MAPPED:
-            me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
-            me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
-            me.key.mapped.owned_symbol = nullptr;
-            break;
-        case INTERFACE_KEY_CALLABLE: break;
-    }
-    me.type = type_clone(me.type);
-    return me;
-}
-
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
@@ -85,8 +68,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&
-                        my type.callable->owned_function_impl &&
-                        my type.callable->owned_function_impl->has_body
+                        my type.callable->function->has_body
                     ) {
                         // Only overload signatures are restricted, a method with a body can have any key
                     } else if (my is_method) {

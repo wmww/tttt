@@ -18,6 +18,9 @@ import types once those stopped being `any`). `@types/node` + `undici-types` (12
 `export =`, `import x = require()`, `globalThis.X` aliases, `typeof import()`) give 60 diagnostics, none of them a
 name error: TS2344 x30, TS7022 x13, TS2392 x10, TS2370 x4.
 
+(After the last link nodes went, `TYPE_LAZY`/`TYPE_REF`/`CallableArg`/`type_clone`: suite, real corpus and bench
+unchanged, synthetic RSS 514 -> 503 MB.)
+
 `./bench.sh`: synthetic **0.36 s** (tsgo 0.50 / 1.21 single-threaded), 514 MB; real corpus **0.79 s** (tsgo 0.83 /
 1.44), 312 MB. Phases on the real corpus: parse 144 ms, resolve names 72 ms, typecheck 574 ms. The CLI no longer
 frees the AST at exit (release builds, ~40 ms; `TTTT_TEARDOWN=1` does). `Symbol` lost its alias/module fields to side

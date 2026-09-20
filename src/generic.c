@@ -13,21 +13,8 @@ void generic_item_drop(GenericItem* me) {
     type_drop(&my fallback);
 }
 
-GenericItem generic_item_clone(GenericItem me) {
-    me.extends = type_clone(me.extends);
-    me.fallback = type_clone(me.fallback);
-    me.owned_symbol = nullptr;
-    return me;
-}
-
 void generic_drop(Generic* me) {
     vec_generic_item_drop(&my items);
-}
-
-Generic generic_clone(Generic me) {
-    return (Generic) {
-        .items = vec_generic_item_clone(me.items),
-    };
 }
 
 void generic_add_names(Generic const* me, Scope* scope) {

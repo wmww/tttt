@@ -39,9 +39,9 @@ types components) are the oracle, not the goal.
   legacy views, clone-and-substitute generics, shadow mode are deleted; `Type` is now `TypeNode`, syntax only. It took
   8 sessions, every one of which raised pass counts, made the suite faster and removed `log_error` noise; nothing in
   `Ty` itself had to be redesigned. `documentation.md` describes the result, `hacks.md` what's unfinished in it.
-- What did *not* get deleted: `TYPE_LAZY`, `TYPE_REF` and the binding `TYPE_INDEXED` are still `TypeNode` tags, now
-  only as three AST-internal links (binding -> initializer/pattern, function-as-`CallableType`, class member ->
-  `Prop.node`; `hacks.md`), and the statement/expression walk still finds its checker through a thread local.
+- The last link nodes (`TYPE_LAZY`, `TYPE_REF`, binding `TYPE_INDEXED`) and `type_clone` are deleted too: `TypeNode`
+  is what the parser made, bindings know their parent pattern (`ty_binding_type()`), a function type is a
+  `FunctionImpl`. What's left of the old world: the statement/expression walk finds its checker through a thread local.
 - The test harness parses every compiler option into one `CompilerOptions` (`src/compiler_options.h`, tsc's defaults
   resolved, also behind `tttt --target/--lib/--strict...`), runs multi-value directives as separate configurations
   with tsc's baseline names, and picks the default lib by target like tsc. The *checker* still only reads four of the

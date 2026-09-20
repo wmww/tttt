@@ -202,14 +202,14 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_CALLABLE:
-            generic_compile_test_info(&my callable->generic, ctx);
-            for_each (i, vec_callable_arg, &my callable->args) {
-                binding_content_compile_test_info(&i->source->initializer.binding, ctx);
-                if (i->source->initializer.binding.has_explicit_type) {
-                    type_compile_test_info(&i->type, ctx);
+            generic_compile_test_info(&my callable->function->generic, ctx);
+            for_each (i, vec_function_arg, &my callable->function->args) {
+                binding_content_compile_test_info(&i->initializer.binding, ctx);
+                if (i->initializer.binding.has_explicit_type) {
+                    type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
                 }
             }
-            type_compile_test_info(&my callable->ret, ctx);
+            type_compile_test_info(&my callable->function->ret, ctx);
             break;
 
         case TYPE_INTERFACE: interface_compile_test_info(&my interface, span_null, ctx); break;
@@ -249,12 +249,6 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             for_each (i, vec_type, &my composite) {
                 type_compile_test_info(i, ctx);
             }
-            break;
-
-        case TYPE_LAZY: break; // Not syntax
-
-        case TYPE_REF:
-            type_compile_test_info(my ref, ctx);
             break;
 
     }
@@ -410,9 +404,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my method.name_span,
                 .name_is_value = my method.name_is_value,
             });
-            TypeNode t = class_item_get_type(me);
-            baseline_test_case_add_type_node(ctx, my method.name_span, &t);
-            type_drop(&t);
+            baseline_test_case_add_type(ctx, my method.name_span, class_item_get_type(me));
             function_impl_compile_test_info(&my method.func, ctx);
         }   break;
 
@@ -423,9 +415,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my field.name_span,
                 .name_is_value = my field.name_is_value,
             });
-            TypeNode t = class_item_get_type(me);
-            baseline_test_case_add_type_node(ctx, my field.name_span, &t);
-            type_drop(&t);
+            baseline_test_case_add_type(ctx, my field.name_span, class_item_get_type(me));
 
             if (my field.has_explicit_type) {
                 type_compile_test_info(&my field.explicit_type, ctx);
@@ -457,7 +447,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         if (is_expr) {
             baseline_test_case_add_symbol_value(ctx, my name, my symbol);
         } else {
-            baseline_test_case_add_type_node(ctx, my name, &my instance_identifier_type);
+            baseline_test_case_add_type(ctx, my name, ty_class_instance_type(current_checker, my symbol));
         }
     }
     generic_compile_test_info(&my generic, ctx);

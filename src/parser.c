@@ -4227,7 +4227,6 @@ static bool parse_binding_type(Parser* parent, Binding* ret) {
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
     ret->explicit_type = type;
-    ret->assigned_type = (TypeNode){0};
     ret->explicit_type_span = span_from(a);
 
     return true;
@@ -4240,8 +4239,7 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
         ret->explicit_type_span = span_null;
         ret->has_explicit_type = false;
         ret->explicit_type = (TypeNode){0};
-        ret->assigned_type = (TypeNode){0};
-        return false;
+            return false;
     }
 }
 

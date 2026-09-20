@@ -71,30 +71,10 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names
     type_lookup_names(&my ret, function_scope, errs);
 }
 
-static TypeNode function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me) {
-    VecCallableArg args = vec_callable_arg_init();
-    for_each (i, vec_function_arg, &my args) {
-        vec_callable_arg_push(&args, (CallableArg){
-            .optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY,
-            .type = type_refcopy(binding_get_effective_type(&i->initializer.binding)),
-            .source = i, // Safe because FunctionImpls are always owned by the AST, and more args will not be added
-        });
-    }
-    return type_callable(c_new(CallableType, {
-        .generic = generic_clone(my generic),
-        .args = args,
-        .ret = type_ref_always(&my ret),
-        .is_constructor = my is_constructor,
-        .is_abstract_constructor = my is_abstract_constructor
-    }));
-}
-
 TypeNode function_impl_into_type(FunctionImpl me) {
     // PERF: Maybe allocate the CallableType and FunctionImpl in the same memory block?
-    FunctionImpl* impl = c_new(FunctionImpl, me);
-    TypeNode type = function_impl_make_callable_sans_inferred_ret(impl);
-    type.callable->owned_function_impl = impl;
-    return type;
+    me.is_type = true;
+    return type_callable(c_new(CallableType, { .function = c_new(FunctionImpl, me) }));
 }
 
 Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
@@ -152,12 +132,13 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
 
         if (i->rest) {
             // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
-            TypeNode const* written = binding_get_effective_type(&i->initializer.binding);
+            Binding const* binding = &i->initializer.binding;
+            TypeNode const* written = binding->has_explicit_type ? &binding->explicit_type : nullptr;
             Checker* checker = current_checker;
             // HACK: and so is a reference to one (`(...a: A1) => R1` in the true branch), but only once the signature
             // that declares it was resolved (members.c: imply_rest_constraint). Any unconstrained `infer` is let through
-            Ty const* rest_type = written->tag == TYPE_INFERRED ?
-                nullptr : ty_from_node(checker, written, (LowerCtx){ .generic = true });
+            Ty const* rest_type = written && written->tag == TYPE_INFERRED ?
+                nullptr : ty_binding_type(checker, binding, (LowerCtx){ .generic = true });
             bool is_infer = rest_type && rest_type->kind == TY_TYPE_PARAM && rest_type->param.state->is_infer &&
                 !ty_param_constraint(checker, rest_type);
             if (rest_type && !is_infer && !ty_extends_array(checker, rest_type)) {

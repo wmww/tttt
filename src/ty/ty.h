@@ -237,7 +237,7 @@ struct Ty {
             // straight off the FunctionImpl (the return type is inferred from its body if it isn't annotated)
             FunctionImpl const* function;
             Symbol const* merged_value; // Function overloads, see ty_merged_value_type()
-            TypeNode const* const* overloads; // If set, the type of an overloaded method: TYPE_CALLABLEs, node is the first
+            FunctionImpl const* const* overloads; // If set, the type of an overloaded method: its signatures
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
             TyMapper const* mapper;
@@ -307,10 +307,13 @@ struct Prop {
     Atom const* name;
     u32 flags;
     Symbol const* parent; // the declared type it was declared in, may be null
-    // Exactly one source of the type: a node to lower or a target to instantiate (or it is known from the start)
+    // Exactly one source of the type (or it is known from the start): a node to lower, what the AST evaluates lazily
+    // (an inferred class field, an accessor), a method, the overloads of a method, a symbol, a target to instantiate
     TypeNode const* node;
+    LazyType const* lazy;
+    FunctionImpl const* function; // A class method: ty_function_type()
+    FunctionImpl const* const* overloads; // An overloaded method: all of its signatures
     Symbol const* symbol; // A member of a namespace: the type of the symbol as a value
-    TypeNode const* const* overloads; // An overloaded method: all of its TYPE_CALLABLE nodes, node being the first
     u32 overload_count;
     LowerCtx ctx;
     Prop const* target;
@@ -339,8 +342,8 @@ typedef struct SigParam {
 
 struct Signature {
     u32 flags;
-    // Exactly one source: a function type node, a function (see Ty.anonymous.function), or a target to instantiate
-    CallableType const* node;
+    // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
+    // or a target to instantiate
     FunctionImpl const* function;
     // Construct signatures of a class: the type parameters are the class's and the return type is its instance type,
     // whatever `node` or `target` say
@@ -360,7 +363,6 @@ struct Signature {
     u32 min_args;
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
     // that is in the middle of being checked
-    TypeNode const* ret_node;
     LazyState ret_state;
     Ty const* ret;
 };
@@ -556,6 +558,12 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
 
 // lower.c
 Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
+// The type of a binding (a variable, a parameter, an element of a destructuring pattern): what is written (lowered
+// with `ctx`), else what is assigned to it
+Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
+// A class as written inside itself: `C<T, U>` with its own type parameters as the arguments
+Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol);
+Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding);
 Ty const* ty_declared_type_of(Checker* me, Symbol const* decl);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
