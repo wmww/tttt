@@ -2,6 +2,31 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 04 stages 3 + 4: modules from everywhere, printing by accessibility
+Suite: **1684 full of 13163 tests** (was 1576), errors 6401 (6050), symbols 8401 (8332), types 3733 (3533). Step by
+step: module refs + ambient modules + `export =` + import types + `import()` +339 tests with a gained component / -13
+(package.json `exports` resolution, an augmentation meeting an export alias), `globalThis` as a namespace and keyword
+names in specifiers +60, `arguments`/`debugger` +46/-2, names by accessibility +94/0, removing the written-type-name
+hack +33/-10 (it hid `any`s), tsc's root file rule in the harness +39/-53 (errors -28, symbols +14, types +14: the
+losers passed only because every file was a root; they need `typeRoots`/`paths` resolution, see `triage.md`).
+`failstats.py`: spurious TS2304 7164 in 1713 tests -> 5420 in 1241, spurious TS2307 2398/575 -> 2224/471, all
+spurious diagnostics 26357 -> 23323; log_error lines 71 -> 66. 145 module tests clean under valgrind.
+
+Real corpus, now with its real options (`--target es2020 --lib es2020 --strict`) and `@types/node` as tsc's own
+tsconfig has it: **7754 diagnostics, 1 name error** (`source-map`, package.json typings; was 51 + 11 unresolved
+import types once those stopped being `any`). `@types/node` + `undici-types` (120 .d.ts files of ambient modules,
+`export =`, `import x = require()`, `globalThis.X` aliases, `typeof import()`) give 60 diagnostics, none of them a
+name error: TS2344 x30, TS7022 x13, TS2392 x10, TS2370 x4.
+
+`./bench.sh`: synthetic **0.36 s** (tsgo 0.50 / 1.21 single-threaded), 514 MB; real corpus **0.79 s** (tsgo 0.83 /
+1.44), 312 MB. Phases on the real corpus: parse 144 ms, resolve names 72 ms, typecheck 574 ms. The CLI no longer
+frees the AST at exit (release builds, ~40 ms; `TTTT_TEARDOWN=1` does). `Symbol` lost its alias/module fields to side
+structs and declarations start at capacity 1 (RSS 337 -> 327 MB with node types loaded). **The plan's "resolve names
+<= 40 ms" was not reached** (72-77 ms): callgrind of the phase is 206 M instructions of which ~35 M are `rep stos` of
+fresh arena chunks over-counted, `scope_resolve` + table probes 33% inclusive, declare (`scope_init_declaration`) 24%;
+it is memory-bound pointer chasing (two AST walks, a scope chain walk per identifier), not something a local fix
+removes. Ideas are in `triage.md`.
+
 ## 2026-09-19, plan 04 stage 2: the type side goes by symbols
 Suite (`./passcount.py`): **1576 full of 13163 tests** (unchanged), errors 6050 (+1), symbols 8332, types 3533.
 Gained an errors component: errorConstructorSubtypes, keyofModuleObjectHasCorrectKeys (namespace/module members go by

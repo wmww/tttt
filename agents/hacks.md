@@ -51,8 +51,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
 - `EnumDecl.is_const`: only decides the symbol flag (a const enum doesn't merge with a namespace); no TS2475 etc.
-- `parse_import_type`: `import("./a").B<T>` and `typeof import("./a")` parse to `any`; nothing is loaded or resolved
-  (imports are only discovered from toplevel statements, `program_handle_statement`). Wants module symbols: plan 04.
+- `parse_import_type`: import attributes (`{ with: { "resolution-mode": ... } }`) are parsed and dropped.
 - `parse_type_predicate`: `x is T` / `asserts x is T` become `boolean` / `void`, the predicate is dropped (plan 05).
   `parse_generic_decl_item` likewise parses and drops `in`/`out`/`const` type parameter modifiers, and
   `parse_variable_statement` drops the `!` of `let x!: T`.
@@ -91,7 +90,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
 
-## The binder (`scope.c`, plan 04 stages 1-2 done, 3-4 to go)
+## The binder (`scope.c`, plan 04 done)
 - Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the
   meaning the name is used with, aliases resolved). The plan wanted one pointer plus an accessor; `target` is that
   accessor's result cached at resolve time, so that checking never walks alias chains. `GenericItem`,
@@ -105,23 +104,53 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   symbols because they come out of those entry points. Known fallout: `console.log = (...args) => {}` with an
   augmented `Console` now sees both `log` signatures and wants tsc's `getIntersectedSignatures` for the contextual
   signature (signatureCombiningRestParameters2 lost its errors component).
-- `make_gather_target`: `import * as ns` / `import x = require()` is an alias whose target is a namespace symbol of
-  its own (`Symbol.gather_module` = the module, `symbol_members()` looks through it) instead of the module symbol
-  itself, only so that its type prints as `typeof ns`. Stage 3 (accessibility-based printing).
+- `make_gather_target`: `import * as ns` / `import x = require()` / `export as namespace N` is an alias whose target is a
+  namespace symbol of its own (`Symbol.gather_module` = the module, `symbol_members()` looks through it) instead of the
+  module symbol itself, so that its type prints as `typeof ns`. With `out_symbol_name()` in place the module symbol
+  could be the target and the display could find the alias in scope; not done, because the symbols baseline also goes
+  by the gather symbol's declaration.
+- `declare global {}` merges into the globals wherever it is written, also inside a namespace where tsc rejects it
+  (moduleAugmentationGlobal8).
+- Modules (stage 3): an augmentation of a module whose export is an *alias* (`export { get }` + `declare module "lib" {
+  export function get(): ... }`) reports TS2484 because alias and function meet in one table; tsc merges into the
+  alias' target (crossFileOverloadModifierConsistency). TS2664 (augmenting a module nobody declares), TS2649, TS1259/
+  TS2497 (default/namespace import of an `export =` module without esModuleInterop) and TS2300 for a second
+  `export =` are not reported. Named imports from an `export =` module only see the *namespace* side of what is
+  assigned, not the properties of its type; `export = a.b` (not a plain identifier) is a variable, so it loses the type
+  meaning. `import("./a")` of an `export =` module has no synthetic `{ default }`. An ambient module of the shared lib
+  program would need an overlay like the globals (no lib declares one). `binder_module_of_ref()` memoises in the AST's
+  `ModuleRef`: all of them are resolved in the link phase, so nothing writes later.
+- `parse_import_type`/`add_module_ref`: a `ModuleRef` made during a parse attempt that is later abandoned stays on the
+  file's list: harmless (one more file looked for, errors come from the users of a ref, not from the list), but not
+  free.
+- `globalThis` is a namespace symbol over `Binder.globals`: its type has *every* global as a property, `let`/`const`
+  and types' values included (tsc: only `var`s and functions), and `ty_namespace_type` builds all ~2k props the first
+  time a program touches it.
+- `identifier_expr_lookup_names`: `arguments` has no symbol (typed `IArguments` by name in
+  `ty_identifier_reference_type`), and is accepted inside arrow functions at top level too (TS2304/TS2496 missing:
+  emitArrowFunctionWhenUsingArguments02_ES6).
+- `scope_export_default`: a second default export that means something else (interface + value) is dropped instead of
+  merged. `resolve_alias_target`: TS1192 is only suppressed for declaration files under
+  `allowSyntheticDefaultImports`; TS2303 (circular alias) and TS2308 (ambiguous `export *`) are not reported.
+- **Parallelism contract audit** (the contract is in `documentation.md`, "Resolve names"), what still writes to shared
+  state:
+  declare phase: (1) scripts and `declare global` declare straight into `Binder.globals`, ambient modules into
+  `Binder.ambient_modules`, and a module augmentation into *another file's* module symbol (all three want per-file
+  contribution tables merged in the link phase; cross-file conflicts are told from same-file ones by comparing the
+  source of the first declaration in `report_conflicts`); (2) every symbol, table and scope comes out of the one
+  `Binder.arena`, and `binder_new_symbol` appends to `Binder.symbols` (the list `binder_link` resolves aliases from):
+  per-file arenas + per-file alias lists; (3) one `ErrorCtx`.
+  resolve phase: read-only on symbol tables as far as I can tell (aliases, `export *` tables and `ModuleRef`s are all
+  resolved in link), but function/block scopes and their symbols are *made* during this walk, from the same shared
+  arena and symbol list; same fix as (2).
+  check phase: the thread-local `current_checker`, see below.
 - Scripts declare straight into `Binder.globals` while they're walked, in file order (`SCOPE_SCRIPT`,
   `SCOPE_GLOBAL_AUGMENTATION`). The plan's contract wants a per-file "global contributions" table merged in the link
   phase; until then declare is not parallelisable and cross-file conflicts are told from same-file ones by comparing
   the source of the first declaration (`report_conflicts`).
-- `declare global {}` merges into the globals wherever it is written, also inside a namespace where tsc rejects it
-  (moduleAugmentationGlobal8). Module augmentations (`declare module "./a" {}`) and ambient modules are containers of
-  their own that nothing can import (`namespace_decl_add_names`).
 - Exported and local declarations of one name live in two tables with no link between them (tsc has a local
   `exportSymbol` stub). TS2440 against an exported local is special-cased in `binder_link`; `export { b }` of a local
   that is also declared exported doesn't show the merged declarations (mergedDeclarationExports), TS2395 is missing.
-- `scope_export_default`: a second default export that means something else (interface + value) is dropped instead of
-  merged. `resolve_alias_target`: no synthetic default for `export =` modules (there is no `export =` at all), TS1192
-  is only suppressed for declaration files under `allowSyntheticDefaultImports`; TS2306 points at the imported name
-  instead of the module specifier; TS2303 (circular alias) and TS2308 (ambiguous `export *`) are not reported.
 - `block_is_instantiated`: syntactic; an `export { x }` always instantiates a namespace, a const enum does too.
 - `let`/`const` against a hoisted `var` of an inner block (TS2451 by tsc's checker), TS2403 (subsequent `var` of a
   different type: the first declaration gives the type), function declarations in blocks under sloppy mode: not done.
@@ -171,10 +200,12 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   the stack is `any` without TS7023.
 - `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x` (it used to be `any`). tsc takes the *declared*
   type of an identifier, not the narrowed one; no difference until narrowing exists.
-- `baseline_test_case_add_type_node` / `baseline_test_case_add_symbol_value`: a variable whose type is a written
-  type *name* (`var x: X.Y.Z`) shows as written (the legacy syntax printer), an enum member as `E.x`, everything
-  else through `ty_display` with unqualified names.
-  Measured: +21 full tests over never qualifying. The real rule needs symbol accessibility (plan 04, symbols).
+- `baseline_test_case_add_symbol_value`: an enum member shows as `E.x` by hand (wants fresh literal types). The
+  "written type shows as written" hack is gone (plan 04 stage 3: `out_symbol_name()`, names by accessibility from
+  `TyDisplay.enclosing`); removing it uncovered what it hid in 10 tests: unresolved qualified names and `this` types
+  lowering to `any`, alias names lost (`Pair<FooBar>` printing structurally). The enclosing scope is tracked per file
+  and namespace only: function/class/block scopes aren't kept on their AST nodes, so a local declaration shadowing an
+  outer one prints unqualified where tsc would qualify.
 - `ty_merged_value_type`: the merged type copies the first named entry's `declared` struct (a class static side or an
   enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one (`ty_static_type_of`,
   which is what `this` in a static member and a derived class's base static side see).
@@ -321,7 +352,5 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   are lazier than the rest (`signature_return_type`), because they're often inferred from a body that is being checked.
 - `builder_add_interface`: index signature and mapped type operand types are lowered eagerly (property and signature
   types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
-- `qualified_name`: declared types always print with their full namespace path (what tsc does in error messages);
-  tsc's `.types` baselines qualify only as far as needed from the enclosing declaration. Needs symbols (plan 04).
 - `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks, no fresh/regular
   literal pairs. No unique symbol types. TS2456 is only a TODO.

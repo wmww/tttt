@@ -80,6 +80,11 @@ static_failable apply_compiler_options(Options const* opts, CompilerOptions* opt
 }
 
 static void destroy_program(Program* program, ErrorCtx* errs) {
+#ifndef DEBUG_BUILD
+    // The process is about to exit: freeing the AST node by node was a tenth of a run on a real project. Set
+    // TTTT_TEARDOWN to look for leaks with a release build
+    if (!getenv("TTTT_TEARDOWN")) return;
+#endif
     program_destroy(program);
     error_ctx_drop(errs);
 }

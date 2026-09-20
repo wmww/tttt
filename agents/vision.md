@@ -5,10 +5,10 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-19, after plan 04 stage 1: the new binder)
+## State (2026-09-19, after plan 04: the new binder, modules, printing by accessibility)
 - ~28.7k LoC of C in `src/` (parser 5.0k, type core `src/ty/` 9.5k, display 1.4k). Inherited from a solo human
   project halted in 2025, ported onto the cleat stdlib, then had its type core replaced (below).
-- `./fasttest.sh`: **1576 / 13163 tests fully pass** (errors 6049, symbols 8332, types 3533; `./passcount.py`).
+- `./fasttest.sh`: **1684 / 13163 tests fully pass** (errors 6401, symbols 8401, types 3733; `./passcount.py`).
   History, like for like denominators and what each session moved are in `measurements.md` and the git log.
 - **`./realworld.py` (tsc's own `src/compiler`, 193k lines, clean under tsc): 0 syntax errors, 117 name errors, 9699
   type errors, 0.9 s** (tsc 4.9 s, tsgo 0.78 s, 1.27 s single-threaded; tttt: parse + bind 0.27 s, typecheck 0.6 s). Plan 03 got it
@@ -16,7 +16,7 @@ types components) are the oracle, not the goal.
   literals, `?.()`, `else` after `b;`, the comma operator, real destructuring patterns, right-associative assignment
   and a dozen small things; the checker needed `keyof` of a union not to be a cross product, and its first real
   profile found two silly hot spots worth 3x (line numbers of diagnostics, properties of intersections).
-  **Now 7758 diagnostics, 51 name errors (node globals), 0.80 s**: plan 04 stage 1 fixed the binder bug behind the DOM
+  **After plan 04: 7754 diagnostics, 1 name error, 0.79 s**: stage 1 fixed the binder bug behind the DOM
   `Node` (an import merged with a local function); nearly all of the rest is missing narrowing (plan 05).
 - **The binder is new (plan 04 stage 1)**: tsc-shaped symbols with flags and exclude masks, persistent scopes, alias
   symbols for every import/export form, one exports table per namespace, `var` hoisting, a lib overlay instead of
@@ -24,8 +24,14 @@ types components) are the oracle, not the goal.
   `log_error` noise in one session, like the type core flips did. Stage 2 moved the type side onto it: the checker
   knows things by `Symbol*` (`ty_type_of_symbol`, `ty_declared_type_of`, `SymbolLinks`), `Declaration`/`MergedType`/
   the `typeof` twins are deleted, lib-internal references see a program's augmentations (`binder_redirect`). Pass
-  counts flat, RSS -20..30%. Printing/ambient modules/`import()` types are stage 3, arenas + the parallelism audit
-  stage 4.
+  counts flat, RSS -20..30%. Stages 3 + 4 finished it: the parser lists every module a file names (import types and
+  `import()` included), ambient and pattern modules, module augmentation, `export =`, `export as namespace`,
+  `globalThis` as a namespace, type names printed by symbol accessibility from the enclosing scope (the
+  written-type-name hack is gone), tsc's root file rule in the test harness. 1576 -> 1684 tests, and the corpus now
+  runs with its real options and `@types/node`: **7754 diagnostics, 1 name error, 0.79 s (tsgo 0.83)**. Not reached:
+  name resolution <= 40 ms (72 ms, memory-bound: `measurements.md`), per-file arenas (the audit of what still writes
+  to shared state during declare/resolve is in `hacks.md`). **Module resolution** (typeRoots, paths, package.json
+  exports) is now the visible gap on the module side: its own plan, see `todo.md`.
 - **The type core migration is finished.** Every type is a `Ty` (`src/ty/`): interned, arena-allocated, id-carrying,
   lazily resolved members, mapper instantiation, tsc-shaped relations (id-keyed caches, maybe-stack, variances),
   calls/overloads/two-pass inference, contextual typing through one `ty_check_expr(expr, contextual)`, conditional/
@@ -101,7 +107,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - When a checker feature "doesn't work" on lib types, look at what the lib *parsed* to first (`new (): T`).
 - Threading (not built, not precluded): all checker state is in `Checker`, the AST is read-only while checking, so N
   checkers over one AST is "make N `Checker`s and partition files". Type ids are per checker (printed union order
-  could depend on the partition; keep it deterministic). Parse is per file. Bind still mutates shared scopes: plan 04.
+  could depend on the partition; keep it deterministic). Parse is per file. Bind still writes to shared tables and one arena: `hacks.md`, "Parallelism contract audit".
 
 ## Risks / concerns
 - Test-chasing: 11k tests invite special-casing message text. Prefer fixes that move whole categories.
@@ -126,7 +132,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. ~~Type core redesign~~ done (8 sessions).
 3. ~~Real-world corpus parses and runs end to end~~ done (plan 03); it is the pinned benchmark and second oracle.
-3b. Persistent symbols / new binder (plan 04), then bind-time flow graph + narrowing (plan 05).
+3b. ~~Persistent symbols / new binder (plan 04)~~ done, then bind-time flow graph + narrowing (plan 05).
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; module resolution, JS files (`allowJs`/`checkJs`).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.

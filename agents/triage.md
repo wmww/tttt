@@ -16,8 +16,8 @@ Uninvestigated items. Triage sessions drain this.
 - `for (x of iterator)`: TS2495 "is not an array type or a string type" for anything that isn't an array, now visible
   because ES2015 libs load (`for-of13`). for..of needs the iteration protocol (`[Symbol.iterator]()`), which needs
   well-known symbol property names.
-- Harness: `@libFiles`, `@noImplicitReferences`, `tsconfig.json` in a test, `@currentDirectory`, `@link` are ignored
-  (see `hacks.md`). `@noImplicitReferences` (155 tests) decides which files are roots, probably the most valuable.
+- Harness: `@libFiles`, `tsconfig.json` in a test, `@currentDirectory`, `@link` are ignored (see `hacks.md`).
+  `@noImplicitReferences` and the "last file is the only root" rule are honoured since plan 04 stage 3.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there
   (the last value of "es5,es2015" is a bad value and ignored -> defaults). Untested.
 - readme.md says development is halted and describes the project as "Tess"'s; refresh it.
@@ -43,9 +43,6 @@ Uninvestigated items. Triage sessions drain this.
   `globalThis.`).
 - tttt's `main.c` only loads 4 lib files and ignores tsconfig; `error.c` "Error added with invalid span" is down to ~70 lines per
   suite run since plan 04 (TS2511 on a lib class, names found in a `_` of some lib).
-- Type display uses the declared name / full namespace path (`typeof A.B`, `C`) where tsc prints the name as
-  accessible from the use site, preferring aliases (`typeof AB`, `AB.C`). Symbols baseline likewise wants
-  qualified names (`Symbol(A.x, ...)`) for namespace members. Both are for the symbols/printing design.
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - `failstats.py --syntax` used to silently reuse the previous dump; it now re-runs the harness unless `--no-run`.
 - Remaining syntax gaps (`./failstats.py --syntax`; the real corpus has none left, so these are test-suite only):
@@ -197,8 +194,26 @@ Uninvestigated items. Triage sessions drain this.
   `test/baseline_results.ts` against the commit before) are mostly `declare global` in odd places, `export { x }`
   next to an exported `x`, and moduleAssignmentCompat1-4 (`Symbol(A)` without a Decl for a non-instantiated namespace
   used as a value).
-- The realworld corpus' remaining name errors are node globals (`process`, `require`, `Buffer`: `types: ["node"]`),
-  `arguments` and the `debugger` statement (parsed as an identifier).
+- The realworld corpus' only name error left is `Cannot find module 'source-map'` from `@types/source-map-support`
+  (a package whose typings are named by its package.json: module resolution). `realworld.py` now runs with the
+  corpus' real options (es2020, strict) and `@types/node`.
+- **Module resolution is the next harness/CLI-sized gap** (not plan 04's): `typeRoots`/`types` and
+  `/// <reference types>`, `paths`/`baseUrl`, package.json `types`/`exports`/`typesVersions`, node16 rules, `.mts`/
+  `.cts`. Spurious TS2307 is in ~600 tests (non-relative names mostly), and the root file rule made ~50 tests honest
+  that used to pass because every file was a root (typeReferenceDirectives*, pathMappingBasedModuleResolution*,
+  nodeModulesTripleSlashReference*). Deserves a plan of its own.
+- "Cannot find name" flavours tsc picks by name: TS2580 (`require`, `process`...: 88 in the baselines), TS2583
+  (`Map`, `Promise`... with an old lib: 116), TS2582 (`describe`, `it`, `test`: 24), TS2581 (`$`), TS2584
+  (`console`, `document`). A table in `identifier_expr_lookup_names`.
+- A type that prints structurally has no size limit: `typeof globalThis` without its name was 23 MB of error text,
+  and the harness then deadlocked writing it to `diff` (`run_diff_subprocess` writes all of stdin before reading).
+  tsc truncates (`...`, the 160 character default of `noErrorTruncation`).
+- TS2694 on an import type names the module by the specifier's symbol name (`"a"`), done; namespaces inside it by
+  bare name where tsc qualifies.
+- Name resolution is 77 ms on the corpus (plan 04 wanted 40). Callgrind says 170 M instructions once `rep stos`
+  over-counting is discounted, so it is cache misses more than work: every identifier walks the scope chain (locals
+  + container exports per level, value then type meaning on failure), and declare + resolve are two walks of the
+  AST. Ideas: one table probe per scope for all meanings, skip empty block scopes when chaining, merge the walks.
 - Plan 04 stage 2 leftovers: contextual signature of a type with several call signatures (tsc:
   `getIntersectedSignatures`; signatureCombiningRestParameters2). Declaration order in the symbols baseline when an
   import merges with a function (`test/probes/plan04/aliasMergesWithLocalValue.ts`: tsc lists the function first,
