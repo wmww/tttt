@@ -17,7 +17,7 @@ typedef struct LazyType {
         // Makes it easy to show a warning if a LazyType is accidentally zero-initialized, otherwise shouldn't be used
         LAZY_TYPE_UNINITIALIZED = 0,
 
-        // The type was known when this LazyType was created (see lazy_type_preeval())
+        // Nothing to evaluate: any (expr_implicit_any())
         LAZY_TYPE_EVALUATED,
 
         // The rest means this LazyType is part of one of the following structs
@@ -25,21 +25,12 @@ typedef struct LazyType {
         LAZY_TYPE_INITIALIZED_BINDING,
         LAZY_TYPE_FOR_EACH_LOOP_VAR,
         LAZY_TYPE_FUNCTION,
-        LAZY_TYPE_CLASS_INSTANCE,
-        LAZY_TYPE_CLASS_CLASS,
         LAZY_TYPE_CLASS_ITEM_FIELD,
         LAZY_TYPE_CLASS_ITEM_ACCESSOR,
-        LAZY_TYPE_ENUM_INSTANCE,
-        LAZY_TYPE_ENUM_INTERFACE,
-        LAZY_TYPE_INTERFACE_DECL,
-        LAZY_TYPE_MERGED,
-        LAZY_TYPE_SCOPE_VALUE_INTERFACE,
     } tag;
     // Where the memo is: a slot in the current Checker, so that typechecking never writes to the AST, and programs
     // that share a lib AST don't share checker state. 0: not bound yet (evaluating is a bug)
     u32 slot;
-    // LAZY_TYPE_EVALUATED: the type, as a node to lower
-    TypeNode preevaluated;
 } LazyType;
 
 // Slot numbers are process-wide and never reused, see hacks.md
@@ -85,13 +76,6 @@ static inline LazyType lazy_type_init(int tag) {
 static inline void lazy_type_bind(LazyType* me, int tag) {
     my tag = tag;
     if (!my slot) my slot = lazy_slot_new();
-}
-
-static inline LazyType lazy_type_preeval(TypeNode type) {
-    return (LazyType){
-        .tag = LAZY_TYPE_EVALUATED,
-        .preevaluated = type,
-    };
 }
 
 static inline struct Ty const* lazy_type_get(LazyType* me) {

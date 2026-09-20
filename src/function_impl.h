@@ -6,7 +6,7 @@
 #include "value.h"
 #include "binding.h"
 #include "generic.h"
-#include "declaration.h"
+#include "lazy_type.h"
 
 typedef struct FunctionArg {
     Span span;
@@ -36,11 +36,10 @@ typedef struct FunctionImpl {
     bool is_method; // Declared with method syntax (parameters compare bivariantly)
     bool is_async;
     bool is_generator;
-    Declaration const* promise_decl; // The global Promise type (if any), looked up for async functions
+    Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
     LazyType lazy_type;
-    DeclHandle declaration;
-    Declaration this_declaration;
+    Symbol* symbol;
     Span arrow_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow;

@@ -16,18 +16,16 @@ void function_impl_drop(FunctionImpl* me) {
     vec_function_arg_drop(&my args);
     type_drop(&my ret);
     lazy_type_drop(&my lazy_type);
-    declaration_drop(&my this_declaration);
     block_drop(&my body);
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
-    scope_init_declaration(scope, &my declaration, (DeclProps){
+    scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
         .exported = exported,
-        .tag = my has_body ? DECLARATION_FUNCTION_IMPL : DECLARATION_FUNCTION_SIGNATURE,
-        .generic = &my generic,
-        .value_type = type_lazy(&my lazy_type),
+        .kind = SYMBOL_DECL_FUNCTION,
+        .node = me,
     });
 }
 
@@ -47,13 +45,7 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names
 
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
 
-    if (this_is_any) {
-        declaration_init(&my this_declaration, (DeclProps){
-            .tag = DECLARATION_VARIABLE,
-            .value_type = type_any,
-        });
-        function_scope->this_declaration = &my this_declaration;
-    }
+    if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY };
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
@@ -65,7 +57,7 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names
         if (i->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
-            function_scope->this_declaration = i->initializer.binding.declaration.get;
+            function_scope->this_ref = (ThisRef){ THIS_PARAMETER, i->initializer.binding.symbol };
         }
     }
 
@@ -162,9 +154,13 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             // `(...args: infer A) => any`: an `infer` type in this position is implicitly constrained to an array
             TypeNode const* written = binding_get_effective_type(&i->initializer.binding);
             Checker* checker = current_checker;
-            if (written->tag != TYPE_INFERRED &&
-                !ty_extends_array(checker, ty_from_node(checker, written, (LowerCtx){ .generic = true }))
-            ) {
+            // HACK: and so is a reference to one (`(...a: A1) => R1` in the true branch), but only once the signature
+            // that declares it was resolved (members.c: imply_rest_constraint). Any unconstrained `infer` is let through
+            Ty const* rest_type = written->tag == TYPE_INFERRED ?
+                nullptr : ty_from_node(checker, written, (LowerCtx){ .generic = true });
+            bool is_infer = rest_type && rest_type->kind == TY_TYPE_PARAM && rest_type->param.state->is_infer &&
+                !ty_param_constraint(checker, rest_type);
+            if (rest_type && !is_infer && !ty_extends_array(checker, rest_type)) {
                 error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");
             }
             if (has_initializer) {

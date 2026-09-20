@@ -138,7 +138,7 @@ static void check_access(
     // ported from kept the noise of everything it couldn't type yet out of the way. Narrowing (plan 03) comes first
     // Namespaces are the exception: their members are exactly their exports
     bool is_namespace = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
-        object->declared.namespace_symbol && !object->declared.namespace_symbol->is_module;
+        object->declared.namespace_symbol && !symbol_members(object->declared.namespace_symbol)->is_module;
     if (!error_if_not_found || !(compiler_options()->no_unchecked_indexed_access || is_namespace)) return;
     if (object->flags & TYF_NULLABLE) {
         error_ctx_error_d(

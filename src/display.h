@@ -61,12 +61,6 @@ static inline DisplayCtx display_ctx_take(DisplayCtx ctx, cstr* target) {
 #define cstr_append_d(target, ctx, ...) \
     (*(target) = display_into_cstr(display_sequence(display_ctx_take(ctx, target), __VA_ARGS__)))
 
-typedef struct Declaration Declaration;
-typedef Declaration const* DeclarationCPtr;
-
-#define g_key DeclarationCPtr, declaration_cptr
-#include <cleat/generic/hset.h>
-
 typedef struct DisplayUnderlineTarget {
     cstr target;
     cstr underline;

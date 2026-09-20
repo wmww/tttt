@@ -2,19 +2,29 @@
 #include "scope.h"
 #include "enum_decl.h"
 #include "class_decl.h"
+#include "interface_decl.h"
+#include "statement.h"
+#include "binding.h"
 #include <math.h>
 
-// Lowering: syntax (`TypeNode`) to semantic types (`Ty`). Besides what the parser makes, nodes include the links name
-// resolution sets up between declarations and what gives them their type: TYPE_REF (another node), TYPE_LAZY (the
-// LazyType of an expression, binding, function, class...) and the TYPE_INDEXED of a destructuring binding.
+// Lowering: syntax (`TypeNode`) to semantic types (`Ty`), and what symbols are as types (ty_declared_type_of()) and as
+// values (ty_type_of_symbol()). Besides what the parser makes, nodes include the links the AST keeps to what gives a
+// binding, parameter or class member its type: TYPE_REF (another node), TYPE_LAZY (the LazyType of an expression,
+// binding, function...) and the TYPE_INDEXED of a destructuring binding (hacks.md).
 
-static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
+static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
-static DeclLinks* decl_links(Checker* me, Declaration const* decl) {
-    u64 key[2] = { KEY_DECL_LINKS, (u64)(uintptr_t)decl };
+static SymbolLinks* symbol_links(Checker* me, Symbol const* symbol) {
+    u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)symbol };
     void const** slot = intern_slot(me, &my links, key, 2);
-    if (!*slot) *slot = arena_new(&my arena, DeclLinks);
-    return (DeclLinks*)*slot;
+    if (!*slot) *slot = arena_new(&my arena, SymbolLinks);
+    return (SymbolLinks*)*slot;
+}
+
+// The program's version of a symbol. A symbol that comes from inside the AST of the shared lib program (`Array` in
+// the declaration of `ReadonlyArray`) is the lib's, which doesn't have what this program has added to it
+static inline Symbol const* canonical(Checker* me, Symbol const* symbol) {
+    return binder_redirect(my binder, symbol);
 }
 
 TyList ty_type_params_of(Checker* me, Generic const* generic) {
@@ -26,8 +36,8 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
     u32 len = (u32)vec_generic_item_size(&generic->items);
     Ty const** params = arena_new_n(&my arena, Ty const*, len);
     for_each (i, vec_generic_item, &generic->items) {
-        Ty const* param = i->declaration_ref ?
-            ty_type_param(me, i->declaration_ref) :
+        Ty const* param = i->symbol_ref ?
+            ty_type_param(me, i->symbol_ref) :
             ty_synthetic_type_param(me, i->name.sv);
         if (!param->param.state->item) param->param.state->item = i;
         params[i_index] = param;
@@ -41,53 +51,48 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
 // Makes the type parameters of a later declaration of a merged interface the same types as the first declaration's
 static void unify_type_params(Checker* me, TyList params, Generic const* other) {
     for_each (i, vec_generic_item, &other->items) {
-        if ((u32)i_index >= params.len || !i->declaration_ref) break;
-        u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)i->declaration_ref };
+        if ((u32)i_index >= params.len || !i->symbol_ref) break;
+        u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)i->symbol_ref };
         void const** slot = intern_slot(me, &my links, key, 2);
         if (!*slot) *slot = params.data[i_index];
     }
 }
 
-static Ty const* registered_type_param(Checker* me, Declaration const* decl) {
-    // `infer X` and mapped type keys are DECLARATION_TYPE declarations like aliases are. They're type parameters if
-    // whatever introduced them was lowered first, which it is since they're only in scope inside of it.
-    u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)decl };
-    return intern_get(&my links, key, 2);
+// `A.B.name`. TODO(plan 04 stage 3): tsc qualifies a name as far as needed to be reachable from where it's printed
+// (symbol accessibility). Always qualifying is what it does for error messages.
+static void append_qualified_name(cstr* out, Symbol const* symbol) {
+    Symbol const* parent = symbol->parent;
+    // Modules and ambient modules (`declare module "m"`) are containers too, but not part of a name
+    if (parent && !parent->is_module && !(parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\''))) {
+        append_qualified_name(out, parent);
+        cstr_append_lit(out, ".");
+    }
+    cstr_append_span(out, symbol->name_span);
 }
 
-// `A.B.name`. TODO(plan 03): tsc qualifies a name as far as needed to be reachable from where it's printed, which
-// needs symbols and an enclosing declaration. Always qualifying is what it does for error messages.
-static Atom const* qualified_name(Checker* me, VecSpan const* namespaces, Span name) {
-    if (!vec_span_size(namespaces)) return checker_atom(me, name.sv);
+Atom const* ty_qualified_name(Checker* me, Symbol const* symbol) {
+    Symbol const* parent = symbol->parent;
+    if (!parent || parent->is_module) return checker_atom(me, symbol->name_span.sv);
     cstr qualified = cstr_null;
-    for_each (i, vec_span, namespaces) {
-        // Ambient modules (`declare module "m"`) are namespaces too, but not part of a name
-        if (i->sv.size && (*i->sv.buf == '"' || *i->sv.buf == '\'')) continue;
-        cstr_append_span(&qualified, *i);
-        cstr_append_lit(&qualified, ".");
-    }
-    cstr_append_span(&qualified, name);
+    append_qualified_name(&qualified, symbol);
     Atom const* ret = checker_atom(me, cstr_sv(&qualified));
     cstr_drop(&qualified);
     return ret;
 }
 
-Atom const* ty_qualified_name(Checker* me, Declaration const* decl) {
-    return qualified_name(me, &decl->namespaces, decl->name);
-}
-
-static Ty const* make_declared(Checker* me, Declaration const* decl, TyDeclaredKind kind) {
+static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind kind) {
     Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
     ret->declared.kind = kind;
-    ret->declared.decl = decl;
-    ret->declared.name = qualified_name(me, &decl->namespaces, decl->name);
+    ret->declared.symbol = symbol;
+    ret->declared.name = ty_qualified_name(me, symbol);
     ret->declared.state = arena_new(&my arena, TyObjectState);
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE) {
-        ret->declared.type_params = ty_type_params_of(me, decl->type_generic);
-        for_each (node, vec_decl_node, &decl->nodes) {
-            if (node->kind != DECL_NODE_INTERFACE) continue;
-            InterfaceDecl const* interface_decl = node->ptr;
-            if (&interface_decl->generic != decl->type_generic) {
+        Generic const* first = symbol_type_generic(symbol);
+        ret->declared.type_params = ty_type_params_of(me, first);
+        for (u32 i = 0; i < symbol->decl_count; i++) {
+            if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
+            InterfaceDecl const* interface_decl = symbol->decls[i].node;
+            if (&interface_decl->generic != first) {
                 unify_type_params(me, ret->declared.type_params, &interface_decl->generic);
             }
         }
@@ -95,34 +100,28 @@ static Ty const* make_declared(Checker* me, Declaration const* decl, TyDeclaredK
     return ret;
 }
 
-void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type) {
-    DeclLinks* links = decl_links(me, decl);
+void ty_set_declared_type(Checker* me, Symbol const* symbol, Ty const* type) {
+    SymbolLinks* links = symbol_links(me, symbol);
     links->declared_type = type;
     links->declared_state = LAZY_STATE_DONE;
 }
 
-// The (first) AST node of the given kind a declaration was made from
-static void const* decl_node(Declaration const* decl, DeclNodeKind kind) {
-    for_each (i, vec_decl_node, &decl->nodes) {
-        if (i->kind == kind) return i->ptr;
-    }
-    return nullptr;
-}
-
 // An enum member's type is made when its enum's is
-static Ty const* enum_member_type(Checker* me, Declaration const* decl) {
-    EnumCase const* enum_case = decl_node(decl, DECL_NODE_ENUM_CASE);
-    if (!enum_case || !enum_case->parent || !enum_case->parent->declaration.get) return ty_intrinsic(me, TY_ERROR);
-    Ty const* enum_type = ty_declared_type_of(me, enum_case->parent->declaration.get);
-    DeclLinks* links = decl_links(me, decl);
+static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
+    if (!symbol->parent || !(symbol->parent->flags & SYMBOL_ENUM)) return ty_intrinsic(me, TY_ERROR);
+    ty_declared_type_of(me, symbol->parent);
+    SymbolLinks* links = symbol_links(me, symbol);
     if (links->declared_state == LAZY_STATE_DONE) return links->declared_type;
     // The enum is being resolved further up the stack and hasn't got to this member yet
-    (void)enum_type;
     return nullptr;
 }
 
-Ty const* ty_declared_type_of(Checker* me, Declaration const* decl) {
-    DeclLinks* links = decl_links(me, decl);
+// The type a symbol stands for in a type position: the symbol must be the one that has the type meaning (what
+// identifiers keep as `target`). Everything about a placeholder is any
+Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
+    symbol = canonical(me, symbol);
+    if (symbol->is_placeholder) return ty_intrinsic(me, TY_ERROR);
+    SymbolLinks* links = symbol_links(me, symbol);
     switch (links->declared_state) {
         case LAZY_STATE_DONE: return links->declared_type;
         case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR); // TODO: TS2456 circular alias
@@ -130,63 +129,57 @@ Ty const* ty_declared_type_of(Checker* me, Declaration const* decl) {
     }
     links->declared_state = LAZY_STATE_IN_FLIGHT;
     Ty const* ret;
-    switch (decl->type_tag) {
-        case DECLARATION_INTERFACE:
-            ret = make_declared(me, decl, TY_DECLARED_INTERFACE);
-            break;
-
-        case DECLARATION_CLASS:
-            ret = make_declared(me, decl, decl->is_typeof ? TY_DECLARED_CLASS_STATIC : TY_DECLARED_CLASS_INSTANCE);
-            break;
-
-        case DECLARATION_ENUM:
-            ret = ty_resolve_enum(me, decl);
-            break;
-
-        case DECLARATION_ENUM_CASE:
-        case DECLARATION_ENUM_CASE_TYPE:
-            if (decl->type_tag == DECLARATION_ENUM_CASE_TYPE && decl->is_typeof) {
-                ret = make_declared(me, decl, TY_DECLARED_ENUM_OBJECT);
-                break;
-            }
-            ret = enum_member_type(me, decl);
-            if (!ret) {
-                links->declared_state = LAZY_STATE_NOT_STARTED;
-                return ty_intrinsic(me, TY_ERROR);
-            }
-            break;
-
-        case DECLARATION_TYPE: {
-            DeclEntries entries = declaration_type_entries(decl);
-            if (entries.len != 1) {
-                ret = ty_intrinsic(me, TY_ERROR);
-            } else if (decl->is_typeof) {
-                ret = ty_from_node(me, &entries.data[0], (LowerCtx){0});
-                // `import * as ns`: the module's value goes by the name it was imported as (`typeof ns`)
-                if (ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_NAMESPACE && !ret->declared.name->len) {
-                    Ty* named = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
-                    named->declared = ret->declared; // Shares the members
-                    named->declared.name = checker_atom(me, decl->name.sv);
-                    ret = named;
-                }
-            } else {
-                TyList params = ty_type_params_of(me, decl->type_generic);
-                ret = lower(me, &entries.data[0], (LowerCtx){ .generic = params.len > 0, .in_alias = true }, decl, params);
-            }
-        }   break;
-
-        case DECLARATION_GENERIC_TYPE:
-            ret = ty_type_param(me, decl);
-            break;
-
-        default:
+    if (symbol->flags & SYMBOL_INTERFACE) {
+        ret = make_declared(me, symbol, TY_DECLARED_INTERFACE);
+    } else if (symbol->flags & SYMBOL_CLASS) {
+        ret = make_declared(me, symbol, TY_DECLARED_CLASS_INSTANCE);
+    } else if (symbol->flags & SYMBOL_ENUM) {
+        ret = ty_resolve_enum(me, symbol);
+    } else if (symbol->flags & SYMBOL_ENUM_MEMBER) {
+        ret = enum_member_type(me, symbol);
+        if (!ret) {
+            links->declared_state = LAZY_STATE_NOT_STARTED;
+            return ty_intrinsic(me, TY_ERROR);
+        }
+    } else if (symbol->flags & SYMBOL_TYPE_PARAMETER) {
+        ret = ty_type_param(me, symbol);
+    } else if (symbol->flags & SYMBOL_TYPE_ALIAS) {
+        SymbolDecl const* decl = &symbol->decls[0];
+        for (u32 i = symbol->decl_count; i--;) {
+            if (symbol->decls[i].flags & SYMBOL_TYPE_ALIAS) decl = &symbol->decls[i];
+        }
+        if (decl->kind == SYMBOL_DECL_TYPE_ALIAS) {
+            TypeDecl const* type_decl = decl->node;
+            TyList params = ty_type_params_of(me, &type_decl->generic);
+            LowerCtx ctx = { .generic = params.len > 0, .in_alias = true };
+            ret = lower(me, &type_decl->type, ctx, symbol, params);
+        } else if (decl->kind == SYMBOL_DECL_BUILTIN) {
+            // The `object` keyword is a builtin alias whose node is an empty interface
+            ret = csview_equals(symbol->name, "object") ?
+                ty_intrinsic(me, TY_NON_PRIMITIVE) :
+                ty_from_node(me, decl->node, (LowerCtx){0});
+        } else {
             ret = ty_intrinsic(me, TY_ERROR);
-            break;
+        }
+    } else {
+        ret = ty_intrinsic(me, TY_ERROR); // A value used as a type, TS2749
     }
-    // decl_links() pointers are stable (arena), the table growing in the meantime doesn't matter
+    // symbol_links() pointers are stable (arena), the table growing in the meantime doesn't matter
     links->declared_type = ret;
     links->declared_state = LAZY_STATE_DONE;
     return ret;
+}
+
+// The static side of a class, the object of an enum: what the symbol is as a value, before any merging
+Ty const* ty_static_type_of(Checker* me, Symbol const* symbol) {
+    symbol = canonical(me, symbol);
+    SymbolLinks* links = symbol_links(me, symbol);
+    if (!links->static_type) {
+        links->static_type = make_declared(
+            me, symbol, symbol->flags & SYMBOL_CLASS ? TY_DECLARED_CLASS_STATIC : TY_DECLARED_ENUM_OBJECT
+        );
+    }
+    return links->static_type;
 }
 
 // Type arguments as written, padded with defaults (then `any`) and truncated to the parameter count
@@ -213,7 +206,7 @@ static TyList lower_type_args(
     return (TyList){ .data = args, .len = params.len };
 }
 
-static Ty const* alias_instance(Checker* me, Declaration const* decl, Ty const* body, TyList params, TyList args) {
+static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body, TyList params, TyList args) {
     u64 stack_key[32];
     u32 count = 2 + args.len;
     check(count <= c_arraylen(stack_key));
@@ -231,8 +224,12 @@ static Ty const* alias_instance(Checker* me, Declaration const* decl, Ty const* 
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
+static bool symbol_is_generic_alias(Symbol const* symbol) {
+    return symbol->flags & SYMBOL_TYPE_ALIAS && !symbol->is_placeholder && symbol_type_generic(symbol);
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
-    Declaration const* decl = identifier->decl_ref;
+    Symbol const* decl = canonical(me, identifier->target);
     if (!decl) {
         if (identifier->keyword || !span_valid(identifier->name)) return ty_intrinsic(me, TY_ERROR);
         cstr name = cstr_null;
@@ -247,18 +244,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 
-    Ty const* param = registered_type_param(me, decl);
-    if (param) return param;
-
-    if (decl->type_tag == DECLARATION_TYPE && !decl->type_generic && !vec_span_size(&decl->declarations)) {
-        // HACK: the `object` keyword is a builtin alias for the legacy checker's empty interface
-        if (csview_equals(decl->name.sv, "object")) return ty_intrinsic(me, TY_NON_PRIMITIVE);
-    }
+    if (identifier->this_kind == THIS_CLASS_STATIC) return ty_static_type_of(me, decl);
 
     Ty const* declared = ty_declared_type_of(me, decl);
-    switch (decl->type_tag) {
-        case DECLARATION_INTERFACE:
-        case DECLARATION_CLASS:
+    if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
             if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
                 // TODO: `this` and a bare `C` inside generic class C are the class's own instantiation
                 // (type arguments = its type parameters), and `this` is really its own type parameter
@@ -269,18 +258,13 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 return ty_reference(me, declared, args);
             }
             return declared;
-
-        case DECLARATION_TYPE:
-            if (decl->type_generic && !decl->is_typeof) {
-                TyList params = ty_type_params_of(me, decl->type_generic);
-                TyList args = lower_type_args(me, params, &identifier->generic_params, ctx, args_buf);
-                return alias_instance(me, decl, declared, params, args);
-            }
-            return declared;
-
-        default:
-            return declared;
     }
+    if (symbol_is_generic_alias(decl)) {
+        TyList params = ty_type_params_of(me, symbol_type_generic(decl));
+        TyList args = lower_type_args(me, params, &identifier->generic_params, ctx, args_buf);
+        return alias_instance(me, decl, declared, params, args);
+    }
+    return declared;
 }
 
 // Free type parameters of a node, see Ty.anonymous.free_params
@@ -319,7 +303,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 
 static void collect_free_params_of_generic(Checker* me, Generic const* generic, FreeParams* out) {
     for_each (i, vec_generic_item, &generic->items) {
-        if (i->declaration_ref) free_params_bind(out, ty_type_param(me, i->declaration_ref));
+        if (i->symbol_ref) free_params_bind(out, ty_type_param(me, i->symbol_ref));
         collect_free_params(me, &i->extends, out);
         collect_free_params(me, &i->fallback, out);
     }
@@ -342,14 +326,11 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 
         case TYPE_IDENTIFIER: {
             IdentifierType const* identifier = node->identifier;
-            Declaration const* decl = identifier->decl_ref;
+            Symbol const* decl = identifier->target;
             if (identifier->keyword) {
                 out->unknown = true; // `this` is the enclosing class applied to its type parameters
-            } else if (decl) {
-                Ty const* param = decl->type_tag == DECLARATION_GENERIC_TYPE ?
-                    ty_type_param(me, decl) :
-                    registered_type_param(me, decl);
-                if (param) free_params_add(out, param);
+            } else if (decl && decl->flags & SYMBOL_TYPE_PARAMETER) {
+                free_params_add(out, ty_type_param(me, decl));
             }
             for_each (i, vec_spanned_type, &identifier->generic_params) {
                 collect_free_params(me, &i->type, out);
@@ -357,8 +338,8 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
         }   break;
 
         case TYPE_INFERRED:
-            if (node->inferred->declaration_ref) {
-                free_params_bind(out, ty_type_param(me, node->inferred->declaration_ref));
+            if (node->inferred->symbol_ref) {
+                free_params_bind(out, ty_type_param(me, node->inferred->symbol_ref));
             }
             collect_free_params(me, &node->inferred->extends, out);
             break;
@@ -384,8 +365,8 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                         collect_free_params(me, &i->key.index.type, out);
                         break;
                     case INTERFACE_KEY_MAPPED:
-                        if (i->key.mapped.declaration_ref) {
-                            free_params_bind(out, ty_type_param(me, i->key.mapped.declaration_ref));
+                        if (i->key.mapped.symbol_ref) {
+                            free_params_bind(out, ty_type_param(me, i->key.mapped.symbol_ref));
                         }
                         collect_free_params(me, &i->key.mapped.in_type, out);
                         if (i->key.mapped.has_as_type) collect_free_params(me, &i->key.mapped.as_type, out);
@@ -457,7 +438,7 @@ static void anonymous_set_free_params(Checker* me, Ty* ty, TypeNode const* const
     if (found.unknown || found.len) ty->flags |= TYF_COULD_CONTAIN_TYPE_VARIABLES;
 }
 
-Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args) {
+Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args) {
     check(node->tag == TYPE_INTERFACE || node->tag == TYPE_CALLABLE);
     ctx.in_alias = false; // Members are resolved lazily, which is what makes recursion through them legal
     u64 key[2] = { KEY_NODE, (u64)(uintptr_t)node };
@@ -498,7 +479,7 @@ static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     ret->declared.kind = TY_DECLARED_NAMESPACE;
     ret->declared.namespace_symbol = symbol;
     // No name: a module (`import * as ns`), which prints as its structure
-    ret->declared.name = symbol->is_module ? checker_atom(me, c_sv("")) : ty_qualified_name(me, &symbol->decl);
+    ret->declared.name = symbol->is_module ? checker_atom(me, c_sv("")) : ty_qualified_name(me, symbol);
     ret->declared.state = arena_new(&my arena, TyObjectState);
     return ret;
 }
@@ -513,19 +494,91 @@ Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
-// The value of a declaration that several declarations contribute a value to: function overloads, a function, class
+// Whether a declaration of a symbol adds something to what the symbol is as a value
+static bool decl_contributes_value(Symbol const* symbol, u32 index) {
+    SymbolDecl const* decl = &symbol->decls[index];
+    if (!(decl->flags & SYMBOL_VALUE)) return false;
+    u32 once = 0; // Of these only the first counts
+    switch (decl->kind) {
+        case SYMBOL_DECL_VARIABLE:
+        case SYMBOL_DECL_BUILTIN:
+        case SYMBOL_DECL_EXPR:
+            once = SYMBOL_VARIABLE; // `var a; var a;`, a parameter and a `var`: the first one gives the type. TODO: TS2403
+            break;
+        case SYMBOL_DECL_FUNCTION:
+            // The implementation of overloads isn't a signature
+            if (((FunctionImpl const*)decl->node)->has_body) once = SYMBOL_FUNCTION;
+            break;
+        case SYMBOL_DECL_ENUM: once = SYMBOL_ENUM; break; // One object for every declaration of the enum
+        case SYMBOL_DECL_NAMESPACE: once = SYMBOL_VALUE_MODULE; break; // And one for every block of a namespace
+        default: break;
+    }
+    for (u32 i = 0; i < index; i++) {
+        if (symbol->decls[i].flags & once) return false;
+    }
+    return true;
+}
+
+static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_VARIABLE:
+            return ty_from_node(me, binding_get_effective_type(decl->node), (LowerCtx){ .generic = true });
+        case SYMBOL_DECL_BUILTIN: return ty_from_node(me, decl->node, (LowerCtx){0});
+        case SYMBOL_DECL_EXPR: return ty_expr_type(me, decl->node);
+        case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
+        case SYMBOL_DECL_CLASS:
+        case SYMBOL_DECL_ENUM:
+            return ty_static_type_of(me, symbol);
+        case SYMBOL_DECL_ENUM_MEMBER: return ty_declared_type_of(me, symbol);
+        case SYMBOL_DECL_NAMESPACE:
+        case SYMBOL_DECL_ALIAS: // `import * as ns`
+            return ty_namespace_type(me, symbol);
+        default:
+            return ty_intrinsic(me, TY_ERROR);
+    }
+}
+
+// What a symbol is as a value, one type per declaration that contributes to it. malloc'd
+static u32 value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
+    u32 count = 0;
+    *out = malloc(sizeof(Ty const*) * (symbol->decl_count + 1));
+    panic_if(!*out, "out of memory");
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (decl_contributes_value(symbol, i)) (*out)[count++] = value_entry_type(me, symbol, &symbol->decls[i]);
+    }
+    return count;
+}
+
+// The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`
+// of an identifier), aliases are seen through. Everything about a placeholder is any
+Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
+    symbol = canonical(me, symbol_for_meaning(symbol, SYMBOL_VALUE));
+    if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, TY_ANY);
+    SymbolDecl const* only = nullptr;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (!decl_contributes_value(symbol, i)) continue;
+        if (only) return ty_merged_value_type(me, symbol);
+        only = &symbol->decls[i];
+    }
+    // Not memoized here: what gives a declaration its type has a memo of its own, which is also what detects cycles
+    return only ? value_entry_type(me, symbol, only) : ty_intrinsic(me, TY_ERROR);
+}
+
+// The value of a symbol that several declarations contribute a value to: function overloads, a function, class
 // or enum merged with a namespace. The members of all of them (members.c: builder_add_merged_value)
-Ty const* ty_merged_value_type(Checker* me, Declaration const* decl) {
-    u64 key[2] = { KEY_MERGED_VALUE, (u64)(uintptr_t)decl };
+Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
+    u64 key[2] = { KEY_MERGED_VALUE, (u64)(uintptr_t)symbol };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
 
     // With a namespace, class or enum among them it goes by name (`typeof f`), overloads alone are anonymous
     Ty const* named = nullptr;
-    for_each (i, vec_type, &decl->merged_value_type.merge_list) {
-        Ty const* entry = ty_from_node(me, i, (LowerCtx){ .generic = true });
-        if (entry->kind == TY_DECLARED && !named) named = entry;
+    Ty const** entries;
+    u32 count = value_entries(me, symbol, &entries);
+    for (u32 i = 0; i < count && !named; i++) {
+        if (entries[i]->kind == TY_DECLARED) named = entries[i];
     }
+    free(entries);
     Ty* ret;
     if (named) {
         ret = named->declared.kind == TY_DECLARED_NAMESPACE ?
@@ -535,18 +588,22 @@ Ty const* ty_merged_value_type(Checker* me, Declaration const* decl) {
             ret->declared = named->declared;
             ret->declared.state = arena_new(&my arena, TyObjectState);
         }
-        ret->declared.merged_value = decl;
-        if (!ret->declared.name->len) ret->declared.name = ty_qualified_name(me, decl);
+        ret->declared.merged_value = symbol;
+        if (!ret->declared.name->len) ret->declared.name = ty_qualified_name(me, symbol);
     } else {
         // A function body can mention every type parameter in scope
         ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | TYF_COULD_CONTAIN_TYPE_VARIABLES);
-        ret->anonymous.merged_value = decl;
+        ret->anonymous.merged_value = symbol;
         ret->anonymous.ctx = (LowerCtx){ .generic = true };
         ret->anonymous.free_params_unknown = true;
         ret->anonymous.state = arena_new(&my arena, TyObjectState);
     }
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
+}
+
+u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
+    return value_entries(me, symbol, out);
 }
 
 static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
@@ -599,10 +656,10 @@ static bool node_reaches_alias_in_flight(Checker* me, TypeNode const* node, u32 
     if (depth > 32) return false;
     switch (node->tag) {
         case TYPE_IDENTIFIER: {
-            Declaration const* decl = node->identifier->decl_ref;
-            if (decl && decl->type_tag == DECLARATION_TYPE && !registered_type_param(me, decl)) {
-                u64 key[2] = { KEY_DECL_LINKS, (u64)(uintptr_t)decl };
-                DeclLinks const* links = intern_get(&my links, key, 2);
+            Symbol const* decl = canonical(me, node->identifier->target);
+            if (decl && decl->flags & SYMBOL_TYPE_ALIAS) {
+                u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)decl };
+                SymbolLinks const* links = intern_get(&my links, key, 2);
                 if (links && links->declared_state == LAZY_STATE_IN_FLIGHT) return true;
             }
             for_each (i, vec_spanned_type, &node->identifier->generic_params) {
@@ -658,7 +715,7 @@ static Ty const* deferred_reference_target(Checker* me, TypeNode const* node) {
 }
 
 Ty const* ty_deferred_reference(
-    Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Declaration const* alias, TyList alias_args
+    Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Symbol const* alias, TyList alias_args
 ) {
     u64 stack_key[64];
     u32 count = 2 + (mapper ? mapper->len * 2 : 0);
@@ -772,11 +829,11 @@ static Ty const* lower_binding_access(Checker* me, IndexedType const* indexed, L
     return ret;
 }
 
-static bool is_naked_type_param_node(Checker* me, TypeNode const* node) {
+static bool is_naked_type_param_node(TypeNode const* node) {
     node = node_skip_refs(node);
-    if (node->tag != TYPE_IDENTIFIER || !node->identifier->decl_ref) return false;
-    Declaration const* decl = node->identifier->decl_ref;
-    return decl->type_tag == DECLARATION_GENERIC_TYPE || registered_type_param(me, decl);
+    if (node->tag != TYPE_IDENTIFIER || !node->identifier->target) return false;
+    Symbol const* decl = node->identifier->target;
+    return (decl->flags & SYMBOL_TYPE_PARAMETER) != 0;
 }
 
 static bool node_reaches_alias_in_flight_deep(Checker* me, TypeNode const* node);
@@ -789,7 +846,7 @@ static TyCondBranch lower_branch(Checker* me, TypeNode const* node, LowerCtx ctx
     return (TyCondBranch){ .type = ty_from_node(me, node, ctx) };
 }
 
-static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Declaration const* alias, TyList alias_args) {
+static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Symbol const* alias, TyList alias_args) {
     // What the operands of this node are lowered with
     LowerCtx ctx = outer_ctx;
     ctx.method = false;
@@ -806,19 +863,17 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, De
         case TYPE_VALUE: return ty_literal(me, &node->value);
         case TYPE_IDENTIFIER: {
             Ty const* ret = lower_identifier(me, node->identifier, ctx);
-            Declaration const* decl = node->identifier->decl_ref;
+            Symbol const* decl = node->identifier->target;
             // The body of an alias is an instantiation of a generic alias: it goes by the new name
-            if (alias && decl && decl->type_tag == DECLARATION_TYPE && decl->type_generic && !decl->is_typeof &&
-                !registered_type_param(me, decl)
-            ) {
+            if (alias && decl && symbol_is_generic_alias(decl)) {
                 ret = ty_realias(me, ret, alias, alias_args);
             }
             return ret;
         }
 
         case TYPE_INFERRED: {
-            if (!node->inferred->declaration_ref) return ty_intrinsic(me, TY_ERROR);
-            Ty const* param = ty_type_param(me, node->inferred->declaration_ref);
+            if (!node->inferred->symbol_ref) return ty_intrinsic(me, TY_ERROR);
+            Ty const* param = ty_type_param(me, node->inferred->symbol_ref);
             param->param.state->is_infer = true;
             return param;
         }
@@ -869,8 +924,8 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, De
                 for_each (i, vec_callable_arg, &extends_node->callable->args) {
                     TypeNode const* arg_type = node_skip_refs(&i->type);
                     if (!i->source || !i->source->rest || arg_type->tag != TYPE_INFERRED) continue;
-                    if (!arg_type->inferred->declaration_ref) continue;
-                    Ty const* param = ty_type_param(me, arg_type->inferred->declaration_ref);
+                    if (!arg_type->inferred->symbol_ref) continue;
+                    Ty const* param = ty_type_param(me, arg_type->inferred->symbol_ref);
                     if (!ty_param_constraint(me, param)) {
                         param->param.state->constraint = ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false);
                         param->param.state->constraint_state = LAZY_STATE_DONE;
@@ -881,7 +936,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, De
             Ty const* extends = ty_from_node(me, &node->ternary->maybe_super, inner);
             TyCondBranch if_true = lower_branch(me, &node->ternary->if_true, inner);
             TyCondBranch if_false = lower_branch(me, &node->ternary->if_false, ctx);
-            bool distributive = is_naked_type_param_node(me, &node->ternary->maybe_sub);
+            bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub);
             Ty const* ret = ty_conditional(me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive);
             return alias && ret->kind == TY_CONDITIONAL ? ty_realias(me, ret, alias, alias_args) : ret;
         }

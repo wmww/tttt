@@ -21,9 +21,11 @@ types components) are the oracle, not the goal.
 - **The binder is new (plan 04 stage 1)**: tsc-shaped symbols with flags and exclude masks, persistent scopes, alias
   symbols for every import/export form, one exports table per namespace, `var` hoisting, a lib overlay instead of
   copying 20k declarations per test program (suite 5.1 s -> 3.2 s). It raised every component and removed almost all
-  `log_error` noise in one session, like the type core flips did. The type side still goes through a `Declaration`
-  payload per symbol (stage 2), printing/ambient modules/`import()` types are stage 3, arenas + the parallelism
-  audit stage 4.
+  `log_error` noise in one session, like the type core flips did. Stage 2 moved the type side onto it: the checker
+  knows things by `Symbol*` (`ty_type_of_symbol`, `ty_declared_type_of`, `SymbolLinks`), `Declaration`/`MergedType`/
+  the `typeof` twins are deleted, lib-internal references see a program's augmentations (`binder_redirect`). Pass
+  counts flat, RSS -20..30%. Printing/ambient modules/`import()` types are stage 3, arenas + the parallelism audit
+  stage 4.
 - **The type core migration is finished.** Every type is a `Ty` (`src/ty/`): interned, arena-allocated, id-carrying,
   lazily resolved members, mapper instantiation, tsc-shaped relations (id-keyed caches, maybe-stack, variances),
   calls/overloads/two-pass inference, contextual typing through one `ty_check_expr(expr, contextual)`, conditional/
@@ -31,9 +33,9 @@ types components) are the oracle, not the goal.
   legacy views, clone-and-substitute generics, shadow mode are deleted; `Type` is now `TypeNode`, syntax only. It took
   8 sessions, every one of which raised pass counts, made the suite faster and removed `log_error` noise; nothing in
   `Ty` itself had to be redesigned. `documentation.md` describes the result, `hacks.md` what's unfinished in it.
-- What did *not* get deleted: the bind-time links (`TYPE_LAZY`, `TYPE_REF`, binding `TYPE_INDEXED`, `MergedType`) that
-  say where a `Declaration`'s type comes from are still `TypeNode`s, and the statement/expression walk still finds
-  its checker through a thread local. Both are symbols-plan material (plan 04), not more type core work.
+- What did *not* get deleted: `TYPE_LAZY`, `TYPE_REF` and the binding `TYPE_INDEXED` are still `TypeNode` tags, now
+  only as three AST-internal links (binding -> initializer/pattern, function-as-`CallableType`, class member ->
+  `Prop.node`; `hacks.md`), and the statement/expression walk still finds its checker through a thread local.
 - The test harness parses every compiler option into one `CompilerOptions` (`src/compiler_options.h`, tsc's defaults
   resolved, also behind `tttt --target/--lib/--strict...`), runs multi-value directives as separate configurations
   with tsc's baseline names, and picks the default lib by target like tsc. The *checker* still only reads four of the

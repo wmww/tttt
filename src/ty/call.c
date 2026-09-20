@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "scope.h"
 #include "error.h"
 
 // Call resolution on Signatures, the way tsc observably does it (resolveCall): collect the call or construct
@@ -761,10 +762,10 @@ Ty const* ty_awaited(Checker* me, Ty const* ty) {
         free(parts);
         return ret;
     }
-    if (ty->kind == TY_REFERENCE && ty->reference.target->declared.decl &&
-        vec_span_is_empty(&ty->reference.target->declared.decl->namespaces)
+    if (ty->kind == TY_REFERENCE && ty->reference.target->declared.symbol &&
+        !ty->reference.target->declared.symbol->parent
     ) {
-        csview name = ty->reference.target->declared.decl->name.sv;
+        csview name = ty->reference.target->declared.symbol->name;
         TyList args = ty_reference_args(me, ty);
         if (args.len == 1 && (csview_equals(name, "Promise") || csview_equals(name, "PromiseLike"))) {
             return ty_awaited(me, args.data[0]);

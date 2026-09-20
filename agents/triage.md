@@ -199,3 +199,10 @@ Uninvestigated items. Triage sessions drain this.
   used as a value).
 - The realworld corpus' remaining name errors are node globals (`process`, `require`, `Buffer`: `types: ["node"]`),
   `arguments` and the `debugger` statement (parsed as an identifier).
+- Plan 04 stage 2 leftovers: contextual signature of a type with several call signatures (tsc:
+  `getIntersectedSignatures`; signatureCombiningRestParameters2). Declaration order in the symbols baseline when an
+  import merges with a function (`test/probes/plan04/aliasMergesWithLocalValue.ts`: tsc lists the function first,
+  it binds function declarations before other statements). `./filetest.sh` on a multi-file probe shows the comment
+  lines before the first `// @filename` as a file of their own in the errors baseline, so the errors component fails
+  although the diagnostics match. The function type underline bug (`^ ^^`) shows on plain `(x: number) => number`
+  too (scopingBasics probe), not only rest parameters.

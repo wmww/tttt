@@ -11,6 +11,8 @@
 #include "several_types.h"
 
 #include <cleat/filesystem.h>
+#include "binding.h"
+#include "scope.h"
 
 typedef struct LineNumberedStr {
     unsigned line;
@@ -913,15 +915,7 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type
 }
 
 void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode const* node) {
-    for (;;) {
-        if (node->tag == TYPE_REF) {
-            node = node->ref;
-        } else if (node->tag == TYPE_LAZY && node->lazy->tag == LAZY_TYPE_EVALUATED) {
-            node = &node->lazy->preevaluated;
-        } else {
-            break;
-        }
-    }
+    while (node->tag == TYPE_REF) node = node->ref;
     if (node->tag != TYPE_IDENTIFIER) {
         baseline_test_case_add_type(me, span, ty_of_node(node));
         return;
@@ -935,20 +929,48 @@ void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode 
     cstr_drop(&rendered);
 }
 
-void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Declaration const* declaration) {
+void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol const* declaration) {
     if (!declaration) {
         log_error("baseline_test_case_add_declaration() called with null declaration");
         return;
     }
     check(span.source);
     baseline_test_case_add_symbol(me, (BaselineSym){
-        .declarations = vec_span_clone(declaration->declarations),
+        .declarations = symbol_declaration_spans(declaration),
         .span = span,
-        .name = declaration->name,
+        .name = declaration->name_span,
     });
-    if (declaration->value_tag) {
-        baseline_test_case_add_type_node(me, span, &declaration->value_type);
-    } else if (declaration->type_tag) {
-        baseline_test_case_add_type_node(me, span, &declaration->declared_type);
+    if (declaration->flags & SYMBOL_VALUE) {
+        baseline_test_case_add_symbol_value(me, span, declaration);
+    } else if (declaration->flags & SYMBOL_TYPE) {
+        baseline_test_case_add_type(me, span, ty_declared_type_of(current_checker, declaration));
     }
+}
+
+void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol const* symbol) {
+    Symbol const* value = symbol_for_meaning(symbol, SYMBOL_VALUE);
+    if (!value || value->is_placeholder) {
+        baseline_test_case_add_type_node(me, span, &type_any);
+        return;
+    }
+    // HACK: what baseline_test_case_add_type_node() does to written type names wants the node of a variable, and an
+    // enum member shows as `E.x`
+    if (!(value->flags & SYMBOL_VALUE & ~(u32)SYMBOL_VARIABLE)) {
+        for (u32 i = 0; i < value->decl_count; i++) {
+            if (!(value->decls[i].flags & SYMBOL_VARIABLE)) continue;
+            if (value->decls[i].kind != SYMBOL_DECL_VARIABLE) break;
+            baseline_test_case_add_type_node(me, span, binding_get_effective_type(value->decls[i].node));
+            return;
+        }
+    }
+    if (value->flags & SYMBOL_ENUM_MEMBER && value->parent) {
+        cstr rendered = cstr_null;
+        cstr_append_span(&rendered, value->parent->name_span);
+        cstr_append_lit(&rendered, ".");
+        cstr_append_span(&rendered, value->name_span);
+        add_type_rendered(me, span, span, cstr_sv(&rendered));
+        cstr_drop(&rendered);
+        return;
+    }
+    baseline_test_case_add_type(me, span, ty_type_of_symbol(current_checker, value));
 }

@@ -18,21 +18,28 @@ typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
 typedef struct Expr Expr;
 typedef struct LazyType LazyType;
-typedef struct Declaration Declaration;
 typedef struct Ty Ty; // A semantic type, see ty/ty.h
-typedef Declaration const* DeclarationCPtr;
 
 g_declare_arc(Expr, expr);
 
-// What an AST node knows its declaration by. Not owning: symbols live as long as the program
+// Symbols (scope.h) are not owned by the AST nodes that point at them: they live as long as the program
 typedef struct Symbol Symbol;
-typedef struct DeclHandle {
-    Declaration* get;
-    Symbol* symbol;
-} DeclHandle;
 typedef Symbol const* SymbolCPtr;
 g_declare_vec(SymbolCPtr, symbol_cptr);
-g_declare_vec(DeclarationCPtr, declaration_cptr);
+
+// What `this` refers to somewhere
+typedef enum ThisKind {
+    THIS_NONE = 0,
+    THIS_CLASS_INSTANCE, // symbol: the class
+    THIS_CLASS_STATIC,   // symbol: the class
+    THIS_ANY,            // A function that isn't a method or arrow function
+    THIS_PARAMETER,      // symbol: the `this` parameter
+} ThisKind;
+
+typedef struct ThisRef {
+    ThisKind kind;
+    Symbol const* symbol;
+} ThisRef;
 g_declare_vec(TupleElement, tuple_element);
 
 typedef struct TypeNode {
@@ -259,6 +266,10 @@ static inline TypeNode type_move(TypeNode* me) {
 void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
 void type_typecheck(TypeNode const* me, ErrorCtx* errs);
 #define g_class_key TypeNode, type
+#define g_declared
+#include <cleat/generic/vec.h>
+
+#define g_key SymbolCPtr, symbol_cptr
 #define g_declared
 #include <cleat/generic/vec.h>
 

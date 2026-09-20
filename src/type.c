@@ -173,14 +173,13 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
             break;
 
         case TYPE_INFERRED:
-            scope_init_declaration(scope, &my inferred->owned_declaration, (DeclProps){
+            scope_init_declaration(scope, &my inferred->owned_symbol, (DeclProps){
                 .name = my inferred->name,
                 .full = my inferred->name,
-                .tag = DECLARATION_TYPE,
-                .is_infer = true,
-                .declared_type = type_refcopy(&my inferred->extends),
+                .kind = SYMBOL_DECL_INFER,
+                .node = my inferred,
             });
-            my inferred->declaration_ref = my inferred->owned_declaration.get;
+            my inferred->symbol_ref = my inferred->owned_symbol;
             break;
 
         case TYPE_CALLABLE:

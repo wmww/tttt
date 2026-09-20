@@ -128,7 +128,7 @@ static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 
 
 // Adds the members written in (or, for classes/enums/namespaces, evaluated by the legacy checker into) an Interface
 static void builder_add_interface_member(
-    Checker* me, MembersBuilder* builder, InterfaceMember const* i, LowerCtx ctx, Declaration const* parent
+    Checker* me, MembersBuilder* builder, InterfaceMember const* i, LowerCtx ctx, Symbol const* parent
 ) {
     {
         switch (i->key.tag) {
@@ -201,8 +201,8 @@ static void builder_add_interface_member(
                 LowerCtx mapped_ctx = ctx;
                 mapped_ctx.generic = true;
                 MappedInfo* mapped = arena_new(&my arena, MappedInfo);
-                mapped->type_param = i->key.mapped.declaration_ref ?
-                    ty_type_param(me, i->key.mapped.declaration_ref) :
+                mapped->type_param = i->key.mapped.symbol_ref ?
+                    ty_type_param(me, i->key.mapped.symbol_ref) :
                     ty_synthetic_type_param(me, i->key.mapped.type_name.sv);
                 mapped->constraint = ty_from_node(me, &i->key.mapped.in_type, mapped_ctx);
                 if (i->key.mapped.has_as_type) {
@@ -230,7 +230,7 @@ static void builder_add_interface_member(
 }
 
 static void builder_add_interface(
-    Checker* me, MembersBuilder* builder, Interface const* interface, LowerCtx ctx, Declaration const* parent
+    Checker* me, MembersBuilder* builder, Interface const* interface, LowerCtx ctx, Symbol const* parent
 ) {
     for_each (i, vec_interface_member, &interface->members) {
         builder_add_interface_member(me, builder, i, ctx, parent);
@@ -266,29 +266,30 @@ static TypeNode const* arena_lazy_wrapper(Checker* me, LazyType const* lazy) {
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: only `extends Name` / `extends Name<Args>` / `extends A.B.Name`; tsc takes the return type of
 // the construct signatures of whatever the expression evaluates to (mixins, `extends f()`)
-static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Declaration const** base_decl) {
+static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
     VecSpannedType const* written_args = nullptr;
     if (extends->tag == EXPR_GENERIC_PARAMS) {
         written_args = &extends->generic_params->params;
         extends = &extends->generic_params->expr;
     }
-    Declaration const* decl = nullptr;
+    Symbol const* decl = nullptr;
     if (extends->tag == EXPR_IDENTIFIER) {
-        decl = extends->identifier.decl_ref;
+        decl = extends->identifier.target;
     } else if (extends->tag == EXPR_PROPERTY && extends->property->form == PROPERTY_EXPR_DOT) {
         // A class in a namespace
         Expr const* object = &extends->property->expr;
         Expr const* name = &extends->property->prop;
-        Declaration const* namespace_decl = nullptr;
-        if (object->tag == EXPR_IDENTIFIER) namespace_decl = object->identifier.decl_ref;
-        if (namespace_decl && namespace_decl->namespace && name->tag == EXPR_IDENTIFIER) {
-            decl = symbol_declaration(
-                symbol_get_export(namespace_decl->namespace, name->identifier.name.sv), SYMBOL_TYPE
-            );
+        Symbol const* namespace_decl = nullptr;
+        if (object->tag == EXPR_IDENTIFIER) namespace_decl = object->identifier.target;
+        namespace_decl = symbol_for_meaning(namespace_decl, SYMBOL_NAMESPACE);
+        if (namespace_decl && !namespace_decl->is_placeholder && name->tag == EXPR_IDENTIFIER) {
+            decl = symbol_get_export(namespace_decl, name->identifier.name.sv);
         }
     }
-    if (!decl || decl->type_tag != DECLARATION_CLASS || decl->is_typeof) return false;
+    // The name was looked up as a value, the class is the same symbol
+    decl = symbol_for_meaning(decl, SYMBOL_CLASS);
+    if (!decl || decl->is_placeholder) return false;
     Ty const* base = ty_declared_type_of(me, decl);
     if (base->kind != TY_DECLARED) return false;
     *base_decl = decl;
@@ -312,7 +313,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
 }
 
 static Prop* builder_add_class_prop(
-    Checker* me, MembersBuilder* builder, cstr const* name_string, Declaration const* parent, TypeNode const* node, LowerCtx ctx,
+    Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, TypeNode const* node, LowerCtx ctx,
     ClassItem const* item
 ) {
     Atom const* name = checker_atom(me, cstr_sv(name_string));
@@ -332,7 +333,7 @@ static Prop* builder_add_class_prop(
 
 // The members a class declares itself, on the instance or the static side
 static void builder_add_class_items(
-    Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side, LowerCtx ctx, Declaration const* parent
+    Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side, LowerCtx ctx, Symbol const* parent
 ) {
     for_each (i, vec_class_item, &class_decl->items) {
         switch (i->tag) {
@@ -445,7 +446,7 @@ static Signature* class_construct_signature(Checker* me, ClassDecl const* class_
 }
 
 static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, Ty const* ty, ClassDecl const* class_decl) {
-    Declaration const* instance_decl = class_decl->declaration.get;
+    Symbol const* instance_decl = class_decl->symbol;
     Ty const* instance = instance_decl ? ty_declared_type_of(me, instance_decl) : nullptr;
     if (!instance || instance->kind != TY_DECLARED) return;
     LowerCtx ctx = { .generic = instance->declared.type_params.len > 0 };
@@ -485,16 +486,10 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     }
 
     Ty const* base_instance = nullptr;
-    Declaration const* base_decl = nullptr;
+    Symbol const* base_decl = nullptr;
     bool has_base = class_base(me, class_decl, ctx, &base_instance, &base_decl);
     Ty const* base_static = nullptr;
-    if (has_base && vec_decl_node_size(&base_decl->nodes)) {
-        ClassDecl const* base_class = nullptr;
-        for_each (node, vec_decl_node, &base_decl->nodes) {
-            if (node->kind == DECL_NODE_CLASS) base_class = node->ptr;
-        }
-        if (base_class) base_static = ty_declared_type_of(me, &base_class->typeof_declaration);
-    }
+    if (has_base) base_static = ty_static_type_of(me, base_decl);
     if (base_static == ty || (base_static && base_static->kind != TY_DECLARED)) base_static = nullptr;
 
     if (!has_constructor) {
@@ -526,9 +521,11 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
 }
 
 // The members of every value declaration of a merged declaration, see ty_merged_value_type()
-static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Declaration const* decl) {
-    for_each (i, vec_type, &decl->merged_value_type.merge_list) {
-        Ty const* entry = ty_from_node(me, i, (LowerCtx){ .generic = true });
+static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbol const* decl) {
+    Ty const** entries;
+    u32 entry_count = ty_merged_value_entries(me, decl, &entries);
+    for (u32 entry_index = 0; entry_index < entry_count; entry_index++) {
+        Ty const* entry = entries[entry_index];
         if (!(entry->flags & TYF_OBJECT)) continue;
         Members const* members = ty_members(me, entry);
         for (u32 j = 0; j < members->prop_count; j++) {
@@ -547,19 +544,20 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Decla
         for (u32 j = 0; j < members->construct_count; j++) builder_push(builder, construct, members->construct[j]);
         for (u32 j = 0; j < members->index_count; j++) builder_push(builder, index, members->index[j]);
     }
+    free(entries);
 }
 
 static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDecl const* enum_decl) {
     bool any_numeric = false;
     for_each (i, vec_enum_case, &enum_decl->cases) {
-        if (!i->declaration.get) continue;
+        if (!i->symbol) continue;
         Atom const* name = checker_atom(me, i->name.sv);
         if (builder_find_prop(builder, name)) continue;
         Prop* prop = arena_new(&my arena, Prop);
         prop->name = name;
-        prop->parent = enum_decl->declaration.get;
+        prop->parent = enum_decl->symbol;
         prop->flags = PROP_READONLY;
-        prop->type = ty_declared_type_of(me, i->declaration.get);
+        prop->type = ty_declared_type_of(me, i->symbol);
         prop->type_state = LAZY_STATE_DONE;
         prop->name_span = i->full_name;
         prop->name_is_value = i->name_is_value;
@@ -580,7 +578,7 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
 }
 
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
-    Declaration const* decl = ty->declared.decl;
+    Symbol const* decl = ty->declared.symbol;
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
     MembersBuilder builder = {0};
     if (ty->declared.merged_value) {
@@ -591,24 +589,24 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
         case TY_DECLARED_INTERFACE:
         case TY_DECLARED_CLASS_INSTANCE: {
             // Own members of every merged declaration first, then what their bases add
-            for_each (node, vec_decl_node, &decl->nodes) {
-                if (node->kind == DECL_NODE_INTERFACE) {
-                    InterfaceDecl const* interface_decl = node->ptr;
+            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                if (node->kind == SYMBOL_DECL_INTERFACE) {
+                    InterfaceDecl const* interface_decl = node->node;
                     check(interface_decl->type.tag == TYPE_INTERFACE);
                     builder_add_interface(me, &builder, &interface_decl->type.interface, ctx, decl);
-                } else if (node->kind == DECL_NODE_CLASS) {
-                    builder_add_class_items(me, &builder, node->ptr, false, ctx, decl);
+                } else if (node->kind == SYMBOL_DECL_CLASS) {
+                    builder_add_class_items(me, &builder, node->node, false, ctx, decl);
                 }
             }
-            for_each (node, vec_decl_node, &decl->nodes) {
-                if (node->kind == DECL_NODE_CLASS) {
+            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                if (node->kind == SYMBOL_DECL_CLASS) {
                     Ty const* base = nullptr;
-                    Declaration const* base_decl = nullptr;
-                    if (class_base(me, node->ptr, ctx, &base, &base_decl) && base != ty) {
+                    Symbol const* base_decl = nullptr;
+                    if (class_base(me, node->node, ctx, &base, &base_decl) && base != ty) {
                         builder_add_inherited(me, &builder, base);
                     }
-                } else if (node->kind == DECL_NODE_INTERFACE) {
-                    InterfaceDecl const* interface_decl = node->ptr;
+                } else if (node->kind == SYMBOL_DECL_INTERFACE) {
+                    InterfaceDecl const* interface_decl = node->node;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
                         Ty const* base = ty_from_node(me, &extends->type, ctx);
                         if (base != ty && (base->flags & TYF_OBJECT)) {
@@ -620,35 +618,35 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
         }   break;
 
         case TY_DECLARED_CLASS_STATIC:
-            for_each (node, vec_decl_node, &decl->nodes) {
-                if (node->kind == DECL_NODE_CLASS) builder_add_class_static_side(me, &builder, ty, node->ptr);
+            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                if (node->kind == SYMBOL_DECL_CLASS) builder_add_class_static_side(me, &builder, ty, node->node);
             }
             break;
 
         case TY_DECLARED_ENUM_OBJECT:
-            for_each (node, vec_decl_node, &decl->nodes) {
-                if (node->kind == DECL_NODE_ENUM) builder_add_enum_object(me, &builder, node->ptr);
+            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                if (node->kind == SYMBOL_DECL_ENUM) builder_add_enum_object(me, &builder, node->node);
             }
             break;
 
         case TY_DECLARED_NAMESPACE:
             // The exported values, in declaration order
             u32 export_count;
-            Symbol** exports = symbol_collect_exports(ty->declared.namespace_symbol, &export_count);
+            SymbolEntry* exports = symbol_collect_exports(ty->declared.namespace_symbol, &export_count);
             for (u32 i = 0; i < export_count; i++) {
-                Symbol const* symbol = exports[i];
-                Declaration const* member = symbol_declaration(symbol, SYMBOL_VALUE);
-                if (!member || !member->value_tag) continue;
+                Symbol const* symbol = exports[i].symbol;
+                Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
+                if (!member || member->is_placeholder) continue;
                 Prop* prop = arena_new(&my arena, Prop);
-                prop->name = checker_atom(me, symbol->name);
-                prop->node = &member->value_type;
+                prop->name = checker_atom(me, exports[i].name);
+                prop->symbol = member;
                 prop->ctx = (LowerCtx){ .generic = true };
-                prop->name_span = symbol->decl.name;
+                prop->name_span = symbol->name_span;
                 // `N.p` in the symbols baseline
-                if (symbol->parent && !symbol->parent->is_module) prop->parent = &symbol->parent->decl;
-                prop_add_decl_spans(
-                    me, prop, symbol->decl.declarations.data, (u32)vec_span_size(&symbol->decl.declarations)
-                );
+                if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
+                VecSpan spans = symbol_declaration_spans(symbol);
+                prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
+                vec_span_drop(&spans);
                 builder_push(&builder, props, prop);
             }
             free(exports);
@@ -896,6 +894,8 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
     } else if (prop->overload_count) {
         type = ty_anonymous_from_overloads(me, prop->overloads, prop->overload_count, prop->ctx);
+    } else if (prop->symbol) {
+        type = ty_type_of_symbol(me, prop->symbol);
     } else {
         type = ty_from_node(me, prop->node, prop->ctx);
     }
@@ -1104,8 +1104,6 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
         TypeNode const* node = state->constraint_node;
         if (state->item) {
             node = state->item->extends_explicit ? &state->item->extends : nullptr;
-        } else if (node && node_skip_to_syntax(node)->tag == TYPE_ANY) {
-            node = nullptr; // An absent constraint is stored as `any`
         }
         state->constraint = node ? ty_from_node(me, node, (LowerCtx){ .generic = true }) : nullptr;
         state->constraint_state = LAZY_STATE_DONE;

@@ -49,7 +49,7 @@ typedef struct TypeDecl {
     Span full_span;
     Generic generic;
     TypeNode type;
-    DeclHandle declaration;
+    Symbol* symbol;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
@@ -65,7 +65,7 @@ typedef struct NamespaceDecl {
     bool is_ambient_module; // `declare module "name" {}`, name is the string literal including quotes
     Block contents;
     Scope* inner_scope;
-    DeclHandle declaration;
+    Symbol* symbol;
 } NamespaceDecl;
 
 void namespace_decl_drop(NamespaceDecl* me);

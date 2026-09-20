@@ -172,6 +172,21 @@ old type world" shrinks to the thread-local checker. Done when: `grep -c 'TYPE_L
 Declaration\b' src` is 0 (or each survivor is justified in `hacks.md`), `scopingBasics` passes all three components,
 no pass count loss versus stage 1.
 
+**Stage 2 as built** (2026-09-19; numbers in `measurements.md`): `declaration.c/.h`, `Declaration`, `DeclHandle`,
+`MergedType`, the `typeof_declaration` twins, `this_declaration`, `wrapped_declaration`, `registered_type_param` and
+the LazyTypes of classes/enums/interfaces/namespace symbols are gone. A `Symbol` lists its declarations as
+`SymbolDecl { kind, flags, node, name, full }`; `ty_declared_type_of`, `ty_static_type_of` (class static side, enum
+object) and `ty_type_of_symbol` (`ty/lower.c`) switch on them, `SymbolLinks` replaces `DeclLinks`, `Prop.symbol` types
+namespace members, `this` is a `ThisRef`. The lib redirect is `binder_redirect()` + `Binder.overlays` (no flag on the
+frozen symbol: it may not be written to; only programs with overlays pay for the lookup). Deviations:
+- Identifiers keep `symbol` *and* `target` (the accessor's result, cached), see `hacks.md`.
+- `TYPE_LAZY`/`TYPE_REF`/binding `TYPE_INDEXED` survive as three AST-internal links (binding -> initializer/parent
+  pattern, function-as-`CallableType`, class member -> `Prop.node`), listed in `hacks.md` with what each needs. None
+  of them is how a symbol finds its type any more, so they're off this plan's critical path: `todo.md` has them as a
+  cleanup session of their own.
+- scopingBasics: errors and symbols pass; types fail only on the `^ ^^` underline lines of function types (the
+  display underline bug in `triage.md`), nothing to do with binding.
+
 **Stage 3: module symbols from everywhere, printing.** The parser records every module reference of a file (import/
 export declarations, `import()` types and expressions, `require()` in import-equals) in a list on the `SourceFile`, and
 `program_add_source_idempotent` loads from that instead of scanning toplevel statements. `import("./a").B<T>` and

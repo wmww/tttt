@@ -25,7 +25,10 @@ g_declare_vec(Expr, expr);
 typedef struct IdentifierExpr {
     Span name;
     KeywordIdentifier keyword;
-    Declaration const* decl_ref; // What the checker goes by: aliases resolved
+    // What the checker goes by: the symbol that has the meaning the name is used with (aliases resolved). Cached next
+    // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
+    Symbol const* target;
+    ThisKind this_kind;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
 } IdentifierExpr;
 
@@ -58,7 +61,6 @@ typedef struct Expr {
         EXPR_TEMPLATE, // Template literal with substitutions and/or a tag. Plain `abc` is a string EXPR_LITERAL
     } tag;
     union {
-        Declaration const* this_or_super;
         Value literal;
         IdentifierExpr identifier;
         BinaryOpExpr* binary_op;

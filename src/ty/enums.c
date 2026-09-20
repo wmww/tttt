@@ -28,13 +28,9 @@ static i32 to_int32(double number) {
 
 // The value of another enum member, if it's known already (a member that comes later, or whose enum is being
 // resolved further up the stack, isn't)
-static EnumValue member_value(Checker* me, Declaration const* decl) {
-    if (!decl || !vec_decl_node_size(&decl->nodes)) return enum_value_unknown;
-    DeclNode node = *vec_decl_node_at(&decl->nodes, 0);
-    if (node.kind != DECL_NODE_ENUM_CASE) return enum_value_unknown;
-    EnumCase const* enum_case = node.ptr;
-    if (!enum_case->declaration.get) return enum_value_unknown;
-    Ty const* type = ty_declared_type_of(me, enum_case->declaration.get);
+static EnumValue member_value(Checker* me, Symbol const* decl) {
+    if (!decl || !(decl->flags & SYMBOL_ENUM_MEMBER)) return enum_value_unknown;
+    Ty const* type = ty_declared_type_of(me, decl);
     if (type->kind != TY_LITERAL || !type->literal.enum_decl) return enum_value_unknown;
     if (type->flags & TYF_STRING_LITERAL) {
         return (EnumValue){ .known = true, .is_string = true, .string = cstr_from_sv(atom_sv(type->literal.string)) };
@@ -114,19 +110,19 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             return evaluate_binary(me, expr->binary_op, depth);
 
         case EXPR_IDENTIFIER:
-            if (!expr->identifier.decl_ref || expr->identifier.decl_ref->value_tag != DECLARATION_ENUM_CASE) {
+            if (!expr->identifier.target || !(expr->identifier.target->flags & SYMBOL_ENUM_MEMBER)) {
                 if (csview_equals(expr->identifier.name.sv, "NaN")) return enum_value_number(NAN);
                 if (csview_equals(expr->identifier.name.sv, "Infinity")) return enum_value_number(INFINITY);
                 return enum_value_unknown;
             }
-            return member_value(me, expr->identifier.decl_ref);
+            return member_value(me, expr->identifier.target);
 
         case EXPR_PROPERTY: {
             // `E.A` and `E["A"]`
             PropertyExpr const* property = expr->property;
-            if (property->expr.tag != EXPR_IDENTIFIER || !property->expr.identifier.decl_ref) return enum_value_unknown;
-            Declaration const* enum_decl = property->expr.identifier.decl_ref;
-            if (enum_decl->value_tag != DECLARATION_ENUM || !enum_decl->namespace) return enum_value_unknown;
+            if (property->expr.tag != EXPR_IDENTIFIER || !property->expr.identifier.target) return enum_value_unknown;
+            Symbol const* enum_decl = property->expr.identifier.target;
+            if (!(enum_decl->flags & SYMBOL_ENUM)) return enum_value_unknown;
             Span name;
             if (property->form == PROPERTY_EXPR_DOT && property->prop.tag == EXPR_IDENTIFIER) {
                 name = property->prop.identifier.name;
@@ -137,7 +133,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             } else {
                 return enum_value_unknown;
             }
-            return member_value(me, symbol_get_export_declaration(enum_decl->namespace, name));
+            return member_value(me, symbol_get_export(enum_decl, name.sv));
         }
 
         default:
@@ -145,12 +141,12 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
     }
 }
 
-Ty const* ty_resolve_enum(Checker* me, Declaration const* decl) {
+Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
     Ty const** members = nullptr;
     u32 count = 0, cap = 0;
-    for_each (node, vec_decl_node, &decl->nodes) {
-        if (node->kind != DECL_NODE_ENUM) continue;
-        EnumDecl const* enum_decl = node->ptr;
+    for (u32 decl_index = 0; decl_index < decl->decl_count; decl_index++) {
+        if (decl->decls[decl_index].kind != SYMBOL_DECL_ENUM) continue;
+        EnumDecl const* enum_decl = decl->decls[decl_index].node;
         EnumValue previous = enum_value_number(-1);
         for_each (i, vec_enum_case, &enum_decl->cases) {
             EnumValue value;
@@ -161,7 +157,7 @@ Ty const* ty_resolve_enum(Checker* me, Declaration const* decl) {
             } else {
                 value = evaluate(me, &i->value, 0);
             }
-            Declaration const* member = i->declaration.get;
+            Symbol const* member = i->symbol;
             Ty const* type;
             if (!member) {
                 type = ty_intrinsic(me, TY_ERROR);
@@ -172,10 +168,8 @@ Ty const* ty_resolve_enum(Checker* me, Declaration const* decl) {
             } else {
                 type = ty_enum_computed_member(me, decl, member);
             }
-            if (member) {
-                ty_set_declared_type(me, member, type);
-                ty_set_declared_type(me, &i->typeof_declaration, type);
-            }
+            // Members of the same name (TS2300) are symbols of their own
+            if (member) ty_set_declared_type(me, member, type);
             if (count == cap) {
                 cap = cap ? cap * 2 : 16;
                 members = realloc(members, sizeof(Ty const*) * cap);
@@ -201,5 +195,5 @@ Ty const* ty_enum_of_member(Checker* me, Ty const* member) {
 }
 
 bool ty_is_enum_union(Ty const* ty) {
-    return ty->kind == TY_UNION && ty->alias && ty->alias->type_tag == DECLARATION_ENUM && !ty->alias_args.len;
+    return ty->kind == TY_UNION && ty->alias && ty->alias->flags & SYMBOL_ENUM && !ty->alias_args.len;
 }

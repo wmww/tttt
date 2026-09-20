@@ -25,7 +25,6 @@ core_files = files(
     'compiler_options.c',
     'source_file.c',
     'program.c',
-    'declaration.c',
     'scope.c',
     'engine.c',
     'string_helpers.c',

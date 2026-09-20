@@ -1,6 +1,6 @@
 #include "ty/ty_internal.h"
 #include <math.h>
-#include "declaration.h"
+#include "lazy_type.h"
 #include "program.h"
 #include "scope.h"
 
@@ -191,6 +191,7 @@ Checker* checker_new(Program* program) {
     Checker* me = calloc(1, sizeof(Checker));
     panic_if(!me, "out of memory");
     my program = program;
+    my binder = program_get_binder(program);
     my next_type_id = 1;
     my intrinsics[TY_ANY] = make_intrinsic(me, "any", TYF_ANY);
     my intrinsics[TY_ERROR] = make_intrinsic(me, "any", TYF_ANY | TYF_ERROR);
@@ -234,7 +235,7 @@ void checker_drop(Checker* me) {
     free(me);
 }
 
-static Ty const* literal_type(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* enum_member) {
+static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* enum_member) {
     // An enum's literal types are per (value, enum): members of one enum with the same value share a type, as in tsc
     u64 key[4] = { KEY_LITERAL, value->tag, 0, (u64)(uintptr_t)enum_decl };
     Atom const* string = nullptr;
@@ -288,13 +289,13 @@ Ty const* ty_literal(Checker* me, Value const* value) {
     return literal_type(me, value, nullptr, nullptr);
 }
 
-Ty const* ty_enum_literal(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* member) {
+Ty const* ty_enum_literal(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* member) {
     return literal_type(me, value, enum_decl, member);
 }
 
 // The type of an enum member whose value isn't a compile time constant (tsc's computed enum type, TypeFlags.Enum).
 // Also the type of an enum without members, with the enum as its own member
-Ty const* ty_enum_computed_member(Checker* me, Declaration const* enum_decl, Declaration const* member) {
+Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol const* member) {
     u64 key[4] = { KEY_LITERAL, UINT32_MAX, (u64)(uintptr_t)member, (u64)(uintptr_t)enum_decl };
     void const** slot = intern_slot(me, &my types, key, 4);
     if (!*slot) {
@@ -333,7 +334,7 @@ static void ty_buf_add_flattened(TyBuf* me, TyKind kind, Ty const* const* types,
 }
 
 static Ty const* intern_composite(
-    Checker* me, TyKind kind, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args
+    Checker* me, TyKind kind, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args
 ) {
     u32 count = 3 + alias_args.len + len;
     u64 stack_key[64];
@@ -364,7 +365,7 @@ static Ty const* intern_composite(
 
 // Only the cheap reductions: flatten, dedupe, absorb any/unknown/never, drop literals next to their primitive.
 // Subtype reduction is a separate operation (TODO, the legacy type_composite() does its own through the relation).
-Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args) {
+Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_UNION, types, len);
@@ -479,7 +480,7 @@ static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
     free(unions);
 }
 
-Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args) {
+Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
     ty_buf_add_flattened(&buf, TY_INTERSECTION, types, len);
@@ -566,23 +567,25 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Declarat
 
 // Type parameters
 
-static Ty const* make_type_param(Checker* me, Declaration const* decl, Atom const* name) {
+static Ty const* make_type_param(Checker* me, Symbol const* decl, Atom const* name) {
     Ty* ret = ty_alloc(me, TY_TYPE_PARAM, TYF_TYPE_PARAM | TYF_COULD_CONTAIN_TYPE_VARIABLES);
-    ret->param.decl = decl;
+    ret->param.symbol = decl;
     ret->param.name = name;
     ret->param.state = arena_new(&my arena, TyParamState);
     return ret;
 }
 
-Ty const* ty_type_param(Checker* me, Declaration const* decl) {
+Ty const* ty_type_param(Checker* me, Symbol const* decl) {
     u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)decl };
     void const** slot = intern_slot(me, &my links, key, 2);
     if (!*slot) {
-        Ty const* ret = make_type_param(me, decl, checker_atom(me, decl->name.sv));
-        // The constraint of a type parameter declaration is kept as the declared type of its Declaration
-        if (decl->declared_type.tag) {
-            ret->param.state->constraint_node = &decl->declared_type;
-        }
+        Ty const* ret = make_type_param(me, decl, checker_atom(me, decl->name_span.sv));
+        // `infer U extends X`. Declared type parameters read their GenericItem (TyParamState.item), mapped type keys
+        // get their constraint from whoever lowers the mapped type
+        InferredType const* inferred = symbol_find_node(decl, SYMBOL_DECL_INFER);
+        if (inferred && inferred->extends.tag != TYPE_ANY) ret->param.state->constraint_node = &inferred->extends;
+        ret->param.state->is_infer = inferred != nullptr;
+        ret->param.state->item = symbol_find_node(decl, SYMBOL_DECL_TYPE_PARAMETER);
         *slot = ret;
     }
     return *slot;
@@ -627,8 +630,8 @@ static Ty const* make_synthetic_target(Checker* me, char const* name) {
 }
 
 static Ty const* global_generic_target(Checker* me, char const* name) {
-    Declaration const* decl = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
-    if (decl && (decl->type_tag == DECLARATION_INTERFACE || decl->type_tag == DECLARATION_CLASS)) {
+    Symbol const* decl = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
+    if (decl && decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
         Ty const* declared = ty_declared_type_of(me, decl);
         if (declared->kind == TY_DECLARED && declared->declared.type_params.len == 1) {
             return declared;

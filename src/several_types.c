@@ -1,6 +1,6 @@
 #include "several_types.h"
 #include "ty/ty.h"
-#include "declaration.h"
+#include "lazy_type.h"
 #include "scope.h"
 #include "generic.h"
 #include "error.h"
@@ -21,7 +21,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
 }
 
 // Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
-static Declaration const* get_declaration_from_namespace(
+static Symbol const* get_symbol_from_namespace(
     Symbol const* namespace,
     Span namespace_name,
     Span item_name,
@@ -32,8 +32,8 @@ static Declaration const* get_declaration_from_namespace(
     *found = nullptr;
     if (!namespace) return nullptr;
     Symbol const* member = symbol_get_export(namespace, item_name.sv);
-    Declaration const* decl = symbol_declaration(member, meaning);
-    if (!decl && meaning == SYMBOL_TYPE) decl = symbol_declaration(member, SYMBOL_ANY_MEANING); // TS2749 below
+    Symbol const* decl = symbol_for_meaning(member, meaning);
+    if (!decl && meaning == SYMBOL_TYPE) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING); // TS2749 below
     if (!decl) {
         error_ctx_error_d(errs, item_name, 2694,
             "Namespace '", namespace_name, "' has no exported member '", item_name, "'.");
@@ -54,13 +54,13 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
 }
 
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
-    check(!my decl_ref);
+    check(!my target);
 
     if (vec_span_size(&my namespaces)) {
         Symbol const* namespace = nullptr;
         Span prev_name = span_null;
         for_each (i, vec_span, &my namespaces) {
-            Declaration const* decl;
+            Symbol const* decl;
             Symbol const* found;
             if (i == my namespaces.data /* First namespaces */) {
                 decl = scope_get_namespace(names, i->sv, &found);
@@ -68,9 +68,10 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                 }
             } else /* Subsequent namespaces */ {
-                decl = get_declaration_from_namespace(namespace, prev_name, *i, SYMBOL_NAMESPACE, &found, errs);
+                decl = get_symbol_from_namespace(namespace, prev_name, *i, SYMBOL_NAMESPACE, &found, errs);
             }
-            namespace = decl ? decl->namespace :nullptr;
+            // Everything looked up in a placeholder is any
+            namespace = decl && !decl->is_placeholder ? decl : nullptr;
             prev_name = *i;
             if (!decl) {
                 break;
@@ -78,19 +79,23 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             vec_symbol_cptr_push(&my namespace_symbols, found);
         }
         if (namespace) {
-            my decl_ref = get_declaration_from_namespace(namespace, prev_name, my name, SYMBOL_TYPE, &my symbol, errs);
+            my target = get_symbol_from_namespace(namespace, prev_name, my name, SYMBOL_TYPE, &my symbol, errs);
         }
     } else if (my keyword) {
-        my decl_ref = scope_get_keyword(names, my keyword, true);
+        if (my keyword == KEYWORD_IDENTIFIER_THIS) {
+            ThisRef this_ref = scope_get_this(names, true);
+            my this_kind = this_ref.kind;
+            my target = this_ref.symbol;
+        }
     } else {
-        my decl_ref = scope_get_type(names, my name.sv, &my symbol);
-        if (!my decl_ref) my decl_ref = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
-        if (!my decl_ref) {
+        my target = scope_get_type(names, my name.sv, &my symbol);
+        if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
+        if (!my target) {
             error_ctx_error_d(errs, my name, 2304, "Cannot find name '", my name, "'.");
         }
     }
 
-    if (my decl_ref && !my decl_ref->type_tag) {
+    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE)) {
         cstr name_str = identifier_type_make_name_str(me);
         Span error_span = span_between(vec_span_size(&my namespaces) ? *my namespaces.data : my name, my name);
         error_ctx_error_d(errs, error_span, 2749,
@@ -108,7 +113,7 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
     for_each (i, vec_spanned_type, &my generic_params) {
         type_typecheck(&i->type, errs);
     }
-    if (my decl_ref) {
+    if (my target) {
         /*
         //This can be enabled once we're parsing the standard library
         if (errs && vec_spanned_type_size(&my generic_params) && generic_empty(my named_type->generic)) {
@@ -130,7 +135,7 @@ void inferred_type_drop(InferredType* me) {
 
 InferredType inferred_type_clone(InferredType me) {
     me.extends = type_clone(me.extends);
-    me.owned_declaration = (DeclHandle){0};
+    me.owned_symbol = nullptr;
     return me;
 }
 

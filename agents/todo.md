@@ -3,12 +3,16 @@ Sessions in order. Delete entries as they complete. See `vision.md` ("Course cor
 
 1. ~~Plan 04 stage 1~~ done (symbols, persistent scopes, tsc's merge rules, aliases, export tables, lib overlay;
    `measurements.md` has the numbers, the plan's "Stage 1 as built" what differs from the plan).
-2. **Execution - plan 04 stage 2**: the type side (`Symbol.decl`/`Declaration`, `DeclHandle`, `MergedType`,
-   `TYPE_LAZY`/`TYPE_REF` links go; `decl_ref` + `symbol` on identifiers become one `Symbol const*`; the lib
-   `frozen -> overlay` redirect replaces `clone_parent_symbol`'s payload clone). Start from `hacks.md`, "The binder".
+2. ~~Plan 04 stage 2~~ done (the type side goes by symbols: `Declaration`/`MergedType`/`DeclHandle`/twins deleted,
+   `ty_type_of_symbol`, lib redirect; the plan's "Stage 2 as built" says what differs).
 2b. **Execution - plan 04 stages 3 + 4**: module symbols from non-toplevel positions (import types), ambient modules,
    `export =`, accessibility-based name printing; then arenas, profile, parallelism contract audit, docs. Split in two
    sessions if stage 3 alone fills one.
+2c. **Execution - the last `TYPE_LAZY`/`TYPE_REF` links** (small, may be folded into stage 4 or skipped until after
+   plan 05 if time is short): the three AST-internal links listed in `hacks.md`, "The AST-side walk" (`Binding`
+   parent pointer + `ty_binding_type`, `CallableType { FunctionImpl* }`, `Prop` sources for class items), then delete
+   the two tags. Plan 05 touches bindings (narrowing on destructured references, definite assignment), so doing 1.
+   first makes its hook cleaner.
 3. **Planning - flow graph + narrowing -> `plans/05-flow-analysis.md`.** Bind-time flow graph, per reference per flow
    node caching, narrowing by typeof/instanceof/truthiness/equality/discriminants/`in`/assignment/type predicates
    (`x is T` isn't in the AST yet), reachability (`never` returns, TS7027), definite assignment (TS2454). Plan 04

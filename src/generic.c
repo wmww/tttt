@@ -16,7 +16,7 @@ void generic_item_drop(GenericItem* me) {
 GenericItem generic_item_clone(GenericItem me) {
     me.extends = type_clone(me.extends);
     me.fallback = type_clone(me.fallback);
-    me.owned_declaration = (DeclHandle){0};
+    me.owned_symbol = nullptr;
     return me;
 }
 
@@ -32,13 +32,13 @@ Generic generic_clone(Generic me) {
 
 void generic_add_names(Generic const* me, Scope* scope) {
     for_each (i, vec_generic_item, &my items) {
-        scope_init_declaration(scope, &i->owned_declaration, (DeclProps){
+        scope_init_declaration(scope, &i->owned_symbol, (DeclProps){
             .name = i->name,
             .full = i->name,
-            .tag = DECLARATION_GENERIC_TYPE,
-            .declared_type = type_refcopy(&i->extends),
+            .kind = SYMBOL_DECL_TYPE_PARAMETER,
+            .node = i,
         });
-        i->declaration_ref = i->owned_declaration.get;
+        i->symbol_ref = i->owned_symbol;
     }
 }
 

@@ -11066,7 +11066,7 @@ const baselines = {
         types: true,
     },
     'errorConstructorSubtypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -19766,7 +19766,7 @@ const baselines = {
         types: false,
     },
     'keyofModuleObjectHasCorrectKeys': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27526,7 +27526,7 @@ const baselines = {
         types: false,
     },
     'signatureCombiningRestParameters2': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },

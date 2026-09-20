@@ -5,7 +5,7 @@
 typedef struct InterfaceMember InterfaceMember;
 typedef struct TypeNode TypeNode;
 typedef struct CallExpr CallExpr;
-typedef struct Declaration Declaration;
+typedef struct Symbol Symbol;
 typedef struct ErrorCtx ErrorCtx;
 g_declare_vec(InterfaceMember, interface_member);
 g_declare_vec(TypeNode, type);

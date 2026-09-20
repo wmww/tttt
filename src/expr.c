@@ -22,11 +22,15 @@ void identifier_expr_drop(IdentifierExpr* me) {
 
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
-        my decl_ref = scope_get_keyword(names, my keyword, false);
+        if (my keyword == KEYWORD_IDENTIFIER_THIS) {
+            ThisRef this_ref = scope_get_this(names, false);
+            my this_kind = this_ref.kind;
+            my target = this_ref.symbol;
+        }
         return;
     }
-    my decl_ref = scope_get_value(names, my name.sv, &my symbol);
-    if (my decl_ref) {
+    my target = scope_get_value(names, my name.sv, &my symbol);
+    if (my target) {
     } else if (scope_get_type(names, my name.sv, nullptr)) {
         error_ctx_error_d(
             errs, my name, 2693,
@@ -362,11 +366,11 @@ static void binary_op_typecheck(
         case BINARY_OP_EQUAL:
             switch (expr->binary_op->left.tag) {
                 case EXPR_IDENTIFIER:
-                    if (expr->binary_op->left.identifier.decl_ref) {
+                    if (expr->binary_op->left.identifier.target) {
                         ty_check_assignable(
                             current_checker,
                             right,
-                            ty_value_type_of(current_checker, expr->binary_op->left.identifier.decl_ref),
+                            ty_type_of_symbol(current_checker, expr->binary_op->left.identifier.target),
                             expr->binary_op->left.outer_span,
                             errs
                         );

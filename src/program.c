@@ -66,21 +66,21 @@ typedef struct Program {
 
 static void program_add_builtins(Program* me) {
 #define GLOBAL_VALUE(global_name, global_value) {\
-    DeclHandle declaration = {0}; \
-    scope_init_declaration(my binder->global_scope, &declaration, (DeclProps) { \
+    Symbol* symbol = nullptr; \
+    scope_init_declaration(my binder->global_scope, &symbol, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
-        .tag = DECLARATION_VARIABLE, \
+        .kind = SYMBOL_DECL_BUILTIN, \
+        .node = &global_value, \
         .function_scoped = true, \
-        .value_type = global_value, \
     } ); \
 }
 
 #define GLOBAL_TYPE(global_name, global_type) {\
-    DeclHandle declaration = {0}; \
-    scope_init_declaration(my binder->global_scope, &declaration, (DeclProps) { \
+    Symbol* symbol = nullptr; \
+    scope_init_declaration(my binder->global_scope, &symbol, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
-        .tag = DECLARATION_TYPE, \
-        .declared_type = global_type, \
+        .kind = SYMBOL_DECL_BUILTIN, \
+        .node = &global_type, \
     } ); \
 }
 
@@ -462,12 +462,16 @@ void program_make_current(Program* me) {
     checker_make_current(my checker);
 }
 
+Binder const* program_get_binder(Program const* me) {
+    return my binder;
+}
+
 Checker* program_get_checker(Program const* me) {
     return my checker;
 }
 
-Declaration const* program_get_global(Program const* me, csview name, u32 meaning) {
-    return symbol_declaration(symbol_table_get(&my binder->globals, name), meaning);
+Symbol const* program_get_global(Program const* me, csview name, u32 meaning) {
+    return symbol_for_meaning(symbol_table_get(&my binder->globals, name), meaning);
 }
 
 void program_typecheck(Program* me) {

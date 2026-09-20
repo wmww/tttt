@@ -249,7 +249,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
 
 // `type Bar = Omit<Foo, "c">`: the instantiation of a generic alias written directly as the body of another alias goes
 // by the new name (tsc passes the new alias symbol to getTypeAliasInstantiation). Same members, its own identity
-Ty const* ty_realias(Checker* me, Ty const* ty, Declaration const* alias, TyList alias_args) {
+Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
     if (ty->alias == alias) return ty;
     if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
         return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);

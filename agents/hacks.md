@@ -6,10 +6,9 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `program_typecheck` because the test traversal and debug display evaluate types afterwards. The type core itself
   takes a `Checker*`; the walk should get one too (a check context with checker + errs + options).
 - `lazy_slot_new`: LazyType slot numbers come from one process-wide atomic counter and are never reused, and
-  everything that might need a memo takes one eagerly (every namespace/module symbol, every `type_identifier` made
-  during checking). A checker's slot table is sparse so this only costs page fragmentation (bench RSS +6%), and it
+  everything that might need a memo takes one eagerly. A checker's slot table is sparse so this only costs page fragmentation (bench RSS +6%), and it
   panics after 1G slots. Per-file numbering (plan 02 §2) didn't fit because Declarations, Scopes and check-time
-  identifier types belong to no file. Slots hold a `Ty*` now and check-time clones are gone, so this can be
+  identifier types belonged to no file; since plan 04 stage 2 every LazyType is in the AST of a file, so it would. Slots hold a `Ty*` now and check-time clones are gone, so this can be
   revisited; a long-running process (language server) needs reuse.
 - `lazy_type_drop`: a slotted LazyType dropped while a checker is current resets its slot (it must be a check-time
   temporary); the AST's own slots are dropped by `checker_drop`, which `program_drop` runs before dropping the AST.
@@ -92,18 +91,23 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
 
-## The binder (`scope.c`, plan 04 stage 1 done, stages 2-4 to go)
-- **`Symbol.decl`**: every symbol still owns a `Declaration`, the payload the type core knows it by (`decl_ref`,
-  `DeclLinks`, `MergedType`, the `TYPE_LAZY`/`TYPE_REF` links). Identifiers carry both `symbol` (what the name found,
-  maybe an alias; the symbols baseline prints it) and `decl_ref` (`symbol_declaration(symbol, meaning)`: aliases
-  resolved, what the checker uses). `DeclHandle { get, symbol }` is what AST nodes keep. All of it goes in stage 2.
-- `clone_parent_symbol`: a test program that adds to a global of the shared lib program (an interface, `Intl`) gets a
-  *clone* of the symbol in its overlay table (`SymbolTable.parent`), payload cloned with
-  `declaration_clone_in_place`. References inside the lib AST keep pointing at the frozen original, so lib-internal
-  uses don't see the augmentation (as before). Stage 2: the `frozen -> overlay` redirect table of the plan.
+## The binder (`scope.c`, plan 04 stages 1-2 done, 3-4 to go)
+- Identifiers keep two symbol pointers, `symbol` (what the name found, maybe an alias) and `target` (the one with the
+  meaning the name is used with, aliases resolved). The plan wanted one pointer plus an accessor; `target` is that
+  accessor's result cached at resolve time, so that checking never walks alias chains. `GenericItem`,
+  `InferredType` and mapped keys keep `owned_symbol` + `symbol_ref` because their clones (`generic_clone`) refer to
+  the original's type parameter.
+- `binder_redirect` / `Binder.overlays`: a program that adds to a symbol of the shared lib program gets a clone in its
+  overlay table (`clone_parent_symbol`, nothing is written to the frozen original), and the checker maps symbols
+  through the redirect at its entry points (`canonical()` in `ty/lower.c`: `ty_declared_type_of`,
+  `ty_static_type_of`, `ty_type_of_symbol`, `lower_identifier`). Anything new that keys checker state by `Symbol*`
+  must do the same or lib-internal references get a second type. `Ty.alias`, `literal.enum_decl` etc. hold canonical
+  symbols because they come out of those entry points. Known fallout: `console.log = (...args) => {}` with an
+  augmented `Console` now sees both `log` signatures and wants tsc's `getIntersectedSignatures` for the contextual
+  signature (signatureCombiningRestParameters2 lost its errors component).
 - `make_gather_target`: `import * as ns` / `import x = require()` is an alias whose target is a namespace symbol of
-  its own (payload: `PortItem.wrapped_declaration`, `Declaration.namespace` = the module symbol) instead of the module
-  symbol itself, only so that its type prints as `typeof ns`. Stage 3 (accessibility-based printing).
+  its own (`Symbol.gather_module` = the module, `symbol_members()` looks through it) instead of the module symbol
+  itself, only so that its type prints as `typeof ns`. Stage 3 (accessibility-based printing).
 - Scripts declare straight into `Binder.globals` while they're walked, in file order (`SCOPE_SCRIPT`,
   `SCOPE_GLOBAL_AUGMENTATION`). The plan's contract wants a per-file "global contributions" table merged in the link
   phase; until then declare is not parallelisable and cross-file conflicts are told from same-file ones by comparing
@@ -125,30 +129,40 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   diagnostics (TS2300 in ~80 tests) still come from nowhere.
 - `symbol_table_collect` allocates; `ty_namespace_type` members and `extend_export_stars` go through it.
 - One test logs "Declaration B acquired multiple times" (a node whose names get added twice; not found yet).
+- `check_access`: no TS2339 on *modules* (`import * as ns; ns.missing`), only on namespaces. Members are by export
+  name now so it would be honest, but it costs nodeModulesTypesVersionPackageExports x3 (module resolution picks the
+  wrong file there). Drop the gate with stage 3 / package.json `exports`.
 
 ## The AST-side walk and what's left of the old type world
-- **`TYPE_LAZY` / `TYPE_REF` / binding `TYPE_INDEXED` are still `TypeNode` tags** (plan 02 wanted them gone). They're
-  the links name resolution makes between a `Declaration` and what gives it its type (`Declaration.value_type`,
-  `MergedType.merge_list`, `Binding.assigned_type`), and lowering follows them. They're never cloned semantically or
-  resolved any more, so they're harmless, but they belong in a symbol (plan 04: a symbol's declarations + a
-  `ty_type_of_symbol`), not in the syntax tree's type.
-- `MergedType` / `LAZY_TYPE_MERGED` / `LAZY_TYPE_EVALUATED`: a declaration's type and value sides are each a list of
-  nodes plus a LazyType (`declared_owner` / `value_owner` say which side and whose). With one entry the LazyType is
-  `LAZY_TYPE_EVALUATED` and lowers the entry on every get (no memo); `node_skip_to_syntax()` and
-  `baseline_test_case_add_type_node()` look through it to find the written type. Same fate as above.
+- **`TYPE_LAZY` / `TYPE_REF` / binding `TYPE_INDEXED` are still `TypeNode` tags**, but no longer how a declaration
+  finds its type (plan 04 stage 2: `Declaration`, `MergedType`, `DeclHandle`, the `typeof_declaration` twins and the
+  per-declaration LazyTypes are gone; `ty_type_of_symbol`/`ty_declared_type_of` switch on `Symbol.decls`). What is
+  left are three AST-internal links, each a refactor of its own:
+  1. `Binding.assigned_type`: `type_lazy(&initialized_binding.lazy_type)` / the for-each `var_type`, and for a
+     destructuring element a `TYPE_INDEXED { is_from_binding }` over the parent pattern's type (`binding_add_names`,
+     lowered by `lower_binding_access`). Wants a parent pointer on `Binding` and a `ty_binding_type(binding)`.
+  2. A function seen as a `CallableType` (`function_impl_lookup_names`, `callable_type_resolve_names`): parameter
+     types are `type_refcopy` of the binding's effective type, the return type a `TYPE_REF`; a constructor's return
+     type is a `TYPE_REF` to `ClassDecl.instance_identifier_type`. Goes with the `CallableType { FunctionImpl* }`
+     item below.
+  3. Class members as `Prop.node`: `class_item_type_node` makes a `type_lazy` of the member's function/field/accessor
+     LazyType (`members.c` wraps accessors the same way). Wants a `Prop` source per class item kind, like
+     `Prop.symbol` for namespace members.
 - `CallableType` (`TYPE_CALLABLE`) still has its own `generic`/`args`/`ret` next to the `FunctionImpl` it owns, filled
   in by `callable_type_resolve_names`. `Signature.node` reads those, `Signature.function` reads a `FunctionImpl`
   directly: two ways to resolve a signature where `CallableType { FunctionImpl* }` would leave one.
-- `type_clone` survives for `declaration_clone_in_place`, whose one caller left is `clone_parent_symbol` (below), and
-  for `generic_clone`. A cloned `IdentifierType`/`CallableType` is lowered like an original, keyed by its own
-  address, so the copy of an interface-typed declaration is a second anonymous `Ty` for the same written type.
+- `type_clone` survives for `generic_clone` and `callable_type_clone`. A cloned `IdentifierType`/`CallableType` is
+  lowered like an original, keyed by its own address (a second anonymous `Ty` for the same written type).
 - `ty/check.c: check_access` (TS2339 and friends): a missing property is only reported under
   `noUncheckedIndexedAccess` and for dot access, the gate the legacy checker had. Everything is in place to report it
   honestly (`ty_access` returning null), but it floods until narrowing and apparent types of everything are right.
   A source that is `any` is let through to anything, even `never` (`check_assignable`).
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS`: what the operator checks in `expr.c`/`ty/expr.c` mean by "extends number"
   (null/undefined don't, whatever strictNullChecks says). tsc checks operands differently (TS18050, never emitted here).
-- `function_impl_typecheck_signature` TS2370: skipped for `...args: infer A` by looking at the written node.
+- `function_impl_typecheck_signature` TS2370: skipped for `...args: infer A` by looking at the written node, and for
+  a *reference* to an unconstrained `infer` type parameter (`(...a: A1) => R1` in the true branch): the implied
+  `unknown[]` constraint only exists once the signature that declares `A1` was resolved (`imply_rest_constraint`),
+  which depends on evaluation order. tsc derives it from the position of the `infer` (getInferTypeConstraint).
 - `generic_params_expr_typecheck` (`f<A>` outside a call): constraints are checked against the first signature only.
 - `for_each_loop_statement_evaluate_var_type`: `for..in` is `string`, `for..of` only knows arrays and strings (TS2495
   for everything else, iterables are `any`).
@@ -157,11 +171,13 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   the stack is `any` without TS7023.
 - `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x` (it used to be `any`). tsc takes the *declared*
   type of an identifier, not the narrowed one; no difference until narrowing exists.
-- `baseline_test_case_add_type_node`: a declaration whose type is a written type *name* (`var x: X.Y.Z`, an enum
-  member) shows as written (the legacy syntax printer), everything else through `ty_display` with unqualified names.
+- `baseline_test_case_add_type_node` / `baseline_test_case_add_symbol_value`: a variable whose type is a written
+  type *name* (`var x: X.Y.Z`) shows as written (the legacy syntax printer), an enum member as `E.x`, everything
+  else through `ty_display` with unqualified names.
   Measured: +21 full tests over never qualifying. The real rule needs symbol accessibility (plan 04, symbols).
 - `ty_merged_value_type`: the merged type copies the first named entry's `declared` struct (a class static side or an
-  enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one.
+  enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one (`ty_static_type_of`,
+  which is what `this` in a static member and a derived class's base static side see).
 
 - Single-member enums: `E.x` prints as `E` (right for `.types`, wrong in error messages where tsc shows the fresh
   literal type `E.x`). Needs fresh/regular literal types. `ty_widened_literal` widens an enum member to its enum.

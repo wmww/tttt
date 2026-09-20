@@ -196,12 +196,8 @@ static void display_binding_content_inner(Display d, Binding const* me) {
         case BINDING_IDENTIFIER:
             display_colored_span(d, color_name, my content_span);
             if (d.debug) {
-                if (!my declaration.get) {
+                if (!my symbol) {
                     display_colored(d, color_error, " /* unresolved */");
-                } else if (!my has_explicit_type) {
-                    display_colored(d, color_implicit, " /* ");
-                    display_type(d, &my declaration.get->declared_type);
-                    display_colored(d, color_implicit, " */");
                 }
             }
             break;
@@ -284,16 +280,12 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    if (my decl_ref && my decl_ref->is_typeof) {
-        display_lit(d, "typeof ");
-    }
-
     for_each (i, vec_span, &my namespaces) {
         display_colored_span(d, color_type, *i);
         display_lit(d, ".");
     }
-    if (my decl_ref && span_valid(my decl_ref->name)) {
-        display_colored_span(d, color_type, my decl_ref->name);
+    if (my target && span_valid(my target->name_span)) {
+        display_colored_span(d, color_type, my target->name_span);
     } else if (span_valid(my name)) {
         display_colored_span(d, color_type, my name);
     } else {
@@ -312,7 +304,7 @@ static void display_identifier_type(Display d, IdentifierType* me) {
     }
 
     if (d.debug) {
-        if (!my decl_ref) {
+        if (!my target) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -325,7 +317,7 @@ static void display_inferred_type(Display d, InferredType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.debug) {
-        if (!my declaration_ref) {
+        if (!my symbol_ref) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -817,7 +809,7 @@ static void display_class_decl(Display d, ClassDecl const* me) {
 static void display_identifier_expr(Display d, IdentifierExpr const* me) {
     display_colored_span(d, color_name, my name);
     if (d.debug) {
-        if (!my decl_ref) {
+        if (!my target) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }

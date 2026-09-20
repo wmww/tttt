@@ -2,7 +2,6 @@
 
 #include "type.h"
 #include "expr.h"
-#include "declaration.h"
 #include "arena.h"
 
 // Symbols, symbol tables and scopes: the binder (plan 04). The model is tsc's (SymbolFlags, the *Excludes merge
@@ -83,8 +82,36 @@ Symbol* symbol_table_lookup(SymbolTable const* me, csview name, u64 hash);
 static inline Symbol* symbol_table_get(SymbolTable const* me, csview name) {
     return me ? symbol_table_lookup(me, name, symbol_name_hash(name)) : nullptr;
 }
-// Every symbol reachable by name, overlaid tables first, malloc'd (null if empty)
-Symbol** symbol_table_collect(SymbolTable const* me, u32* count);
+// Every symbol reachable by name (the name it is in the table by: `export default class C` is `default`), overlaid
+// tables first, malloc'd (null if empty)
+SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count);
+
+// The AST node a declaration of a symbol was made from
+typedef enum SymbolDeclKind {
+    SYMBOL_DECL_NONE = 0,
+    SYMBOL_DECL_VARIABLE,       // Binding: variables, parameters, destructured elements
+    SYMBOL_DECL_FUNCTION,       // FunctionImpl
+    SYMBOL_DECL_CLASS,          // ClassDecl
+    SYMBOL_DECL_INTERFACE,      // InterfaceDecl
+    SYMBOL_DECL_ENUM,           // EnumDecl
+    SYMBOL_DECL_ENUM_MEMBER,    // EnumCase
+    SYMBOL_DECL_TYPE_ALIAS,     // TypeDecl
+    SYMBOL_DECL_TYPE_PARAMETER, // GenericItem
+    SYMBOL_DECL_INFER,          // InferredType, several of the same name in a conditional type are one type parameter
+    SYMBOL_DECL_MAPPED_KEY,     // InterfaceMember with a mapped key
+    SYMBOL_DECL_NAMESPACE,      // NamespaceDecl
+    SYMBOL_DECL_ALIAS,          // PortItem
+    SYMBOL_DECL_EXPR,           // Expr: `export default <expr>`
+    SYMBOL_DECL_BUILTIN,        // TypeNode const*: `number`, `globalThis`... (program_add_builtins())
+} SymbolDeclKind;
+
+typedef struct SymbolDecl {
+    SymbolDeclKind kind;
+    u32 flags; // What this declaration added to the symbol's flags
+    void const* node;
+    Span name;
+    Span full;
+} SymbolDecl;
 
 typedef enum AliasState {
     ALIAS_UNRESOLVED = 0,
@@ -99,13 +126,13 @@ typedef struct Symbol {
     csview name;
     Symbol* parent; // The container: namespace, enum, module
     SymbolTable* exports; // Namespaces, enums, modules: one table, shared by all declaration blocks
-    Span* decl_names; // The name of every declaration, for duplicate identifier errors
+    Span name_span; // Of the first declaration
+    SymbolDecl* decls; // Every declaration, in order
     u32 decl_count;
     u32 decl_cap;
-    // What the type core knows a symbol by until plan 04 stage 2. Never copied. For an alias it only has the name and
-    // declaration spans (unless the alias merged with local declarations)
-    Declaration decl;
-    LazyType value_interface; // The value of a namespace or module (LAZY_TYPE_SCOPE_VALUE_INTERFACE)
+    bool exported;
+    // `import * as ns`: the module whose exports are the members, see make_gather_target()
+    Symbol* gather_module;
 
     // Aliases
     PortItem* alias_item;
@@ -126,16 +153,42 @@ typedef struct Symbol {
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
 } Symbol;
 
-// The declaration payload that gives the symbol the given meaning: its own, or for an alias its target's
-Declaration const* symbol_declaration(Symbol const* me, u32 meaning);
+// The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
+// Placeholders mean everything
+Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning);
+// The symbol whose exports are the members of a namespace, enum or module symbol
+static inline Symbol const* symbol_members(Symbol const* me) {
+    return me && my gather_module ? my gather_module : me;
+}
+// The first declaration of the given kind, null if there is none
+SymbolDecl const* symbol_find_decl(Symbol const* me, SymbolDeclKind kind);
+static inline void const* symbol_find_node(Symbol const* me, SymbolDeclKind kind) {
+    SymbolDecl const* decl = symbol_find_decl(me, kind);
+    return decl ? decl->node : nullptr;
+}
+// The type parameters of the (first) class, interface or type alias declaration, null if it has none
+Generic const* symbol_type_generic(Symbol const* me);
+// The full span of every declaration
+VecSpan symbol_declaration_spans(Symbol const* me);
 // The flags of the symbol with aliases seen through
 u32 symbol_resolved_flags(Symbol const* me);
 Symbol* symbol_resolve_alias(Symbol* me);
 // Member of a namespace, enum or module (`export *` included), null if there is none
 Symbol* symbol_get_export(Symbol const* me, csview name);
-Declaration const* symbol_get_export_declaration(Symbol const* me, Span name);
 // All of them, malloc'd
-Symbol** symbol_collect_exports(Symbol const* me, u32* count);
+SymbolEntry* symbol_collect_exports(Symbol const* me, u32* count);
+
+typedef struct DeclProps {
+    Span name;
+    Span full;
+    bool exported;
+    SymbolDeclKind kind;
+    void const* node;
+    bool function_scoped; // `var`
+    bool is_parameter;
+    bool is_const_enum;
+    bool is_instantiated; // Namespaces: has a value
+} DeclProps;
 
 typedef enum ScopeKind {
     SCOPE_BLOCK = 0, // Blocks, loops, catch, switch, type parameter lists, `infer`, mapped types, class bodies
@@ -159,16 +212,27 @@ typedef struct Scope {
     // Ambient namespace (or declaration file) without export declarations: everything is exported
     bool export_context;
     bool ambient;
-    Declaration const* this_declaration;
-    Declaration const* super_declaration;
+    ThisRef this_ref;
 } Scope;
+
+// Symbol pointer -> symbol pointer, open addressing
+typedef struct SymbolMap {
+    Symbol const** keys;
+    Symbol** values;
+    u32 count;
+    u32 cap;
+} SymbolMap;
 
 typedef struct Binder {
     Arena arena;
     ErrorCtx* errs;
     SymbolTable globals;
     Scope* global_scope;
-    Symbol** symbols; // malloc'd, all of them: payloads need dropping, aliases get resolved eagerly
+    Binder const* parent;
+    // Symbols of the parent (the shared lib program) this program has added to -> the clone that has everything.
+    // What's inside the lib AST keeps pointing at the frozen original, so the checker maps through binder_redirect()
+    SymbolMap overlays;
+    Symbol** symbols; // malloc'd, all of them: aliases get resolved eagerly
     u32 symbol_count;
     u32 symbol_cap;
 } Binder;
@@ -192,9 +256,17 @@ static inline bool scope_is_var_container(Scope const* me) {
     return my kind != SCOPE_BLOCK && my kind != SCOPE_ENUM;
 }
 
+// The program's version of a symbol: the overlay if it added to a symbol of the shared lib program
+Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol);
+static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symbol) {
+    // Nothing is ever written to a symbol of the parent, so there's no flag to test: programs that add to lib
+    // symbols are rare, and only those pay for the lookup
+    return symbol && my overlays.count && symbol->binder != me ? binder_redirect_slow(me, symbol) : symbol;
+}
+
 // Declares props in the scope (or the exports of its container, or the nearest function scope), merging with an
 // existing symbol when tsc's rules allow it. Checks that ret was previously null
-void scope_init_declaration(Scope* me, DeclHandle* ret, DeclProps props);
+void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default` of a declaration (which is declared locally under its own name) and of an expression
 void scope_export_default(Scope* me, Symbol* symbol);
@@ -202,9 +274,9 @@ void scope_export_default_expr(Scope* me, Expr* expr);
 
 // Lookup by meaning, seeing through aliases. The symbol found may be an alias, see symbol_declaration()
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);
-Declaration const* scope_get_value(Scope const* me, csview name, Symbol const** found);
-Declaration const* scope_get_type(Scope const* me, csview name, Symbol const** found);
-Declaration const* scope_get_namespace(Scope const* me, csview name, Symbol const** found);
-Declaration const* scope_get_keyword(Scope const* me, KeywordIdentifier keyword, bool type_else_value);
-
-Ty const* symbol_evaluate_value_interface(Symbol const* me);
+// Same, returning the symbol that has the meaning (aliases resolved), *found is what the name itself refers to
+Symbol const* scope_get_value(Scope const* me, csview name, Symbol const** found);
+Symbol const* scope_get_type(Scope const* me, csview name, Symbol const** found);
+Symbol const* scope_get_namespace(Scope const* me, csview name, Symbol const** found);
+// What `this` is here. In a type position only a class will do
+ThisRef scope_get_this(Scope const* me, bool type_else_value);

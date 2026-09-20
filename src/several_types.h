@@ -12,7 +12,10 @@ typedef struct IdentifierType {
     VecSymbolCPtr namespace_symbols; // What each of the namespaces resolved to (maybe an alias), shorter on failure
     Span name;
     KeywordIdentifier keyword;
-    Declaration const* decl_ref; // What the checker goes by: aliases resolved
+    // What the checker goes by: the symbol that has the meaning the name is used with (aliases resolved). Cached next
+    // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
+    Symbol const* target;
+    ThisKind this_kind;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
     VecSpannedType generic_params;
 } IdentifierType;
@@ -35,8 +38,8 @@ typedef struct InferredType {
     Span name;
     Span full_span;
     TypeNode extends;
-    DeclHandle owned_declaration;
-    Declaration const* declaration_ref;
+    Symbol* owned_symbol;
+    Symbol const* symbol_ref;
 } InferredType;
 
 void inferred_type_drop(InferredType* me);

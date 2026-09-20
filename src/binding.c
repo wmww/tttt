@@ -28,13 +28,14 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
 
         case BINDING_IDENTIFIER:
             // TODO: somehow abstract literals on the exported value only (see defaultNamedExportWithType1)
-            scope_init_declaration(scope, &my declaration, (DeclProps){
+            scope_init_declaration(scope, &my symbol, (DeclProps){
                 .name = my content_span,
                 .full = span_valid(props.full) ? props.full : my content_span,
                 .exported = props.exported,
-                .tag = props.is_function_arg ? DECLARATION_ARGUMENT : DECLARATION_VARIABLE,
+                .kind = SYMBOL_DECL_VARIABLE,
+                .node = me,
+                .is_parameter = props.is_function_arg,
                 .function_scoped = props.function_scoped,
-                .value_type = type_refcopy(binding_get_effective_type(me)),
             });
             break;
 
@@ -151,7 +152,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
         case BINDING_NOOP: break;
 
         case BINDING_IDENTIFIER:
-            if (my declaration.get) {
+            if (my symbol) {
                 Ty const* type = ty_of_node(binding_get_effective_type(me));
                 if ((type->flags & TYF_ERROR) && type == ty_intrinsic(current_checker, TY_ERROR) &&
                     compiler_options()->no_implicit_any

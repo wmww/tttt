@@ -28,10 +28,6 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
 
 static Ty const* any_type(Checker* me) { return ty_intrinsic(me, TY_ANY); }
 
-Ty const* ty_value_type_of(Checker* me, Declaration const* decl) {
-    return ty_from_node(me, &decl->value_type, expr_lower_ctx);
-}
-
 // Memo
 
 static bool kind_uses_context(Expr const* expr) {
@@ -416,20 +412,26 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
 // Identifiers
 
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier) {
-    Declaration const* decl = identifier->decl_ref;
+    Symbol const* decl = identifier->target;
+    switch (identifier->this_kind) {
+        case THIS_NONE: break;
+        case THIS_ANY: return any_type(me);
+        case THIS_PARAMETER: break;
+        case THIS_CLASS_STATIC: return ty_static_type_of(me, decl);
+        case THIS_CLASS_INSTANCE: {
+            // The instance type, for a generic class applied to its own parameters
+            Ty const* declared = ty_declared_type_of(me, decl);
+            if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
+                return ty_reference(me, declared, declared->declared.type_params);
+            }
+            return declared;
+        }
+    }
     if (!decl) {
         // TODO: `this` outside of anything that has one is `typeof globalThis` (or implicitly any)
         return identifier->keyword == KEYWORD_IDENTIFIER_THIS ? ty_intrinsic(me, TY_UNDEFINED) : any_type(me);
     }
-    if (identifier->keyword && decl->value_tag == DECLARATION_CLASS) {
-        // `this` (and `super`) inside a class: the instance type, for a generic class applied to its own parameters
-        Ty const* declared = ty_declared_type_of(me, decl);
-        if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
-            return ty_reference(me, declared, declared->declared.type_params);
-        }
-        return declared;
-    }
-    return ty_value_type_of(me, decl);
+    return ty_type_of_symbol(me, decl);
 }
 
 // Operators
@@ -889,7 +891,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
 
 static bool is_const_assertion(AsTypeExpr const* as_type) {
     TypeNode const* type = &as_type->type;
-    return type->tag == TYPE_IDENTIFIER && !type->identifier->decl_ref && span_equals(type->identifier->name, "const") &&
+    return type->tag == TYPE_IDENTIFIER && !type->identifier->target && span_equals(type->identifier->name, "const") &&
         vec_span_is_empty(&type->identifier->namespaces);
 }
 
@@ -1023,7 +1025,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_OBJECT: return check_object(me, expr, ctx);
         case EXPR_ARRAY: return check_array(me, expr, ctx);
-        case EXPR_CLASS_DECL: return ty_value_type_of(me, expr->class_decl->declaration.get);
+        case EXPR_CLASS_DECL: return ty_type_of_symbol(me, expr->class_decl->symbol);
 
         case EXPR_REGEX: return ty_global_regexp_type(me);
 

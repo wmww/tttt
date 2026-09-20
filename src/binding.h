@@ -16,7 +16,7 @@ typedef struct Binding {
         BINDING_OBJECT,
     } tag;
     union {
-        DeclHandle declaration;
+        Symbol* symbol;
         VecBinding array;
         VecObjectBindingItem object;
     };

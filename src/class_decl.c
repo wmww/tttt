@@ -88,9 +88,6 @@ void class_decl_drop(ClassDecl* me) {
     expr_drop(&my extends);
     vec_type_drop(&my implements);
     vec_class_item_drop(&my items);
-    lazy_type_drop(&my instance_type);
-    lazy_type_drop(&my class_type);
-    declaration_drop(&my typeof_declaration);
     type_drop(&my instance_identifier_type);
 }
 
@@ -128,35 +125,18 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
 }
 
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
-    declaration_init(&my typeof_declaration, (DeclProps){
+    scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
         .exported = exported,
-        .tag = DECLARATION_CLASS,
-        .value_type = type_lazy(&my class_type),
-        .declared_type = type_lazy(&my class_type),
-        .is_typeof = true,
-        .node = { DECL_NODE_CLASS, me },
-    });
-
-    scope_init_declaration(scope, &my declaration, (DeclProps){
-        .name = my name,
-        .full = my full_span,
-        .exported = exported,
-        .tag = DECLARATION_CLASS,
-        .generic = &my generic,
-        .value_type = type_identifier(c_new(IdentifierType, {
-            .name = my name,
-            .decl_ref = &my typeof_declaration,
-        })),
-        .declared_type = type_lazy(&my instance_type),
-        .node = { DECL_NODE_CLASS, me },
+        .kind = SYMBOL_DECL_CLASS,
+        .node = me,
     });
 }
 
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
-    this_scope->this_declaration = static_members ? &my typeof_declaration : my declaration.get;
+    this_scope->this_ref = (ThisRef){ static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, my symbol };
 
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {
@@ -166,9 +146,6 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
 }
 
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
-    lazy_type_bind(&my instance_type, LAZY_TYPE_CLASS_INSTANCE);
-    lazy_type_bind(&my class_type, LAZY_TYPE_CLASS_CLASS);
-
     for_each (i, vec_expr, &my decorators) {
         expr_lookup_names(i, names, errs);
     }
@@ -180,12 +157,12 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         // Is it the fallback type, always any or something else? unclear.
         vec_spanned_type_push(&generic_params, spanned_type(i->name, type_identifier(c_new(IdentifierType, {
             .name = i->name,
-            .decl_ref = i->declaration_ref,
+            .target = i->symbol_ref,
         }))));
     }
     my instance_identifier_type = type_identifier(c_new(IdentifierType, {
         .name = my name,
-        .decl_ref = my declaration.get,
+        .target = my symbol,
         .generic_params = generic_params,
     }));
 
@@ -232,15 +209,6 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 
     class_members_lookup_names(me, names, errs, true);
     class_members_lookup_names(me, names, errs, false);
-}
-
-// Classes are evaluated by the new type core (ty/members.c)
-Ty const* class_decl_evaluate_type(ClassDecl* me, bool resolve_instance) {
-    Checker* checker = current_checker;
-    if (resolve_instance) {
-        return my declaration.get ? ty_declared_type_of(checker, my declaration.get) : ty_intrinsic(checker, TY_ANY);
-    }
-    return ty_declared_type_of(checker, &my typeof_declaration);
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {

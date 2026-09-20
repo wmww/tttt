@@ -48,9 +48,7 @@ void lazy_slots_drop(LazySlots* me) {
 }
 
 void lazy_type_drop(LazyType* me) {
-    if (my tag == LAZY_TYPE_EVALUATED) {
-        type_drop(&my preevaluated);
-    } else if (my slot) {
+    if (my slot) {
         // Dropped while a checker is around: this LazyType was made during typechecking, and nothing will ask for its
         // slot again. Slots of the AST die with their checker instead, which is gone before the AST is
         LazyMemo* state = lazy_type_state_peek(me);
@@ -67,7 +65,7 @@ void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
 }
 
 Ty const* lazy_type_evaluate(LazyType* me) {
-    if (my tag == LAZY_TYPE_EVALUATED) return ty_from_node(current_checker, &my preevaluated, (LowerCtx){ .generic = true });
+    if (my tag == LAZY_TYPE_EVALUATED) return ty_intrinsic(current_checker, TY_ANY);
 
     // THREADSAFETY: slots belong to one checker, which belongs to one thread
     LazyMemo* state = lazy_type_state(me);
@@ -107,14 +105,6 @@ Ty const* lazy_type_evaluate(LazyType* me) {
             result = function_impl_evaluate_type(c_container_of(me, FunctionImpl, lazy_type));
             break;
 
-        case LAZY_TYPE_CLASS_INSTANCE:
-            result = class_decl_evaluate_type(c_container_of(me, ClassDecl, instance_type), true);
-            break;
-
-        case LAZY_TYPE_CLASS_CLASS:
-            result = class_decl_evaluate_type(c_container_of(me, ClassDecl, class_type), false);
-            break;
-
         case LAZY_TYPE_CLASS_ITEM_FIELD:
             result = class_item_field_evaluate_type(c_container_of(me, ClassItem, field.lazy_type));
             break;
@@ -123,25 +113,6 @@ Ty const* lazy_type_evaluate(LazyType* me) {
             result = class_item_accessor_evaluate_type(c_container_of(me, ClassItem, method.accessor_type));
             break;
 
-        case LAZY_TYPE_ENUM_INSTANCE:
-            result = enum_decl_evaluate_instance_type(c_container_of(me, EnumDecl, instance_type));
-            break;
-
-        case LAZY_TYPE_ENUM_INTERFACE:
-            result = enum_decl_evaluate_interface_type(c_container_of(me, EnumDecl, interface_type));
-            break;
-
-        case LAZY_TYPE_INTERFACE_DECL:
-            result = interface_decl_evaluate_type(c_container_of(me, InterfaceDecl, lazy_type));
-            break;
-
-        case LAZY_TYPE_MERGED:
-            result = merged_type_evaluate_type(c_container_of(me, MergedType, lazy));
-            break;
-
-        case LAZY_TYPE_SCOPE_VALUE_INTERFACE:
-            result = symbol_evaluate_value_interface(c_container_of(me, Symbol, value_interface));
-            break;
     }
 
     if (!state->done) {

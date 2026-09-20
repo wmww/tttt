@@ -8,7 +8,7 @@
 #include "interface_member.h"
 #include "interface_decl.h"
 #include "function_impl.h"
-#include "declaration.h"
+#include "lazy_type.h"
 #include "generic.h"
 #include "expr.h"
 
@@ -24,13 +24,13 @@ enum {
     KEY_CONDITIONAL,
     KEY_ANONYMOUS_INSTANCE,
     // First word of every key in Checker.links
-    KEY_TYPE_PARAM,     // Declaration -> Ty
-    KEY_DECL_LINKS,     // Declaration -> DeclLinks
+    KEY_TYPE_PARAM,     // Symbol -> Ty
+    KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks
     KEY_GENERIC_PARAMS, // Generic -> TyList
-    KEY_ALIAS_INSTANCE, // (alias Declaration, argument ids) -> Ty
+    KEY_ALIAS_INSTANCE, // (alias Symbol, argument ids) -> Ty
     KEY_NODE,           // TYPE_INTERFACE/TYPE_CALLABLE node -> Ty
     KEY_NAMESPACE,      // Symbol -> Ty
-    KEY_MERGED_VALUE,   // Declaration -> Ty, see ty_merged_value_type()
+    KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE node, mapper pairs) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_VARIANCES,      // declared type id -> variance array
@@ -45,46 +45,15 @@ enum {
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);
 
-// The declarations merged into a Declaration's type side, as the nodes they were registered with
-typedef struct DeclEntries {
-    TypeNode const* data;
-    u32 len;
-} DeclEntries;
-
-static inline DeclEntries declaration_type_entries(Declaration const* decl) {
-    MergedType const* merged = &decl->merged_declared_type;
-    if (vec_type_size(&merged->merge_list)) {
-        return (DeclEntries){ .data = merged->merge_list.data, .len = (u32)vec_type_size(&merged->merge_list) };
-    } else if (merged->lazy.tag == LAZY_TYPE_EVALUATED) {
-        return (DeclEntries){ .data = &merged->lazy.preevaluated, .len = 1 };
-    } else {
-        return (DeclEntries){0};
-    }
-}
-
 // Follows TYPE_REF only, which never evaluates anything
 static inline TypeNode const* node_skip_refs(TypeNode const* type) {
     while (type->tag == TYPE_REF) type = type->ref;
     return type;
 }
 
-// Follows TYPE_REF and the LazyTypes that stand for a written type (LAZY_TYPE_EVALUATED: a declaration with a single
-// entry), which never evaluates anything either
-static inline TypeNode const* node_skip_to_syntax(TypeNode const* type) {
-    for (;;) {
-        if (type->tag == TYPE_REF) {
-            type = type->ref;
-        } else if (type->tag == TYPE_LAZY && type->lazy->tag == LAZY_TYPE_EVALUATED) {
-            type = &type->lazy->preevaluated;
-        } else {
-            return type;
-        }
-    }
-}
-
 // alias_of: the deferred reference this is an instantiation of, if it goes by an alias name (null otherwise)
 Ty const* ty_deferred_reference(
-    Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Declaration const* alias, TyList alias_args
+    Checker* me, TypeNode const* node, LowerCtx ctx, TyMapper const* mapper, Symbol const* alias, TyList alias_args
 );
 Ty const* ty_anonymous_from_overloads(Checker* me, TypeNode const* const* overloads, u32 count, LowerCtx ctx);
 

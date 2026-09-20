@@ -120,8 +120,8 @@ static Ty const* global_type(Checker* me, GlobalType which) {
             empty->anonymous.state->members_state = LAZY_STATE_DONE;
             my global_types[which] = empty;
         } else {
-            Declaration const* decl = program_get_global(my program, csview_from(names[which]), SYMBOL_TYPE);
-            if (decl && (decl->type_tag == DECLARATION_INTERFACE || decl->type_tag == DECLARATION_CLASS)) {
+            Symbol const* decl = program_get_global(my program, csview_from(names[which]), SYMBOL_TYPE);
+            if (decl && decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
                 Ty const* declared = ty_declared_type_of(me, decl);
                 if (declared->kind == TY_DECLARED && !declared->declared.type_params.len) {
                     my global_types[which] = declared;
@@ -200,10 +200,10 @@ static csview unqualified(csview name) {
 }
 
 // tsc's isEnumTypeRelatedTo: the same enum, or enums of the same name whose members agree (two versions of a library)
-static bool enums_related(Checker* me, Declaration const* source, Declaration const* target) {
+static bool enums_related(Checker* me, Symbol const* source, Symbol const* target) {
     if (source == target) return true;
-    if (!source || !target || !csview_eq(&source->name.sv, &target->name.sv)) return false;
-    if (!source->namespace || !target->namespace) return false;
+    if (!source || !target || !csview_eq(&source->name, &target->name)) return false;
+    if (!(source->flags & target->flags & SYMBOL_ENUM)) return false;
     Ty const* source_type = ty_declared_type_of(me, source);
     TyList members = source_type->kind == TY_UNION ?
         source_type->composite.types :
@@ -211,8 +211,8 @@ static bool enums_related(Checker* me, Declaration const* source, Declaration co
     for (u32 i = 0; i < members.len; i++) {
         Ty const* member = members.data[i];
         if (member->kind != TY_LITERAL || !member->literal.enum_member || member->literal.enum_member == source) continue;
-        Declaration const* other = symbol_get_export_declaration(target->namespace, member->literal.enum_member->name);
-        if (!other || other->value_tag != DECLARATION_ENUM_CASE) return false;
+        Symbol const* other = symbol_get_export(target, member->literal.enum_member->name);
+        if (!other || !(other->flags & SYMBOL_ENUM_MEMBER)) return false;
         Ty const* other_type = ty_declared_type_of(me, other);
         if (other_type->kind != TY_LITERAL) return false;
         bool known = (member->flags & TYF_LITERAL) && (other_type->flags & TYF_LITERAL);
@@ -268,7 +268,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     }
     if ((sf & TYF_ENUM) && (tf & TYF_ENUM)) {
         if (enums_related(me, s->literal.enum_decl, t->literal.enum_decl) &&
-            csview_eq(&s->literal.enum_member->name.sv, &t->literal.enum_member->name.sv)
+            csview_eq(&s->literal.enum_member->name, &t->literal.enum_member->name)
         ) {
             return true;
         }

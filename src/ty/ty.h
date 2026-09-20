@@ -191,7 +191,7 @@ struct Ty {
     u32 kind; // TyKind
     u32 flags; // TyFlags
     // How to print the type if it was made by a type alias (tsc's aliasSymbol/aliasTypeArguments)
-    Declaration const* alias;
+    Symbol const* alias;
     TyList alias_args;
     union {
         struct {
@@ -202,21 +202,21 @@ struct Ty {
             Atom const* string;
             // Enum literals (TYF_ENUM_LITERAL): the enum, and the (first) member with this value. A member whose
             // value isn't constant has TYF_ENUM instead of a literal flag, and no value
-            Declaration const* enum_decl;
-            Declaration const* enum_member;
+            Symbol const* enum_decl;
+            Symbol const* enum_member;
         } literal;
         struct {
-            Declaration const* decl; // null for synthesized ones
+            Symbol const* symbol; // null for synthesized ones
             Atom const* name;
             TyParamState* state;
         } param;
         struct {
             TyDeclaredKind kind;
-            Declaration const* decl; // null for tuple targets and synthetics
+            Symbol const* symbol; // null for tuple targets and synthetics
             struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module
             // Set if this is the value of a declaration with several value declarations (a namespace merged with a
             // function, class or enum): the members are those of all of them, see ty_merged_value_type()
-            Declaration const* merged_value;
+            Symbol const* merged_value;
             Atom const* name;
             TyList type_params;
             TupleShape const* tuple;
@@ -236,7 +236,7 @@ struct Ty {
             // The type of a function declaration/expression, method, accessor or constructor: one signature, read
             // straight off the FunctionImpl (the return type is inferred from its body if it isn't annotated)
             FunctionImpl const* function;
-            Declaration const* merged_value; // Function overloads, see ty_merged_value_type()
+            Symbol const* merged_value; // Function overloads, see ty_merged_value_type()
             TypeNode const* const* overloads; // If set, the type of an overloaded method: TYPE_CALLABLEs, node is the first
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
@@ -306,9 +306,10 @@ typedef enum PropFlags {
 struct Prop {
     Atom const* name;
     u32 flags;
-    Declaration const* parent; // the declared type it was declared in, may be null
+    Symbol const* parent; // the declared type it was declared in, may be null
     // Exactly one source of the type: a node to lower or a target to instantiate (or it is known from the start)
     TypeNode const* node;
+    Symbol const* symbol; // A member of a namespace: the type of the symbol as a value
     TypeNode const* const* overloads; // An overloaded method: all of its TYPE_CALLABLE nodes, node being the first
     u32 overload_count;
     LowerCtx ctx;
@@ -410,10 +411,12 @@ typedef enum TyVariance {
     VARIANCE_UNRELIABLE    = 1 << 3, // Measured through something that isn't simply structural: fall back to structure
 } TyVariance;
 
-typedef struct DeclLinks {
+// What the checker knows about a symbol (nothing in a Symbol is written during checking)
+typedef struct SymbolLinks {
     LazyState declared_state;
     Ty const* declared_type;
-} DeclLinks;
+    Ty const* static_type; // See ty_static_type_of()
+} SymbolLinks;
 
 typedef enum TyRelation {
     TY_RELATION_ASSIGNABLE,
@@ -468,14 +471,15 @@ typedef enum TyIntrinsic {
 
 struct Checker {
     Program* program;
-    LazySlots lazy; // The memos of every LazyType in the AST and in Declarations, see lazy_type.h
+    struct Binder const* binder;
+    LazySlots lazy; // The memos of every LazyType in the AST, see lazy_type.h
     Arena arena;
     u32 next_type_id;
     Ty const* intrinsics[TY_INTRINSIC_COUNT];
     InternTable atoms;
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
-    InternTable links;  // Declaration -> DeclLinks, AST node -> Ty, Generic -> type parameter list...
+    InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;
     Ty const* global_types[9]; // GlobalType in relate.c: String, Number... looked up on first use
@@ -511,12 +515,12 @@ TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
 Ty const* ty_unresolved(Checker* me, csview name);
 Ty const* ty_literal(Checker* me, Value const* value);
-Ty const* ty_enum_literal(Checker* me, Value const* value, Declaration const* enum_decl, Declaration const* member);
-Ty const* ty_enum_computed_member(Checker* me, Declaration const* enum_decl, Declaration const* member);
+Ty const* ty_enum_literal(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* member);
+Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_string_literal(Checker* me, csview sv);
-Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args);
-Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Declaration const* alias, TyList alias_args);
-Ty const* ty_type_param(Checker* me, Declaration const* decl);
+Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
+Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
+Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
 Ty const* ty_reference(Checker* me, Ty const* target, TyList args);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
@@ -528,7 +532,7 @@ Ty const* ty_conditional(
     Ty const* root, TyMapper const* mapper, // null for a root
     bool distributive
 );
-Ty const* ty_realias(Checker* me, Ty const* ty, Declaration const* alias, TyList alias_args);
+Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
@@ -552,16 +556,19 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
 
 // lower.c
 Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
-Ty const* ty_declared_type_of(Checker* me, Declaration const* decl);
+Ty const* ty_declared_type_of(Checker* me, Symbol const* decl);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
-Ty const* ty_merged_value_type(Checker* me, Declaration const* decl);
-Atom const* ty_qualified_name(Checker* me, Declaration const* decl); // `A.B.name`
-void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type);
+Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
+Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
+Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
+u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out); // malloc'd
+Atom const* ty_qualified_name(Checker* me, Symbol const* decl); // `A.B.name`
+void ty_set_declared_type(Checker* me, Symbol const* decl, Ty const* type);
 TyList ty_type_params_of(Checker* me, Generic const* generic);
-Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Declaration const* alias, TyList alias_args);
+Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args);
 
 // enums.c
-Ty const* ty_resolve_enum(Checker* me, Declaration const* decl); // Only ty_declared_type_of() should call this
+Ty const* ty_resolve_enum(Checker* me, Symbol const* decl); // Only ty_declared_type_of() should call this
 Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
 bool ty_is_enum_union(Ty const* ty);
 
@@ -594,7 +601,6 @@ Ty const* ty_expr_type(Checker* me, Expr const* expr); // The memo, else checked
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
 // Every reference to a variable, parameter, function, class... gets its type here (plan 03: narrowing goes here)
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier);
-Ty const* ty_value_type_of(Checker* me, Declaration const* decl);
 // What a declaration without type annotation makes of its initializer's type (tsc's getWidenedType, plus
 // getWidenedLiteralType if `literals`: mutable locations)
 Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals);

@@ -11,8 +11,8 @@ typedef struct GenericItem {
     TypeNode extends;
     bool fallback_explicit;
     TypeNode fallback;
-    DeclHandle owned_declaration;
-    Declaration const* declaration_ref;
+    Symbol* owned_symbol;
+    Symbol const* symbol_ref;
 } GenericItem;
 
 void generic_item_drop(GenericItem* me);

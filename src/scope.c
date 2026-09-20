@@ -5,7 +5,10 @@
 #include "generic.h"
 #include "program.h"
 #include "port_statement.h"
-#include "ty/ty.h"
+#include "function_impl.h"
+#include "class_decl.h"
+#include "interface_decl.h"
+#include "statement.h"
 
 // Symbol tables
 
@@ -74,7 +77,7 @@ static void symbol_table_insert(SymbolTable* me, Arena* arena, csview name, u64 
 }
 
 // An overlaid table replaces a symbol of its parent by a clone, see clone_parent_symbol()
-static void symbol_table_collect_into(SymbolTable const* me, SymbolTable const* top, Symbol** out, u32* count) {
+static void symbol_table_collect_into(SymbolTable const* me, SymbolTable const* top, SymbolEntry* out, u32* count) {
     if (!me) return;
     symbol_table_collect_into(my parent, top, out, count);
     for (u32 i = 0; i < my count; i++) {
@@ -82,16 +85,16 @@ static void symbol_table_collect_into(SymbolTable const* me, SymbolTable const* 
         for (SymbolTable const* above = top; above != me && !shadowed; above = above->parent) {
             shadowed = symbol_table_get_own(above, my entries[i].name, my entries[i].hash);
         }
-        if (!shadowed) out[(*count)++] = my entries[i].symbol;
+        if (!shadowed) out[(*count)++] = my entries[i];
     }
 }
 
-Symbol** symbol_table_collect(SymbolTable const* me, u32* count) {
+SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count) {
     *count = 0;
     u32 total = 0;
     for (SymbolTable const* i = me; i; i = i->parent) total += i->count;
     if (!total) return nullptr;
-    Symbol** ret = malloc(sizeof(Symbol*) * total);
+    SymbolEntry* ret = malloc(sizeof(SymbolEntry) * total);
     symbol_table_collect_into(me, me, ret, count);
     return ret;
 }
@@ -107,11 +110,9 @@ Binder* binder_new(ErrorCtx* errs) {
 
 void binder_destroy(Binder* me) {
     if (!me) return;
-    for (u32 i = 0; i < my symbol_count; i++) {
-        declaration_drop(&my symbols[i]->decl);
-        lazy_type_drop(&my symbols[i]->value_interface);
-    }
     free(my symbols);
+    free(my overlays.keys);
+    free(my overlays.values);
     arena_drop(&my arena);
     free(me);
 }
@@ -119,6 +120,43 @@ void binder_destroy(Binder* me) {
 void binder_set_parent(Binder* me, Binder const* parent) {
     check(!my globals.parent);
     my globals.parent = &parent->globals;
+    my parent = parent;
+}
+
+// Overlays
+
+static u32 symbol_map_pos(SymbolMap const* me, Symbol const* key) {
+    u64 h = (u64)(uintptr_t)key * 0x9e3779b97f4a7c15ull;
+    u32 pos = (u32)(h >> 32) & (my cap - 1);
+    while (my keys[pos] && my keys[pos] != key) pos = (pos + 1) & (my cap - 1);
+    return pos;
+}
+
+static void symbol_map_set(SymbolMap* me, Symbol const* key, Symbol* value) {
+    if ((my count + 1) * 2 > my cap) {
+        SymbolMap old = *me;
+        my cap = old.cap ? old.cap * 2 : 16;
+        my keys = calloc(my cap, sizeof(Symbol const*));
+        my values = calloc(my cap, sizeof(Symbol*));
+        panic_if(!my keys || !my values, "out of memory");
+        for (u32 i = 0; i < old.cap; i++) {
+            if (!old.keys[i]) continue;
+            u32 pos = symbol_map_pos(me, old.keys[i]);
+            my keys[pos] = old.keys[i];
+            my values[pos] = old.values[i];
+        }
+        free(old.keys);
+        free(old.values);
+    }
+    u32 pos = symbol_map_pos(me, key);
+    if (!my keys[pos]) my count++;
+    my keys[pos] = key;
+    my values[pos] = value;
+}
+
+Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol) {
+    u32 pos = symbol_map_pos(&my overlays, symbol);
+    return my overlays.keys[pos] ? my overlays.values[pos] : symbol;
 }
 
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
@@ -138,23 +176,23 @@ static void symbol_ensure_exports(Symbol* me) {
     if (!my exports) my exports = arena_new(&my binder->arena, SymbolTable);
 }
 
-static void symbol_ensure_value_interface(Symbol* me) {
-    if (!my value_interface.tag) my value_interface = lazy_type_init(LAZY_TYPE_SCOPE_VALUE_INTERFACE);
-}
-
 Symbol* binder_new_module_symbol(Binder* me, SourceFile* file) {
     Symbol* ret = binder_new_symbol(me, c_sv(""), SYMBOL_VALUE_MODULE);
     ret->is_module = true;
     ret->module_file = file;
     symbol_ensure_exports(ret);
-    symbol_ensure_value_interface(ret);
-    declaration_init(&ret->decl, (DeclProps){
-        .name = sv_make_span(c_sv("")),
-        .tag = DECLARATION_NAMESPACE_WITH_VALUE,
-        .value_type = type_lazy(&ret->value_interface),
-        .namespace = ret,
-    });
     return ret;
+}
+
+static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
+    if (my decl_count == my decl_cap) {
+        u32 cap = my decl_cap ? my decl_cap * 2 : 2;
+        SymbolDecl* decls = arena_new_n(&my binder->arena, SymbolDecl, cap);
+        if (my decl_count) memcpy(decls, my decls, sizeof(SymbolDecl) * my decl_count);
+        my decls = decls;
+        my decl_cap = cap;
+    }
+    my decls[my decl_count++] = decl;
 }
 
 // Stands for something that couldn't be resolved: has every meaning, and everything about it is any
@@ -163,25 +201,26 @@ static Symbol* binder_new_placeholder(Binder* me, Span name, Span full) {
         me, name.sv, SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_TYPE_ALIAS | SYMBOL_NAMESPACE_MODULE
     );
     ret->is_placeholder = true;
-    ret->decl = (Declaration){
-        .name = name,
-        .declarations = vec_span_single(full),
-        .value_tag = DECLARATION_NAMESPACE_WITH_VALUE,
-        .type_tag = DECLARATION_NAMESPACE_WITH_VALUE,
-        .namespace_tag = DECLARATION_NAMESPACE_WITH_VALUE,
-    };
+    ret->name_span = name;
+    symbol_add_decl(ret, (SymbolDecl){ .name = name, .full = full });
     return ret;
 }
 
-static void symbol_add_decl_name(Symbol* me, Span name) {
-    if (my decl_count == my decl_cap) {
-        u32 cap = my decl_cap ? my decl_cap * 2 : 2;
-        Span* names = arena_new_n(&my binder->arena, Span, cap);
-        if (my decl_count) memcpy(names, my decl_names, sizeof(Span) * my decl_count);
-        my decl_names = names;
-        my decl_cap = cap;
+SymbolDecl const* symbol_find_decl(Symbol const* me, SymbolDeclKind kind) {
+    if (!me) return nullptr;
+    for (u32 i = 0; i < my decl_count; i++) {
+        if (my decls[i].kind == kind) return &my decls[i];
     }
-    my decl_names[my decl_count++] = name;
+    return nullptr;
+}
+
+VecSpan symbol_declaration_spans(Symbol const* me) {
+    VecSpan ret = vec_span_init();
+    if (!me) return ret;
+    for (u32 i = 0; i < my decl_count; i++) {
+        if (span_valid(my decls[i].full)) vec_span_push(&ret, my decls[i].full);
+    }
+    return ret;
 }
 
 // Scopes
@@ -240,7 +279,7 @@ static void report_conflict(ErrorCtx* errs, Span at, unsigned code) {
 }
 
 static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, u32 includes) {
-    bool same_file = existing->decl_count && existing->decl_names[0].source == name.source;
+    bool same_file = existing->decl_count && existing->decls[0].name.source == name.source;
     unsigned code = 2300;
     if ((existing->flags | includes) & SYMBOL_ENUM) {
         code = 2567;
@@ -250,40 +289,27 @@ static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, 
         // Across files symbols are merged by the checker in tsc, which looks at both sides
         code = 2451;
     }
-    for (u32 i = 0; i < existing->decl_count; i++) report_conflict(errs, existing->decl_names[i], code);
+    for (u32 i = 0; i < existing->decl_count; i++) report_conflict(errs, existing->decls[i].name, code);
     report_conflict(errs, name, code);
 }
 
 // A program that adds to a symbol of the lib program it shares (an interface, a namespace like Intl) gets a clone to
-// add to. What's inside the lib keeps referring to the original, see hacks.md
+// add to: nothing is written to the original. What's inside the lib AST keeps pointing at the original, the checker
+// gets from there to the clone through binder_redirect()
 static Symbol* clone_parent_symbol(Binder* binder, Symbol const* original) {
     Symbol* ret = binder_new_symbol(binder, original->name, original->flags);
     Binder* owner = ret->binder;
     *ret = *original;
     ret->binder = owner;
-    declaration_clone_in_place(&ret->decl);
-    if (ret->decl.namespace == original) ret->decl.namespace = ret;
     if (original->decl_count) {
-        ret->decl_names = arena_new_n(&binder->arena, Span, original->decl_cap);
-        memcpy(ret->decl_names, original->decl_names, sizeof(Span) * original->decl_count);
+        ret->decls = arena_new_n(&binder->arena, SymbolDecl, original->decl_cap);
+        memcpy(ret->decls, original->decls, sizeof(SymbolDecl) * original->decl_count);
     }
     if (original->exports) {
         ret->exports = arena_new(&binder->arena, SymbolTable);
         ret->exports->parent = original->exports;
     }
-    if (original->value_interface.tag) {
-        ret->value_interface = lazy_type_init(LAZY_TYPE_SCOPE_VALUE_INTERFACE);
-        // The clone's value is a type of its own
-        if (ret->decl.merged_value_type.lazy.tag == LAZY_TYPE_EVALUATED &&
-            ret->decl.merged_value_type.lazy.preevaluated.tag == TYPE_LAZY &&
-            ret->decl.merged_value_type.lazy.preevaluated.lazy == &original->value_interface
-        ) {
-            ret->decl.merged_value_type.lazy.preevaluated.lazy = &ret->value_interface;
-        }
-        for_each (i, vec_type, &ret->decl.merged_value_type.merge_list) {
-            if (i->tag == TYPE_LAZY && i->lazy == &original->value_interface) i->lazy = &ret->value_interface;
-        }
-    }
+    symbol_map_set(&binder->overlays, original, ret);
     return ret;
 }
 
@@ -346,73 +372,68 @@ static SymbolTable* scope_declaration_table(Scope* me, bool exported) {
     return &my locals;
 }
 
-static void declaration_set_namespaces(Declaration* decl, Symbol const* parent) {
-    if (!parent || parent->is_module) return;
-    declaration_set_namespaces(decl, parent->parent);
-    vec_span_push(&decl->namespaces, parent->decl.name);
-}
-
 static void symbol_flags_of_props(DeclProps const* props, u32* includes, u32* excludes) {
-    switch (props->tag) {
-        case DECLARATION_NAMESPACE_TYPE_ONLY:
-            *includes = SYMBOL_NAMESPACE_MODULE;
-            *excludes = SYMBOL_NAMESPACE_MODULE_EXCLUDES;
+    switch (props->kind) {
+        case SYMBOL_DECL_NAMESPACE:
+            *includes = props->is_instantiated ? SYMBOL_VALUE_MODULE : SYMBOL_NAMESPACE_MODULE;
+            *excludes = props->is_instantiated ? SYMBOL_VALUE_MODULE_EXCLUDES : SYMBOL_NAMESPACE_MODULE_EXCLUDES;
             return;
-        case DECLARATION_NAMESPACE_WITH_VALUE:
-            *includes = SYMBOL_VALUE_MODULE;
-            *excludes = SYMBOL_VALUE_MODULE_EXCLUDES;
-            return;
-        case DECLARATION_FUNCTION_IMPL:
-        case DECLARATION_FUNCTION_SIGNATURE:
+        case SYMBOL_DECL_FUNCTION:
             *includes = SYMBOL_FUNCTION;
             *excludes = SYMBOL_FUNCTION_EXCLUDES;
             return;
-        case DECLARATION_VARIABLE:
-            *includes = props->function_scoped ? SYMBOL_FUNCTION_SCOPED_VARIABLE : SYMBOL_BLOCK_SCOPED_VARIABLE;
-            *excludes = props->function_scoped ?
-                SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES : SYMBOL_BLOCK_SCOPED_VARIABLE_EXCLUDES;
+        case SYMBOL_DECL_VARIABLE:
+        case SYMBOL_DECL_BUILTIN:
+        case SYMBOL_DECL_EXPR:
+            if (props->kind == SYMBOL_DECL_BUILTIN && !props->function_scoped) {
+                *includes = SYMBOL_TYPE_ALIAS;
+                *excludes = SYMBOL_TYPE_ALIAS_EXCLUDES;
+            } else if (props->is_parameter) {
+                *includes = SYMBOL_FUNCTION_SCOPED_VARIABLE;
+                *excludes = SYMBOL_PARAMETER_EXCLUDES;
+            } else {
+                *includes = props->function_scoped ? SYMBOL_FUNCTION_SCOPED_VARIABLE : SYMBOL_BLOCK_SCOPED_VARIABLE;
+                *excludes = props->function_scoped ?
+                    SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES : SYMBOL_BLOCK_SCOPED_VARIABLE_EXCLUDES;
+            }
             return;
-        case DECLARATION_ARGUMENT:
-            *includes = SYMBOL_FUNCTION_SCOPED_VARIABLE;
-            *excludes = SYMBOL_PARAMETER_EXCLUDES;
-            return;
-        case DECLARATION_INTERFACE:
+        case SYMBOL_DECL_INTERFACE:
             *includes = SYMBOL_INTERFACE;
             *excludes = SYMBOL_INTERFACE_EXCLUDES;
             return;
-        case DECLARATION_TYPE:
-            *includes = props->is_infer ? SYMBOL_TYPE_PARAMETER : SYMBOL_TYPE_ALIAS;
-            *excludes = props->is_infer ? SYMBOL_TYPE_PARAMETER_EXCLUDES : SYMBOL_TYPE_ALIAS_EXCLUDES;
+        case SYMBOL_DECL_TYPE_ALIAS:
+            *includes = SYMBOL_TYPE_ALIAS;
+            *excludes = SYMBOL_TYPE_ALIAS_EXCLUDES;
             return;
-        case DECLARATION_GENERIC_TYPE:
+        case SYMBOL_DECL_TYPE_PARAMETER:
+        case SYMBOL_DECL_INFER:
+        case SYMBOL_DECL_MAPPED_KEY:
             *includes = SYMBOL_TYPE_PARAMETER;
             *excludes = SYMBOL_TYPE_PARAMETER_EXCLUDES;
             return;
-        case DECLARATION_CLASS:
+        case SYMBOL_DECL_CLASS:
             *includes = SYMBOL_CLASS;
             *excludes = SYMBOL_CLASS_EXCLUDES;
             return;
-        case DECLARATION_ENUM:
+        case SYMBOL_DECL_ENUM:
             *includes = props->is_const_enum ? SYMBOL_CONST_ENUM : SYMBOL_REGULAR_ENUM;
             *excludes = props->is_const_enum ? SYMBOL_CONST_ENUM_EXCLUDES : SYMBOL_REGULAR_ENUM_EXCLUDES;
             return;
-        case DECLARATION_ENUM_CASE:
+        case SYMBOL_DECL_ENUM_MEMBER:
             *includes = SYMBOL_ENUM_MEMBER;
             *excludes = SYMBOL_ENUM_MEMBER_EXCLUDES;
             return;
-        case DECLARATION_ENUM_CASE_TYPE:
-        case DECLARATION_NONE:
+        case SYMBOL_DECL_ALIAS:
+        case SYMBOL_DECL_NONE:
             break;
     }
-    panic("declaration tag ", (i32)props->tag, " can't be declared in a scope");
+    panic("declaration kind ", (i32)props->kind, " can't be declared in a scope");
 }
 
-void scope_init_declaration(Scope* me, DeclHandle* ret, DeclProps props) {
-    if (ret->get) {
+void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
+    if (*ret) {
         // `var`s of nested blocks were declared by statement_hoist_names() already
-        if (!props.function_scoped) log_error("Declaration ", ret->get->name, " acquired multiple times");
-        type_drop(&props.value_type);
-        type_drop(&props.declared_type);
+        if (!props.function_scoped) log_error("Declaration ", (*ret)->name_span, " acquired multiple times");
         return;
     }
     Scope* scope = me;
@@ -426,57 +447,32 @@ void scope_init_declaration(Scope* me, DeclHandle* ret, DeclProps props) {
     bool merged;
     Symbol* symbol = declare_symbol(scope, table, props.name.sv, props.name, includes, excludes, &merged);
     u32 flags_before = merged ? symbol->decl_flags_before : 0;
-    if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER) {
-        // Type parameters of the same name merge as far as tsc's binder is concerned
-        if (props.is_infer) {
-            // `infer U` twice in one conditional type: the same type parameter
-            type_drop(&props.declared_type);
-            *ret = (DeclHandle){ .get = &symbol->decl, .symbol = symbol };
-            return;
-        }
-        // <T, T>: the checker reports the second
+    if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
+        // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
+        // in one conditional type wants. <T, T>: the checker reports the second
         report_conflict(scope->errs, props.name, 2300);
         symbol = binder_new_symbol(scope->binder, props.name.sv, includes);
         merged = false;
     }
     if (merged && includes & (SYMBOL_CLASS | SYMBOL_FUNCTION) && flags_before & SYMBOL_VALUE_MODULE &&
         !(flags_before & (SYMBOL_CLASS | SYMBOL_FUNCTION)) && !scope->ambient &&
-        symbol->decl_count && symbol->decl_names[0].source == props.name.source &&
-        (props.tag != DECLARATION_FUNCTION_SIGNATURE)
+        symbol->decl_count && symbol->decls[0].name.source == props.name.source &&
+        !(props.kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)props.node)->has_body)
     ) {
-        error_ctx_error_d(scope->errs, symbol->decl_names[0], 2434,
+        error_ctx_error_d(scope->errs, symbol->decls[0].name, 2434,
             "A namespace declaration cannot be located prior to a class or function with which it is merged.");
     }
     if (!merged) {
         // Like in tsc only exports have a parent: a local of a namespace is just `x`, not `N.x`
         if (scope->container && table == scope->container->exports) symbol->parent = scope->container;
-        symbol->decl.name = props.name;
-        symbol->decl.exported = props.exported;
-        declaration_set_namespaces(&symbol->decl, symbol->parent);
+        symbol->name_span = props.name;
+        symbol->exported = props.exported;
     }
-    symbol_add_decl_name(symbol, props.name);
-
-    if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) {
-        props.namespace = symbol;
-        symbol_ensure_exports(symbol);
-    }
-    if (includes & SYMBOL_VALUE_MODULE) {
-        // The value of a namespace is one type however many blocks it has
-        if (symbol->decl.namespace_tag == DECLARATION_NAMESPACE_WITH_VALUE) {
-            props.value_known = true;
-        } else {
-            symbol_ensure_value_interface(symbol);
-            props.value_type = type_lazy(&symbol->value_interface);
-        }
-    }
-    if (merged && includes & SYMBOL_FUNCTION_SCOPED_VARIABLE && flags_before & SYMBOL_FUNCTION_SCOPED_VARIABLE) {
-        // `var a; var a;` (or a parameter and a var): the first one gives the type. TODO: TS2403
-        type_drop(&props.value_type);
-        props.value_type = (TypeNode){0};
-        props.value_known = true;
-    }
-    declaration_init(&symbol->decl, props);
-    *ret = (DeclHandle){ .get = &symbol->decl, .symbol = symbol };
+    symbol_add_decl(symbol, (SymbolDecl){
+        .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full,
+    });
+    if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) symbol_ensure_exports(symbol);
+    *ret = symbol;
 }
 
 // Ports
@@ -528,11 +524,12 @@ void scope_add_port(Scope* me, PortItem* item) {
     );
     if (!merged) {
         symbol->parent = my container;
-        symbol->decl.name = item->decl_name;
-        symbol->decl.exported = exported;
+        symbol->name_span = item->decl_name;
+        symbol->exported = exported;
     }
-    symbol_add_decl_name(symbol, item->decl_name);
-    vec_span_push(&symbol->decl.declarations, item->full_span);
+    symbol_add_decl(symbol, (SymbolDecl){
+        .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item, .name = item->decl_name, .full = item->full_span,
+    });
     symbol->alias_item = item;
     symbol->alias_scope = me;
     item->symbol = symbol;
@@ -555,8 +552,8 @@ static bool scope_default_export_table(Scope* me, Span at, Symbol const* symbol,
     }
     if (existing) {
         for (u32 i = 0; i < existing->decl_count; i++) {
-            if (span_valid(existing->decl_names[i])) {
-                error_ctx_error_d(my errs, existing->decl_names[i], 2528, "A module cannot have multiple default exports.");
+            if (span_valid(existing->decls[i].name)) {
+                error_ctx_error_d(my errs, existing->decls[i].name, 2528, "A module cannot have multiple default exports.");
             }
         }
         if (span_valid(at)) error_ctx_error_d(my errs, at, 2528, "A module cannot have multiple default exports.");
@@ -567,7 +564,7 @@ static bool scope_default_export_table(Scope* me, Span at, Symbol const* symbol,
 
 void scope_export_default(Scope* me, Symbol* symbol) {
     SymbolTable* table;
-    if (!scope_default_export_table(me, symbol->decl.name, symbol, symbol->flags, &table)) return;
+    if (!scope_default_export_table(me, symbol->name_span, symbol, symbol->flags, &table)) return;
     symbol_table_insert(table, &my binder->arena, c_sv("default"), symbol_name_hash(c_sv("default")), symbol);
 }
 
@@ -580,19 +577,19 @@ void scope_export_default_expr(Scope* me, Expr* expr) {
         symbol = binder_new_symbol(my binder, c_sv("default"), SYMBOL_ALIAS);
         symbol->alias_scope = me;
         symbol->alias_name = expr->identifier.name;
-        symbol->decl.name = expr->identifier.name;
-        vec_span_push(&symbol->decl.declarations, expr->outer_span);
+        symbol->name_span = expr->identifier.name;
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = expr->outer_span,
+        });
     } else {
         symbol = binder_new_symbol(my binder, c_sv("default"), SYMBOL_BLOCK_SCOPED_VARIABLE);
-        declaration_init(&symbol->decl, (DeclProps){
-            .name = expr->outer_span,
-            .full = expr->outer_span,
-            .tag = DECLARATION_VARIABLE,
-            .value_type = type_lazy(&expr->lazy_type),
+        symbol->name_span = expr->outer_span;
+        symbol_add_decl(symbol, (SymbolDecl){
+            .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = expr,
+            .name = expr->outer_span, .full = expr->outer_span,
         });
     }
     symbol->parent = my container;
-    symbol_add_decl_name(symbol, expr->outer_span);
     symbol_table_insert(table, &my binder->arena, c_sv("default"), symbol_name_hash(c_sv("default")), symbol);
 }
 
@@ -622,12 +619,11 @@ static void extend_export_stars(
     (*visited)[(*visited_count)++] = module;
 
     u32 count;
-    Symbol** own = symbol_table_collect(module->exports, &count);
+    SymbolEntry* own = symbol_table_collect(module->exports, &count);
     for (u32 i = 0; i < count; i++) {
-        if (nested && csview_equals(own[i]->name, "default")) continue;
-        u64 hash = symbol_name_hash(own[i]->name);
-        if (!symbol_table_get_own(target, own[i]->name, hash)) {
-            symbol_table_insert(target, arena, own[i]->name, hash, own[i]);
+        if (nested && csview_equals(own[i].name, "default")) continue;
+        if (!symbol_table_get_own(target, own[i].name, own[i].hash)) {
+            symbol_table_insert(target, arena, own[i].name, own[i].hash, own[i].symbol);
         }
     }
     free(own);
@@ -654,20 +650,17 @@ static SymbolTable const* module_resolved_exports(Symbol* me) {
 }
 
 Symbol* symbol_get_export(Symbol const* me, csview name) {
+    me = symbol_members(me);
     if (!me) return nullptr;
     SymbolTable const* table = my is_module ? module_resolved_exports((Symbol*)me) : my exports;
     return symbol_table_get(table, name);
 }
 
-Symbol** symbol_collect_exports(Symbol const* me, u32* count) {
+SymbolEntry* symbol_collect_exports(Symbol const* me, u32* count) {
     *count = 0;
+    me = symbol_members(me);
     if (!me) return nullptr;
     return symbol_table_collect(my is_module ? module_resolved_exports((Symbol*)me) : my exports, count);
-}
-
-Declaration const* symbol_get_export_declaration(Symbol const* me, Span name) {
-    Symbol const* member = symbol_get_export(me, name.sv);
-    return member ? symbol_declaration(member, SYMBOL_ANY_MEANING) : nullptr;
 }
 
 // Aliases
@@ -713,9 +706,9 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         Span name = *vec_span_at(&item->alias_path, i);
         Span prev = *vec_span_at(&item->alias_path, i - 1);
         bool last = i == vec_span_size(&item->alias_path) - 1;
-        Declaration const* container = symbol_declaration(target, SYMBOL_NAMESPACE);
-        if (!container || !container->namespace) return nullptr; // A placeholder: anything goes
-        Symbol* next = resolve_if_pure_alias(symbol_get_export(container->namespace, name.sv));
+        Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
+        if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes
+        Symbol* next = resolve_if_pure_alias(symbol_get_export(container, name.sv));
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
             error_ctx_error_d(errs, name, 2694, "Namespace '", prev, "' has no exported member '", name, "'.");
             return nullptr;
@@ -731,23 +724,11 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
 static Symbol* make_gather_target(Symbol* me, Symbol* module) {
     PortItem* item = my alias_item;
     Symbol* ret = binder_new_symbol(my binder, item->decl_name.sv, SYMBOL_VALUE_MODULE);
-    declaration_init(&item->wrapped_declaration, (DeclProps){
-        .name = item->decl_name,
-        .full = item->full_span,
-        .tag = DECLARATION_TYPE,
-        .declared_type = type_lazy(&module->value_interface),
-        .is_typeof = true,
-    });
-    ret->decl.name = item->decl_name;
-    declaration_init(&ret->decl, (DeclProps){
-        .name = item->decl_name,
-        .full = item->full_span,
-        .tag = DECLARATION_NAMESPACE_WITH_VALUE,
-        .value_type = type_identifier(c_new(IdentifierType, {
-            .name = item->decl_name,
-            .decl_ref = &item->wrapped_declaration,
-        })),
-        .namespace = module,
+    ret->name_span = item->decl_name;
+    ret->gather_module = module;
+    symbol_add_decl(ret, (SymbolDecl){
+        .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_VALUE_MODULE, .node = item,
+        .name = item->decl_name, .full = item->full_span,
     });
     return ret;
 }
@@ -858,9 +839,9 @@ u32 symbol_resolved_flags(Symbol const* me) {
     return resolved_flags(me, 0);
 }
 
-Declaration const* symbol_declaration(Symbol const* me, u32 meaning) {
+Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning) {
     for (int depth = 0; me && depth < ALIAS_CHAIN_MAX; depth++) {
-        if (my flags & meaning || my is_placeholder) return &my decl;
+        if (my flags & meaning || my is_placeholder) return me;
         if (!(my flags & SYMBOL_ALIAS)) return nullptr;
         me = symbol_resolve_alias((Symbol*)me);
     }
@@ -938,43 +919,45 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
     return nullptr;
 }
 
-static Declaration const* scope_get(Scope const* me, csview name, u32 meaning, Symbol const** found) {
+static Symbol const* scope_get(Scope const* me, csview name, u32 meaning, Symbol const** found) {
     Symbol* symbol = scope_resolve(me, name, meaning);
     if (found) *found = symbol;
-    return symbol_declaration(symbol, meaning);
+    return symbol_for_meaning(symbol, meaning);
 }
 
-Declaration const* scope_get_value(Scope const* me, csview name, Symbol const** found) {
+Symbol const* scope_get_value(Scope const* me, csview name, Symbol const** found) {
     return scope_get(me, name, SYMBOL_VALUE, found);
 }
 
-Declaration const* scope_get_type(Scope const* me, csview name, Symbol const** found) {
+Symbol const* scope_get_type(Scope const* me, csview name, Symbol const** found) {
     return scope_get(me, name, SYMBOL_TYPE, found);
 }
 
-Declaration const* scope_get_namespace(Scope const* me, csview name, Symbol const** found) {
+Symbol const* scope_get_namespace(Scope const* me, csview name, Symbol const** found) {
     return scope_get(me, name, SYMBOL_NAMESPACE, found);
 }
 
-Declaration const* scope_get_keyword(Scope const* me, KeywordIdentifier keyword, bool type_else_value) {
+ThisRef scope_get_this(Scope const* me, bool type_else_value) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        Declaration const* decl = nullptr;
-        switch (keyword) {
-            case KEYWORD_IDENTIFIER_THIS: decl = scope->this_declaration; break;
-            case KEYWORD_IDENTIFIER_SUPER: decl = scope->super_declaration; break;
-            case KEYWORD_IDENTIFIER_NONE: break;
-        }
-        if (decl) {
-            if (type_else_value && decl->type_tag) {
-                return decl;
-            } else if (!type_else_value && decl->value_tag) {
-                return decl;
-            }
-        }
+        ThisKind kind = scope->this_ref.kind;
+        if (!kind) continue;
+        bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC;
+        if (!type_else_value || is_class) return scope->this_ref;
     }
-    return nullptr;
+    return (ThisRef){0};
 }
 
-Ty const* symbol_evaluate_value_interface(Symbol const* me) {
-    return ty_namespace_type(current_checker, me);
+Generic const* symbol_type_generic(Symbol const* me) {
+    if (!me) return nullptr;
+    for (u32 i = 0; i < my decl_count; i++) {
+        Generic const* generic = nullptr;
+        switch (my decls[i].kind) {
+            case SYMBOL_DECL_CLASS: generic = &((ClassDecl const*)my decls[i].node)->generic; break;
+            case SYMBOL_DECL_INTERFACE: generic = &((InterfaceDecl const*)my decls[i].node)->generic; break;
+            case SYMBOL_DECL_TYPE_ALIAS: generic = &((TypeDecl const*)my decls[i].node)->generic; break;
+            default: continue;
+        }
+        return generic_empty(generic) ? nullptr : generic;
+    }
+    return nullptr;
 }

@@ -39,11 +39,13 @@ void program_typecheck(Program* me);
 // that isn't typechecked
 void program_make_current(Program* me);
 
+struct Binder const* program_get_binder(Program const* me);
+
 // Null before program_make_current()
 struct Checker* program_get_checker(Program const* me);
 
 // A global by name and meaning (SymbolFlags), null if there is none
-struct Declaration const* program_get_global(Program const* me, csview name, u32 meaning);
+struct Symbol const* program_get_global(Program const* me, csview name, u32 meaning);
 
 // Returns the number of source files loaded or imported
 intptr_t program_get_file_count(Program const* me);

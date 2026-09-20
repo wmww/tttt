@@ -10,34 +10,24 @@ void interface_decl_drop(InterfaceDecl* me) {
     generic_drop(&my generic);
     vec_spanned_type_drop(&my extends);
     type_drop(&my type);
-    lazy_type_drop(&my lazy_type);
 }
 
 void interface_decl_add_names(InterfaceDecl* me, Scope* scope, bool exported) {
-    scope_init_declaration(scope, &my declaration, (DeclProps){
+    scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
         .exported = exported,
-        .tag = DECLARATION_INTERFACE,
-        .generic = &my generic,
-        .declared_type = type_lazy(&my lazy_type),
-        .node = { DECL_NODE_INTERFACE, me },
+        .kind = SYMBOL_DECL_INTERFACE,
+        .node = me,
     });
 }
 
 void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs) {
-    lazy_type_bind(&my lazy_type, LAZY_TYPE_INTERFACE_DECL);
     names = scope_new_generic(names, &my generic, errs);
     for_each (i, vec_spanned_type, &my extends) {
         type_lookup_names(&i->type, names, errs);
     }
     type_lookup_names(&my type, names, errs);
-}
-
-Ty const* interface_decl_evaluate_type(InterfaceDecl* me) {
-    // Interfaces are evaluated by the new type core (ty/members.c)
-    if (my declaration.get) return ty_declared_type_of(current_checker, my declaration.get);
-    return ty_from_node(current_checker, &my type, (LowerCtx){ .generic = true });
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {

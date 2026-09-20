@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "scope.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -306,7 +307,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
     if (ty->alias) {
-        out(d, ty->alias->name.sv);
+        out(d, ty->alias->name_span.sv);
         if (ty->alias_args.len) {
             out_lit(d, "<");
             display_list(me, d, ty->alias_args);
@@ -331,7 +332,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out_name(d, atom_sv(ty_qualified_name(me, ty->literal.enum_decl)));
                 if (ty->literal.enum_member != ty->literal.enum_decl && ty_enum_of_member(me, ty) != ty) {
                     out_lit(d, ".");
-                    out(d, ty->literal.enum_member->name.sv);
+                    out(d, ty->literal.enum_member->name_span.sv);
                 }
             } else if (ty->literal.string) {
                 display_string_literal(d, atom_sv(ty->literal.string));

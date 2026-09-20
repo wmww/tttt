@@ -1,7 +1,7 @@
 #pragma once
 
 #include "statement.h"
-#include "declaration.h"
+#include "lazy_type.h"
 #include "scope.h"
 
 // Covers both import and export statements
@@ -48,7 +48,6 @@ typedef struct PortItem {
     SourceFile* source_file; // File to import from, set by import_statement_set_source_file()
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
-    Declaration wrapped_declaration; // `import * as ns`: the type `typeof ns`, just need someone to own it
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {

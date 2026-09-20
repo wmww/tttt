@@ -2,6 +2,20 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 04 stage 2: the type side goes by symbols
+Suite (`./passcount.py`): **1576 full of 13163 tests** (unchanged), errors 6050 (+1), symbols 8332, types 3533.
+Gained an errors component: errorConstructorSubtypes, keyofModuleObjectHasCorrectKeys (namespace/module members go by
+export name now). Lost: signatureCombiningRestParameters2 errors (lib-internal `console: Console` sees the test's `Console`
+augmentation now, which is right; the two `log` signatures then need tsc's `getIntersectedSignatures` for the contextual
+signature, see `hacks.md` "The binder"). `failstats.py` log_error lines unchanged (71 in 22 tests).
+Real corpus: 7758 diagnostics, identical by code to stage 1. 755 binder-heavy tests (`^(enum|import|export|merged|
+augment).*`) clean under valgrind.
+
+`./bench.sh` (machine noisier than for stage 1: tsgo measured 0.52 / 0.87 s in the same run): synthetic **0.42 s
+(was 0.49), peak RSS 522 MB (was 760)**, phases parse 172 ms, resolve names 100 ms (128), typecheck 76 ms. Real corpus
+0.86 s, **310 MB (was 392)**, resolve names 76 ms (81), typecheck 568 ms. The RSS is the `Declaration` payload
+(two `MergedType`s, three vecs, a LazyType slot per symbol and per class/enum/interface) that no longer exists.
+
 ## 2026-09-19, plan 04 stage 1: symbols, persistent scopes, aliases (the new binder)
 Suite: **1576 full of 13163 tests** (was 1508), errors 6049 (5738), symbols 8332 (7891), types 3533 (3459). Lost
 components versus the old binder: 7 errors, ~35 symbols, 14 types (default-export corner cases, `declare global` inside

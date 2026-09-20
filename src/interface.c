@@ -2,7 +2,7 @@
 #include "interface_member.h"
 #include "display.h"
 #include "error.h"
-#include "declaration.h"
+#include "lazy_type.h"
 #include "callable_type.h"
 #include "expr.h"
 

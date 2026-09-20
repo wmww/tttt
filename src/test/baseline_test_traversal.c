@@ -17,12 +17,18 @@
 
 // What the symbols baseline shows for a reference: the declarations of the symbol the name found (an alias shows its
 // import, not what it resolves to), or of the declaration when there is no symbol (keywords, synthetic nodes)
-static inline Declaration const* shown_declaration(Symbol const* symbol, Declaration const* decl) {
-    return symbol && vec_span_size(&symbol->decl.declarations) ? &symbol->decl : decl;
+static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const* decl) {
+    return symbol && symbol->decl_count ? symbol : decl;
 }
 
-static inline VecSpan declaration_get_spans(Declaration const* me) {
-    return me ? vec_span_clone(my declarations) : vec_span_init();
+static inline VecSpan declaration_get_spans(Symbol const* me) {
+    return symbol_declaration_spans(me);
+}
+
+// `A.B.C` as spans
+static void push_symbol_path(VecSpan* out, Symbol const* symbol) {
+    if (symbol->parent && !symbol->parent->is_module) push_symbol_path(out, symbol->parent);
+    vec_span_push(out, symbol->name_span);
 }
 
 void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
@@ -42,7 +48,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             break;
 
         case BINDING_IDENTIFIER:
-            baseline_test_case_add_declaration(ctx, my content_span, my declaration.get);
+            baseline_test_case_add_declaration(ctx, my content_span, my symbol);
             break;
 
         case BINDING_ARRAY:
@@ -156,14 +162,14 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (span_equals(my identifier->name, "object")) {
                 break;
             }
-            if (my identifier->decl_ref && !span_valid(my identifier->decl_ref->name)) {
+            if (my identifier->target && !span_valid(my identifier->target->name_span)) {
                 break;
             }
             VecSpan so_far = vec_span_init();
             for_each (i, vec_span, &my identifier->namespaces) {
                 intptr_t index = i_index;
-                Declaration const* decl = index < vec_symbol_cptr_size(&my identifier->namespace_symbols) ?
-                    &(*vec_symbol_cptr_at(&my identifier->namespace_symbols, index))->decl :
+                Symbol const* decl = index < vec_symbol_cptr_size(&my identifier->namespace_symbols) ?
+                    *vec_symbol_cptr_at(&my identifier->namespace_symbols, index) :
                     nullptr;
                 baseline_test_case_add_type_node(ctx, *i, &type_any);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -177,7 +183,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             vec_span_drop(&so_far);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
-                .declarations = declaration_get_spans(shown_declaration(my identifier->symbol, my identifier->decl_ref)),
+                .declarations = declaration_get_spans(shown_declaration(my identifier->symbol, my identifier->target)),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
             });
@@ -188,7 +194,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
 
         case TYPE_INFERRED:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = declaration_get_spans(my inferred->declaration_ref),
+                .declarations = declaration_get_spans(my inferred->symbol_ref),
                 .allow_declaration_empty = true,
                 .span = my inferred->name,
             });
@@ -255,7 +261,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
 
 void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
-        baseline_test_case_add_declaration(ctx, my name, my declaration.get);
+        baseline_test_case_add_declaration(ctx, my name, my symbol);
     }
     generic_compile_test_info(&my generic, ctx);
     for_each (i, vec_function_arg, &my args) {
@@ -272,14 +278,13 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
 
 // An alias shows its own declaration as the symbol and the value of what it resolves to as the type
 static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
-    Declaration const* value = symbol_declaration(my symbol, SYMBOL_VALUE);
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = vec_span_clone(my symbol->decl.declarations),
+        .declarations = symbol_declaration_spans(my symbol),
         .span = my decl_name,
         .name = my decl_name,
     });
     // tsc shows aliases of pure types as any
-    baseline_test_case_add_type_node(ctx, my decl_name, value ? &value->value_type : &type_any);
+    baseline_test_case_add_symbol_value(ctx, my decl_name, my symbol);
 }
 
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
@@ -303,22 +308,22 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     continue;
                 }
                 Symbol const* symbol = *vec_symbol_cptr_at(&my main.alias_path_symbols, i_index);
-                Declaration const* decl = symbol_declaration(symbol, SYMBOL_ANY_MEANING);
-                if (!decl) decl = &symbol->decl;
+                Symbol const* decl = symbol_for_meaning(symbol, SYMBOL_ANY_MEANING);
+                if (!decl) decl = symbol;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(decl->declarations),
+                    .declarations = symbol_declaration_spans(decl),
                     .span = *i,
-                    .name = decl->name,
+                    .name = decl->name_span,
                 });
-                if (decl->type_tag && !decl->namespace_tag) {
+                if (decl->flags & SYMBOL_TYPE && !(decl->flags & SYMBOL_NAMESPACE) && !decl->is_placeholder) {
                     TypeNode t = type_identifier(c_new(IdentifierType, {
-                        .name = decl->name,
-                        .decl_ref = decl,
+                        .name = decl->name_span,
+                        .target = decl,
                     }));
                     baseline_test_case_add_type_node(ctx, *i, &t);
                     type_drop(&t);
                 } else {
-                    baseline_test_case_add_type_node(ctx, *i, &decl->value_type);
+                    baseline_test_case_add_symbol_value(ctx, *i, decl);
                 }
             }
             break;
@@ -327,15 +332,14 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
     }
     for_each (i, vec_port_item, &my items) {
         if (!i->symbol) continue;
-        Declaration const* value = symbol_declaration(i->symbol, SYMBOL_VALUE);
         if (i->decl_name.sv.buf != i->source_name.sv.buf) {
             if (i->source_symbol) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(i->source_symbol->decl.declarations),
+                    .declarations = symbol_declaration_spans(i->source_symbol),
                     .span = i->source_name,
                 });
             }
-            baseline_test_case_add_type_node(ctx, i->source_name, value ? &value->value_type : &type_any);
+            baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
         }
         port_item_add_alias(i, ctx);
     }
@@ -350,27 +354,25 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
 void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         // Every declaration of a merged enum
-        .declarations = my declaration.get ? vec_span_clone(my declaration.get->declarations) : vec_span_single(my full_span),
+        .declarations = my symbol ? symbol_declaration_spans(my symbol) : vec_span_single(my full_span),
         .span = my name,
     });
     baseline_test_case_add_type(
         ctx, my name,
-        my declaration.get ? ty_declared_type_of(current_checker, my declaration.get) : ty_unresolved(current_checker, my name.sv)
+        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_unresolved(current_checker, my name.sv)
     );
     for_each (i, vec_enum_case, &my cases) {
-        //baseline_test_case_add_declaration(ctx, i->name, i->declaration.get);
+        //baseline_test_case_add_declaration(ctx, i->name, i->symbol);
         Span span = i->full_name;
-        Declaration const* declaration = i->declaration.get;
+        Symbol const* declaration = i->symbol;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .namespaces = vec_span_single(my name),
-            .declarations = vec_span_clone(declaration->declarations),
+            .declarations = symbol_declaration_spans(declaration),
             .span = span,
-            .name = i->name_is_value ? i->full_name : declaration->name,
+            .name = i->name_is_value ? i->full_name : declaration->name_span,
             .name_is_value = i->name_is_value,
         });
-        if (declaration->value_tag) {
-            baseline_test_case_add_type_node(ctx, span, &declaration->value_type);
-        }
+        baseline_test_case_add_symbol_value(ctx, span, declaration);
         if (i->value.tag != EXPR_IMPLICIT_ANY) {
             expr_compile_test_info(&i->value, ctx);
         }
@@ -448,11 +450,11 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     }
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(my declaration.get),
+            .declarations = declaration_get_spans(my symbol),
             .span = my name,
         });
         if (is_expr) {
-            baseline_test_case_add_type_node(ctx, my name, &my declaration.get->value_type);
+            baseline_test_case_add_symbol_value(ctx, my name, my symbol);
         } else {
             baseline_test_case_add_type_node(ctx, my name, &my instance_identifier_type);
         }
@@ -462,7 +464,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
         // tsc shows the instance type at the name of the base class, not `typeof Base`
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);
         if (extends_type->kind == TY_DECLARED && extends_type->declared.kind == TY_DECLARED_CLASS_STATIC &&
-            extends_type->declared.decl
+            extends_type->declared.symbol
         ) {
             if (my extends.tag != EXPR_GENERIC_PARAMS) {
                 Members const* statics = ty_members(current_checker, extends_type);
@@ -486,13 +488,13 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
 
 void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = declaration_get_spans(my declaration.get),
+        .declarations = declaration_get_spans(my symbol),
         .span = my name,
     });
     // The declared type as the new core knows it, which carries the alias name where tsc would
     baseline_test_case_add_type(
         ctx, my name,
-        my declaration.get ? ty_declared_type_of(current_checker, my declaration.get) : ty_intrinsic(current_checker, TY_ANY)
+        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_intrinsic(current_checker, TY_ANY)
     );
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(&my type, ctx);
@@ -501,7 +503,7 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
 void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(my declaration.get),
+            .declarations = declaration_get_spans(my symbol),
             .span = my name,
         });
     }
@@ -513,24 +515,22 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 }
 
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
-    if (span_valid(my name) && my declaration.get) {
+    if (span_valid(my name) && my symbol) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(my declaration.get),
+            .declarations = declaration_get_spans(my symbol),
             .span = my name,
         });
-        if (my declaration.get->value_tag) {
-            baseline_test_case_add_type_node(ctx, my name, &my declaration.get->value_type);
-        }
+        if (my symbol->flags & SYMBOL_VALUE) baseline_test_case_add_symbol_value(ctx, my name, my symbol);
     }
     block_compile_test_info(&my contents, ctx);
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
-    if (my decl_ref && span_valid(my decl_ref->name)) {
+    if (my target && span_valid(my target->name_span)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(shown_declaration(my symbol, my decl_ref)),
+            .declarations = declaration_get_spans(shown_declaration(my symbol, my target)),
             .span = my name,
-            .name = shown_declaration(my symbol, my decl_ref)->name,
+            .name = shown_declaration(my symbol, my target)->name_span,
         });
     }
 }
@@ -581,10 +581,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 VecSpan declarations = vec_span_init();
                 for (u32 j = 0; j < root->decl_span_count; j++) vec_span_push(&declarations, root->decl_spans[j]);
                 VecSpan namespaces = vec_span_init();
-                if (prop->parent) {
-                    namespaces = vec_span_clone(prop->parent->namespaces);
-                    vec_span_push(&namespaces, prop->parent->name);
-                }
+                if (prop->parent) push_symbol_path(&namespaces, prop->parent);
                 if (my property->form == PROPERTY_EXPR_DOT) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = vec_span_clone(declarations),
@@ -755,13 +752,13 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    if (my tag == EXPR_IDENTIFIER && my identifier.decl_ref && !my identifier.keyword) {
+    if (my tag == EXPR_IDENTIFIER && my identifier.target && !my identifier.keyword) {
         // Do NOT degenericize
         baseline_test_case_add_type_recursive(
             ctx,
             my outer_span,
             my inner_span,
-            ty_of_node(&my identifier.decl_ref->value_type)
+            ty_identifier_reference_type(current_checker, &my identifier)
         );
     } else if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
         Checker* checker = current_checker;

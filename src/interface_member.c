@@ -36,7 +36,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
         case INTERFACE_KEY_MAPPED:
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
             me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
-            me.key.mapped.owned_declaration = (DeclHandle){0};
+            me.key.mapped.owned_symbol = nullptr;
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -53,13 +53,13 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         case INTERFACE_KEY_MAPPED:
             type_lookup_names(&my key.mapped.in_type, names, errs);
             names = scope_new(names, SCOPE_BLOCK);
-            scope_init_declaration(names, &my key.mapped.owned_declaration, (DeclProps){
+            scope_init_declaration(names, &my key.mapped.owned_symbol, (DeclProps){
                 .name = my key.mapped.type_name,
                 .full = my key.mapped.type_name,
-                .tag = DECLARATION_TYPE,
-                .declared_type = type_any,
+                .kind = SYMBOL_DECL_MAPPED_KEY,
+                .node = me,
             });
-            my key.mapped.declaration_ref = my key.mapped.owned_declaration.get;
+            my key.mapped.symbol_ref = my key.mapped.owned_symbol;
             // The `as` clause sees the key parameter
             type_lookup_names(&my key.mapped.as_type, names, errs);
             break;

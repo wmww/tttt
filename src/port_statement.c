@@ -7,7 +7,6 @@
 void port_item_drop(PortItem* me) {
     vec_span_drop(&my alias_path);
     vec_symbol_cptr_drop(&my alias_path_symbols);
-    declaration_drop(&my wrapped_declaration);
 }
 
 void port_statement_drop(PortStatement* me) {

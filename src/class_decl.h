@@ -2,7 +2,7 @@
 
 #include "function_impl.h"
 #include "interface_member.h"
-#include "declaration.h"
+#include "lazy_type.h"
 
 typedef enum AccessModifier {
     ACCESS_MODIFIER_PUBLIC,
@@ -85,15 +85,11 @@ typedef struct ClassDecl {
     Expr extends;
     VecTypeNode implements;
     VecClassItem items;
-    LazyType instance_type;
-    LazyType class_type;
-    Declaration typeof_declaration;
-    DeclHandle declaration;
+    Symbol* symbol;
     TypeNode instance_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported);
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
-Ty const* class_decl_evaluate_type(ClassDecl* me, bool resolve_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

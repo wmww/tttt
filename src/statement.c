@@ -79,13 +79,12 @@ void type_decl_drop(TypeDecl* me) {
 }
 
 void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
-    scope_init_declaration(scope, &my declaration, (DeclProps){
+    scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
         .exported = props.exported,
-        .tag = DECLARATION_TYPE,
-        .generic = &my generic,
-        .declared_type = type_refcopy(&my type),
+        .kind = SYMBOL_DECL_TYPE_ALIAS,
+        .node = me,
     });
 }
 
@@ -142,16 +141,18 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         if (my is_ambient_module) {
             // TODO: ambient modules should be registered with the program so imports can resolve to them
             my inner_scope->container = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
-            my inner_scope->container->decl.name = my name;
+            my inner_scope->container->name_span = my name;
         } else {
             bool has_value = block_is_instantiated(&my contents);
-            scope_init_declaration(scope, &my declaration, (DeclProps){
+            scope_init_declaration(scope, &my symbol, (DeclProps){
                 .name = my name,
                 .full = my full_span,
                 .exported = props.exported,
-                .tag = has_value ? DECLARATION_NAMESPACE_WITH_VALUE : DECLARATION_NAMESPACE_TYPE_ONLY,
+                .kind = SYMBOL_DECL_NAMESPACE,
+                .node = me,
+                .is_instantiated = has_value,
             });
-            my inner_scope->container = my declaration.symbol;
+            my inner_scope->container = my symbol;
         }
     }
     my inner_scope->ambient = scope->ambient || props.declared;
@@ -423,10 +424,10 @@ void statement_hoist_names(Statement* me, Scope* scope) {
 static void statement_export_default(Statement const* me, Scope* scope) {
     Symbol* symbol = nullptr;
     switch (my tag) {
-        case STATEMENT_DECL_FUNCTION: symbol = my decl.function.impl->declaration.symbol; break;
-        case STATEMENT_DECL_ENUM: symbol = my decl.enum_->declaration.symbol; break;
-        case STATEMENT_DECL_CLASS: symbol = my decl.class->declaration.symbol; break;
-        case STATEMENT_DECL_INTERFACE: symbol = my decl.interface->declaration.symbol; break;
+        case STATEMENT_DECL_FUNCTION: symbol = my decl.function.impl->symbol; break;
+        case STATEMENT_DECL_ENUM: symbol = my decl.enum_->symbol; break;
+        case STATEMENT_DECL_CLASS: symbol = my decl.class->symbol; break;
+        case STATEMENT_DECL_INTERFACE: symbol = my decl.interface->symbol; break;
         default: break;
     }
     if (symbol) scope_export_default(scope, symbol);
