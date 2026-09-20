@@ -11,7 +11,7 @@ typedef struct GenericItem {
     TypeNode extends;
     bool fallback_explicit;
     TypeNode fallback;
-    ArcDeclaration owned_declaration;
+    DeclHandle owned_declaration;
     Declaration const* declaration_ref;
 } GenericItem;
 
@@ -32,5 +32,5 @@ static inline bool generic_empty(Generic const* me) {
 void generic_drop(Generic* me);
 Generic generic_clone(Generic me);
 void generic_add_names(Generic const* me, Scope* scope);
-void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs);
+void generic_lookup_names(Generic const* me, Scope* names, ErrorCtx* errs);
 void generic_typecheck(Generic const* me, ErrorCtx* errs);

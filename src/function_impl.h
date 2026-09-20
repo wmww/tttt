@@ -39,7 +39,7 @@ typedef struct FunctionImpl {
     Declaration const* promise_decl; // The global Promise type (if any), looked up for async functions
     bool is_abstract_constructor;
     LazyType lazy_type;
-    ArcDeclaration declaration;
+    DeclHandle declaration;
     Declaration this_declaration;
     Span arrow_span;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
@@ -50,7 +50,7 @@ typedef struct FunctionImpl {
 
 void function_impl_drop(FunctionImpl* me);
 void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported);
-void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* names, ErrorCtx* errs);
+void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names, ErrorCtx* errs);
 TypeNode function_impl_into_type(FunctionImpl me);
 Ty const* function_impl_evaluate_type(FunctionImpl* me);
 // What return expressions are contextually typed by. Returns the enclosing function's, to be put back

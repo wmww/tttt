@@ -2,6 +2,7 @@
 
 #include "statement.h"
 #include "declaration.h"
+#include "scope.h"
 
 // Covers both import and export statements
 
@@ -42,14 +43,12 @@ typedef struct PortItem {
     bool type_only; // Has the "type" keyword for the main import
     Span source_name; // Only used for _SPECIFIC ports
     VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
-    VecDeclarationCPtr alias_path_decls; // What each item of alias_path resolved to, shorter if resolution failed
-    bool alias_conflict; // An alias who's name was already taken, which is fine if the target turns out to have no value
+    VecSymbolCPtr alias_path_symbols; // What each item of alias_path resolved to, shorter if resolution failed
     bool export_import; // `export import foo = ...`
     SourceFile* source_file; // File to import from, set by import_statement_set_source_file()
-    bool error_reported; // Set and used by Scope
-    ArcDeclaration declaration; // Set by Scope
-    Declaration const* source_decl; // Set by Scope, used by the tests
-    Declaration wrapped_declaration; // Used for gather statements, just need someone to own it
+    Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
+    Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
+    Declaration wrapped_declaration; // `import * as ns`: the type `typeof ns`, just need someone to own it
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
@@ -91,4 +90,3 @@ typedef struct PortStatement {
 void port_statement_drop(PortStatement* me);
 void port_statement_assign_source(PortStatement* me, SourceFile* source);
 void port_statement_add_names(PortStatement* me, Scope* scope);
-void port_statement_resolve_names(PortStatement* me, ScopeStack* names, ErrorCtx* errs);

@@ -88,12 +88,12 @@ typedef struct ClassDecl {
     LazyType instance_type;
     LazyType class_type;
     Declaration typeof_declaration;
-    ArcDeclaration declaration;
+    DeclHandle declaration;
     TypeNode instance_identifier_type;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
 void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported);
-void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs);
+void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
 Ty const* class_decl_evaluate_type(ClassDecl* me, bool resolve_instance);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);

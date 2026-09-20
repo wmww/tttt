@@ -7,7 +7,6 @@
 #include "function_impl.h"
 #include "generic.h"
 #include "value.h"
-#include "scope_stack.h"
 #include "scope.h"
 #include "display.h"
 #include "error.h"
@@ -178,6 +177,7 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
                 .name = my inferred->name,
                 .full = my inferred->name,
                 .tag = DECLARATION_TYPE,
+                .is_infer = true,
                 .declared_type = type_refcopy(&my inferred->extends),
             });
             my inferred->declaration_ref = my inferred->owned_declaration.get;
@@ -239,7 +239,7 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
     }
 }
 
-void type_lookup_names(TypeNode* me, ScopeStack* names, ErrorCtx* errs) {
+void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
     switch (my tag) {
         case TYPE_ANY:
         case TYPE_UNKNOWN:
@@ -281,11 +281,9 @@ void type_lookup_names(TypeNode* me, ScopeStack* names, ErrorCtx* errs) {
             type_lookup_names(&my ternary->maybe_sub, names, errs);
             type_lookup_names(&my ternary->maybe_super, names, errs);
 
-            Scope inferred_types_scope = scope_init(errs);
-            type_add_inferred_names(&my ternary->maybe_super, &inferred_types_scope);
-            scope_push_to_stack(&inferred_types_scope, names);
-            type_lookup_names(&my ternary->if_true, names, errs);
-            scope_drop(&inferred_types_scope);
+            Scope* inferred_types_scope = scope_new(names, SCOPE_BLOCK);
+            type_add_inferred_names(&my ternary->maybe_super, inferred_types_scope);
+            type_lookup_names(&my ternary->if_true, inferred_types_scope, errs);
 
             type_lookup_names(&my ternary->if_false, names, errs);
         }   break;

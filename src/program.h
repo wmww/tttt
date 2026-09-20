@@ -7,7 +7,6 @@ typedef struct Program Program;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct SourceFile SourceFile;
 typedef struct Fs Fs;
-typedef struct Scope Scope;
 typedef union arc_js_object ArcObject;
 
 Program* program_new(ErrorCtx* errs, Fs const* fs);
@@ -43,7 +42,8 @@ void program_make_current(Program* me);
 // Null before program_make_current()
 struct Checker* program_get_checker(Program const* me);
 
-Scope const* program_get_global_scope(Program const* me);
+// A global by name and meaning (SymbolFlags), null if there is none
+struct Declaration const* program_get_global(Program const* me, csview name, u32 meaning);
 
 // Returns the number of source files loaded or imported
 intptr_t program_get_file_count(Program const* me);

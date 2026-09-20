@@ -283,7 +283,9 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
         Declaration const* namespace_decl = nullptr;
         if (object->tag == EXPR_IDENTIFIER) namespace_decl = object->identifier.decl_ref;
         if (namespace_decl && namespace_decl->namespace && name->tag == EXPR_IDENTIFIER) {
-            decl = scope_get_declaration(namespace_decl->namespace, name->identifier.name);
+            decl = symbol_declaration(
+                symbol_get_export(namespace_decl->namespace, name->identifier.name.sv), SYMBOL_TYPE
+            );
         }
     }
     if (!decl || decl->type_tag != DECLARATION_CLASS || decl->is_typeof) return false;
@@ -630,17 +632,26 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             break;
 
         case TY_DECLARED_NAMESPACE:
-            for_each (i, hmap_arc_declaration, &ty->declared.namespace_scope->declarations) {
-                Declaration const* member = i->second.get;
-                if (!member->value_tag) continue;
+            // The exported values, in declaration order
+            u32 export_count;
+            Symbol** exports = symbol_collect_exports(ty->declared.namespace_symbol, &export_count);
+            for (u32 i = 0; i < export_count; i++) {
+                Symbol const* symbol = exports[i];
+                Declaration const* member = symbol_declaration(symbol, SYMBOL_VALUE);
+                if (!member || !member->value_tag) continue;
                 Prop* prop = arena_new(&my arena, Prop);
-                prop->name = checker_atom(me, member->name.sv);
+                prop->name = checker_atom(me, symbol->name);
                 prop->node = &member->value_type;
                 prop->ctx = (LowerCtx){ .generic = true };
-                prop->name_span = member->name;
-                prop_add_decl_spans(me, prop, member->declarations.data, (u32)vec_span_size(&member->declarations));
+                prop->name_span = symbol->decl.name;
+                // `N.p` in the symbols baseline
+                if (symbol->parent && !symbol->parent->is_module) prop->parent = &symbol->parent->decl;
+                prop_add_decl_spans(
+                    me, prop, symbol->decl.declarations.data, (u32)vec_span_size(&symbol->decl.declarations)
+                );
                 builder_push(&builder, props, prop);
             }
+            free(exports);
             break;
 
         case TY_DECLARED_TUPLE_TARGET: // TODO: numeric properties and `length`, then the array members (relations see a tuple as its array for now)

@@ -16,10 +16,6 @@ Uninvestigated items. Triage sessions drain this.
 - `for (x of iterator)`: TS2495 "is not an array type or a string type" for anything that isn't an array, now visible
   because ES2015 libs load (`for-of13`). for..of needs the iteration protocol (`[Symbol.iterator]()`), which needs
   well-known symbol property names.
-- `Intl`: `declare var Intl` doesn't exist but `declare namespace Intl` is declared in a dozen lib files, and
-  "Tried to add multiple namespaces to declaration Intl" means only the first contributes
-  (`es2021LocalesObjectArgument`: `new Intl.Locale` isn't constructable). Same root cause as the 177-test namespace
-  merging item.
 - Harness: `@libFiles`, `@noImplicitReferences`, `tsconfig.json` in a test, `@currentDirectory`, `@link` are ignored
   (see `hacks.md`). `@noImplicitReferences` (155 tests) decides which files are roots, probably the most valuable.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there
@@ -36,8 +32,6 @@ Uninvestigated items. Triage sessions drain this.
 - Perf: peak RSS is ~120 bytes per source byte (500 MB for a 4 MB corpus), worse than tsgo. AST node size / per-node
   allocations / `DEBUG_ALLOCATOR` (always defined in `prelude.h`, even in release; adds a header word per allocation
   and a counter) are the suspects. Measure with it off.
-- Perf: `resolve names` costs as much as parsing (92 ms vs 88 ms on the bench corpus). Surprising for a phase that
-  should be a hash lookup per identifier; look for per-scope allocation or linear scans.
 - The bench corpus is weak (easy passing tests x200 copies in namespaces). Replace with a real project as soon as
   tttt can get through one without parse errors.
 - Harness runs a test twice when the first run leaves net allocations (lib cache fill), 173 times per suite run. Fine,
@@ -47,16 +41,8 @@ Uninvestigated items. Triage sessions drain this.
 - Checking the stdlib itself (`tttt --no-lib --keep-going thirdparty/lib/esnext.full.d.ts`) gives 32 name errors and
   143 type errors; tsc gives none. Cheap regression target for lib-related bugs (Intl namespace merging,
   `globalThis.`).
-- tttt's `main.c` only loads 4 lib files and ignores tsconfig; `error.c` "Error added with invalid span" fires ~1.4k
-  times per suite run, mostly duplicate-identifier / redeclare errors whose other declaration is in a lib.
-- Namespaces with the same name don't merge (`module A {} module A {}`, also namespace + enum/function): `declaration.c`
-  logs "Tried to add multiple namespaces to declaration" in 167 tests now that `module` parses. Probably belongs in
-  the symbols plan (03) rather than a patch on `Scope`.
-- Non-exported namespace members appear to be visible from outside (`scope_evaluate_value_interface` puts every
-  declaration with a value into the namespace's value type, and namespace scopes have no `export_scope`). Verify,
-  write up as a bug.
-- `for (var a ...) {}` then using `a` after the loop gives TS2304: `var` isn't hoisted out of for-loop scopes to the
-  function/file scope. Verify for blocks in general.
+- tttt's `main.c` only loads 4 lib files and ignores tsconfig; `error.c` "Error added with invalid span" is down to ~70 lines per
+  suite run since plan 04 (TS2511 on a lib class, names found in a `_` of some lib).
 - Type display uses the declared name / full namespace path (`typeof A.B`, `C`) where tsc prints the name as
   accessible from the use site, preferring aliases (`typeof AB`, `AB.C`). Symbols baseline likewise wants
   qualified names (`Symbol(A.x, ...)`) for namespace members. Both are for the symbols/printing design.
@@ -206,3 +192,10 @@ Uninvestigated items. Triage sessions drain this.
   - Parse (175 ms) and name resolution (166 ms) are each twice the typecheck phase (87 ms) on the bench. Name
     resolution copying declarations per import (`declaration_clone_in_place`) and the lib scope per program is the
     first suspect; nobody has profiled either phase yet.
+- Plan 04 stage 1 leftovers (see `hacks.md`, "The binder"): one test logs "Declaration B acquired multiple times"
+  (grep `build/failstats/stderr.txt`); the ~35 tests that lost their symbols component (`python3` diff of
+  `test/baseline_results.ts` against the commit before) are mostly `declare global` in odd places, `export { x }`
+  next to an exported `x`, and moduleAssignmentCompat1-4 (`Symbol(A)` without a Decl for a non-instantiated namespace
+  used as a value).
+- The realworld corpus' remaining name errors are node globals (`process`, `require`, `Buffer`: `types: ["node"]`),
+  `arguments` and the `debugger` statement (parsed as an identifier).

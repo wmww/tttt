@@ -5,7 +5,6 @@
 typedef struct Statement Statement;
 typedef struct TypeNode TypeNode;
 typedef struct ErrorCtx ErrorCtx;
-typedef struct ScopeStack ScopeStack;
 
 g_declare_vec(Statement, statement);
 
@@ -23,8 +22,10 @@ typedef struct Block {
 
 void block_drop(Block* me);
 void block_add_names(Block const* me, Scope* scope);
-void block_lookup_names(Block const* me, ScopeStack* names, ErrorCtx* errs);
-void block_resolve_names(Block const* me, ScopeStack* names, ErrorCtx* errs);
+// `export {}`, `export * from`, `export default x`: an ambient module with none of them exports everything
+bool block_has_export_declarations(Block const* me);
+void block_lookup_names(Block const* me, Scope* names, ErrorCtx* errs);
+void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs);
 // The types of the `return` expressions inside (nested functions excluded), checked with Checker.return_context
 typedef struct TyBuf TyBuf;
 void block_collect_return_types(Block const* me, TyBuf* out);

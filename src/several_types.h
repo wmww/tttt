@@ -9,16 +9,17 @@
 // generic params/etc
 typedef struct IdentifierType {
     VecSpan namespaces;
-    VecDeclarationCPtr namespace_decls;
+    VecSymbolCPtr namespace_symbols; // What each of the namespaces resolved to (maybe an alias), shorter on failure
     Span name;
     KeywordIdentifier keyword;
-    Declaration const* decl_ref;
+    Declaration const* decl_ref; // What the checker goes by: aliases resolved
+    Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
     VecSpannedType generic_params;
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);
 IdentifierType identifier_type_clone(IdentifierType me);
-void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs);
+void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs);
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 
 static inline TypeNode type_identifier(IdentifierType* identifier) {
@@ -34,7 +35,7 @@ typedef struct InferredType {
     Span name;
     Span full_span;
     TypeNode extends;
-    ArcDeclaration owned_declaration;
+    DeclHandle owned_declaration;
     Declaration const* declaration_ref;
 } InferredType;
 
@@ -72,7 +73,7 @@ typedef struct IndexedType {
 
 void indexed_type_drop(IndexedType* me);
 IndexedType indexed_type_clone(IndexedType me);
-void indexed_type_lookup_names(IndexedType* me, ScopeStack* names, ErrorCtx* errs);
+void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs);
 void indexed_type_typecheck(IndexedType const* me, ErrorCtx* errs);
 
 // Keyof
@@ -83,7 +84,7 @@ typedef struct KeyofType {
 
 void keyof_type_drop(KeyofType* me);
 KeyofType keyof_type_clone(KeyofType me);
-void keyof_type_lookup_names(KeyofType* me, ScopeStack* names, ErrorCtx* errs);
+void keyof_type_lookup_names(KeyofType* me, Scope* names, ErrorCtx* errs);
 void keyof_type_typecheck(KeyofType const* me, ErrorCtx* errs);
 
 // Typeof
@@ -95,7 +96,7 @@ typedef struct TypeofType {
 
 void typeof_type_drop(TypeofType* me);
 TypeofType typeof_type_clone(TypeofType me);
-void typeof_type_lookup_names(TypeofType* me, ScopeStack* names, ErrorCtx* errs);
+void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs);
 void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs);
 
 // Ternary

@@ -120,9 +120,7 @@ static Ty const* global_type(Checker* me, GlobalType which) {
             empty->anonymous.state->members_state = LAZY_STATE_DONE;
             my global_types[which] = empty;
         } else {
-            Declaration const* decl = scope_get_declaration(
-                program_get_global_scope(my program), sv_make_span(csview_from(names[which]))
-            );
+            Declaration const* decl = program_get_global(my program, csview_from(names[which]), SYMBOL_TYPE);
             if (decl && (decl->type_tag == DECLARATION_INTERFACE || decl->type_tag == DECLARATION_CLASS)) {
                 Ty const* declared = ty_declared_type_of(me, decl);
                 if (declared->kind == TY_DECLARED && !declared->declared.type_params.len) {
@@ -213,7 +211,7 @@ static bool enums_related(Checker* me, Declaration const* source, Declaration co
     for (u32 i = 0; i < members.len; i++) {
         Ty const* member = members.data[i];
         if (member->kind != TY_LITERAL || !member->literal.enum_member || member->literal.enum_member == source) continue;
-        Declaration const* other = scope_get_declaration(target->namespace, member->literal.enum_member->name);
+        Declaration const* other = symbol_get_export_declaration(target->namespace, member->literal.enum_member->name);
         if (!other || other->value_tag != DECLARATION_ENUM_CASE) return false;
         Ty const* other_type = ty_declared_type_of(me, other);
         if (other_type->kind != TY_LITERAL) return false;

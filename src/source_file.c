@@ -42,16 +42,6 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my contents);
     free(my line_starts);
     block_drop(&my ast);
-    scope_drop(&my module_scope);
-    vec_scope_cptr_drop(&my global_scopes);
     cstr_drop(&my decl_override);
 }
 
-void source_file_set_module_true(SourceFile* me, ErrorCtx* errs) {
-    if (!my is_module) {
-        my is_module = true;
-        my module_scope = scope_init_toplevel(errs);
-    } else {
-        check(my module_scope.errs == errs);
-    }
-}

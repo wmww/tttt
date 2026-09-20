@@ -39,7 +39,7 @@ typedef struct VariableStatement {
 
 void variable_statement_drop(VariableStatement* me);
 void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported);
-void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs);
+void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx* errs);
 
 // Type declaration
@@ -49,7 +49,7 @@ typedef struct TypeDecl {
     Span full_span;
     Generic generic;
     TypeNode type;
-    ArcDeclaration declaration;
+    DeclHandle declaration;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
@@ -64,15 +64,13 @@ typedef struct NamespaceDecl {
     bool is_global;
     bool is_ambient_module; // `declare module "name" {}`, name is the string literal including quotes
     Block contents;
-    Scope inner_scope;
-    Scope* global_scope; // Set only if global
-    TypeNode value_type;
-    ArcDeclaration declaration;
+    Scope* inner_scope;
+    DeclHandle declaration;
 } NamespaceDecl;
 
 void namespace_decl_drop(NamespaceDecl* me);
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props);
-void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs);
+void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs);
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs);
 
 // If statements
@@ -157,6 +155,11 @@ static inline bool statement_tag_is_decl(typeof((Statement){}.tag) tag) {
     }
 }
 
+// The statements that have decl.props
+static inline bool statement_declares_name(typeof((Statement){}.tag) tag) {
+    return statement_tag_is_decl(tag) || tag == STATEMENT_DECL_INTERFACE || tag == STATEMENT_DECL_NAMESPACE;
+}
+
 static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(Statement const* me) {
     if (statement_tag_is_decl(my tag)) {
         return my decl.props.exported;
@@ -169,7 +172,8 @@ static inline typeof(((DeclStatementProps){}).exported) statement_get_exported(S
 
 void statement_drop(Statement* me);
 void statement_add_names(Statement* me, Scope* scope);
-void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs);
+void statement_hoist_names(Statement* me, Scope* scope);
+void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs);
 void statement_collect_return_types(Statement const* me, TyBuf* out);
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 

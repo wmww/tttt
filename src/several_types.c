@@ -1,6 +1,5 @@
 #include "several_types.h"
 #include "ty/ty.h"
-#include "scope_stack.h"
 #include "declaration.h"
 #include "scope.h"
 #include "generic.h"
@@ -10,31 +9,37 @@
 
 void identifier_type_drop(IdentifierType* me) {
     vec_span_drop(&my namespaces);
-    vec_declaration_cptr_drop(&my namespace_decls);
+    vec_symbol_cptr_drop(&my namespace_symbols);
     vec_spanned_type_drop(&my generic_params);
 }
 
 IdentifierType identifier_type_clone(IdentifierType me) {
     me.namespaces = vec_span_clone(me.namespaces);
-    me.namespace_decls = vec_declaration_cptr_clone(me.namespace_decls);
+    me.namespace_symbols = vec_symbol_cptr_clone(me.namespace_symbols);
     me.generic_params = vec_spanned_type_clone(me.generic_params);
     return me;
 }
 
+// Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
 static Declaration const* get_declaration_from_namespace(
-    Scope const* namespace,
+    Symbol const* namespace,
     Span namespace_name,
     Span item_name,
-    bool namespace_only,
+    u32 meaning,
+    Symbol const** found,
     ErrorCtx* errs
 ) {
+    *found = nullptr;
     if (!namespace) return nullptr;
-    Declaration const* decl = scope_get_declaration(namespace, item_name);
-    if (!decl || (namespace_only && !decl->namespace)) {
+    Symbol const* member = symbol_get_export(namespace, item_name.sv);
+    Declaration const* decl = symbol_declaration(member, meaning);
+    if (!decl && meaning == SYMBOL_TYPE) decl = symbol_declaration(member, SYMBOL_ANY_MEANING); // TS2749 below
+    if (!decl) {
         error_ctx_error_d(errs, item_name, 2694,
             "Namespace '", namespace_name, "' has no exported member '", item_name, "'.");
-        decl = nullptr;
+        return nullptr;
     }
+    *found = member;
     return decl;
 }
 
@@ -48,36 +53,38 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
     return ret;
 }
 
-void identifier_type_lookup_names(IdentifierType* me, ScopeStack* names, ErrorCtx* errs) {
+void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my decl_ref);
 
     if (vec_span_size(&my namespaces)) {
-        Scope const* namespace = nullptr;
+        Symbol const* namespace = nullptr;
         Span prev_name = span_null;
         for_each (i, vec_span, &my namespaces) {
             Declaration const* decl;
+            Symbol const* found;
             if (i == my namespaces.data /* First namespaces */) {
-                decl = scope_stack_get_namespace(names, i->sv);
+                decl = scope_get_namespace(names, i->sv, &found);
                 if (!decl) {
                     error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                 }
             } else /* Subsequent namespaces */ {
-                decl = get_declaration_from_namespace(namespace, prev_name, *i, true, errs);
+                decl = get_declaration_from_namespace(namespace, prev_name, *i, SYMBOL_NAMESPACE, &found, errs);
             }
             namespace = decl ? decl->namespace :nullptr;
             prev_name = *i;
             if (!decl) {
                 break;
             }
-            vec_declaration_cptr_push(&my namespace_decls, decl);
+            vec_symbol_cptr_push(&my namespace_symbols, found);
         }
         if (namespace) {
-            my decl_ref = get_declaration_from_namespace(namespace, prev_name, my name, false, errs);
+            my decl_ref = get_declaration_from_namespace(namespace, prev_name, my name, SYMBOL_TYPE, &my symbol, errs);
         }
     } else if (my keyword) {
-        my decl_ref = scope_stack_get_keyword(names, my keyword, true);
+        my decl_ref = scope_get_keyword(names, my keyword, true);
     } else {
-        my decl_ref = scope_stack_get_type(names, my name.sv);
+        my decl_ref = scope_get_type(names, my name.sv, &my symbol);
+        if (!my decl_ref) my decl_ref = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
         if (!my decl_ref) {
             error_ctx_error_d(errs, my name, 2304, "Cannot find name '", my name, "'.");
         }
@@ -119,12 +126,11 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 
 void inferred_type_drop(InferredType* me) {
     type_drop(&my extends);
-    arc_declaration_drop(&my owned_declaration);
 }
 
 InferredType inferred_type_clone(InferredType me) {
     me.extends = type_clone(me.extends);
-    me.owned_declaration = arc_declaration_init();
+    me.owned_declaration = (DeclHandle){0};
     return me;
 }
 
@@ -146,7 +152,7 @@ IndexedType indexed_type_clone(IndexedType me) {
     };
 }
 
-void indexed_type_lookup_names(IndexedType* me, ScopeStack* names, ErrorCtx* errs) {
+void indexed_type_lookup_names(IndexedType* me, Scope* names, ErrorCtx* errs) {
     type_lookup_names(&my interface, names, errs);
     type_lookup_names(&my index, names, errs);
 }
@@ -168,7 +174,7 @@ KeyofType keyof_type_clone(KeyofType me) {
     };
 }
 
-void keyof_type_lookup_names(KeyofType* me, ScopeStack* names, ErrorCtx* errs) {
+void keyof_type_lookup_names(KeyofType* me, Scope* names, ErrorCtx* errs) {
     type_lookup_names(&my interface, names, errs);
 }
 
@@ -190,7 +196,7 @@ TypeofType typeof_type_clone(TypeofType me) {
     return me;
 }
 
-void typeof_type_lookup_names(TypeofType* me, ScopeStack* names, ErrorCtx* errs) {
+void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs) {
     expr_lookup_names(my expr, names, errs);
 }
 

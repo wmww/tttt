@@ -2,7 +2,6 @@
 #include "stc/types.h"
 #include "type.h"
 #include "error.h"
-#include "scope_stack.h"
 #include "scope.h"
 #include "function_impl.h"
 #include "generic.h"
@@ -21,14 +20,14 @@ void identifier_expr_drop(IdentifierExpr* me) {
     ignore me;
 }
 
-void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs) {
+void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
-        my decl_ref = scope_stack_get_keyword(names, my keyword, false);
+        my decl_ref = scope_get_keyword(names, my keyword, false);
         return;
     }
-    my decl_ref = scope_stack_get_value(names, my name.sv);
+    my decl_ref = scope_get_value(names, my name.sv, &my symbol);
     if (my decl_ref) {
-    } else if (scope_stack_get_type(names, my name.sv)) {
+    } else if (scope_get_type(names, my name.sv, nullptr)) {
         error_ctx_error_d(
             errs, my name, 2693,
             "'", my name, "' only refers to a type, but is being used as a value here."
@@ -181,7 +180,7 @@ static bool as_type_is_const_assertion(AsTypeExpr const* me) {
         vec_span_is_empty(&my type.identifier->namespaces) && !vec_spanned_type_size(&my type.identifier->generic_params);
 }
 
-void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
+void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
     switch (my tag) {
@@ -235,11 +234,12 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
 
         case EXPR_FUNCTION: {
             // A function expression's name is only visible inside it
-            Scope name_scope = scope_init(errs);
-            function_impl_add_names(my function, &name_scope, false);
-            scope_push_to_stack(&name_scope, names);
-            function_impl_lookup_names(my function, !span_valid(my function->arrow_span), names, errs);
-            scope_drop(&name_scope);
+            Scope* name_scope = names;
+            if (span_valid(my function->name)) {
+                name_scope = scope_new(names, SCOPE_BLOCK);
+                function_impl_add_names(my function, name_scope, false);
+            }
+            function_impl_lookup_names(my function, !span_valid(my function->arrow_span), name_scope, errs);
         }   break;
 
         case EXPR_OBJECT:
@@ -258,11 +258,9 @@ void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case EXPR_CLASS_DECL: {
-            Scope class_name_scope = scope_init(errs);
-            class_decl_add_names(my class_decl, &class_name_scope, false);
-            scope_push_to_stack(&class_name_scope, names);
-            class_decl_lookup_names(my class_decl, names, errs);
-            scope_drop(&class_name_scope);
+            Scope* class_name_scope = scope_new(names, SCOPE_BLOCK);
+            class_decl_add_names(my class_decl, class_name_scope, false);
+            class_decl_lookup_names(my class_decl, class_name_scope, errs);
         }   break;
 
         case EXPR_SPREAD:

@@ -140,7 +140,7 @@ Ty const* lazy_type_evaluate(LazyType* me) {
             break;
 
         case LAZY_TYPE_SCOPE_VALUE_INTERFACE:
-            result = scope_evaluate_value_interface(c_container_of(me, Scope, value_interface));
+            result = symbol_evaluate_value_interface(c_container_of(me, Symbol, value_interface));
             break;
     }
 

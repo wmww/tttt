@@ -13,7 +13,6 @@ typedef struct TypeofType TypeofType;
 typedef struct CallableType CallableType;
 typedef struct TupleElement TupleElement;
 typedef struct ErrorCtx ErrorCtx;
-typedef struct ScopeStack ScopeStack;
 typedef struct Scope Scope;
 typedef struct Generic Generic;
 typedef struct CallExpr CallExpr;
@@ -24,7 +23,15 @@ typedef struct Ty Ty; // A semantic type, see ty/ty.h
 typedef Declaration const* DeclarationCPtr;
 
 g_declare_arc(Expr, expr);
-g_declare_arc(Declaration, declaration);
+
+// What an AST node knows its declaration by. Not owning: symbols live as long as the program
+typedef struct Symbol Symbol;
+typedef struct DeclHandle {
+    Declaration* get;
+    Symbol* symbol;
+} DeclHandle;
+typedef Symbol const* SymbolCPtr;
+g_declare_vec(SymbolCPtr, symbol_cptr);
 g_declare_vec(DeclarationCPtr, declaration_cptr);
 g_declare_vec(TupleElement, tuple_element);
 
@@ -249,7 +256,7 @@ static inline TypeNode type_move(TypeNode* me) {
     return ret;
 }
 
-void type_lookup_names(TypeNode* me, ScopeStack* names, ErrorCtx* errs);
+void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs);
 void type_typecheck(TypeNode const* me, ErrorCtx* errs);
 #define g_class_key TypeNode, type
 #define g_declared

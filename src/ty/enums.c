@@ -137,7 +137,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             } else {
                 return enum_value_unknown;
             }
-            return member_value(me, scope_get_declaration(enum_decl->namespace, name));
+            return member_value(me, symbol_get_export_declaration(enum_decl->namespace, name));
         }
 
         default:

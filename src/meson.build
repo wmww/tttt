@@ -27,7 +27,6 @@ core_files = files(
     'program.c',
     'declaration.c',
     'scope.c',
-    'scope_stack.c',
     'engine.c',
     'string_helpers.c',
     'ty/checker.c',

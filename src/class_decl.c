@@ -1,6 +1,5 @@
 #include "class_decl.h"
 #include "ty/ty.h"
-#include "scope_stack.h"
 #include "statement.h"
 #include "interface_member.h"
 #include "callable_type.h"
@@ -92,11 +91,10 @@ void class_decl_drop(ClassDecl* me) {
     lazy_type_drop(&my instance_type);
     lazy_type_drop(&my class_type);
     declaration_drop(&my typeof_declaration);
-    arc_declaration_drop(&my declaration);
     type_drop(&my instance_identifier_type);
 }
 
-void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
+void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) {
         expr_lookup_names(i, names, errs);
     }
@@ -122,7 +120,9 @@ void class_item_lookup_names(ClassItem* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_STATIC_BLOCK:
-            block_resolve_names(&my static_block, names, errs);
+            Scope* block_scope = scope_new(names, SCOPE_STATIC_BLOCK);
+            block_add_names(&my static_block, block_scope);
+            block_lookup_names(&my static_block, block_scope, errs);
             break;
     }
 }
@@ -154,21 +154,18 @@ void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
     });
 }
 
-static void class_members_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs, bool static_members) {
-    Scope this_scope = scope_init(errs);
-    this_scope.this_declaration = static_members ? &my typeof_declaration : my declaration.get;
+static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
+    Scope* this_scope = scope_new(names, SCOPE_BLOCK);
+    this_scope->this_declaration = static_members ? &my typeof_declaration : my declaration.get;
 
-    scope_push_to_stack(&this_scope, names);
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {
-            class_item_lookup_names(i, names, errs);
+            class_item_lookup_names(i, this_scope, errs);
         }
     }
-
-    scope_drop(&this_scope);
 }
 
-void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
+void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my instance_type, LAZY_TYPE_CLASS_INSTANCE);
     lazy_type_bind(&my class_type, LAZY_TYPE_CLASS_CLASS);
 
@@ -176,8 +173,7 @@ void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
         expr_lookup_names(i, names, errs);
     }
 
-    Scope generic_scope = scope_init(errs);
-    scope_push_generic_to_stack(&generic_scope, &my generic, names);
+    names = scope_new_generic(names, &my generic, errs);
 
     VecSpannedType generic_params = vec_spanned_type_init();
     for_each (i, vec_generic_item, &my generic.items) {
@@ -236,8 +232,6 @@ void class_decl_lookup_names(ClassDecl* me, ScopeStack* names, ErrorCtx* errs) {
 
     class_members_lookup_names(me, names, errs, true);
     class_members_lookup_names(me, names, errs, false);
-
-    scope_drop(&generic_scope);
 }
 
 // Classes are evaluated by the new type core (ty/members.c)

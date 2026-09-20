@@ -6,7 +6,6 @@
 #include "statement.h"
 #include "port_statement.h"
 #include "source_file.h"
-#include "scope_stack.h"
 #include "ty/ty.h"
 
 #define g_class_key SourceFile, source_file
@@ -58,7 +57,7 @@ typedef struct Program {
     bool loading_stdlib; // If we're loading standard library files instead of normal files
     ErrorCtx* errs; // unowned
     Fs const* fs;
-    Scope global_scope;
+    Binder* binder;
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     Checker* checker; // Created by program_make_current()
@@ -67,23 +66,22 @@ typedef struct Program {
 
 static void program_add_builtins(Program* me) {
 #define GLOBAL_VALUE(global_name, global_value) {\
-    ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
+    DeclHandle declaration = {0}; \
+    scope_init_declaration(my binder->global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_VARIABLE, \
+        .function_scoped = true, \
         .value_type = global_value, \
     } ); \
-    arc_declaration_drop(&declaration); \
 }
 
 #define GLOBAL_TYPE(global_name, global_type) {\
-    ArcDeclaration declaration = {0}; \
-    scope_init_declaration(&my global_scope, &declaration, (DeclProps) { \
+    DeclHandle declaration = {0}; \
+    scope_init_declaration(my binder->global_scope, &declaration, (DeclProps) { \
         .name = sv_make_span(c_sv(global_name)), \
         .tag = DECLARATION_TYPE, \
         .declared_type = global_type, \
     } ); \
-    arc_declaration_drop(&declaration); \
 }
 
     GLOBAL_VALUE("globalThis", type_any);
@@ -233,7 +231,7 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     Program* ret = c_new(Program, {
         .errs = errs,
         .fs = fs,
-        .global_scope = scope_init(errs),
+        .binder = binder_new(errs),
         .options = compiler_options_init(),
     });
     program_add_builtins(ret);
@@ -243,10 +241,10 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
 static void program_drop(Program* me) {
     // First, its memos point into the AST and the scopes
     checker_drop(my checker);
-    scope_drop(&my global_scope);
     hmap_box_source_file_drop(&my source_files_map);
     vec_source_file_ptr_drop(&my source_files_ordered);
     compiler_options_drop(&my options);
+    binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
 
 CompilerOptions* program_options(Program* me) {
@@ -293,7 +291,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_IMPORT_EXPORT: {
             PortStatement* port = statement->import_export;
             if (port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) {
-                source_file_set_module_true(source, my errs);
+                source->is_module = true;
             }
             SourceFile* imported = nullptr;
             if (!port->requires_target) {
@@ -305,15 +303,10 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         }   break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            source_file_set_module_true(source, my errs);
+            source->is_module = true;
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            if (statement->decl.namespace.is_global) {
-                statement->decl.namespace.global_scope = &my global_scope;
-            }
-            // Fallthrough
-
         case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_FUNCTION:
         case STATEMENT_DECL_ENUM:
@@ -321,7 +314,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_DECL_TYPE:
         case STATEMENT_DECL_INTERFACE:
             if (statement->decl.props.exported) {
-                source_file_set_module_true(source, my errs);
+                source->is_module = true;
             }
             break;
 
@@ -431,41 +424,34 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
 }
 
 void program_copy_globals_from(Program* me, Program const* other) {
-    scope_copy_declarations_from(&my global_scope, &other->global_scope);
+    binder_set_parent(my binder, other->binder);
 }
 
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
+    set_compiler_options(&my options);
 
+    // Declare: symbols, the scopes of files and namespaces, exports
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        block_add_names(&source->ast, source_file_get_scope_or(source, &my global_scope));
-        for_each (i, vec_scope_cptr, &source->global_scopes) {
-            scope_copy_declarations_from(&my global_scope, *i);
-        }
+        source->scope = scope_new_file(my binder, source);
     }
-
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_module) {
-            scope_process_imports(&source->module_scope);
-        }
+        block_add_names(&source->ast, source->scope);
     }
 
-    ScopeStack* names = scope_stack_new();
-    scope_stack_push_scope(names, &my global_scope);
+    // Link: `export *` tables and every alias. Nothing writes to a symbol after this
+    binder_link(my binder);
 
+    // Resolve: every identifier gets its symbol, function and block scopes are made on the way
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_module) scope_push_to_stack(&source->module_scope, names);
-        block_lookup_names(&source->ast, names, my errs);
-        if (source->is_module) scope_pop_from_stack(&source->module_scope);
+        block_lookup_names(&source->ast, source->scope, my errs);
     }
 
-    scope_stack_pop_scope(names, &my global_scope);
-    scope_stack_destroy(names);
-
+    clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
     CHANGE_PHASE(PROGRAM_PHASE_RESOLVING_NAMES, PROGRAM_PHASE_NAMES_RESOLVED);
 }
@@ -480,8 +466,8 @@ Checker* program_get_checker(Program const* me) {
     return my checker;
 }
 
-Scope const* program_get_global_scope(Program const* me) {
-    return &my global_scope;
+Declaration const* program_get_global(Program const* me, csview name, u32 meaning) {
+    return symbol_declaration(symbol_table_get(&my binder->globals, name), meaning);
 }
 
 void program_typecheck(Program* me) {

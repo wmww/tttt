@@ -1,6 +1,5 @@
 #include "generic.h"
 #include "ty/ty.h"
-#include "scope_stack.h"
 #include "scope.h"
 #include "several_types.h"
 #include "callable_type.h"
@@ -12,13 +11,12 @@
 void generic_item_drop(GenericItem* me) {
     type_drop(&my extends);
     type_drop(&my fallback);
-    arc_declaration_drop(&my owned_declaration);
 }
 
 GenericItem generic_item_clone(GenericItem me) {
     me.extends = type_clone(me.extends);
     me.fallback = type_clone(me.fallback);
-    me.owned_declaration = arc_declaration_init();
+    me.owned_declaration = (DeclHandle){0};
     return me;
 }
 
@@ -44,7 +42,7 @@ void generic_add_names(Generic const* me, Scope* scope) {
     }
 }
 
-void generic_lookup_names(Generic const* me, ScopeStack* names, ErrorCtx* errs) {
+void generic_lookup_names(Generic const* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_generic_item, &my items) {
         type_lookup_names(&i->extends, names, errs);
         type_lookup_names(&i->fallback, names, errs);

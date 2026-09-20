@@ -27,16 +27,7 @@ typedef struct Program Program;
 
 // Arena
 
-typedef struct ArenaChunk ArenaChunk;
-typedef struct Arena {
-    ArenaChunk* head;
-    size_t total; // bytes handed out, for measurements
-} Arena;
-
-void* arena_alloc(Arena* me, size_t size); // zeroed, 8 byte aligned
-void arena_drop(Arena* me);
-#define arena_new(arena, T) ((T*)arena_alloc(arena, sizeof(T)))
-#define arena_new_n(arena, T, n) ((T*)arena_alloc(arena, sizeof(T) * (size_t)(n)))
+#include "arena.h"
 
 // An interned string. Pointer equality is string equality (within one Checker).
 typedef struct Atom {
@@ -222,7 +213,7 @@ struct Ty {
         struct {
             TyDeclaredKind kind;
             Declaration const* decl; // null for tuple targets and synthetics
-            Scope const* namespace_scope; // TY_DECLARED_NAMESPACE only
+            struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module
             // Set if this is the value of a declaration with several value declarations (a namespace merged with a
             // function, class or enum): the members are those of all of them, see ty_merged_value_type()
             Declaration const* merged_value;
@@ -562,7 +553,7 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
 // lower.c
 Ty const* ty_from_node(Checker* me, TypeNode const* node, LowerCtx ctx);
 Ty const* ty_declared_type_of(Checker* me, Declaration const* decl);
-Ty const* ty_namespace_type(Checker* me, Scope const* scope);
+Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_merged_value_type(Checker* me, Declaration const* decl);
 Atom const* ty_qualified_name(Checker* me, Declaration const* decl); // `A.B.name`
 void ty_set_declared_type(Checker* me, Declaration const* decl, Ty const* type);

@@ -2,7 +2,6 @@
 #include "ty/ty.h"
 #include "port_statement.h"
 #include "error.h"
-#include "scope_stack.h"
 #include "scope.h"
 #include "class_decl.h"
 #include "enum_decl.h"
@@ -20,11 +19,12 @@ void variable_statement_add_names(VariableStatement* me, Scope* scope, bool expo
         initialized_binding_add_names(i, scope, (BindingAddNamesProps){
             .abstract_literals = my keyword != VAR_INIT_CONST,
             .exported = exported,
+            .function_scoped = my keyword == VAR_INIT_VAR,
         });
     }
 }
 
-void variable_statement_resolve_names(VariableStatement* me, ScopeStack* names, ErrorCtx* errs) {
+void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_initialized_binding, &my initializers) {
         initialized_binding_lookup_names(i, names, errs);
     }
@@ -76,7 +76,6 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, ErrorCtx
 void type_decl_drop(TypeDecl* me) {
     generic_drop(&my generic);
     type_drop(&my type);
-    arc_declaration_drop(&my declaration);
 }
 
 void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
@@ -99,76 +98,71 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
 
 void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
-    scope_drop(&my inner_scope);
-    type_drop(&my value_type);
-    arc_declaration_drop(&my declaration);
 }
 
-void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
-    my inner_scope = scope_init_namespace(my name, scope, scope->errs);
-
-    if (my is_global && !props.declared) {
-        error_ctx_error_d(scope->errs, my name, 2670,
-            "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");
-    }
-
-    bool has_value = false;
-    for_each (i, vec_statement, &my contents.statements) {
-        Scope* inner_scope = &my inner_scope;
-        if (my is_global) {
-            if (my global_scope) {
-                inner_scope = my global_scope;
-            } else {
-                log_error("Global scope not set");
-            }
-        }
-        statement_add_names(i, inner_scope);
+// tsc's getModuleInstanceState(), syntactically: a namespace is a value if it contains more than types
+static bool block_is_instantiated(Block const* me) {
+    for_each (i, vec_statement, &my statements) {
         switch (i->tag) {
             case STATEMENT_NOOP:
             case STATEMENT_DECL_TYPE:
             case STATEMENT_DECL_INTERFACE:
                 break;
 
-            case STATEMENT_DECL_NAMESPACE:
-                if (i->decl.namespace.declaration.get && i->decl.namespace.declaration.get->value_tag) {
-                    has_value = true;
+            case STATEMENT_IMPORT_EXPORT:
+                // TODO: an export declaration is as instantiated as what it exports
+                if (port_item_is_export(&i->import_export->main) || i->import_export->main.export_import ||
+                    span_equals(i->import_export->keyword_span, "export")
+                ) {
+                    return true;
                 }
                 break;
 
-            default:
-                has_value = true;
+            case STATEMENT_DECL_NAMESPACE:
+                if (i->decl.namespace.is_global || block_is_instantiated(&i->decl.namespace.contents)) return true;
                 break;
+
+            default:
+                return true;
         }
     }
-
-    has_value |= my is_global;
-
-    if (has_value) {
-        check(my value_type.tag == 0);
-        my value_type = type_lazy(&my inner_scope.value_interface);
-    }
-
-    if (my is_ambient_module) {
-        // TODO: ambient modules should be registered with the program so imports can resolve to them
-        return;
-    }
-
-    scope_init_declaration(scope, &my declaration, (DeclProps){
-        .name = my name,
-        .full = my full_span,
-        .exported = props.exported,
-        .tag = has_value ? DECLARATION_NAMESPACE_WITH_VALUE : DECLARATION_NAMESPACE_TYPE_ONLY,
-        .value_type = has_value ? type_ref_always(&my value_type) : type_any,
-        .namespace = &my inner_scope,
-    });
+    return false;
 }
 
-void namespace_decl_resolve_names(NamespaceDecl* me, ScopeStack* names, ErrorCtx* errs) {
-    scope_push_to_stack(&my inner_scope, names);
-    for_each (i, vec_statement, &my contents.statements) {
-        statement_resolve_names(i, names, errs);
+void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
+    if (my is_global && !props.declared && !scope->ambient) {
+        error_ctx_error_d(scope->errs, my name, 2670,
+            "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");
     }
-    scope_pop_from_stack(&my inner_scope);
+
+    if (my is_global) {
+        my inner_scope = scope_new(scope, SCOPE_GLOBAL_AUGMENTATION);
+    } else {
+        my inner_scope = scope_new(scope, SCOPE_NAMESPACE);
+        if (my is_ambient_module) {
+            // TODO: ambient modules should be registered with the program so imports can resolve to them
+            my inner_scope->container = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
+            my inner_scope->container->decl.name = my name;
+        } else {
+            bool has_value = block_is_instantiated(&my contents);
+            scope_init_declaration(scope, &my declaration, (DeclProps){
+                .name = my name,
+                .full = my full_span,
+                .exported = props.exported,
+                .tag = has_value ? DECLARATION_NAMESPACE_WITH_VALUE : DECLARATION_NAMESPACE_TYPE_ONLY,
+            });
+            my inner_scope->container = my declaration.symbol;
+        }
+    }
+    my inner_scope->ambient = scope->ambient || props.declared;
+    my inner_scope->export_context = my inner_scope->ambient && !block_has_export_declarations(&my contents);
+
+    block_add_names(&my contents, my inner_scope);
+}
+
+void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* errs) {
+    (void)names;
+    block_lookup_names(&my contents, my inner_scope, errs);
 }
 
 void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) {
@@ -314,13 +308,150 @@ void statement_drop(Statement* me) {
     }
 }
 
-void statement_add_names(Statement* me, Scope* scope) {
+// The variables of `for (var/let x of y)`: their type comes from the iterable
+static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
+    if (my variable.tag != FOR_EACH_LOOP_STATEMENT) return;
+    VecInitializedBinding* initializers = &my variable.statement.initializers;
+    intptr_t var_size = vec_initialized_binding_size(initializers);
+    if (var_size > 1) {
+        error_ctx_error_d(
+            scope->errs,
+            vec_initialized_binding_at(initializers, 1)->binding.content_span,
+            my keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
+            "Only a single variable declaration is allowed in a 'for...",
+            for_each_loop_statement_keyword_str(me).str, "' statement."
+        );
+    } else if (var_size == 0) {
+        // Error added by parser
+    } else {
+        InitializedBinding* initializer = initializers->data;
+        if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
+            error_ctx_error_d(
+                scope->errs,
+                initializer->binding.content_span,
+                1189,
+                "The variable declaration of a 'for...",
+                for_each_loop_statement_keyword_str(me).str,
+                "' statement cannot have an initializer."
+            );
+        } else if (initializer->binding.has_explicit_type) {
+            error_ctx_error_d(
+                scope->errs,
+                initializer->binding.content_span,
+                2404,
+                "The left-hand side of a 'for...",
+                for_each_loop_statement_keyword_str(me).str,
+                "' statement cannot use a type annotation."
+            );
+        }
+    }
+    for_each (i, vec_initialized_binding, &my variable.statement.initializers) {
+        // If we set has_explicit_type = false here but don't clear the type, the type will still show
+        // up in test AST traversial (as required), but will not be typechecked (as required). This
+        // is dumb but it works.
+        i->binding.has_explicit_type = false;
+        binding_add_names(&i->binding, type_lazy(&my var_type), scope, (BindingAddNamesProps){
+            .function_scoped = my variable.statement.keyword == VAR_INIT_VAR,
+        });
+    }
+}
+
+static void block_hoist_names(Block* me, Scope* scope) {
+    for_each (i, vec_statement, &my statements) {
+        statement_hoist_names(i, scope);
+    }
+}
+
+// Declares the `var`s of nested statements in the function, module or namespace scope they belong to. Never looks
+// into functions. The blocks they're in skip them when their turn comes (scope_init_declaration())
+void statement_hoist_names(Statement* me, Scope* scope) {
     switch (my tag) {
+        case STATEMENT_BLOCK:
+            block_hoist_names(&my block, scope);
+            break;
+
+        case STATEMENT_IF_ELSE:
+            for_each (i, vec_statement, &my if_else.statements) {
+                statement_hoist_names(i, scope);
+            }
+            break;
+
+        case STATEMENT_FOR_LOOP:
+            statement_hoist_names(&my for_loop->initialization, scope);
+            statement_hoist_names(&my for_loop->body, scope);
+            break;
+
+        case STATEMENT_FOR_EACH_LOOP:
+            if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT &&
+                my for_each_loop->variable.statement.keyword == VAR_INIT_VAR
+            ) {
+                for_each_loop_add_names(my for_each_loop, scope);
+            }
+            statement_hoist_names(&my for_each_loop->body, scope);
+            break;
+
+        case STATEMENT_SWITCH:
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                for_each (j, vec_statement, &i->statements) {
+                    statement_hoist_names(j, scope);
+                }
+            }
+            break;
+
+        case STATEMENT_TRY_CATCH:
+            block_hoist_names(&my try_catch->try_block, scope);
+            block_hoist_names(&my try_catch->catch_block, scope);
+            block_hoist_names(&my try_catch->finally_block, scope);
+            break;
+
+        case STATEMENT_LABELED:
+            statement_hoist_names(my labeled.body, scope);
+            break;
+
+        case STATEMENT_DECL_VARIABLE:
+            if (my decl.variable.keyword == VAR_INIT_VAR) {
+                variable_statement_add_names(&my decl.variable, scope, my decl.props.exported);
+            }
+            break;
+
+        default:
+            break;
+    }
+}
+
+// `export default function f() {}`: f locally, `default` in the exports
+static void statement_export_default(Statement const* me, Scope* scope) {
+    Symbol* symbol = nullptr;
+    switch (my tag) {
+        case STATEMENT_DECL_FUNCTION: symbol = my decl.function.impl->declaration.symbol; break;
+        case STATEMENT_DECL_ENUM: symbol = my decl.enum_->declaration.symbol; break;
+        case STATEMENT_DECL_CLASS: symbol = my decl.class->declaration.symbol; break;
+        case STATEMENT_DECL_INTERFACE: symbol = my decl.interface->declaration.symbol; break;
+        default: break;
+    }
+    if (symbol) scope_export_default(scope, symbol);
+}
+
+void statement_add_names(Statement* me, Scope* scope) {
+    if (statement_declares_name(my tag) && my decl.props.exported == DECL_EXPORTED_YES_DEFAULT) {
+        my decl.props.exported = DECL_EXPORTED_NO;
+        statement_add_names(me, scope);
+        my decl.props.exported = DECL_EXPORTED_YES_DEFAULT;
+        statement_export_default(me, scope);
+        return;
+    }
+    switch (my tag) {
+        case STATEMENT_EXPORT_DEFAULT_EXPR:
+            scope_export_default_expr(scope, &my expr);
+            break;
+
         case STATEMENT_IMPORT_EXPORT:
             port_statement_add_names(my import_export, scope);
             break;
 
         case STATEMENT_DECL_VARIABLE:
+            // The `var`s of nested blocks were declared by statement_hoist_names()
+            if (my decl.variable.keyword == VAR_INIT_VAR && !scope_is_var_container(scope)) break;
             variable_statement_add_names(&my decl.variable, scope, my decl.props.exported);
             break;
 
@@ -363,14 +494,13 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_BREAK:
         case STATEMENT_CONTINUE:
         case STATEMENT_EXPR:
-        case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             break;
     }
 }
 
-void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
+void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
     switch (my tag) {
         case STATEMENT_LABELED:
             statement_resolve_names(my labeled.body, names, errs);
@@ -385,88 +515,35 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
                 expr_lookup_names(i, names, errs);
             }
             for_each (i, vec_statement, &my if_else.statements) {
-                Scope branch_scope = scope_init(errs);
-                statement_add_names(i, &branch_scope);
-                scope_push_to_stack(&branch_scope, names);
-                statement_resolve_names(i, names, errs);
-                scope_drop(&branch_scope);
+                Scope* branch_scope = scope_new(names, SCOPE_BLOCK);
+                statement_add_names(i, branch_scope);
+                statement_resolve_names(i, branch_scope, errs);
             }
             break;
 
         case STATEMENT_FOR_LOOP: {
-            Scope loop_scope = scope_init(errs);
-            statement_add_names(&my for_loop->initialization, &loop_scope);
-
-            scope_push_to_stack(&loop_scope, names);
-            statement_resolve_names(&my for_loop->initialization, names, errs);
-            expr_lookup_names(&my for_loop->condition, names, errs);
-            expr_lookup_names(&my for_loop->afterthought, names, errs);
-            scope_pop_from_stack(&loop_scope);
-
-            statement_add_names(&my for_loop->body, &loop_scope);
-
-            scope_push_to_stack(&loop_scope, names);
-            statement_resolve_names(&my for_loop->body, names, errs);
-            scope_drop(&loop_scope);
+            Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
+            statement_add_names(&my for_loop->initialization, loop_scope);
+            statement_add_names(&my for_loop->body, loop_scope);
+            statement_resolve_names(&my for_loop->initialization, loop_scope, errs);
+            expr_lookup_names(&my for_loop->condition, loop_scope, errs);
+            expr_lookup_names(&my for_loop->afterthought, loop_scope, errs);
+            statement_resolve_names(&my for_loop->body, loop_scope, errs);
         }   break;
 
         case STATEMENT_FOR_EACH_LOOP: {
             lazy_type_bind(&my for_each_loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
-            Scope loop_scope = scope_init(errs);
+            Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
             switch (my for_each_loop->variable.tag) {
                 case FOR_EACH_LOOP_STATEMENT:
                     VecInitializedBinding* initializers = &my for_each_loop->variable.statement.initializers;
-                    intptr_t var_size = vec_initialized_binding_size(initializers);
-                    if (var_size > 1) {
-                        error_ctx_error_d(
-                            errs,
-                            vec_initialized_binding_at(initializers, 1)->binding.content_span,
-                            my for_each_loop->keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
-                            "Only a single variable declaration is allowed in a 'for...",
-                            for_each_loop_statement_keyword_str(my for_each_loop).str, "' statement."
-                        );
-                    } else if (var_size == 0) {
-                        // Error added by parser
-                    } else {
-                        InitializedBinding* initializer = initializers->data;
-                        if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
-                            error_ctx_error_d(
-                                errs,
-                                initializer->binding.content_span,
-                                1189,
-                                "The variable declaration of a 'for...",
-                                for_each_loop_statement_keyword_str(my for_each_loop).str,
-                                "' statement cannot have an initializer."
-                            );
-                        } else if (initializer->binding.has_explicit_type) {
-                            error_ctx_error_d(
-                                errs,
-                                initializer->binding.content_span,
-                                2404,
-                                "The left-hand side of a 'for...",
-                                for_each_loop_statement_keyword_str(my for_each_loop).str,
-                                "' statement cannot use a type annotation."
-                            );
-                        }
+                    if (my for_each_loop->variable.statement.keyword != VAR_INIT_VAR) {
+                        for_each_loop_add_names(my for_each_loop, loop_scope);
                     }
                     for_each (i, vec_initialized_binding, initializers) {
-                        // If we set has_explicit_type = false here but don't clear the type, the type will still show
-                        // up in test AST traversial (as required), but will not be typechecked (as required). This
-                        // is dumb but it works.
-                        i->binding.has_explicit_type = false;
-                        binding_add_names(
-                            &i->binding,
-                            type_lazy(&my for_each_loop->var_type),
-                            &loop_scope,
-                            (BindingAddNamesProps){}
-                        );
+                        binding_lookup_names(&i->binding, loop_scope, errs);
+                        expr_lookup_names(&i->value, loop_scope, errs);
                     }
-                    scope_push_to_stack(&loop_scope, names);
-                    for_each (i, vec_initialized_binding, initializers) {
-                        binding_lookup_names(&i->binding, names, errs);
-                        expr_lookup_names(&i->value, names, errs);
-                    }
-                    scope_pop_from_stack(&loop_scope);
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
@@ -474,46 +551,36 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
                     break;
             }
 
-            scope_push_to_stack(&loop_scope, names);
-            expr_lookup_names(&my for_each_loop->iterable, names, errs);
-            scope_pop_from_stack(&loop_scope);
-
-            statement_add_names(&my for_each_loop->body, &loop_scope);
-
-            scope_push_to_stack(&loop_scope, names);
-            statement_resolve_names(&my for_each_loop->body, names, errs);
-            scope_drop(&loop_scope);
+            expr_lookup_names(&my for_each_loop->iterable, loop_scope, errs);
+            statement_add_names(&my for_each_loop->body, loop_scope);
+            statement_resolve_names(&my for_each_loop->body, loop_scope, errs);
         }   break;
 
         case STATEMENT_SWITCH: {
             expr_lookup_names(&my switch_->needle, names, errs);
-            Scope switch_scope = scope_init(errs);
+            Scope* switch_scope = scope_new(names, SCOPE_BLOCK);
             for_each (i, vec_switch_case, &my switch_->cases) {
                 for_each (j, vec_statement, &i->statements) {
-                    statement_add_names(j, &switch_scope);
+                    statement_add_names(j, switch_scope);
                 }
             }
-            scope_push_to_stack(&switch_scope, names);
             for_each (i, vec_switch_case, &my switch_->cases) {
                 if (i->is_pattern) {
-                    expr_lookup_names(&i->pattern, names, errs);
+                    expr_lookup_names(&i->pattern, switch_scope, errs);
                 }
                 for_each (j, vec_statement, &i->statements) {
-                    statement_resolve_names(j, names, errs);
+                    statement_resolve_names(j, switch_scope, errs);
                 }
             }
-            scope_drop(&switch_scope);
         }   break;
 
         case STATEMENT_TRY_CATCH: {
             block_resolve_names(&my try_catch->try_block, names, errs);
 
-            Scope catch_scope = scope_init(errs);
-            binding_add_names(&my try_catch->catch_var, type_any, &catch_scope, (BindingAddNamesProps){});
-            scope_push_to_stack(&catch_scope, names);
-            binding_lookup_names(&my try_catch->catch_var, names, errs);
-            block_resolve_names(&my try_catch->catch_block, names, errs);
-            scope_drop(&catch_scope);
+            Scope* catch_scope = scope_new(names, SCOPE_BLOCK);
+            binding_add_names(&my try_catch->catch_var, type_any, catch_scope, (BindingAddNamesProps){});
+            binding_lookup_names(&my try_catch->catch_var, catch_scope, errs);
+            block_resolve_names(&my try_catch->catch_block, catch_scope, errs);
 
             block_resolve_names(&my try_catch->finally_block, names, errs);
         }   break;
@@ -525,7 +592,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_RETURN_EXPR:
-            if (!scope_stack_has_function(names)) {
+            if (!scope_has_function(names)) {
                 error_ctx_error_d(
                     errs,
                     my expr.outer_span,
@@ -536,8 +603,7 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             expr_lookup_names(&my expr, names, errs);
             break;
 
-        case STATEMENT_IMPORT_EXPORT:
-            port_statement_resolve_names(my import_export, names, errs);
+        case STATEMENT_IMPORT_EXPORT: // Aliases are resolved by binder_link()
             break;
 
         case STATEMENT_DECL_VARIABLE:
@@ -557,10 +623,8 @@ void statement_resolve_names(Statement* me, ScopeStack* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_DECL_TYPE: {
-            Scope generic_scope = scope_init(errs);
-            scope_push_generic_to_stack(&generic_scope, &my decl.type.generic, names);
-            type_lookup_names(&my decl.type.type, names, errs);
-            scope_drop(&generic_scope);
+            Scope* generic_scope = scope_new_generic(names, &my decl.type.generic, errs);
+            type_lookup_names(&my decl.type.type, generic_scope, errs);
         }   break;
 
         case STATEMENT_DECL_INTERFACE:

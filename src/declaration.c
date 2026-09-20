@@ -69,126 +69,10 @@ void declaration_clone_in_place(Declaration* me) {
     if (my declared_type.tag) {
         my declared_type = type_lazy(&my merged_declared_type.lazy);
     }
-    my shared_between_scopes = false;
 }
 
 static inline Generic const* generic_or_null(Generic const* generic) {
     return (generic && !generic_empty(generic)) ? generic : nullptr;
-}
-
-DeclProps decl_props_clone(DeclProps me) {
-    me.value_type = type_clone(me.value_type);
-    me.declared_type = type_clone(me.declared_type);
-    return me;
-}
-
-static bool declaration_types_test_mergable(
-    Span a_name, DeclarationTag a_tag,
-    Span b_name, DeclarationTag b_tag,
-    ErrorCtx* errs
-) {
-    if (!a_tag || !b_tag) return true;
-
-    bool mergable = false;
-
-    switch (a_tag) {
-        case DECLARATION_INTERFACE:
-            switch (b_tag) {
-                case DECLARATION_INTERFACE:
-                case DECLARATION_CLASS:
-                    mergable = true;
-                    break;
-
-                default: break;
-            }
-            break;
-
-        case DECLARATION_CLASS:
-            if (b_tag == DECLARATION_INTERFACE) {
-                mergable = true;
-            }
-            break;
-
-        case DECLARATION_ENUM:
-            if (b_tag == DECLARATION_ENUM) {
-                mergable = true;
-            }
-            break;
-
-        default: break;
-    }
-
-    if (!mergable) {
-        if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
-            error_ctx_error_d(errs, a_name, 2567,
-                "Enum declarations can only merge with namespace or other enum declarations.");
-            error_ctx_error_d(errs, b_name, 2567,
-                "Enum declarations can only merge with namespace or other enum declarations.");
-        } else {
-            if (a_tag != DECLARATION_GENERIC_TYPE) {
-                error_ctx_error_d(errs, a_name, 2300, "Duplicate identifier '", a_name, "'.");
-            }
-            error_ctx_error_d(errs, b_name, 2300, "Duplicate identifier '", b_name, "'.");
-        }
-    }
-
-    return mergable;
-}
-
-static bool declaration_values_test_mergable(
-    Span a_name, DeclarationTag a_tag,
-    Span b_name, DeclarationTag b_tag,
-    ErrorCtx* errs
-) {
-    if (!a_tag || !b_tag) {
-        return true;
-    } else if (a_tag == DECLARATION_ENUM || b_tag == DECLARATION_ENUM) {
-        error_ctx_error_d(errs, a_name, 2567,
-            "Enum declarations can only merge with namespace or other enum declarations.");
-        error_ctx_error_d(errs, b_name, 2567,
-            "Enum declarations can only merge with namespace or other enum declarations.");
-        return false;
-    } else if (
-        (a_tag == DECLARATION_NAMESPACE_WITH_VALUE  && b_tag == DECLARATION_NAMESPACE_WITH_VALUE) ||
-        (a_tag == DECLARATION_NAMESPACE_WITH_VALUE  && b_tag == DECLARATION_CLASS) ||
-        (a_tag == DECLARATION_CLASS                 && b_tag == DECLARATION_NAMESPACE_WITH_VALUE)
-    ) {
-        if (a_tag == DECLARATION_NAMESPACE_WITH_VALUE && b_tag == DECLARATION_CLASS) {
-            error_ctx_error_d(errs, a_name, 2434,
-                "A namespace declaration cannot be located prior to a class or function with which it is merged.");
-        }
-        return true;
-    } else if (
-        (a_tag == DECLARATION_FUNCTION_SIGNATURE || a_tag == DECLARATION_FUNCTION_IMPL) &&
-        (b_tag == DECLARATION_FUNCTION_SIGNATURE || b_tag == DECLARATION_FUNCTION_IMPL)
-    ) {
-        // TODO: make sure things are in the right order, there's only one implementation, etc
-        return true;
-    } else if (a_tag == DECLARATION_ARGUMENT) {
-        error_ctx_error_d(errs, b_name, 2300, "Duplicate identifier '", b_name, "'.");
-        error_ctx_error_d(errs, a_name, 2300, "Duplicate identifier '", a_name, "'.");
-        return false;
-    } else {
-        error_ctx_error_d(errs, b_name, 2451, "Cannot redeclare block-scoped variable '", b_name, "'.");
-        error_ctx_error_d(errs, a_name, 2451, "Cannot redeclare block-scoped variable '", a_name, "'.");
-        return false;
-    }
-}
-
-bool declaration_test_mergable(Declaration const* me, DeclProps const* props, ErrorCtx* errs) {
-    bool types_mergable = declaration_types_test_mergable(
-        my name, my type_tag,
-        props->name, declaration_tag_has_type(props->tag) ? props->tag : DECLARATION_NONE,
-        errs
-    );
-
-    bool values_mergable = declaration_values_test_mergable(
-        my name, my value_tag,
-        props->name, declaration_tag_has_value(props->tag) ? props->tag : DECLARATION_NONE,
-        errs
-    );
-
-    return types_mergable && values_mergable;
 }
 
 void declaration_init(Declaration* me, DeclProps props) {
@@ -199,7 +83,10 @@ void declaration_init(Declaration* me, DeclProps props) {
     vec_span_push(&my declarations, props.full);
     if (props.node.kind) vec_decl_node_push(&my nodes, props.node);
 
-    if (declaration_tag_has_value(props.tag)) {
+    if (declaration_tag_has_value(props.tag) && props.value_known) {
+        // A further block of a namespace, a redeclared `var`: nothing new about the value
+        if (props.tag > my value_tag) my value_tag = props.tag;
+    } else if (declaration_tag_has_value(props.tag)) {
         if (!my value_tag) {
             my value_generic = generic_or_null(props.generic);
             my value_type = type_lazy(&my merged_value_type.lazy);
@@ -235,13 +122,9 @@ void declaration_init(Declaration* me, DeclProps props) {
     }
 
     if (declaration_tag_has_namespace(props.tag)) {
-        check(props.namespace); // This may not be correct
-        if (!my namespace) {
-            my namespace_tag = props.tag;
-            my namespace = props.namespace;
-        } else {
-            log_error("Tried to add multiple namespaces to declaration ", my name);
-        }
+        check(props.namespace);
+        if (!my namespace || props.tag > my namespace_tag) my namespace_tag = props.tag;
+        my namespace = props.namespace;
     } else if (props.namespace) {
         panic("declaration_init() called with tag ", (i32)props.tag, " and non-null namespace");
     }

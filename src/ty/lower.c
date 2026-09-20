@@ -121,38 +121,7 @@ static Ty const* enum_member_type(Checker* me, Declaration const* decl) {
     return nullptr;
 }
 
-// Import aliases (`import b = a.E`) and re-exports are *copies* of the declaration they alias (see hacks.md:
-// port_item_resolve_alias). The AST node knows the declaration it made, which is the one identity goes by.
-static Declaration const* canonical_declaration(Declaration const* decl) {
-    if (!vec_decl_node_size(&decl->nodes)) return decl;
-    DeclNode node = *vec_decl_node_at(&decl->nodes, 0);
-    Declaration const* canonical = nullptr;
-    switch (node.kind) {
-        case DECL_NODE_NONE: break;
-        case DECL_NODE_CLASS: {
-            ClassDecl const* class_decl = node.ptr;
-            canonical = decl->is_typeof ? &class_decl->typeof_declaration : class_decl->declaration.get;
-        }   break;
-        case DECL_NODE_INTERFACE:
-            canonical = ((InterfaceDecl const*)node.ptr)->declaration.get;
-            break;
-        case DECL_NODE_ENUM: {
-            EnumDecl const* enum_decl = node.ptr;
-            canonical = decl->is_typeof ? &enum_decl->typeof_declaration : enum_decl->declaration.get;
-        }   break;
-        case DECL_NODE_ENUM_CASE: {
-            EnumCase const* enum_case = node.ptr;
-            canonical = decl->type_tag == DECLARATION_ENUM_CASE_TYPE ? &enum_case->typeof_declaration : enum_case->declaration.get;
-        }   break;
-    }
-    // A copy that has merged with something else since (a program adding to a lib interface) is its own thing
-    if (!canonical || vec_decl_node_size(&canonical->nodes) != vec_decl_node_size(&decl->nodes)) return decl;
-    if (canonical->type_tag != decl->type_tag || canonical->is_typeof != decl->is_typeof) return decl;
-    return canonical;
-}
-
 Ty const* ty_declared_type_of(Checker* me, Declaration const* decl) {
-    decl = canonical_declaration(decl);
     DeclLinks* links = decl_links(me, decl);
     switch (links->declared_state) {
         case LAZY_STATE_DONE: return links->declared_type;
@@ -524,28 +493,22 @@ Ty const* ty_anonymous_from_overloads(Checker* me, TypeNode const* const* overlo
     return ret;
 }
 
-static Ty* make_namespace(Checker* me, Scope const* scope) {
+static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
     ret->declared.kind = TY_DECLARED_NAMESPACE;
-    ret->declared.namespace_scope = scope;
-    cstr name = cstr_null;
-    for_each (i, vec_span, &scope->namespaces) {
-        if (i_index) cstr_append_lit(&name, ".");
-        cstr_append_span(&name, *i);
-    }
-    // No name: the scope of a module (`import * as ns`), which prints as its structure
-    ret->declared.name = checker_atom(me, cstr_sv(&name));
-    cstr_drop(&name);
+    ret->declared.namespace_symbol = symbol;
+    // No name: a module (`import * as ns`), which prints as its structure
+    ret->declared.name = symbol->is_module ? checker_atom(me, c_sv("")) : ty_qualified_name(me, &symbol->decl);
     ret->declared.state = arena_new(&my arena, TyObjectState);
     return ret;
 }
 
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
-Ty const* ty_namespace_type(Checker* me, Scope const* scope) {
-    u64 key[2] = { KEY_NAMESPACE, (u64)(uintptr_t)scope };
+Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
+    u64 key[2] = { KEY_NAMESPACE, (u64)(uintptr_t)symbol };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
-    Ty const* ret = make_namespace(me, scope);
+    Ty const* ret = make_namespace(me, symbol);
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
@@ -566,7 +529,7 @@ Ty const* ty_merged_value_type(Checker* me, Declaration const* decl) {
     Ty* ret;
     if (named) {
         ret = named->declared.kind == TY_DECLARED_NAMESPACE ?
-            make_namespace(me, named->declared.namespace_scope) :
+            make_namespace(me, named->declared.namespace_symbol) :
             ty_alloc(me, TY_DECLARED, TYF_OBJECT);
         if (named->declared.kind != TY_DECLARED_NAMESPACE) {
             ret->declared = named->declared;

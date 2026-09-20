@@ -1,11 +1,11 @@
 # Todo
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction") for why.
 
-1. **Execution - plan 04 stage 1** (`plans/04-symbols.md`): symbols, persistent scopes, tsc's merge rules, alias
-   symbols and export tables replace `scope.c`/`scope_stack.c`/ports; `Declaration` survives one more stage as the
-   uncopied payload of a symbol. Exit criteria are in the plan (probes in `test/probes/plan04/`, corpus TS2440 = 0 and
-   no DOM `Node`). If it overruns, the plan's Risks section says where to cut.
-2. **Execution - plan 04 stage 2**: the type side (`Declaration`, `MergedType`, `TYPE_LAZY`/`TYPE_REF` links go).
+1. ~~Plan 04 stage 1~~ done (symbols, persistent scopes, tsc's merge rules, aliases, export tables, lib overlay;
+   `measurements.md` has the numbers, the plan's "Stage 1 as built" what differs from the plan).
+2. **Execution - plan 04 stage 2**: the type side (`Symbol.decl`/`Declaration`, `DeclHandle`, `MergedType`,
+   `TYPE_LAZY`/`TYPE_REF` links go; `decl_ref` + `symbol` on identifiers become one `Symbol const*`; the lib
+   `frozen -> overlay` redirect replaces `clone_parent_symbol`'s payload clone). Start from `hacks.md`, "The binder".
 2b. **Execution - plan 04 stages 3 + 4**: module symbols from non-toplevel positions (import types), ambient modules,
    `export =`, accessibility-based name printing; then arenas, profile, parallelism contract audit, docs. Split in two
    sessions if stage 3 alone fills one.

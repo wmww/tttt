@@ -16,7 +16,7 @@ typedef struct Binding {
         BINDING_OBJECT,
     } tag;
     union {
-        ArcDeclaration declaration;
+        DeclHandle declaration;
         VecBinding array;
         VecObjectBindingItem object;
     };
@@ -41,13 +41,14 @@ typedef struct BindingAddNamesProps {
     bool abstract_literals;
     bool exported;
     bool is_function_arg;
+    bool function_scoped; // `var`
     Span full;
 } BindingAddNamesProps;
 
 void binding_drop(Binding* me);
 void binding_add_names(Binding* me, TypeNode input, Scope* scope, BindingAddNamesProps props);
 TypeNode const* binding_get_effective_type(Binding const* me); // Only valid after binding_add_names() is called
-void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs);
+void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs);
 void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
 void binding_typecheck(Binding* me, ErrorCtx* errs);
 
@@ -72,7 +73,7 @@ typedef struct InitializedBinding {
 
 void initialized_binding_drop(InitializedBinding* me);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
-void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names, ErrorCtx* errs);
+void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs);
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 

@@ -110,17 +110,14 @@ typedef struct Declaration {
     // This is allowed to be null when declaration_tag_has_namespace() returns true. In this case every declaration
     // looked up should be an "any" declaration.
     // TODO: document better
-    Scope const* namespace;
-    // Used when copying the same declarations between many programs that should remain isolated (such as loading the
-    // standard library for the tests). Allows declarations to be "copy-on-write". A declaration shared between scopes
-    // should be replaced by a deep copy before being modified.
-    bool shared_between_scopes;
+    struct Symbol const* namespace; // Members are its exports
 } Declaration;
 
 void declaration_drop(Declaration* me);
 // This function can be called on a declaration after copying it's memory from another declaration to make this one take
 // ownership of its resources. This isn't a normal clone function because setting up declared_type correctly requires
-// address stability, which would be broken by returning a Declaration by value.
+// address stability, which would be broken by returning a Declaration by value. Only used when a program adds to a
+// symbol of the shared lib program (scope.c: clone_parent_symbol)
 void declaration_clone_in_place(Declaration* me);
 
 typedef struct DeclProps {
@@ -132,23 +129,23 @@ typedef struct DeclProps {
     TypeNode value_type;
     TypeNode declared_type;
     bool is_typeof;
-    Scope const* namespace;
+    bool function_scoped; // `var` (parameters are DECLARATION_ARGUMENT)
+    bool is_const_enum;
+    bool is_infer; // `infer U`: several of the same name are one type parameter
+    // Set by scope_init_declaration(): a further block of a namespace or a redeclared `var` adds nothing to the value
+    bool value_known;
+    // Set by scope_init_declaration(): the symbol being declared for namespaces and enums
+    struct Symbol const* namespace;
     DeclNode node;
 } DeclProps;
-
-DeclProps decl_props_clone(DeclProps me);
-
-// Returns true if the two declarations can be merged
-bool declaration_test_mergable(Declaration const* me, DeclProps const* props, ErrorCtx* errs);
 
 // If called multiple times attempts to merge declarations, does not check if merging is allowed, scope.c does that
 void declaration_init(Declaration* me, DeclProps props);
 
-#define g_class_key Declaration, declaration
-#define g_opt (c_no_atomic)
-#define g_declared
-#include <cleat/generic/arc.h>
-
 #define g_key DeclarationCPtr, declaration_cptr
+#define g_declared
+#include <cleat/generic/vec.h>
+
+#define g_key SymbolCPtr, symbol_cptr
 #define g_declared
 #include <cleat/generic/vec.h>

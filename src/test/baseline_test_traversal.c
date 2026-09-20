@@ -15,6 +15,12 @@
 #include "callable_type.h"
 #include "ty/ty.h"
 
+// What the symbols baseline shows for a reference: the declarations of the symbol the name found (an alias shows its
+// import, not what it resolves to), or of the declaration when there is no symbol (keywords, synthetic nodes)
+static inline Declaration const* shown_declaration(Symbol const* symbol, Declaration const* decl) {
+    return symbol && vec_span_size(&symbol->decl.declarations) ? &symbol->decl : decl;
+}
+
 static inline VecSpan declaration_get_spans(Declaration const* me) {
     return me ? vec_span_clone(my declarations) : vec_span_init();
 }
@@ -156,8 +162,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             VecSpan so_far = vec_span_init();
             for_each (i, vec_span, &my identifier->namespaces) {
                 intptr_t index = i_index;
-                Declaration const* decl = index < vec_declaration_cptr_size(&my identifier->namespace_decls) ?
-                    *vec_declaration_cptr_at(&my identifier->namespace_decls, index) :
+                Declaration const* decl = index < vec_symbol_cptr_size(&my identifier->namespace_symbols) ?
+                    &(*vec_symbol_cptr_at(&my identifier->namespace_symbols, index))->decl :
                     nullptr;
                 baseline_test_case_add_type_node(ctx, *i, &type_any);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -171,7 +177,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             vec_span_drop(&so_far);
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
-                .declarations = declaration_get_spans(my identifier->decl_ref),
+                .declarations = declaration_get_spans(shown_declaration(my identifier->symbol, my identifier->decl_ref)),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,
             });
@@ -264,37 +270,41 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     block_compile_test_info(&my body, ctx);
 }
 
+// An alias shows its own declaration as the symbol and the value of what it resolves to as the type
+static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
+    Declaration const* value = symbol_declaration(my symbol, SYMBOL_VALUE);
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = vec_span_clone(my symbol->decl.declarations),
+        .span = my decl_name,
+        .name = my decl_name,
+    });
+    // tsc shows aliases of pure types as any
+    baseline_test_case_add_type_node(ctx, my decl_name, value ? &value->value_type : &type_any);
+}
+
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
     switch (my main.tag) {
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
         case PORT_REEXPORT_GATHER:
             // Null when the scope refused the import, eg `import a = require("b")` inside an ambient module
-            if (my main.declaration.get) {
-                baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
-            }
+            if (my main.symbol) port_item_add_alias(&my main, ctx);
             break;
 
         case PORT_IMPORT_ALIAS:
-            if (!my main.declaration.get) {
-                baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
-            } else if (!my main.declaration.get->value_tag) {
-                // tsc shows aliases of pure types as any
-                baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(my main.declaration.get->declarations),
-                    .span = my main.decl_name,
-                    .name = my main.declaration.get->name,
-                });
+            if (!my main.symbol) {
                 baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
             } else {
-                baseline_test_case_add_declaration(ctx, my main.decl_name, my main.declaration.get);
+                port_item_add_alias(&my main, ctx);
             }
             for_each (i, vec_span, &my main.alias_path) {
-                if (i_index >= vec_declaration_cptr_size(&my main.alias_path_decls)) {
+                if (i_index >= vec_symbol_cptr_size(&my main.alias_path_symbols)) {
                     baseline_test_case_add_type_node(ctx, *i, &type_any);
                     continue;
                 }
-                Declaration const* decl = *vec_declaration_cptr_at(&my main.alias_path_decls, i_index);
+                Symbol const* symbol = *vec_symbol_cptr_at(&my main.alias_path_symbols, i_index);
+                Declaration const* decl = symbol_declaration(symbol, SYMBOL_ANY_MEANING);
+                if (!decl) decl = &symbol->decl;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = vec_span_clone(decl->declarations),
                     .span = *i,
@@ -316,22 +326,18 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         default: break;
     }
     for_each (i, vec_port_item, &my items) {
-        Declaration const* declaration = i->declaration.get;
-        if (!declaration) continue;
+        if (!i->symbol) continue;
+        Declaration const* value = symbol_declaration(i->symbol, SYMBOL_VALUE);
         if (i->decl_name.sv.buf != i->source_name.sv.buf) {
-            if (i->source_decl) {
+            if (i->source_symbol) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(i->source_decl->declarations),
+                    .declarations = vec_span_clone(i->source_symbol->decl.declarations),
                     .span = i->source_name,
                 });
             }
-            baseline_test_case_add_type_node(ctx, i->source_name, &declaration->value_type);
+            baseline_test_case_add_type_node(ctx, i->source_name, value ? &value->value_type : &type_any);
         }
-        baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = vec_span_clone(declaration->declarations),
-            .span = i->decl_name,
-        });
-        baseline_test_case_add_type_node(ctx, i->decl_name, &declaration->value_type);
+        port_item_add_alias(i, ctx);
     }
 }
 
@@ -343,7 +349,8 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
 
 void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = vec_span_single(my full_span),
+        // Every declaration of a merged enum
+        .declarations = my declaration.get ? vec_span_clone(my declaration.get->declarations) : vec_span_single(my full_span),
         .span = my name,
     });
     baseline_test_case_add_type(
@@ -521,9 +528,9 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (my decl_ref && span_valid(my decl_ref->name)) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(my decl_ref),
+            .declarations = declaration_get_spans(shown_declaration(my symbol, my decl_ref)),
             .span = my name,
-            .name = my decl_ref->name,
+            .name = shown_declaration(my symbol, my decl_ref)->name,
         });
     }
 }

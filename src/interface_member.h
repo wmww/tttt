@@ -40,7 +40,7 @@ typedef struct InterfaceMember {
                 bool has_as_type;
                 signed char readonly; // -1 for remove, +1 for add
                 signed char optional; // -1 for remove, +1 for add
-                ArcDeclaration owned_declaration;
+                DeclHandle owned_declaration;
                 Declaration const* declaration_ref;
             } mapped;
         };
@@ -75,7 +75,7 @@ static inline InterfaceMember interface_member_make(
 
 void interface_member_drop(InterfaceMember* me);
 InterfaceMember interface_member_clone(InterfaceMember me);
-void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, ErrorCtx* errs);
+void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs);
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs);
 
 

@@ -627,10 +627,7 @@ static Ty const* make_synthetic_target(Checker* me, char const* name) {
 }
 
 static Ty const* global_generic_target(Checker* me, char const* name) {
-    Declaration const* decl = scope_get_declaration(
-        program_get_global_scope(my program),
-        sv_make_span(csview_from(name))
-    );
+    Declaration const* decl = program_get_global(my program, csview_from(name), SYMBOL_TYPE);
     if (decl && (decl->type_tag == DECLARATION_INTERFACE || decl->type_tag == DECLARATION_CLASS)) {
         Ty const* declared = ty_declared_type_of(me, decl);
         if (declared->kind == TY_DECLARED && declared->declared.type_params.len == 1) {

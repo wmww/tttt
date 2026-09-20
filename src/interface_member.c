@@ -21,7 +21,6 @@ void interface_member_drop(InterfaceMember* me) {
         case INTERFACE_KEY_MAPPED:
             type_drop(&my key.mapped.in_type);
             type_drop(&my key.mapped.as_type);
-            arc_declaration_drop(&my key.mapped.owned_declaration);
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -37,7 +36,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
         case INTERFACE_KEY_MAPPED:
             me.key.mapped.in_type = type_clone(me.key.mapped.in_type);
             me.key.mapped.as_type = type_clone(me.key.mapped.as_type);
-            me.key.mapped.owned_declaration = arc_declaration_init();
+            me.key.mapped.owned_declaration = (DeclHandle){0};
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
@@ -45,10 +44,7 @@ InterfaceMember interface_member_clone(InterfaceMember me) {
     return me;
 }
 
-void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, ErrorCtx* errs) {
-    Scope scope;
-    bool scope_initialized = false;
-
+void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
         case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index.type, names, errs); break;
@@ -56,27 +52,22 @@ void interface_member_lookup_names(InterfaceMember* me, ScopeStack* names, Error
 
         case INTERFACE_KEY_MAPPED:
             type_lookup_names(&my key.mapped.in_type, names, errs);
-            type_lookup_names(&my key.mapped.as_type, names, errs);
-            scope = scope_init(errs);
-            scope_init_declaration(&scope, &my key.mapped.owned_declaration, (DeclProps){
+            names = scope_new(names, SCOPE_BLOCK);
+            scope_init_declaration(names, &my key.mapped.owned_declaration, (DeclProps){
                 .name = my key.mapped.type_name,
                 .full = my key.mapped.type_name,
                 .tag = DECLARATION_TYPE,
                 .declared_type = type_any,
             });
             my key.mapped.declaration_ref = my key.mapped.owned_declaration.get;
-            scope_push_to_stack(&scope, names);
-            scope_initialized = true;
+            // The `as` clause sees the key parameter
+            type_lookup_names(&my key.mapped.as_type, names, errs);
             break;
 
         case INTERFACE_KEY_CALLABLE: break;
     }
 
     type_lookup_names(&my type, names, errs);
-
-    if (scope_initialized) {
-        scope_drop(&scope);
-    }
 }
 
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs) {

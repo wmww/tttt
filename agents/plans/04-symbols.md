@@ -150,6 +150,22 @@ Done when: all three probes' errors components match tsc; on the corpus TS2440 =
 `/tmp/realworld.txt`, type errors well under 7k (from 9.7k); "Tried to add multiple namespaces" and "acquired multiple
 times" gone from `./failstats.py`; spurious TS2451 under ~500 (from 3245); suite time not worse.
 
+**Stage 1 as built** (2026-09-19; numbers in `measurements.md`, open ends in `hacks.md` "The binder"): everything
+above landed in one session, in `scope.h`/`scope.c` (no separate `symbol.c`/`binder.c`: it is 900 lines). Deviations:
+- The two-walk shape of the AST code was kept (`*_add_names(Scope*)` declares, `*_lookup_names(Scope*)` resolves with
+  the current scope where the `ScopeStack*` used to be), so the diff in the AST files is mechanical.
+- Identifiers carry `symbol` *and* `decl_ref` (the payload behind it, resolved by meaning at lookup time) instead of a
+  `Symbol const*` with an accessor: the checker and the type core are untouched. Stage 2 folds them.
+- Scripts declare directly into the program's global table (no per-file contribution tables + link merge yet), and
+  aliases are resolved eagerly in `binder_link()` but *can* also resolve on demand (import-equals needs scopes, which
+  all exist after declare). The contract audit is stage 4's.
+- `import * as ns` is an alias to a per-import namespace symbol rather than to the module symbol (printing, stage 3).
+- Also done on the way: default exports/imports (there were none), `export default x` as an alias, TS2306 instead of
+  the "not a module" log_error, mapped type `as` clauses see the key parameter, class `static {}` blocks keep their
+  `var`s, TS2339 on namespaces (their members are exactly their exports), `N.x` in the symbols baseline.
+- "Type errors well under 7k" on the corpus did not happen (7758): the calls that the DOM `Node` used to break now
+  fail on missing narrowing. Plan 05.
+
 **Stage 2: the type side.** Delete `Declaration`, `MergedType`, the link `TypeNode` tags and the twins as described
 above; `DeclLinks` -> symbol links; lib redirect table; `hacks.md` section "The AST-side walk and what's left of the
 old type world" shrinks to the thread-local checker. Done when: `grep -c 'TYPE_LAZY\|TYPE_REF\|MergedType\|

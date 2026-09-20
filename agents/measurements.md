@@ -2,6 +2,25 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 04 stage 1: symbols, persistent scopes, aliases (the new binder)
+Suite: **1576 full of 13163 tests** (was 1508), errors 6049 (5738), symbols 8332 (7891), types 3533 (3459). Lost
+components versus the old binder: 7 errors, ~35 symbols, 14 types (default-export corner cases, `declare global` inside
+a namespace, `export { x }` merged with an exported `x`, moduleAssignmentCompat*: listed in `hacks.md`, "The binder").
+Suite wall time 5.1 s -> 3.2 s (no more copying 20k lib declarations per test program). `failstats.py` log_error
+lines: thousands ("Tried to add multiple namespaces" 485, "Error added with invalid span" ~1300, "Imported source
+file is not a module" 163 tests) -> 71 lines in 22 tests, none of them the binder's but one. Spurious TS2451 3245 ->
+off the chart (< 300), spurious TS2300 684 -> 327 (class members and pretty-printed conflict tests).
+
+Real corpus (`./realworld.py`): 9816 -> **7758 diagnostics**; TS2440 10 -> 0, the DOM `Node` is gone (no "baseURI" in
+the output), name errors 117 -> 51 (all node globals, `arguments`, `debugger`). What is left is narrowing: TS2345 5231
+(`X | undefined` arguments), TS7006 891, TS2322 583, TS2769 288. The plan hoped for "well under 7k": fixing `Node`
+made ~2000 calls check for real, and they now fail on missing narrowing instead.
+Probes (`test/probes/plan04/`): errors match tsc on all three; scopingBasics also symbols.
+
+`./bench.sh`: synthetic 0.49 s (tsgo 0.52), phases parse 171 ms, **resolve names 128 ms (was 166)**, typecheck 78 ms,
+peak RSS 760 MB. Real corpus 0.80 s (tsgo 0.77, 1.29 single-threaded), 392 MB (was 410), phases parse 129 ms,
+**resolve names 81 ms (was 116; stage 4 target <= 40)**, typecheck 505 ms.
+
 ## 2026-09-18, plan 03: the real-world corpus parses and typechecks
 Suite: **1508 full of 13163 tests** (was 1434), errors 5738 (5513), symbols 7891 (7797), types 3459 (3360). No test or
 component was lost at any step. Tests with a spurious TS1xxx: 1497 (was 2017).

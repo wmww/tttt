@@ -1,5 +1,4 @@
 #include "function_impl.h"
-#include "scope_stack.h"
 #include "callable_type.h"
 #include "generic.h"
 #include "statement.h"
@@ -17,7 +16,6 @@ void function_impl_drop(FunctionImpl* me) {
     vec_function_arg_drop(&my args);
     type_drop(&my ret);
     lazy_type_drop(&my lazy_type);
-    arc_declaration_drop(&my declaration);
     declaration_drop(&my this_declaration);
     block_drop(&my body);
 }
@@ -33,10 +31,10 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
     });
 }
 
-void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* names, ErrorCtx* errs) {
+void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
     if (my is_async) {
-        my promise_decl = scope_stack_get_type(names, c_sv("Promise"));
+        my promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
     }
     for_each (i, vec_function_arg, &my args) {
         for_each (decorator, vec_expr, &i->decorators) {
@@ -45,22 +43,21 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
     }
 
     // Handle generics (includes adding names)
-    Scope generic_scope = scope_init(errs);
-    scope_push_generic_to_stack(&generic_scope, &my generic, names);
+    names = scope_new_generic(names, &my generic, errs);
 
-    Scope function_scope = scope_init_function(errs);
+    Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
 
     if (this_is_any) {
         declaration_init(&my this_declaration, (DeclProps){
             .tag = DECLARATION_VARIABLE,
             .value_type = type_any,
         });
-        function_scope.this_declaration = &my this_declaration;
+        function_scope->this_declaration = &my this_declaration;
     }
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
-        initialized_binding_add_names(&i->initializer, &function_scope, (BindingAddNamesProps){
+        initialized_binding_add_names(&i->initializer, function_scope, (BindingAddNamesProps){
             .abstract_literals = true,
             .is_function_arg = true,
             .full = i->span,
@@ -68,28 +65,18 @@ void function_impl_lookup_names(FunctionImpl* me, bool this_is_any, ScopeStack* 
         if (i->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
-            function_scope.this_declaration = i->initializer.binding.declaration.get;
+            function_scope->this_declaration = i->initializer.binding.declaration.get;
         }
     }
 
-    scope_push_to_stack(&function_scope, names);
-    // Now that names for all arguments are added, resolve all names
+    // The toplevel of the function body is the same scope as the arguments
+    block_add_names(&my body, function_scope);
+
     for_each (i, vec_function_arg, &my args) {
-        initialized_binding_lookup_names(&i->initializer, names, errs);
+        initialized_binding_lookup_names(&i->initializer, function_scope, errs);
     }
-    scope_pop_from_stack(&function_scope);
-
-    // Processes names in the function body and return type. don't push a stack frame since the toplevel function body
-    // should be the same namespace as the arguments
-    block_add_names(&my body, &function_scope);
-
-    scope_push_to_stack(&function_scope, names);
-    block_lookup_names(&my body, names, errs);
-    type_lookup_names(&my ret, names, errs);
-    scope_pop_from_stack(&function_scope);
-
-    scope_drop(&function_scope);
-    scope_drop(&generic_scope);
+    block_lookup_names(&my body, function_scope, errs);
+    type_lookup_names(&my ret, function_scope, errs);
 }
 
 static TypeNode function_impl_make_callable_sans_inferred_ret(FunctionImpl const* me) {

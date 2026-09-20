@@ -1,5 +1,4 @@
 #include "binding.h"
-#include "scope_stack.h"
 #include "scope.h"
 #include "several_types.h"
 #include "display.h"
@@ -9,7 +8,7 @@
 void binding_drop(Binding* me) {
     switch (my tag) {
         case BINDING_NOOP: break;
-        case BINDING_IDENTIFIER: arc_declaration_drop(&my declaration); break;
+        case BINDING_IDENTIFIER: break;
         case BINDING_ARRAY: vec_binding_drop(&my array); break;
         case BINDING_OBJECT: vec_object_binding_item_drop(&my object); break;
     }
@@ -34,6 +33,7 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
                 .full = span_valid(props.full) ? props.full : my content_span,
                 .exported = props.exported,
                 .tag = props.is_function_arg ? DECLARATION_ARGUMENT : DECLARATION_VARIABLE,
+                .function_scoped = props.function_scoped,
                 .value_type = type_refcopy(binding_get_effective_type(me)),
             });
             break;
@@ -78,7 +78,7 @@ void binding_add_names(Binding* me, TypeNode assigned, Scope* scope, BindingAddN
     }
 }
 
-void binding_lookup_names(Binding* me, ScopeStack* names, ErrorCtx* errs) {
+void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
     switch (my tag) {
         case BINDING_NOOP:
         case BINDING_IDENTIFIER: break;
@@ -205,7 +205,7 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
     binding_add_names(&my binding, type_lazy(&my lazy_type), scope, props);
 }
 
-void initialized_binding_lookup_names(InitializedBinding* me, ScopeStack* names, ErrorCtx* errs) {
+void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names(&my value, names, errs);
 }

@@ -6,7 +6,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `program_typecheck` because the test traversal and debug display evaluate types afterwards. The type core itself
   takes a `Checker*`; the walk should get one too (a check context with checker + errs + options).
 - `lazy_slot_new`: LazyType slot numbers come from one process-wide atomic counter and are never reused, and
-  everything that might need a memo takes one eagerly (every transient `scope_init`, every `type_identifier` made
+  everything that might need a memo takes one eagerly (every namespace/module symbol, every `type_identifier` made
   during checking). A checker's slot table is sparse so this only costs page fragmentation (bench RSS +6%), and it
   panics after 1G slots. Per-file numbering (plan 02 §2) didn't fit because Declarations, Scopes and check-time
   identifier types belong to no file. Slots hold a `Ty*` now and check-time clones are gone, so this can be
@@ -41,10 +41,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   approximate for multi-file tests.
 - `bench/make_corpus.py`: corpus is passing tests wrapped in namespaces and replicated. Flatters tttt.
 - `main.c: --keep-going`: typechecks after name errors purely so the bench can time the stdlib; not validated.
-- `port_item_resolve_alias` (`import x = A.B`): the alias is a *copy* of the target declaration, made during name
-  resolution by overwriting a placeholder in place (other ports copy too, see `process_port`). An alias to something
-  declared by a later alias, or to a namespace that gains members later, sees a stale/any copy. Wants real symbols
-  with alias links (plan 04, symbols). `alias_conflict` likewise only approximates merging an alias with an existing name.
 - `parse_import_equals`: `import x = require("m")` is treated exactly like `import * as x from "m"`. Wrong for
   `export =` modules (not supported at all yet).
 - `namespace_decl_add_names`: ambient modules (`declare module "m" {}`) get a scope for their contents but are not
@@ -55,7 +51,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   in `BlockTypecheckCtx` just permits any labeled `break` inside any labeled statement.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
-- `EnumDecl.is_const`: recorded, nothing uses it.
+- `EnumDecl.is_const`: only decides the symbol flag (a const enum doesn't merge with a namespace); no TS2475 etc.
 - `parse_import_type`: `import("./a").B<T>` and `typeof import("./a")` parse to `any`; nothing is loaded or resolved
   (imports are only discovered from toplevel statements, `program_handle_statement`). Wants module symbols: plan 04.
 - `parse_type_predicate`: `x is T` / `asserts x is T` become `boolean` / `void`, the predicate is dropped (plan 05).
@@ -96,6 +92,40 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `engine.c` ignores every construct added in parser rounds 1 and 2 (returns undefined). See triage: is it used?
 
 
+## The binder (`scope.c`, plan 04 stage 1 done, stages 2-4 to go)
+- **`Symbol.decl`**: every symbol still owns a `Declaration`, the payload the type core knows it by (`decl_ref`,
+  `DeclLinks`, `MergedType`, the `TYPE_LAZY`/`TYPE_REF` links). Identifiers carry both `symbol` (what the name found,
+  maybe an alias; the symbols baseline prints it) and `decl_ref` (`symbol_declaration(symbol, meaning)`: aliases
+  resolved, what the checker uses). `DeclHandle { get, symbol }` is what AST nodes keep. All of it goes in stage 2.
+- `clone_parent_symbol`: a test program that adds to a global of the shared lib program (an interface, `Intl`) gets a
+  *clone* of the symbol in its overlay table (`SymbolTable.parent`), payload cloned with
+  `declaration_clone_in_place`. References inside the lib AST keep pointing at the frozen original, so lib-internal
+  uses don't see the augmentation (as before). Stage 2: the `frozen -> overlay` redirect table of the plan.
+- `make_gather_target`: `import * as ns` / `import x = require()` is an alias whose target is a namespace symbol of
+  its own (payload: `PortItem.wrapped_declaration`, `Declaration.namespace` = the module symbol) instead of the module
+  symbol itself, only so that its type prints as `typeof ns`. Stage 3 (accessibility-based printing).
+- Scripts declare straight into `Binder.globals` while they're walked, in file order (`SCOPE_SCRIPT`,
+  `SCOPE_GLOBAL_AUGMENTATION`). The plan's contract wants a per-file "global contributions" table merged in the link
+  phase; until then declare is not parallelisable and cross-file conflicts are told from same-file ones by comparing
+  the source of the first declaration (`report_conflicts`).
+- `declare global {}` merges into the globals wherever it is written, also inside a namespace where tsc rejects it
+  (moduleAugmentationGlobal8). Module augmentations (`declare module "./a" {}`) and ambient modules are containers of
+  their own that nothing can import (`namespace_decl_add_names`).
+- Exported and local declarations of one name live in two tables with no link between them (tsc has a local
+  `exportSymbol` stub). TS2440 against an exported local is special-cased in `binder_link`; `export { b }` of a local
+  that is also declared exported doesn't show the merged declarations (mergedDeclarationExports), TS2395 is missing.
+- `scope_export_default`: a second default export that means something else (interface + value) is dropped instead of
+  merged. `resolve_alias_target`: no synthetic default for `export =` modules (there is no `export =` at all), TS1192
+  is only suppressed for declaration files under `allowSyntheticDefaultImports`; TS2306 points at the imported name
+  instead of the module specifier; TS2303 (circular alias) and TS2308 (ambiguous `export *`) are not reported.
+- `block_is_instantiated`: syntactic; an `export { x }` always instantiates a namespace, a const enum does too.
+- `let`/`const` against a hoisted `var` of an inner block (TS2451 by tsc's checker), TS2403 (subsequent `var` of a
+  different type: the first declaration gives the type), function declarations in blocks under sloppy mode: not done.
+- Class and interface *members* are not symbols (`Prop` has the identity the checker needs); duplicate member
+  diagnostics (TS2300 in ~80 tests) still come from nowhere.
+- `symbol_table_collect` allocates; `ty_namespace_type` members and `extend_export_stars` go through it.
+- One test logs "Declaration B acquired multiple times" (a node whose names get added twice; not found yet).
+
 ## The AST-side walk and what's left of the old type world
 - **`TYPE_LAZY` / `TYPE_REF` / binding `TYPE_INDEXED` are still `TypeNode` tags** (plan 02 wanted them gone). They're
   the links name resolution makes between a `Declaration` and what gives it its type (`Declaration.value_type`,
@@ -109,8 +139,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `CallableType` (`TYPE_CALLABLE`) still has its own `generic`/`args`/`ret` next to the `FunctionImpl` it owns, filled
   in by `callable_type_resolve_names`. `Signature.node` reads those, `Signature.function` reads a `FunctionImpl`
   directly: two ways to resolve a signature where `CallableType { FunctionImpl* }` would leave one.
-- `type_clone` (26 callers) survives for name resolution copying declarations (`declaration_clone_in_place`,
-  `decl_props_clone`, ports). A cloned `IdentifierType`/`CallableType` is lowered like an original, keyed by its own
+- `type_clone` survives for `declaration_clone_in_place`, whose one caller left is `clone_parent_symbol` (below), and
+  for `generic_clone`. A cloned `IdentifierType`/`CallableType` is lowered like an original, keyed by its own
   address, so the copy of an interface-typed declaration is a second anonymous `Ty` for the same written type.
 - `ty/check.c: check_access` (TS2339 and friends): a missing property is only reported under
   `noUncheckedIndexedAccess` and for dot access, the gate the legacy checker had. Everything is in place to report it
@@ -131,11 +161,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   member) shows as written (the legacy syntax printer), everything else through `ty_display` with unqualified names.
   Measured: +21 full tests over never qualifying. The real rule needs symbol accessibility (plan 04, symbols).
 - `ty_merged_value_type`: the merged type copies the first named entry's `declared` struct (a class static side or an
-  enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one. Non-exported namespace
-  members are properties too (`Scope.declarations`, as the legacy structural type had it).
+  enum object) and gives it all entries' members; it's a second `Ty` next to the unmerged one.
 
-- `canonical_declaration`: import aliases and re-exports are copies of a Declaration; identity goes by the declaration
-  the AST node itself registered (found through `Declaration.nodes`), unless the copy merged with something since.
 - Single-member enums: `E.x` prints as `E` (right for `.types`, wrong in error messages where tsc shows the fresh
   literal type `E.x`). Needs fresh/regular literal types. `ty_widened_literal` widens an enum member to its enum.
 

@@ -17,7 +17,6 @@ typedef struct vec_object_expr_item ObjectExpr;
 typedef struct FunctionImpl FunctionImpl;
 typedef struct ClassDecl ClassDecl;
 typedef struct ErrorCtx ErrorCtx;
-typedef struct ScopeStack ScopeStack;
 typedef struct Expr Expr;
 
 g_declare_vec(ObjectExprItem, object_expr_item);
@@ -26,11 +25,12 @@ g_declare_vec(Expr, expr);
 typedef struct IdentifierExpr {
     Span name;
     KeywordIdentifier keyword;
-    Declaration const* decl_ref;
+    Declaration const* decl_ref; // What the checker goes by: aliases resolved
+    Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);
-void identifier_expr_lookup_names(IdentifierExpr* me, ScopeStack* names, ErrorCtx* errs);
+void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs);
 Ty const* identifier_expr_evaluate_type(IdentifierExpr const* me);
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs);
 
@@ -173,7 +173,7 @@ extern const int ternary_precedence;
 extern const int new_keyword_precedence;
 
 void expr_drop(Expr* me);
-void expr_lookup_names(Expr* me, ScopeStack* names, ErrorCtx* errs);
+void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs);
 Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
 

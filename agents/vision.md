@@ -5,20 +5,25 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-18, after plan 03: the real corpus runs)
+## State (2026-09-19, after plan 04 stage 1: the new binder)
 - ~28.7k LoC of C in `src/` (parser 5.0k, type core `src/ty/` 9.5k, display 1.4k). Inherited from a solo human
   project halted in 2025, ported onto the cleat stdlib, then had its type core replaced (below).
-- `./fasttest.sh`: **1508 / 13163 tests fully pass** (errors 5738, symbols 7891, types 3459; `./passcount.py`).
+- `./fasttest.sh`: **1576 / 13163 tests fully pass** (errors 6049, symbols 8332, types 3533; `./passcount.py`).
   History, like for like denominators and what each session moved are in `measurements.md` and the git log.
 - **`./realworld.py` (tsc's own `src/compiler`, 193k lines, clean under tsc): 0 syntax errors, 117 name errors, 9699
   type errors, 0.9 s** (tsc 4.9 s, tsgo 0.78 s, 1.27 s single-threaded; tttt: parse + bind 0.27 s, typecheck 0.6 s). Plan 03 got it
   from "1119 syntax errors, then heap corruption" to running end to end in one session; the parser needed regex
   literals, `?.()`, `else` after `b;`, the comma operator, real destructuring patterns, right-associative assignment
   and a dozen small things; the checker needed `keyof` of a union not to be a cross product, and its first real
-  profile found two silly hot spots worth 3x (line numbers of diagnostics, properties of intersections). ~40% of the type errors are
-  one binder bug (an imported `Node` merged with a local `function Node` is dropped, so the type resolves to the DOM
-  `Node`; `plans/04-symbols.md`), most of the rest is missing narrowing: the two
-  plans that were next anyway.
+  profile found two silly hot spots worth 3x (line numbers of diagnostics, properties of intersections).
+  **Now 7758 diagnostics, 51 name errors (node globals), 0.80 s**: plan 04 stage 1 fixed the binder bug behind the DOM
+  `Node` (an import merged with a local function); nearly all of the rest is missing narrowing (plan 05).
+- **The binder is new (plan 04 stage 1)**: tsc-shaped symbols with flags and exclude masks, persistent scopes, alias
+  symbols for every import/export form, one exports table per namespace, `var` hoisting, a lib overlay instead of
+  copying 20k declarations per test program (suite 5.1 s -> 3.2 s). It raised every component and removed almost all
+  `log_error` noise in one session, like the type core flips did. The type side still goes through a `Declaration`
+  payload per symbol (stage 2), printing/ambient modules/`import()` types are stage 3, arenas + the parallelism
+  audit stage 4.
 - **The type core migration is finished.** Every type is a `Ty` (`src/ty/`): interned, arena-allocated, id-carrying,
   lazily resolved members, mapper instantiation, tsc-shaped relations (id-keyed caches, maybe-stack, variances),
   calls/overloads/two-pass inference, contextual typing through one `ty_check_expr(expr, contextual)`, conditional/
@@ -64,8 +69,7 @@ types components) are the oracle, not the goal.
 
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
-(no tokenizer, fail cache for the ambiguous cases), an AST of plain structs, a name resolution phase using a
-transient `ScopeStack`, then typechecking driven by `LazyType` (memoised, cycle-detecting per-node types).
+(no tokenizer, fail cache for the ambiguous cases), an AST of plain structs, a binder (symbols, persistent scopes: declare, link, resolve), then typechecking driven by `LazyType` (memoised, cycle-detecting per-node types).
 
 Things I believe are fine: C, cleat, the phase structure, LazyType as the memo/cycle mechanism, the parser
 approach (fast in principle; watch error-recovery fidelity since tsc's parse errors are part of the oracle).
@@ -80,9 +84,8 @@ next (symbols = plan 04, flow = plan 05, see the course correction above):
    reachability, no definite assignment. A huge share of real-world TS and of the test suite depends on it. It
    needs a flow graph (or equivalent) built at bind time, plus per-reference-per-flow-node caching - which in turn
    wants cheap type identity.
-4. **Scopes are discarded after name resolution**; there's no persistent symbol table. Declaration merging lives
-   in `Scope` during resolution. Probably workable, but the symbols baseline, flow analysis, `this`/class member
-   lookup and later language-service-ish needs all lean on persistent symbols. Needs a look.
+4. ~~Scopes are discarded after name resolution; there's no persistent symbol table~~ **Fixed by plan 04 stage 1**
+   (class/interface members are still not symbols, see the plan).
 5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST
    between all test programs. Blocks arena-owned types and multiple checkers over one AST. **Fixed by plan 02 stage
    2** (memos in per-`Checker` slots); the `has_cache` fields of legacy type operators went in 4b2.
