@@ -548,6 +548,7 @@ BaselineTestCase run_baseline_test_case(
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
+        ret.enclosing = i->source->scope;
         block_compile_test_info(&i->source->ast, &ret);
     }
     clear_compiler_options();
@@ -903,9 +904,8 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
 }
 
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
-    // TODO(plan 03): names are qualified as far as needed from where they're printed, which needs symbols
     cstr rendered = cstr_null;
-    ty_display(current_checker, (TyDisplay){ .target = &rendered, .unqualified_names = true }, type);
+    ty_display(current_checker, (TyDisplay){ .target = &rendered, .enclosing = my enclosing }, type);
     add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered));
     cstr_drop(&rendered);
 }
@@ -916,17 +916,7 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type
 
 void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode const* node) {
     while (node->tag == TYPE_REF) node = node->ref;
-    if (node->tag != TYPE_IDENTIFIER) {
-        baseline_test_case_add_type(me, span, ty_of_node(node));
-        return;
-    }
-    // HACK: a written type shows as written. Qualified names (`X.Y.Z`) come out the way tsc prints them more often
-    // that way than by always or never qualifying; the real rule needs symbol accessibility (plan 03)
-    cstr rendered = cstr_null;
-    Display d = { .target = &rendered };
-    display_type(d, node);
-    add_type_rendered(me, span, span, cstr_sv(&rendered));
-    cstr_drop(&rendered);
+    baseline_test_case_add_type(me, span, ty_of_node(node));
 }
 
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol const* declaration) {
@@ -953,16 +943,7 @@ void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol
         baseline_test_case_add_type_node(me, span, &type_any);
         return;
     }
-    // HACK: what baseline_test_case_add_type_node() does to written type names wants the node of a variable, and an
-    // enum member shows as `E.x`
-    if (!(value->flags & SYMBOL_VALUE & ~(u32)SYMBOL_VARIABLE)) {
-        for (u32 i = 0; i < value->decl_count; i++) {
-            if (!(value->decls[i].flags & SYMBOL_VARIABLE)) continue;
-            if (value->decls[i].kind != SYMBOL_DECL_VARIABLE) break;
-            baseline_test_case_add_type_node(me, span, binding_get_effective_type(value->decls[i].node));
-            return;
-        }
-    }
+    // An enum member shows as `E.x`. HACK: should be the fresh literal type of the member
     if (value->flags & SYMBOL_ENUM_MEMBER && value->parent) {
         cstr rendered = cstr_null;
         cstr_append_span(&rendered, value->parent->name_span);

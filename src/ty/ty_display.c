@@ -1,5 +1,6 @@
 #include "ty/ty_internal.h"
 #include "scope.h"
+#include "program.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -16,15 +17,90 @@ static void display_list(Checker* me, TyDisplay d, TyList list) {
     }
 }
 
-// A declared name. HACK(plan 03): tsc qualifies a name as far as needed from where it's printed, which needs symbols.
-// Error messages always qualify (so does tsc there), the `.types` baselines never do (right more often than not)
-static void out_name(TyDisplay d, csview qualified) {
-    if (d.unqualified_names) {
-        isize_t dot = qualified.size;
-        while (dot > 0 && qualified.buf[dot - 1] != '.') dot--;
-        qualified = csview_from_n(qualified.buf + dot, qualified.size - dot);
+// Symbol accessibility, a simplified getAccessibleSymbolChain(): how to name a symbol from a scope
+
+static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
+    Binder const* binder = program_get_binder(my program);
+    return binder_redirect(binder, a) == binder_redirect(binder, b);
+}
+
+// An alias among the entries of a table that names the symbol
+static bool find_alias_in_table(Checker* me, SymbolTable const* table, Symbol const* symbol, u32 meaning, csview* name) {
+    if (!table) return false;
+    for (u32 i = 0; i < table->count; i++) {
+        Symbol const* candidate = table->entries[i].symbol;
+        if (!(candidate->flags & SYMBOL_ALIAS) || candidate->alias_state != ALIAS_DONE) continue;
+        Symbol const* target = symbol_for_meaning(candidate, meaning);
+        if (target && same_symbol(me, target, symbol)) {
+            *name = table->entries[i].name;
+            return true;
+        }
     }
-    out(d, qualified);
+    return false;
+}
+
+static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
+    Symbol const* parent = symbol->parent;
+    if (!parent || symbol->is_global_this) {
+        out(d, symbol->name_span.sv);
+        return;
+    }
+    bool quoted_parent = parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\'');
+    if (!d.enclosing) {
+        // Modules and ambient modules (`declare module "m"`) are containers too, but not part of a name
+        if (!parent->is_module && !quoted_parent) {
+            out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
+            out_lit(d, ".");
+        }
+        out(d, symbol->name_span.sv);
+        return;
+    }
+    // Visible under its own name?
+    Symbol const* found = scope_resolve(d.enclosing, symbol->name, meaning);
+    if (found && same_symbol(me, symbol_for_meaning(found, meaning), symbol)) {
+        out(d, symbol->name_span.sv);
+        return;
+    }
+    // Under an import's? The globals aren't searched: nothing but `export as namespace` puts an alias there
+    for (Scope const* scope = d.enclosing; scope && scope->kind != SCOPE_GLOBAL; scope = scope->parent) {
+        csview alias_name;
+        if (find_alias_in_table(me, &scope->locals, symbol, meaning, &alias_name) ||
+            (scope->container && find_alias_in_table(me, scope->container->exports, symbol, meaning, &alias_name))
+        ) {
+            out(d, alias_name);
+            return;
+        }
+    }
+    if (parent->is_module) {
+        // Of another module that nothing here names: `import("a").T`
+        Scope const* file_scope = d.enclosing;
+        while (file_scope->parent && file_scope->kind != SCOPE_MODULE && file_scope->kind != SCOPE_SCRIPT) {
+            file_scope = file_scope->parent;
+        }
+        if (file_scope->container != parent) {
+            cstr module_name = module_name_for_error(parent, nullptr, false);
+            out_lit(d, "import(");
+            out(d, cstr_sv(&module_name));
+            out_lit(d, ").");
+            cstr_drop(&module_name);
+        }
+    } else if (!quoted_parent) {
+        out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
+        out_lit(d, ".");
+    }
+    out(d, symbol->name_span.sv);
+}
+
+// The name of a declared type: by its symbol when it has one
+static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 meaning) {
+    Symbol const* symbol = declared->declared.symbol;
+    if (!symbol) symbol = declared->declared.merged_value;
+    if (!symbol && declared->declared.kind == TY_DECLARED_NAMESPACE) symbol = declared->declared.namespace_symbol;
+    if (symbol && !symbol->is_module && span_valid(symbol->name_span)) {
+        out_symbol_name(me, d, symbol, meaning);
+    } else {
+        out(d, atom_sv(declared->declared.name));
+    }
 }
 
 static void display_string_literal(TyDisplay d, csview sv) {
@@ -303,11 +379,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     }
 
     if (ty_is_enum_union(ty)) {
-        out_name(d, atom_sv(ty_qualified_name(me, ty->alias)));
+        out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         return;
     }
     if (ty->alias) {
-        out(d, ty->alias->name_span.sv);
+        out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         if (ty->alias_args.len) {
             out_lit(d, "<");
             display_list(me, d, ty->alias_args);
@@ -323,13 +399,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_LITERAL:
             if (d.widen_literals && !ty->literal.enum_decl) {
-                ty_display(me, (TyDisplay){ .target = d.target, .depth = d.depth, .visiting = d.visiting }, ty_widened_literal(me, ty));
+                ty_display(me, (TyDisplay){ .target = d.target, .depth = d.depth, .visiting = d.visiting, .enclosing = d.enclosing }, ty_widened_literal(me, ty));
                 break;
             }
             if (ty->literal.enum_decl) {
                 // The only member of an enum is the enum. TODO(fresh literals): tsc prints the *fresh* type of the
                 // expression `E.x` as `E.x` even then (error messages); `.types` baselines show the widened `E`
-                out_name(d, atom_sv(ty_qualified_name(me, ty->literal.enum_decl)));
+                out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_TYPE);
                 if (ty->literal.enum_member != ty->literal.enum_decl && ty_enum_of_member(me, ty) != ty) {
                     out_lit(d, ".");
                     out(d, ty->literal.enum_member->name_span.sv);
@@ -358,7 +434,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         break;
                     }
                     out_lit(d, "typeof ");
-                    out_name(d, atom_sv(ty->declared.name));
+                    out_declared_name(me, d, ty, SYMBOL_VALUE);
                     break;
 
                 case TY_DECLARED_TUPLE_TARGET:
@@ -366,7 +442,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     break;
 
                 default:
-                    out_name(d, atom_sv(ty->declared.name));
+                    out_declared_name(me, d, ty, SYMBOL_TYPE);
                     if (ty->declared.type_params.len) {
                         out_lit(d, "<");
                         display_list(me, d, ty->declared.type_params);
@@ -386,7 +462,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 display_parenthesized_if(me, d, args.data[0], needs_parens_in_array(me, args.data[0]));
                 out_lit(d, "[]");
             } else {
-                out_name(d, atom_sv(target->declared.name));
+                out_declared_name(me, d, target, SYMBOL_TYPE);
                 out_lit(d, "<");
                 display_list(me, d, args);
                 out_lit(d, ">");

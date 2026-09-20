@@ -57,6 +57,8 @@ typedef struct BaselineTestCase {
     bool noisy;
     MockFs* fs;
     Program* program;
+    // Where the traversal is: types are printed the way they're named from there
+    struct Scope const* enclosing;
     cstr lib_list;
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;

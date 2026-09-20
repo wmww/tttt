@@ -666,7 +666,10 @@ typedef struct TyDisplay {
     // Literal types inside object types that came from expressions print as their primitive: tsc widens the
     // properties of an object literal when it types it, the legacy checker only when it reports. HACK
     bool widen_literals;
-    bool unqualified_names; // See out_name() in ty_display.c
+    // Where the type is printed from (tsc's enclosingDeclaration): names are qualified as far as needed to be reachable
+    // from there (`T` inside namespace N, `N.T` outside, an import's name, `import("a").T` when nothing names it).
+    // Null: always fully qualified, which is what error messages show
+    struct Scope const* enclosing;
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

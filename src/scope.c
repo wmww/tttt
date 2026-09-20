@@ -516,8 +516,26 @@ static bool port_item_declares_export(PortItem const* item) {
 void scope_add_port(Scope* me, PortItem* item) {
     switch (item->tag) {
         case PORT_NOOP:
-        case PORT_EXPORT_AS_NAMESPACE:
             return;
+
+        case PORT_EXPORT_AS_NAMESPACE: {
+            // A global alias of the module (UMD). TODO: TS2686 when a module uses it
+            if (my kind != SCOPE_MODULE || !my container) return;
+            bool merged;
+            Symbol* symbol = declare_symbol(
+                me, &my binder->globals, item->decl_name.sv, item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, &merged
+            );
+            if (merged) return;
+            symbol->name_span = item->decl_name;
+            symbol_add_decl(symbol, (SymbolDecl){
+                .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item,
+                .name = item->decl_name, .full = item->full_span,
+            });
+            symbol->alias_item = item;
+            symbol->alias_scope = me;
+            item->symbol = symbol;
+            return;
+        }
 
         case PORT_REEXPORT_SPLAT: {
             Symbol* module = my container;
@@ -852,7 +870,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
     }
     Symbol* module = nullptr;
     Symbol* assigned = nullptr; // What its `export =` names, if it has one
-    if (item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC) {
+    if (item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC && item->tag != PORT_EXPORT_AS_NAMESPACE) {
         module = binder_module_of_ref(my binder, item->module_ref);
         if (!module) {
             // No file: TS2307 comes from the statement
@@ -928,8 +946,13 @@ static Symbol* resolve_alias_target(Symbol* me) {
         case PORT_IMPORT_ALIAS:
             return resolve_import_alias_path(me);
 
+        case PORT_EXPORT_AS_NAMESPACE: {
+            Symbol* own_module = my alias_scope->container;
+            Symbol* own_assigned = module_export_equals(own_module);
+            return own_assigned != own_module ? own_assigned : make_gather_target(me, own_module);
+        }
+
         case PORT_NOOP:
-        case PORT_EXPORT_AS_NAMESPACE:
         case PORT_REEXPORT_SPLAT:
             break;
     }

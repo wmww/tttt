@@ -523,7 +523,10 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         });
         if (my symbol->flags & SYMBOL_VALUE) baseline_test_case_add_symbol_value(ctx, my name, my symbol);
     }
+    Scope const* outer = ctx->enclosing;
+    if (my inner_scope) ctx->enclosing = my inner_scope;
     block_compile_test_info(&my contents, ctx);
+    ctx->enclosing = outer;
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
