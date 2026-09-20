@@ -420,6 +420,16 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     return ok(main_source);
 }
 
+SourceFile* program_find_source(Program const* me, csview path) {
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(my fs, &cwd)) or_panic;
+    cstr canonical_path = relative_path_of(cstr_sv(&cwd), path);
+    cstr_drop(&cwd);
+    auto found = hmap_box_source_file_get(&my source_files_map, cstr_sv(&canonical_path));
+    cstr_drop(&canonical_path);
+    return found ? found->second.get : nullptr;
+}
+
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     my loading_stdlib = true;
     cstr path = cstr_d(lib_path, "/", name, ".d.ts");

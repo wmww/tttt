@@ -281,10 +281,24 @@ void baseline_test_configurations(csview test_source, VecCStr* out) {
     vec_variation_drop(&variations);
 }
 
+// `/require\(/` or `/reference\spath/`, like tsc's harness
+static bool contents_mention_references(csview contents) {
+    if (csview_find_sv(contents, c_sv("require(")) != c_NPOS) return true;
+    static const char* const forms[] = { "reference path", "reference\tpath" };
+    for (size_t i = 0; i < sizeof(forms) / sizeof(*forms); i++) {
+        if (csview_find_sv(contents, csview_from(forms[i])) != c_NPOS) return true;
+    }
+    return false;
+}
+
 // A harness directive that is a compiler option (or one of the harness's own that we honour)
 static void apply_setting(BaselineTestCase* me, csview key, csview value) {
     if (tag_equals(key, "notypesandsymbols")) {
         my no_types_and_symbols = tag_equals(value, "true");
+        return;
+    }
+    if (tag_equals(key, "noimplicitreferences")) {
+        my no_implicit_references = tag_equals(value, "true");
         return;
     }
     // Unknown options are overwhelmingly emit options. A bad value is something tsc's harness refuses to run, which
@@ -520,16 +534,46 @@ BaselineTestCase run_baseline_test_case(
     Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
     program_copy_globals_from(program, lib_program);
 
-    for_each (i, vec_baseline_test_file, &ret.files) {
-        if (!path_is_script(cstr_sv(&i->path))) {
-            // package.json, tsconfig.json, .map files and so on exist in the filesystem but aren't root files
-            try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&i->path), &i->raw_contents)) or_panic;
-            continue;
+    // tsc's harness: with `@noImplicitReferences`, or when the last file mentions `require(` or `reference path`, that
+    // file is the only root (the others are part of the program if something refers to them) and comes first in the
+    // baselines
+    bool last_is_only_root = false;
+    if (vec_baseline_test_file_size(&ret.files) > 1) {
+        BaselineTestFile* last = vec_baseline_test_file_back_mut(&ret.files);
+        cstr contents = cstr_null;
+        try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&last->path), &contents)) if_err (e) {
+            ignore e;
+            current_error_destroy(); // A symlink (`@link`) to nowhere and the like
         }
+        last_is_only_root = ret.no_implicit_references || contents_mention_references(cstr_sv(&contents));
+        cstr_drop(&contents);
+        if (last_is_only_root) {
+            // Rotate it to the front (in place: popping would drop it)
+            BaselineTestFile moved = *last;
+            isize count = vec_baseline_test_file_size(&ret.files);
+            memmove(ret.files.data + 1, ret.files.data, sizeof(BaselineTestFile) * (size_t)(count - 1));
+            ret.files.data[0] = moved;
+        }
+    }
+
+    for_each (i, vec_baseline_test_file, &ret.files) {
+        bool is_root = !last_is_only_root || i_index == 0;
+        if (!path_is_script(cstr_sv(&i->path)) || !is_root) continue;
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
-        source->display_path_override = cstr_str(&i->path);
         i->source = source;
+    }
+    for_each (i, vec_baseline_test_file, &ret.files) {
+        if (!i->source && path_is_script(cstr_sv(&i->path))) {
+            i->source = program_find_source(program, cstr_sv(&i->path));
+        }
+        if (i->source) {
+            ((SourceFile*)i->source)->display_path_override = cstr_str(&i->path);
+        } else {
+            // package.json, tsconfig.json, .map files and so on, and scripts nothing refers to: they exist in the
+            // filesystem but aren't part of the program, the errors baseline still shows them
+            try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&i->path), &i->raw_contents)) or_panic;
+        }
     }
 
     // Yes, the correct logic seems to be to only show type errors if there were no parse errors, but name errors are

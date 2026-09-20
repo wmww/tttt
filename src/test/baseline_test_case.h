@@ -57,6 +57,7 @@ typedef struct BaselineTestCase {
     bool noisy;
     MockFs* fs;
     Program* program;
+    bool no_implicit_references; // `@noImplicitReferences`
     // Where the traversal is: types are printed the way they're named from there
     struct Scope const* enclosing;
     cstr lib_list;

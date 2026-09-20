@@ -21,6 +21,9 @@ CompilerOptions* program_options(Program* me);
 // program's ErrorCtx instead
 failable program_load(Program* me, csview path, returns SourceFile*);
 
+// The file at path if it is part of the program (loaded or imported), null otherwise
+SourceFile* program_find_source(Program const* me, csview path);
+
 // Loads the standard library file based on the name (such as es5 or es2015.collection)
 failable program_load_stdlib(Program* me, csview name, returns SourceFile*);
 
