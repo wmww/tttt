@@ -437,6 +437,7 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     }
     if (function->has_body && !function->ret_explicit) out->unknown = true;
     collect_free_params(me, &function->ret, out);
+    if (function->predicate && function->predicate->has_type) collect_free_params(me, &function->predicate->type, out);
 }
 
 // Only when some type parameter is in scope (ctx.generic), otherwise there's nothing to find

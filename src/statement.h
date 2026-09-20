@@ -143,6 +143,9 @@ typedef struct Statement {
         } decl;
     };
     Span span; // With the `;`
+    // The control flow node before the statement, for the statements tsc gives one (null otherwise, and in code the
+    // builder found unreachable): a call that never returns or an exhaustive switch before it makes it unreachable
+    FlowNode* flow;
     bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
     Span jump_label; // The label break and continue jump to, null if there isn't one or for other statements
 } Statement;

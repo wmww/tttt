@@ -2,6 +2,18 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-19, plan 05 stage 3: predicates, assertions, never calls, discriminants, switch, instanceof, in
+Suite: **1742 full of 13163** (was 1736), errors 6536 (6493), symbols 8475 (8409), types 3814 (3807). 111 tests gained
+a component, 3 lost one (`spreadBooleanRespectsFreshness`, `typeGuardNarrowBy(Mutable)UntypedField`: see `triage.md`).
+Flow-named tests (388): **34 full / errors 242 / symbols 198 / types 54** (stage 2: 30 / 223 / 165 / 48).
+
+Real corpus: 3984 -> **1626 diagnostics** (TS2345 2366 -> 317, TS2322 248 -> 92, TS2769 157 -> 103, TS2454 gone,
+TS7006 852 of them and not flow related).
+
+`./bench.sh`: synthetic wall 0.36 s, resolve 97.6 ms, typecheck 84.6 ms, RSS 545 MB (531: `Statement.flow`,
+`FunctionImpl.predicate`). Real corpus wall **0.98 s** (tsgo 0.77), resolve 74 ms, **typecheck 678 -> 778 ms**, RSS
+318 MB. Not profiled (stage 4).
+
 ## 2026-09-19, plan 05 stage 2: the narrowing engine (truthiness, equality, typeof, assignments, loops, closures)
 Suite: **1736 full of 13163** (was 1699), errors 6493 (6433), symbols 8409 (8401), types 3807 (3742). 116 tests gained
 a component, 1 lost one (`typePredicatesOptionalChaining2`: optional chains now evaluate to `T | undefined`, and the

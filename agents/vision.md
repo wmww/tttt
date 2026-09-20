@@ -94,7 +94,9 @@ next (symbols = plan 04, flow = plan 05, see the course correction above):
    wants cheap type identity. **In progress (plan 05):** the graph exists (stage 1: built in the resolve walk,
    tsc's node model, binder-side reachability, +11% resolve time) and so does the engine (stage 2: tsc's
    `getFlowTypeOfReference` with loops, closures, type facts, TS2454; the real corpus went 7777 -> 3984 diagnostics,
-   typecheck +37%). Left: predicates, assertions, discriminants, switch, typed reachability (stage 3), fallout (4).
+   typecheck +37%), and the rest of narrowing (stage 3: type predicates end to end, assertions, `never` calls, typed
+   reachability, discriminants, switch, `instanceof`, `in`; corpus 3984 -> 1626, typecheck another +15%). What the
+   corpus reports now is inference and contextual typing, not flow. Left: fallout, the profile (stage 4).
 4. ~~Scopes are discarded after name resolution; there's no persistent symbol table~~ **Fixed by plan 04 stage 1**
    (class/interface members are still not symbols, see the plan).
 5. **Checker state is stored in the AST** (`LazyType` memos inside nodes), and the test harness shares one lib AST

@@ -158,6 +158,9 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
                 }
             }
             type_add_inferred_names(&my callable->function->ret, scope);
+            if (my callable->function->predicate && my callable->function->predicate->has_type) {
+                type_add_inferred_names(&my callable->function->predicate->type, scope);
+            }
             break;
 
         case TYPE_INTERFACE:

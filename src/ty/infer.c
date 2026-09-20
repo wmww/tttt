@@ -183,6 +183,14 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
         infer_from(me, inf, ty_instantiate(me, source_type, base), target_param->type);
     }
     if (flip) inf->contravariant = !inf->contravariant;
+    TyPredicate const* source_predicate = signature_predicate(me, source);
+    TyPredicate const* target_predicate = signature_predicate(me, target);
+    if (source_predicate && target_predicate && source_predicate->type && target_predicate->type &&
+        source_predicate->is_this == target_predicate->is_this && source_predicate->asserts == target_predicate->asserts
+    ) {
+        infer_from(me, inf, ty_instantiate(me, source_predicate->type, base), target_predicate->type);
+        return;
+    }
     infer_from(me, inf, ty_instantiate(me, signature_return_type(me, source), base), signature_return_type(me, target));
 }
 

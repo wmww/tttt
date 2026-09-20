@@ -1009,6 +1009,24 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
         flow->dead = was_dead;
         return;
     }
+    switch (my tag) {
+        case STATEMENT_NOOP:
+        case STATEMENT_IF_ELSE:
+        case STATEMENT_FOR_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_SWITCH:
+        case STATEMENT_TRY_CATCH:
+        case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
+        case STATEMENT_EXPR:
+        case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
+        case STATEMENT_DECL_VARIABLE:
+            my flow = flow_builder_reference(flow, span_null);
+            break;
+        default:
+            break;
+    }
     // What "the statement an assignment is in" can be (tsc: extendAssignmentPosition())
     switch (my tag) {
         case STATEMENT_DECL_VARIABLE:
@@ -1091,6 +1109,13 @@ void statement_collect_return_types(Statement const* me, TyBuf* out) {
 }
 
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
+    // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
+    // checkSourceElement(); an error only when allowUnreachableCode is explicitly false)
+    if (my flow && compiler_options()->is_set[COMPILER_OPTION_allow_unreachable_code] &&
+        !compiler_options()->allow_unreachable_code && ty_flow_reachability(current_checker, my flow) == FLOW_REACH_NO
+    ) {
+        error_ctx_error_d(errs, my span, 7027, "Unreachable code detected.");
+    }
     switch (my tag) {
         case STATEMENT_LABELED:
             ctx.inside_label = true;

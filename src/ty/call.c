@@ -495,6 +495,7 @@ typedef struct CallInfo {
     Ty const* contextual; // contextual type of the call expression, may be null
     VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
     TyList type_args;
+    Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
 } CallInfo;
 
 static u32 min_type_arguments(Checker* me, Signature const* sig) {
@@ -725,14 +726,18 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     }
 
     Args args = collect_args(me, call);
-    ret = resolve_with_signatures(me, signatures, count, &args, info, call_span, errs).ret;
+    Resolution resolution = resolve_with_signatures(me, signatures, count, &args, info, call_span, errs);
+    ret = resolution.ret;
+    if (info->chosen_out) *info->chosen_out = resolution.chosen;
     free(args.data);
     free(signatures);
     return ret;
 }
 
-static Ty const* resolve(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs) {
-    CallInfo info = { .call = call, .contextual = contextual };
+static Ty const* resolve_into(
+    Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs, Candidate* chosen_out
+) {
+    CallInfo info = { .call = call, .contextual = contextual, .chosen_out = chosen_out };
     Ty const* type_args[32];
     if (call->callable.tag == EXPR_GENERIC_PARAMS) {
         // `f<A, B>(x)`: the callee type is that of `f`
@@ -744,6 +749,46 @@ static Ty const* resolve(Checker* me, Ty const* callee, CallExpr const* call, Ty
         info.type_args = (TyList){ .data = type_args, .len = len };
     }
     return resolve_call(me, callee, &info, call_span, errs);
+}
+
+static Ty const* resolve(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs) {
+    return resolve_into(me, callee, call, contextual, call_span, errs, nullptr);
+}
+
+static bool has_predicate_or_declared_never(Checker* me, Signature const* sig) {
+    return signature_predicate(me, sig) || signature_declared_never(sig);
+}
+
+// What control flow analysis wants to know about a call (tsc's getEffectsSignature()): the type predicate of the
+// signature it resolves to, and whether that is declared to return `never`. A callee with one signature that isn't
+// generic is that signature whatever the arguments are; anything else is resolved, which checks the arguments: the
+// caller (flow.c) sees to it that this happens in uncached mode
+CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call) {
+    CallEffects none = {0};
+    if (!callee || call->uses_new || call->is_extends) return none;
+    Ty const* apparent = ty_apparent_type(me, callee);
+    if ((apparent->flags & TYF_ANY) || !(apparent->flags & TYF_OBJECT)) return none;
+    Members const* members = ty_members(me, apparent);
+    if (!members->call_count) return none;
+    Candidate chosen = {0};
+    signature_resolve(me, members->call[0]);
+    if (members->call_count == 1 && !members->call[0]->type_params.len) {
+        chosen.sig = members->call[0];
+    } else {
+        bool some = false;
+        for (u32 i = 0; i < members->call_count && !some; i++) some = has_predicate_or_declared_never(me, members->call[i]);
+        if (!some) return none;
+        resolve_into(me, callee, call, nullptr, span_null, nullptr, &chosen);
+    }
+    if (!chosen.sig || !has_predicate_or_declared_never(me, chosen.sig)) return none;
+    CallEffects ret = { .returns_never = signature_declared_never(chosen.sig) };
+    TyPredicate const* predicate = signature_predicate(me, chosen.sig);
+    if (predicate) {
+        ret.predicate = *predicate;
+        ret.has_predicate = true;
+        if (predicate->type && chosen.mapper) ret.predicate.type = ty_instantiate(me, predicate->type, chosen.mapper);
+    }
+    return ret;
 }
 
 // `import("./a")`: a promise of the module (of what its `export =` names)

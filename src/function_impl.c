@@ -16,6 +16,10 @@ void function_impl_drop(FunctionImpl* me) {
     generic_drop(&my generic);
     vec_function_arg_drop(&my args);
     type_drop(&my ret);
+    if (my predicate) {
+        type_drop(&my predicate->type);
+        free(my predicate);
+    }
     lazy_type_drop(&my lazy_type);
     block_drop(&my body);
 }
@@ -92,6 +96,15 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         initialized_binding_lookup_names_parameter(&i->initializer, function_scope, errs);
     }
     type_lookup_names(&my ret, function_scope, errs);
+    if (my predicate) {
+        TypePredicateNode* predicate = my predicate;
+        if (predicate->has_type) type_lookup_names(&predicate->type, function_scope, errs);
+        for_each (i, vec_function_arg, &my args) {
+            if (predicate->is_this || !csview_equals_sv(i->initializer.binding.content_span.sv, predicate->name.sv)) continue;
+            predicate->param_index = (i32)i_index;
+            if (i->initializer.binding.tag == BINDING_IDENTIFIER) predicate->symbol = i->initializer.binding.symbol;
+        }
+    }
     block_lookup_names_as(&my body, true, function_scope, errs);
 
     my end_flow = nullptr;

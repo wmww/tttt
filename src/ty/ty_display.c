@@ -167,6 +167,15 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params) {
     out_lit(d, ">");
 }
 
+void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate) {
+    if (predicate->asserts) out_lit(d, "asserts ");
+    out(d, atom_sv(predicate->param_name));
+    if (predicate->type) {
+        out_lit(d, " is ");
+        ty_display(me, d, predicate->type);
+    }
+}
+
 // `(a: A, b?: B, ...rest: C[])` followed by `separator` and the return type
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 
@@ -194,6 +203,11 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
+    TyPredicate const* predicate = signature_predicate(me, sig);
+    if (predicate) {
+        ty_display_predicate(me, d, predicate);
+        return;
+    }
     ty_display(me, d, signature_return_type(me, sig));
 }
 

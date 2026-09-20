@@ -1639,7 +1639,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
 
 // `x is T`, `this is T`, `asserts x`, `asserts x is T` as a return type
 // TODO: predicates aren't in the AST yet (narrowing, plan 05), this gives the `boolean` or `void` the function returns
-static bool parse_type_predicate(Parser* parent, TypeNode* ret) {
+static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
 
     Span name;
@@ -1655,16 +1655,17 @@ static bool parse_type_predicate(Parser* parent, TypeNode* ret) {
         asserts = true;
         hop_whitespace_full(&p, true, false);
     }
+    TypePredicateNode predicate = { .name = name, .is_this = span_equals(name, "this"), .asserts = asserts, .param_index = -1 };
     if (hop_start_if_ends_on_word_break(&p, "is")) {
         hop_whitespace(&p);
-        TypeNode t;
-        expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
-        type_drop(&t);
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &predicate.type);
+        predicate.has_type = true;
     } else if (!asserts) {
         return parse_fail(&p);
     }
 
-    *ret = asserts ? type_void : type_boolean;
+    ret->ret = asserts ? type_void : type_boolean;
+    ret->predicate = c_new(TypePredicateNode, predicate);
     return parse_success(&p);
 }
 
@@ -1819,7 +1820,7 @@ static bool parse_function_args(
 
     if (parse_ret_type) {
         Anchor ret_a = anchor(&p);
-        if (parse_type_predicate(&p, &ret->ret)) {
+        if (parse_type_predicate(&p, ret)) {
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
         } else if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
@@ -5200,6 +5201,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
     Span label = span_null;
     ret->jump_label = span_null;
+    ret->flow = nullptr;
     if (*p.pos == ';') {
         *ret = statement_noop;
     } else if (hop_start_if_ends_on_word_break(&p, "debugger")) {

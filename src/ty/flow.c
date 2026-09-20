@@ -9,9 +9,7 @@
 // Queries on the control flow graph (flow.h, plan 05). The graph is read-only and may be shared by several checkers,
 // so everything that is remembered is remembered in the Checker.
 //
-// So far: reachability, the skeleton of tsc's isReachableFlowNode(). What needs types (a call of a function that
-// returns `never`, an assertion of `false`, a `switch` that is exhaustive) answers FLOW_REACH_UNKNOWN until narrowing
-// exists (plan 05 stage 3), and callers only act on what is certain.
+// First reachability (tsc's isReachableFlowNode()), then narrowing (getFlowTypeOfReference()).
 
 // try/finally: the antecedents a label has while walking back through a reduce label
 typedef struct FlowLabelOverride {
@@ -26,6 +24,20 @@ static FlowList const* label_antecedents(FlowNode const* label, FlowLabelOverrid
     }
     return label->antecedents;
 }
+
+static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_statement);
+
+// `assert(false)`, `assert(false && x)`, `assert(false || false)`
+static bool is_false_expr(Expr const* expr) {
+    if (expr->tag == EXPR_LITERAL) return expr->literal.tag == VALUE_BOOLEAN && !expr->literal.boolean;
+    if (expr->tag != EXPR_BINARY_OP) return false;
+    BinaryOpExpr const* binary = expr->binary_op;
+    if (binary->op == BINARY_OP_AND_AND) return is_false_expr(&binary->left) || is_false_expr(&binary->right);
+    if (binary->op == BINARY_OP_OR_OR) return is_false_expr(&binary->left) && is_false_expr(&binary->right);
+    return false;
+}
+
+static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_);
 
 static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, FlowLabelOverride const* overrides, bool use_cache) {
     bool unknown = false; // Something on the way may or may not stop control
@@ -42,8 +54,14 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
         if (flags & (FLOW_ASSIGNMENT | FLOW_CONDITION)) {
             flow = flow->antecedent;
         } else if (flags & FLOW_CALL) {
-            // TODO (stage 3): unreachable if the callee is declared to return `never`, or asserts a `false` argument
-            unknown = true;
+            Expr const* call_expr = flow->node;
+            CallEffects effects = call_effects(me, call_expr, true);
+            if (effects.returns_never) return FLOW_REACH_NO;
+            if (effects.has_predicate && effects.predicate.asserts && !effects.predicate.is_this && !effects.predicate.type &&
+                effects.predicate.param_index >= 0 && effects.predicate.param_index < vec_expr_size(&call_expr->call->args)
+            ) {
+                if (is_false_expr(vec_expr_at(&call_expr->call->args, effects.predicate.param_index))) return FLOW_REACH_NO;
+            }
             flow = flow->antecedent;
         } else if (flags & FLOW_BRANCH_LABEL) {
             FlowList const* antecedents = label_antecedents(flow, overrides);
@@ -59,9 +77,8 @@ static FlowReachability reachability_walk(Checker* me, FlowNode const* flow, Flo
             if (!antecedents || !antecedents->count) return FLOW_REACH_NO;
             flow = antecedents->items[0];
         } else if (flags & FLOW_SWITCH_CLAUSE) {
-            // TODO (stage 3): "no clause matched" is unreachable if the switch is exhaustive
             FlowSwitchClause const* clause = flow->node;
-            if (clause->clause_start == clause->clause_end) unknown = true;
+            if (clause->clause_start == clause->clause_end && is_exhaustive_switch(me, clause->switch_)) return FLOW_REACH_NO;
             flow = flow->antecedent;
         } else if (flags & FLOW_REDUCE_LABEL) {
             FlowReduceLabel const* reduce = flow->node;
@@ -108,6 +125,7 @@ typedef struct FlowQuery {
 
 static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow);
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish);
+static bool is_type_subset_of(Ty const* source, Ty const* target);
 
 // Type facts (tsc's TypeFacts, bit for bit)
 
@@ -266,10 +284,10 @@ static bool has_type_facts(Checker* me, Ty const* ty, u32 mask) {
 
 // Filtering and mapping over the members of a union
 
-typedef bool (*TyPredicate)(Checker* me, Ty const* ty, void const* arg);
+typedef bool (*TyFilterFn)(Checker* me, Ty const* ty, void const* arg);
 typedef Ty const* (*TyMapFn)(Checker* me, Ty const* ty, void const* arg);
 
-static Ty const* filter_type(Checker* me, Ty const* ty, TyPredicate keep, void const* arg) {
+static Ty const* filter_type(Checker* me, Ty const* ty, TyFilterFn keep, void const* arg) {
     if (ty->kind != TY_UNION) {
         return (ty->flags & TYF_NEVER) || keep(me, ty, arg) ? ty : ty_intrinsic(me, TY_NEVER);
     }
@@ -681,6 +699,10 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
     Checker* me = q->me;
     FlowAssign const* assign = flow->node;
     if (assign_matches(q, assign)) {
+        if (ty_flow_reachability(me, flow) == FLOW_REACH_NO) {
+            *out = (FlowType){ ty_intrinsic(me, TY_UNREACHABLE_NEVER), false };
+            return true;
+        }
         if (assign_is_compound(assign)) {
             FlowType before = type_at_flow_node(q, flow->antecedent);
             *out = (FlowType){ base_type_of_literal(me, before.type), before.incomplete };
@@ -699,10 +721,276 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
         return true;
     }
     if (assign_contains(q, assign)) {
+        if (ty_flow_reachability(me, flow) == FLOW_REACH_NO) {
+            *out = (FlowType){ ty_intrinsic(me, TY_UNREACHABLE_NEVER), false };
+            return true;
+        }
         *out = (FlowType){ q->declared, false };
         return true;
     }
     return false;
+}
+
+// Calls: type predicates, assertions, functions that never return
+
+static bool symbol_has_explicit_type(Symbol const* symbol) {
+    if (symbol->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_VALUE_MODULE)) return true;
+    if (!(symbol->flags & SYMBOL_VARIABLE)) return false;
+    Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
+    return binding && !binding->parent && binding->has_explicit_type;
+}
+
+static bool prop_has_explicit_type(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    // HACK: the template of a mapped type (`Readonly<Services>`), where tsc asks the property it was mapped from
+    if (!prop->name) return true;
+    if (prop->symbol) return symbol_has_explicit_type(prop->symbol);
+    return prop->node || prop->function || prop->overload_count;
+}
+
+// tsc's getTypeOfDottedName(): the type of the callee of a call statement from declarations alone, without control
+// flow analysis (which is in the middle of asking). Null: some name on the way has no explicit type, and the call is
+// taken to have no effect (tsc reports TS2775/TS2776 for an assertion like that)
+static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
+    expr = skip_reference_wrappers(expr);
+    if (expr->tag == EXPR_IDENTIFIER) {
+        u32 keyword = expr->identifier.keyword;
+        if (keyword == KEYWORD_IDENTIFIER_THIS || keyword == KEYWORD_IDENTIFIER_SUPER) {
+            return ty_identifier_reference_type(me, &expr->identifier);
+        }
+        Symbol const* symbol = expr->identifier.target;
+        if (keyword || !symbol || !symbol_has_explicit_type(symbol)) return nullptr;
+        return ty_identifier_reference_type(me, &expr->identifier);
+    }
+    if (expr->tag != EXPR_PROPERTY) return nullptr;
+    Ty const* object = type_of_dotted_name(me, &expr->property->expr);
+    Atom const* name = object ? access_name(me, expr->property) : nullptr;
+    if (!name) return nullptr;
+    object = ty_apparent_type(me, object);
+    if (!(object->flags & TYF_OBJECT)) return nullptr;
+    Prop const* prop = ty_get_prop(me, object, name);
+    return prop && prop_has_explicit_type(prop) ? prop_type(me, prop) : nullptr;
+}
+
+// tsc's getEffectsSignature(), remembered per call like there
+static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_statement) {
+    u64 key[3] = { KEY_FLOW_CALL, (u64)(uintptr_t)call_expr, is_statement };
+    CallEffects const* cached = intern_get(&my links, key, 3);
+    if (cached) return *cached;
+    CallExpr const* call = call_expr->call;
+    Expr const* callee_expr = &call->callable;
+    if (callee_expr->tag == EXPR_GENERIC_PARAMS) callee_expr = &callee_expr->generic_params->expr;
+    Ty const* callee = nullptr;
+    if (is_statement) {
+        callee = type_of_dotted_name(me, callee_expr);
+    } else if (callee_expr->tag != EXPR_IDENTIFIER || callee_expr->identifier.keyword != KEYWORD_IDENTIFIER_SUPER) {
+        callee = ty_non_nullable(me, ty_flow_expr_type(me, callee_expr));
+    }
+    my flow_uncached++;
+    CallEffects effects = ty_call_effects(me, callee, call);
+    my flow_uncached--;
+    CallEffects* stored = arena_new(&my arena, CallEffects);
+    *stored = effects;
+    *intern_slot(me, &my links, key, 3) = stored;
+    return effects;
+}
+
+static Ty const* non_nullable_constraint_or(Checker* me, Ty const* ty) {
+    Ty const* constraint = ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED) ? ty_base_constraint(me, ty) : nullptr;
+    return constraint ? constraint : ty;
+}
+
+// tsc's isTypeDerivedFrom(): what `instanceof` goes by, the classes something is made of rather than its shape
+static bool is_type_derived_from(Checker* me, Ty const* source, Ty const* target) {
+    if (source->kind == TY_UNION) {
+        for (u32 i = 0; i < source->composite.types.len; i++) {
+            if (!is_type_derived_from(me, source->composite.types.data[i], target)) return false;
+        }
+        return true;
+    }
+    if (target->kind == TY_UNION) {
+        for (u32 i = 0; i < target->composite.types.len; i++) {
+            if (is_type_derived_from(me, source, target->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    if (source->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < source->composite.types.len; i++) {
+            if (is_type_derived_from(me, source->composite.types.data[i], target)) return true;
+        }
+        return false;
+    }
+    if (source->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        Ty const* constraint = ty_base_constraint(me, source);
+        if (!constraint || constraint == source) constraint = ty_intrinsic(me, TY_UNKNOWN_);
+        return is_type_derived_from(me, constraint, target);
+    }
+    if (is_empty_anonymous_object(me, target)) return (source->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE)) != 0;
+    if (target == ty_global_object_type(me)) {
+        return (source->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE)) && !is_empty_anonymous_object(me, source);
+    }
+    if (target == ty_global_function_type(me)) return (source->flags & TYF_OBJECT) && is_function_object(me, source);
+    if (!(source->flags & TYF_OBJECT) || !(target->flags & TYF_OBJECT)) return false;
+    return ty_has_base_type(me, source, target);
+}
+
+static bool is_strict_subtype(Checker* me, Ty const* source, Ty const* target) {
+    return ty_is_related(me, source, target, TY_RELATION_STRICT_SUBTYPE);
+}
+
+// One member of the candidate of getNarrowedType(): the members of `type` that are it, or that it is
+static Ty const* narrowed_by_candidate_member(Checker* me, Ty const* type, Ty const* c, bool check_derived) {
+    TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    TyBuf parts = {0};
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* t = members.data[i];
+        // HACK: tsc tries the strict subtype relation and then the subtype relation, there's only the strict one here
+        if (check_derived ? is_type_derived_from(me, t, c) : is_strict_subtype(me, t, c)) ty_buf_push(&parts, t);
+        else if (check_derived ? is_type_derived_from(me, c, t) : is_strict_subtype(me, c, t)) ty_buf_push(&parts, c);
+    }
+    if (!parts.len) {
+        // A type parameter whose constraint the candidate fits is both
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* t = members.data[i];
+            if (!(t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
+            Ty const* constraint = ty_base_constraint(me, t);
+            if (!constraint || constraint == t) constraint = ty_intrinsic(me, TY_UNKNOWN_);
+            if (check_derived ? is_type_derived_from(me, c, constraint) : is_strict_subtype(me, c, constraint)) {
+                Ty const* both[2] = { t, c };
+                ty_buf_push(&parts, ty_intersection(me, both, 2, nullptr, (TyList){0}));
+            }
+        }
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
+static bool is_not_subset_of(Checker* me, Ty const* member, void const* arg) {
+    (void)me;
+    return !is_type_subset_of(member, arg);
+}
+
+static bool is_not_derived_from(Checker* me, Ty const* member, void const* arg) {
+    return !is_type_derived_from(me, member, arg);
+}
+
+// tsc's getNarrowedType(): what a type predicate or `instanceof` makes of a type
+static Ty const* narrowed_type(Checker* me, Ty const* type, Ty const* candidate, bool assume_true, bool check_derived) {
+    if (!assume_true) {
+        if (type == candidate) return ty_intrinsic(me, TY_NEVER);
+        if (check_derived) return filter_type(me, type, is_not_derived_from, candidate);
+        bool was_unknown = (type->flags & TYF_UNKNOWN) != 0;
+        if (was_unknown) {
+            Ty const* parts[3] = { ty_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
+            type = ty_union(me, parts, 3, nullptr, (TyList){0});
+        }
+        Ty const* true_type = narrowed_type(me, type, candidate, true, false);
+        Ty const* rest = filter_type(me, type, is_not_subset_of, true_type);
+        return was_unknown && rest == type ? ty_intrinsic(me, TY_UNKNOWN_) : rest;
+    }
+    if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || type == candidate) return candidate;
+    TyList candidates = candidate->kind == TY_UNION ? candidate->composite.types : (TyList){ .data = &candidate, .len = 1 };
+    TyBuf parts = {0};
+    for (u32 i = 0; i < candidates.len; i++) {
+        ty_buf_push(&parts, narrowed_by_candidate_member(me, type, candidates.data[i], check_derived));
+    }
+    Ty const* narrowed = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    if (!(narrowed->flags & TYF_NEVER)) return narrowed;
+    if (is_strict_subtype(me, candidate, type)) return candidate;
+    if (ty_is_related(me, type, candidate, TY_RELATION_ASSIGNABLE)) return type;
+    if (ty_is_related(me, candidate, type, TY_RELATION_ASSIGNABLE)) return candidate;
+    Ty const* both[2] = { type, candidate };
+    return ty_intersection(me, both, 2, nullptr, (TyList){0});
+}
+
+// Discriminants: `x.kind === "a"` says which members of the union x can be
+
+static bool is_literal_type(Ty const* ty) {
+    if (ty->kind == TY_UNION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (!is_unit_type(ty->composite.types.data[i]) && !(ty->composite.types.data[i]->flags & TYF_ENUM)) return false;
+        }
+        return true;
+    }
+    return is_unit_type(ty);
+}
+
+static Ty const* prop_type_by_name(Checker* me, Ty const* ty, Atom const* name) {
+    return ty_access(me, ty, ty_string_literal(me, atom_sv(name)));
+}
+
+// tsc's isDiscriminantProperty(): the members of the union have different types for it, a literal type among them
+static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* name) {
+    if (type->kind != TY_UNION) return false;
+    u64 key[3] = { KEY_FLOW_DISCRIMINANT, type->id, (u64)(uintptr_t)name };
+    uintptr_t cached = (uintptr_t)intern_get(&my links, key, 3);
+    if (cached) return cached == 2;
+    Ty const* first = nullptr;
+    bool non_uniform = false;
+    bool has_literal = false;
+    bool generic = false;
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        Ty const* member = type->composite.types.data[i];
+        if (member->flags & (TYF_NULLABLE | TYF_VOID)) continue;
+        Ty const* prop = prop_type_by_name(me, member, name);
+        if (!prop) continue;
+        if (!first) first = prop;
+        non_uniform |= prop != first;
+        has_literal |= is_literal_type(prop);
+        generic |= (prop->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
+    }
+    bool ret = non_uniform && has_literal && !generic;
+    *intern_slot(me, &my links, key, 3) = (void const*)(uintptr_t)(ret ? 2 : 1);
+    return ret;
+}
+
+// tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property
+// TODO: destructured discriminants (`const { kind } = x`), aliases of them
+static PropertyExpr const* discriminant_access(FlowQuery* q, Expr const* expr, Ty const* computed) {
+    Checker* me = q->me;
+    if (q->declared->kind != TY_UNION && computed->kind != TY_UNION) return nullptr;
+    expr = skip_reference_wrappers(expr);
+    if (expr->tag != EXPR_PROPERTY || !is_matching_reference(me, q->reference, &expr->property->expr)) return nullptr;
+    Atom const* name = access_name(me, expr->property);
+    if (!name) return nullptr;
+    Ty const* type = q->declared->kind == TY_UNION && is_type_subset_of(computed, q->declared) ? q->declared : computed;
+    return is_discriminant_property(me, type, name) ? expr->property : nullptr;
+}
+
+typedef Ty const* (*NarrowPropFn)(FlowQuery* q, Ty const* prop_type, void const* arg);
+
+typedef struct DiscriminantFilter {
+    Atom const* name;
+    Ty const* narrowed;
+} DiscriminantFilter;
+
+static bool keep_by_discriminant(Checker* me, Ty const* member, void const* arg) {
+    DiscriminantFilter const* filter = arg;
+    Ty const* discriminant = prop_type_by_name(me, member, filter->name);
+    if (!discriminant) discriminant = ty_intrinsic(me, TY_UNKNOWN_);
+    if ((discriminant->flags & TYF_NEVER) || (filter->narrowed->flags & TYF_NEVER)) return false;
+    return ty_is_comparable_either_way(me, filter->narrowed, discriminant);
+}
+
+// The members of `type` whose property could be what `narrow` leaves of the property's type
+static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, PropertyExpr const* access, NarrowPropFn narrow, void const* arg) {
+    Checker* me = q->me;
+    Atom const* name = access_name(me, access);
+    if (!name) return type;
+    bool optional_chain = access->optional_chain;
+    bool remove_nullable = compiler_options()->strict_null_checks && has_type_facts(me, type, TF_EQ_UNDEFINED_OR_NULL) &&
+        (optional_chain || (access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG));
+    Ty const* prop = prop_type_by_name(me, remove_nullable ? type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL) : type, name);
+    if (!prop) return type;
+    if (remove_nullable && optional_chain) prop = union_of(me, prop, ty_intrinsic(me, TY_UNDEFINED));
+    DiscriminantFilter filter = { name, narrow(q, prop, arg) };
+    return filter_type(me, type, keep_by_discriminant, &filter);
+}
+
+static Ty const* narrow_prop_by_facts(FlowQuery* q, Ty const* prop_type, void const* arg) {
+    return type_with_facts(q->me, prop_type, *(u32 const*)arg);
 }
 
 // Conditions
@@ -715,7 +1003,11 @@ static Ty const* narrow_by_truthiness(FlowQuery* q, Ty const* type, Expr const* 
     if (compiler_options()->strict_null_checks && assume_true && optional_chain_contains_reference(me, expr, q->reference)) {
         type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
     }
-    // TODO (stage 3): discriminant property access
+    PropertyExpr const* access = discriminant_access(q, expr, type);
+    if (access) {
+        u32 facts = assume_true ? TF_TRUTHY : TF_FALSY;
+        return narrow_by_discriminant(q, type, access, narrow_prop_by_facts, &facts);
+    }
     return type;
 }
 
@@ -724,7 +1016,11 @@ static Ty const* narrow_by_optionality(FlowQuery* q, Ty const* type, Expr const*
     if (is_matching_reference(me, q->reference, expr)) {
         return adjusted_type_with_facts(me, type, assume_present ? TF_NE_UNDEFINED_OR_NULL : TF_EQ_UNDEFINED_OR_NULL);
     }
-    // TODO (stage 3): discriminant property access
+    PropertyExpr const* access = discriminant_access(q, expr, type);
+    if (access) {
+        u32 facts = assume_present ? TF_NE_UNDEFINED_OR_NULL : TF_EQ_UNDEFINED_OR_NULL;
+        return narrow_by_discriminant(q, type, access, narrow_prop_by_facts, &facts);
+    }
     return type;
 }
 
@@ -805,6 +1101,7 @@ static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, E
     if (type->flags & TYF_ANY) return type;
     if (op == BINARY_OP_NOT_EQUAL || op == BINARY_OP_TRIPLE_NOT_EQUAL) assume_true = !assume_true;
     Ty const* value_type = ty_flow_expr_type(me, value);
+    // TODO: tsc narrows by the regular type of a literal here
     bool double_equals = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_NOT_EQUAL;
     if (value_type->flags & TYF_NULLABLE && value_type->kind != TY_UNION) {
         if (!compiler_options()->strict_null_checks) return type;
@@ -883,6 +1180,17 @@ static u32 typeof_ne_facts(csview name) {
     return TF_TYPEOF_NE_HOST_OBJECT;
 }
 
+typedef struct TypeofPropArg {
+    csview name;
+    bool assume_true;
+} TypeofPropArg;
+
+static Ty const* narrow_prop_by_typeof(FlowQuery* q, Ty const* prop_type, void const* arg) {
+    TypeofPropArg const* a = arg;
+    return a->assume_true ? narrow_by_type_name(q->me, prop_type, a->name) :
+        adjusted_type_with_facts(q->me, prop_type, typeof_ne_facts(a->name));
+}
+
 static Ty const* narrow_by_typeof(FlowQuery* q, Ty const* type, Expr const* typeof_expr, BinaryOp op, Expr const* literal, bool assume_true) {
     Checker* me = q->me;
     if (op == BINARY_OP_NOT_EQUAL || op == BINARY_OP_TRIPLE_NOT_EQUAL) assume_true = !assume_true;
@@ -894,7 +1202,11 @@ static Ty const* narrow_by_typeof(FlowQuery* q, Ty const* type, Expr const* type
         ) {
             type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
         }
-        // TODO (stage 3): discriminant property access
+        PropertyExpr const* access = discriminant_access(q, target, type);
+        if (access) {
+            TypeofPropArg arg = { name, assume_true };
+            return narrow_by_discriminant(q, type, access, narrow_prop_by_typeof, &arg);
+        }
         return type;
     }
     return assume_true ? narrow_by_type_name(me, type, name) : adjusted_type_with_facts(me, type, typeof_ne_facts(name));
@@ -927,6 +1239,99 @@ static bool is_string_literal_expr(Expr const* expr) {
     return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_STRING;
 }
 
+typedef struct EqualityPropArg {
+    BinaryOp op;
+    Expr const* value;
+    bool assume_true;
+} EqualityPropArg;
+
+static Ty const* narrow_prop_by_equality(FlowQuery* q, Ty const* prop_type, void const* arg) {
+    EqualityPropArg const* a = arg;
+    return narrow_by_equality(q, prop_type, a->op, a->value, a->assume_true);
+}
+
+static Ty const* constructor_instance_type(Checker* me, Ty const* constructor, void const* arg) {
+    (void)arg;
+    Ty const* prototype = ty_access(me, constructor, ty_string_literal(me, c_sv("prototype")));
+    if (prototype && !(prototype->flags & TYF_ANY)) return prototype;
+    Ty const* apparent = ty_apparent_type(me, constructor);
+    if (apparent->flags & TYF_OBJECT) {
+        Members const* members = ty_members(me, apparent);
+        if (members->construct_count) {
+            // TODO: tsc erases the type parameters of a generic signature to any
+            TyBuf results = {0};
+            for (u32 i = 0; i < members->construct_count; i++) ty_buf_push(&results, signature_return_type(me, members->construct[i]));
+            Ty const* ret = ty_union(me, results.data, results.len, nullptr, (TyList){0});
+            ty_buf_drop(&results);
+            return ret;
+        }
+    }
+    return ty_empty_object_type(me);
+}
+
+// TODO: `[Symbol.hasInstance]` methods with a type predicate
+static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr const* binary, bool assume_true) {
+    Checker* me = q->me;
+    Expr const* left = reference_candidate(&binary->left);
+    if (!is_matching_reference(me, q->reference, left)) {
+        if (assume_true && compiler_options()->strict_null_checks && optional_chain_contains_reference(me, left, q->reference)) {
+            return adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
+        }
+        return type;
+    }
+    Ty const* right_type = ty_flow_expr_type(me, &binary->right);
+    Ty const* object = ty_global_object_type(me);
+    Ty const* function = ty_global_function_type(me);
+    if (!object || !function || !is_type_derived_from(me, right_type, object)) return type;
+    if (!is_type_derived_from(me, right_type, function)) return type;
+    Ty const* instance = map_type(me, right_type, constructor_instance_type, nullptr);
+    if ((type->flags & TYF_ANY) && (instance == object || instance == function)) return type;
+    if (!assume_true && !((instance->flags & TYF_OBJECT) && !is_empty_anonymous_object(me, instance))) return type;
+    return narrowed_type(me, type, instance, assume_true, true);
+}
+
+typedef struct PresenceArg {
+    Atom const* name;
+    bool assume_true;
+} PresenceArg;
+
+static bool is_presence_possible(Checker* me, Ty const* member, void const* arg) {
+    PresenceArg const* a = arg;
+    Ty const* apparent = ty_apparent_type(me, member);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return !a->assume_true;
+    FoundProp prop = ty_find_prop(me, apparent, a->name);
+    if (prop.found) return (prop.flags & PROP_OPTIONAL) || a->assume_true;
+    bool has_index = prop_type_by_name(me, apparent, a->name) != nullptr;
+    return has_index || !a->assume_true;
+}
+
+// `"a" in x`. TODO: tsc intersects with `Record<"a", unknown>` when no member of x is known to have the property
+static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* binary, bool assume_true) {
+    Checker* me = q->me;
+    Expr const* target = reference_candidate(&binary->right);
+    if (!is_matching_reference(me, q->reference, target)) return type;
+    bool is_number = false;
+    Atom const* name = ty_property_name_of_key(me, ty_flow_expr_type(me, &binary->left), &is_number);
+    if (!name || (type->flags & TYF_ANY)) return type;
+    PresenceArg known = { name, true };
+    Ty const* possible = filter_type(me, type, is_presence_possible, &known);
+    bool is_known = false;
+    TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    for (u32 i = 0; i < members.len && !is_known; i++) {
+        Ty const* apparent = ty_apparent_type(me, members.data[i]);
+        is_known = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
+            (ty_find_prop(me, apparent, name).found || prop_type_by_name(me, apparent, name));
+    }
+    (void)possible;
+    if (!is_known) return type;
+    PresenceArg arg = { name, assume_true };
+    return filter_type(me, type, is_presence_possible, &arg);
+}
+
+static bool is_boolean_literal_expr(Expr const* expr) {
+    return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_BOOLEAN;
+}
+
 static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
     Checker* me = q->me;
     BinaryOpExpr const* binary = expr->binary_op;
@@ -953,9 +1358,27 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
                     type = narrow_by_optional_chain_containment(q, type, binary->op, left, assume_true);
                 }
             }
-            // TODO (stage 3): discriminant properties, `x.constructor === C`, comparisons with `true`/`false`
+            PropertyExpr const* left_access = discriminant_access(q, left, type);
+            PropertyExpr const* right_access = left_access ? nullptr : discriminant_access(q, right, type);
+            if (left_access || right_access) {
+                EqualityPropArg arg = { binary->op, left_access ? right : left, assume_true };
+                return narrow_by_discriminant(q, type, left_access ? left_access : right_access, narrow_prop_by_equality, &arg);
+            }
+            // TODO: `x.constructor === C`
+            // `isFoo(x) === true`
+            bool equals = binary->op == BINARY_OP_DOUBLE_EQUAL || binary->op == BINARY_OP_TRIPLE_EQUAL;
+            if (is_boolean_literal_expr(right) && left->tag != EXPR_PROPERTY) {
+                return narrow_type(q, type, left, (assume_true == equals) == right->literal.boolean, false);
+            }
+            if (is_boolean_literal_expr(left) && right->tag != EXPR_PROPERTY) {
+                return narrow_type(q, type, right, (assume_true == equals) == left->literal.boolean, false);
+            }
             return type;
         }
+        case BINARY_OP_INSTANCEOF:
+            return narrow_by_instanceof(q, type, binary, assume_true);
+        case BINARY_OP_IN:
+            return narrow_by_in(q, type, binary, assume_true);
         case BINARY_OP_COMMA:
             return narrow_type(q, type, &binary->right, assume_true, false);
         // Broken down into conditions of their own by the builder, except inside something that isn't
@@ -968,22 +1391,110 @@ static Ty const* narrow_by_binary(FlowQuery* q, Ty const* type, Expr const* expr
                 union_of(me, narrow_type(q, type, &binary->left, true, false), narrow_type(q, type, &binary->right, true, false)) :
                 narrow_type(q, narrow_type(q, type, &binary->left, false, false), &binary->right, false, false);
         default:
-            // TODO (stage 3): instanceof, in
             return type;
     }
+}
+
+// The argument a predicate of the call is about: `this is T` is about the object the method is called on
+static Expr const* predicate_argument(TyPredicate const* predicate, CallExpr const* call) {
+    if (predicate->is_this) {
+        Expr const* callee = &call->callable;
+        if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+        callee = skip_reference_wrappers(callee);
+        return callee->tag == EXPR_PROPERTY ? &callee->property->expr : nullptr;
+    }
+    if (predicate->param_index < 0 || predicate->param_index >= vec_expr_size(&call->args)) return nullptr;
+    return vec_expr_at(&call->args, predicate->param_index);
+}
+
+typedef struct PredicatePropArg {
+    Ty const* candidate;
+    bool assume_true;
+} PredicatePropArg;
+
+static Ty const* narrow_prop_by_predicate(FlowQuery* q, Ty const* prop_type, void const* arg) {
+    PredicatePropArg const* a = arg;
+    return narrowed_type(q->me, prop_type, a->candidate, a->assume_true, false);
+}
+
+static bool every_member_is_nullable(Ty const* ty) {
+    return every_member_has_flags(ty, TYF_NULLABLE, true);
+}
+
+static Ty const* narrow_by_predicate(FlowQuery* q, Ty const* type, TyPredicate const* predicate, CallExpr const* call, bool assume_true) {
+    Checker* me = q->me;
+    Ty const* candidate = predicate->type;
+    if (!candidate) return type;
+    if ((type->flags & TYF_ANY) && (candidate == ty_global_object_type(me) || candidate == ty_global_function_type(me))) return type;
+    Expr const* argument = predicate_argument(predicate, call);
+    if (!argument) return type;
+    if (argument->tag == EXPR_SPREAD) return type;
+    if (is_matching_reference(me, q->reference, argument)) return narrowed_type(me, type, candidate, assume_true, false);
+    if (compiler_options()->strict_null_checks && optional_chain_contains_reference(me, argument, q->reference) &&
+        (assume_true ? !has_type_facts(me, candidate, TF_EQ_UNDEFINED) : every_member_is_nullable(candidate))
+    ) {
+        type = adjusted_type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
+    }
+    PropertyExpr const* access = discriminant_access(q, argument, type);
+    if (access) {
+        PredicatePropArg arg = { candidate, assume_true };
+        return narrow_by_discriminant(q, type, access, narrow_prop_by_predicate, &arg);
+    }
+    return type;
+}
+
+// Whether a call could say something about the reference: one of its arguments is it, or it is called on it
+static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
+    Checker* me = q->me;
+    for_each (i, vec_expr, &call->args) {
+        if (is_matching_reference(me, q->reference, i) || contains_matching_reference(me, q->reference, i) ||
+            optional_chain_contains_reference(me, i, q->reference)
+        ) {
+            return true;
+        }
+    }
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    callee = skip_reference_wrappers(callee);
+    if (callee->tag != EXPR_PROPERTY) return false;
+    Expr const* object = &callee->property->expr;
+    return is_matching_reference(me, q->reference, object) || contains_matching_reference(me, q->reference, object);
+}
+
+static Ty const* narrow_by_call(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true) {
+    CallExpr const* call = expr->call;
+    if (call->uses_new || !has_matching_argument(q, call)) return type;
+    // (An optional call that didn't happen says nothing)
+    if (!assume_true && expr_is_optional_chain(expr)) return type;
+    CallEffects effects = call_effects(q->me, expr, false);
+    if (!effects.has_predicate || effects.predicate.asserts) return type;
+    return narrow_by_predicate(q, type, &effects.predicate, call, assume_true);
+}
+
+// What is known after `assert(expr)` returned
+static Ty const* narrow_by_assertion(FlowQuery* q, Ty const* type, Expr const* expr) {
+    Checker* me = q->me;
+    if (is_boolean_literal_expr(expr) && !expr->literal.boolean) return ty_intrinsic(me, TY_UNREACHABLE_NEVER);
+    if (expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_AND_AND) {
+        return narrow_by_assertion(q, narrow_by_assertion(q, type, &expr->binary_op->left), &expr->binary_op->right);
+    }
+    if (expr->tag == EXPR_BINARY_OP && expr->binary_op->op == BINARY_OP_OR_OR) {
+        return union_of(me, narrow_by_assertion(q, type, &expr->binary_op->left), narrow_by_assertion(q, type, &expr->binary_op->right));
+    }
+    return narrow_type(q, type, expr, true, false);
 }
 
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish) {
     if (nullish) return narrow_by_optionality(q, type, expr, assume_true);
     switch (expr->tag) {
         case EXPR_IDENTIFIER:
-            // TODO (stage 3): aliased conditions (`const ok = typeof x === "string"`)
+            // TODO: aliased conditions (`const ok = typeof x === "string"`)
             if (expr->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) return type;
             return narrow_by_truthiness(q, type, expr, assume_true);
         case EXPR_PROPERTY:
             return narrow_by_truthiness(q, type, expr, assume_true);
         case EXPR_CALL:
-            return type; // TODO (stage 3): type predicates
+            return narrow_by_call(q, type, expr, assume_true);
         case EXPR_AS_TYPE:
             return expr->as_type->is_satisfies ? narrow_type(q, type, &expr->as_type->expr, assume_true, false) : type;
         case EXPR_BINARY_OP:
@@ -995,6 +1506,196 @@ static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, boo
         default:
             return type;
     }
+}
+
+// Switch statements
+
+static SwitchCase const* switch_case_at(SwitchStatement const* switch_, u32 i) {
+    return vec_switch_case_at(&switch_->cases, i);
+}
+
+static u32 switch_case_count(SwitchStatement const* switch_) {
+    return (u32)vec_switch_case_size(&switch_->cases);
+}
+
+// The type of every case expression, never for `default`
+static void switch_clause_types(Checker* me, SwitchStatement const* switch_, TyBuf* out) {
+    for_each (i, vec_switch_case, &switch_->cases) {
+        ty_buf_push(out, i->is_pattern ? ty_flow_expr_type(me, &i->pattern) : ty_intrinsic(me, TY_NEVER));
+    }
+}
+
+static bool buf_contains(TyBuf const* buf, Ty const* ty) {
+    for (u32 i = 0; i < buf->len; i++) {
+        if (buf->data[i] == ty) return true;
+    }
+    return false;
+}
+
+static bool is_not_case_unit(Checker* me, Ty const* member, void const* arg) {
+    (void)me;
+    TyBuf const* switch_types = arg;
+    Ty const* unit = member;
+    if (member->kind == TY_INTERSECTION) {
+        // `"a" & Tag`
+        for (u32 i = 0; i < member->composite.types.len; i++) {
+            if (is_unit_type(member->composite.types.data[i])) unit = member->composite.types.data[i];
+        }
+    }
+    return !(is_unit_type(unit) && buf_contains(switch_types, unit));
+}
+
+static Ty const* narrow_by_switch_on_discriminant(FlowQuery* q, Ty const* type, FlowSwitchClause const* clause) {
+    Checker* me = q->me;
+    TyBuf switch_types = {0};
+    switch_clause_types(me, clause->switch_, &switch_types);
+    if (!switch_types.len) return type;
+    bool has_default = clause->clause_start == clause->clause_end;
+    for (u32 i = clause->clause_start; i < clause->clause_end; i++) has_default |= (switch_types.data[i]->flags & TYF_NEVER) != 0;
+    // TODO: `unknown` narrowed by the cases of a switch without default
+    Ty const* discriminant = ty_union(me, switch_types.data + clause->clause_start, clause->clause_end - clause->clause_start, nullptr, (TyList){0});
+    Ty const* case_type = discriminant->flags & TYF_NEVER ? discriminant :
+        replace_primitives_with_literals(me, filter_type(me, type, is_comparable_to, discriminant), discriminant);
+    Ty const* ret = case_type;
+    if (has_default) {
+        Ty const* default_type = filter_type(me, type, is_not_case_unit, &switch_types);
+        ret = case_type->flags & TYF_NEVER ? default_type : union_of(me, case_type, default_type);
+    }
+    ty_buf_drop(&switch_types);
+    return ret;
+}
+
+static Ty const* narrow_prop_by_switch(FlowQuery* q, Ty const* prop_type, void const* arg) {
+    return narrow_by_switch_on_discriminant(q, prop_type, arg);
+}
+
+// The string of every case of a `switch (typeof x)`, false if some case isn't a string literal
+static bool typeof_switch_has_witnesses(SwitchStatement const* switch_) {
+    for_each (i, vec_switch_case, &switch_->cases) {
+        if (i->is_pattern && !is_string_literal_expr(&i->pattern)) return false;
+    }
+    return true;
+}
+
+// What is known when none of the cases outside of [start, end) matched
+static u32 typeof_switch_not_equal_facts(SwitchStatement const* switch_, u32 start, u32 end) {
+    u32 facts = 0;
+    for_each (i, vec_switch_case, &switch_->cases) {
+        if (i->is_pattern && ((u32)i_index < start || (u32)i_index >= end)) {
+            facts |= typeof_ne_facts(cstr_sv(&i->pattern.literal.string));
+        }
+    }
+    return facts;
+}
+
+static bool has_all_facts(Checker* me, Ty const* member, void const* arg) {
+    u32 facts = *(u32 const*)arg;
+    return (type_facts(me, member, facts) & facts) == facts;
+}
+
+static Ty const* narrow_by_switch_on_typeof(FlowQuery* q, Ty const* type, FlowSwitchClause const* clause) {
+    Checker* me = q->me;
+    SwitchStatement const* switch_ = clause->switch_;
+    if (!typeof_switch_has_witnesses(switch_)) return type;
+    bool has_default = clause->clause_start == clause->clause_end;
+    for (u32 i = clause->clause_start; i < clause->clause_end; i++) has_default |= !switch_case_at(switch_, i)->is_pattern;
+    if (has_default) {
+        u32 facts = typeof_switch_not_equal_facts(switch_, clause->clause_start, clause->clause_end);
+        return filter_type(me, type, has_all_facts, &facts);
+    }
+    TyBuf parts = {0};
+    for (u32 i = clause->clause_start; i < clause->clause_end; i++) {
+        ty_buf_push(&parts, narrow_by_type_name(me, type, cstr_sv(&switch_case_at(switch_, i)->pattern.literal.string)));
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
+static Ty const* narrow_by_switch_on_true(FlowQuery* q, Ty const* type, FlowSwitchClause const* clause) {
+    Checker* me = q->me;
+    SwitchStatement const* switch_ = clause->switch_;
+    u32 count = switch_case_count(switch_);
+    bool has_default = clause->clause_start == clause->clause_end;
+    for (u32 i = clause->clause_start; i < clause->clause_end; i++) has_default |= !switch_case_at(switch_, i)->is_pattern;
+    // The cases before didn't match
+    for (u32 i = 0; i < clause->clause_start; i++) {
+        SwitchCase const* c = switch_case_at(switch_, i);
+        if (c->is_pattern) type = narrow_type(q, type, &c->pattern, false, false);
+    }
+    if (has_default) {
+        for (u32 i = clause->clause_end; i < count; i++) {
+            SwitchCase const* c = switch_case_at(switch_, i);
+            if (c->is_pattern) type = narrow_type(q, type, &c->pattern, false, false);
+        }
+        return type;
+    }
+    TyBuf parts = {0};
+    for (u32 i = clause->clause_start; i < clause->clause_end; i++) {
+        ty_buf_push(&parts, narrow_type(q, type, &switch_case_at(switch_, i)->pattern, true, false));
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
+static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
+    Checker* me = q->me;
+    FlowSwitchClause const* clause = flow->node;
+    Expr const* needle = skip_reference_wrappers(&clause->switch_->needle);
+    FlowType before = type_at_flow_node(q, flow->antecedent);
+    Ty const* type = before.type;
+    if (is_matching_reference(me, q->reference, needle)) {
+        type = narrow_by_switch_on_discriminant(q, type, clause);
+    } else if (is_typeof_expr(needle) && is_matching_reference(me, q->reference, &needle->unary_op->expr)) {
+        type = narrow_by_switch_on_typeof(q, type, clause);
+    } else if (needle->tag == EXPR_LITERAL && needle->literal.tag == VALUE_BOOLEAN && needle->literal.boolean) {
+        type = narrow_by_switch_on_true(q, type, clause);
+    } else {
+        // TODO: `switch (x?.kind)` says x isn't nullish in the cases that aren't `undefined`
+        PropertyExpr const* access = discriminant_access(q, needle, type);
+        if (access) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
+    }
+    return (FlowType){ type, before.incomplete };
+}
+
+// tsc's isExhaustiveSwitchStatement(): the cases cover everything the needle can be
+static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_) {
+    u64 key[2] = { KEY_FLOW_EXHAUSTIVE, (u64)(uintptr_t)switch_ };
+    uintptr_t cached = (uintptr_t)intern_get(&my links, key, 2);
+    if (cached) return cached == 2; // (3, being worked out: a circularity, which tsc answers with "no" too)
+    void const** slot = intern_slot(me, &my links, key, 2);
+    *slot = (void const*)(uintptr_t)3;
+    bool ret = false;
+    Expr const* needle = skip_reference_wrappers(&switch_->needle);
+    if (is_typeof_expr(needle)) {
+        if (typeof_switch_has_witnesses(switch_)) {
+            Ty const* operand = non_nullable_constraint_or(me, ty_flow_expr_type(me, &needle->unary_op->expr));
+            u32 facts = typeof_switch_not_equal_facts(switch_, 0, 0);
+            if (operand->flags & (TYF_ANY | TYF_UNKNOWN)) {
+                // (tsc's AllTypeofNE: the seven names and "undefined")
+                u32 all = (TF_ALL_TYPEOF_NE & ~TF_TYPEOF_NE_HOST_OBJECT) | TF_NE_UNDEFINED;
+                ret = (facts & all) == all;
+            } else {
+                ret = (filter_type(me, operand, has_all_facts, &facts)->flags & TYF_NEVER) != 0;
+            }
+        }
+    } else {
+        Ty const* type = ty_flow_expr_type(me, needle);
+        if (is_literal_type(type) || (type->flags & TYF_BOOLEAN)) {
+            TyBuf switch_types = {0};
+            switch_clause_types(me, switch_, &switch_types);
+            ret = switch_types.len > 0;
+            for (u32 i = 0; i < switch_types.len && ret; i++) {
+                ret = is_unit_type(switch_types.data[i]) || (switch_types.data[i]->flags & TYF_NEVER);
+            }
+            TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+            for (u32 i = 0; i < members.len && ret; i++) ret = buf_contains(&switch_types, members.data[i]);
+            ty_buf_drop(&switch_types);
+        }
+    }
+    *intern_slot(me, &my links, key, 2) = (void const*)(uintptr_t)(ret ? 2 : 1);
+    return ret;
 }
 
 static FlowType type_at_flow_condition(FlowQuery* q, FlowNode const* flow) {
@@ -1057,9 +1758,18 @@ static FlowType type_at_branch_label(FlowQuery* q, FlowList const* antecedents) 
     bool subtype_reduction = false;
     bool seen_incomplete = false;
     FlowType ret;
+    FlowNode const* bypass = nullptr;
     for (u32 i = 0; i < antecedents->count; i++) {
-        // TODO (stage 3): the bypass branch of an exhaustive switch
-        FlowType branch = type_at_flow_node(q, antecedents->items[i]);
+        FlowNode const* antecedent = antecedents->items[i];
+        if (!bypass && (antecedent->flags & FLOW_SWITCH_CLAUSE)) {
+            // "No case matched" of a switch that may be exhaustive: looked at last, and only if it could add something
+            FlowSwitchClause const* clause = antecedent->node;
+            if (clause->clause_start == clause->clause_end) {
+                bypass = antecedent;
+                continue;
+            }
+        }
+        FlowType branch = type_at_flow_node(q, antecedent);
         // Every other branch can only add subtypes of the declared type
         if (branch.type == q->declared && q->declared == q->initial) {
             ty_buf_drop(&types);
@@ -1068,6 +1778,19 @@ static FlowType type_at_branch_label(FlowQuery* q, FlowList const* antecedents) 
         push_if_unique(&types, branch.type);
         if (!is_type_subset_of(branch.type, q->initial)) subtype_reduction = true;
         seen_incomplete |= branch.incomplete;
+    }
+    if (bypass) {
+        FlowType branch = type_at_flow_node(q, bypass);
+        FlowSwitchClause const* clause = bypass->node;
+        if (!(branch.type->flags & TYF_NEVER) && !buf_contains(&types, branch.type) && !is_exhaustive_switch(q->me, clause->switch_)) {
+            if (branch.type == q->declared && q->declared == q->initial) {
+                ty_buf_drop(&types);
+                return (FlowType){ branch.type, false };
+            }
+            ty_buf_push(&types, branch.type);
+            if (!is_type_subset_of(branch.type, q->initial)) subtype_reduction = true;
+            seen_incomplete |= branch.incomplete;
+        }
     }
     ret = (FlowType){ union_at_label(q, &types, subtype_reduction), seen_incomplete };
     ty_buf_drop(&types);
@@ -1148,6 +1871,30 @@ static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl 
     return !symbol->last_assignment_end || symbol->last_assignment_end < span_start_ptr(reference->identifier.name);
 }
 
+// A call statement: an assertion narrows, after a call that never returns there is nothing. False: no effect
+static bool type_at_flow_call(FlowQuery* q, FlowNode const* flow, FlowType* out) {
+    Checker* me = q->me;
+    Expr const* expr = flow->node;
+    CallEffects effects = call_effects(me, expr, true);
+    if (effects.has_predicate && effects.predicate.asserts) {
+        TyPredicate const* predicate = &effects.predicate;
+        FlowType before = type_at_flow_node(q, flow->antecedent);
+        Ty const* narrowed = before.type;
+        if (predicate->type) {
+            narrowed = narrow_by_predicate(q, before.type, predicate, expr->call, true);
+        } else if (!predicate->is_this && predicate->param_index >= 0 && predicate->param_index < vec_expr_size(&expr->call->args)) {
+            narrowed = narrow_by_assertion(q, before.type, vec_expr_at(&expr->call->args, predicate->param_index));
+        }
+        *out = (FlowType){ narrowed, before.incomplete };
+        return true;
+    }
+    if (effects.returns_never) {
+        *out = (FlowType){ ty_intrinsic(me, TY_UNREACHABLE_NEVER), false };
+        return true;
+    }
+    return false;
+}
+
 #define FLOW_MAX_DEPTH 2000
 
 static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
@@ -1177,15 +1924,14 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
                 continue;
             }
         } else if (flags & FLOW_CALL) {
-            // TODO (stage 3): assertion functions, calls that never return
-            flow = flow->antecedent;
-            continue;
+            if (!type_at_flow_call(q, flow, &type)) {
+                flow = flow->antecedent;
+                continue;
+            }
         } else if (flags & FLOW_CONDITION) {
             type = type_at_flow_condition(q, flow);
         } else if (flags & FLOW_SWITCH_CLAUSE) {
-            // TODO (stage 3): narrowing by switch
-            flow = flow->antecedent;
-            continue;
+            type = type_at_switch_clause(q, flow);
         } else if (flags & FLOW_LABEL) {
             FlowList const* antecedents = label_antecedents(flow, q->overrides);
             if (!antecedents || !antecedents->count) {
@@ -1246,5 +1992,6 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
     my flow_shared_count = q.shared_start;
     // (The result of a top-level query can be marked incomplete: a shared node that was first reached through a back
     // edge is remembered with what it had then. tsc takes the type as it is, so that is what the baselines show)
+    if (result.type == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return declared;
     return result.type;
 }

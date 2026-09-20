@@ -43,6 +43,9 @@ enum {
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
     KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
+    KEY_FLOW_CALL,      // (call Expr, is a statement) -> CallEffects, see flow.c
+    KEY_FLOW_DISCRIMINANT, // (type id, property name) -> 1 + whether the property discriminates the union
+    KEY_FLOW_EXHAUSTIVE, // SwitchStatement -> 1 + whether it is exhaustive (2: being worked out)
     KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
 };
 
@@ -107,6 +110,8 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* ty_global_regexp_type(Checker* me);
 Ty const* ty_global_function_type(Checker* me); // Null without a lib
+Ty const* ty_global_object_type(Checker* me); // Null without a lib
+bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
 // The property name a key type stands for (a string or number literal), null if none
 Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);

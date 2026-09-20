@@ -191,10 +191,23 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `Statement.span` (16 bytes per statement) exists only for TS7027 ranges and `last_assignment_end`.
 
 ## Narrowing (`ty/flow.c`, the hooks in `ty/expr.c`; plan 05 stage 2)
-- Not there yet (stage 3, marked `TODO (stage 3)` in `flow.c`): type predicates and assertion calls (call nodes are
-  skipped), `never` calls and typed reachability, discriminant properties, `switch` clauses (skipped: no narrowing
-  by case, no exhaustiveness), `instanceof`, `in`, `x.constructor === C`, comparisons with `true`/`false`, aliased
-  conditions (`const ok = typeof x === "string"`), assignment nodes in code that a `never` call made unreachable.
+- Not there (each has a TODO in `flow.c`): aliased conditions (`const ok = typeof x === "string"; if (ok)`),
+  destructured discriminants (`const { kind } = x`), `x.constructor === C`, `[Symbol.hasInstance]` predicates,
+  `"a" in x` intersecting with `Record<"a", unknown>` when no member is known to have the property, `unknown`
+  narrowed by the cases of a `switch`, `switch (x?.kind)` removing nullish, inferred type predicates (tsc 5.5),
+  the key property map tsc uses for big unions (`getKeyPropertyName()`: an optimisation, but it also changes which
+  members `getNarrowedType()` starts from), erasure of generic construct signatures in `constructor_instance_type()`.
+- `narrowed_by_candidate_member()`: tsc tries the strict subtype relation, then the (non-strict) subtype relation.
+  There is only `TY_RELATION_STRICT_SUBTYPE` here.
+- `prop_has_explicit_type()`: a property of a mapped type (`Readonly<Services>`) counts as explicitly typed; tsc asks
+  the property it was mapped from. Object literal members never count (right), but neither does anything tsc finds
+  through a JSDoc type.
+- No TS2775 / TS2776 (an assertion whose callee has a name without an explicit type is silently not an assertion),
+  no TS1228 for predicates in the wrong place: `new (x) => x is T` and accessors parse as predicates and are treated
+  as such, `(x: this is T)` parameter types don't parse at all (a parse error hides every semantic error of the
+  file: `assertionTypePredicates1`).
+- `Statement.flow` costs 8 bytes per statement for the sake of TS7027 after `never` calls, which is an error only
+  under `allowUnreachableCode: false`. Labeled statements have none (tsc gives both the label and its body one).
 - `chain_object_type()` (`ty/expr.c`): tsc marks the `undefined` of an optional chain that ended with a marker type
   and strips only that when the chain continues. Here every `undefined` of an object that continues a chain is taken
   for the marker, so `a?.b.c` with an optional `b` isn't an error. Wants an `optional` intrinsic that prints as
@@ -216,7 +229,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `LazyMemo.hits`: expression memos allow 8 re-entrant evaluations before they answer the error type. It's a runaway
   guard, not a design: tsc has no expression-level cycle detection at all.
 - TS2339 / TS18048 on property access are still behind `noUncheckedIndexedAccess` (`check_access()`): "narrowing
-  comes first" was the reason, revisit after stage 3.
+  comes first" was the reason, and narrowing is there now: stage 4 (`s.b` on a union that lacks `b` in
+  `test/probes/plan05/narrowingStage3.ts` is the one error that probe misses).
 
 ## The AST-side walk and what's left of the old type world
 - `TYPE_LAZY`, `TYPE_REF`, the binding `TYPE_INDEXED`, `CallableArg`, `type_clone` and its whole family are gone:

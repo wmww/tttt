@@ -135,6 +135,8 @@ void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCa
     }
 }
 
+static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTestCase* ctx);
+
 void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case TYPE_UNKNOWN:
@@ -209,7 +211,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
                 }
             }
-            type_compile_test_info(&my callable->function->ret, ctx);
+            if (my callable->function->predicate) {
+                type_predicate_compile_test_info(my callable->function->predicate, ctx);
+            } else {
+                type_compile_test_info(&my callable->function->ret, ctx);
+            }
             break;
 
         case TYPE_INTERFACE: interface_compile_test_info(&my interface, span_null, ctx); break;
@@ -254,6 +260,18 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
     }
 }
 
+// `x is T`: the symbols baseline has the parameter, the types baseline nothing
+static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTestCase* ctx) {
+    if (my symbol) {
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = symbol_declaration_spans(my symbol),
+            .span = my name,
+            .name = my name,
+        });
+    }
+    if (my has_type) type_compile_test_info(&my type, ctx);
+}
+
 void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     if (span_valid(my name)) {
         baseline_test_case_add_declaration(ctx, my name, my symbol);
@@ -265,7 +283,9 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         }
         initialized_binding_compile_test_info(&i->initializer, ctx);
     }
-    if (my ret_explicit && !my is_constructor) {
+    if (my predicate) {
+        type_predicate_compile_test_info(my predicate, ctx);
+    } else if (my ret_explicit && !my is_constructor) {
         type_compile_test_info(&my ret, ctx);
     }
     block_compile_test_info(&my body, ctx);

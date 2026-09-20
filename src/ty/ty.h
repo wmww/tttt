@@ -340,6 +340,15 @@ typedef struct SigParam {
     bool rest;
 } SigParam;
 
+// `x is T`, `this is T`, `asserts x`, `asserts x is T`
+typedef struct TyPredicate {
+    bool is_this;
+    bool asserts;
+    i32 param_index; // Among Signature.params, -1: no such parameter
+    Atom const* param_name;
+    Ty const* type; // Null: `asserts x`
+} TyPredicate;
+
 struct Signature {
     u32 flags;
     // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
@@ -365,6 +374,8 @@ struct Signature {
     // that is in the middle of being checked
     LazyState ret_state;
     Ty const* ret;
+    TyPredicate const* predicate; // Use signature_predicate()
+    bool predicate_done;
 };
 
 typedef struct IndexInfo {
@@ -467,6 +478,7 @@ typedef enum TyIntrinsic {
     TY_VOID,
     TY_NEVER,
     TY_SILENT_NEVER,
+    TY_UNREACHABLE_NEVER, // Control flow: after a call that never returns. A reference there has its declared type
     TY_NON_PRIMITIVE,
     TY_INTRINSIC_COUNT,
 } TyIntrinsic;
@@ -574,6 +586,14 @@ Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 Ty const* prop_type(Checker* me, Prop const* prop);
 void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
+TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
+bool signature_declared_never(Signature const* sig);
+typedef struct CallEffects {
+    bool has_predicate;
+    bool returns_never;
+    TyPredicate predicate; // With the type arguments of the call
+} CallEffects;
+CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call);
 TyList ty_reference_args(Checker* me, Ty const* reference);
 Ty const* ty_param_constraint(Checker* me, Ty const* param); // null if unconstrained
 Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
@@ -753,4 +773,5 @@ typedef struct TyDisplay {
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
+void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);
 cstr ty_to_cstr(Checker* me, Ty const* ty);

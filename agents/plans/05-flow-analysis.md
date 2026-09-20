@@ -234,6 +234,26 @@ tsc's types before building narrowing kinds on top.
   of the 8 literals, string literal truthiness (`is_definitely_falsy()` read a borrowed string as empty).
 - `./tscbaseline.sh file.ts [types|symbols|errors.txt]` prints what tsc says about a probe.
 
+## Stage 3 is done: what stage 4 should know
+`documentation.md` ("Control flow": reachability, narrowing, type predicates) describes what exists, `hacks.md`
+("Narrowing") what is left out. Probes: `narrowingBasics.ts` passes errors, `narrowingStage3.ts` (every stage 3 form)
+narrows like tsc everywhere; what differs in their types is union member order, alias names of filtered unions
+(`FooBase` vs `string | false`), `b?: T` without `| undefined`, `this` types and signature underlines.
+- Corpus: 3984 -> **1626** (TS2345 2366 -> 317). What is left is no longer narrowing, see `triage.md` ("Real corpus
+  after plan 05 stage 3"): TS7006 852 (unchanged since before plan 05: the members of the `checker` object literal
+  aren't contextually typed), `visitNode(node, visitor, isExpression)` picking the wrong overload
+  (`test/probes/plan05/visitNodeInference.ts`), `Pick<>` / `Readonly<>` targets.
+- Corpus typecheck went 678 -> 778 ms (call effects, discriminants, switch clauses are new work per query). The
+  profile is stage 4's. Candidates seen while writing: `is_discriminant_property()` is cached per (union, name) but
+  `narrow_by_discriminant()` does a `ty_access()` and a comparable check per member per query (tsc has the key
+  property map for unions of 10+), `call_effects()` resolves generic/overloaded callees fully.
+- Suite: only +6 full tests (errors +43, symbols +66, types +7): nearly every flow test still fails *types* on
+  something else. Look at what before picking fallout work: signature underlines (`: ^ ^^ ^^^^^`) are in most diffs.
+- Correct narrowing exposed (not fixed here): `[x]` with `x: string | false` widens `false` to `boolean` (no
+  fresh/regular literals: `spreadBooleanRespectsFreshness`), relations ignore symbol-keyed members so `{ length }` is
+  a subtype of `Iterable<any>` (`typeGuardNarrowByUntypedField`), `super.x` is `any` (`neverReturningFunctions1`).
+- `FLOW_REACH_UNKNOWN` is never answered any more; the tri-state can go.
+
 ## Stages (one session each; save baselines and update docs every time)
 1. **(DONE)** **Flow graph.** `flow.h`/`flow.c`, builder in the resolve walk in flow order, assignment-target and
    `is_assigned` bits, function scopes know their `FunctionImpl`, `TTTT_DUMP_FLOW`, `IdentifierExpr` repacked, binder-side
@@ -248,7 +268,7 @@ tsc's types before building narrowing kinds on top.
    declared types, closures rule, TS2454.
    *Done when:* the truthiness/typeofs/equality/assignments/loops/closures functions of the probe match tsc in errors
    and types; corpus diagnostics drop by thousands (expect the `X | undefined` bulk to go; record the number).
-3. **The rest of narrowing.** Type predicates end to end (parser, `TypeNode`, signatures, display, relations),
+3. **(DONE)** **The rest of narrowing.** Type predicates end to end (parser, `TypeNode`, signatures, display, relations),
    assertion functions and `never` calls (call flow nodes, typed reachability, the return type consumers),
    discriminants, `switch` (values, `typeof`, `true`, exhaustiveness), `instanceof`, `in`, optional chains, `typeof x`
    in types, aliased conditions if time allows.

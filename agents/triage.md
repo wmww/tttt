@@ -243,3 +243,29 @@ Uninvestigated items. Triage sessions drain this.
   `"string"` it prints in another order than tsc's (made at checker startup there). Make it in `checker_new()` if a
   test shows it.
 
+## Real corpus after plan 05 stage 3 (1626 diagnostics, `./realworld.py`)
+- **TS7006 852** (was 876 before plan 05, so not flow): mostly the members of `const checker: TypeChecker = { ... }`
+  in `checker.ts` (`getFalseType: (fresh?) => ...`): arrow functions in an object literal whose contextual type is an
+  interface with optional/overloaded methods don't get their parameters typed. Biggest single category now.
+- **TS2345 317 / TS2769 103 / TS2322 92**: `visitNode(node, visitor, isExpression)` resolves to the overload without
+  the predicate (`test/probes/plan05/visitNodeInference.ts`: inference into `Visitor<NonNullable<TIn>, TVisited>` with
+  a `T | readonly N[]` return); `CompilerOptions` -> `Pick<CompilerOptions, "target" | "module">` (20),
+  `PathPathComponents` -> `Readonly<...>`, `{ operator: string; ... }` -> `Comparator` (literal widening in an object
+  literal that has a contextual type), `unknown` -> `Symbol` (9, some call returns unknown).
+- TS2349 78, TS2558 38, TS2344 30, TS2495 25 (`this`-typed `sort()` in for-of?), TS2364 19, TS2392 13, TS7022 12: not
+  looked at.
+
+## Found by plan 05 stage 3, not narrowing
+- `super.x` is `any`: `super` has no target symbol and no type (`neverReturningFunctions1`: `super.throw()` isn't a
+  never call; every `super.method()` result is unchecked).
+- Relations ignore symbol-keyed members: `{ length: unknown }` is a strict subtype of `Iterable<any>`
+  (`typeGuardNarrowByUntypedField`, `typeGuardNarrowByMutableUntypedField` regressed honestly when predicates started
+  narrowing).
+- `spreadBooleanRespectsFreshness` regressed honestly too: `[x]` with `x: string | false` gives `(string | boolean)[]`
+  (no fresh/regular literal types, `hacks.md`), and a union filtered down to the members of an alias prints as
+  `string | false` where tsc says `FooBase`.
+- The symbols baseline has no symbol for property accesses on primitives (`y.length` with `y: string`) and on unions
+  (`v.kind`): `expr_compile_test_info()` for `EXPR_PROPERTY` only looks at object types. Could be many SYM components.
+- Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775 / TS2776 (assertion
+  callee without explicit types), TS1225 (no such parameter), inferred predicates (tsc 5.5), `x is T` where the
+  function returns a non-boolean (TS2322 on return) are all missing.

@@ -133,6 +133,7 @@ static Ty const* global_type(Checker* me, GlobalType which) {
 }
 
 Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_FUNCTION); }
+Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJECT); }
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
 
 // The type of a regular expression literal
@@ -551,6 +552,46 @@ static Ternary compare_signatures(
     Ty const* target_return = signature_return_type(me, target);
     if (target_return->flags & (TYF_VOID | TYF_ANY)) return result;
     Ty const* source_return = signature_return_type(me, source);
+    // A type predicate is only assignable to the same predicate (a `boolean` target takes any)
+    TyPredicate const* target_predicate = signature_predicate(me, target);
+    if (target_predicate) {
+        TyPredicate const* source_predicate = signature_predicate(me, source);
+        if (!source_predicate) {
+            if (report) {
+                cstr sig_str = cstr_null;
+                ty_display_signature(me, (TyDisplay){ .target = &sig_str }, source);
+                report_line(st, 1224, cstr_d("Signature '", sig_str, "' must be a type predicate."));
+                cstr_drop(&sig_str);
+            }
+            return TERNARY_FALSE;
+        }
+        Ternary related = TERNARY_FALSE;
+        if (source_predicate->is_this != target_predicate->is_this || source_predicate->asserts != target_predicate->asserts) {
+            if (report && source_predicate->is_this != target_predicate->is_this) {
+                report_line(st, 1228, cstr_lit("A 'this'-based type guard is not compatible with a parameter-based type guard."));
+            }
+        } else if (!source_predicate->is_this && source_predicate->param_index != target_predicate->param_index) {
+            if (report) {
+                report_line(st, 1227, cstr_d(
+                    "Parameter '", atom_sv(source_predicate->param_name), "' is not in the same position as parameter '",
+                    atom_sv(target_predicate->param_name), "'."
+                ));
+            }
+        } else if (!source_predicate->type || !target_predicate->type) {
+            related = source_predicate->type == target_predicate->type ? TERNARY_TRUE : TERNARY_FALSE;
+        } else {
+            related = is_related_to(me, st, source_predicate->type, target_predicate->type, report);
+        }
+        if (!related && report) {
+            cstr source_str = cstr_null;
+            cstr target_str = cstr_null;
+            ty_display_predicate(me, (TyDisplay){ .target = &source_str }, source_predicate);
+            ty_display_predicate(me, (TyDisplay){ .target = &target_str }, target_predicate);
+            report_line(st, 1226, cstr_d("Type predicate '", source_str, "' is not assignable to '", target_str, "'."));
+            c_drop(cstr, &source_str, &target_str);
+        }
+        return result & related;
+    }
     Ternary related = TERNARY_FALSE;
     if (st->relation == TY_RELATION_COMPARABLE) related = is_related_to(me, st, target_return, source_return, false);
     if (!related) related = is_related_to(me, st, source_return, target_return, report);

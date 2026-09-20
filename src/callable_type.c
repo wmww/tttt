@@ -14,4 +14,5 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(my function, true, errs);
     type_typecheck(&my function->ret, errs);
+    if (my function->predicate && my function->predicate->has_type) type_typecheck(&my function->predicate->type, errs);
 }

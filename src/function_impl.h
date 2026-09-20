@@ -24,6 +24,17 @@ void function_arg_drop(FunctionArg* me);
 #define g_no_clone
 #include <cleat/generic/vec.h>
 
+// `x is T`, `this is T`, `asserts x`, `asserts x is T` in the place of a return type (`ret` is boolean / void then)
+typedef struct TypePredicateNode {
+    Span name; // The parameter, or `this`
+    bool is_this;
+    bool asserts;
+    bool has_type;
+    TypeNode type;
+    Symbol const* symbol; // The parameter, set by the resolve walk (null: `this`, a pattern, or no such parameter)
+    i32 param_index; // Among `args`, -1 if there is none of that name
+} TypePredicateNode;
+
 typedef struct FunctionImpl {
     Span name;
     Span full_span;
@@ -33,6 +44,7 @@ typedef struct FunctionImpl {
     Span ret_span;
     bool ret_explicit;
     TypeNode ret;
+    TypePredicateNode* predicate; // Usually null
     bool is_constructor;
     bool is_method; // Declared with method syntax (parameters compare bivariantly)
     bool is_async;

@@ -552,6 +552,39 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
     }
 }
 
+// tsc's hasBaseType(): whether the class or interface `source` is, extends or (transitively) inherits from `target`.
+// Type arguments don't matter
+static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 depth) {
+    if (source->kind == TY_REFERENCE) source = source->reference.target;
+    if (source == target) return true;
+    if (depth > 32 || source->kind != TY_DECLARED) return false;
+    if (source->declared.kind != TY_DECLARED_INTERFACE && source->declared.kind != TY_DECLARED_CLASS_INSTANCE) return false;
+    Symbol const* decl = source->declared.symbol;
+    if (!decl) return false;
+    LowerCtx ctx = { .generic = source->declared.type_params.len > 0 };
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (node->kind == SYMBOL_DECL_CLASS) {
+            Ty const* base = nullptr;
+            Symbol const* base_decl = nullptr;
+            if (class_base(me, node->node, ctx, &base, &base_decl) && base != source && has_base_type(me, base, target, depth + 1)) {
+                return true;
+            }
+        } else if (node->kind == SYMBOL_DECL_INTERFACE) {
+            InterfaceDecl const* interface_decl = node->node;
+            for_each (extends, vec_spanned_type, &interface_decl->extends) {
+                Ty const* base = ty_from_node(me, &extends->type, ctx);
+                if (base != source && has_base_type(me, base, target, depth + 1)) return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
+    if (target->kind == TY_REFERENCE) target = target->reference.target;
+    return has_base_type(me, source, target, 0);
+}
+
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
@@ -980,6 +1013,53 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     sig->ret = ret;
     sig->ret_state = LAZY_STATE_DONE;
     return ret;
+}
+
+// Only ever from an annotation, so asking doesn't infer a return type (TODO: tsc 5.5 infers `x is T` for functions
+// that return a narrowing expression)
+TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
+    Signature* sig = (Signature*)const_sig;
+    if (sig->predicate_done) return sig->predicate;
+    signature_resolve(me, sig);
+    sig->predicate_done = true;
+    if (sig->class_instance) return nullptr;
+    if (sig->target) {
+        TyPredicate const* target_predicate = signature_predicate(me, sig->target);
+        if (target_predicate && target_predicate->type && sig->mapper) {
+            TyPredicate* predicate = arena_new(&my arena, TyPredicate);
+            *predicate = *target_predicate;
+            predicate->type = ty_instantiate(me, target_predicate->type, sig->mapper);
+            sig->predicate = predicate;
+        } else {
+            sig->predicate = target_predicate;
+        }
+    } else if (sig->function && sig->function->predicate) {
+        TypePredicateNode const* node = sig->function->predicate;
+        TyPredicate* predicate = arena_new(&my arena, TyPredicate);
+        *predicate = (TyPredicate){
+            .is_this = node->is_this,
+            .asserts = node->asserts,
+            .param_index = node->param_index,
+            .param_name = checker_atom(me, node->name.sv),
+        };
+        // (`this: T` isn't among the parameters of the signature)
+        u32 arg_count = (u32)vec_function_arg_size(&sig->function->args);
+        if (predicate->param_index >= 0 && sig->param_count < arg_count) predicate->param_index--;
+        if (node->has_type) {
+            LowerCtx ctx = sig->ctx;
+            ctx.generic |= !sig->function->is_type || sig->type_params.len > 0;
+            ctx.method = false;
+            predicate->type = ty_from_node(me, &node->type, ctx);
+        }
+        sig->predicate = predicate;
+    }
+    return sig->predicate;
+}
+
+// Declared to return `never` (an inferred never doesn't count for control flow)
+bool signature_declared_never(Signature const* sig) {
+    while (sig->target) sig = sig->target;
+    return sig->function && sig->function->ret_explicit && !sig->function->predicate && sig->function->ret.tag == TYPE_NEVER;
 }
 
 typedef struct WordBuf {
