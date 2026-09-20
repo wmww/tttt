@@ -1,4 +1,19 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-printf "\x1b[32mTokens:       \x1b[42m%s\n\x1b[33m5h Limit:     \x1b[43m%s\n\x1b[31mWeekly Fable: \x1b[41m%s\n\x1b[35mLoC:          \x1b[45m%'d\n\x1b[0m" "$(~/playground/personal/tools/cc-tokens -r ~/tttt/ | grep -P '^TOTAL' | awk '{print $5}')" $(~/playground/personal/tools/cc-usage | awk '/Session/ {print $4} /Weekly, Fable/ {print $4}') "$(tokei -t C,'C Header' ~/tttt/ | awk '/Total/ {print $3}')"
+printf \
+    "\e[34mTokens:       \e[44;1;37m%12s\e[0m\n\e[33m5h Limit:     \e[43;1;37m%12s\e[0m\n\e[31mWeekly Fable: \e[41;1;37m%12s\e[0m\n\e[35mLoC:          \e[45;1;37m%'12d\e[0m\n\e[32mTests:        \e[42;1;37m%12s\e[0m\n" \
+    "$(~/playground/personal/tools/cc-tokens -r ~/tttt/ \
+        | grep -P '^TOTAL' \
+        | awk '{print $5}')" \
+    - - \
+    "$(tokei -t C,'C Header' ~/tttt/ \
+        | awk '/Total/ {print $3}')" \
+    "$(echo \
+        "$(("$(cat test/baseline_results.ts | grep true | wc -l)" * 10000 \
+            / "$(cat test/baseline_results.ts | grep -P '(true|false)' | wc -l)"))%" \
+        | sed -E 's/(...)$/.\1/')"
+
+#    $((~/playground/personal/tools/cc-usage \
+#        | awk '/Session/ {print $4} /Weekly, Fable/ {print $4}') \
+#        || echo - -) \
