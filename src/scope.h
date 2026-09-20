@@ -119,6 +119,25 @@ typedef enum AliasState {
     ALIAS_DONE,
 } AliasState;
 
+// What only aliases have
+typedef struct SymbolAlias {
+    PortItem* item;
+    Scope* scope; // Where `import x = A.B` and `export { x }` resolve from
+    Span name; // `export default x`, which has no item: the name to resolve from scope
+    AliasState state;
+    Symbol* target; // Never an alias that is nothing else. A placeholder when resolution failed
+} SymbolAlias;
+
+// What only modules (files and ambient modules) have
+typedef struct SymbolModule {
+    SourceFile* file; // Null for an ambient module
+    PortItem** export_stars;
+    u32 export_star_count;
+    u32 export_star_cap;
+    SymbolTable* resolved_exports; // Own exports + `export *`, see module_resolved_exports()
+    AliasState resolved_exports_state;
+} SymbolModule;
+
 typedef struct Symbol {
     Binder* binder;
     u32 flags;
@@ -134,20 +153,8 @@ typedef struct Symbol {
     // `import * as ns`: the module whose exports are the members, see make_gather_target()
     Symbol* gather_module;
 
-    // Aliases
-    PortItem* alias_item;
-    Scope* alias_scope; // Where `import x = A.B` and `export { x }` resolve from
-    Span alias_name; // `export default x`, which has no alias_item: the name to resolve from alias_scope
-    AliasState alias_state;
-    Symbol* alias_target; // Never an alias that is nothing else. A placeholder when resolution failed
-
-    // Modules
-    SourceFile* module_file;
-    PortItem** export_stars;
-    u32 export_star_count;
-    u32 export_star_cap;
-    SymbolTable* resolved_exports; // Own exports + `export *`, see module_resolved_exports()
-    AliasState resolved_exports_state;
+    SymbolAlias* alias; // Every symbol with SYMBOL_ALIAS has one
+    SymbolModule* module; // Every is_module symbol has one
 
     bool is_module;
     bool is_global_this;

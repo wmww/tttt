@@ -29,7 +29,7 @@ static bool find_alias_in_table(Checker* me, SymbolTable const* table, Symbol co
     if (!table) return false;
     for (u32 i = 0; i < table->count; i++) {
         Symbol const* candidate = table->entries[i].symbol;
-        if (!(candidate->flags & SYMBOL_ALIAS) || candidate->alias_state != ALIAS_DONE) continue;
+        if (!(candidate->flags & SYMBOL_ALIAS) || candidate->alias->state != ALIAS_DONE) continue;
         Symbol const* target = symbol_for_meaning(candidate, meaning);
         if (target && same_symbol(me, target, symbol)) {
             *name = table->entries[i].name;

@@ -166,6 +166,7 @@ Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
     ret->name = name;
     ret->flags = flags;
     ret->binder = me;
+    if (flags & SYMBOL_ALIAS) ret->alias = arena_new(&my arena, SymbolAlias);
     if (my symbol_count == my symbol_cap) {
         my symbol_cap = my symbol_cap ? my symbol_cap * 2 : 64;
         my symbols = realloc(my symbols, sizeof(Symbol*) * my symbol_cap);
@@ -181,7 +182,8 @@ static void symbol_ensure_exports(Symbol* me) {
 Symbol* binder_new_module_symbol(Binder* me, SourceFile* file) {
     Symbol* ret = binder_new_symbol(me, c_sv(""), SYMBOL_VALUE_MODULE);
     ret->is_module = true;
-    ret->module_file = file;
+    ret->module = arena_new(&my arena, SymbolModule);
+    ret->module->file = file;
     symbol_ensure_exports(ret);
     return ret;
 }
@@ -203,6 +205,7 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
     if (ret) return ret;
     ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
     ret->is_module = true;
+    ret->module = arena_new(&my arena, SymbolModule);
     ret->name_span = name_span;
     symbol_ensure_exports(ret);
     symbol_table_insert(&my ambient_modules, &my arena, name, hash, ret);
@@ -218,7 +221,7 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
 
 static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
     if (my decl_count == my decl_cap) {
-        u32 cap = my decl_cap ? my decl_cap * 2 : 2;
+        u32 cap = my decl_cap ? my decl_cap * 2 : 1; // Most symbols have one declaration
         SymbolDecl* decls = arena_new_n(&my binder->arena, SymbolDecl, cap);
         if (my decl_count) memcpy(decls, my decls, sizeof(SymbolDecl) * my decl_count);
         my decls = decls;
@@ -371,6 +374,7 @@ static Symbol* declare_symbol(
         }
         existing->decl_flags_before = existing->flags;
         existing->flags |= includes;
+        if (includes & SYMBOL_ALIAS && !existing->alias) existing->alias = arena_new(&binder->arena, SymbolAlias);
         *merged = true;
         return existing;
     }
@@ -531,8 +535,8 @@ void scope_add_port(Scope* me, PortItem* item) {
                 .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item,
                 .name = item->decl_name, .full = item->full_span,
             });
-            symbol->alias_item = item;
-            symbol->alias_scope = me;
+            symbol->alias->item = item;
+            symbol->alias->scope = me;
             item->symbol = symbol;
             return;
         }
@@ -540,16 +544,16 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_REEXPORT_SPLAT: {
             Symbol* module = my container;
             if (!module || !module->is_module || !item->module_ref) return;
-            if (module->export_star_count == module->export_star_cap) {
-                u32 cap = module->export_star_cap ? module->export_star_cap * 2 : 4;
+            if (module->module->export_star_count == module->module->export_star_cap) {
+                u32 cap = module->module->export_star_cap ? module->module->export_star_cap * 2 : 4;
                 PortItem** stars = arena_new_n(&my binder->arena, PortItem*, cap);
-                if (module->export_star_count) {
-                    memcpy(stars, module->export_stars, sizeof(PortItem*) * module->export_star_count);
+                if (module->module->export_star_count) {
+                    memcpy(stars, module->module->export_stars, sizeof(PortItem*) * module->module->export_star_count);
                 }
-                module->export_stars = stars;
-                module->export_star_cap = cap;
+                module->module->export_stars = stars;
+                module->module->export_star_cap = cap;
             }
-            module->export_stars[module->export_star_count++] = item;
+            module->module->export_stars[module->module->export_star_count++] = item;
             return;
         }
 
@@ -580,15 +584,15 @@ void scope_add_port(Scope* me, PortItem* item) {
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .node = item, .name = item->decl_name, .full = item->full_span,
     });
-    symbol->alias_item = item;
-    symbol->alias_scope = me;
+    symbol->alias->item = item;
+    symbol->alias->scope = me;
     item->symbol = symbol;
 
     bool needs_module = item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC;
     if (needs_module && !item->module_ref) {
         // The parser complained
-        symbol->alias_target = binder_new_placeholder(my binder, item->decl_name, item->full_span);
-        symbol->alias_state = ALIAS_DONE;
+        symbol->alias->target = binder_new_placeholder(my binder, item->decl_name, item->full_span);
+        symbol->alias->state = ALIAS_DONE;
     }
 }
 
@@ -629,8 +633,8 @@ void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals) {
     if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
         // Everything the name means is exported, types included
         symbol = binder_new_symbol(my binder, export_name, SYMBOL_ALIAS);
-        symbol->alias_scope = me;
-        symbol->alias_name = expr->identifier.name;
+        symbol->alias->scope = me;
+        symbol->alias->name = expr->identifier.name;
         symbol->name_span = expr->identifier.name;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = expr->outer_span,
@@ -739,24 +743,24 @@ static void extend_export_stars(
     }
     free(own);
 
-    for (u32 i = 0; i < module->export_star_count; i++) {
-        Symbol* next = binder_module_of_ref(module->binder, module->export_stars[i]->module_ref);
+    for (u32 i = 0; i < module->module->export_star_count; i++) {
+        Symbol* next = binder_module_of_ref(module->binder, module->module->export_stars[i]->module_ref);
         if (!next || module_visited(*visited, *visited_count, next)) continue;
         extend_export_stars(target, arena, next, visited, visited_count, visited_cap, true);
     }
 }
 
 static SymbolTable const* module_resolved_exports(Symbol* me) {
-    if (!my export_star_count) return my exports;
-    if (my resolved_exports_state == ALIAS_DONE) return my resolved_exports;
+    if (!my module->export_star_count) return my exports;
+    if (my module->resolved_exports_state == ALIAS_DONE) return my module->resolved_exports;
     SymbolTable* table = arena_new(&my binder->arena, SymbolTable);
     Symbol** visited = nullptr;
     u32 visited_count = 0;
     u32 visited_cap = 0;
     extend_export_stars(table, &my binder->arena, me, &visited, &visited_count, &visited_cap, false);
     free(visited);
-    my resolved_exports = table;
-    my resolved_exports_state = ALIAS_DONE;
+    my module->resolved_exports = table;
+    my module->resolved_exports_state = ALIAS_DONE;
     return table;
 }
 
@@ -786,15 +790,15 @@ static Symbol* resolve_if_pure_alias(Symbol* me) {
 }
 
 static Symbol* resolve_import_alias_path(Symbol* me) {
-    PortItem* item = my alias_item;
-    ErrorCtx* errs = my alias_scope->errs;
+    PortItem* item = my alias->item;
+    ErrorCtx* errs = my alias->scope->errs;
     if (vec_span_is_empty(&item->alias_path)) return nullptr;
     Span first = *vec_span_front(&item->alias_path);
     Symbol* target;
     if (vec_span_size(&item->alias_path) == 1) {
-        target = scope_resolve(my alias_scope, first.sv, SYMBOL_NAMESPACE);
-        if (!target) target = scope_resolve(my alias_scope, first.sv, SYMBOL_VALUE);
-        if (!target) target = scope_resolve(my alias_scope, first.sv, SYMBOL_TYPE);
+        target = scope_resolve(my alias->scope, first.sv, SYMBOL_NAMESPACE);
+        if (!target) target = scope_resolve(my alias->scope, first.sv, SYMBOL_VALUE);
+        if (!target) target = scope_resolve(my alias->scope, first.sv, SYMBOL_TYPE);
         if (target == me) target = nullptr;
         if (!target) {
             error_ctx_error_d(errs, first, 2304, "Cannot find name '", first, "'.");
@@ -805,7 +809,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         return target;
     }
 
-    target = scope_resolve(my alias_scope, first.sv, SYMBOL_NAMESPACE);
+    target = scope_resolve(my alias->scope, first.sv, SYMBOL_NAMESPACE);
     if (target == me) target = nullptr;
     if (!target) {
         error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
@@ -833,7 +837,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
 // `import * as ns`: a namespace symbol of its own around the module, so that its type prints as `typeof ns` (tsc gets
 // there through symbol accessibility, plan 04 stage 3)
 static Symbol* make_gather_target(Symbol* me, Symbol* module) {
-    PortItem* item = my alias_item;
+    PortItem* item = my alias->item;
     Symbol* ret = binder_new_symbol(my binder, item->decl_name.sv, SYMBOL_VALUE_MODULE);
     ret->name_span = item->decl_name;
     ret->gather_module = module;
@@ -847,9 +851,9 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305) or by its path without the extension
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier) {
-    if (!module->module_file) return cstr_from_sv(module->name);
+    if (!module->module->file) return cstr_from_sv(module->name);
     if (by_specifier) return cstr_d("\"", ref->path, "\"");
-    csview path = cstr_sv(&module->module_file->canonical_path);
+    csview path = cstr_sv(&module->module->file->canonical_path);
     static const char* const extensions[] = { ".d.ts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs" };
     for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); i++) {
         if (csview_ends_with(path, extensions[i])) {
@@ -861,11 +865,11 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 }
 
 static Symbol* resolve_alias_target(Symbol* me) {
-    PortItem* item = my alias_item;
-    ErrorCtx* errs = my alias_scope->errs;
+    PortItem* item = my alias->item;
+    ErrorCtx* errs = my alias->scope->errs;
     if (!item) {
         // `export default x`, TS2304 comes from the expression
-        Symbol* found = scope_resolve(my alias_scope, my alias_name.sv, SYMBOL_ANY_MEANING);
+        Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
         return found == me ? nullptr : resolve_if_pure_alias(found);
     }
     Symbol* module = nullptr;
@@ -929,7 +933,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
         }
 
         case PORT_EXPORT_SPECIFIC: {
-            Symbol* found = scope_resolve(my alias_scope, item->source_name.sv, SYMBOL_ANY_MEANING);
+            Symbol* found = scope_resolve(my alias->scope, item->source_name.sv, SYMBOL_ANY_MEANING);
             if (!found || found == me) {
                 error_ctx_error_d(errs, item->source_name, 2304, "Cannot find name '", item->source_name, "'.");
                 return nullptr;
@@ -947,7 +951,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             return resolve_import_alias_path(me);
 
         case PORT_EXPORT_AS_NAMESPACE: {
-            Symbol* own_module = my alias_scope->container;
+            Symbol* own_module = my alias->scope->container;
             Symbol* own_assigned = module_export_equals(own_module);
             return own_assigned != own_module ? own_assigned : make_gather_target(me, own_module);
         }
@@ -961,20 +965,20 @@ static Symbol* resolve_alias_target(Symbol* me) {
 
 Symbol* symbol_resolve_alias(Symbol* me) {
     if (!me || !(my flags & SYMBOL_ALIAS)) return me;
-    switch (my alias_state) {
-        case ALIAS_DONE: return my alias_target;
+    switch (my alias->state) {
+        case ALIAS_DONE: return my alias->target;
         case ALIAS_IN_FLIGHT: return nullptr; // TODO: TS2303 circular definition of import alias
         case ALIAS_UNRESOLVED: break;
     }
-    my alias_state = ALIAS_IN_FLIGHT;
+    my alias->state = ALIAS_IN_FLIGHT;
     Symbol* target = resolve_alias_target(me);
     if (!target) {
-        target = my alias_item ?
-            binder_new_placeholder(my binder, my alias_item->decl_name, my alias_item->full_span) :
-            binder_new_placeholder(my binder, my alias_name, my alias_name);
+        target = my alias->item ?
+            binder_new_placeholder(my binder, my alias->item->decl_name, my alias->item->full_span) :
+            binder_new_placeholder(my binder, my alias->name, my alias->name);
     }
-    my alias_target = target;
-    my alias_state = ALIAS_DONE;
+    my alias->target = target;
+    my alias->state = ALIAS_DONE;
     return target;
 }
 
@@ -1010,13 +1014,13 @@ void binder_link(Binder* me) {
     }
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];
-        if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->alias_scope) continue;
+        if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->alias->scope) continue;
         Symbol* target = symbol_resolve_alias(symbol);
-        if (!symbol->alias_item || !target || target->is_placeholder) continue;
+        if (!symbol->alias->item || !target || target->is_placeholder) continue;
         // In tsc an exported declaration also has a local symbol, which an import of the same name conflicts with
         u32 local_flags = symbol->flags;
-        Symbol const* container = symbol->alias_scope->container;
-        if (container && !port_item_declares_export(symbol->alias_item)) {
+        Symbol const* container = symbol->alias->scope->container;
+        if (container && !port_item_declares_export(symbol->alias->item)) {
             Symbol const* exported = symbol_table_get(container->exports, symbol->name);
             if (exported && exported != symbol) local_flags |= exported->flags & ~(u32)SYMBOL_ALIAS;
         }
@@ -1027,8 +1031,8 @@ void binder_link(Binder* me) {
             (target_flags & SYMBOL_TYPE ? SYMBOL_TYPE : 0) |
             (target_flags & SYMBOL_NAMESPACE ? SYMBOL_NAMESPACE : 0);
         if (!(local_flags & excluded)) continue;
-        PortItem const* item = symbol->alias_item;
-        ErrorCtx* errs = symbol->alias_scope->errs;
+        PortItem const* item = symbol->alias->item;
+        ErrorCtx* errs = symbol->alias->scope->errs;
         if (port_item_is_export(item)) {
             error_ctx_error_d(errs, item->full_span, 2484,
                 "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
@@ -1048,7 +1052,7 @@ void binder_link(Binder* me) {
 // Lookup
 
 static bool is_export_specifier_alias(Symbol const* me) {
-    return my flags == SYMBOL_ALIAS && my alias_item && port_item_is_export(my alias_item);
+    return my flags == SYMBOL_ALIAS && my alias->item && port_item_is_export(my alias->item);
 }
 
 static bool symbol_has_meaning(Symbol const* me, u32 meaning) {

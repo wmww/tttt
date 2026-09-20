@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-printf "Tokens:       %s\n5h Limit:     %s\nWeekly Fable: %s\nLoC:          %'d\n" "$(~/playground/personal/tools/cc-tokens -r ~/tttt/ | grep -P '^TOTAL' | awk '{print $5}')" $(~/playground/personal/tools/cc-usage | awk '/Session/ {print $4} /Weekly, Fable/ {print $4}') "$(tokei -t C,'C Header' ~/tttt/ | awk '/Total/ {print $3}')"
+printf "\x1b[32mTokens:       \x1b[42m%s\n\x1b[33m5h Limit:     \x1b[43m%s\n\x1b[31mWeekly Fable: \x1b[41m%s\n\x1b[35mLoC:          \x1b[45m%'d\n\x1b[0m" "$(~/playground/personal/tools/cc-tokens -r ~/tttt/ | grep -P '^TOTAL' | awk '{print $5}')" $(~/playground/personal/tools/cc-usage | awk '/Session/ {print $4} /Weekly, Fable/ {print $4}') "$(tokei -t C,'C Header' ~/tttt/ | awk '/Total/ {print $3}')"
