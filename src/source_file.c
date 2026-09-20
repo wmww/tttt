@@ -43,5 +43,20 @@ void source_file_drop(SourceFile* me) {
     free(my line_starts);
     block_drop(&my ast);
     cstr_drop(&my decl_override);
+    for (u32 i = 0; i < my module_ref_count; i++) {
+        cstr_drop(&my module_refs[i]->path);
+        free(my module_refs[i]);
+    }
+    free(my module_refs);
+}
+
+ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span) {
+    if (my module_ref_count == my module_ref_cap) {
+        my module_ref_cap = my module_ref_cap ? my module_ref_cap * 2 : 8;
+        my module_refs = realloc(my module_refs, sizeof(ModuleRef*) * my module_ref_cap);
+    }
+    ModuleRef* ret = c_new(ModuleRef, { .path = path, .span = span });
+    my module_refs[my module_ref_count++] = ret;
+    return ret;
 }
 

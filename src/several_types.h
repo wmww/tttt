@@ -18,6 +18,14 @@ typedef struct IdentifierType {
     ThisKind this_kind;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
     VecSpannedType generic_params;
+    // `import("./a").A.B<T>`: names are looked up in the module's exports instead of the scope. `name` is null for a
+    // bare `import("./a")`. With import_typeof it is a value (`typeof import("./a").x`)
+    ModuleRef* import_ref;
+    bool import_typeof;
+    Span import_span;
+    // `typeof import("./a").A.foo`: from this index on (namespaces, then name) the names are properties of the type of
+    // `target`, not exports. -1 if all are exports
+    int import_prop_start;
 } IdentifierType;
 
 void identifier_type_drop(IdentifierType* me);

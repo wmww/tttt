@@ -95,6 +95,12 @@ typedef enum TypePrecedence {
 } TypePrecedence;
 
 static bool hop_token(Parser* parent);
+
+// Takes path. The file owns it: what a failed parse attempt leaves behind is merely one more file looked for
+static ModuleRef* add_module_ref(Parser* p, cstr path, Span span) {
+    return source_file_add_module_ref((SourceFile*)p->shared->source, path, span);
+}
+
 static bool parse_literal(Parser* parent, Value* ret);
 static bool parse_binary_op(Parser* parent, BinaryOp* op);
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
@@ -1041,13 +1047,15 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     return parse_success(&p);
 }
 
-// `import("./a")`, `import("./a").B.C<T>`, `typeof import("./a")`
-// HACK: not in the AST, the caller makes it `any`. Resolving it wants module symbols (plan 04), and the file has to be
-// loaded from wherever the type appears (program_handle_statement() only looks at toplevel import statements)
-static bool parse_import_type(Parser* parent) {
+// `import("./a")`, `import("./a").B.C<T>`, `typeof import("./a")`: an IdentifierType whose names are looked up in the
+// module instead of the scope
+static bool parse_import_type(Parser* parent, TypeNode* ret) {
     Parser p = parser(parent);
+    Anchor a = anchor(&p);
 
+    IdentifierType identifier = {0};
     if (hop_start_if_ends_on_word_break(&p, "typeof")) {
+        identifier.import_typeof = true;
         hop_whitespace(&p);
     }
     if (!hop_start_if_ends_on_word_break(&p, "import")) {
@@ -1059,10 +1067,12 @@ static bool parse_import_type(Parser* parent) {
     }
     hop_whitespace(&p);
     cstr path = cstr_null;
-    if (!parse_string(&p, &path)) {
+    Anchor path_anchor = anchor(&p);
+    bool has_path = parse_string(&p, &path);
+    Span path_span = span_from(path_anchor);
+    if (!has_path) {
         parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
     }
-    cstr_drop(&path);
     hop_whitespace(&p);
     if (hop_char(&p, ',')) {
         // Import attributes: `{ with: { "resolution-mode": "import" } }`
@@ -1080,17 +1090,61 @@ static bool parse_import_type(Parser* parent) {
     while (hop_char(&p, '.')) {
         hop_whitespace(&p);
         Span name;
-        expect_identifier(&p, &name);
+        if (!parse_identifier_or_keyword(&p, &name)) {
+            expect_identifier(&p, &name);
+        }
+        if (span_valid(identifier.name)) vec_span_push(&identifier.namespaces, identifier.name);
+        identifier.name = name;
         end = p.pos;
         hop_whitespace(&p);
     }
-    VecSpannedType generic_params;
-    if (p.whitespace != WHITESPACE_NEWLINE && parse_generic_params(&p, false, &generic_params)) {
-        vec_spanned_type_drop(&generic_params);
+    if (p.whitespace != WHITESPACE_NEWLINE && parse_generic_params(&p, false, &identifier.generic_params)) {
         end = p.pos;
     }
     p.pos = end;
 
+    if (has_path) {
+        identifier.import_ref = add_module_ref(&p, path, path_span);
+    } else {
+        cstr_drop(&path);
+    }
+    identifier.import_span = span_from(a);
+    *ret = type_identifier(c_new(IdentifierType, identifier));
+    return parse_success(&p);
+}
+
+// The `import` of `import("./a")` and `import.meta`, as a keyword identifier (the call and the property access are
+// parsed like any other)
+static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    if (!hop_start_if_ends_on_word_break(&p, "import")) {
+        return parse_fail(&p);
+    }
+    *ret = (IdentifierExpr){ .name = span_from(a), .keyword = KEYWORD_IDENTIFIER_IMPORT };
+    Parser ahead = parser(&p);
+    hop_whitespace(&ahead);
+    if (*ahead.pos == '.') {
+        parse_fail(&ahead);
+        return parse_success(&p);
+    }
+    if (!hop_char(&ahead, '(')) {
+        parse_fail(&ahead);
+        return parse_fail(&p);
+    }
+    hop_whitespace(&ahead);
+    cstr path = cstr_null;
+    Anchor path_anchor = anchor(&ahead);
+    if (parse_string(&ahead, &path)) {
+        Span path_span = span_from(path_anchor);
+        hop_whitespace(&ahead);
+        if (*ahead.pos == ')' || *ahead.pos == ',') {
+            ret->module_ref = add_module_ref(&p, path, path_span);
+        } else {
+            cstr_drop(&path);
+        }
+    }
+    parse_fail(&ahead);
     return parse_success(&p);
 }
 
@@ -1163,8 +1217,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         *ret = type_keyof(c_new(KeyofType, {
             .interface = parsed.type,
         }));
-    } else if (parse_import_type(&p)) {
-        *ret = type_any;
+    } else if (parse_import_type(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "typeof")) {
         hop_whitespace(&p);
         Expr expr;
@@ -3563,6 +3616,8 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .name = span_from(a),
             .keyword = KEYWORD_IDENTIFIER_SUPER,
         });
+    } else if (parse_import_keyword_expr(&p, &ret->identifier)) {
+        *ret = expr_identifier(ret->identifier);
     } else if (parse_identifier_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
         inner_span_set = true;
@@ -3747,12 +3802,15 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
             item.type_only = true;
         }
 
-        if (expect_identifier(&p, &item.source_name)) {
+        // Any identifier name will do: `default as a`, `a as default`
+        if (parse_identifier_or_keyword(&p, &item.source_name) || expect_identifier(&p, &item.source_name)) {
             hop_whitespace(&p);
 
             if (hop_start_if_ends_on_word_break(&p, "as")) {
                 hop_whitespace(&p);
-                expect_identifier(&p, &item.decl_name);
+                if (!parse_identifier_or_keyword(&p, &item.decl_name)) {
+                    expect_identifier(&p, &item.decl_name);
+                }
             } else {
                 item.decl_name = item.source_name;
             }
@@ -3866,6 +3924,20 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     }
     statement.keyword_span = span_from(a);
     hop_whitespace(&p);
+
+    if (is_export && *p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
+        // `export = x`
+        p.pos++;
+        hop_whitespace(&p);
+        Expr expr;
+        expect_expr(&p, expr_ctx_null, &expr);
+        *ret = (Statement){
+            .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
+            .expr = expr,
+            .export_equals = true,
+        };
+        return parse_success(&p);
+    }
 
     if (is_export) {
         // `export import a = b.c`
@@ -3986,6 +4058,13 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     statement.main.full_span = span_from(a);
 
 done:
+    if (span_valid(statement.target_path_span)) {
+        statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
+        statement.main.module_ref = statement.module_ref;
+        for_each (i, vec_port_item, &statement.items) {
+            i->module_ref = statement.module_ref;
+        }
+    }
     *ret = (Statement){
         .tag = STATEMENT_IMPORT_EXPORT,
         .import_export = c_new(PortStatement, statement),
@@ -4875,11 +4954,14 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             if (is_string && is_module_keyword) {
                 ret->is_ambient_module = true;
                 ret->name = span_from(name_anchor);
+                ret->module_ref = add_module_ref(&p, cstr_move(&val.string), ret->name);
+                ret->module_ref->is_declaration = true;
                 value_drop(&val);
                 hop_whitespace(&p);
                 if (!parse_block(&p, true, &ret->contents)) {
                     // `declare module "a";` is a shorthand ambient module
                     ret->contents = (Block){0};
+                    ret->is_shorthand = true;
                 }
                 ret->full_span = span_from(a);
                 return parse_success(&p);
@@ -5120,6 +5202,8 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Span label = span_null;
     ret->jump_label = span_null;
     if (*p.pos == ';') {
+        *ret = statement_noop;
+    } else if (hop_start_if_ends_on_word_break(&p, "debugger")) {
         *ret = statement_noop;
     } else if (parse_label(&p, &label)) {
         hop_whitespace(&p);

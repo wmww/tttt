@@ -1,5 +1,7 @@
 #include "ty/ty_internal.h"
 #include "scope.h"
+#include "source_file.h"
+#include "program.h"
 #include "error.h"
 
 // Call resolution on Signatures, the way tsc observably does it (resolveCall): collect the call or construct
@@ -744,7 +746,27 @@ static Ty const* resolve(Checker* me, Ty const* callee, CallExpr const* call, Ty
     return resolve_call(me, callee, &info, call_span, errs);
 }
 
+// `import("./a")`: a promise of the module (of what its `export =` names)
+static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
+    if (call->callable.tag != EXPR_IDENTIFIER || call->callable.identifier.keyword != KEYWORD_IDENTIFIER_IMPORT) {
+        return nullptr;
+    }
+    ModuleRef const* ref = call->callable.identifier.module_ref;
+    Ty const* module = ty_intrinsic(me, TY_ANY);
+    if (ref && ref->module && !ref->module->is_shorthand_module) {
+        // TODO: esModuleInterop's synthetic `{ default: ... }` for an `export =` module
+        module = ty_type_of_symbol(me, module_export_equals(ref->module));
+    }
+    Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
+    if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2712
+    Ty const* promise = ty_declared_type_of(me, promise_symbol);
+    if (promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return ty_intrinsic(me, TY_ANY);
+    return ty_reference(me, promise, (TyList){ .data = &module, .len = 1 });
+}
+
 Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual) {
+    Ty const* imported = dynamic_import_type(me, call);
+    if (imported) return imported;
     return resolve(me, callee, call, contextual, span_null, nullptr);
 }
 

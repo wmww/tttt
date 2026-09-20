@@ -31,6 +31,8 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
     my target = scope_get_value(names, my name.sv, &my symbol);
     if (my target) {
+    } else if (span_equals(my name, "arguments") && scope_has_function(names)) {
+        // No symbol: ty_identifier_reference_type() makes it IArguments. TODO: not in arrow functions (TS2496)
     } else if (scope_get_type(names, my name.sv, nullptr)) {
         error_ctx_error_d(
             errs, my name, 2693,

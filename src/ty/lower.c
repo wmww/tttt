@@ -230,6 +230,21 @@ static bool symbol_is_generic_alias(Symbol const* symbol) {
 
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     Symbol const* decl = canonical(me, identifier->target);
+    if (span_valid(identifier->import_span)) {
+        // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)
+        if (!decl || decl->is_placeholder) return ty_intrinsic(me, TY_ANY);
+        if (identifier->import_typeof) {
+            Ty const* ret = ty_type_of_symbol(me, decl);
+            isize count = vec_span_size(&identifier->namespaces) + 1;
+            for (isize i = identifier->import_prop_start; i >= 0 && i < count; i++) {
+                Span name = i == count - 1 ? identifier->name : *vec_span_at(&identifier->namespaces, i);
+                Prop const* prop = ty_get_prop(me, ret, checker_atom(me, name.sv));
+                if (!prop) return ty_intrinsic(me, TY_ANY); // TODO: TS2339
+                ret = prop_type(me, prop);
+            }
+            return ret;
+        }
+    }
     if (!decl) {
         if (identifier->keyword || !span_valid(identifier->name)) return ty_intrinsic(me, TY_ERROR);
         cstr name = cstr_null;
@@ -478,8 +493,16 @@ static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
     ret->declared.kind = TY_DECLARED_NAMESPACE;
     ret->declared.namespace_symbol = symbol;
-    // No name: a module (`import * as ns`), which prints as its structure
-    ret->declared.name = symbol->is_module ? checker_atom(me, c_sv("")) : ty_qualified_name(me, symbol);
+    if (symbol->is_module) {
+        // `typeof import("a")`. `import * as ns` has a symbol of its own (make_gather_target())
+        cstr module_name = module_name_for_error(symbol, nullptr, false);
+        cstr name = cstr_d("import(", module_name, ")");
+        ret->declared.name = checker_atom(me, cstr_sv(&name));
+        cstr_drop(&name);
+        cstr_drop(&module_name);
+    } else {
+        ret->declared.name = ty_qualified_name(me, symbol);
+    }
     ret->declared.state = arena_new(&my arena, TyObjectState);
     return ret;
 }
@@ -554,6 +577,8 @@ static u32 value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     symbol = canonical(me, symbol_for_meaning(symbol, SYMBOL_VALUE));
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, TY_ANY);
+    // `typeof import("./a")`, `import("./a")`, `globalThis`
+    if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
     SymbolDecl const* only = nullptr;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (!decl_contributes_value(symbol, i)) continue;

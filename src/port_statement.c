@@ -15,31 +15,15 @@ void port_statement_drop(PortStatement* me) {
     cstr_drop(&my target_path);
 }
 
-void port_statement_assign_source(PortStatement* me, SourceFile* source) {
-    my main.source_file = source;
-    for_each (i, vec_port_item, &my items) {
-        i->source_file = my main.source_file;
-    }
-}
-
 void port_statement_add_names(PortStatement* me, Scope* scope) {
-    if (span_valid(my target_path_span)) {
-        if (scope->kind != SCOPE_MODULE) {
-            error_ctx_error_d(
-                scope->errs,
-                my keyword_span,
-                1232,
-                "An import declaration can only be used at the top level of a namespace or module."
-            );
-            return;
-        }
-        // tsc doesn't mind unresolved side effect imports (`import "./a"`)
-        if (!my main.source_file && !my side_effect_only) {
-            error_ctx_error_d(
-                scope->errs, my target_path_span, 2307,
-                "Cannot find module '", my target_path, "' or its corresponding type declarations."
-            );
-        }
+    if (my module_ref && !(scope->kind == SCOPE_MODULE || (scope->container && scope->container->is_module))) {
+        error_ctx_error_d(
+            scope->errs,
+            my keyword_span,
+            1232,
+            "An import declaration can only be used at the top level of a namespace or module."
+        );
+        return;
     }
 
     scope_add_port(scope, &my main);
@@ -48,3 +32,15 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
     }
 }
 
+
+void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
+    // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
+    if (my module_ref && !my side_effect_only && !my module_ref->file &&
+        !binder_module_of_ref(scope->binder, my module_ref)
+    ) {
+        error_ctx_error_d(
+            errs, my target_path_span, 2307,
+            "Cannot find module '", my target_path, "' or its corresponding type declarations."
+        );
+    }
+}

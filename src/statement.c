@@ -1,4 +1,5 @@
 #include "statement.h"
+#include "source_file.h"
 #include "ty/ty.h"
 #include "port_statement.h"
 #include "error.h"
@@ -139,9 +140,21 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     } else {
         my inner_scope = scope_new(scope, SCOPE_NAMESPACE);
         if (my is_ambient_module) {
-            // TODO: ambient modules should be registered with the program so imports can resolve to them
-            my inner_scope->container = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
-            my inner_scope->container->name_span = my name;
+            // In a module it augments the module it names, in a script it declares one. Either way every block goes
+            // into the one module symbol
+            Symbol* module = nullptr;
+            bool augmentation = scope->kind == SCOPE_MODULE;
+            if (augmentation && my module_ref->file) {
+                module = my module_ref->file->scope ? my module_ref->file->scope->container : nullptr;
+            }
+            if (!module) {
+                // TODO: TS2664 for an augmentation of a module nobody declares
+                module = binder_ambient_module(scope->binder, cstr_sv(&my module_ref->path), my name);
+            }
+            if (my is_shorthand) module->is_shorthand_module = true;
+            my symbol = module;
+            my inner_scope->container = module;
+            my is_augmentation = augmentation;
         } else {
             bool has_value = block_is_instantiated(&my contents);
             scope_init_declaration(scope, &my symbol, (DeclProps){
@@ -157,6 +170,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     }
     my inner_scope->ambient = scope->ambient || props.declared;
     my inner_scope->export_context = my inner_scope->ambient && !block_has_export_declarations(&my contents);
+    if (my is_ambient_module && my is_augmentation) my inner_scope->export_context = true;
 
     block_add_names(&my contents, my inner_scope);
 }
@@ -443,7 +457,7 @@ void statement_add_names(Statement* me, Scope* scope) {
     }
     switch (my tag) {
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            scope_export_default_expr(scope, &my expr);
+            scope_export_default_expr(scope, &my expr, my export_equals);
             break;
 
         case STATEMENT_IMPORT_EXPORT:
@@ -605,6 +619,7 @@ void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case STATEMENT_IMPORT_EXPORT: // Aliases are resolved by binder_link()
+            port_statement_lookup_names(my import_export, names, errs);
             break;
 
         case STATEMENT_DECL_VARIABLE:

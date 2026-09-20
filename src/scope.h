@@ -150,6 +150,8 @@ typedef struct Symbol {
     AliasState resolved_exports_state;
 
     bool is_module;
+    bool is_global_this;
+    bool is_shorthand_module; // `declare module "m";`: every import from it is any
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
 } Symbol;
 
@@ -228,10 +230,17 @@ typedef struct Binder {
     ErrorCtx* errs;
     SymbolTable globals;
     Scope* global_scope;
+    Symbol* global_this;
     Binder const* parent;
     // Symbols of the parent (the shared lib program) this program has added to -> the clone that has everything.
     // What's inside the lib AST keeps pointing at the frozen original, so the checker maps through binder_redirect()
     SymbolMap overlays;
+    // `declare module "m"`, by name without quotes. Patterns ("*.css") are in the table like the others and listed
+    // in pattern_modules too
+    SymbolTable ambient_modules;
+    Symbol** pattern_modules; // malloc'd
+    u32 pattern_module_count;
+    u32 pattern_module_cap;
     Symbol** symbols; // malloc'd, all of them: aliases get resolved eagerly
     u32 symbol_count;
     u32 symbol_cap;
@@ -245,6 +254,19 @@ void binder_set_parent(Binder* me, Binder const* parent);
 void binder_link(Binder* me);
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags);
 Symbol* binder_new_module_symbol(Binder* me, SourceFile* file);
+// `globalThis`: a namespace whose exports are the globals
+void binder_declare_global_this(Binder* me);
+// The ambient module of that name (no quotes), made if it doesn't exist yet: every `declare module "m"` block and
+// every augmentation of it declare into the same symbol
+Symbol* binder_ambient_module(Binder* me, csview name, Span name_span);
+// The module a string names: an ambient module, the file the program found for it if that is a module, a pattern
+// ambient module. Null if there is none (module_ref_is_missing() tells "not found" from "not a module")
+Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref);
+// What importing the module gives: the target of its `export =` if it has one, else itself
+Symbol* module_export_equals(Symbol* module);
+// How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
+// imported with (TS2305, ref may be null otherwise) or by its path without the extension. With the quotes
+cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
 Scope* scope_new_file(Binder* binder, SourceFile* file);
@@ -261,7 +283,9 @@ Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol);
 static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symbol) {
     // Nothing is ever written to a symbol of the parent, so there's no flag to test: programs that add to lib
     // symbols are rare, and only those pay for the lookup
-    return symbol && my overlays.count && symbol->binder != me ? binder_redirect_slow(me, symbol) : symbol;
+    if (!symbol || symbol->binder == me) return symbol;
+    if (symbol->is_global_this) return my global_this; // The lib's `typeof globalThis` has this program's globals
+    return my overlays.count ? binder_redirect_slow(me, symbol) : symbol;
 }
 
 // Declares props in the scope (or the exports of its container, or the nearest function scope), merging with an
@@ -270,7 +294,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default` of a declaration (which is declared locally under its own name) and of an expression
 void scope_export_default(Scope* me, Symbol* symbol);
-void scope_export_default_expr(Scope* me, Expr* expr);
+// export_equals: `export = x`, under the name `export=` like in tsc
+void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals);
 
 // Lookup by meaning, seeing through aliases. The symbol found may be an alias, see symbol_declaration()
 Symbol* scope_resolve(Scope const* me, csview name, u32 meaning);

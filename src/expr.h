@@ -30,6 +30,7 @@ typedef struct IdentifierExpr {
     Symbol const* target;
     ThisKind this_kind;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
+    ModuleRef* module_ref; // `import("./a")`: the module, the identifier is the `import` keyword
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);

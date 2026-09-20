@@ -111,6 +111,7 @@ Binder* binder_new(ErrorCtx* errs) {
 void binder_destroy(Binder* me) {
     if (!me) return;
     free(my symbols);
+    free(my pattern_modules);
     free(my overlays.keys);
     free(my overlays.values);
     arena_drop(&my arena);
@@ -120,6 +121,7 @@ void binder_destroy(Binder* me) {
 void binder_set_parent(Binder* me, Binder const* parent) {
     check(!my globals.parent);
     my globals.parent = &parent->globals;
+    my ambient_modules.parent = &parent->ambient_modules;
     my parent = parent;
 }
 
@@ -181,6 +183,36 @@ Symbol* binder_new_module_symbol(Binder* me, SourceFile* file) {
     ret->is_module = true;
     ret->module_file = file;
     symbol_ensure_exports(ret);
+    return ret;
+}
+
+void binder_declare_global_this(Binder* me) {
+    csview name = c_sv("globalThis");
+    Symbol* symbol = binder_new_symbol(me, name, SYMBOL_VALUE_MODULE);
+    symbol->is_global_this = true;
+    symbol->name_span = sv_make_span(name);
+    my global_this = symbol;
+    symbol->exports = &my globals; // Its parent table included, when there is one
+    symbol_table_insert(&my globals, &my arena, name, symbol_name_hash(name), symbol);
+}
+
+Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
+    u64 hash = symbol_name_hash(name);
+    // TODO: one of the shared lib program would want an overlay like the globals (no lib declares any)
+    Symbol* ret = symbol_table_lookup(&my ambient_modules, name, hash);
+    if (ret) return ret;
+    ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
+    ret->is_module = true;
+    ret->name_span = name_span;
+    symbol_ensure_exports(ret);
+    symbol_table_insert(&my ambient_modules, &my arena, name, hash, ret);
+    if (memchr(name.buf, '*', (size_t)name.size)) {
+        if (my pattern_module_count == my pattern_module_cap) {
+            my pattern_module_cap = my pattern_module_cap ? my pattern_module_cap * 2 : 4;
+            my pattern_modules = realloc(my pattern_modules, sizeof(Symbol*) * my pattern_module_cap);
+        }
+        my pattern_modules[my pattern_module_count++] = ret;
+    }
     return ret;
 }
 
@@ -489,7 +521,7 @@ void scope_add_port(Scope* me, PortItem* item) {
 
         case PORT_REEXPORT_SPLAT: {
             Symbol* module = my container;
-            if (!module || !module->is_module || !item->source_file) return;
+            if (!module || !module->is_module || !item->module_ref) return;
             if (module->export_star_count == module->export_star_cap) {
                 u32 cap = module->export_star_cap ? module->export_star_cap * 2 : 4;
                 PortItem** stars = arena_new_n(&my binder->arena, PortItem*, cap);
@@ -534,19 +566,22 @@ void scope_add_port(Scope* me, PortItem* item) {
     symbol->alias_scope = me;
     item->symbol = symbol;
 
-    bool needs_file = item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC;
-    if (needs_file && !item->source_file) {
-        // TS2307 was reported by the statement
+    bool needs_module = item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC;
+    if (needs_module && !item->module_ref) {
+        // The parser complained
         symbol->alias_target = binder_new_placeholder(my binder, item->decl_name, item->full_span);
         symbol->alias_state = ALIAS_DONE;
     }
 }
 
-static bool scope_default_export_table(Scope* me, Span at, Symbol const* symbol, u32 flags, SymbolTable** table) {
-    if (my kind != SCOPE_MODULE || !my container) return false; // TODO: TS1319 and friends
+static bool scope_default_export_table(
+    Scope* me, csview name, Span at, Symbol const* symbol, u32 flags, SymbolTable** table
+) {
+    if (!my container || !my container->is_module) return false; // TODO: TS1319 and friends
     symbol_ensure_exports(my container);
     *table = my container->exports;
-    Symbol* existing = symbol_table_get(*table, c_sv("default"));
+    Symbol* existing = symbol_table_get(*table, name);
+    if (existing && !csview_equals(name, "default")) return false; // TODO: TS2300 for a second `export =`
     if (existing && (existing == symbol || !(existing->flags & flags & SYMBOL_ANY_MEANING))) {
         return false; // Overloads, or an interface and a value. TODO: the second one is lost
     }
@@ -564,17 +599,18 @@ static bool scope_default_export_table(Scope* me, Span at, Symbol const* symbol,
 
 void scope_export_default(Scope* me, Symbol* symbol) {
     SymbolTable* table;
-    if (!scope_default_export_table(me, symbol->name_span, symbol, symbol->flags, &table)) return;
+    if (!scope_default_export_table(me, c_sv("default"), symbol->name_span, symbol, symbol->flags, &table)) return;
     symbol_table_insert(table, &my binder->arena, c_sv("default"), symbol_name_hash(c_sv("default")), symbol);
 }
 
-void scope_export_default_expr(Scope* me, Expr* expr) {
+void scope_export_default_expr(Scope* me, Expr* expr, bool export_equals) {
     SymbolTable* table;
-    if (!scope_default_export_table(me, expr->outer_span, nullptr, SYMBOL_VALUE, &table)) return;
+    csview export_name = export_equals ? c_sv("export=") : c_sv("default");
+    if (!scope_default_export_table(me, export_name, expr->outer_span, nullptr, SYMBOL_VALUE, &table)) return;
     Symbol* symbol;
     if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
         // Everything the name means is exported, types included
-        symbol = binder_new_symbol(my binder, c_sv("default"), SYMBOL_ALIAS);
+        symbol = binder_new_symbol(my binder, export_name, SYMBOL_ALIAS);
         symbol->alias_scope = me;
         symbol->alias_name = expr->identifier.name;
         symbol->name_span = expr->identifier.name;
@@ -582,7 +618,7 @@ void scope_export_default_expr(Scope* me, Expr* expr) {
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = expr->outer_span,
         });
     } else {
-        symbol = binder_new_symbol(my binder, c_sv("default"), SYMBOL_BLOCK_SCOPED_VARIABLE);
+        symbol = binder_new_symbol(my binder, export_name, SYMBOL_BLOCK_SCOPED_VARIABLE);
         symbol->name_span = expr->outer_span;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = expr,
@@ -590,13 +626,70 @@ void scope_export_default_expr(Scope* me, Expr* expr) {
         });
     }
     symbol->parent = my container;
-    symbol_table_insert(table, &my binder->arena, c_sv("default"), symbol_name_hash(c_sv("default")), symbol);
+    symbol_table_insert(table, &my binder->arena, export_name, symbol_name_hash(export_name), symbol);
 }
 
 // Modules
 
 static Symbol* source_file_module_symbol(SourceFile const* file) {
     return file && file->is_module && file->scope ? file->scope->container : nullptr;
+}
+
+// The name of a pattern ambient module is its string literal, quotes included
+static bool pattern_module_matches(Symbol const* pattern, csview path, isize* prefix_len) {
+    csview name = pattern->name;
+    if (name.size < 2) return false;
+    name = (csview){ name.buf + 1, name.size - 2 };
+    const char* star = memchr(name.buf, '*', (size_t)name.size);
+    if (!star) return false;
+    isize prefix = star - name.buf;
+    isize suffix = name.size - prefix - 1;
+    if (path.size < prefix + suffix) return false;
+    if (memcmp(path.buf, name.buf, (size_t)prefix)) return false;
+    if (memcmp(path.buf + path.size - suffix, star + 1, (size_t)suffix)) return false;
+    *prefix_len = prefix;
+    return true;
+}
+
+static Symbol* binder_find_module(Binder const* me, ModuleRef const* ref) {
+    csview path = cstr_sv(&ref->path);
+    bool relative = csview_starts_with(path, "./") || csview_starts_with(path, "../") ||
+        csview_equals(path, ".") || csview_equals(path, "..");
+    if (!relative) {
+        Symbol* ambient = symbol_table_get(&my ambient_modules, path);
+        if (ambient) return ambient;
+    }
+    if (ref->file) return source_file_module_symbol(ref->file);
+    // The longest prefix wins
+    Symbol* best = nullptr;
+    isize best_prefix = -1;
+    for (Binder const* binder = me; binder; binder = binder->parent) {
+        for (u32 i = 0; i < binder->pattern_module_count; i++) {
+            isize prefix;
+            if (pattern_module_matches(binder->pattern_modules[i], path, &prefix) && prefix > best_prefix) {
+                best = binder->pattern_modules[i];
+                best_prefix = prefix;
+            }
+        }
+    }
+    return best;
+}
+
+Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref) {
+    if (!ref) return nullptr;
+    if (ref->module_state != ALIAS_DONE) {
+        ref->module = binder_find_module(me, ref);
+        ref->module_state = ALIAS_DONE;
+    }
+    return ref->module;
+}
+
+Symbol* module_export_equals(Symbol* module) {
+    if (!module || !module->is_module) return module;
+    Symbol* assigned = symbol_table_get(module->exports, c_sv("export="));
+    if (!assigned) return module;
+    Symbol* target = assigned->flags & SYMBOL_ALIAS ? symbol_resolve_alias(assigned) : assigned;
+    return target ? target : module;
 }
 
 static bool module_visited(Symbol** visited, u32 count, Symbol const* module) {
@@ -621,7 +714,7 @@ static void extend_export_stars(
     u32 count;
     SymbolEntry* own = symbol_table_collect(module->exports, &count);
     for (u32 i = 0; i < count; i++) {
-        if (nested && csview_equals(own[i].name, "default")) continue;
+        if (nested && (csview_equals(own[i].name, "default") || csview_equals(own[i].name, "export="))) continue;
         if (!symbol_table_get_own(target, own[i].name, own[i].hash)) {
             symbol_table_insert(target, arena, own[i].name, own[i].hash, own[i].symbol);
         }
@@ -629,7 +722,7 @@ static void extend_export_stars(
     free(own);
 
     for (u32 i = 0; i < module->export_star_count; i++) {
-        Symbol* next = source_file_module_symbol(module->export_stars[i]->source_file);
+        Symbol* next = binder_module_of_ref(module->binder, module->export_stars[i]->module_ref);
         if (!next || module_visited(*visited, *visited_count, next)) continue;
         extend_export_stars(target, arena, next, visited, visited_count, visited_cap, true);
     }
@@ -733,6 +826,22 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
     return ret;
 }
 
+// How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
+// imported with (TS2305) or by its path without the extension
+cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier) {
+    if (!module->module_file) return cstr_from_sv(module->name);
+    if (by_specifier) return cstr_d("\"", ref->path, "\"");
+    csview path = cstr_sv(&module->module_file->canonical_path);
+    static const char* const extensions[] = { ".d.ts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs" };
+    for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); i++) {
+        if (csview_ends_with(path, extensions[i])) {
+            path.size -= (isize)strlen(extensions[i]);
+            break;
+        }
+    }
+    return cstr_d("\"", path, "\"");
+}
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias_item;
     ErrorCtx* errs = my alias_scope->errs;
@@ -742,23 +851,37 @@ static Symbol* resolve_alias_target(Symbol* me) {
         return found == me ? nullptr : resolve_if_pure_alias(found);
     }
     Symbol* module = nullptr;
+    Symbol* assigned = nullptr; // What its `export =` names, if it has one
     if (item->tag != PORT_IMPORT_ALIAS && item->tag != PORT_EXPORT_SPECIFIC) {
-        module = source_file_module_symbol(item->source_file);
+        module = binder_module_of_ref(my binder, item->module_ref);
         if (!module) {
-            // TODO: `export =` / ambient module files, the span is the module specifier's in tsc
-            error_ctx_error_d(errs, item->decl_name, 2306,
-                "File '", item->source_file->canonical_path, "' is not a module.");
+            // No file: TS2307 comes from the statement
+            if (item->module_ref->file) {
+                error_ctx_error_d(errs, item->module_ref->span, 2306,
+                    "File '", item->module_ref->file->canonical_path, "' is not a module.");
+            }
             return nullptr;
         }
+        if (module->is_shorthand_module) return nullptr; // Everything is any
+        assigned = module_export_equals(module);
+        if (assigned == module) assigned = nullptr;
     }
     switch (item->tag) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
             Symbol* found = symbol_get_export(module, item->source_name.sv);
+            if (!found && assigned) {
+                if (assigned->is_placeholder) return nullptr;
+                // TODO: properties of the type of what is assigned are importable too
+                Symbol const* container = symbol_for_meaning(assigned, SYMBOL_NAMESPACE);
+                if (container) found = symbol_get_export(container, item->source_name.sv);
+                if (!found) return nullptr;
+            }
             if (!found) {
+                cstr module_name = module_name_for_error(module, item->module_ref, true);
                 error_ctx_error_d(errs, item->source_name, 2305,
-                    "Module '", item->source_file->canonical_path, "' has no exported member '",
-                    item->source_name, "'.");
+                    "Module '", module_name, "' has no exported member '", item->source_name, "'.");
+                cstr_drop(&module_name);
                 return nullptr;
             }
             item->source_symbol = found;
@@ -767,13 +890,20 @@ static Symbol* resolve_alias_target(Symbol* me) {
 
         case PORT_IMPORT_DEFAULT: {
             Symbol* found = symbol_get_export(module, c_sv("default"));
+            if (!found && assigned) {
+                // esModuleInterop / allowSyntheticDefaultImports: the default import is what `export =` names.
+                // TODO: TS1259 without them
+                return assigned;
+            }
             if (!found) {
-                // TODO: `export =` modules, where esModuleInterop makes the default import the whole module
-                if (compiler_options()->allow_synthetic_default_imports && item->source_file->is_declaration) {
+                if (compiler_options()->allow_synthetic_default_imports &&
+                    (!item->module_ref->file || item->module_ref->file->is_declaration)
+                ) {
                     return nullptr;
                 }
-                error_ctx_error_d(errs, item->decl_name, 1192,
-                    "Module '", item->source_file->canonical_path, "' has no default export.");
+                cstr module_name = module_name_for_error(module, item->module_ref, false);
+                error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
+                cstr_drop(&module_name);
                 return nullptr;
             }
             item->source_symbol = found;
@@ -792,6 +922,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
 
         case PORT_IMPORT_GATHER:
         case PORT_REEXPORT_GATHER:
+            if (assigned) return assigned;
             return make_gather_target(me, module);
 
         case PORT_IMPORT_ALIAS:

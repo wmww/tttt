@@ -181,6 +181,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 vec_span_push(&so_far, *i);
             }
             vec_span_drop(&so_far);
+            if (!span_valid(my identifier->name)) break; // A bare `import("./a")`
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
                 .declarations = declaration_get_spans(shown_declaration(my identifier->symbol, my identifier->target)),

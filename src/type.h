@@ -24,6 +24,7 @@ g_declare_arc(Expr, expr);
 
 // Symbols (scope.h) are not owned by the AST nodes that point at them: they live as long as the program
 typedef struct Symbol Symbol;
+typedef struct ModuleRef ModuleRef; // source_file.h
 typedef Symbol const* SymbolCPtr;
 g_declare_vec(SymbolCPtr, symbol_cptr);
 
@@ -292,4 +293,5 @@ typedef enum KeywordIdentifier {
     KEYWORD_IDENTIFIER_NONE = 0,
     KEYWORD_IDENTIFIER_THIS,
     KEYWORD_IDENTIFIER_SUPER,
+    KEYWORD_IDENTIFIER_IMPORT, // `import("./a")` and `import.meta`
 } KeywordIdentifier;

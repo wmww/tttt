@@ -84,7 +84,7 @@ static void program_add_builtins(Program* me) {
     } ); \
 }
 
-    GLOBAL_VALUE("globalThis", type_any);
+    binder_declare_global_this(my binder);
 
     GLOBAL_TYPE("any", type_any);
     GLOBAL_TYPE("unknown", type_unknown);
@@ -123,6 +123,13 @@ static bool get_import_path_of_index(Fs const* fs, csview path, cstr* ret) {
 static bool get_import_path_find_extension(Fs const* fs, csview path, cstr* ret) {
     *ret = cstr_from_sv(path);
     intptr_t base_len = cstr_size(ret);
+
+    // As written: `/// <reference path="a.d.ts" />`, `import "./a.ts"`
+    if ((csview_ends_with(path, ".ts") || csview_ends_with(path, ".tsx") || csview_ends_with(path, ".mts") ||
+            csview_ends_with(path, ".cts")) && fs_is_reg_file(fs, path)
+    ) {
+        return true;
+    }
 
     if (csview_ends_with(path, ".js")) {
         base_len -= 3;
@@ -293,13 +300,6 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
             if (port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) {
                 source->is_module = true;
             }
-            SourceFile* imported = nullptr;
-            if (!port->requires_target) {
-                imported = source;
-            } else if (span_valid(port->target_path_span)) {
-                imported = program_load_import_idempotent(me, port->target_path_span, cstr_sv(&port->target_path));
-            }
-            port_statement_assign_source(port, imported);
         }   break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
@@ -387,6 +387,15 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         program_handle_statement(me, source_file, i);
     }
 
+    // Every module the file mentions, wherever (the parser lists them). By index: loading parses, never this file
+    for (u32 i = 0; i < source_file->module_ref_count; i++) {
+        ModuleRef* ref = source_file->module_refs[i];
+        // `declare module "./a" {}` in a module augments a file. In a script it declares an ambient module, and so
+        // does a name that finds no file
+        if (ref->is_declaration && !source_file->is_module) continue;
+        ref->file = program_load_import_idempotent(me, ref->span, cstr_sv(&ref->path));
+    }
+
     // Add here so imports come before importing file
     vec_source_file_ptr_push(&my source_files_ordered, source_file);
 
@@ -442,7 +451,13 @@ void program_resolve_names(Program* me) {
         block_add_names(&source->ast, source->scope);
     }
 
-    // Link: `export *` tables and every alias. Nothing writes to a symbol after this
+    // Link: what every module name refers to (ambient modules are all declared now), `export *` tables and every alias. Nothing writes to a symbol after this
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        for (u32 j = 0; j < source->module_ref_count; j++) {
+            binder_module_of_ref(my binder, source->module_refs[j]);
+        }
+    }
     binder_link(my binder);
 
     // Resolve: every identifier gets its symbol, function and block scopes are made on the way

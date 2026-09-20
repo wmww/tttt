@@ -15,7 +15,11 @@ yield await async keyof infer readonly unique enum super delete if try finally s
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('entry', nargs='*', default=['thirdparty/tsc/src/compiler/checker.ts'])
+    # The corpus' tsconfig: target/lib es2020, strict, types: ["node"]
+    ap.add_argument('entry', nargs='*', default=['thirdparty/tsc/node_modules/@types/node/index.d.ts',
+                                                 'thirdparty/tsc/src/compiler/checker.ts'])
+    ap.add_argument('--options', default='--target es2020 --lib es2020 --strict',
+                    help='compiler options passed to tttt')
     ap.add_argument('-n', type=int, default=25, help='rows per table')
     ap.add_argument('--code', help='list every place this code is reported')
     ap.add_argument('--no-build', action='store_true')
@@ -28,7 +32,7 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run(['./release/tttt', '-q', '--keep-going', '--all-errors', *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        proc = subprocess.run(['./release/tttt', '-q', '--keep-going', '--all-errors', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)

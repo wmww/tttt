@@ -1,4 +1,5 @@
 #include "several_types.h"
+#include "source_file.h"
 #include "ty/ty.h"
 #include "lazy_type.h"
 #include "scope.h"
@@ -23,7 +24,7 @@ IdentifierType identifier_type_clone(IdentifierType me) {
 // Member of a namespace by meaning, TS2694 if there is none. *found is the member as declared (maybe an alias)
 static Symbol const* get_symbol_from_namespace(
     Symbol const* namespace,
-    Span namespace_name,
+    csview namespace_name,
     Span item_name,
     u32 meaning,
     Symbol const** found,
@@ -53,8 +54,97 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
     return ret;
 }
 
+// `import("./a").A.B`, `typeof import("./a")`: the names are members of the module
+static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
+    my import_prop_start = -1;
+    if (!my import_ref) return; // The parser complained
+    Symbol* module = binder_module_of_ref(names->binder, my import_ref);
+    if (!module) {
+        if (my import_ref->file) {
+            error_ctx_error_d(errs, my import_ref->span, 2306,
+                "File '", my import_ref->file->canonical_path, "' is not a module.");
+        } else {
+            error_ctx_error_d(errs, my import_ref->span, 2307,
+                "Cannot find module '", my import_ref->path, "' or its corresponding type declarations.");
+        }
+        return;
+    }
+    if (module->is_shorthand_module) return;
+    Symbol const* container = module_export_equals(module);
+    if (!span_valid(my name)) {
+        if (my import_typeof) {
+            my target = container;
+            my symbol = container;
+        } else if (container != module && symbol_for_meaning(container, SYMBOL_TYPE)) {
+            // `export = C`
+            my target = symbol_for_meaning(container, SYMBOL_TYPE);
+            my symbol = container;
+        } else {
+            error_ctx_error_d(errs, my import_span, 1340,
+                "Module '", my import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
+                my import_ref->path, "')'?");
+        }
+        return;
+    }
+    if (my import_typeof) {
+        // A value: exports as far as they go, properties from there on
+        Symbol const* current = container;
+        isize count = vec_span_size(&my namespaces) + 1;
+        for (isize i = 0; i < count; i++) {
+            bool last = i == count - 1;
+            Span name = last ? my name : *vec_span_at(&my namespaces, i);
+            Symbol const* members = symbol_for_meaning(current, SYMBOL_NAMESPACE);
+            if (members && members->is_placeholder) return;
+            Symbol const* member = members ? symbol_get_export(members, name.sv) : nullptr;
+            Symbol const* value = symbol_for_meaning(member, last ? SYMBOL_VALUE : SYMBOL_VALUE | SYMBOL_NAMESPACE);
+            if (!value) {
+                if (i == 0 || !(current->flags & SYMBOL_VALUE)) {
+                    cstr container_name = current == module ?
+                        module_name_for_error(module, nullptr, false) : cstr_from_sv(current->name);
+                    error_ctx_error_d(errs, name, 2694,
+                        "Namespace '", container_name, "' has no exported member '", name, "'.");
+                    cstr_drop(&container_name);
+                    return;
+                }
+                my import_prop_start = (int)i;
+                break;
+            }
+            if (last) my symbol = member;
+            else vec_symbol_cptr_push(&my namespace_symbols, member);
+            current = value;
+        }
+        my target = symbol_for_meaning(current, SYMBOL_VALUE);
+        return;
+    }
+
+    cstr module_name = container == module ? module_name_for_error(module, nullptr, false) : cstr_from_sv(container->name);
+    csview prev_name = cstr_sv(&module_name);
+    for_each (i, vec_span, &my namespaces) {
+        Symbol const* found;
+        container = get_symbol_from_namespace(container, prev_name, *i, SYMBOL_NAMESPACE, &found, errs);
+        if (!container || container->is_placeholder) {
+            cstr_drop(&module_name);
+            return;
+        }
+        vec_symbol_cptr_push(&my namespace_symbols, found);
+        prev_name = i->sv;
+    }
+    my target = get_symbol_from_namespace(
+        container, prev_name, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, &my symbol, errs
+    );
+    cstr_drop(&module_name);
+}
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
+
+    if (my import_ref || span_valid(my import_span)) {
+        import_type_lookup_names(me, names, errs);
+        for_each (i, vec_spanned_type, &my generic_params) {
+            type_lookup_names(&i->type, names, errs);
+        }
+        return;
+    }
 
     if (vec_span_size(&my namespaces)) {
         Symbol const* namespace = nullptr;
@@ -68,7 +158,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                 }
             } else /* Subsequent namespaces */ {
-                decl = get_symbol_from_namespace(namespace, prev_name, *i, SYMBOL_NAMESPACE, &found, errs);
+                decl = get_symbol_from_namespace(namespace, prev_name.sv, *i, SYMBOL_NAMESPACE, &found, errs);
             }
             // Everything looked up in a placeholder is any
             namespace = decl && !decl->is_placeholder ? decl : nullptr;
@@ -79,7 +169,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             vec_symbol_cptr_push(&my namespace_symbols, found);
         }
         if (namespace) {
-            my target = get_symbol_from_namespace(namespace, prev_name, my name, SYMBOL_TYPE, &my symbol, errs);
+            my target = get_symbol_from_namespace(namespace, prev_name.sv, my name, SYMBOL_TYPE, &my symbol, errs);
         }
     } else if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {

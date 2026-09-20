@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "program.h"
 #include "class_decl.h"
 #include "scope.h"
 #include "error.h"
@@ -426,6 +427,10 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
             }
             return declared;
         }
+    }
+    if (!decl && !identifier->keyword && span_equals(identifier->name, "arguments")) {
+        Symbol const* arguments = program_get_global(my program, c_sv("IArguments"), SYMBOL_TYPE);
+        return arguments ? ty_declared_type_of(me, arguments) : any_type(me);
     }
     if (!decl) {
         // TODO: `this` outside of anything that has one is `typeof globalThis` (or implicitly any)

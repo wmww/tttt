@@ -63,6 +63,9 @@ typedef struct NamespaceDecl {
     Span full_span;
     bool is_global;
     bool is_ambient_module; // `declare module "name" {}`, name is the string literal including quotes
+    bool is_shorthand; // `declare module "name";`: everything imported from it is any
+    ModuleRef* module_ref; // Of an ambient module
+    bool is_augmentation; // `declare module "./a" {}` in a module: adds to the module it names
     Block contents;
     Scope* inner_scope;
     Symbol* symbol;
@@ -139,6 +142,7 @@ typedef struct Statement {
             };
         } decl;
     };
+    bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
     Span jump_label; // The label break and continue jump to, null if there isn't one or for other statements
 } Statement;
 
