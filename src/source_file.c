@@ -1,5 +1,6 @@
 #include "source_file.h"
 #include "error.h"
+#include "string_helpers.h"
 #include "compiler_options.h"
 
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
@@ -45,6 +46,7 @@ void source_file_drop(SourceFile* me) {
     free(my line_starts);
     block_drop(&my ast);
     cstr_drop(&my decl_override);
+    cstr_drop(&my package_json);
     for (u32 i = 0; i < my module_ref_count; i++) {
         cstr_drop(&my module_refs[i]->path);
         cstr_drop(&my module_refs[i]->resolved_path);
@@ -119,6 +121,38 @@ void module_ref_report_resolved(ModuleRef const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     bool allowed = options->allow_importing_ts_extensions || options->rewrite_relative_import_extensions ||
         (my span.source && my span.source->is_declaration);
+    // node16 and node18 can't `require()` an ES module (nodenext can)
+    SourceFile const* from = my span.source;
+    bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
+    if ((options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18) && sync_import &&
+        my file && my file->is_esm && my file->is_module
+    ) {
+        if (my syntax == MODULE_REF_REQUIRE) {
+            error_ctx_error_d(errs, my span, 1471,
+                "Module '", my path, "' cannot be imported using this construct. The specifier only resolves to an "
+                "ES module, which cannot be imported with 'require'. Use an ECMAScript import instead.");
+        } else {
+            Error* error = error_ctx_error_d(errs, my span, 1479,
+                "The current file is a CommonJS module whose imports will produce 'require' calls; however, the "
+                "referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a "
+                "dynamic 'import(\"", my path, "\")' call instead.");
+            // What would make this file an ES module, when its extension leaves that open
+            csview name = cstr_sv(&from->canonical_path);
+            bool ts = csview_ends_with(name, ".ts"), js = csview_ends_with(name, ".js");
+            if (error && (ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) {
+                const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
+                cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
+                if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, "', or ");
+                if (cstr_size(&from->package_json) && !from->package_has_type) {
+                    cstr_append_d(&hint, DEFAULT_DISPLAY,
+                        "add the field `\"type\": \"module\"` to '", from->package_json, "'.");
+                } else {
+                    cstr_append_lit(&hint, "create a local package.json file with `{ \"type\": \"module\" }`.");
+                }
+                error_sub_error_s(error, span_null, 1479, hint);
+            }
+        }
+    }
     if (my used_ts_extension && !allowed && my file && !my file->is_declaration) {
         isize dot = cstr_size(&my path);
         while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;

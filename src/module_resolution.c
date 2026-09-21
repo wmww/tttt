@@ -1187,8 +1187,8 @@ ResolvedModule module_resolver_resolve(
     } else {
         ret.json_without_option = state.json_without_option;
         bool dot_relative = specifier.buf[0] == '.' && module_name_is_relative(specifier);
-        bool has_extension = csview_find_sv(basename_of(specifier), c_sv(".")) != c_NPOS &&
-            !csview_equals(basename_of(specifier), ".") && !csview_equals(basename_of(specifier), "..");
+        // (tsc's hasExtension(): "./" and ".." have one)
+        bool has_extension = csview_find_sv(basename_of(specifier), c_sv(".")) != c_NPOS;
         if (state.esm_mode && dot_relative && !has_extension) {
             // tsc's checker: the extension to write is the output's of whichever file is next to the name
             ret.needs_extension = true;
@@ -1291,15 +1291,20 @@ StrList module_resolver_automatic_types(ModuleResolver* me) {
     return ret;
 }
 
-ResolutionMode module_resolver_file_mode(ModuleResolver* me, csview file) {
-    if (ends_with(file, ".mts") || ends_with(file, ".mjs")) return RESOLUTION_MODE_ESM;
-    if (ends_with(file, ".cts") || ends_with(file, ".cjs")) return RESOLUTION_MODE_COMMONJS;
+FileFormat module_resolver_file_format(ModuleResolver* me, csview file) {
+    FileFormat ret = { .mode = RESOLUTION_MODE_COMMONJS };
     State state = state_make(me, RESOLUTION_MODE_COMMONJS);
     cstr dir = absolute_containing_dir(me, file);
     cstr scope_dir = cstr_null;
     PackageJson const* scope = package_scope_of(&state, cstr_sv(&dir), &scope_dir);
-    ResolutionMode ret = scope && csview_equals(json_get_string(&scope->json, "type"), "module") ?
-        RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+    if (scope) {
+        ret.package_json = cstr_d(scope_dir, cstr_size(&scope_dir) > 1 ? "/" : "", "package.json");
+        csview type = json_get_string(&scope->json, "type");
+        ret.package_has_type = type.size > 0;
+        if (csview_equals(type, "module")) ret.mode = RESOLUTION_MODE_ESM;
+    }
+    if (ends_with(file, ".mts") || ends_with(file, ".mjs")) ret.mode = RESOLUTION_MODE_ESM;
+    if (ends_with(file, ".cts") || ends_with(file, ".cjs")) ret.mode = RESOLUTION_MODE_COMMONJS;
     cstr_drop(&scope_dir);
     cstr_drop(&dir);
     return ret;

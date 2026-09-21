@@ -1138,7 +1138,9 @@ static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
     if (parse_string(&ahead, &path)) {
         Span path_span = span_from(path_anchor);
         hop_whitespace(&ahead);
-        if (*ahead.pos == ')' || *ahead.pos == ',') {
+        // (a template with substitutions isn't a module name anyone can resolve)
+        bool is_constant = csview_find_sv(path_span.sv, c_sv("${")) == c_NPOS || *path_span.sv.buf != '`';
+        if (is_constant && (*ahead.pos == ')' || *ahead.pos == ',')) {
             ret->module_ref = add_module_ref(&p, path, path_span);
             ret->module_ref->syntax = MODULE_REF_DYNAMIC;
         } else {

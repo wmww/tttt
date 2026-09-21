@@ -63,9 +63,14 @@ ResolvedModule module_resolver_resolve_type_reference(ModuleResolver* me, csview
 // roots (`typeRoots`, else each `node_modules/@types` from the config's or the current directory upwards)
 StrList module_resolver_automatic_types(ModuleResolver* me);
 
-// Whether a file is an ES module to node16/nodenext: by extension (.mts/.mjs/.cts/.cjs), else by the `type` of the
-// nearest package.json
-ResolutionMode module_resolver_file_mode(ModuleResolver* me, csview file);
+// What node16/nodenext make of a file: an ES module by extension (.mts/.mjs, not .cts/.cjs), else by the `type` of the
+// nearest package.json (tsc's impliedNodeFormat and packageJsonScope)
+typedef struct FileFormat {
+    ResolutionMode mode;
+    cstr package_json; // The nearest package.json, empty if there is none
+    bool package_has_type;
+} FileFormat;
+FileFormat module_resolver_file_format(ModuleResolver* me, csview file);
 
 static inline bool module_name_is_relative(csview name) {
     // tsc's isExternalModuleNameRelative(): "./", "../", ".", "..", or rooted

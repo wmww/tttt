@@ -10366,7 +10366,7 @@ const baselines = {
         types: false,
     },
     'dynamicImportInDefaultExportExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48411,7 +48411,7 @@ const baselines = {
         types: true,
     },
     'moduleResolutionWithoutExtension5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48426,7 +48426,7 @@ const baselines = {
         types: true,
     },
     'moduleResolutionWithoutExtension8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -52801,17 +52801,17 @@ const baselines = {
         types: false,
     },
     'nodeModules1(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModules1(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModules1(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -52826,7 +52826,7 @@ const baselines = {
         types: true,
     },
     'nodeModulesCJSResolvingToESM1_emptyPackageJson': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52836,7 +52836,7 @@ const baselines = {
         types: true,
     },
     'nodeModulesCJSResolvingToESM3_modulePackageJson': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53381,12 +53381,12 @@ const baselines = {
         types: false,
     },
     'nodeModulesPackageImports(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesPackageImports(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53701,12 +53701,12 @@ const baselines = {
         types: true,
     },
     'nodePackageSelfName(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodePackageSelfName(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53716,12 +53716,12 @@ const baselines = {
         types: true,
     },
     'nodePackageSelfNameScoped(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodePackageSelfNameScoped(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

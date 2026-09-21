@@ -52,7 +52,11 @@ typedef struct SourceFile {
     bool is_stdlib;
     bool is_module;
     bool is_declaration;
-    bool resolution_mode_known, is_esm; // node16/nodenext: whether the file is an ES module, once something asked
+    // With node16/node18/nodenext modules or resolution: whether the file is an ES module, the package.json that has a
+    // say in that (as messages name it, empty if there is none) and whether it says (src/module_resolution.h)
+    bool is_esm;
+    bool package_has_type;
+    cstr package_json;
     Scope* scope; // The file's scope, made when names are declared. A module's container is its module symbol
     cstr decl_override; // Used for the tests
     const char* display_path_override; // Used for the tests

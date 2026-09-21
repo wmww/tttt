@@ -1,4 +1,5 @@
 #include "expr.h"
+#include "source_file.h"
 #include "stc/types.h"
 #include "type.h"
 #include "error.h"
@@ -28,6 +29,13 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             ThisRef this_ref = scope_get_this(names, false);
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
+        } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && my module_ref) {
+            // `import("./a")`
+            if (my module_ref->file) {
+                module_ref_report_resolved(my module_ref, errs);
+            } else if (!binder_module_of_ref(names->binder, my module_ref)) {
+                module_ref_report_unresolved(my module_ref, errs);
+            }
         }
         return;
     }

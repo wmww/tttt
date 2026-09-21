@@ -161,17 +161,9 @@ static cstr program_path_for_message(Program* me, csview absolute) {
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     ModuleResolver* resolver = program_resolver(me);
     csview containing = cstr_sv(&source->canonical_path);
-    ResolutionMode mode = RESOLUTION_MODE_COMMONJS;
-    if (my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
-        my options.module_resolution == MODULE_RESOLUTION_NODENEXT
-    ) {
-        if (!source->resolution_mode_known) {
-            source->is_esm = module_resolver_file_mode(resolver, containing) == RESOLUTION_MODE_ESM;
-            source->resolution_mode_known = true;
-        }
-        mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_COMMONJS :
-            ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
-    }
+    // The conditions `exports` are read with: by syntax, else the format of the importing file
+    ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_COMMONJS :
+        ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
     if (my options.no_resolve) {
         // Nothing is added to the program, but a name may still mean a file that is part of it
@@ -376,6 +368,19 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         source_file->is_stdlib = true;
         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
         cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
+    }
+
+    bool node_formats = (my options.module >= MODULE_KIND_NODE16 && my options.module <= MODULE_KIND_NODENEXT) ||
+        my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
+        my options.module_resolution == MODULE_RESOLUTION_NODENEXT;
+    if (node_formats && !my loading_stdlib) {
+        FileFormat format = module_resolver_file_format(program_resolver(me), cstr_sv(&source_file->canonical_path));
+        source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
+        source_file->package_has_type = format.package_has_type;
+        if (cstr_size(&format.package_json)) {
+            source_file->package_json = program_path_for_message(me, cstr_sv(&format.package_json));
+        }
+        cstr_drop(&format.package_json);
     }
 
     parse_file(source_file, my errs);
