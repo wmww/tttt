@@ -22,6 +22,7 @@ typedef enum ModuleRefFailure {
     MODULE_REF_IS_JSON, // Resolved to a .json file: `any` for now
     MODULE_REF_JSON_WITHOUT_OPTION, // TS2732
     MODULE_REF_ARBITRARY_EXTENSION, // Resolved to a .d.*.ts file without allowArbitraryExtensions: TS6263
+    MODULE_REF_JSX_NOT_SET, // Resolved to a .tsx/.jsx file without `jsx`: TS6142
     MODULE_REF_NEEDS_EXTENSION, // TS2834 / TS2835 (with `suggestion`)
 } ModuleRefFailure;
 
@@ -33,6 +34,7 @@ typedef struct ModuleRef {
     ModuleRefSyntax syntax;
     SourceFile* file; // What the program's module resolution found, may be null
     ModuleRefFailure failure; // Without a file
+    bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
     Symbol* module; // Memo of binder_module_of_ref()
     AliasState module_state;
@@ -69,6 +71,9 @@ ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);
 static inline csview source_file_display_path(SourceFile const* me) {
     return my display_path_override ? csview_from(my display_path_override) : cstr_sv(&my canonical_path);
 }
+
+// What there is to say about a module name that did find its file (TS5097)
+void module_ref_report_resolved(ModuleRef const* me, struct ErrorCtx* errs);
 
 // The diagnostic for a module name that led to no module (neither a file nor an ambient module): TS2307 and its
 // flavours, by what module resolution found instead

@@ -120,12 +120,14 @@ void str_list_drop(StrList* me) {
     *me = (StrList){0};
 }
 
-static void str_list_set_from_commas(StrList* me, csview value) {
+// keep_empty: an empty entry means something (the "" of `moduleSuffixes`), so "a," is two entries
+static void str_list_set_from_commas(StrList* me, csview value, bool keep_empty) {
     str_list_clear(me);
-    while (value.size) {
+    if (!value.size) return;
+    while (true) {
         isize end = csview_find_sv(value, c_sv(","));
         csview single = csview_trim_whitespace(csview_slice(value, 0, end));
-        if (single.size) str_list_push(me, single);
+        if (single.size || keep_empty) str_list_push(me, single);
         if (end == c_NPOS) break;
         value = csview_slice(value, end + 1, INTPTR_MAX);
     }
@@ -205,7 +207,7 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
     }
 #define LIST_OPTION(lowercase, field, set_field) \
     if (name_equals(name, lowercase)) { \
-        str_list_set_from_commas(&my field, value); \
+        str_list_set_from_commas(&my field, value, name_equals(name, "modulesuffixes")); \
         set_field; \
         return COMPILER_OPTION_OK; \
     }

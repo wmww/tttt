@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../compiler_options.h"
+
 #include "error.h"
 #include "source_file.h"
 #include "program.h"
@@ -64,6 +66,11 @@ typedef struct BaselineTestCase {
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
     VecBaselineTestFile files;
+    // A unit named tsconfig.json: its options (under the directives) and its files are the roots
+    bool has_tsconfig;
+    StrList tsconfig_roots; // Absolute
+    VecCStr directives; // (key, value) pairs, to be applied again over the tsconfig's options
+    csview current_unit; // While the test source is read: the `@filename` directives apply to
     VecCStr links; // `@link: target -> link` directives as (target, link) pairs, made once the files exist
 } BaselineTestCase;
 

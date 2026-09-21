@@ -3,8 +3,8 @@
 summarises what it reports: exit status, wall time, peak RSS, diagnostics by code, and syntax errors grouped by
 the token they point at. tsc reports nothing for this corpus, so every diagnostic is a tttt bug.
 
-  ./realworld.py                 # thirdparty/tsc/src/compiler/checker.ts and everything it imports
-  ./realworld.py path/to/entry.ts -n 40
+  ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
+  ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
 """
 import argparse, collections, re, resource, subprocess, sys, time
@@ -15,11 +15,11 @@ yield await async keyof infer readonly unique enum super delete if try finally s
 
 def main():
     ap = argparse.ArgumentParser()
-    # The corpus' tsconfig: target/lib es2020, strict, types: ["node"]
-    ap.add_argument('entry', nargs='*', default=['thirdparty/tsc/node_modules/@types/node/index.d.ts',
-                                                 'thirdparty/tsc/src/compiler/checker.ts'])
-    ap.add_argument('--options', default='--target es2020 --lib es2020 --strict',
-                    help='compiler options passed to tttt')
+    # Without entry files the corpus' own tsconfig says everything: files, target/lib es2020, strict, nodenext,
+    # types: ["node"]
+    ap.add_argument('entry', nargs='*', default=[])
+    ap.add_argument('--options', default='-p thirdparty/tsc/src/compiler',
+                    help='options passed to tttt (the project, or compiler options when entry files are given)')
     ap.add_argument('-n', type=int, default=25, help='rows per table')
     ap.add_argument('--code', help='list every place this code is reported')
     ap.add_argument('--no-build', action='store_true')

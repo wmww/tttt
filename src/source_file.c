@@ -82,6 +82,10 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
                 "Module '", my path, "' was resolved to '", my resolved_path,
                 "', but '--allowArbitraryExtensions' is not set.");
             return;
+        case MODULE_REF_JSX_NOT_SET:
+            error_ctx_error_d(errs, my span, 6142,
+                "Module '", my path, "' was resolved to '", my resolved_path, "', but '--jsx' is not set.");
+            return;
         case MODULE_REF_JSON_WITHOUT_OPTION:
             error_ctx_error_d(errs, my span, 2732,
                 "Cannot find module '", my path,
@@ -108,5 +112,18 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
     } else {
         error_ctx_error_d(errs, my span, 2307,
             "Cannot find module '", my path, "' or its corresponding type declarations.");
+    }
+}
+
+void module_ref_report_resolved(ModuleRef const* me, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    bool allowed = options->allow_importing_ts_extensions || options->rewrite_relative_import_extensions ||
+        (my span.source && my span.source->is_declaration);
+    if (my used_ts_extension && !allowed && my file && !my file->is_declaration) {
+        isize dot = cstr_size(&my path);
+        while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;
+        error_ctx_error_d(errs, my span, 5097,
+            "An import path can only end with a '.", csview_slice(cstr_sv(&my path), dot, cstr_size(&my path)),
+            "' extension when 'allowImportingTsExtensions' is enabled.");
     }
 }

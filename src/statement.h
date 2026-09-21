@@ -208,6 +208,8 @@ typedef struct SourceDirectiveStatement {
     cstr path;
     Span path_span;
     bool preserve;
+    // Set by the program when what is named wasn't found: the path as messages name it (TS6053), the name (TS2688)
+    cstr not_found;
 } SourceDirectiveStatement;
 
 // Loop statements

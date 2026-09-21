@@ -182,16 +182,28 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     switch (resolved.kind) {
         case RESOLVED_TS:
         case RESOLVED_DTS:
-            if (resolved.arbitrary_extension && !my options.allow_arbitrary_extensions) {
+            if (my options.jsx == JSX_NONE && csview_ends_with(cstr_sv(&resolved.path), ".tsx")) {
+                ref->failure = MODULE_REF_JSX_NOT_SET;
+                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+            } else if (resolved.arbitrary_extension && !my options.allow_arbitrary_extensions && !source->is_declaration) {
                 ref->failure = MODULE_REF_ARBITRARY_EXTENSION;
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else {
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+                ref->used_ts_extension = resolved.used_ts_extension;
             }
             break;
         case RESOLVED_JS:
+            if (my options.jsx == JSX_NONE && csview_ends_with(cstr_sv(&resolved.path), ".jsx")) {
+                ref->failure = MODULE_REF_JSX_NOT_SET;
+                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+                break;
+            }
             // JavaScript of a package isn't part of the program even with allowJs (tsc's maxNodeModuleJsDepth is 0)
-            if (my options.allow_js && !resolved.is_external_library) {
+            // (a package that is a link to somewhere outside of any node_modules is the project's own code)
+            if (my options.allow_js && !(resolved.is_external_library &&
+                csview_find_sv(cstr_sv(&resolved.path), c_sv("/node_modules/")) != c_NPOS)
+            ) {
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
             } else {
                 ref->failure = MODULE_REF_IS_JS;
@@ -245,15 +257,29 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_SOURCE_DIRECTIVE:
             switch (statement->source_directive->tag) {
                 case SOURCE_DIRECTIVE_REFERENCE_PATH:
-                    program_load_reference_path(
+                    if (my options.no_resolve) break;
+                    if (!program_load_reference_path(
                         me,
                         statement->source_directive->path_span,
                         cstr_sv(&statement->source_directive->path)
-                    );
+                    )) {
+                        // Reported when names are resolved: it is no reason not to typecheck
+                        cstr cwd = cstr_null;
+                        try (fs_get_cwd(my fs, &cwd)) or_panic;
+                        cstr dir = absolute_path_of(cstr_sv(&cwd), dirname_of(cstr_sv(&source->canonical_path)));
+                        cstr absolute = absolute_path_of(cstr_sv(&dir), cstr_sv(&statement->source_directive->path));
+                        cstr_take(&statement->source_directive->not_found, program_path_for_message(me, cstr_sv(&absolute)));
+                        cstr_drop(&absolute);
+                        cstr_drop(&dir);
+                        cstr_drop(&cwd);
+                    }
                     break;
                 case SOURCE_DIRECTIVE_REFERENCE_TYPES:
-                    program_load_type_reference(
-                        me, cstr_sv(&statement->source_directive->path), cstr_sv(&source->canonical_path));
+                    if (!program_load_type_reference(
+                        me, cstr_sv(&statement->source_directive->path), cstr_sv(&source->canonical_path))
+                    ) {
+                        cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
+                    }
                     break;
                 case SOURCE_DIRECTIVE_REFERENCE_LIB:
                     // Between lib files: they are all in one directory. TODO: a lib only a directive in the program

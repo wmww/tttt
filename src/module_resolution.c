@@ -97,6 +97,7 @@ void module_resolver_destroy(ModuleResolver* me) {
 // ---- Paths ----
 
 static cstr join(csview dir, csview rest) {
+    if (rest.size && rest.buf[0] == '/') return absolute_path_of(c_sv("/"), rest); // A rooted name: `import "/foo"`
     cstr combined = cstr_from_sv(dir);
     cstr_append_lit(&combined, "/");
     cstr_append_sv(&combined, rest);
@@ -545,8 +546,10 @@ static Search load_using_options(State* me, csview name, int extensions, Loader 
     CompilerOptions const* options = my resolver->options;
     bool relative = module_name_is_relative(name);
     if (options->path_count && !(name.buf[0] == '.' && relative)) {
+        // A pattern that matched and led nowhere ends what the options have to say (no baseUrl lookup), the ordinary
+        // lookup still runs
         Search result = load_using_paths_option(me, name, extensions, loader, out);
-        if (result != SEARCH_CONTINUE) return result;
+        if (result != SEARCH_CONTINUE) return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_CONTINUE;
     }
     if (relative) {
         return load_using_root_dirs(me, name, extensions, loader, out) ? SEARCH_FOUND : SEARCH_CONTINUE;
@@ -575,7 +578,9 @@ static bool load_package_json_field(State* me, csview candidate, int extensions,
             return true;
         }
     }
-    return load_file_no_implicit_extensions(me, candidate, extensions, out);
+    if (!load_file_no_implicit_extensions(me, candidate, extensions, out)) return false;
+    out->used_ts_extension = false; // The package wrote the extension, not the import
+    return true;
 }
 
 static bool load_file_loader(State* me, csview candidate, int extensions, Found* out) {
@@ -920,12 +925,15 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
         if (result == SEARCH_STOP) result = SEARCH_CONTINUE; // The walk up the directories goes on, like tsc's `?.value`
     } else {
         JsonValue const* version_paths = rest.size && root_package ? version_paths_of(root_package) : nullptr;
+        bool versioned = false;
         if (version_paths) {
+            // A matching `typesVersions` pattern is the only way to the file, found or not
             result = load_using_version_paths(
                 me, version_paths, cstr_sv(&package_dir), rest, extensions, load_as_file_or_directory, out);
+            versioned = result != SEARCH_CONTINUE;
             if (result == SEARCH_STOP) result = SEARCH_CONTINUE;
         }
-        if (result == SEARCH_CONTINUE && directory_exists(me, parent_of(cstr_sv(&candidate)))) {
+        if (!versioned && directory_exists(me, parent_of(cstr_sv(&candidate)))) {
             bool found = (rest.size || !my esm_mode) && load_file(me, cstr_sv(&candidate), extensions, out);
             if (!found && directory_exists(me, cstr_sv(&candidate))) {
                 found = load_directory(me, cstr_sv(&candidate), package, extensions, out);
@@ -1178,24 +1186,28 @@ ResolvedModule module_resolver_resolve(
         apply_realpath(me, &ret);
     } else {
         ret.json_without_option = state.json_without_option;
-        if (state.esm_mode && module_name_is_relative(specifier) && !script_extension_of(specifier).size) {
-            // What would have been found with CommonJS rules says which extension is missing
+        bool dot_relative = specifier.buf[0] == '.' && module_name_is_relative(specifier);
+        bool has_extension = csview_find_sv(basename_of(specifier), c_sv(".")) != c_NPOS &&
+            !csview_equals(basename_of(specifier), ".") && !csview_equals(basename_of(specifier), "..");
+        if (state.esm_mode && dot_relative && !has_extension) {
+            // tsc's checker: the extension to write is the output's of whichever file is next to the name
             ret.needs_extension = true;
-            State relaxed = state;
-            relaxed.esm_mode = false;
-            Found meant = {0};
-            bool ignored;
-            if (node_try_resolve(&relaxed, specifier, EXT_TS | EXT_DTS | EXT_JS, &meant, &ignored) == SEARCH_FOUND) {
-                csview extension = script_extension_of(cstr_sv(&meant.path));
-                const char* suggestion =
-                    csview_equals(extension, ".mts") || csview_equals(extension, ".d.mts") ? ".mjs" :
-                    csview_equals(extension, ".cts") || csview_equals(extension, ".d.cts") ? ".cjs" :
-                    csview_equals(extension, ".tsx") && my options->jsx == JSX_PRESERVE ? ".jsx" : ".js";
-                bool is_index = csview_starts_with(basename_of(cstr_sv(&meant.path)), "index.") &&
-                    !csview_equals(basename_of(specifier), "index");
-                ret.suggested_extension = is_index ? cstr_d("/index", suggestion) : cstr_from(suggestion);
-                cstr_drop(&meant.path);
+            static const char* const suggestions[][2] = {
+                {".mts", ".mjs"}, {".ts", ".js"}, {".cts", ".cjs"}, {".mjs", ".mjs"}, {".js", ".js"}, {".cjs", ".cjs"},
+                {".tsx", nullptr}, {".jsx", ".jsx"}, {".json", ".json"},
+            };
+            cstr stem = join(state.containing_dir, specifier);
+            for (isize i = 0; i < (isize)c_arraylen(suggestions); i++) {
+                cstr candidate = cstr_d(stem, suggestions[i][0]);
+                bool exists = file_exists(&state, cstr_sv(&candidate));
+                cstr_drop(&candidate);
+                if (!exists) continue;
+                const char* suggestion = suggestions[i][1] ? suggestions[i][1] :
+                    my options->jsx == JSX_PRESERVE ? ".jsx" : ".js";
+                ret.suggested_extension = cstr_from(suggestion);
+                break;
             }
+            cstr_drop(&stem);
         }
     }
     cstr_drop(&containing_dir);

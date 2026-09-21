@@ -5062,8 +5062,8 @@ const baselines = {
     },
     'commonSourceDirectory_dts': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'commonjsAccessExports': {
         errors: false,
@@ -8116,7 +8116,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitJsReExportDefault': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8336,7 +8336,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitPathMappingMonorepo2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -20423,7 +20423,7 @@ const baselines = {
     'maxNodeModuleJsDepthDefaultsToZero': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'maximum10SpellingSuggestions': {
         errors: false,
@@ -21541,7 +21541,7 @@ const baselines = {
         types: true,
     },
     'moduleResolutionWithExtensions_notSupported3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21561,7 +21561,7 @@ const baselines = {
         types: false,
     },
     'moduleResolutionWithExtensions_withPaths': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21617,51 +21617,51 @@ const baselines = {
     },
     'moduleResolutionWithSuffixes_empty': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSuffixes_notSpecified': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSuffixes_one': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSuffixes_oneBlank': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSuffixes_oneNotFound': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSuffixes_one_dirModuleWithIndex': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSuffixes_one_externalModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleResolutionWithSuffixes_one_externalModulePath': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleResolutionWithSuffixes_one_externalModule_withPaths': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleResolutionWithSuffixes_one_externalTSModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21671,39 +21671,39 @@ const baselines = {
         types: false,
     },
     'moduleResolutionWithSuffixes_one_jsonModule': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
-    'moduleResolutionWithSuffixes_threeLastIsBlank1': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
-    'moduleResolutionWithSuffixes_threeLastIsBlank2': {
-        errors: false,
-        symbols: false,
-        types: false,
-    },
-    'moduleResolutionWithSuffixes_threeLastIsBlank3': {
         errors: true,
         symbols: false,
         types: false,
     },
+    'moduleResolutionWithSuffixes_threeLastIsBlank1': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'moduleResolutionWithSuffixes_threeLastIsBlank2': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
+    'moduleResolutionWithSuffixes_threeLastIsBlank3': {
+        errors: true,
+        symbols: true,
+        types: true,
+    },
     'moduleResolutionWithSuffixes_threeLastIsBlank4': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithSymlinks': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleResolutionWithSymlinks_notInNodeModules': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleResolutionWithSymlinks_preserveSymlinks': {
         errors: false,
@@ -21716,7 +21716,7 @@ const baselines = {
         types: false,
     },
     'moduleResolutionWithSymlinks_withOutDir': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23266,7 +23266,7 @@ const baselines = {
         types: false,
     },
     'nodeColonModuleResolution2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23291,7 +23291,7 @@ const baselines = {
         types: false,
     },
     'nodeNextImportModeImplicitIndexResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24937,13 +24937,13 @@ const baselines = {
     },
     'pathMappingBasedModuleResolution2_classic': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution2_node': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution3_classic': {
         errors: true,
@@ -24961,27 +24961,27 @@ const baselines = {
         types: false,
     },
     'pathMappingBasedModuleResolution4_node': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'pathMappingBasedModuleResolution5_classic': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'pathMappingBasedModuleResolution5_node': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'pathMappingBasedModuleResolution6_classic': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'pathMappingBasedModuleResolution6_node': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -24996,29 +24996,29 @@ const baselines = {
         types: false,
     },
     'pathMappingBasedModuleResolution8_classic': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'pathMappingBasedModuleResolution8_node': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot_differentRootTypes': {
-        errors: true,
+        errors: false,
         symbols: false,
         types: false,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot_multipleAliases': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot_realRootFile': {
         errors: true,
@@ -25027,8 +25027,8 @@ const baselines = {
     },
     'pathMappingBasedModuleResolution_rootImport_noAliasWithRoot': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_noAliasWithRoot_realRootFile': {
         errors: true,
@@ -25037,36 +25037,36 @@ const baselines = {
     },
     'pathMappingBasedModuleResolution_withExtension': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution_withExtensionInName': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution_withExtension_MapedToNodeModules': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingBasedModuleResolution_withExtension_failedLookup': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'pathMappingInheritedBaseUrl': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'pathMappingWithoutBaseUrl1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'pathMappingWithoutBaseUrl2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26827,8 +26827,8 @@ const baselines = {
     },
     'requireOfJsonFileWithoutResolveJsonModuleAndPathMapping': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'requireOfJsonFile_PathMapping': {
         errors: true,
@@ -26898,12 +26898,12 @@ const baselines = {
     'resolutionCandidateFromPackageJsonField2(moduleresolution=bundler)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolutionCandidateFromPackageJsonField2(moduleresolution=node10)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolveInterfaceNameWithSameLetDeclarationName1': {
         errors: true,
@@ -27456,24 +27456,24 @@ const baselines = {
         types: true,
     },
     'sideEffectImports2(noimplicitany=false,nouncheckedsideeffectimports=false)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'sideEffectImports2(noimplicitany=false,nouncheckedsideeffectimports=true)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'sideEffectImports2(noimplicitany=true,nouncheckedsideeffectimports=false)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'sideEffectImports2(noimplicitany=true,nouncheckedsideeffectimports=true)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'sideEffectImports3(moduledetection=auto,nouncheckedsideeffectimports=false)': {
         errors: true,
@@ -37421,7 +37421,7 @@ const baselines = {
         types: false,
     },
     'decoratorOnClassConstructor2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -48381,7 +48381,7 @@ const baselines = {
         types: false,
     },
     'moduleResolutionWithoutExtension1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52186,12 +52186,12 @@ const baselines = {
         types: true,
     },
     'bundlerRelative1(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bundlerRelative1(module=preserve)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52506,7 +52506,7 @@ const baselines = {
         types: true,
     },
     'nodeAllowJsPackageSelfName2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58111,8 +58111,8 @@ const baselines = {
         types: false,
     },
     'library-reference-13': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'library-reference-14': {

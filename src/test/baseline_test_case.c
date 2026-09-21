@@ -1,6 +1,7 @@
 #include "baseline_test_case.h"
 #include "baseline_test_traversal.h"
 #include "mock_fs.h"
+#include "../tsconfig.h"
 #include "program.h"
 
 #include "source_file.h"
@@ -307,7 +308,21 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         try (fs_change_cwd(mock, value)) or_log(info);
         return;
     }
-    if (tag_equals(key, "link") || tag_equals(key, "symlink")) {
+    if (tag_equals(key, "symlink")) {
+        // `// @symlink: /a/x.ts,/b/x.ts` inside a file: other paths the file is at
+        while (value.size) {
+            isize end = csview_find_sv(value, c_sv(","));
+            csview link = csview_trim_whitespace(csview_slice(value, 0, end));
+            if (link.size) {
+                vec_cstr_push(&my links, cstr_from_sv(my current_unit));
+                vec_cstr_push(&my links, cstr_from_sv(link));
+            }
+            if (end == c_NPOS) break;
+            value = csview_slice(value, end + 1, INTPTR_MAX);
+        }
+        return;
+    }
+    if (tag_equals(key, "link")) {
         // `// @link: /packages/a -> /node_modules/a`
         isize arrow = csview_find_sv(value, c_sv("->"));
         if (arrow != c_NPOS) {
@@ -318,6 +333,8 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         }
         return;
     }
+    vec_cstr_push(&my directives, cstr_from_sv(key));
+    vec_cstr_push(&my directives, cstr_from_sv(value));
     // Unknown options are overwhelmingly emit options. A bad value is something tsc's harness refuses to run, which
     // doesn't happen in tests that have baselines
     ignore compiler_options_set(program_options(my program), key, value);
@@ -355,19 +372,24 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     );
 
     bool has_line = false;
+    bool seen_filename = false;
     csview current_filename = basename_of(my source_path);
+    my current_unit = current_filename;
     for_each (i, lines_sv, contents_sv) {
         csview tag_key, tag_value;
         if (parse_tag(i, &tag_key, &tag_value)) {
             if (tag_equals(tag_key, "filename")) {
-                if (cstr_size(&source_contents)) {
+                // (what precedes the first `@filename` is a file of its own only if there is something in it)
+                if (cstr_size(&source_contents) || seen_filename) {
                     try (add_virtual_source_file(me, current_filename, source_contents)) cleanup {
                         cstr_drop(&unparsed_contents);
                     }
                     source_contents = cstr_null;
                 }
                 has_line = false;
+                seen_filename = true;
                 current_filename = tag_value;
+                my current_unit = current_filename;
             } else {
                 apply_setting(me, tag_key, tag_value);
             }
@@ -389,6 +411,26 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
 
     for (isize i = 0; i + 1 < vec_cstr_size(&my links); i += 2) {
         try (mock_fs_create_symlink(my fs, cstr_sv(vec_cstr_at(&my links, i + 1)), cstr_sv(vec_cstr_at(&my links, i)))) or_log(info);
+    }
+
+    // Like tsc's harness, a tsconfig.json (or jsconfig.json) among the files gives the options the directives are
+    // applied over, and decides which of the files are roots
+    for_each (i, vec_baseline_test_file, &my files) {
+        csview name = basename_of(cstr_sv(&i->path));
+        if (!tag_equals(name, "tsconfig.json") && !tag_equals(name, "jsconfig.json")) continue;
+        try (tsconfig_load(mock_fs_get_fs(my fs), cstr_sv(&i->path), program_options(my program), &my tsconfig_roots)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+            break;
+        }
+        my has_tsconfig = true;
+        VecCStr directives = my directives;
+        my directives = (VecCStr){0};
+        for (isize j = 0; j + 1 < vec_cstr_size(&directives); j += 2) {
+            apply_setting(me, cstr_sv(vec_cstr_at(&directives, j)), cstr_sv(vec_cstr_at(&directives, j + 1)));
+        }
+        vec_cstr_drop(&directives);
+        break;
     }
 
     // The configuration's values replace the "es5,es2015" the directives above left behind
@@ -585,7 +627,7 @@ BaselineTestCase run_baseline_test_case(
     // file is the only root (the others are part of the program if something refers to them) and comes first in the
     // baselines
     bool last_is_only_root = false;
-    if (vec_baseline_test_file_size(&ret.files) > 1) {
+    if (!ret.has_tsconfig && vec_baseline_test_file_size(&ret.files) > 1) {
         BaselineTestFile* last = vec_baseline_test_file_back_mut(&ret.files);
         cstr contents = cstr_null;
         try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&last->path), &contents)) if_err (e) {
@@ -605,6 +647,17 @@ BaselineTestCase run_baseline_test_case(
 
     for_each (i, vec_baseline_test_file, &ret.files) {
         bool is_root = !last_is_only_root || i_index == 0;
+        if (ret.has_tsconfig) {
+            cstr cwd = cstr_null;
+            try (fs_get_cwd(mock_fs_get_fs(fs), &cwd)) or_panic;
+            cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&i->path));
+            is_root = false;
+            for (isize j = 0; j < ret.tsconfig_roots.count && !is_root; j++) {
+                is_root = cstr_eq(&ret.tsconfig_roots.items[j], &absolute);
+            }
+            cstr_drop(&absolute);
+            cstr_drop(&cwd);
+        }
         if (!path_is_script(cstr_sv(&i->path)) || !is_root) continue;
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
@@ -661,6 +714,8 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     cstr_drop(&my formatted_errors);
     vec_baseline_test_file_drop(&my files);
     vec_cstr_drop(&my links);
+    vec_cstr_drop(&my directives);
+    str_list_drop(&my tsconfig_roots);
 }
 
 static csview relative_test_path(csview test_path) {

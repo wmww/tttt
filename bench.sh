@@ -62,21 +62,20 @@ echo "tttt phases (one run):"
 ./release/tttt -q --time "${FILES[@]}" 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
 # The pinned benchmark: tsc's own compiler sources, the same files every session (./realworld.py is the correctness
-# view of the same run). tttt follows the imports of checker.ts, which reaches all of src/compiler; tsc and tsgo use
-# its tsconfig (adds @types/node, which tttt doesn't resolve yet). tttt exits 1: everything it reports there is a bug
+# view of the same run). Everyone runs from its tsconfig. tttt exits 1: everything it reports there is a bug
 REAL=thirdparty/tsc/src/compiler
 # Its tsconfig is composite: without these tsc writes a tsbuildinfo and the next run checks nothing
 REAL_ARGS="--noEmit --composite false --incremental false --declaration false --declarationMap false --emitDeclarationOnly false --isolatedDeclarations false"
 echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
-measure "tttt" ./release/tttt -q --keep-going $REAL/checker.ts
+measure "tttt" ./release/tttt -q --keep-going -p $REAL
 measure "tsc (node)" node thirdparty/tsc/lib/tsc.js $REAL_ARGS -p $REAL
 if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
     measure "tsgo" tsc $REAL_ARGS -p $REAL
     measure "tsgo single-threaded" tsc $REAL_ARGS --singleThreaded -p $REAL
 fi
 echo "tttt phases (one run):"
-./release/tttt -q --time --keep-going $REAL/checker.ts 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
+./release/tttt -q --time --keep-going -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
 echo
 echo "stdlib only (parse + resolve + typecheck of thirdparty/lib/esnext.full.d.ts and everything it references;"

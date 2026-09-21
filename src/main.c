@@ -1,3 +1,8 @@
+// realpath() and PATH_MAX, which strict -std=c2x hides
+#define _XOPEN_SOURCE 700
+#include <limits.h>
+#include <stdlib.h>
+
 #include "ty/ty.h"
 #include "type.h"
 #include "program.h"
@@ -6,8 +11,10 @@
 #include "display.h"
 #include "source_file.h"
 #include "string_helpers.h"
+#include "tsconfig.h"
 #include <cleat/filesystem.h>
 #include <time.h>
+#include <stdlib.h>
 
 // What gets loaded when neither --lib nor --target say otherwise (tsc would load just lib.d.ts, which makes for..of
 // over anything but an array an error; bench.sh gives tsc the same list)
@@ -21,6 +28,7 @@ typedef struct Options {
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck even if there were parse or name errors
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
+    const char* project; // -p: a tsconfig.json or the directory of one
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -60,10 +68,34 @@ static_failable load_stdlib(Program* program) {
     return ok;
 }
 
-// Strict unless told otherwise, then whatever was on the command line
-static_failable apply_compiler_options(Options const* opts, CompilerOptions* options) {
+// Follows symlinks like the real filesystem does, for the program's module resolution
+static cstr real_path_of(void* ctx, csview path) {
+    ignore ctx;
+    if (path.size >= PATH_MAX) return cstr_null;
+    char buf[PATH_MAX];
+    memcpy(buf, path.buf, (size_t)path.size);
+    buf[path.size] = 0;
+    char resolved[PATH_MAX];
+    return realpath(buf, resolved) ? cstr_from(resolved) : cstr_null;
+}
+
+// The project's tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line.
+// The config's root files are appended to root_files
+static_failable apply_compiler_options(Options const* opts, CompilerOptions* options, StrList* root_files) {
     bool libs_decided = false;
-    ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
+    cstr config = opts->project ? cstr_from(opts->project) :
+        opts->path_count ? cstr_null : tsconfig_find(fs, c_sv("."));
+    if (cstr_size(&config)) {
+        if (!opts->quiet) println(color_good, "Project ", config, color_normal);
+        // Files on the command line replace the config's
+        try (tsconfig_load(fs, cstr_sv(&config), options, opts->path_count ? nullptr : root_files)) cleanup {
+            cstr_drop(&config);
+        }
+        libs_decided = options->target_set || cstr_size(&options->lib);
+    } else {
+        ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
+    }
+    cstr_drop(&config);
     for (intptr_t i = 0; i < opts->option_count; i++) {
         csview name = csview_from(opts->option_names[i]);
         switch (compiler_options_set(options, name, csview_from(opts->option_values[i]))) {
@@ -106,8 +138,16 @@ static intptr_t report_errors(ErrorCtx* errs) {
 static_failable check_files(Options const* opts, returns int) {
     ErrorCtx errs = error_ctx_init();
     Program* program = program_new(&errs, fs);
-    try (apply_compiler_options(opts, program_options(program))) cleanup {
+    program_set_realpath(program, real_path_of, nullptr);
+    StrList root_files = {0};
+    try (apply_compiler_options(opts, program_options(program), &root_files)) cleanup {
+        str_list_drop(&root_files);
         destroy_program(program, &errs);
+    }
+    if (!opts->path_count && !root_files.count) {
+        str_list_drop(&root_files);
+        destroy_program(program, &errs);
+        return err_d("No input files: none on the command line and none from a tsconfig.json");
     }
     double last = now_ms();
 
@@ -127,13 +167,16 @@ static_failable check_files(Options const* opts, returns int) {
     phase_done(opts, "load+parse libs", &last);
 
     SourceFile* source = nullptr;
-    for (intptr_t i = 0; i < opts->path_count; i++) {
-        csview path = csview_from(opts->paths[i]);
+    for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {
+        csview path = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
         if (!opts->quiet) println(color_good, "Loading ", path, "...", color_normal);
         try (program_load(program, path, &source)) cleanup {
+            str_list_drop(&root_files);
             destroy_program(program, &errs);
         }
     }
+    str_list_drop(&root_files);
+    program_load_automatic_types(program);
     phase_done(opts, "load+parse files", &last);
 
     int ret = 0;
@@ -190,9 +233,11 @@ int main(int argc, const char** argv) {
     for (int i = 1; i < argc; i++) {
         if (streq(argv[i], "--help") || streq(argv[i], "-h")) {
             println(
-                "The Tess TypeScript Typechecker\n\nUSAGE: tttt [OPTIONS] TSPATH...\n\n"
+                "The Tess TypeScript Typechecker\n\nUSAGE: tttt [OPTIONS] [TSPATH...]\n\n"
                 "  -q, --quiet   only print diagnostics and the summary\n"
                 "  --time        print how long each phase took to stderr\n"
+                "  -p, --project PATH  a tsconfig.json or its directory: options and, without TSPATHs, the files.\n"
+                "                Without TSPATHs and -p, the nearest tsconfig.json from here upwards\n"
                 "  --no-lib      don't load the standard library\n"
                 "  --keep-going  typecheck even after parse or name errors\n"
                 "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
@@ -208,6 +253,8 @@ int main(int argc, const char** argv) {
             opts.keep_going = true;
         } else if (streq(argv[i], "--all-errors")) {
             print_error_ctx_max_display = INTPTR_MAX;
+        } else if ((streq(argv[i], "-p") || streq(argv[i], "--project")) && i + 1 < argc) {
+            opts.project = argv[++i];
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {
@@ -234,11 +281,6 @@ int main(int argc, const char** argv) {
             // Paths are compacted to the front of argv, which is fine as they never outnumber what we've already read
             opts.paths[opts.path_count++] = argv[i];
         }
-    }
-
-    if (opts.path_count == 0) {
-        println(color_error, "Too few arguments", color_normal);
-        return 1;
     }
 
     try (int ret, check_files(&opts, &ret)) if_err (e) {

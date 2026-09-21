@@ -253,6 +253,7 @@ void statement_drop(Statement* me) {
 
         case STATEMENT_SOURCE_DIRECTIVE:
             cstr_drop(&my source_directive->path);
+            cstr_drop(&my source_directive->not_found);
             free(my source_directive);
             break;
 
@@ -987,8 +988,24 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             namespace_decl_resolve_names(&my decl.namespace, names, errs);
             break;
 
-        case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
+            if (cstr_size(&my source_directive->not_found)) {
+                // Without the quotes
+                Span span = my source_directive->path_span;
+                if (span.sv.size >= 2 && (*span.sv.buf == '"' || *span.sv.buf == '\'')) {
+                    span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
+                }
+                if (my source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
+                    error_ctx_error_d(errs, span, 2688,
+                        "Cannot find type definition file for '", my source_directive->not_found, "'.");
+                } else {
+                    error_ctx_error_d(errs, span, 6053,
+                        "File '", my source_directive->not_found, "' not found.");
+                }
+            }
+            break;
+
+        case STATEMENT_NOOP:
             break;
     }
 }

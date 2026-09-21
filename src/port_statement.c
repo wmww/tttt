@@ -39,5 +39,7 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
         module_ref_report_unresolved(my module_ref, errs);
+    } else if (my module_ref && my module_ref->file) {
+        module_ref_report_resolved(my module_ref, errs);
     }
 }
