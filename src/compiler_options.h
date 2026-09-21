@@ -115,6 +115,23 @@ typedef enum ModuleDetectionKind {
     X(use_define_for_class_fields, "usedefineforclassfields", false) \
     X(verbatim_module_syntax, "verbatimmodulesyntax", false)
 
+// A list of strings, as the list options are written ("a,b" on the command line, an array in a tsconfig)
+typedef struct StrList {
+    cstr* items;
+    isize count;
+    isize cap;
+} StrList;
+
+void str_list_push(StrList* me, csview item);
+void str_list_clear(StrList* me);
+void str_list_drop(StrList* me);
+
+// One entry of `paths`: "@app/*": ["src/*", "generated/*"]
+typedef struct PathMapping {
+    cstr pattern;
+    StrList substitutions;
+} PathMapping;
+
 typedef enum CompilerOptionId {
 #define X(field, name, strict_family) COMPILER_OPTION_##field,
     COMPILER_BOOL_OPTIONS(X)
@@ -136,6 +153,20 @@ typedef struct CompilerOptions {
     ModuleDetectionKind module_detection;
     cstr lib; // Comma separated, lowercase, as written ("es2015,dom"). Empty: the default library of the target
 
+    // Module resolution (src/module_resolution.h reads these). Paths are as written: relative ones are relative to
+    // config_dir (the directory of the tsconfig they came from), or to the current directory when that is empty
+    cstr config_dir;
+    cstr base_url;
+    cstr paths_base; // What `paths` substitutions are relative to without a baseUrl: the tsconfig that has the `paths`
+    PathMapping* paths;
+    isize path_count;
+    StrList root_dirs;
+    StrList type_roots;
+    StrList types;
+    StrList module_suffixes;
+    StrList custom_conditions;
+    bool base_url_set, paths_set, type_roots_set, types_set;
+
     // Which options were given explicitly, the rest get their defaults from compiler_options_resolve()
     bool is_set[COMPILER_BOOL_OPTION_COUNT];
     bool target_set, module_set, module_resolution_set, module_detection_set;
@@ -151,6 +182,9 @@ CompilerOptions compiler_options_init();
 void compiler_options_drop(CompilerOptions* me);
 // name is case insensitive ("strictNullChecks"), value is what would be written in a tsconfig or on the command line
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value);
+// One entry of `paths` (there is no way to write them as a single string). Replaces an entry with the same pattern
+void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList substitutions);
+void compiler_options_clear_paths(CompilerOptions* me);
 // Applies the defaults that depend on other options. Idempotent
 void compiler_options_resolve(CompilerOptions* me);
 // Shorthand for tests and tools: `strict: true` and resolve

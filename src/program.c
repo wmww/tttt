@@ -7,6 +7,7 @@
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
+#include "module_resolution.h"
 
 #define g_class_key SourceFile, source_file
 #define g_no_clone
@@ -58,6 +59,7 @@ typedef struct Program {
     ErrorCtx* errs; // unowned
     Fs const* fs;
     Binder* binder;
+    ModuleResolver* resolver; // Made on first use, the options are final by then
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     Checker* checker; // Created by program_make_current()
@@ -99,139 +101,6 @@ static void program_add_builtins(Program* me) {
 
 static SourceFile* program_add_source_idempotent(Program* me, csview path);
 
-static bool get_import_path_of_index(Fs const* fs, csview path, cstr* ret) {
-    *ret = cstr_from_sv(path);
-    intptr_t base_len = cstr_size(ret);
-
-    cstr_append_n(ret, &path_sep, 1);
-    cstr_append_lit(ret, "index.d.ts");
-    if (fs_is_reg_file(fs, cstr_sv(ret))) {
-        return true;
-    }
-    cstr_resize(ret, base_len, '_');
-
-    cstr_append_n(ret, &path_sep, 1);
-    cstr_append_lit(ret, "index.ts");
-    if (fs_is_reg_file(fs, cstr_sv(ret))) {
-        return true;
-    }
-
-    cstr_drop(ret);
-    return false;
-}
-
-static bool get_import_path_find_extension(Fs const* fs, csview path, cstr* ret) {
-    *ret = cstr_from_sv(path);
-    intptr_t base_len = cstr_size(ret);
-
-    // As written: `/// <reference path="a.d.ts" />`, `import "./a.ts"`
-    if ((csview_ends_with(path, ".ts") || csview_ends_with(path, ".tsx") || csview_ends_with(path, ".mts") ||
-            csview_ends_with(path, ".cts")) && fs_is_reg_file(fs, path)
-    ) {
-        return true;
-    }
-
-    if (csview_ends_with(path, ".js")) {
-        base_len -= 3;
-        cstr_resize(ret, base_len, '_');
-    }
-
-    if (fs_is_directory(fs, cstr_sv(ret))) {
-        cstr ret2;
-        if (get_import_path_of_index(fs, cstr_sv(ret), &ret2)) {
-            cstr_drop(ret);
-            *ret = ret2;
-            return true;
-        }
-    }
-
-    cstr_append_lit(ret, ".d.ts");
-    if (fs_is_reg_file(fs, cstr_sv(ret))) {
-        return true;
-    }
-    cstr_resize(ret, base_len, '_');
-
-    cstr_append_lit(ret, ".ts");
-    if (fs_is_reg_file(fs, cstr_sv(ret))) {
-        return true;
-    }
-    cstr_resize(ret, base_len, '_');
-
-    cstr_drop(ret);
-    return false;
-}
-
-static bool get_import_path_relative(Fs const* fs, csview cwd, csview path, cstr* ret) {
-    cstr str = cstr_from_sv(cwd);
-    cstr_append_n(&str, &path_sep, 1);
-    cstr_append_sv(&str, path);
-
-    if (get_import_path_find_extension(fs, cstr_sv(&str), ret)) {
-        cstr_drop(&str);
-        return true;
-    }
-
-    cstr_drop(&str);
-    return false;
-}
-
-static bool get_node_modules_dir(Fs const* fs, csview path, cstr* ret) {
-    cstr str = cstr_from_sv(path);
-    while (true) {
-        intptr_t start_len = cstr_size(&str);
-        cstr_append_n(&str, &path_sep, 1);
-        cstr_append_lit(&str, "node_modules");
-        if (fs_is_directory(fs, cstr_sv(&str))) {
-            *ret = str;
-            return true;
-        }
-        cstr_resize(&str, start_len, '_');
-        cstr_resize(&str, basename_of(cstr_sv(&str)).buf - cstr_str(&str), '_');
-        if (cstr_size(&str) <= 2 && (
-                cstr_is_empty(&str) ||
-                cstr_equals(&str, ".") ||
-                cstr_equals(&str, "..") ||
-                (cstr_size(&str) == 1 && *cstr_str(&str) == path_sep)
-            )
-        ) {
-            cstr_drop(&str);
-            return false;
-        }
-    }
-}
-
-static bool get_import_path(Fs const* fs, csview cwd, csview path, cstr* ret) {
-    if (csview_starts_with(path, "/")) {
-        return get_import_path_find_extension(fs, path, ret);
-    }
-
-    if (get_import_path_relative(fs, cwd, path, ret)) {
-        return true;
-    }
-
-    cstr node_modules_path;
-    if (get_node_modules_dir(fs, cwd, &node_modules_path)) {
-        intptr_t base_len = cstr_size(&node_modules_path);
-
-        cstr_append_n(&node_modules_path, &path_sep, 1);
-        cstr_append_lit(&node_modules_path, "@types");
-        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
-            cstr_drop(&node_modules_path);
-            return true;
-        }
-        cstr_resize(&node_modules_path, base_len, '_');
-
-        if (get_import_path_relative(fs, cstr_sv(&node_modules_path), path, ret)) {
-            cstr_drop(&node_modules_path);
-            return true;
-        }
-
-        cstr_drop(&node_modules_path);
-    }
-
-    return false;
-}
-
 Program* program_new(ErrorCtx* errs, Fs const* fs) {
     check(errs);
     check(fs);
@@ -250,6 +119,7 @@ static void program_drop(Program* me) {
     checker_drop(my checker);
     hmap_box_source_file_drop(&my source_files_map);
     vec_source_file_ptr_drop(&my source_files_ordered);
+    module_resolver_destroy(my resolver);
     compiler_options_drop(&my options);
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
@@ -265,17 +135,108 @@ void program_destroy(Program* me) {
     }
 }
 
-static SourceFile* program_load_import_idempotent(Program* me, Span path_span, csview path) {
-    check(span_valid(path_span));
-    csview cwd = dirname_of(cstr_sv(&path_span.source->canonical_path));
-    cstr source_path;
-    if (get_import_path(my fs, cwd, path, &source_path)) {
-        SourceFile* ret = program_add_source_idempotent(me, cstr_sv(&source_path));
-        cstr_drop(&source_path);
-        return ret;
-    } else {
-        return nullptr;
+static ModuleResolver* program_resolver(Program* me) {
+    if (!my resolver) my resolver = module_resolver_new(my fs, &my options);
+    return my resolver;
+}
+
+void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx) {
+    module_resolver_set_realpath(program_resolver(me), realpath, ctx);
+}
+
+// tsc names files by absolute path, and its test harness strips the directory the test's files are in: relative
+// below the working directory, absolute elsewhere
+static cstr program_path_for_message(Program* me, csview absolute) {
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(my fs, &cwd)) or_panic;
+    if (cstr_size(&cwd) > 1) cstr_append_lit(&cwd, "/");
+    cstr ret = cstr_size(&cwd) > 1 && absolute.size > cstr_size(&cwd) &&
+            !memcmp(absolute.buf, cstr_str(&cwd), (size_t)cstr_size(&cwd)) ?
+        cstr_from_sv(csview_slice(absolute, cstr_size(&cwd), absolute.size)) : cstr_from_sv(absolute);
+    cstr_drop(&cwd);
+    return ret;
+}
+
+// A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
+static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
+    ModuleResolver* resolver = program_resolver(me);
+    csview containing = cstr_sv(&source->canonical_path);
+    ResolutionMode mode = RESOLUTION_MODE_COMMONJS;
+    if (my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
+        my options.module_resolution == MODULE_RESOLUTION_NODENEXT
+    ) {
+        if (!source->resolution_mode_known) {
+            source->is_esm = module_resolver_file_mode(resolver, containing) == RESOLUTION_MODE_ESM;
+            source->resolution_mode_known = true;
+        }
+        mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_COMMONJS :
+            ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     }
+    ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+    if (my options.no_resolve) {
+        // Nothing is added to the program, but a name may still mean a file that is part of it
+        if (resolved.kind != RESOLVED_NONE) ref->file = program_find_source(me, cstr_sv(&resolved.path));
+        resolved_module_drop(&resolved);
+        return;
+    }
+    switch (resolved.kind) {
+        case RESOLVED_TS:
+        case RESOLVED_DTS:
+            if (resolved.arbitrary_extension && !my options.allow_arbitrary_extensions) {
+                ref->failure = MODULE_REF_ARBITRARY_EXTENSION;
+                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+            } else {
+                ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+            }
+            break;
+        case RESOLVED_JS:
+            // JavaScript of a package isn't part of the program even with allowJs (tsc's maxNodeModuleJsDepth is 0)
+            if (my options.allow_js && !resolved.is_external_library) {
+                ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
+            } else {
+                ref->failure = MODULE_REF_IS_JS;
+                cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
+            }
+            break;
+        case RESOLVED_JSON:
+            ref->failure = MODULE_REF_IS_JSON;
+            break;
+        case RESOLVED_NONE:
+            if (resolved.json_without_option) {
+                ref->failure = MODULE_REF_JSON_WITHOUT_OPTION;
+            } else if (resolved.needs_extension) {
+                ref->failure = MODULE_REF_NEEDS_EXTENSION;
+                if (cstr_size(&resolved.suggested_extension)) {
+                    cstr_take(&ref->resolved_path, cstr_d(ref->path, resolved.suggested_extension));
+                }
+            }
+            break;
+    }
+    resolved_module_drop(&resolved);
+}
+
+// `/// <reference path="a.ts" />`: the file itself, relative to the one with the directive
+static SourceFile* program_load_reference_path(Program* me, Span path_span, csview path) {
+    check(span_valid(path_span));
+    csview dir = dirname_of(cstr_sv(&path_span.source->canonical_path));
+    cstr full = path.size && path.buf[0] == '/' ? cstr_from_sv(path) : cstr_d(dir, "/", path);
+    SourceFile* ret = nullptr;
+    static const char* const extensions[] = { "", ".ts", ".tsx", ".d.ts" };
+    for (isize i = 0; i < (isize)c_arraylen(extensions) && !ret; i++) {
+        cstr candidate = cstr_d(full, extensions[i]);
+        if (fs_is_reg_file(my fs, cstr_sv(&candidate))) ret = program_add_source_idempotent(me, cstr_sv(&candidate));
+        cstr_drop(&candidate);
+    }
+    cstr_drop(&full);
+    return ret;
+}
+
+static SourceFile* program_load_type_reference(Program* me, csview name, csview containing_file) {
+    ResolvedModule resolved = module_resolver_resolve_type_reference(program_resolver(me), name, containing_file);
+    SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
+        program_add_source_idempotent(me, cstr_sv(&resolved.path));
+    resolved_module_drop(&resolved);
+    return ret;
 }
 
 // Called for each toplevel statement of each loaded file
@@ -284,13 +245,25 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_SOURCE_DIRECTIVE:
             switch (statement->source_directive->tag) {
                 case SOURCE_DIRECTIVE_REFERENCE_PATH:
-                case SOURCE_DIRECTIVE_REFERENCE_LIB:
-                case SOURCE_DIRECTIVE_REFERENCE_TYPES:
-                    program_load_import_idempotent(
+                    program_load_reference_path(
                         me,
                         statement->source_directive->path_span,
                         cstr_sv(&statement->source_directive->path)
                     );
+                    break;
+                case SOURCE_DIRECTIVE_REFERENCE_TYPES:
+                    program_load_type_reference(
+                        me, cstr_sv(&statement->source_directive->path), cstr_sv(&source->canonical_path));
+                    break;
+                case SOURCE_DIRECTIVE_REFERENCE_LIB:
+                    // Between lib files: they are all in one directory. TODO: a lib only a directive in the program
+                    // names (the harness keeps libs in a shared program, which a test's file can't add to)
+                    if (my loading_stdlib) {
+                        cstr name = cstr_d(statement->source_directive->path, ".d.ts");
+                        cstr_lowercase(&name);
+                        program_load_reference_path(me, statement->source_directive->path_span, cstr_sv(&name));
+                        cstr_drop(&name);
+                    }
                     break;
             }
             break;
@@ -369,7 +342,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         source_file_make(cstr_clone(canonical_path), contents)
     );
 
-    if (csview_ends_with(path, ".d.ts")) {
+    if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
         source_file->is_declaration = true;
     }
 
@@ -393,7 +366,8 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         // `declare module "./a" {}` in a module augments a file. In a script it declares an ambient module, and so
         // does a name that finds no file
         if (ref->is_declaration && !source_file->is_module) continue;
-        ref->file = program_load_import_idempotent(me, ref->span, cstr_sv(&ref->path));
+        if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
+        program_load_module_ref(me, source_file, ref);
     }
 
     // Add here so imports come before importing file
@@ -442,6 +416,18 @@ failable program_load_stdlib(Program* me, csview name, returns SourceFile*) {
     return ok(source);
 }
 
+void program_load_automatic_types(Program* me) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    set_compiler_options(&my options);
+    StrList names = module_resolver_automatic_types(program_resolver(me));
+    for (isize i = 0; i < names.count; i++) {
+        // TODO: TS2688 for an entry of `types` that isn't found (a diagnostic without a file)
+        ignore program_load_type_reference(me, cstr_sv(&names.items[i]), c_sv(""));
+    }
+    str_list_drop(&names);
+    clear_compiler_options();
+}
+
 void program_copy_globals_from(Program* me, Program const* other) {
     binder_set_parent(my binder, other->binder);
 }
@@ -459,6 +445,16 @@ void program_resolve_names(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         block_add_names(&source->ast, source->scope);
+    }
+
+    if (my options.no_resolve) {
+        for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+            SourceFile* source = *i;
+            for (u32 j = 0; j < source->module_ref_count; j++) {
+                ModuleRef* ref = source->module_refs[j];
+                if (!ref->is_declaration || source->is_module) program_load_module_ref(me, source, ref);
+            }
+        }
     }
 
     // Link: what every module name refers to (ambient modules are all declared now), `export *` tables and every alias. Nothing writes to a symbol after this

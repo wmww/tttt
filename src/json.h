@@ -1,0 +1,45 @@
+#pragma once
+
+#include "prelude.h"
+
+// A small JSON reader for package.json and tsconfig.json: comments and trailing commas are fine (tsconfig), and the
+// members of an object keep their order (the conditions of a package.json `exports` are tried in the order written).
+// A value owns its children; strings are unescaped
+
+typedef enum JsonTag {
+    JSON_NULL,
+    JSON_BOOL,
+    JSON_NUMBER,
+    JSON_STRING,
+    JSON_ARRAY,
+    JSON_OBJECT,
+} JsonTag;
+
+typedef struct JsonValue JsonValue;
+typedef struct JsonMember JsonMember;
+
+struct JsonValue {
+    JsonTag tag;
+    bool boolean;
+    double number;
+    cstr string;
+    JsonValue* items; // JSON_ARRAY
+    JsonMember* members; // JSON_OBJECT
+    isize count; // Of items or members
+};
+
+struct JsonMember {
+    cstr key;
+    JsonValue value;
+};
+
+// False if text isn't JSON (what was read so far is dropped, *out is a null value)
+bool json_parse(csview text, JsonValue* out);
+void json_drop(JsonValue* me);
+
+// Null unless me is an object with that member. The last one wins, like JSON.parse
+JsonValue const* json_get(JsonValue const* me, const char* key);
+// Null unless me is an object with a member of that type
+JsonValue const* json_get_tagged(JsonValue const* me, const char* key, JsonTag tag);
+// The string member of that name, an empty view if there is none
+csview json_get_string(JsonValue const* me, const char* key);

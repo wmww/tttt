@@ -25,6 +25,8 @@ core_files = files(
     'compiler_options.c',
     'source_file.c',
     'program.c',
+    'json.c',
+    'module_resolution.c',
     'scope.c',
     'flow.c',
     'engine.c',

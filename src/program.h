@@ -12,6 +12,9 @@ typedef union arc_js_object ArcObject;
 Program* program_new(ErrorCtx* errs, Fs const* fs);
 void program_destroy(Program* me);
 
+// How the program's module resolution follows symlinks (see module_resolution.h), before loading anything
+void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx);
+
 // Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and
 // checking of this program read them through compiler_options()
 CompilerOptions* program_options(Program* me);
@@ -20,6 +23,10 @@ CompilerOptions* program_options(Program* me);
 // Can be called multiple times. Fails if path can't be read; problems inside the file are reported through the
 // program's ErrorCtx instead
 failable program_load(Program* me, csview path, returns SourceFile*);
+
+// The packages that are part of every program: the `types` option, else everything in the type roots (`typeRoots`,
+// else node_modules/@types from the config's or the current directory upwards). Call it after the root files
+void program_load_automatic_types(Program* me);
 
 // The file at path if it is part of the program (loaded or imported), null otherwise
 SourceFile* program_find_source(Program const* me, csview path);

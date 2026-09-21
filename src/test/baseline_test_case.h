@@ -64,6 +64,7 @@ typedef struct BaselineTestCase {
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
     VecBaselineTestFile files;
+    VecCStr links; // `@link: target -> link` directives as (target, link) pairs, made once the files exist
 } BaselineTestCase;
 
 // Never prints to stdout, only prints to stderr if noisy is true, or if it panics. show_logs leaves the checker's

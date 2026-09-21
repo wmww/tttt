@@ -1,0 +1,1294 @@
+#include "module_resolution.h"
+#include "json.h"
+
+// tsc's version, for `typesVersions` and versioned `types@>=5.0` conditions
+enum { TS_VERSION_MAJOR = 5, TS_VERSION_MINOR = 8 };
+
+enum {
+    EXT_TS = 1 << 0,
+    EXT_JS = 1 << 1,
+    EXT_DTS = 1 << 2,
+    EXT_JSON = 1 << 3,
+};
+
+// tsc's SearchResult: a lookup either has nothing to say (the search goes on), found something, or decided that the
+// name resolves to nothing (a `paths` pattern or an `exports` map matched and led nowhere)
+typedef enum Search {
+    SEARCH_CONTINUE,
+    SEARCH_FOUND,
+    SEARCH_STOP,
+} Search;
+
+typedef struct Found {
+    cstr path;
+    ResolvedKind kind;
+    bool used_ts_extension;
+    bool arbitrary_extension;
+} Found;
+
+typedef struct PackageJson {
+    bool exists;
+    JsonValue json;
+} PackageJson;
+
+static void package_json_drop(PackageJson* me) {
+    json_drop(&my json);
+}
+
+#define g_pro_key SvStr, svstr
+#define g_class_val PackageJson, package_json
+#define g_no_clone
+#include <cleat/generic/hmap.h>
+
+typedef struct ModuleResolver {
+    Fs const* fs;
+    CompilerOptions const* options;
+    cstr cwd;
+    RealpathFn realpath;
+    void* realpath_ctx;
+    HMapPackageJson package_jsons; // By directory. The map never moves its values' json, only the PackageJson structs
+} ModuleResolver;
+
+// One resolution in progress
+typedef struct State {
+    ModuleResolver* resolver;
+    ModuleResolutionKind kind;
+    bool esm_mode; // node16/nodenext resolving an `import`: no extension or index probing
+    bool use_exports, use_imports, use_self_name;
+    bool in_type_reference;
+    const char* conditions[24];
+    isize condition_count;
+    csview containing_dir;
+    bool json_without_option;
+} State;
+
+void resolved_module_drop(ResolvedModule* me) {
+    cstr_drop(&my path);
+    cstr_drop(&my suggested_extension);
+    *me = (ResolvedModule){0};
+}
+
+ModuleResolver* module_resolver_new(Fs const* fs, CompilerOptions const* options) {
+    return c_new(ModuleResolver, { .fs = fs, .options = options });
+}
+
+void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void* ctx) {
+    my realpath = realpath;
+    my realpath_ctx = ctx;
+}
+
+static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
+    if (!my realpath || !resolved->is_external_library || my options->preserve_symlinks) return;
+    cstr real = my realpath(my realpath_ctx, cstr_sv(&resolved->path));
+    if (cstr_size(&real)) {
+        cstr_take(&resolved->path, real);
+    } else {
+        cstr_drop(&real);
+    }
+}
+
+void module_resolver_destroy(ModuleResolver* me) {
+    if (!me) return;
+    cstr_drop(&my cwd);
+    hmap_package_json_drop(&my package_jsons);
+    free(me);
+}
+
+// ---- Paths ----
+
+static cstr join(csview dir, csview rest) {
+    cstr combined = cstr_from_sv(dir);
+    cstr_append_lit(&combined, "/");
+    cstr_append_sv(&combined, rest);
+    cstr ret = absolute_path_of(c_sv("/"), cstr_sv(&combined));
+    cstr_drop(&combined);
+    return ret;
+}
+
+// Of an option: relative to the tsconfig it came from, else to the current directory
+static cstr option_path(ModuleResolver const* me, csview path) {
+    csview base = cstr_size(&my options->config_dir) ? cstr_sv(&my options->config_dir) : cstr_sv(&my cwd);
+    cstr absolute_base = absolute_path_of(cstr_sv(&my cwd), base);
+    cstr ret = absolute_path_of(cstr_sv(&absolute_base), path);
+    cstr_drop(&absolute_base);
+    return ret;
+}
+
+static bool ends_with(csview s, const char* suffix) {
+    return csview_ends_with(s, suffix);
+}
+
+static bool sv_starts_with(csview s, csview prefix) {
+    return s.size >= prefix.size && !memcmp(s.buf, prefix.buf, (size_t)prefix.size);
+}
+
+static bool sv_ends_with(csview s, csview suffix) {
+    return s.size >= suffix.size && !memcmp(s.buf + s.size - suffix.size, suffix.buf, (size_t)suffix.size);
+}
+
+// Of a normalised absolute path, without a trailing separator ("/" for what is directly in the root)
+static csview parent_of(csview path) {
+    isize i = path.size;
+    while (i > 0 && path.buf[i - 1] == '/') i--;
+    while (i > 0 && path.buf[i - 1] != '/') i--;
+    while (i > 1 && path.buf[i - 1] == '/') i--;
+    return csview_slice(path, 0, i ? i : 1);
+}
+
+// dir = its parent, false at the root
+static bool go_up(cstr* dir) {
+    if (cstr_size(dir) <= 1) return false;
+    cstr parent = cstr_from_sv(parent_of(cstr_sv(dir)));
+    cstr_take(dir, parent);
+    return true;
+}
+
+static bool path_contains_node_modules(csview path) {
+    return csview_find_sv(path, c_sv("/node_modules/")) != c_NPOS;
+}
+
+// ---- Files ----
+
+static bool file_exists(State* me, csview path) {
+    return fs_is_reg_file(my resolver->fs, path);
+}
+
+static bool directory_exists(State* me, csview path) {
+    return fs_is_directory(my resolver->fs, path);
+}
+
+// tsc's tryFile(): with `moduleSuffixes`, "a.ts" is looked for as "a<suffix>.ts" for each suffix in order
+static bool try_file(State* me, csview path, csview extension, cstr* out) {
+    StrList const* suffixes = &my resolver->options->module_suffixes;
+    if (!suffixes->count) {
+        if (!file_exists(me, path)) return false;
+        *out = cstr_from_sv(path);
+        return true;
+    }
+    csview stem = csview_slice(path, 0, path.size - extension.size);
+    for (isize i = 0; i < suffixes->count; i++) {
+        cstr candidate = cstr_d(stem, suffixes->items[i], extension);
+        if (file_exists(me, cstr_sv(&candidate))) {
+            *out = candidate;
+            return true;
+        }
+        cstr_drop(&candidate);
+    }
+    return false;
+}
+
+static bool try_extension(State* me, csview stem, const char* extension, ResolvedKind kind, Found* out) {
+    cstr path = cstr_d(stem, extension);
+    bool found = try_file(me, cstr_sv(&path), csview_from(extension), &out->path);
+    cstr_drop(&path);
+    if (found) out->kind = kind;
+    return found;
+}
+
+// tsc's tryAddingExtensions(): the files `stem` + extension could mean, given the extension that was written
+static bool try_adding_extensions(State* me, csview stem, int extensions, csview original, Found* out) {
+    if (csview_equals(original, ".mjs") || csview_equals(original, ".mts") || csview_equals(original, ".d.mts")) {
+        return (extensions & EXT_TS && try_extension(me, stem, ".mts", RESOLVED_TS, out)) ||
+            (extensions & EXT_DTS && try_extension(me, stem, ".d.mts", RESOLVED_DTS, out)) ||
+            (extensions & EXT_JS && try_extension(me, stem, ".mjs", RESOLVED_JS, out));
+    }
+    if (csview_equals(original, ".cjs") || csview_equals(original, ".cts") || csview_equals(original, ".d.cts")) {
+        return (extensions & EXT_TS && try_extension(me, stem, ".cts", RESOLVED_TS, out)) ||
+            (extensions & EXT_DTS && try_extension(me, stem, ".d.cts", RESOLVED_DTS, out)) ||
+            (extensions & EXT_JS && try_extension(me, stem, ".cjs", RESOLVED_JS, out));
+    }
+    if (csview_equals(original, ".json")) {
+        return (extensions & EXT_DTS && try_extension(me, stem, ".d.json.ts", RESOLVED_DTS, out)) ||
+            (extensions & EXT_JSON && try_extension(me, stem, ".json", RESOLVED_JSON, out));
+    }
+    if (csview_equals(original, ".tsx") || csview_equals(original, ".jsx")) {
+        // "./a.jsx" prefers a.tsx to a.ts
+        return (extensions & EXT_TS && (
+                try_extension(me, stem, ".tsx", RESOLVED_TS, out) || try_extension(me, stem, ".ts", RESOLVED_TS, out))) ||
+            (extensions & EXT_DTS && try_extension(me, stem, ".d.ts", RESOLVED_DTS, out)) ||
+            (extensions & EXT_JS && (
+                try_extension(me, stem, ".jsx", RESOLVED_JS, out) || try_extension(me, stem, ".js", RESOLVED_JS, out)));
+    }
+    if (!original.size || csview_equals(original, ".ts") || csview_equals(original, ".d.ts") ||
+        csview_equals(original, ".js")
+    ) {
+        return (extensions & EXT_TS && (
+                try_extension(me, stem, ".ts", RESOLVED_TS, out) || try_extension(me, stem, ".tsx", RESOLVED_TS, out))) ||
+            (extensions & EXT_DTS && try_extension(me, stem, ".d.ts", RESOLVED_DTS, out)) ||
+            (extensions & EXT_JS && (
+                try_extension(me, stem, ".js", RESOLVED_JS, out) || try_extension(me, stem, ".jsx", RESOLVED_JS, out)));
+    }
+    // `import "./style.css"` finds style.d.css.ts
+    if (extensions & EXT_DTS) {
+        cstr extension = cstr_d(".d", original, ".ts");
+        bool found = try_extension(me, stem, cstr_str(&extension), RESOLVED_DTS, out);
+        cstr_drop(&extension);
+        if (found) out->arbitrary_extension = true;
+        return found;
+    }
+    return false;
+}
+
+// The extension of a path as far as resolution cares: ".d.ts" style ones whole, "" for anything that isn't a script
+static csview script_extension_of(csview path) {
+    static const char* const known[] = {
+        ".d.ts", ".d.mts", ".d.cts", ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json",
+    };
+    for (isize i = 0; i < (isize)c_arraylen(known); i++) {
+        if (ends_with(path, known[i])) return csview_slice(path, path.size - (isize)strlen(known[i]), path.size);
+    }
+    return c_sv("");
+}
+
+static bool extension_is_ts_source(csview extension) {
+    return csview_equals(extension, ".ts") || csview_equals(extension, ".tsx") || csview_equals(extension, ".mts") ||
+        csview_equals(extension, ".cts");
+}
+
+// "./a.js" means a.ts, a.tsx or a.d.ts (and a.js itself); "./a.css" means a.d.css.ts
+static bool load_file_no_implicit_extensions(State* me, csview candidate, int extensions, Found* out) {
+    csview name = basename_of(candidate);
+    isize dot = c_NPOS;
+    for (isize i = name.size - 1; i > 0; i--) {
+        if (name.buf[i] == '.') {
+            dot = i;
+            break;
+        }
+    }
+    if (dot == c_NPOS) return false;
+    csview extension = script_extension_of(candidate);
+    if (!extension.size) extension = csview_slice(name, dot, name.size);
+    if (csview_equals(extension, ".json") && !my resolver->options->resolve_json_module) {
+        // Found only to tell the caller why not
+        cstr path = cstr_null;
+        if (extensions & EXT_TS && try_file(me, candidate, extension, &path)) {
+            my json_without_option = true;
+            cstr_drop(&path);
+        }
+        extensions &= ~EXT_JSON;
+    }
+    csview stem = csview_slice(candidate, 0, candidate.size - extension.size);
+    if (!try_adding_extensions(me, stem, extensions, extension, out)) return false;
+    out->used_ts_extension = extension_is_ts_source(extension);
+    return true;
+}
+
+// tsc's loadModuleFromFile()
+static bool load_file(State* me, csview candidate, int extensions, Found* out) {
+    if (load_file_no_implicit_extensions(me, candidate, extensions, out)) return true;
+    if (my esm_mode) return false;
+    return try_adding_extensions(me, candidate, extensions, c_sv(""), out);
+}
+
+// ---- package.json ----
+
+static PackageJson const* package_json_of(State* me, csview directory) {
+    ModuleResolver* resolver = my resolver;
+    auto cached = hmap_package_json_get(&resolver->package_jsons, directory);
+    if (cached) {
+        return cached->second.exists ? &cached->second : nullptr;
+    }
+    PackageJson package = {0};
+    cstr path = cstr_d(directory, "/package.json");
+    if (fs_is_reg_file(resolver->fs, cstr_sv(&path))) {
+        cstr contents = cstr_null;
+        bool readable = true;
+        try (fs_read_file(resolver->fs, cstr_sv(&path), &contents)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+            readable = false;
+        }
+        if (readable) {
+            // A package.json that doesn't parse still marks a package, with nothing in it
+            package.exists = true;
+            ignore json_parse(cstr_sv(&contents), &package.json);
+            cstr_drop(&contents);
+        }
+    }
+    cstr_drop(&path);
+    auto inserted = hmap_package_json_insert(&resolver->package_jsons, cstr_from_sv(directory), package);
+    return inserted.ref->second.exists ? &inserted.ref->second : nullptr;
+}
+
+// The nearest package.json at or above directory, and where it is
+static PackageJson const* package_scope_of(State* me, csview directory, cstr* scope_dir) {
+    cstr dir = cstr_from_sv(directory);
+    while (true) {
+        if (!ends_with(cstr_sv(&dir), "/node_modules")) {
+            PackageJson const* found = package_json_of(me, cstr_sv(&dir));
+            if (found) {
+                *scope_dir = dir;
+                return found;
+            }
+        }
+        if (!go_up(&dir)) break;
+    }
+    cstr_drop(&dir);
+    return nullptr;
+}
+
+// One comparator set of a semver range against tsc's version: ">=3.1 <4.0", "*", "3.x", "^5.0", "~5.8"
+static bool version_in_comparators(csview set) {
+    while (true) {
+        set = csview_trim_whitespace(set);
+        if (!set.size) return true;
+        isize end = 0;
+        while (end < set.size && set.buf[end] != ' ') end++;
+        csview comparator = csview_slice(set, 0, end);
+        set = csview_slice(set, end, set.size);
+        isize op_len = 0;
+        while (op_len < comparator.size && strchr("<>=^~", comparator.buf[op_len])) op_len++;
+        csview op = csview_slice(comparator, 0, op_len);
+        csview version = csview_slice(comparator, op_len, comparator.size);
+        if (!version.size && !op.size) continue;
+        // Only major.minor matter: tsc compares against "5.8.x" for typesVersions
+        long parts[2] = { -1, -1 };
+        isize at = 0;
+        for (int i = 0; i < 2 && at < version.size; i++) {
+            if (version.buf[at] == '*' || version.buf[at] == 'x' || version.buf[at] == 'X') break;
+            long n = 0;
+            bool any = false;
+            while (at < version.size && version.buf[at] >= '0' && version.buf[at] <= '9') {
+                n = n * 10 + (version.buf[at++] - '0');
+                any = true;
+            }
+            if (!any) break;
+            parts[i] = n;
+            if (at < version.size && version.buf[at] == '.') at++;
+        }
+        if (parts[0] < 0) continue; // "*"
+        long mine = TS_VERSION_MAJOR * 1000 + TS_VERSION_MINOR;
+        long low = parts[0] * 1000 + (parts[1] < 0 ? 0 : parts[1]);
+        long high = parts[1] < 0 ? parts[0] * 1000 + 999 : low; // "3" and "3.x" cover every minor
+        bool fits;
+        if (csview_equals(op, ">=")) fits = mine >= low;
+        else if (csview_equals(op, ">")) fits = mine > high;
+        else if (csview_equals(op, "<=")) fits = mine <= high;
+        else if (csview_equals(op, "<")) fits = mine < low;
+        else if (csview_equals(op, "^")) fits = mine >= low && mine / 1000 == parts[0];
+        else fits = mine >= low && mine <= high; // "=", "~" and a bare version
+        if (!fits) return false;
+    }
+}
+
+static bool version_in_range(csview range) {
+    while (true) {
+        isize bar = csview_find_sv(range, c_sv("||"));
+        if (version_in_comparators(csview_slice(range, 0, bar))) return true;
+        if (bar == c_NPOS) return false;
+        range = csview_slice(range, bar + 2, range.size);
+    }
+}
+
+// The `paths`-like object of the first `typesVersions` entry that matches tsc's version
+static JsonValue const* version_paths_of(PackageJson const* package) {
+    JsonValue const* versions = json_get_tagged(&package->json, "typesVersions", JSON_OBJECT);
+    if (!versions) return nullptr;
+    for (isize i = 0; i < versions->count; i++) {
+        if (version_in_range(cstr_sv(&versions->members[i].key))) {
+            JsonValue const* paths = &versions->members[i].value;
+            return paths->tag == JSON_OBJECT ? paths : nullptr;
+        }
+    }
+    return nullptr;
+}
+
+// ---- `paths` and friends ----
+
+// Whether name matches "prefix*suffix" (or the pattern exactly); the text the star stands for
+static bool pattern_matches(csview pattern, csview name, csview* star, isize* prefix_len) {
+    isize at = csview_find_sv(pattern, c_sv("*"));
+    if (at == c_NPOS) {
+        *star = c_sv("");
+        *prefix_len = INTPTR_MAX; // An exact match beats any pattern
+        return csview_equals_sv(pattern, name);
+    }
+    csview prefix = csview_slice(pattern, 0, at);
+    csview suffix = csview_slice(pattern, at + 1, pattern.size);
+    if (name.size < prefix.size + suffix.size) return false;
+    if (memcmp(name.buf, prefix.buf, (size_t)prefix.size)) return false;
+    if (memcmp(name.buf + name.size - suffix.size, suffix.buf, (size_t)suffix.size)) return false;
+    *star = csview_slice(name, prefix.size, name.size - suffix.size);
+    *prefix_len = prefix.size;
+    return true;
+}
+
+static cstr replace_first_star(csview text, csview star) {
+    isize at = csview_find_sv(text, c_sv("*"));
+    if (at == c_NPOS) return cstr_from_sv(text);
+    return cstr_d(csview_slice(text, 0, at), star, csview_slice(text, at + 1, text.size));
+}
+
+typedef bool (*Loader)(State* me, csview candidate, int extensions, Found* out);
+
+static bool load_as_file_or_directory(State* me, csview candidate, int extensions, Found* out);
+
+static ResolvedKind kind_of_extension(csview extension) {
+    if (csview_starts_with(extension, ".d.")) return RESOLVED_DTS;
+    if (extension_is_ts_source(extension)) return RESOLVED_TS;
+    if (csview_equals(extension, ".json")) return RESOLVED_JSON;
+    return RESOLVED_JS;
+}
+
+// One substitution of a matched `paths` / `typesVersions` pattern
+static bool try_substitution(
+    State* me, csview base, csview substitution, csview star, int extensions, Loader loader, Found* out
+) {
+    cstr path = replace_first_star(substitution, star);
+    cstr candidate = join(base, cstr_sv(&path));
+    cstr_drop(&path);
+    bool found = false;
+    // A mapping may name a file with its extension, which an import shouldn't
+    csview extension = script_extension_of(substitution);
+    if (extension.size && try_file(me, cstr_sv(&candidate), extension, &out->path)) {
+        out->kind = kind_of_extension(extension);
+        found = true;
+    }
+    if (!found) found = loader(me, cstr_sv(&candidate), extensions, out);
+    cstr_drop(&candidate);
+    return found;
+}
+
+// tsc's tryLoadModuleUsingPaths() over the option
+static Search load_using_paths_option(State* me, csview name, int extensions, Loader loader, Found* out) {
+    CompilerOptions const* options = my resolver->options;
+    PathMapping const* best = nullptr;
+    csview best_star = c_sv("");
+    isize best_prefix = -1;
+    for (isize i = 0; i < options->path_count; i++) {
+        csview star;
+        isize prefix_len;
+        if (pattern_matches(cstr_sv(&options->paths[i].pattern), name, &star, &prefix_len) && prefix_len > best_prefix) {
+            best = &options->paths[i];
+            best_star = star;
+            best_prefix = prefix_len;
+        }
+    }
+    if (!best) return SEARCH_CONTINUE;
+    cstr base = cstr_size(&options->base_url) ? option_path(my resolver, cstr_sv(&options->base_url)) :
+        cstr_size(&options->paths_base) ? option_path(my resolver, cstr_sv(&options->paths_base)) :
+        option_path(my resolver, c_sv("."));
+    Search ret = SEARCH_STOP;
+    for (isize i = 0; i < best->substitutions.count; i++) {
+        if (try_substitution(me, cstr_sv(&base), cstr_sv(&best->substitutions.items[i]), best_star, extensions, loader, out)) {
+            ret = SEARCH_FOUND;
+            break;
+        }
+    }
+    cstr_drop(&base);
+    return ret;
+}
+
+// The same over a `typesVersions` entry of a package
+static Search load_using_version_paths(
+    State* me, JsonValue const* paths, csview base, csview name, int extensions, Loader loader, Found* out
+) {
+    JsonMember const* best = nullptr;
+    csview best_star = c_sv("");
+    isize best_prefix = -1;
+    for (isize i = 0; i < paths->count; i++) {
+        csview star;
+        isize prefix_len;
+        if (pattern_matches(cstr_sv(&paths->members[i].key), name, &star, &prefix_len) && prefix_len > best_prefix) {
+            best = &paths->members[i];
+            best_star = star;
+            best_prefix = prefix_len;
+        }
+    }
+    if (!best) return SEARCH_CONTINUE;
+    if (best->value.tag != JSON_ARRAY) return SEARCH_STOP;
+    for (isize i = 0; i < best->value.count; i++) {
+        JsonValue const* substitution = &best->value.items[i];
+        if (substitution->tag != JSON_STRING) continue;
+        if (try_substitution(me, base, cstr_sv(&substitution->string), best_star, extensions, loader, out)) {
+            return SEARCH_FOUND;
+        }
+    }
+    return SEARCH_STOP;
+}
+
+// tsc's tryLoadModuleUsingRootDirs(): a relative name is looked for below every root dir, as if they were one directory
+static bool load_using_root_dirs(State* me, csview name, int extensions, Loader loader, Found* out) {
+    StrList const* root_dirs = &my resolver->options->root_dirs;
+    if (!root_dirs->count) return false;
+    cstr candidate = join(my containing_dir, name);
+    isize matched = -1;
+    isize matched_len = 0;
+    for (isize i = 0; i < root_dirs->count; i++) {
+        cstr root = option_path(my resolver, cstr_sv(&root_dirs->items[i]));
+        if (cstr_size(&root) > 1) cstr_append_lit(&root, "/");
+        if (cstr_starts_with_sv(&candidate, cstr_sv(&root)) && cstr_size(&root) > matched_len) {
+            matched = i;
+            matched_len = cstr_size(&root);
+        }
+        cstr_drop(&root);
+    }
+    bool found = false;
+    if (matched >= 0) {
+        found = loader(me, cstr_sv(&candidate), extensions, out);
+        csview suffix = csview_slice(cstr_sv(&candidate), matched_len, cstr_size(&candidate));
+        for (isize i = 0; i < root_dirs->count && !found; i++) {
+            if (i == matched) continue;
+            cstr root = option_path(my resolver, cstr_sv(&root_dirs->items[i]));
+            cstr other = join(cstr_sv(&root), suffix);
+            found = loader(me, cstr_sv(&other), extensions, out);
+            cstr_drop(&other);
+            cstr_drop(&root);
+        }
+    }
+    cstr_drop(&candidate);
+    return found;
+}
+
+// tsc's tryLoadModuleUsingOptionalResolutionSettings()
+static Search load_using_options(State* me, csview name, int extensions, Loader loader, Found* out) {
+    CompilerOptions const* options = my resolver->options;
+    bool relative = module_name_is_relative(name);
+    if (options->path_count && !(name.buf[0] == '.' && relative)) {
+        Search result = load_using_paths_option(me, name, extensions, loader, out);
+        if (result != SEARCH_CONTINUE) return result;
+    }
+    if (relative) {
+        return load_using_root_dirs(me, name, extensions, loader, out) ? SEARCH_FOUND : SEARCH_CONTINUE;
+    }
+    if (cstr_size(&options->base_url)) {
+        cstr base = option_path(my resolver, cstr_sv(&options->base_url));
+        cstr candidate = join(cstr_sv(&base), name);
+        bool found = loader(me, cstr_sv(&candidate), extensions, out);
+        cstr_drop(&candidate);
+        cstr_drop(&base);
+        if (found) return SEARCH_FOUND;
+    }
+    return SEARCH_CONTINUE;
+}
+
+// ---- Directories and packages ----
+
+// tsc's loadFileNameFromPackageJsonField(): a file a package.json names, which may be the output of the file we want
+static bool load_package_json_field(State* me, csview candidate, int extensions, Found* out) {
+    csview extension = script_extension_of(candidate);
+    if ((extensions & EXT_TS && extension_is_ts_source(extension)) ||
+        (extensions & EXT_DTS && csview_starts_with(extension, ".d."))
+    ) {
+        if (try_file(me, candidate, extension, &out->path)) {
+            out->kind = kind_of_extension(extension);
+            return true;
+        }
+    }
+    return load_file_no_implicit_extensions(me, candidate, extensions, out);
+}
+
+static bool load_file_loader(State* me, csview candidate, int extensions, Found* out) {
+    return load_file(me, candidate, extensions, out);
+}
+
+// What a package.json (may be null) makes of its directory: `typings` / `types` / `main`, then `index`
+static bool load_directory(State* me, csview directory, PackageJson const* package, int extensions, Found* out) {
+    csview entry = c_sv("");
+    JsonValue const* version_paths = nullptr;
+    if (package) {
+        if (extensions & (EXT_TS | EXT_DTS)) {
+            entry = json_get_string(&package->json, "typings");
+            if (!entry.size) entry = json_get_string(&package->json, "types");
+        }
+        if (!entry.size) entry = json_get_string(&package->json, "main");
+        version_paths = version_paths_of(package);
+    }
+    cstr entry_path = entry.size ? join(directory, entry) : cstr_null;
+    cstr index_path = join(directory, c_sv("index"));
+    bool found = false;
+
+    if (version_paths) {
+        // The name `typesVersions` sees is the entry relative to the package
+        csview base = entry.size ? cstr_sv(&entry_path) : cstr_sv(&index_path);
+        csview relative = csview_slice(base, directory.size + 1, base.size);
+        Search result = load_using_version_paths(
+            me, version_paths, directory, relative, extensions, load_as_file_or_directory, out);
+        if (result != SEARCH_CONTINUE) {
+            cstr_drop(&entry_path);
+            cstr_drop(&index_path);
+            return result == SEARCH_FOUND;
+        }
+    }
+
+    if (entry.size) {
+        found = load_package_json_field(me, cstr_sv(&entry_path), extensions, out);
+        if (!found) {
+            // `"main": "lib"` or `"types": "dist/index"`. Not through package.json again, and with extension probing
+            // even in ESM mode
+            bool esm_mode = my esm_mode;
+            my esm_mode = false;
+            found = load_file(me, cstr_sv(&entry_path), extensions, out);
+            if (!found && directory_exists(me, cstr_sv(&entry_path))) {
+                cstr nested_index = join(cstr_sv(&entry_path), c_sv("index"));
+                found = load_file(me, cstr_sv(&nested_index), extensions, out);
+                cstr_drop(&nested_index);
+            }
+            my esm_mode = esm_mode;
+        }
+    }
+    if (!found && !my esm_mode) found = load_file(me, cstr_sv(&index_path), extensions, out);
+    cstr_drop(&entry_path);
+    cstr_drop(&index_path);
+    return found;
+}
+
+// tsc's nodeLoadModuleByRelativeName(): a path without (or with a replaceable) extension, as a file, then a directory
+static bool load_as_file_or_directory(State* me, csview candidate, int extensions, Found* out) {
+    bool trailing_slash = ends_with(candidate, "/");
+    if (trailing_slash) candidate.size--;
+    if (!trailing_slash) {
+        if (!directory_exists(me, parent_of(candidate))) return false;
+        if (load_file(me, candidate, extensions, out)) return true;
+    }
+    if (my esm_mode && !my in_type_reference) return false;
+    if (!directory_exists(me, candidate)) return false;
+    return load_directory(me, candidate, package_json_of(me, candidate), extensions, out);
+}
+
+static bool load_as_file_or_directory_classic(State* me, csview candidate, int extensions, Found* out) {
+    return load_file(me, candidate, extensions, out);
+}
+
+// ---- `exports` and `imports` ----
+
+static bool condition_applies(State* me, csview condition) {
+    if (csview_equals(condition, "default")) return true;
+    for (isize i = 0; i < my condition_count; i++) {
+        if (csview_equals(condition, my conditions[i])) return true;
+    }
+    // "types@>=5.2"
+    if (csview_starts_with(condition, "types@")) {
+        for (isize i = 0; i < my condition_count; i++) {
+            if (!strcmp(my conditions[i], "types")) return version_in_range(csview_slice(condition, 6, condition.size));
+        }
+    }
+    return false;
+}
+
+static bool has_bad_segment(csview path, bool skip_first) {
+    while (path.size) {
+        isize end = csview_find_sv(path, c_sv("/"));
+        csview segment = csview_slice(path, 0, end);
+        if (!skip_first && (csview_equals(segment, "..") || csview_equals(segment, ".") ||
+            csview_equals(segment, "node_modules"))
+        ) {
+            return true;
+        }
+        skip_first = false;
+        if (end == c_NPOS) break;
+        path = csview_slice(path, end + 1, path.size);
+    }
+    return false;
+}
+
+static cstr replace_all_stars(csview text, csview star) {
+    cstr ret = cstr_null;
+    while (true) {
+        isize at = csview_find_sv(text, c_sv("*"));
+        cstr_append_sv(&ret, csview_slice(text, 0, at));
+        if (at == c_NPOS) break;
+        cstr_append_sv(&ret, star);
+        text = csview_slice(text, at + 1, text.size);
+    }
+    return ret;
+}
+
+static Search resolve_non_relative(State* me, csview name, csview from_dir, int extensions, Found* out);
+
+// tsc's loadModuleFromTargetExportOrImport(): what one target of an exports/imports map leads to
+static Search load_target(
+    State* me, JsonValue const* target, csview subpath, bool pattern, bool is_imports, csview package_dir,
+    int extensions, Found* out
+) {
+    switch (target->tag) {
+        case JSON_STRING: {
+            csview text = cstr_sv(&target->string);
+            if (!pattern && subpath.size && !ends_with(text, "/")) return SEARCH_STOP;
+            if (!csview_starts_with(text, "./")) {
+                if (is_imports && !csview_starts_with(text, "../") && !csview_starts_with(text, "/")) {
+                    // `"#dep": "some-package"`
+                    cstr name = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
+                    Search result = resolve_non_relative(me, cstr_sv(&name), package_dir, extensions, out);
+                    cstr_drop(&name);
+                    return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_STOP;
+                }
+                return SEARCH_STOP;
+            }
+            if (has_bad_segment(text, true) || has_bad_segment(subpath, false)) return SEARCH_STOP;
+            cstr relative = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
+            cstr path = join(package_dir, cstr_sv(&relative));
+            bool found = load_package_json_field(me, cstr_sv(&path), extensions, out);
+            cstr_drop(&relative);
+            cstr_drop(&path);
+            return found ? SEARCH_FOUND : SEARCH_STOP;
+        }
+        case JSON_OBJECT:
+            for (isize i = 0; i < target->count; i++) {
+                if (!condition_applies(me, cstr_sv(&target->members[i].key))) continue;
+                Search result = load_target(
+                    me, &target->members[i].value, subpath, pattern, is_imports, package_dir, extensions, out);
+                if (result != SEARCH_CONTINUE) return result;
+            }
+            return SEARCH_CONTINUE;
+        case JSON_ARRAY:
+            if (!target->count) return SEARCH_STOP;
+            for (isize i = 0; i < target->count; i++) {
+                Search result = load_target(
+                    me, &target->items[i], subpath, pattern, is_imports, package_dir, extensions, out);
+                // An entry that leads nowhere lets the next one try
+                if (result == SEARCH_FOUND) return result;
+            }
+            return SEARCH_STOP;
+        default:
+            return SEARCH_STOP;
+    }
+}
+
+// tsc's comparePatternKeys(): the longer the part before the star the better, then the longer key
+static bool pattern_key_is_better(csview a, csview b) {
+    isize a_star = csview_find_sv(a, c_sv("*"));
+    isize b_star = csview_find_sv(b, c_sv("*"));
+    isize a_base = a_star == c_NPOS ? a.size : a_star + 1;
+    isize b_base = b_star == c_NPOS ? b.size : b_star + 1;
+    if (a_base != b_base) return a_base > b_base;
+    if (a_star == c_NPOS) return false;
+    if (b_star == c_NPOS) return true;
+    return a.size > b.size;
+}
+
+// tsc's loadModuleFromExportsOrImports(): a lookup of "./sub/path" or "#name" in a map of subpaths and patterns
+static Search load_from_map(
+    State* me, JsonValue const* map, csview key, bool is_imports, csview package_dir, int extensions, Found* out
+) {
+    bool key_is_plain = !ends_with(key, "/") && csview_find_sv(key, c_sv("*")) == c_NPOS;
+    if (key_is_plain) {
+        for (isize i = map->count - 1; i >= 0; i--) {
+            if (cstr_equals_sv(&map->members[i].key, key)) {
+                Search result = load_target(
+                    me, &map->members[i].value, c_sv(""), false, is_imports, package_dir, extensions, out);
+                return result == SEARCH_CONTINUE ? SEARCH_STOP : result;
+            }
+        }
+    }
+    JsonMember const* best = nullptr;
+    for (isize i = 0; i < map->count; i++) {
+        csview candidate = cstr_sv(&map->members[i].key);
+        isize star = csview_find_sv(candidate, c_sv("*"));
+        bool matches;
+        if (star != c_NPOS) {
+            if (csview_find_sv(csview_slice(candidate, star + 1, candidate.size), c_sv("*")) != c_NPOS) continue;
+            csview prefix = csview_slice(candidate, 0, star);
+            csview suffix = csview_slice(candidate, star + 1, candidate.size);
+            matches = key.size >= prefix.size + suffix.size && sv_starts_with(key, prefix) &&
+                sv_ends_with(key, suffix) && !csview_equals_sv(key, candidate);
+        } else if (ends_with(candidate, "/")) {
+            matches = sv_starts_with(key, candidate);
+        } else {
+            continue;
+        }
+        if (matches && (!best || pattern_key_is_better(candidate, cstr_sv(&best->key)))) best = &map->members[i];
+    }
+    if (!best) return SEARCH_CONTINUE;
+    csview matched = cstr_sv(&best->key);
+    isize star = csview_find_sv(matched, c_sv("*"));
+    csview subpath = star != c_NPOS ?
+        csview_slice(key, star, key.size - (matched.size - star - 1)) :
+        csview_slice(key, matched.size, key.size);
+    Search result = load_target(me, &best->value, subpath, star != c_NPOS, is_imports, package_dir, extensions, out);
+    return result == SEARCH_CONTINUE ? SEARCH_STOP : result;
+}
+
+static bool any_key_starts_with_dot(JsonValue const* object) {
+    for (isize i = 0; i < object->count; i++) {
+        if (cstr_starts_with(&object->members[i].key, ".")) return true;
+    }
+    return false;
+}
+
+// tsc's loadModuleFromExports(). subpath is "." or "./sub/path"
+static Search load_from_exports(
+    State* me, PackageJson const* package, csview package_dir, csview subpath, int extensions, Found* out
+) {
+    JsonValue const* exports = json_get(&package->json, "exports");
+    if (!exports || exports->tag == JSON_NULL) return SEARCH_CONTINUE;
+    bool is_subpath_map = exports->tag == JSON_OBJECT && any_key_starts_with_dot(exports);
+    if (csview_equals(subpath, ".")) {
+        JsonValue const* main_export = is_subpath_map ? json_get(exports, ".") : exports;
+        if (main_export) {
+            Search result = load_target(me, main_export, c_sv(""), false, false, package_dir, extensions, out);
+            return result == SEARCH_FOUND ? SEARCH_FOUND : SEARCH_STOP;
+        }
+    } else if (is_subpath_map) {
+        Search result = load_from_map(me, exports, subpath, false, package_dir, extensions, out);
+        if (result != SEARCH_CONTINUE) return result;
+    }
+    return SEARCH_STOP;
+}
+
+// `import "#internal/x"`: the `imports` of the package the importing file is in
+static Search load_from_imports(State* me, csview name, csview from_dir, int extensions, Found* out) {
+    if (csview_equals(name, "#") || csview_starts_with(name, "#/")) return SEARCH_STOP;
+    cstr scope_dir = cstr_null;
+    PackageJson const* scope = package_scope_of(me, from_dir, &scope_dir);
+    Search result = SEARCH_STOP;
+    if (scope) {
+        JsonValue const* imports = json_get_tagged(&scope->json, "imports", JSON_OBJECT);
+        if (imports) {
+            result = load_from_map(me, imports, name, true, cstr_sv(&scope_dir), extensions, out);
+            if (result == SEARCH_CONTINUE) result = SEARCH_STOP;
+        }
+    }
+    cstr_drop(&scope_dir);
+    return result;
+}
+
+// A package importing itself by name, through its own `exports`
+static Search load_from_self_name(State* me, csview name, csview from_dir, int extensions, Found* out) {
+    cstr scope_dir = cstr_null;
+    PackageJson const* scope = package_scope_of(me, from_dir, &scope_dir);
+    Search result = SEARCH_CONTINUE;
+    if (scope && json_get(&scope->json, "exports")) {
+        csview package_name = json_get_string(&scope->json, "name");
+        if (package_name.size && sv_starts_with(name, package_name) &&
+            (name.size == package_name.size || name.buf[package_name.size] == '/')
+        ) {
+            cstr subpath = cstr_d(".", csview_slice(name, package_name.size, name.size));
+            // tsc: types first, then whatever else the caller accepts
+            result = load_from_exports(me, scope, cstr_sv(&scope_dir), cstr_sv(&subpath), extensions, out);
+            cstr_drop(&subpath);
+        }
+    }
+    cstr_drop(&scope_dir);
+    return result;
+}
+
+// ---- node_modules ----
+
+// "@scope/pkg/sub/path" -> "@scope/pkg" + "sub/path"
+static csview package_name_of(csview name, csview* rest) {
+    isize slash = csview_find_sv(name, c_sv("/"));
+    if (slash != c_NPOS && name.buf[0] == '@') {
+        isize second = csview_find_sv(csview_slice(name, slash + 1, name.size), c_sv("/"));
+        slash = second == c_NPOS ? c_NPOS : slash + 1 + second;
+    }
+    if (slash == c_NPOS) {
+        *rest = c_sv("");
+        return name;
+    }
+    *rest = csview_slice(name, slash + 1, name.size);
+    return csview_slice(name, 0, slash);
+}
+
+// "@scope/pkg" lives in @types as "scope__pkg"
+static cstr mangle_scoped_name(csview name) {
+    if (!name.size || name.buf[0] != '@') return cstr_from_sv(name);
+    isize slash = csview_find_sv(name, c_sv("/"));
+    if (slash == c_NPOS) return cstr_from_sv(name);
+    return cstr_d(csview_slice(name, 1, slash), "__", csview_slice(name, slash + 1, name.size));
+}
+
+typedef struct PackageLoad {
+    PackageJson const* package;
+    csview directory;
+    bool has_rest;
+} PackageLoad;
+
+// tsc's loadModuleFromSpecificNodeModulesDirectory()
+static Search load_from_node_modules_dir(State* me, csview node_modules, csview name, int extensions, Found* out) {
+    cstr candidate = join(node_modules, name);
+    csview rest;
+    csview package_name = package_name_of(name, &rest);
+    cstr package_dir = join(node_modules, package_name);
+    Search result = SEARCH_CONTINUE;
+
+    PackageJson const* package = directory_exists(me, cstr_sv(&candidate)) ? package_json_of(me, cstr_sv(&candidate)) : nullptr;
+    PackageJson const* root_package = rest.size ? package_json_of(me, cstr_sv(&package_dir)) : package;
+    bool exports_rule = my use_exports && root_package && json_get(&root_package->json, "exports") &&
+        json_get(&root_package->json, "exports")->tag != JSON_NULL;
+
+    if (rest.size && package && !exports_rule) {
+        // A nested package.json: `node_modules/foo/bar/package.json`
+        bool found = load_file(me, cstr_sv(&candidate), extensions, out) ||
+            load_directory(me, cstr_sv(&candidate), package, extensions, out);
+        result = found ? SEARCH_FOUND : SEARCH_CONTINUE;
+    } else if (exports_rule) {
+        // `exports` blocks every other way into the package
+        cstr subpath = rest.size ? cstr_d("./", rest) : cstr_lit(".");
+        result = load_from_exports(me, root_package, cstr_sv(&package_dir), cstr_sv(&subpath), extensions, out);
+        cstr_drop(&subpath);
+        if (result == SEARCH_STOP) result = SEARCH_CONTINUE; // The walk up the directories goes on, like tsc's `?.value`
+    } else {
+        JsonValue const* version_paths = rest.size && root_package ? version_paths_of(root_package) : nullptr;
+        if (version_paths) {
+            result = load_using_version_paths(
+                me, version_paths, cstr_sv(&package_dir), rest, extensions, load_as_file_or_directory, out);
+            if (result == SEARCH_STOP) result = SEARCH_CONTINUE;
+        }
+        if (result == SEARCH_CONTINUE && directory_exists(me, parent_of(cstr_sv(&candidate)))) {
+            bool found = (rest.size || !my esm_mode) && load_file(me, cstr_sv(&candidate), extensions, out);
+            if (!found && directory_exists(me, cstr_sv(&candidate))) {
+                found = load_directory(me, cstr_sv(&candidate), package, extensions, out);
+                if (!found && !rest.size && package && my esm_mode) {
+                    // No index probing in ESM mode, except that a package without `main` or `exports` is its index.js
+                    cstr index = join(cstr_sv(&candidate), c_sv("index.js"));
+                    found = load_file(me, cstr_sv(&index), extensions, out);
+                    cstr_drop(&index);
+                }
+            }
+            if (found) result = SEARCH_FOUND;
+        }
+    }
+    cstr_drop(&candidate);
+    cstr_drop(&package_dir);
+    return result;
+}
+
+// One `node_modules`: the package, then its @types twin
+static Search load_from_immediate_node_modules(
+    State* me, csview directory, csview name, int extensions, bool types_only, Found* out
+) {
+    cstr node_modules = join(directory, c_sv("node_modules"));
+    Search result = SEARCH_CONTINUE;
+    if (directory_exists(me, cstr_sv(&node_modules))) {
+        if (!types_only) result = load_from_node_modules_dir(me, cstr_sv(&node_modules), name, extensions, out);
+        if (result == SEARCH_CONTINUE && extensions & EXT_DTS) {
+            cstr types_dir = join(cstr_sv(&node_modules), c_sv("@types"));
+            if (directory_exists(me, cstr_sv(&types_dir))) {
+                cstr mangled = mangle_scoped_name(name);
+                result = load_from_node_modules_dir(me, cstr_sv(&types_dir), cstr_sv(&mangled), EXT_DTS, out);
+                cstr_drop(&mangled);
+            }
+            cstr_drop(&types_dir);
+        }
+    }
+    cstr_drop(&node_modules);
+    return result;
+}
+
+static Search walk_up_node_modules(
+    State* me, csview from_dir, csview name, int extensions, bool types_only, Found* out
+) {
+    cstr dir = cstr_from_sv(from_dir);
+    Search result = SEARCH_CONTINUE;
+    while (true) {
+        if (!csview_equals(basename_of(cstr_sv(&dir)), "node_modules")) {
+            result = load_from_immediate_node_modules(me, cstr_sv(&dir), name, extensions, types_only, out);
+            if (result != SEARCH_CONTINUE) break;
+        }
+        if (!go_up(&dir)) break;
+    }
+    cstr_drop(&dir);
+    return result;
+}
+
+// tsc's loadModuleFromNearestNodeModulesDirectory(): TypeScript and declarations all the way up first, then the rest
+static Search load_from_nearest_node_modules(State* me, csview from_dir, csview name, int extensions, Found* out) {
+    int priority = extensions & (EXT_TS | EXT_DTS);
+    int secondary = extensions & ~(EXT_TS | EXT_DTS);
+    if (priority) {
+        Search result = walk_up_node_modules(me, from_dir, name, priority, false, out);
+        if (result != SEARCH_CONTINUE) return result;
+    }
+    if (secondary) return walk_up_node_modules(me, from_dir, name, secondary, false, out);
+    return SEARCH_CONTINUE;
+}
+
+// ---- Type roots ----
+
+static StrList effective_type_roots(ModuleResolver* me) {
+    StrList ret = {0};
+    CompilerOptions const* options = my options;
+    if (options->type_roots_set) {
+        for (isize i = 0; i < options->type_roots.count; i++) {
+            cstr root = option_path(me, cstr_sv(&options->type_roots.items[i]));
+            str_list_push(&ret, cstr_sv(&root));
+            cstr_drop(&root);
+        }
+        return ret;
+    }
+    // Every node_modules/@types from the config's (else the current) directory upwards
+    cstr dir = option_path(me, c_sv("."));
+    while (true) {
+        cstr candidate = join(cstr_sv(&dir), c_sv("node_modules/@types"));
+        if (fs_is_directory(my fs, cstr_sv(&candidate))) str_list_push(&ret, cstr_sv(&candidate));
+        cstr_drop(&candidate);
+        if (!go_up(&dir)) break;
+    }
+    cstr_drop(&dir);
+    return ret;
+}
+
+// tsc's resolveFromTypeRoot(): the last resort of a node-style lookup of a module name
+static bool load_from_type_roots(State* me, csview name, Found* out) {
+    if (!my resolver->options->type_roots_set) return false;
+    StrList roots = effective_type_roots(my resolver);
+    bool found = false;
+    for (isize i = 0; i < roots.count && !found; i++) {
+        cstr candidate = join(cstr_sv(&roots.items[i]), name);
+        if (directory_exists(me, cstr_sv(&roots.items[i]))) {
+            found = load_file(me, cstr_sv(&candidate), EXT_DTS, out);
+            if (!found && directory_exists(me, cstr_sv(&candidate))) {
+                found = load_directory(me, cstr_sv(&candidate), package_json_of(me, cstr_sv(&candidate)), EXT_DTS, out);
+            }
+        }
+        cstr_drop(&candidate);
+    }
+    str_list_drop(&roots);
+    return found;
+}
+
+// ---- The resolvers ----
+
+static Search resolve_non_relative(State* me, csview name, csview from_dir, int extensions, Found* out) {
+    if (my use_imports && csview_starts_with(name, "#")) {
+        return load_from_imports(me, name, from_dir, extensions, out);
+    }
+    if (my use_self_name) {
+        Search result = load_from_self_name(me, name, from_dir, extensions, out);
+        if (result != SEARCH_CONTINUE) return result;
+    }
+    if (csview_find_sv(name, c_sv(":")) != c_NPOS) return SEARCH_STOP; // "node:fs" is an ambient module or nothing
+    Search result = load_from_nearest_node_modules(me, from_dir, name, extensions, out);
+    if (result == SEARCH_CONTINUE && extensions & EXT_DTS && load_from_type_roots(me, name, out)) return SEARCH_FOUND;
+    return result;
+}
+
+static Search node_try_resolve(State* me, csview name, int extensions, Found* out, bool* external) {
+    Search result = load_using_options(me, name, extensions, load_as_file_or_directory, out);
+    if (result != SEARCH_CONTINUE) {
+        if (result == SEARCH_FOUND) *external = path_contains_node_modules(cstr_sv(&out->path));
+        return result;
+    }
+    if (!module_name_is_relative(name)) {
+        *external = !csview_starts_with(name, "#");
+        result = resolve_non_relative(me, name, my containing_dir, extensions, out);
+        if (result == SEARCH_FOUND && !path_contains_node_modules(cstr_sv(&out->path))) *external = false;
+        return result;
+    }
+    cstr candidate = join(my containing_dir, name);
+    // "." and "./" mean the directory, never a file next to it
+    bool is_directory = ends_with(name, "/") || csview_equals(name, ".") || csview_equals(name, "..") ||
+        ends_with(name, "/.") || ends_with(name, "/..");
+    if (is_directory) cstr_append_lit(&candidate, "/");
+    bool found = load_as_file_or_directory(me, cstr_sv(&candidate), extensions, out);
+    cstr_drop(&candidate);
+    *external = found && path_contains_node_modules(name);
+    return found ? SEARCH_FOUND : SEARCH_CONTINUE;
+}
+
+static Search classic_try_resolve(State* me, csview name, int extensions, Found* out, bool* external) {
+    Search result = load_using_options(me, name, extensions, load_as_file_or_directory_classic, out);
+    if (result != SEARCH_CONTINUE) return result;
+    if (module_name_is_relative(name)) {
+        cstr candidate = join(my containing_dir, name);
+        bool found = load_file(me, cstr_sv(&candidate), extensions, out);
+        cstr_drop(&candidate);
+        return found ? SEARCH_FOUND : SEARCH_CONTINUE;
+    }
+    // Next to the importing file, then next to each of its ancestors
+    cstr dir = cstr_from_sv(my containing_dir);
+    bool found = false;
+    while (true) {
+        cstr candidate = join(cstr_sv(&dir), name);
+        found = load_file(me, cstr_sv(&candidate), extensions, out);
+        cstr_drop(&candidate);
+        if (found || !go_up(&dir)) break;
+    }
+    cstr_drop(&dir);
+    if (found) return SEARCH_FOUND;
+    if (extensions & EXT_DTS) {
+        // Typings from @types, the one thing classic resolution knows of node_modules
+        result = walk_up_node_modules(me, my containing_dir, name, EXT_DTS, true, out);
+        if (result == SEARCH_FOUND) *external = true;
+        return result;
+    }
+    return SEARCH_CONTINUE;
+}
+
+static void add_condition(State* me, const char* condition) {
+    if (my condition_count < (isize)c_arraylen(my conditions)) my conditions[my condition_count++] = condition;
+}
+
+static State state_make(ModuleResolver* resolver, ResolutionMode mode) {
+    // The working directory as of the first resolution: whoever made the resolver may still have been setting up
+    if (!cstr_size(&resolver->cwd)) {
+        try (fs_get_cwd(resolver->fs, &resolver->cwd)) or_panic;
+    }
+    CompilerOptions const* options = resolver->options;
+    State state = { .resolver = resolver, .kind = options->module_resolution };
+    bool node_next = state.kind == MODULE_RESOLUTION_NODE16 || state.kind == MODULE_RESOLUTION_NODENEXT;
+    bool bundler = state.kind == MODULE_RESOLUTION_BUNDLER;
+    state.esm_mode = node_next && mode == RESOLUTION_MODE_ESM;
+    state.use_exports = options->resolve_package_json_exports && (node_next || bundler);
+    state.use_imports = options->resolve_package_json_imports && (node_next || bundler);
+    state.use_self_name = node_next || bundler;
+    add_condition(&state, bundler || mode == RESOLUTION_MODE_ESM ? "import" : "require");
+    add_condition(&state, "types");
+    if (!bundler) add_condition(&state, "node");
+    for (isize i = 0; i < options->custom_conditions.count; i++) {
+        add_condition(&state, cstr_str(&options->custom_conditions.items[i]));
+    }
+    return state;
+}
+
+static cstr absolute_containing_dir(ModuleResolver* me, csview containing_file) {
+    cstr absolute = absolute_path_of(cstr_sv(&my cwd), containing_file);
+    cstr ret = cstr_from_sv(parent_of(cstr_sv(&absolute)));
+    cstr_drop(&absolute);
+    return ret;
+}
+
+ResolvedModule module_resolver_resolve(
+    ModuleResolver* me,
+    csview specifier,
+    csview containing_file,
+    ResolutionMode mode
+) {
+    ResolvedModule ret = {0};
+    if (!specifier.size) return ret;
+    State state = state_make(me, mode);
+    cstr containing_dir = absolute_containing_dir(me, containing_file);
+    state.containing_dir = cstr_sv(&containing_dir);
+
+    Found found = {0};
+    bool external = false;
+    Search result;
+    int secondary = EXT_JS | (my options->resolve_json_module ? EXT_JSON : 0);
+    if (state.kind == MODULE_RESOLUTION_CLASSIC) {
+        result = classic_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
+        if (result == SEARCH_CONTINUE) result = classic_try_resolve(&state, specifier, secondary, &found, &external);
+    } else if (state.use_exports) {
+        // With export maps in play a `types` condition anywhere beats any JavaScript
+        result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS, &found, &external);
+        if (result != SEARCH_FOUND) {
+            Search second = node_try_resolve(&state, specifier, secondary, &found, &external);
+            if (second == SEARCH_FOUND) result = second;
+        }
+    } else {
+        result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS | secondary, &found, &external);
+    }
+
+    if (result == SEARCH_FOUND) {
+        ret.kind = found.kind;
+        ret.path = found.path;
+        ret.is_external_library = external;
+        ret.used_ts_extension = found.used_ts_extension;
+        ret.arbitrary_extension = found.arbitrary_extension;
+        apply_realpath(me, &ret);
+    } else {
+        ret.json_without_option = state.json_without_option;
+        if (state.esm_mode && module_name_is_relative(specifier) && !script_extension_of(specifier).size) {
+            // What would have been found with CommonJS rules says which extension is missing
+            ret.needs_extension = true;
+            State relaxed = state;
+            relaxed.esm_mode = false;
+            Found meant = {0};
+            bool ignored;
+            if (node_try_resolve(&relaxed, specifier, EXT_TS | EXT_DTS | EXT_JS, &meant, &ignored) == SEARCH_FOUND) {
+                csview extension = script_extension_of(cstr_sv(&meant.path));
+                const char* suggestion =
+                    csview_equals(extension, ".mts") || csview_equals(extension, ".d.mts") ? ".mjs" :
+                    csview_equals(extension, ".cts") || csview_equals(extension, ".d.cts") ? ".cjs" :
+                    csview_equals(extension, ".tsx") && my options->jsx == JSX_PRESERVE ? ".jsx" : ".js";
+                bool is_index = csview_starts_with(basename_of(cstr_sv(&meant.path)), "index.") &&
+                    !csview_equals(basename_of(specifier), "index");
+                ret.suggested_extension = is_index ? cstr_d("/index", suggestion) : cstr_from(suggestion);
+                cstr_drop(&meant.path);
+            }
+        }
+    }
+    cstr_drop(&containing_dir);
+    return ret;
+}
+
+ResolvedModule module_resolver_resolve_type_reference(ModuleResolver* me, csview name, csview containing_file) {
+    ResolvedModule ret = {0};
+    if (!name.size) return ret;
+    State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+    state.in_type_reference = true;
+    // Type reference lookup is node-style whatever the resolution kind, with exports for the modern ones
+    if (state.kind == MODULE_RESOLUTION_CLASSIC) state.kind = MODULE_RESOLUTION_NODE10;
+    cstr containing_dir = containing_file.size ? absolute_containing_dir(me, containing_file) : option_path(me, c_sv("."));
+    state.containing_dir = cstr_sv(&containing_dir);
+
+    Found found = {0};
+    bool resolved = false;
+    // Primary: the type roots
+    StrList roots = effective_type_roots(me);
+    for (isize i = 0; i < roots.count && !resolved; i++) {
+        cstr candidate = join(cstr_sv(&roots.items[i]), name);
+        if (directory_exists(&state, cstr_sv(&roots.items[i]))) {
+            // Custom type roots resolve as file or directory, like modules
+            if (my options->type_roots_set) resolved = load_file(&state, cstr_sv(&candidate), EXT_DTS, &found);
+            if (!resolved && directory_exists(&state, cstr_sv(&candidate))) {
+                resolved = load_directory(&state, cstr_sv(&candidate), package_json_of(&state, cstr_sv(&candidate)), EXT_DTS, &found);
+            }
+        }
+        cstr_drop(&candidate);
+    }
+    str_list_drop(&roots);
+    // Secondary: node_modules from the containing file upwards. Not for the automatic ones when there are custom type
+    // roots, which are then the only place those come from
+    if (!resolved && !(my options->type_roots_set && !containing_file.size)) {
+        if (module_name_is_relative(name)) {
+            cstr candidate = join(state.containing_dir, name);
+            resolved = load_as_file_or_directory(&state, cstr_sv(&candidate), EXT_DTS, &found);
+            cstr_drop(&candidate);
+        } else {
+            resolved = load_from_nearest_node_modules(&state, state.containing_dir, name, EXT_DTS, &found) == SEARCH_FOUND;
+        }
+        ret.is_external_library = resolved;
+    }
+    if (resolved) {
+        ret.kind = found.kind;
+        ret.path = found.path;
+        apply_realpath(me, &ret);
+    }
+    cstr_drop(&containing_dir);
+    return ret;
+}
+
+StrList module_resolver_automatic_types(ModuleResolver* me) {
+    StrList ret = {0};
+    if (my options->types_set) {
+        for (isize i = 0; i < my options->types.count; i++) str_list_push(&ret, cstr_sv(&my options->types.items[i]));
+        return ret;
+    }
+    State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+    StrList roots = effective_type_roots(me);
+    for (isize i = 0; i < roots.count; i++) {
+        if (!fs_is_directory(my fs, cstr_sv(&roots.items[i]))) continue;
+        for_each (item, fs_listdir_sorted, my fs, cstr_sv(&roots.items[i])) {
+            if (!item.name.size || item.name.buf[0] == '.') continue;
+            if (!fs_is_directory(my fs, item.path)) continue;
+            cstr absolute = absolute_path_of(cstr_sv(&my cwd), item.path);
+            PackageJson const* package = package_json_of(&state, cstr_sv(&absolute));
+            cstr_drop(&absolute);
+            // A package without a package.json counts, one that says `"typings": null` opts out
+            if (package) {
+                JsonValue const* typings = json_get(&package->json, "typings");
+                if (typings && typings->tag == JSON_NULL) continue;
+            }
+            bool seen = false;
+            for (isize j = 0; j < ret.count && !seen; j++) seen = cstr_equals_sv(&ret.items[j], item.name);
+            if (!seen) str_list_push(&ret, item.name);
+        }
+    }
+    str_list_drop(&roots);
+    return ret;
+}
+
+ResolutionMode module_resolver_file_mode(ModuleResolver* me, csview file) {
+    if (ends_with(file, ".mts") || ends_with(file, ".mjs")) return RESOLUTION_MODE_ESM;
+    if (ends_with(file, ".cts") || ends_with(file, ".cjs")) return RESOLUTION_MODE_COMMONJS;
+    State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+    cstr dir = absolute_containing_dir(me, file);
+    cstr scope_dir = cstr_null;
+    PackageJson const* scope = package_scope_of(&state, cstr_sv(&dir), &scope_dir);
+    ResolutionMode ret = scope && csview_equals(json_get_string(&scope->json, "type"), "module") ?
+        RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+    cstr_drop(&scope_dir);
+    cstr_drop(&dir);
+    return ret;
+}

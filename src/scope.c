@@ -865,7 +865,7 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier) {
     if (!module->module->file) return cstr_from_sv(module->name);
     if (by_specifier) return cstr_d("\"", ref->path, "\"");
-    csview path = cstr_sv(&module->module->file->canonical_path);
+    csview path = source_file_display_path(module->module->file);
     static const char* const extensions[] = { ".d.ts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs" };
     for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); i++) {
         if (csview_ends_with(path, extensions[i])) {
@@ -892,7 +892,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
             // No file: TS2307 comes from the statement
             if (item->module_ref->file) {
                 error_ctx_error_d(errs, item->module_ref->span, 2306,
-                    "File '", item->module_ref->file->canonical_path, "' is not a module.");
+                    "File '", source_file_display_path(item->module_ref->file), "' is not a module.");
             }
             return nullptr;
         }

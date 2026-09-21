@@ -9,9 +9,10 @@ typedef struct MockFsNode {
     enum {
         MOCK_FS_NODE_FILE,
         MOCK_FS_NODE_DIR,
+        MOCK_FS_NODE_SYMLINK,
     } tag;
     union {
-        cstr file;
+        cstr file; // Of a symlink: the absolute path it points to
         HMapMockFsNode dir;
     };
 } MockFsNode;
@@ -27,6 +28,7 @@ void mock_fs_node_drop(MockFsNode* me);
 void mock_fs_node_drop(MockFsNode* me) {
     switch (my tag) {
         case MOCK_FS_NODE_FILE:
+        case MOCK_FS_NODE_SYMLINK:
             cstr_drop(&my file);
             break;
 
@@ -57,6 +59,17 @@ typedef struct MockFs {
     cstr cwd;
 } MockFs;
 
+static inline MockFsNode* lookup_node(MockFs const* me, csview path, bool create_dirs);
+
+// What a node is once symlinks are followed, null for a dangling or circular one
+static MockFsNode* follow_symlinks(MockFs const* me, MockFsNode* node) {
+    for (int depth = 0; node && node->tag == MOCK_FS_NODE_SYMLINK; depth++) {
+        if (depth > 16) return nullptr;
+        node = lookup_node(me, cstr_sv(&node->file), false);
+    }
+    return node;
+}
+
 static inline MockFsNode* lookup_node(MockFs const* me, csview path, bool create_dirs) {
     // TODO: refactor to use csview more
     cstr absolute = absolute_path_of(cstr_sv(&my cwd), path.size ? path : c_sv("."));
@@ -79,7 +92,7 @@ static inline MockFsNode* lookup_node(MockFs const* me, csview path, bool create
         if (segment.size) {
             auto value = hmap_mock_fs_node_get_mut(&ret->dir, segment);
             if (value) {
-                ret = &value->second;
+                ret = follow_symlinks(me, &value->second);
             } else if (create_dirs) {
                 auto result = hmap_mock_fs_node_insert(&ret->dir, cstr_from_sv(segment), mock_fs_dir());
                 ret = &result.ref->second;
@@ -294,6 +307,51 @@ failable mock_fs_create_file(MockFs* me, csview path, cstr contents) {
         return err_d(path, ": already exists");
     }
     return ok;
+}
+
+failable mock_fs_create_symlink(MockFs* me, csview link, csview target) {
+    csview name = basename_of(link);
+    MockFsNode* dir = name.size ? lookup_node(me, dirname_of(link), true) : nullptr;
+    if (!dir || dir->tag != MOCK_FS_NODE_DIR) {
+        return err_d(link, ": parent directory could not be created");
+    }
+    MockFsNode node = { .tag = MOCK_FS_NODE_SYMLINK, .file = absolute_path_of(cstr_sv(&my cwd), target) };
+    auto result = hmap_mock_fs_node_insert(&dir->dir, cstr_from_sv(name), node);
+    if (!result.inserted) {
+        cstr_drop(&node.file);
+        return err_d(link, ": already exists");
+    }
+    return ok;
+}
+
+cstr mock_fs_realpath(void* ctx, csview path) {
+    MockFs const* me = ctx;
+    cstr absolute = absolute_path_of(cstr_sv(&my cwd), path);
+    for (int depth = 0; depth < 16; depth++) {
+        // The first component that is a link is replaced by its target, then again from the start
+        MockFsNode const* node = &my root;
+        csview rest = cstr_sv(&absolute);
+        bool replaced = false;
+        isize at = 1;
+        while (at <= rest.size && node && node->tag == MOCK_FS_NODE_DIR) {
+            isize end = at;
+            while (end < rest.size && rest.buf[end] != path_sep) end++;
+            csview segment = csview_slice(rest, at, end);
+            if (!segment.size) break;
+            auto value = hmap_mock_fs_node_get(&node->dir, segment);
+            if (!value) break;
+            if (value->second.tag == MOCK_FS_NODE_SYMLINK) {
+                cstr next = cstr_d(value->second.file, csview_slice(rest, end, rest.size));
+                cstr_take(&absolute, next);
+                replaced = true;
+                break;
+            }
+            node = &value->second;
+            at = end + 1;
+        }
+        if (!replaced) break;
+    }
+    return absolute;
 }
 
 Fs const* mock_fs_get_fs(MockFs const* me) {

@@ -1,4 +1,6 @@
 #include "source_file.h"
+#include "error.h"
+#include "compiler_options.h"
 
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
     check(cstr_size(&canonical_path));
@@ -45,6 +47,7 @@ void source_file_drop(SourceFile* me) {
     cstr_drop(&my decl_override);
     for (u32 i = 0; i < my module_ref_count; i++) {
         cstr_drop(&my module_refs[i]->path);
+        cstr_drop(&my module_refs[i]->resolved_path);
         free(my module_refs[i]);
     }
     free(my module_refs);
@@ -60,3 +63,50 @@ ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span) {
     return ret;
 }
 
+
+void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    switch (my failure) {
+        case MODULE_REF_IS_JSON:
+            return;
+        case MODULE_REF_IS_JS:
+            // The import is `any`, which is only worth a word when that has to be explicit
+            if (options->no_implicit_any) {
+                error_ctx_error_d(errs, my span, 7016,
+                    "Could not find a declaration file for module '", my path, "'. '", my resolved_path,
+                    "' implicitly has an 'any' type.");
+            }
+            return;
+        case MODULE_REF_ARBITRARY_EXTENSION:
+            error_ctx_error_d(errs, my span, 6263,
+                "Module '", my path, "' was resolved to '", my resolved_path,
+                "', but '--allowArbitraryExtensions' is not set.");
+            return;
+        case MODULE_REF_JSON_WITHOUT_OPTION:
+            error_ctx_error_d(errs, my span, 2732,
+                "Cannot find module '", my path,
+                "'. Consider using '--resolveJsonModule' to import module with '.json' extension.");
+            return;
+        case MODULE_REF_NEEDS_EXTENSION:
+            if (cstr_size(&my resolved_path)) {
+                error_ctx_error_d(errs, my span, 2835,
+                    "Relative import paths need explicit file extensions in ECMAScript imports when "
+                    "'--moduleResolution' is 'node16' or 'nodenext'. Did you mean '", my resolved_path, "'?");
+            } else {
+                error_ctx_error_d(errs, my span, 2834,
+                    "Relative import paths need explicit file extensions in ECMAScript imports when "
+                    "'--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.");
+            }
+            return;
+        case MODULE_REF_NOT_FOUND:
+            break;
+    }
+    if (options->module_resolution == MODULE_RESOLUTION_CLASSIC) {
+        error_ctx_error_d(errs, my span, 2792,
+            "Cannot find module '", my path, "'. Did you mean to set the 'moduleResolution' option to 'nodenext', "
+            "or to add aliases to the 'paths' option?");
+    } else {
+        error_ctx_error_d(errs, my span, 2307,
+            "Cannot find module '", my path, "' or its corresponding type declarations.");
+    }
+}

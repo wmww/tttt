@@ -1140,6 +1140,7 @@ static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
         hop_whitespace(&ahead);
         if (*ahead.pos == ')' || *ahead.pos == ',') {
             ret->module_ref = add_module_ref(&p, path, path_span);
+            ret->module_ref->syntax = MODULE_REF_DYNAMIC;
         } else {
             cstr_drop(&path);
         }
@@ -3887,6 +3888,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         parse_success(&require_p);
         statement->main.tag = PORT_IMPORT_GATHER;
         statement->requires_target = true;
+        statement->is_import_require = true;
     } else {
         parse_fail(&require_p);
         statement->main.tag = PORT_IMPORT_ALIAS;
@@ -4063,6 +4065,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
 done:
     if (span_valid(statement.target_path_span)) {
         statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
+        if (statement.is_import_require) statement.module_ref->syntax = MODULE_REF_REQUIRE;
         statement.main.module_ref = statement.module_ref;
         for_each (i, vec_port_item, &statement.items) {
             i->module_ref = statement.module_ref;

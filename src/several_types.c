@@ -56,10 +56,9 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     if (!module) {
         if (my import_ref->file) {
             error_ctx_error_d(errs, my import_ref->span, 2306,
-                "File '", my import_ref->file->canonical_path, "' is not a module.");
+                "File '", source_file_display_path(my import_ref->file), "' is not a module.");
         } else {
-            error_ctx_error_d(errs, my import_ref->span, 2307,
-                "Cannot find module '", my import_ref->path, "' or its corresponding type declarations.");
+            module_ref_report_unresolved(my import_ref, errs);
         }
         return;
     }

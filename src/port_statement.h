@@ -80,6 +80,7 @@ typedef struct PortStatement {
     PortItem main; // The main import item (not in {}s)
     VecPortItem items; // List of curly brace-enclosed imported items
     bool side_effect_only; // `import "./abc"`
+    bool is_import_require; // `import a = require("m")`
     bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes
         // a compile error
     cstr target_path; // Path of the module to import from

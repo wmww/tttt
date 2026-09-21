@@ -38,9 +38,6 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     if (my module_ref && !my side_effect_only && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
-        error_ctx_error_d(
-            errs, my target_path_span, 2307,
-            "Cannot find module '", my target_path, "' or its corresponding type declarations."
-        );
+        module_ref_report_unresolved(my module_ref, errs);
     }
 }

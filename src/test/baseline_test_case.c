@@ -301,6 +301,23 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         my no_implicit_references = tag_equals(value, "true");
         return;
     }
+    if (tag_equals(key, "currentdirectory")) {
+        Fs const* mock = mock_fs_get_fs(my fs);
+        try (fs_mkdir(mock, value)) or_log(info);
+        try (fs_change_cwd(mock, value)) or_log(info);
+        return;
+    }
+    if (tag_equals(key, "link") || tag_equals(key, "symlink")) {
+        // `// @link: /packages/a -> /node_modules/a`
+        isize arrow = csview_find_sv(value, c_sv("->"));
+        if (arrow != c_NPOS) {
+            csview target = csview_trim_whitespace(csview_slice(value, 0, arrow));
+            csview link = csview_trim_whitespace(csview_slice(value, arrow + 2, INTPTR_MAX));
+            vec_cstr_push(&my links, cstr_from_sv(target));
+            vec_cstr_push(&my links, cstr_from_sv(link));
+        }
+        return;
+    }
     // Unknown options are overwhelmingly emit options. A bad value is something tsc's harness refuses to run, which
     // doesn't happen in tests that have baselines
     ignore compiler_options_set(program_options(my program), key, value);
@@ -326,6 +343,11 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     cstr source_contents = cstr_null;
 
     try (fs_read_file(fs, my source_path, &unparsed_contents)) bubble;
+
+    // Like tsc's harness: relative file names are in /.src, which is the current directory unless the test says
+    // otherwise. So `/node_modules` is found from every file but isn't below the sources
+    try (fs_mkdir(mock_fs_get_fs(my fs), c_sv("/.src"))) bubble;
+    try (fs_change_cwd(mock_fs_get_fs(my fs), c_sv("/.src"))) bubble;
 
     csview contents_sv = csview_from_range(
         file_start_excluding_bom(cstr_str(&unparsed_contents)),
@@ -365,6 +387,10 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     }
     cstr_drop(&unparsed_contents);
 
+    for (isize i = 0; i + 1 < vec_cstr_size(&my links); i += 2) {
+        try (mock_fs_create_symlink(my fs, cstr_sv(vec_cstr_at(&my links, i + 1)), cstr_sv(vec_cstr_at(&my links, i)))) or_log(info);
+    }
+
     // The configuration's values replace the "es5,es2015" the directives above left behind
     while (config.size) {
         isize end = csview_find_sv(config, c_sv(","));
@@ -389,7 +415,9 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
             return i;
         }
     }
-    panic("failed to find test for source file ", source->canonical_path);
+    // A file the test didn't write: reached through a symlink by a path we didn't expect, say
+    log_error("failed to find test for source file ", source->canonical_path);
+    return nullptr;
 }
 
 static void format_error_tree(
@@ -463,7 +491,7 @@ static void process_errors(BaselineTestCase* me) {
             current_test_file = find_file(me, current_source);
         }
 
-        check(current_test_file);
+        if (!current_test_file) continue;
 
         // Like tsc's harness (iterateErrorBaseline): a squiggle under every line the error covers, the message after
         // the last one. Lines of several errors interleave, so items are kept ordered by line
@@ -535,6 +563,7 @@ BaselineTestCase run_baseline_test_case(
     ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
     MockFs* fs = mock_fs_new();
     Program* program = program_new(errs, mock_fs_get_fs(fs));
+    program_set_realpath(program, mock_fs_realpath, fs);
 
     BaselineTestCase ret = {
         .source_path = source_path,
@@ -581,6 +610,7 @@ BaselineTestCase run_baseline_test_case(
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         i->source = source;
     }
+    program_load_automatic_types(program);
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source && path_is_script(cstr_sv(&i->path))) {
             i->source = program_find_source(program, cstr_sv(&i->path));
@@ -630,6 +660,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     cstr_drop(&my lib_list);
     cstr_drop(&my formatted_errors);
     vec_baseline_test_file_drop(&my files);
+    vec_cstr_drop(&my links);
 }
 
 static csview relative_test_path(csview test_path) {

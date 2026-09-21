@@ -90,6 +90,68 @@ CompilerOptions compiler_options_init() {
 
 void compiler_options_drop(CompilerOptions* me) {
     cstr_drop(&my lib);
+    cstr_drop(&my config_dir);
+    cstr_drop(&my base_url);
+    cstr_drop(&my paths_base);
+    compiler_options_clear_paths(me);
+    str_list_drop(&my root_dirs);
+    str_list_drop(&my type_roots);
+    str_list_drop(&my types);
+    str_list_drop(&my module_suffixes);
+    str_list_drop(&my custom_conditions);
+}
+
+void str_list_push(StrList* me, csview item) {
+    if (my count == my cap) {
+        my cap = my cap ? my cap * 2 : 4;
+        my items = realloc(my items, sizeof(cstr) * (size_t)my cap);
+    }
+    my items[my count++] = cstr_from_sv(item);
+}
+
+void str_list_clear(StrList* me) {
+    for (isize i = 0; i < my count; i++) cstr_drop(&my items[i]);
+    my count = 0;
+}
+
+void str_list_drop(StrList* me) {
+    str_list_clear(me);
+    free(my items);
+    *me = (StrList){0};
+}
+
+static void str_list_set_from_commas(StrList* me, csview value) {
+    str_list_clear(me);
+    while (value.size) {
+        isize end = csview_find_sv(value, c_sv(","));
+        csview single = csview_trim_whitespace(csview_slice(value, 0, end));
+        if (single.size) str_list_push(me, single);
+        if (end == c_NPOS) break;
+        value = csview_slice(value, end + 1, INTPTR_MAX);
+    }
+}
+
+void compiler_options_clear_paths(CompilerOptions* me) {
+    for (isize i = 0; i < my path_count; i++) {
+        cstr_drop(&my paths[i].pattern);
+        str_list_drop(&my paths[i].substitutions);
+    }
+    free(my paths);
+    my paths = nullptr;
+    my path_count = 0;
+}
+
+void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList substitutions) {
+    my paths_set = true;
+    for (isize i = 0; i < my path_count; i++) {
+        if (cstr_equals_sv(&my paths[i].pattern, pattern)) {
+            str_list_drop(&my paths[i].substitutions);
+            my paths[i].substitutions = substitutions;
+            return;
+        }
+    }
+    my paths = realloc(my paths, sizeof(PathMapping) * (size_t)(my path_count + 1));
+    my paths[my path_count++] = (PathMapping){ .pattern = cstr_from_sv(pattern), .substitutions = substitutions };
 }
 
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value) {
@@ -135,6 +197,24 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
         cstr_lowercase(&my lib);
         return COMPILER_OPTION_OK;
     }
+
+    if (name_equals(name, "baseurl")) {
+        cstr_take(&my base_url, cstr_from_sv(value));
+        my base_url_set = true;
+        return COMPILER_OPTION_OK;
+    }
+#define LIST_OPTION(lowercase, field, set_field) \
+    if (name_equals(name, lowercase)) { \
+        str_list_set_from_commas(&my field, value); \
+        set_field; \
+        return COMPILER_OPTION_OK; \
+    }
+    LIST_OPTION("rootdirs", root_dirs, )
+    LIST_OPTION("typeroots", type_roots, my type_roots_set = true)
+    LIST_OPTION("types", types, my types_set = true)
+    LIST_OPTION("modulesuffixes", module_suffixes, )
+    LIST_OPTION("customconditions", custom_conditions, )
+#undef LIST_OPTION
 
     return COMPILER_OPTION_UNKNOWN;
 }
