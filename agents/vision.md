@@ -5,8 +5,17 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-19, after plan 04: the new binder, modules, printing by accessibility)
-- ~28.7k LoC of C in `src/` (parser 5.0k, type core `src/ty/` 9.5k, display 1.4k). Inherited from a solo human
+## State (2026-09-20, after plan 06: module resolution and tsconfig; numbers below this first bullet are older)
+- **Now: `./fasttest.sh` 1849 / 13163 fully pass** (errors 6814, symbols 8514, types 3897). `./realworld.py` runs the
+  corpus **from its own tsconfig** (`tttt -p`, 223 files incl. `@types/node`): 1752 diagnostics, 0.59 s (tsgo 0.72).
+  Plans 04 (binder), 05 (flow/narrowing) and 06 (module resolution) are done; each moved the suite by a whole category
+  in one go. **Module resolution (plan 06)** is tsc's algorithm as a pure module (`src/module_resolution.c`: classic,
+  node10, node16/nodenext/bundler with `exports`/`imports`/conditions, `paths`/`baseUrl`/`rootDirs`, `typesVersions`,
+  type reference directives, automatic `@types`, symlinks), `src/tsconfig.c` (`extends`, `files`/`include`/`exclude`)
+  behind the CLI and the harness, and the harness lives in tsc's virtual filesystem layout (`/.src`). Spurious TS2307
+  went from 348 tests to 44. What's left on that side is small and listed in `hacks.md` ("Module resolution"): the
+  biggest is that **JS files are still parsed as TypeScript** and json modules are `any`.
+- ~28.7k LoC of C in `src/` (30.7k after plan 06) (parser 5.0k, type core `src/ty/` 9.5k, display 1.4k). Inherited from a solo human
   project halted in 2025, ported onto the cleat stdlib, then had its type core replaced (below).
 - `./fasttest.sh`: **1684 / 13163 tests fully pass** (errors 6401, symbols 8401, types 3733; `./passcount.py`).
   History, like for like denominators and what each session moved are in `measurements.md` and the git log.
@@ -127,8 +136,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - Single-threaded design. tsgo's win is largely parallel parse/bind + multiple checkers. Arena/interning design
   must not preclude per-file parallel parse/bind and ideally sharded checking (the type core doesn't, see above;
   plan 04 must cover bind). Parse + bind are now 4x the typecheck phase on the bench: they're where the time is.
-- JS files, JSX, JSDoc, tsconfig/project handling, module resolution (node16/bundler), declaration emit: all
-  absent. Declaration/JS emit is out of scope for now (typechecker only, `--noEmit` semantics).
+- JS files, JSX, JSDoc, project references, declaration emit: all absent (tsconfig and module resolution exist
+  since plan 06). Declaration/JS emit is out of scope for now (typechecker only, `--noEmit` semantics).
 - readme.md still says development is halted; update when convenient.
 
 ## Where this is going (rough order)
@@ -136,7 +145,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 2. ~~Type core redesign~~ done (8 sessions).
 3. ~~Real-world corpus parses and runs end to end~~ done (plan 03); it is the pinned benchmark and second oracle.
 3b. ~~Persistent symbols / new binder (plan 04)~~ done, then bind-time flow graph + narrowing (plan 05).
-4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; module resolution, JS files (`allowJs`/`checkJs`).
+4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); JS files
+   (`allowJs`/`checkJs`), diagnostics without a file (option validation, TS2688).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark.

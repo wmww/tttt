@@ -16,8 +16,7 @@ Uninvestigated items. Triage sessions drain this.
 - `for (x of iterator)`: TS2495 "is not an array type or a string type" for anything that isn't an array, now visible
   because ES2015 libs load (`for-of13`). for..of needs the iteration protocol (`[Symbol.iterator]()`), which needs
   well-known symbol property names.
-- Harness: `@libFiles`, `tsconfig.json` in a test, `@currentDirectory`, `@link` are ignored (see `hacks.md`).
-  `@noImplicitReferences` and the "last file is the only root" rule are honoured since plan 04 stage 3.
+- Harness: `@libFiles` is ignored (see `hacks.md`): react.d.ts and the `typescript` API, ~40 tests.
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration there
   (the last value of "es5,es2015" is a bad value and ignored -> defaults). Untested.
 - readme.md says development is halted and describes the project as "Tess"'s; refresh it.
@@ -41,7 +40,7 @@ Uninvestigated items. Triage sessions drain this.
 - Checking the stdlib itself (`tttt --no-lib --keep-going thirdparty/lib/esnext.full.d.ts`) gives 32 name errors and
   143 type errors; tsc gives none. Cheap regression target for lib-related bugs (Intl namespace merging,
   `globalThis.`).
-- tttt's `main.c` only loads 4 lib files and ignores tsconfig; `error.c` "Error added with invalid span" is down to ~70 lines per
+- `error.c` "Error added with invalid span" is down to ~70 lines per
   suite run since plan 04 (TS2511 on a lib class, names found in a `_` of some lib).
 - `parse_label` should refuse reserved words (`default:`/`case x:` are fine today only because of parse order).
 - `failstats.py --syntax` used to silently reuse the previous dump; it now re-runs the harness unless `--no-run`.
@@ -194,14 +193,10 @@ Uninvestigated items. Triage sessions drain this.
   `test/baseline_results.ts` against the commit before) are mostly `declare global` in odd places, `export { x }`
   next to an exported `x`, and moduleAssignmentCompat1-4 (`Symbol(A)` without a Decl for a non-instantiated namespace
   used as a value).
-- The realworld corpus' only name error left is `Cannot find module 'source-map'` from `@types/source-map-support`
-  (a package whose typings are named by its package.json: module resolution). `realworld.py` now runs with the
-  corpus' real options (es2020, strict) and `@types/node`.
-- **Module resolution is the next harness/CLI-sized gap** (not plan 04's): `typeRoots`/`types` and
-  `/// <reference types>`, `paths`/`baseUrl`, package.json `types`/`exports`/`typesVersions`, node16 rules, `.mts`/
-  `.cts`. Spurious TS2307 is in ~600 tests (non-relative names mostly), and the root file rule made ~50 tests honest
-  that used to pass because every file was a root (typeReferenceDirectives*, pathMappingBasedModuleResolution*,
-  nodeModulesTripleSlashReference*). Deserves a plan of its own.
+- The realworld corpus' one name error is now `scanner.ts:299 [TS2693] 'LanugageFeatures' only refers to a type`
+  in `typeof LanguageFeatureMinimumTarget[LanugageFeatures]`: an indexed access on a type query, whose index is a
+  *type*; the name walk looks it up as a value (tiny probe: `declare const o: Record<K, number>; type K = "a"; let v: typeof o[K]`). `source-map` resolves since
+  plan 06. `realworld.py` and `bench.sh` run `tttt -p thirdparty/tsc/src/compiler` (the corpus' own tsconfig).
 - "Cannot find name" flavours tsc picks by name: TS2580 (`require`, `process`...: 88 in the baselines), TS2583
   (`Map`, `Promise`... with an old lib: 116), TS2582 (`describe`, `it`, `test`: 24), TS2581 (`$`), TS2584
   (`console`, `document`). A table in `identifier_expr_lookup_names`.
@@ -299,3 +294,11 @@ every query), `ty_enum_of_member` -> `ty_declared_type_of` -> `intern_slot` 9% (
 member literal), `narrowed_type` 8%, `ty_union_subtype_reduced` 2.5%, `call_effects` interning 0.5%. The parser's
 `parse_fail`/`hop_start_if_ends_on_word_break` are visible again (~5%).
 
+- **After plan 06 (module resolution)**, what is left by size, see `hacks.md` "Module resolution": `@libFiles` in
+  the harness (~40 tests), json modules as types (~35), diagnostics without a file (TS2688 for `types`, TS5xxx option
+  validation: ~60 tests), resolution-mode attributes (~20), package ids / duplicate packages, `tryLoadInputFileForPath`
+  (8), TS2846 (import of a `.d.ts` by name, 7 tests), TS2877/TS2876 (`rewriteRelativeImportExtensions`), Windows paths.
+- `selfReferentialDefaultNoStackOverflow` lost its types component when `./QSpinner` started resolving to the JS file
+  itself: wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
+- `nodeModulesPackagePatternExports*` and friends now resolve everything and fail on the parser: `export { x as "y" }`
+  style / `import cjs = require` in `.d.cts` give TS1003/TS1005, and TS2303 "Circular definition of import alias".

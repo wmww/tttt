@@ -35,10 +35,14 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
     // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
-    if (my module_ref && !my side_effect_only && !my module_ref->file &&
+    bool unchecked = my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports;
+    if (my module_ref && !unchecked && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
-        module_ref_report_unresolved(my module_ref, errs);
+        // (an implicitly `any` module is no problem for an import that imports nothing)
+        if (!(my side_effect_only && my module_ref->failure == MODULE_REF_IS_JS)) {
+            module_ref_report_unresolved(my module_ref, errs);
+        }
     } else if (my module_ref && my module_ref->file) {
         module_ref_report_resolved(my module_ref, errs);
     }

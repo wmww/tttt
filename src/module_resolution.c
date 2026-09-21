@@ -623,10 +623,12 @@ static bool load_directory(State* me, csview directory, PackageJson const* packa
             // even in ESM mode
             bool esm_mode = my esm_mode;
             my esm_mode = false;
-            found = load_file(me, cstr_sv(&entry_path), extensions, out);
+            // Even when only declarations are wanted, "types" may lead to a .ts file
+            int expanded = extensions == EXT_DTS ? EXT_TS | EXT_DTS : extensions;
+            found = load_file(me, cstr_sv(&entry_path), expanded, out);
             if (!found && directory_exists(me, cstr_sv(&entry_path))) {
                 cstr nested_index = join(cstr_sv(&entry_path), c_sv("index"));
-                found = load_file(me, cstr_sv(&nested_index), extensions, out);
+                found = load_file(me, cstr_sv(&nested_index), expanded, out);
                 cstr_drop(&nested_index);
             }
             my esm_mode = esm_mode;

@@ -20,9 +20,10 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   unused locals, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
   `ErrorConfig` it replaced, set around load/resolve/check by `program.c`; becomes a `Checker`/`Program` field read
   through a context when signatures get one.
-- `baseline_test_case.c: apply_setting`: harness-only directives other than `@filename` and `@noTypesAndSymbols` are
-  ignored (`@libFiles`, `@noImplicitReferences`, `@currentDirectory`, `@link`/`@symlink`, `@baselineFile`, a
-  `tsconfig.json` among the test's files). Bad option values are ignored too (tsc's harness throws).
+- `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@libFiles` (react.d.ts,
+  the `typescript` API for APISample_*: ~40 tests with a spurious TS2307), `@baselineFile`, `@fullEmitPaths`. Bad
+  option values are ignored too (tsc's harness throws). A `tsconfig.json` unit is honoured for options and roots, its
+  own diagnostics (TS5xxx option validation, TS18003 no inputs) are not produced.
 - `baseline_test_result_run`: with `@noTypesAndSymbols` the symbols and types components count as *passed*, so the
   per-component totals include ~900 free passes. A test without types/symbols baselines is run before we know
   whether it should have had any.
@@ -32,7 +33,6 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   cyclic any more (the structural namespace types that were are gone), so this is probably dead; check and delete.
 - `main.c: default_libs`: without `--lib`/`--target` the CLI loads ES5 + DOM + three ES2015 libs (what the bench
   corpus needs) rather than tsc's default for the target.
-- `program.c`: `.js` import path handling by suffix check - not real module resolution.
 - ~60 `PERF`/`HACK`/`TODO`/`FIXME` comments in `src/` not yet catalogued here (triage).
 - `failstats.py: line_ratio`: "line match" is multiset overlap of lines, not a diff (difflib was far too slow), so
   it overstates similarity when lines are reordered. Good enough for ranking nearly-passing tests.
@@ -44,14 +44,16 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `export =` modules (not supported at all yet).
 - `namespace_decl_add_names`: ambient modules (`declare module "m" {}`) get a scope for their contents but are not
   registered anywhere, so `import ... from "m"` still reports TS2307. Needs a program-level ambient module table
-  (module resolution work). Their `"m"` name line is also missing from the symbols/types baselines.
+  (stale? plan 04 added `Binder.ambient_modules`; verify and delete). Their `"m"` name line is also missing from the symbols/types baselines.
 - `parse_jump_target` / `Statement.jump_label`: labels are parsed and shown in the types baseline, but never checked
   (TS1116 unknown label, TS1107 crossing function boundary, TS7028 unused label, duplicate labels). `inside_label`
   in `BlockTypecheckCtx` just permits any labeled `break` inside any labeled statement.
 - `run_baseline_test_case: path_is_script`: virtual files that aren't TS/JS by extension are left out of the program
   entirely. Right for package.json/tsconfig.json, wrong for `.json` modules under `resolveJsonModule` (5 tests).
 - `EnumDecl.is_const`: only decides the symbol flag (a const enum doesn't merge with a namespace); no TS2475 etc.
-- `parse_import_type`: import attributes (`{ with: { "resolution-mode": ... } }`) are parsed and dropped.
+- `parse_import_type`: import attributes (`{ with: { "resolution-mode": ... } }`) are parsed and dropped, on import
+  declarations too: `ModuleRef.syntax` only knows import / require / dynamic, so an override never reaches
+  `program_load_module_ref()` (resolutionMode* tests, TS1454-1456, TS2836/2841...).
 - `parse_type_predicate`: `x is T` / `asserts x is T` become `boolean` / `void`, the predicate is dropped (plan 05).
   `parse_generic_decl_item` likewise parses and drops `in`/`out`/`const` type parameter modifiers, and
   `parse_variable_statement` drops the `!` of `let x!: T`.
@@ -426,3 +428,33 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   types are lazy); computed keys that aren't string/number literals are dropped (unique symbols).
 - `ty_union`: no subtype reduction, doesn't drop `null`/`undefined` without strictNullChecks, no fresh/regular
   literal pairs. No unique symbol types. TS2456 is only a TODO.
+
+## Module resolution (`src/module_resolution.c`, `src/tsconfig.c`, plan 06)
+- A resolved `.json` module is `any` (`MODULE_REF_IS_JSON`): the file isn't parsed into a type, `path_is_script` keeps
+  it out of the harness' program too. `requireOfJson*`, `jsonFileImport*` (~35 tests).
+- A `.js` file that resolves with `allowJs` is loaded and parsed **as TypeScript** (the JS gate is still missing, see
+  `todo.md`): CommonJS `exports.x =` files give TS2306 "is not a module" (27 tests) and TS2304 for `exports`/`module`.
+- JavaScript from a package is never part of the program (`maxNodeModuleJsDepth` is taken as 0, the option isn't read).
+- `apply_realpath` only runs for node_modules results, like tsc, but tsc also keeps the *original* path
+  (`originalPath`) for declaration emit and for "is this the same package" checks (TS2300-style duplicate package
+  detection, `duplicatePackage*` tests): we have no package ids at all (`name@version` from package.json).
+- `tryLoadInputFileForPath` (mapping an `exports`/`imports` target in `outDir`/`declarationDir` back to the input
+  `.ts`) is not implemented: `nodeNextPackageSelfNameWithOutDir*`, `nodeNextPackageImportMapRootDir`, 8 tests.
+- TS7016 has no elaboration ("Try `npm i --save-dev @types/x`..." needs package ids) and no "alternate result"
+  chain (TS6278: types exist but `exports` hides them; tsc re-resolves without exports to find out).
+- `types` entries and automatic `@types` packages that don't resolve are silent: TS2688 needs a diagnostic without a
+  file (`program_load_automatic_types`). The harness prints those at the top of the errors baseline; `ErrorCtx` drops
+  errors without a span. Same for every tsconfig/option diagnostic (TS5xxx: 5110 23 tests, 5095 15, 5098...).
+- Windows-style rooted names (`c:/root/...`, `A:/foo`) are not paths to us (3 tests).
+- `/// <reference lib="..." />` only works between lib files (same directory); in a program file it is ignored,
+  because the harness keeps libs in a shared lib program a test can't add to.
+- `/// <reference path>` tries "", .ts, .tsx, .d.ts by hand in `program_load_reference_path()`; tsc also honours
+  `allowJs` extensions and reports TS6231/TS1006-style problems. `no_resolve` skips it entirely (tsc: TS6053-free).
+- The resolver's caches are per `ModuleResolver` = per `Program` (package.json by directory) and unsynchronised:
+  parallel loading needs a lock or per-thread resolvers. There is no cache of resolutions themselves (tsc caches per
+  directory + name + mode); on the 223-file corpus resolution doesn't show in the profile, so none was built.
+- `tsconfig.c`: no `references`, no `watchOptions`, config errors are one `failable` message (no TS5xxx), `include`
+  globs skip dot-directories and the three package directories always (tsc: only under `**`), the JS gate for
+  `allowJs` in `include` depends on the option having been read before the files are collected (it has).
+- `main.c`: strict by default *only without* a tsconfig; command line options override the config's. `--lib`/`--target`
+  default (`default_libs`) only when neither the config nor the command line decides.

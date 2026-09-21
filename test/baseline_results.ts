@@ -27431,7 +27431,7 @@ const baselines = {
         types: true,
     },
     'sideEffectImports1(module=commonjs,nouncheckedsideeffectimports=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27441,7 +27441,7 @@ const baselines = {
         types: true,
     },
     'sideEffectImports1(module=nodenext,nouncheckedsideeffectimports=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27451,7 +27451,7 @@ const baselines = {
         types: true,
     },
     'sideEffectImports1(module=preserve,nouncheckedsideeffectimports=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53361,7 +53361,7 @@ const baselines = {
         types: false,
     },
     'nodeModulesNoDirectoryModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65796,7 +65796,7 @@ const baselines = {
         types: false,
     },
     'typingsLookup4': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

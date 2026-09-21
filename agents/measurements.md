@@ -2,6 +2,18 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-20, plan 06: module resolution, tsconfig
+Suite: **1849 full of 13163** (was 1756), errors 6814 (6561), symbols 8514 (8475), types 3897 (3816). ~300 tests gained
+a component, 1 lost one honestly (`selfReferentialDefaultNoStackOverflow`, see `triage.md`). Spurious TS2307: 348 tests
+-> 44 (what is left: `@libFiles`, outDir input mapping, Windows paths). TS1479/TS1471 (143 + 68 missing) -> 0,
+TS2834/TS2835, TS5097, TS6142, TS6053, TS2792 mostly gone; still missing: TS2688 without a file, TS5xxx option checks.
+
+Real corpus: now `tttt -p thirdparty/tsc/src/compiler`, ie the corpus' own tsconfig: 223 files with `@types/node` and
+its dependencies found by resolution instead of by hand. **1752 diagnostics** (1750 before), the `source-map` name
+error is gone. `./bench.sh`: wall **0.59 s (tsgo 0.72, tsc 4.72)**, load+parse 143 ms (120-144 before: no measurable
+cost from resolution, which stats a few hundred paths and reads ~10 package.json files), resolve 77 ms, typecheck
+373 ms, RSS 338 MB.
+
 ## 2026-09-19, plan 05 stage 4: TS2339 ungated, parameter properties, expression bases, the profile
 Suite: **1756 full of 13163** (was 1742), errors 6561 (6536), symbols 8475, types 3816 (3814). 73 tests gained a
 component, 48 lost their errors component honestly (spurious TS2339 / TS18046-18048 the gate used to hide, see
