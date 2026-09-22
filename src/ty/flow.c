@@ -645,12 +645,25 @@ static Ty const* initial_or_assigned_type(FlowQuery* q, FlowAssign const* assign
             Binding const* binding = assign->binding;
             if (!binding->parent && binding->source && binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
                 InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-                if (initialized->value.tag != EXPR_IMPLICIT_ANY) return ty_flow_expr_type(me, &initialized->value);
+                if (initialized->value.tag == EXPR_IMPLICIT_ANY) return ty_binding_assigned_type(me, binding);
+                if (binding->has_explicit_type && ty_expr_is_context_sensitive(&initialized->value)) {
+                    // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below)
+                    Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
+                    return ty_check_expr(me, &initialized->value, annotated->flags & TYF_ANY ? nullptr : annotated);
+                }
+                return ty_flow_expr_type(me, &initialized->value);
             }
             return ty_binding_assigned_type(me, binding);
         }
-        case FLOW_ASSIGN_EXPR:
-            return ty_flow_expr_type(me, &assign->assignment->binary_op->right);
+        case FLOW_ASSIGN_EXPR: {
+            // A function expression is typed by its target, like the walk over the statement does (tsc finds the
+            // contextual type up the tree, so asking bottom-up gets the same). Anything else goes without context
+            BinaryOpExpr const* assignment = assign->assignment->binary_op;
+            if (assignment->op == BINARY_OP_EQUAL && ty_expr_is_context_sensitive(&assignment->right)) {
+                return ty_expr_type(me, assign->assignment);
+            }
+            return ty_flow_expr_type(me, &assignment->right);
+        }
         case FLOW_ASSIGN_FOR_EACH:
             return for_each_element_type(me, assign->for_each);
         case FLOW_ASSIGN_PATTERN: {

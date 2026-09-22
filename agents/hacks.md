@@ -355,7 +355,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   rests on the rule "whoever knows the contextual type checks first": `expr_typecheck` evaluates the expression's own
   type before walking into it, `initialized_binding_typecheck`/return statements/calls check with their context first.
   An expression first reached some other way (the `.types` traversal of a program that wasn't typechecked) is typed
-  without context.
+  without context. Flow analysis is the main "other way": it asks for assigned types bottom-up, before the walk
+  reaches them (return type inference of a function referenced early). `initial_or_assigned_type()` re-derives the
+  context for context-sensitive values of `x = e` and annotated declarations; other bottom-up entry points (compound
+  and logical assignments, destructuring defaults) still type function expressions without it.
 - `Checker.return_context`: the contextual type of `return` expressions is checker state saved/restored around
   function bodies (`function_impl_enter_return_context`), because `statement_collect_return_types` and
   `statement_typecheck` have no parameter for it.
