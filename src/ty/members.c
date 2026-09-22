@@ -652,6 +652,8 @@ bool ty_has_unresolved_base(Checker* me, Ty const* ty) {
     return has_unresolved_base(me, ty, static_side, 0);
 }
 
+static Members const* resolve_tuple_members(Checker* me, Ty const* tuple);
+
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
@@ -727,7 +729,10 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             free(exports);
             break;
 
-        case TY_DECLARED_TUPLE_TARGET: // TODO: numeric properties and `length`, then the array members (relations see a tuple as its array for now)
+        case TY_DECLARED_TUPLE_TARGET:
+            // (Only the empty tuple is used as it is, the others are referenced with their elements)
+            builder_finish(me, &builder);
+            return resolve_tuple_members(me, ty);
         case TY_DECLARED_SYNTHETIC:
             break;
     }
@@ -917,6 +922,57 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
 
 static Members const* resolve_members_inner(Checker* me, Ty const* ty);
 
+// A tuple's members (tsc's createTupleTargetType): a property per element before any rest element, a readonly
+// `length` (the possible lengths, or number with a rest element), then what the array of its elements has
+static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
+    Ty const* target = tuple->kind == TY_REFERENCE ? tuple->reference.target : tuple;
+    TupleShape const* shape = target->declared.tuple;
+    TyList elements = tuple->kind == TY_REFERENCE ? ty_reference_args(me, tuple) : target->declared.type_params;
+    MembersBuilder builder = {0};
+    u32 min_length = 0;
+    bool variable = false;
+    for (u32 i = 0; i < shape->arity; i++) {
+        if (shape->flags[i] & TUPLE_ELEMENT_REST) {
+            variable = true;
+            break;
+        }
+        bool optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0;
+        if (!optional) min_length = i + 1;
+        cstr name = cstr_d(i);
+        Prop* prop = arena_new(&my arena, Prop);
+        prop->name = checker_atom(me, cstr_sv(&name));
+        cstr_drop(&name);
+        prop->flags = (optional ? PROP_OPTIONAL : 0) | (shape->readonly ? PROP_READONLY : 0);
+        prop->type = elements.data[i];
+        prop->type_state = LAZY_STATE_DONE;
+        prop->name_is_value = true;
+        builder_push(&builder, props, prop);
+    }
+    Ty const* length;
+    if (variable) {
+        length = ty_intrinsic(me, TY_NUMBER);
+    } else {
+        u32 count = shape->arity - min_length + 1;
+        Ty const** lengths = malloc(sizeof(Ty const*) * count);
+        panic_if(!lengths, "out of memory");
+        for (u32 i = 0; i < count; i++) {
+            Value value = value_number(min_length + i);
+            lengths[i] = ty_literal(me, &value);
+        }
+        length = ty_union(me, lengths, count, nullptr, (TyList){0});
+        free(lengths);
+    }
+    Prop* length_prop = arena_new(&my arena, Prop);
+    length_prop->name = checker_atom(me, c_sv("length"));
+    length_prop->flags = PROP_READONLY;
+    length_prop->type = length;
+    length_prop->type_state = LAZY_STATE_DONE;
+    builder_push(&builder, props, length_prop);
+    Ty const* array = ty_tuple_as_array(me, tuple);
+    if (array) builder_add_inherited(me, &builder, array);
+    return builder_finish(me, &builder);
+}
+
 static Members const* resolve_members(Checker* me, Ty const* ty) {
     return expand_mapped(me, resolve_members_inner(me, ty));
 }
@@ -928,6 +984,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
 
         case TY_REFERENCE: {
             Ty const* target = ty->reference.target;
+            if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) return resolve_tuple_members(me, ty);
             TyMapper const* mapper = ty_mapper_new(me, target->declared.type_params, ty_reference_args(me, ty));
             return resolve_instantiated_members(me, target, mapper, false);
         }

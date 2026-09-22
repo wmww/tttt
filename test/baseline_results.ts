@@ -9223,7 +9223,7 @@ const baselines = {
     'deferredLookupTypeResolution2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deferredTypeReferenceWithinArrayWithinTuple': {
         errors: true,
@@ -20231,14 +20231,14 @@ const baselines = {
         types: false,
     },
     'mapOnTupleTypes01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mapOnTupleTypes02': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mappedArrayTupleIntersections': {
         errors: true,
@@ -27621,7 +27621,7 @@ const baselines = {
         types: true,
     },
     'sliceResultCast': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -63892,8 +63892,8 @@ const baselines = {
     },
     'strictTupleLength': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'tupleElementTypes1': {
         errors: true,
