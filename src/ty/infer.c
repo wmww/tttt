@@ -714,7 +714,8 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
     Ty const* contra = param->contra_len ? common_subtype(me, param->contra, param->contra_len) : nullptr;
     if (co && contra) {
         // The covariant inference wins if it fits what the contravariant positions ask for
-        // ... and no type parameter constrained to this one has a candidate it wouldn't cover
+        // ... and neither its own candidates (it isn't one of a conflicting set) nor those of a type parameter constrained
+        // to this one have one it wouldn't cover
         if (co->flags & (TYF_NEVER | TYF_ANY)) return contra;
         bool fits_some = false;
         for (u32 j = 0; j < param->contra_len; j++) {
@@ -723,7 +724,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         if (!fits_some) return contra;
         for (u32 j = 0; j < inf->len; j++) {
             InferParam const* other = &inf->params[j];
-            if (other == param || ty_param_constraint(me, other->param) != param->param) continue;
+            if (other != param && ty_param_constraint(me, other->param) != param->param) continue;
             for (u32 k = 0; k < other->co_len; k++) {
                 if (!ty_is_related(me, other->co[k], co, TY_RELATION_ASSIGNABLE)) return contra;
             }
