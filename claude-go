@@ -6,6 +6,7 @@ set -uo pipefail
 prompt='go!'
 model='opus'
 runs=1
+loop=''
 quiet=''
 workdir=''
 extra=()
@@ -22,8 +23,12 @@ unattended, so only point it at somewhere you are happy for it to act freely.
   -m, --model NAME    model alias or id       (default: fable)
   -C, --dir DIR       run the session in DIR  (default: cwd)
   -n, --runs N        run N sessions back to back, stop on the first failure
+  -l, --loop          run sessions back to back forever, stop on the first failure
   -q, --quiet         hide thinking and tool-result previews
   -h, --help          this
+
+With several runs (--runs N > 1 or --loop), the first Ctrl+C lets the current
+session finish and then stops; a second Ctrl+C kills the session right away.
 
 Anything after `--` is passed straight through to `claude`.
 Exit status is the session's: 0 if it finished cleanly, non-zero otherwise.
@@ -36,6 +41,7 @@ while [[ $# -gt 0 ]]; do
     -m|--model)  model="${2:?--model needs a value}";   shift 2 ;;
     -C|--dir)    workdir="${2:?--dir needs a value}";   shift 2 ;;
     -n|--runs)   runs="${2:?--runs needs a value}";     shift 2 ;;
+    -l|--loop)   loop=1; shift ;;
     -q|--quiet)  quiet=1; shift ;;
     -h|--help)   usage; exit 0 ;;
     --)          shift; extra=("$@"); break ;;
@@ -232,7 +238,9 @@ END { exit saw_end ? status : 1 }
 
 function banner {
   local run="$1" total="$2" tag=''
-  (( total > 1 )) && tag="$(printf '  ·  run %d/%d' "$run" "$total")"
+  if [[ -n "$loop" ]]; then tag="$(printf '  ·  run %d  ·  looping' "$run")"
+  elif (( total > 1 )); then tag="$(printf '  ·  run %d/%d' "$run" "$total")"
+  fi
 
   if (( colour )); then
     local rule; printf -v rule '%*s' $((width - 2)) ''; rule="${rule// /─}"
@@ -253,10 +261,7 @@ function banner {
 
 # ------------------------------------------------------------------- the runs
 
-overall=0
-for (( run = 1; run <= runs; run++ )); do
-  banner "$run" "$runs"
-
+function session {
   claude --print --verbose \
          --output-format stream-json \
          --model "$model" \
@@ -265,14 +270,72 @@ for (( run = 1; run <= runs; run++ )); do
          -- "$prompt" \
   | jq --unbuffered -r --arg cwd "$cwd" --arg t0 "$(date +%s)" "$JQ_FILTER" \
   | awk -v colour="$colour" -v width="$width" -v quiet="${quiet:-0}" "$AWK_FORMATTER"
+  return "${PIPESTATUS[2]}"
+}
 
-  rc=${PIPESTATUS[2]}
+function note {  # a highlighted status line, outside of any session's output
+  if (( colour )); then printf '\n\033[38;5;203m■ %s\033[0m\n' "$1"; else printf '\n■ %s\n' "$1"; fi
+}
+
+# With several runs, Ctrl+C is two-stage. The session runs as a background job
+# in its own process group (job control), so the terminal's SIGINT reaches only
+# this script: the first one just asks to stop after the current session, the
+# second one takes the session's whole process group down.
+multi=''
+[[ -n "$loop" ]] || (( runs > 1 )) && multi=1
+stopping=''
+job=''
+
+function on_interrupt {
+  if [[ -z "$stopping" ]]; then
+    stopping=1
+    note 'Ctrl+C: stopping after this session (Ctrl+C again to kill it now)'
+  else
+    note 'Ctrl+C again: killing the session'
+    if [[ -n "$job" ]]; then
+      kill -INT -- "-$job" 2>/dev/null
+      for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 -- "-$job" 2>/dev/null || break; sleep 0.2; done
+      kill -KILL -- "-$job" 2>/dev/null
+    fi
+    exit 130
+  fi
+}
+
+function run_session {
+  if [[ -z "$multi" ]]; then session; return; fi
+  set -m
+  session </dev/null &
+  job=$!
+  set +m
+  local rc
+  # wait returns early (>128) whenever the trap fires; keep waiting until the
+  # job itself has actually finished.
+  while :; do
+    wait "$job"; rc=$?
+    kill -0 "$job" 2>/dev/null || break
+  done
+  job=''
+  return "$rc"
+}
+
+[[ -n "$multi" ]] && trap on_interrupt INT
+
+overall=0
+for (( run = 1; loop || run <= runs; run++ )); do
+  banner "$run" "$runs"
+
+  run_session
+  rc=$?
   if (( rc != 0 )); then
     overall=$rc
-    (( runs > 1 )) && printf '\n\033[38;5;203m■ stopping: run %d/%d did not finish cleanly\033[0m\n' "$run" "$runs"
+    [[ -n "$multi" ]] && note "stopping: run $run did not finish cleanly"
     break
   fi
-  (( run < runs )) && printf '\n'
+  if [[ -n "$stopping" ]]; then
+    note "stopped after run $run, as asked"
+    break
+  fi
+  [[ -n "$multi" ]] && printf '\n'
 done
 
 exit "$overall"
