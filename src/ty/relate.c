@@ -1076,6 +1076,18 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
     return ret == indexed || (ret->flags & TYF_DEFERRED) ? nullptr : ret;
 }
 
+// A distributive conditional type with its check type replaced by the constraint (tsc's
+// getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C. Null if that's no different
+static Ty const* distributive_constraint(Checker* me, Ty const* conditional) {
+    Ty const* check = conditional->conditional.check;
+    if (!conditional->conditional.distributive || check->kind != TY_TYPE_PARAM) return nullptr;
+    Ty const* check_constraint = ty_param_constraint(me, check);
+    if (!check_constraint || check_constraint == check) return nullptr;
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &check, .len = 1 }, (TyList){ .data = &check_constraint, .len = 1 });
+    Ty const* instantiated = ty_instantiate(me, conditional, mapper);
+    return instantiated != conditional && !(instantiated->flags & TYF_NEVER) ? instantiated : nullptr;
+}
+
 // What a type variable is known to be at least: tsc's getBaseConstraintOfType, without the circularity reporting.
 // Null if there's nothing to know (an unconstrained type parameter, `T[K]` that stays generic...)
 static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
@@ -1104,6 +1116,12 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             return ret->flags & TYF_DEFERRED ? base_constraint(me, ret, depth + 1) : ret;
         }
         case TY_CONDITIONAL: {
+            Ty const* distributive = distributive_constraint(me, ty);
+            if (distributive) {
+                if (distributive->kind != TY_TYPE_PARAM && !(distributive->flags & TYF_DEFERRED)) return distributive;
+                Ty const* deeper = base_constraint(me, distributive, depth + 1);
+                if (deeper) return deeper;
+            }
             Ty const* parts[2];
             for (u32 i = 0; i < 2; i++) {
                 parts[i] = ty_conditional_branch(me, ty, i);
@@ -1239,7 +1257,18 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         }
 
         case TY_CONDITIONAL: {
-            Ternary related = is_related_to(me, st, ty_conditional_branch(me, source, true), target, report);
+            Ternary related = is_related_to(me, st, ty_conditional_branch(me, source, true), target, false);
+            if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), target, false);
+            if (related) return related;
+            // Through the distributive constraint (not to another conditional type, like in tsc)
+            if (target->kind != TY_CONDITIONAL) {
+                Ty const* constraint = distributive_constraint(me, source);
+                if (constraint) {
+                    related = is_related_to(me, st, constraint, target, false);
+                    if (related) return related;
+                }
+            }
+            related = is_related_to(me, st, ty_conditional_branch(me, source, true), target, report);
             if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), target, report);
             return related;
         }
