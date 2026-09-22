@@ -841,6 +841,41 @@ static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start)
 }
 
 
+// `const { a } = x.y` after `if (x.y.a)`: an element of a top-level object pattern whose initializer is a reference
+// has the flow type of `x.y.a` there (tsc's getFlowTypeOfDestructuring, through a synthetic access made once)
+static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty const* declared) {
+    Binding const* parent = binding->parent;
+    ObjectBindingItem const* item = binding->parent_item;
+    if (parent->parent || parent->tag != BINDING_OBJECT || binding->rest || item->computed_key || !item) return declared;
+    if (item->source.tag != VALUE_STRING || !parent->source || parent->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
+        return declared;
+    }
+    InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+    Expr const* object = &initialized->value;
+    FlowNode* flow = object->tag == EXPR_IDENTIFIER ? object->identifier.flow :
+        object->tag == EXPR_PROPERTY ? object->property->flow : nullptr;
+    if (!flow) return declared;
+    u64 key[2] = { KEY_SYNTHETIC_ACCESS, (u64)(uintptr_t)binding };
+    Expr const* access = intern_get(&my links, key, 2);
+    if (!access) {
+        PropertyExpr* property = arena_new(&my arena, PropertyExpr);
+        *property = (PropertyExpr){
+            .expr = *object,
+            .prop = expr_literal(item->source_span, item->source),
+            .form = PROPERTY_EXPR_DOT,
+            .flow = flow,
+        };
+        Expr* synthetic = arena_new(&my arena, Expr);
+        *synthetic = (Expr){
+            .tag = EXPR_PROPERTY, .property = property, .inner_span = item->source_span, .outer_span = item->source_span,
+            .lazy_type.tag = LAZY_TYPE_EXPR,
+        };
+        *intern_slot(me, &my links, key, 2) = synthetic;
+        access = synthetic;
+    }
+    return ty_flow_type(me, access, declared, declared, flow);
+}
+
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
 // of what its pattern is assigned
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
@@ -861,6 +896,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         ret = ty_access(me, object, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
+        if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
     if (binding->default_value) {
