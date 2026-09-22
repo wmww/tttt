@@ -9507,7 +9507,7 @@ const baselines = {
     },
     'destructuringTuple': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringTypeGuardFlow': {
@@ -30356,7 +30356,7 @@ const baselines = {
         types: true,
     },
     'typeInferenceConflictingCandidates': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

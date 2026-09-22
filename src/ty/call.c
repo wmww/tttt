@@ -166,8 +166,12 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     arg->type = ty_check_expr(me, arg->expr, shape_type_at(shape, i));
 }
 
-static void check_args(Checker* me, ParamShape const* shape, Args* args) {
-    for (u32 i = 0; i < args->len; i++) check_arg(me, shape, args, i);
+// `skip_sensitive`: leave out the context-sensitive arguments, which a contextual type would type for good (tsc's
+// CheckMode.SkipContextSensitive, while it's not known yet which overload they'll be checked against)
+static void check_args(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive) {
+    for (u32 i = 0; i < args->len; i++) {
+        if (!skip_sensitive || !args->data[i].context_sensitive) check_arg(me, shape, args, i);
+    }
 }
 
 static bool has_correct_arity(ParamShape const* shape, Args const* args) {
@@ -294,7 +298,9 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
 }
 
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
-static TyMapper const* infer_type_arguments(Checker* me, Signature const* sig, Args* args, Ty const* contextual) {
+static TyMapper const* infer_type_arguments(
+    Checker* me, Signature const* sig, Args* args, Ty const* contextual, bool skip_sensitive
+) {
     Inference inf;
     inference_init(&inf, sig->type_params);
     ParamShape shape = param_shape(me, sig, nullptr);
@@ -319,7 +325,7 @@ static TyMapper const* infer_type_arguments(Checker* me, Signature const* sig, A
         infer_from_arg(me, &inf, &shape, args, i);
     }
     // Second pass: each context-sensitive argument sees what is known by then, which is thereby decided
-    for (u32 i = 0; any_sensitive && i < args->len; i++) {
+    for (u32 i = 0; any_sensitive && !skip_sensitive && i < args->len; i++) {
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
         if (!arg->context_sensitive) continue;
@@ -353,10 +359,15 @@ static TyMapper const* infer_type_arguments(Checker* me, Signature const* sig, A
 // The first argument that doesn't fit, -1 if they all do. `*param_type` is what it should have fit, `*arg_type` what
 // it is (a tuple of the remaining arguments for a variadic rest parameter)
 static i32 first_unfit_argument(
-    Checker* me, ParamShape const* shape, Args const* args, TyRelation relation, Ty const** arg_type, Ty const** param_type
+    Checker* me, ParamShape const* shape, Args const* args, TyRelation relation, bool skip_sensitive,
+    Ty const** arg_type, Ty const** param_type
 ) {
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
+        if (skip_sensitive && arg->context_sensitive) {
+            if (i >= shape->count && shape->rest_variadic) break;
+            continue;
+        }
         Ty const* source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
         Ty const* target;
         if (i < shape->count) {
@@ -445,10 +456,10 @@ static void report_arity(
 // Reports why the arguments don't fit the candidate. Returns the span it reported at
 static Span report_unfit_argument(Checker* me, Candidate const* candidate, Args* args, Span call_span, ErrorCtx* errs) {
     ParamShape shape = param_shape(me, candidate->sig, candidate->mapper);
-    check_args(me, &shape, args);
+    check_args(me, &shape, args, false);
     Ty const* arg_type = nullptr;
     Ty const* param_type = nullptr;
-    i32 index = first_unfit_argument(me, &shape, args, TY_RELATION_ASSIGNABLE, &arg_type, &param_type);
+    i32 index = first_unfit_argument(me, &shape, args, TY_RELATION_ASSIGNABLE, false, &arg_type, &param_type);
     Span span = call_span;
     if (index >= 0) {
         Arg const* arg = &args->data[index];
@@ -582,9 +593,12 @@ static bool check_type_argument_constraints(
     return satisfied;
 }
 
-static TyMapper const* candidate_mapper(Checker* me, Signature const* sig, Args* args, CallInfo const* info) {
+static TyMapper const* candidate_mapper(
+    Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive
+) {
     if (!sig->type_params.len) return nullptr;
-    return info->type_arg_nodes ? explicit_type_arguments(me, sig, info) : infer_type_arguments(me, sig, args, info->contextual);
+    return info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
+        infer_type_arguments(me, sig, args, info->contextual, skip_sensitive);
 }
 
 static Resolution resolve_with_signatures(
@@ -597,6 +611,12 @@ static Resolution resolve_with_signatures(
     u32 unfit_count = 0;
     bool type_argument_arity_ok = false;
     TyRelation rounds[2] = { TY_RELATION_STRICT_SUBTYPE, TY_RELATION_ASSIGNABLE };
+    // With a choice to make, candidates are first tried without their context-sensitive arguments, which are only
+    // checked (and typed for good) against the first candidate the rest fit (tsc's argCheckMode)
+    bool skip_sensitive = false;
+    if (count > 1 || (count == 1 && signatures[0]->type_params.len)) {
+        for (u32 i = 0; i < args->len; i++) skip_sensitive |= args->data[i].context_sensitive;
+    }
     for (u32 round = count > 1 ? 0 : 1; round < 2 && !ret.chosen.sig; round++) {
         unfit_count = 0;
         for (u32 i = 0; i < count && !ret.chosen.sig; i++) {
@@ -608,12 +628,22 @@ static Resolution resolve_with_signatures(
             bool arity_ok = has_correct_arity(&uninstantiated, args);
             free(uninstantiated.types);
             if (!arity_ok) continue;
-            Candidate candidate = { .sig = sig, .mapper = candidate_mapper(me, sig, args, info) };
+            Candidate candidate = { .sig = sig, .mapper = candidate_mapper(me, sig, args, info, skip_sensitive) };
             ParamShape shape = param_shape(me, sig, candidate.mapper);
-            check_args(me, &shape, args);
+            check_args(me, &shape, args, skip_sensitive);
             Ty const* arg_type;
             Ty const* param_type;
-            if (first_unfit_argument(me, &shape, args, rounds[round], &arg_type, &param_type) < 0) {
+            bool fits = first_unfit_argument(me, &shape, args, rounds[round], skip_sensitive, &arg_type, &param_type) < 0;
+            if (fits && skip_sensitive) {
+                // Again with everything, for this candidate and the ones after it
+                skip_sensitive = false;
+                free(shape.types);
+                candidate.mapper = candidate_mapper(me, sig, args, info, false);
+                shape = param_shape(me, sig, candidate.mapper);
+                check_args(me, &shape, args, false);
+                fits = first_unfit_argument(me, &shape, args, rounds[round], false, &arg_type, &param_type) < 0;
+            }
+            if (fits) {
                 ret.chosen = candidate;
             } else {
                 unfit[unfit_count++] = candidate;
@@ -646,7 +676,7 @@ static Resolution resolve_with_signatures(
             for (u32 i = 0; i < count; i++) {
                 signature_resolve(me, signatures[i]);
                 if (signatures[i]->type_params.len && has_correct_type_argument_arity(me, signatures[i], info)) {
-                    Candidate candidate = { .sig = signatures[i], .mapper = candidate_mapper(me, signatures[i], args, info) };
+                    Candidate candidate = { .sig = signatures[i], .mapper = candidate_mapper(me, signatures[i], args, info, false) };
                     return_types[len++] = candidate_return_type(me, &candidate);
                 } else if (!signatures[i]->type_params.len) {
                     return_types[len++] = signature_return_type(me, signatures[i]);
