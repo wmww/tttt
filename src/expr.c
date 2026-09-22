@@ -709,6 +709,106 @@ static bool extends_strict_nulls(Ty const* source, TyIntrinsic target) {
     return ty_is_related(checker, source, ty_intrinsic(checker, target), TY_RELATION_ASSIGNABLE_STRICT_NULLS);
 }
 
+// The type without undefined, what a destructuring default stands in for
+static Ty const* without_undefined(Checker* checker, Ty const* type) {
+    if (type->kind != TY_UNION) return type->flags & TYF_UNDEFINED ? ty_intrinsic(checker, TY_NEVER) : type;
+    TyList members = type->composite.types;
+    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+    u32 len = 0;
+    for (u32 i = 0; i < members.len; i++) {
+        if (!(members.data[i]->flags & TYF_UNDEFINED)) kept[len++] = members.data[i];
+    }
+    Ty const* ret = len == members.len ? type : ty_union(checker, kept, len, nullptr, (TyList){0});
+    free(kept);
+    return ret;
+}
+
+// `target = source` where target is a reference or a destructuring pattern (tsc's checkReferenceAssignment and
+// checkDestructuringAssignment): each reference in it gets what it destructures to. Null `source` when that can't be
+// told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only
+static void assignment_target_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (source && (source->flags & TYF_ANY)) source = nullptr;
+    switch (target->tag) {
+        case EXPR_IDENTIFIER:
+            if (source && target->identifier.target) {
+                Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
+                ty_check_assignable(checker, source, declared, target->outer_span, errs);
+            }
+            return;
+
+        case EXPR_PROPERTY:
+            if (source) ty_check_assignable(checker, source, ty_expr_type(checker, target), target->outer_span, errs);
+            return;
+
+        case EXPR_UNARY_OP:
+            // `x! = 1`
+            if (target->unary_op->op == UNARY_OP_RIGHT_BANG) assignment_target_typecheck(&target->unary_op->expr, source, errs);
+            else break;
+            return;
+
+        case EXPR_AS_TYPE:
+            // `(x as T) = 1`: T is what's assigned to
+            if (source && !target->as_type->is_satisfies) {
+                ty_check_assignable(checker, source, ty_expr_type(checker, target), target->outer_span, errs);
+            }
+            return;
+
+        case EXPR_BINARY_OP:
+            // `[x = 1] = a`: a default, which the walk checks as an assignment of its own
+            if (target->binary_op->op != BINARY_OP_EQUAL || expr_is_perenthisized(target)) break;
+            assignment_target_typecheck(
+                &target->binary_op->left, source ? without_undefined(checker, source) : nullptr, errs
+            );
+            return;
+
+        case EXPR_ARRAY: {
+            if (expr_is_perenthisized(target)) break;
+            bool array_like = source && ty_extends_array(checker, source);
+            u32 index = 0;
+            for_each (i, vec_expr, &target->array) {
+                Ty const* element = nullptr;
+                if (i->tag == EXPR_SPREAD) {
+                    assignment_target_typecheck(i->spread, nullptr, errs); // TODO: the rest of the array or tuple
+                } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
+                    // A hole
+                } else {
+                    if (array_like) {
+                        Value key = value_number(index);
+                        element = ty_access(checker, source, ty_literal(checker, &key));
+                        if (!element) element = ty_access(checker, source, ty_intrinsic(checker, TY_NUMBER));
+                    }
+                    assignment_target_typecheck(i, element, errs);
+                }
+                index++;
+            }
+            return;
+        }
+
+        case EXPR_OBJECT:
+            if (expr_is_perenthisized(target)) break;
+            for_each (i, vec_object_expr_item, &target->object) {
+                Ty const* property = nullptr;
+                if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
+                    property = ty_access(checker, source, ty_string_literal(checker, cstr_sv(&i->name_string)));
+                }
+                if (i->tag == OBJECT_ITEM_SPREAD) {
+                    assignment_target_typecheck(&i->value, nullptr, errs); // TODO: the rest of the object
+                } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
+                    // HACK: `{ a = 1 } = o`: the parser drops the default, so neither side is checked
+                } else if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
+                    assignment_target_typecheck(&i->value, property, errs);
+                }
+            }
+            return;
+
+        default:
+            break;
+    }
+    error_ctx_error_d(errs, target->outer_span, 2364,
+        "The left-hand side of an assignment expression must be a variable or a property access.");
+}
+
 static void binary_op_typecheck(
     Ty const* left,
     BinaryOp op,
@@ -765,32 +865,7 @@ static void binary_op_typecheck(
             break;
 
         case BINARY_OP_EQUAL:
-            switch (expr->binary_op->left.tag) {
-                case EXPR_IDENTIFIER:
-                    if (expr->binary_op->left.identifier.target) {
-                        ty_check_assignable(
-                            current_checker,
-                            right,
-                            ty_type_of_symbol(current_checker, expr->binary_op->left.identifier.target),
-                            expr->binary_op->left.outer_span,
-                            errs
-                        );
-                    }
-                    break;
-
-                case EXPR_PROPERTY:
-                    // TODO
-                    break;
-
-                default:
-                    error_ctx_error_d(
-                        errs,
-                        expr->binary_op->left.outer_span,
-                        2364,
-                        "The left-hand side of an assignment expression must be a variable or a property access."
-                    );
-                    break;
-            }
+            assignment_target_typecheck(&expr->binary_op->left, right, errs);
             break;
 
         case BINARY_OP_DOUBLE_EQUAL:

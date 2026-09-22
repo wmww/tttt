@@ -36,6 +36,15 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   /`document`): a table in `identifier_expr_lookup_names`. Check counts with `./failstats.py --code`.
 
 ## Checker gaps (each verified still open by probe)
+- genericClassExpressionInFunction: `s.genericVar = 12` on an instance of a class extending a generic class expression
+  gives "not assignable to type 'V'" (the base class's type parameter is not instantiated), exposed when property
+  assignments started being checked (plan 08).
+- Enum members aliasing another member's value (`FirstX = A`) should have the *same* literal type (tsc prints
+  `SyntaxKind.A`), and the symbols baseline names an enum-member initializer reference `SyntaxKind.A` (probe
+  `test/probes/plan08/table1.ts`). Matters for `SyntaxKind.FirstX` comparisons and mapped keys.
+- Types baseline: an annotated parameter prints tsc's reused annotation (`ReturnType<typeof mk>["a"]`), we print the
+  resolved type; `type R = ReturnType<typeof f>` prints `R` instead of the resolved object (probe
+  `returntype_index.ts`). And `[]` in `outputs || []` under strict is `undefined[]` where tsc says `never[]`.
 - An array literal contextually typed by an array binding pattern should be a tuple (`let [a = 1, b] = [undefined,
   "s"]` gives `a: string | number`, tsc `number` and `[undefined, string]`); an array literal is never a tuple
   without contextual typing (correctOrderOfPromiseMethod); object rest (`{ a, ...rest }`) gives the whole object

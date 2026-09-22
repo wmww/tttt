@@ -2252,6 +2252,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             // TODO: keep it once assignment patterns are checked
             hop_char(&p, '=');
             hop_whitespace(&p);
+            item.shorthand_default = true;
             Expr default_value;
             if (expect_expr(&p, expr_ctx_null, &default_value)) {
                 expr_drop(&default_value);

@@ -336,6 +336,13 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 
 ## Expressions (`ty/expr.c`), contextual typing, the call passes
 `ty_check_expr(expr, contextual)` is meant to stay; what's listed is where it stops short of tsc.
+- **Assignment targets** (`assignment_target_typecheck`, expr.c): a property target is checked against its *read*
+  type; tsc uses the write type (`getWriteTypeOfSymbol`), so divergent accessors (`get x(): number; set x(v: number |
+  string)`) give a false TS2322 (divergentAccessors*, getterSetterSubtypeAssignment). Needs a write type on `Prop`.
+  Array pattern rest elements, object rest and non-array iterables aren't checked (null source), and `{ a = 1 } = o`
+  isn't checked at all because the parser drops shorthand defaults (`ObjectExprItem.shorthand_default`). The array
+  pattern's own type isn't the tuple tsc gives it. Expando assignments to functions (`foo.constructor = 1`, nullPropertyName)
+  are checked against the existing member.
 - **No fresh/regular literal type pairs.** Every literal type that comes out of an expression counts as fresh: it
   widens at a mutable location (`ty_widened_for_declaration`, `check_for_mutable_location`), so `const c: 1 = 1; let x = c`
   gives `number` where tsc says `1`. No object literal freshness either (no excess property checks, TS2353).
