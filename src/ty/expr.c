@@ -574,7 +574,8 @@ static Ty const* definitely_falsy_part(Checker* me, Ty const* ty) {
         free(parts);
         return ret;
     }
-    if (ty->flags & (TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED)) return ty;
+    // A type parameter contributes nothing, whatever its constraint (tsc's getDefinitelyFalsyPartOfType)
+    if (ty->flags & (TYF_ANY | TYF_UNKNOWN)) return ty;
     return ty_intrinsic(me, TY_NEVER);
 }
 
