@@ -7828,7 +7828,7 @@ const baselines = {
     'declarationEmitDestructuringWithOptionalBindingParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDetachedComment1': {
         errors: true,
@@ -9528,7 +9528,7 @@ const baselines = {
     'destructuringWithGenericParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringWithNewExpression': {
         errors: true,
@@ -10773,7 +10773,7 @@ const baselines = {
     'emptyOptionalBindingPatternInDeclarationSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyThenWarning': {
         errors: false,
@@ -27858,7 +27858,7 @@ const baselines = {
     'sourceMapValidationDestructuringParametertArrayBindingPatternDefaultValues': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringParametertArrayBindingPatternDefaultValues2': {
         errors: true,

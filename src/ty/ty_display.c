@@ -374,6 +374,7 @@ void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate
 }
 
 // `(a: A, b?: B, ...rest: C[])` followed by `separator` and the return type
+static void append_binding_pattern(cstr* out, Binding const* binding);
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new);
 
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
@@ -404,7 +405,15 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
         SigParam const* param = &sig->params[i];
         if (i) out_lit(d, ", ");
         if (param->rest) out_lit(d, "...");
-        out(reused_if(d, d.reused || param->decl), atom_sv(param->name));
+        Binding const* name_binding = param->decl ? &param->decl->initializer.binding : nullptr;
+        if (name_binding && (name_binding->tag == BINDING_ARRAY || name_binding->tag == BINDING_OBJECT)) {
+            cstr pattern = cstr_init();
+            append_binding_pattern(&pattern, name_binding);
+            out(reused_if(d, true), cstr_sv(&pattern));
+            cstr_drop(&pattern);
+        } else {
+            out(reused_if(d, d.reused || param->decl), atom_sv(param->name));
+        }
         if (param->optional) out_lit(d, "?");
         out_lit(d, ": ");
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
@@ -427,6 +436,39 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
         return;
     }
     ty_display(me, reused_if(d, reused), ret);
+}
+
+// A destructured parameter's name the way tsc prints it in a signature: the pattern without its defaults
+static void append_binding_pattern(cstr* out, Binding const* binding) {
+    if (binding->rest) cstr_append_sv(out, c_sv("..."));
+    if (binding->tag == BINDING_ARRAY) {
+        cstr_append_sv(out, c_sv("["));
+        for (isize_t i = 0; i < binding->array.size; i++) {
+            if (i) cstr_append_sv(out, c_sv(", "));
+            append_binding_pattern(out, &binding->array.data[i]);
+        }
+        cstr_append_sv(out, c_sv("]"));
+    } else if (binding->tag == BINDING_OBJECT) {
+        if (!binding->object.size) {
+            cstr_append_sv(out, c_sv("{}"));
+            return;
+        }
+        cstr_append_sv(out, c_sv("{ "));
+        for (isize_t i = 0; i < binding->object.size; i++) {
+            ObjectBindingItem const* item = &binding->object.data[i];
+            if (i) cstr_append_sv(out, c_sv(", "));
+            bool shorthand = item->target.rest || (item->target.tag == BINDING_IDENTIFIER &&
+                item->target.content_span.sv.buf == item->source_span.sv.buf);
+            if (!shorthand) {
+                cstr_append_sv(out, item->source_span.sv);
+                cstr_append_sv(out, c_sv(": "));
+            }
+            append_binding_pattern(out, &item->target);
+        }
+        cstr_append_sv(out, c_sv(" }"));
+    } else {
+        cstr_append_sv(out, binding->content_span.sv);
+    }
 }
 
 static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {

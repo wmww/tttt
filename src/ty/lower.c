@@ -900,11 +900,22 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     }
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
     if (binding->default_value) {
-        // `[x = 1]`: undefined is replaced by the default
+        // `[x = 1]`: undefined is replaced by the default. Under a written type, the default only removes undefined
+        // (unless it can be undefined itself), else the two are a subtype-reduced union (tsc's getTypeForBindingElement)
+        Binding const* root = parent;
+        while (root->parent) root = root->parent;
         Ty const* types[2] = { ty_without_undefined(me, ret), nullptr };
+        if (root->has_explicit_type) {
+            Ty const* default_type = ty_expr_type(me, binding->default_value);
+            if (compiler_options()->strict_null_checks && !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
+                ty_without_undefined(me, default_type) == default_type) {
+                ret = types[0];
+            }
+            return ret;
+        }
         // Not ty_check_expr() with types[0] as the contextual type: only the uncontextual path detects `[x = x]`
         types[1] = ty_widened_for_declaration(me, ty_expr_type(me, binding->default_value), true);
-        ret = ret->flags & TYF_ANY ? ret : ty_union(me, types, 2, nullptr, (TyList){0});
+        ret = ret->flags & TYF_ANY ? ret : ty_union_subtype_reduced(me, types, 2);
     }
     return ret;
 }
