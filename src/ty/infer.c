@@ -461,9 +461,20 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (target->kind == TY_UNION) {
         infer_to_union(me, inf, source, target);
     } else if (target->kind == TY_INTERSECTION) {
+        // Members that aren't naked type parameters first; a single naked one (`T & {}`) is inferred to with the
+        // naked type variable priority, as it is less specific. Several get nothing (tsc's inferToMultipleTypes)
+        u32 naked_count = 0;
+        Ty const* naked = nullptr;
         for (u32 i = 0; i < target->composite.types.len; i++) {
-            infer_from(me, inf, source, target->composite.types.data[i]);
+            Ty const* member = target->composite.types.data[i];
+            if (inference_param(inf, member)) {
+                naked = member;
+                naked_count++;
+            } else {
+                infer_from(me, inf, source, member);
+            }
         }
+        if (naked_count == 1) infer_with_priority(me, inf, source, naked, INFER_PRIORITY_NAKED_TYPE_VARIABLE);
     } else if (source->kind == TY_UNION) {
         for (u32 i = 0; i < source->composite.types.len; i++) {
             infer_from(me, inf, source->composite.types.data[i], target);

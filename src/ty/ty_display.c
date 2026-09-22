@@ -592,7 +592,8 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 }
             }
         }
-        display_parenthesized_if(me, d, t, is_function_like(me, t) || (t->kind == TY_CONDITIONAL && !t->alias));
+        bool parens = is_function_like(me, t) || (!t->alias && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION));
+        display_parenthesized_if(me, d, t, parens);
     }
     if (nullable & TYF_NULL) {
         out(d, first ? c_sv("null") : c_sv(" | null"));

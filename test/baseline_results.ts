@@ -17163,7 +17163,7 @@ const baselines = {
     'inferenceOfNullableObjectTypesWithCommonBase': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceOptionalProperties': {
         errors: true,
@@ -65551,7 +65551,7 @@ const baselines = {
         types: false,
     },
     'keyofInferenceLowerPriorityThanReturn': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
