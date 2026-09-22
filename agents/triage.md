@@ -3,7 +3,6 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
 06); items fixed by plans 04-06 or verified fixed by probe are gone.
 
 ## Category-sized (worth a plan or a whole session)
-- **Types baseline underlines** (`^^^` lines): 1445 tests would fully pass with them right. `plans/07_underlines.md`.
 - **JS files: JSDoc types, CommonJS**. Since the triage after plan 06 `.js` files load only with `allowJs`, semantic
   diagnostics in them only with `checkJs`/`@ts-check` (`SourceFile.unchecked`, `error_ctx_remove_unchecked`), so ~900
   `@allowJs` tests now mostly fail *quietly*: they need JSDoc types (`@param`, `@type`, `@typedef`), `module.exports`
@@ -104,8 +103,10 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   operands; `expr.c` operator checks use `type_extends_strict_nulls` + TS2365 instead.
 - `unionRelationshipCheckPasses`: `{ foo?: number | undefined }` -> `{ foo?: undefined } | { foo: number }` needs
   tsc's discriminated-union decomposition of the source (`typeRelatedToDiscriminatedType`).
-- Optional parameters print as `x?: T` in signatures; tsc prints `x?: T | undefined` under strictNullChecks (part of
-  plan 07's node reuse question: the source annotation is reused, and `| undefined` added).
+- Optional parameters print as `x?: T` in signatures; tsc prints `x?: T | undefined` under strictNullChecks (the
+  annotation is reused and `| undefined` added synthetically: `TyDisplay.reused` can express that now).
+- Signatures don't print their `this` parameter (`method(this: C, q: string)` prints `(q: string) => void`; tsc
+  prints it). Found by plan 07's probes.
 - Union member order: tsc's order is type id order, literal types are made when the type node is first resolved;
   we lower annotations eagerly in a different order (`stringLiteralsWithEqualityChecks03`, `y: "p" | "q" | 1` as
   `1 | "p" | "q"`, `typeof x`'s union built on first use). Worth a failstats pass over diffs that differ only by
@@ -154,7 +155,8 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   exist in both `compiler/` and `conformative/`, so its pass counts can differ from the harness by one or two.
 - `./release/tttt file.ts` without `-q` prints the parsed AST before typechecking; `display_expr` prints `?` for
   expression types there. Is that dump worth keeping at all? `display.c`'s syntax printer is only needed for debug
-  output and written type *names* now: `DISPLAY_TYPE_MAX_DEPTH`, `BriefType`, `DisplayUnderlineTarget` may be dead.
+  output and written type *names* now: `DISPLAY_TYPE_MAX_DEPTH`, `BriefType` may be dead; `DisplayUnderlineTarget` /
+  `underline_display()` is (types underlines are `TyDisplay.underline` since plan 07), delete it.
 - `tttt` finds `thirdparty/lib/` relative to the cwd. Should be relative to the executable / an install prefix.
 - Nodes aren't cloned any more: collapse `owned_symbol`/`symbol_ref` (`GenericItem`, `InferredType`, mapped keys)
   and `key.expr.owned`/`ref` into one pointer each; drop `LAZY_TYPE_FUNCTION` (`hacks.md`).

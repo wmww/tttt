@@ -34,7 +34,25 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   members don't exist. `program_load` refuses a `.js` root without `allowJs` (TS6504) but a `.js` file reached
   through an import is refused by `program_load_module_ref` with `MODULE_REF_IS_JS` (TS7016-style), two paths.
 - `TTTT_IGNORE_UNDERLINES=1` (`compare_outputs`): the types component compared without its `^^^` lines, a
-  measurement for `plans/07_underlines.md`, not a mode to save results in.
+  measurement of what the underlines still cost (73 tests on 2026-09-22), not a mode to save results in.
+- Types baseline underlines (`ty_display.c` node reuse, see `documentation.md`), approximations of tsc's node builder:
+  - A reused annotation is *marked* reused but printed from the `Ty`. tsc re-prints the annotation itself, so where
+    the two differ the text is wrong (`w: Array<string>` prints `string[]`, `r: N.Q` written inside N prints `Q`,
+    binding pattern parameters print with their initializers `{ a, b = 1 }`).
+  - `annotation_accessible()` checks only the first name of each type reference against `enclosing`, treats every
+    type parameter as accessible and never looks into `typeof x`. tsc's `visitExistingNodeTreeSymbols` does much more.
+  - Instantiated signatures: "reused if the mapper left the type alone and it doesn't mention the signature's type
+    parameters" is fitted to probes, not ported; `mentions()` is conservative (any non-reference object type counts).
+    `f<number>` (instantiation expressions) reuse nothing in tsc, and we don't print that line at all yet.
+  - `single_return_assertion()`: only a body that is exactly `return x as T`; tsc allows other statements before
+    it, and runs its whole `typeFromExpression` (literals, object literals, arrows: `() => (X) => {}` prints `X`
+    synthetic there) which is not ported.
+  - Index signatures, tuple element names, mapped types, type parameter defaults: always synthetic (matches the
+    probes, not checked beyond).
+  - The `any` underline rule reads whether *tsc's* `.errors.txt` exists (`baseline_test_result_run`), so the types
+    component doesn't inherit failures of the errors component. `BaselineTestCase.any_keeps_underline` is a one-shot
+    flag set by the traversal right before the add; a site that sets it and then adds no types line leaks it to the
+    next line.
 - `baseline_test_result_run`: with `@noTypesAndSymbols` the symbols and types components count as *passed*, so the
   per-component totals include ~900 free passes. A test without types/symbols baselines is run before we know
   whether it should have had any.

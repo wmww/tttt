@@ -1029,6 +1029,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             SigParam* param = &params[i_index];
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
             param->rest = i->rest;
+            param->decl = i;
             param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
             if (function->is_type) imply_rest_constraint(me, param);
@@ -1175,6 +1176,7 @@ Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 cou
             prop->type_state = LAZY_STATE_DONE;
             prop->name_span = props[i].name_span;
             prop->name_is_value = props[i].name_is_value;
+            prop->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             flags |= props[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
             builder_push(&builder, props, prop);

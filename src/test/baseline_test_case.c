@@ -18,6 +18,9 @@
 typedef struct LineNumberedStr {
     unsigned line;
     cstr str;
+    // A types line of `any`: where its underline starts. tsc's harness leaves it out when the test has no errors (a
+    // TypeWriterWalker without hadErrorBaseline prints the intrinsic name instead of a type node). 0: always kept
+    isize_t any_underline_at;
 } LineNumberedStr;
 
 static void line_numbered_str_drop(LineNumberedStr* me) {
@@ -744,7 +747,8 @@ static void render_lines_woven_with_file(
     bool is_errors,
     csview source_contents,
     VecLineNumberedStr const* lines,
-    bool is_last_file
+    bool is_last_file,
+    bool drop_any_underlines
 ) {
     const char* line_indent = is_errors ? "    " : "";
     unsigned line = 0;
@@ -792,7 +796,12 @@ static void render_lines_woven_with_file(
             if (lines_added_from_vec) {
                 cstr_append(target, "\r\n");
             }
-            cstr_append_s(target, vec_line_numbered_str_at(lines, index)->str);
+            LineNumberedStr const* added = vec_line_numbered_str_at(lines, index);
+            if (drop_any_underlines && added->any_underline_at) {
+                cstr_append_sv(target, csview_from_n(cstr_str(&added->str), added->any_underline_at));
+            } else {
+                cstr_append_s(target, added->str);
+            }
             lines_added_from_vec = true;
             index++;
             newline_if_next_line_non_empty = true;
@@ -841,7 +850,8 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
             true,
             i->source ? cstr_sv(&i->source->contents) : cstr_sv(&i->raw_contents),
             &i->errors,
-            i == vec_baseline_test_file_back(&my files)
+            i == vec_baseline_test_file_back(&my files),
+            false
         );
     }
 }
@@ -856,12 +866,17 @@ void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me)
             false,
             cstr_sv(&i->source->contents),
             &i->symbols,
-            i == vec_baseline_test_file_back(&my files)
+            i == vec_baseline_test_file_back(&my files),
+            false
         );
     }
 }
 
-void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
+bool baseline_test_case_has_errors(BaselineTestCase const* me) {
+    return !error_ctx_empty(my error_ctx) || cstr_size(&my formatted_global_errors);
+}
+
+void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, bool had_errors) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
@@ -871,7 +886,8 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me) {
             false,
             cstr_sv(&i->source->contents),
             &i->types,
-            i == vec_baseline_test_file_back(&my files)
+            i == vec_baseline_test_file_back(&my files),
+            !had_errors
         );
     }
 }
@@ -1010,7 +1026,8 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
 }
 
 // One `>text : type` line plus its underline per parenthesization level of the expression
-static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered) {
+// `underline` null: all of it synthetic (`^`)
+static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered, cstr const* underline_of_type) {
     const char* outer_start = span_start_ptr(outer_span);
     const char* outer_last = span_end_ptr(outer_span) - 1;
     const char* inner_start = span_start_ptr(inner_span);
@@ -1030,12 +1047,25 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     intptr_t line = span_line_index(outer_span);
     cstr target = cstr_lit(">");
     append_span_contents_without_newlines(&target, outer_span);
-    cstr underline = cstr_lit(">");
-    cstr_resize(&underline, cstr_size(&target), ' ');
+    // As wide as the text in UTF-16 code units, which is what the harness counts
+    isize_t width = 0;
+    for (isize_t i = 0; i < cstr_size(&target); i++) {
+        unsigned char c = (unsigned char)cstr_str(&target)[i];
+        if ((c & 0xC0) != 0x80) width += c >= 0xF0 ? 2 : 1;
+    }
+    cstr underline = cstr_null;
+    cstr_resize(&underline, width, ' ');
+    *cstr_data(&underline) = '>';
     cstr_append_lit(&target, " : ");
     cstr_append_lit(&underline, " : ");
     cstr_append_sv(&target, rendered);
-    cstr_resize(&underline, cstr_size(&underline) + rendered.size, '^');
+    if (underline_of_type) {
+        cstr_append_s(&underline, *underline_of_type);
+    } else {
+        cstr_resize(&underline, cstr_size(&underline) + rendered.size, '^');
+    }
+    isize_t any_underline_at = my any_keeps_underline || !csview_equals(rendered, "any") ? 0 : cstr_size(&target);
+    my any_keeps_underline = false; // Only the node itself, not what's parenthesized in it
     cstr_append_lit(&target, "\r\n");
     cstr_append_s(&target, underline);
     cstr_drop(&underline);
@@ -1043,19 +1073,21 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
         .str = target,
+        .any_underline_at = any_underline_at,
     });
     if (!base_case) {
         outer_span.sv.buf++;
         outer_span.sv.size -= 2;
-        add_type_rendered(me, outer_span, inner_span, rendered);
+        add_type_rendered(me, outer_span, inner_span, rendered, underline_of_type);
     }
 }
 
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
     cstr rendered = cstr_null;
-    ty_display(current_checker, (TyDisplay){ .target = &rendered, .enclosing = my enclosing }, type);
-    add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered));
-    cstr_drop(&rendered);
+    cstr underline = cstr_null;
+    ty_display(current_checker, (TyDisplay){ .target = &rendered, .enclosing = my enclosing, .underline = &underline }, type);
+    add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
+    c_drop(cstr, &rendered, &underline);
 }
 
 void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type) {
@@ -1096,7 +1128,7 @@ void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol
         cstr_append_span(&rendered, value->parent->name_span);
         cstr_append_lit(&rendered, ".");
         cstr_append_span(&rendered, value->name_span);
-        add_type_rendered(me, span, span, cstr_sv(&rendered));
+        add_type_rendered(me, span, span, cstr_sv(&rendered), nullptr);
         cstr_drop(&rendered);
         return;
     }

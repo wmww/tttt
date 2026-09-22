@@ -325,6 +325,8 @@ struct Prop {
     Span const* decl_spans;
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
+    // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
+    TypeNode const* asserted;
 };
 
 typedef enum SignatureFlags {
@@ -338,6 +340,7 @@ typedef struct SigParam {
     Ty const* type;
     bool optional;
     bool rest;
+    struct FunctionArg const* decl; // Where it was declared, kept by instantiation. Null for synthesized ones
 } SigParam;
 
 // `x is T`, `this is T`, `asserts x`, `asserts x is T`
@@ -671,6 +674,9 @@ Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); 
 bool ty_expr_is_context_sensitive(Expr const* expr);
 // The type of the property an item of an object literal made (what the `.types` baseline shows at its name)
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item);
+// `x as const`
+typedef struct AsTypeExpr AsTypeExpr;
+bool as_type_is_const(AsTypeExpr const* as_type);
 // `f<A, B>` as a value: the type arguments applied to the signatures that take that many
 Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
 
@@ -682,6 +688,7 @@ typedef struct ObjectLiteralProp {
     Span const* decl_spans;
     u32 decl_span_count;
     bool name_is_value;
+    TypeNode const* asserted; // See Prop.asserted
 } ObjectLiteralProp;
 Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count);
 
@@ -772,6 +779,13 @@ typedef struct TyDisplay {
     // from there (`T` inside namespace N, `N.T` outside, an import's name, `import("a").T` when nothing names it).
     // Null: always fully qualified, which is what error messages show
     struct Scope const* enclosing;
+    // The types baseline's `^^^` line: every character printed gets a `^`, or a space where tsc's declaration
+    // emitter would have reused a node from the source (`reused`, see display_signature()). Null: not wanted
+    cstr* underline;
+    bool reused;
+    // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
+    // mentions them is reused inside of it
+    TyList fresh_params;
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

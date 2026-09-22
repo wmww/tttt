@@ -886,6 +886,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (i->tag == OBJECT_ITEM_GETTER) existing->type = type;
             continue;
         }
+        TypeNode const* asserted = nullptr;
+        if (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_AS_TYPE && !i->value.as_type->is_satisfies &&
+            !as_type_is_const(i->value.as_type) && type == ty_expr_type(me, &i->value)
+        ) {
+            asserted = &i->value.as_type->type;
+        }
         Span* decl_span = arena_new(&my arena, Span);
         *decl_span = i->span;
         u32 flags = 0;
@@ -899,6 +905,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .decl_spans = decl_span,
             .decl_span_count = 1,
             .name_is_value = name_is_value,
+            .asserted = asserted,
         });
     }
     free(accessor_spans);
@@ -988,7 +995,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
 
 // The rest
 
-static bool is_const_assertion(AsTypeExpr const* as_type) {
+bool as_type_is_const(AsTypeExpr const* as_type) {
     TypeNode const* type = &as_type->type;
     return type->tag == TYPE_IDENTIFIER && !type->identifier->target && span_equals(type->identifier->name, "const") &&
         vec_span_is_empty(&type->identifier->namespaces);
@@ -1124,7 +1131,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
 
         case EXPR_AS_TYPE: {
             AsTypeExpr const* as_type = expr->as_type;
-            if (is_const_assertion(as_type)) return check_with(me, &as_type->expr, (ExprCtx){ .is_const = true });
+            if (as_type_is_const(as_type)) return check_with(me, &as_type->expr, (ExprCtx){ .is_const = true });
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
             // The type of `e as T` doesn't depend on e, which is checked when the statement walk gets there (tsc defers
             // it too): `const data = get(id) as Data` in a loop that assigns id from data isn't circular

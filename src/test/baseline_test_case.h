@@ -62,6 +62,10 @@ typedef struct BaselineTestCase {
     bool no_implicit_references; // `@noImplicitReferences`
     // Where the traversal is: types are printed the way they're named from there
     struct Scope const* enclosing;
+    // Set by the traversal right before adding a node whose `any` keeps its underline even without errors (tsc's
+    // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
+    // names). The next types line consumes it
+    bool any_keeps_underline;
     cstr lib_list;
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
@@ -96,7 +100,11 @@ void baseline_test_case_drop(BaselineTestCase* me);
 // These are used to get the data into string form, so it can be compared with known correct results or serialized
 void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me);
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me);
-void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me);
+// had_errors: whether tsc reported anything for the test, which decides whether an `any` has an underline (see
+// LineNumberedStr.any_underline_at). The expected baseline's say rather than ours, so that a missing error doesn't
+// fail the types component too
+void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, bool had_errors);
+bool baseline_test_case_has_errors(BaselineTestCase const* me);
 
 typedef struct BaselineSym {
     VecSpan declarations;   // The places this symbol was declared. Empty spans are ignored. If empty or all nulls falls

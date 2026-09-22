@@ -6,10 +6,10 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-22, insights after the triage following plan 06)
-- **Suite: `./fasttest.sh` 1971 / 13163 fully pass** (errors 6907, symbols 8787, types 3974). The types component
-  under-reports by ~60%: the `^^^` underline lines of the types baseline (which parts of a printed type tsc's
-  declaration emitter reused from source) hide 1445 otherwise fully passing tests (`TTTT_IGNORE_UNDERLINES=1`: 3350
-  full, types 6334). Plan 07 fixes that.
+- **Suite: `./fasttest.sh` 3496 / 13163 fully pass** (errors 6907, symbols 8787, types 6364). Plan 07 (types
+  baseline underlines, tsc's node reuse) took it from 1971 in one session: the types component is now a real
+  measurement of type *printing* (ignoring underlines would only add 73 more), so `failstats.py`'s types numbers mean
+  something again.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
   under tsc): **0 parse, 0 name, 1751 type diagnostics**, 0.6-0.7 s wall (tsgo 0.72 s, tsc 4.7 s). The count has been
   flat for three plans. 810 of it is one contextual-typing bug in one file; the rest is mostly calls/inference
@@ -31,9 +31,8 @@ types components) are the oracle, not the goal.
   (module resolution was needed), but the corpus is now the next thing: plan 08 works it down root cause by root
   cause, with the suite as a regression check, and ends with the first bench/profile where tttt does all of the
   work tsgo does. Until then the perf headline stays "no evidence of a deficit", not "faster".
-- **Plan 07 (underlines) first anyway**: it's one or two sessions, fully planned, and makes the types component
-  a real measurement for everything after it. It's harness fidelity, so it gets a budget (see `todo.md`) and must
-  not grow into a port of tsc's node-reuse edge cases.
+- **Plan 07 (underlines)** done in one session (1971 -> 3496 full), within budget: the reuse rule is fitted to
+  probes, not a port of tsc's node builder (`hacks.md`).
 - The spread of the corpus count is smaller than it looks: rank buckets by root cause, not by code (one mapped type
   with an `as` clause = 810 TS7006). The same goes for `failstats.py`.
 
@@ -117,8 +116,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 3. ~~Real-world corpus parses and runs end to end~~ done (plan 03); it is the pinned benchmark and second oracle.
 3b. ~~Persistent symbols / new binder (plan 04)~~ done, then bind-time flow graph + narrowing (plan 05).
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
-   diagnostics without a file~~ done (triage). **Types baseline underlines (plan 07)**: the one remaining harness
-   item, and the biggest item of any kind by test count.
+   diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.

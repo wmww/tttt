@@ -43,7 +43,7 @@ int main(int argc, const char** argv) {
         print_section("sym", &results);
         cstr_clear(&results);
 
-        baseline_test_case_render_types(&results, &test_case);
+        baseline_test_case_render_types(&results, &test_case, baseline_test_case_has_errors(&test_case));
         print_section("typ", &results);
         cstr_clear(&results);
 

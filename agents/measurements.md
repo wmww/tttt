@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 07: types baseline underlines
+Suite: **3496 full of 13163** (was 1971), errors 6907, symbols 8787, **types 6364** (3974). 0 tests lost a component.
+`TTTT_IGNORE_UNDERLINES=1` now gives 3537 full / types 6437 (it was 3350 / 6334 before plan 07: other fixes since),
+so 97% of the types gap the underlines caused is closed; the remaining 73 tests are a tail of 1-3 test shapes
+(`hacks.md`, "Types baseline underlines"). Two rules did it: tsc's node reuse for signatures/properties (1716 ->
+66 tests differing only in underlines), and no underline for `any` when tsc's baseline has no errors (+655).
+Real corpus unchanged (1751 diagnostics, 0.73 s wall): the change is harness-only.
+
 ## 2026-09-21, triage after plan 06
 Suite: **1971 full of 13163** (was 1849), errors 6907, symbols 8787, types 3974. What moved: JS gate + fileless
 diagnostics + option validation (+54), harness typechecking next to parse errors (+8, -7 honest), property symbols

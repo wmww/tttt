@@ -177,7 +177,7 @@ void baseline_test_result_run(
         );
         cstr_clear(&our_result);
 
-        baseline_test_case_render_types(&our_result, &test_case);
+        baseline_test_case_render_types(&our_result, &test_case, fs_is_reg_file(fs, cstr_sv(&errors_path)));
         dump_output(suite, name, ".types", cstr_sv(&our_result));
         my types_passed = compare_outputs(
             name,

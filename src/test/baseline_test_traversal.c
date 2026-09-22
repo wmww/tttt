@@ -113,6 +113,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             break;
 
         case BINDING_IDENTIFIER:
+            if (my parent) ctx->any_keeps_underline = true; // A binding element
             baseline_test_case_add_declaration(ctx, my content_span, my symbol);
             break;
 
@@ -238,6 +239,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 Symbol const* decl = index < vec_symbol_cptr_size(&my identifier->namespace_symbols) ?
                     *vec_symbol_cptr_at(&my identifier->namespace_symbols, index) :
                     nullptr;
+                ctx->any_keeps_underline = true; // Part of a qualified name
                 baseline_test_case_add_type_node(ctx, *i, &type_any);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),
@@ -364,6 +366,7 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx) {
         .name = my decl_name,
     });
     // tsc shows aliases of pure types as any
+    ctx->any_keeps_underline = true; // An import/export name
     baseline_test_case_add_symbol_value(ctx, my decl_name, my symbol);
 }
 
@@ -378,11 +381,13 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
 
         case PORT_IMPORT_ALIAS:
             if (!my main.symbol) {
+                ctx->any_keeps_underline = true;
                 baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
             } else {
                 port_item_add_alias(&my main, ctx);
             }
             for_each (i, vec_span, &my main.alias_path) {
+                ctx->any_keeps_underline = true; // Part of a qualified name
                 if (i_index >= vec_symbol_cptr_size(&my main.alias_path_symbols)) {
                     baseline_test_case_add_type_node(ctx, *i, &type_any);
                     continue;
@@ -419,6 +424,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = i->source_name,
                 });
             }
+            ctx->any_keeps_underline = true;
             baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
         }
         port_item_add_alias(i, ctx);
@@ -683,13 +689,16 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             }
             vec_span_drop(&info.declarations);
 
+            bool dot = my property->form != PROPERTY_EXPR_BRACKET;
             if (!has_compiled_expr_info) {
+                ctx->any_keeps_underline = dot; // The object of a property access
                 expr_compile_test_info(&my property->expr, ctx);
             }
 
-            if (my property->form == PROPERTY_EXPR_BRACKET) {
+            if (!dot) {
                 expr_compile_test_info(&my property->prop, ctx);
             } else if (!csview_starts_with(my property->prop.outer_span.sv, "#")) {
+                ctx->any_keeps_underline = true;
                 baseline_test_case_add_type(ctx, my property->prop.outer_span, expr_get_type((Expr*)me));
             }
         }   break;
@@ -842,10 +851,12 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     if (span_valid(my jump_label)) {
         // Both labels and the targets of break and continue are shown as any
+        ctx->any_keeps_underline = true;
         baseline_test_case_add_type_node(ctx, my jump_label, &type_any);
     }
     switch (my tag) {
         case STATEMENT_LABELED:
+            ctx->any_keeps_underline = true;
             baseline_test_case_add_type_node(ctx, my labeled.name, &type_any);
             statement_compile_test_info(my labeled.body, ctx);
             break;
@@ -863,6 +874,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED) {
+                ctx->any_keeps_underline = my tag == STATEMENT_EXPORT_DEFAULT_EXPR; // Of an export assignment
                 expr_compile_test_info(&my expr, ctx);
             }
             break;
