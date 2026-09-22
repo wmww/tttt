@@ -458,6 +458,17 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     u32 param_count = sig->param_count;
     SigParam const* params = expanded_params(me, sig, &param_count);
     if (!params) params = sig->params;
+    if (sig->this_type) {
+        out(reused_if(d, d.reused || function), c_sv("this"));
+        out_lit(d, ": ");
+        FunctionArg const* this_decl = function ? vec_function_arg_at(&function->args, 0) : nullptr;
+        Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
+        bool reused = reusable && binding && binding->has_explicit_type &&
+            (!instantiated || (sig->this_type == root->this_type && !mentions(me, sig->this_type, d.fresh_params))) &&
+            reuses(me, d, &binding->explicit_type);
+        ty_display(me, reused_if(d, reused), sig->this_type);
+        if (param_count) out_lit(d, ", ");
+    }
     for (u32 i = 0; i < param_count; i++) {
         SigParam const* param = &params[i];
         if (i) out_lit(d, ", ");

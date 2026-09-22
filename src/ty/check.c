@@ -66,6 +66,10 @@ void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, S
     check_assignable(me, "Argument of type", source, "parameter of type", target, 2345, span, errs);
 }
 
+void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
+    check_assignable(me, "The 'this' context of type", source, "method's 'this' of type", target, 2684, span, errs);
+}
+
 Ty const* ty_of_node(TypeNode const* node) {
     return ty_from_node(current_checker, node, (LowerCtx){ .generic = true });
 }

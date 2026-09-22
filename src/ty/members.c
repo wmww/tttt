@@ -1122,6 +1122,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         sig->params = params;
         sig->param_count = target->param_count;
         sig->min_args = target->min_args;
+        sig->this_type = target->this_type ? ty_instantiate(me, target->this_type, sig->mapper) : nullptr;
     }
     if (!sig->target && sig->function) {
         FunctionImpl const* function = sig->function;
@@ -1147,8 +1148,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             if (counting_required) sig->min_args++;
         }
         if (count && params[0].name == checker_atom(me, c_sv("this"))) {
-            // `this: T` is about how the function is called, not an argument. TODO: check the receiver against it
+            // `this: T` is about how the function is called, not an argument
             if (sig->min_args && !params[0].optional) sig->min_args--;
+            sig->this_type = params[0].type;
             params++;
             count--;
         }

@@ -294,7 +294,7 @@ static bool fixed_by_argument(Checker* me, Ty const* param_type, Ty const* param
 
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
 static TyMapper const* infer_type_arguments(
-    Checker* me, Signature const* sig, Args* args, Ty const* contextual, bool skip_sensitive
+    Checker* me, Signature const* sig, Args* args, Ty const* contextual, Ty const* this_arg, bool skip_sensitive
 ) {
     Inference inf;
     inference_init(&inf, sig->type_params);
@@ -306,6 +306,8 @@ static TyMapper const* infer_type_arguments(
             infer_types(me, &inf, contextual, return_type, INFER_PRIORITY_RETURN_TYPE);
         }
     }
+
+    if (sig->this_type && this_arg) infer_types(me, &inf, this_arg, sig->this_type, INFER_PRIORITY_NORMAL);
 
     // First pass: everything that isn't context sensitive
     bool any_sensitive = false;
@@ -401,6 +403,17 @@ typedef struct Resolution {
     Ty const* ret;
 } Resolution;
 
+// What a call brings besides its arguments
+typedef struct CallInfo {
+    CallExpr const* call;
+    Ty const* contextual; // contextual type of the call expression, may be null
+    VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
+    TyList type_args;
+    Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
+    Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
+    Span this_span; // Where a `this` that doesn't fit is reported
+} CallInfo;
+
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
     return ty_instantiate(me, signature_return_type(me, candidate->sig), candidate->mapper);
 }
@@ -450,8 +463,22 @@ static void report_arity(
     }
 }
 
+// Whether what `this` is in the call fits the `this` parameter of the candidate
+static bool this_fits(Checker* me, Candidate const* candidate, CallInfo const* info, TyRelation relation) {
+    Ty const* this_type = candidate->sig->this_type;
+    if (!this_type || !info->this_arg || (info->this_arg->flags & TYF_ANY)) return true;
+    return ty_is_related(me, info->this_arg, ty_instantiate(me, this_type, candidate->mapper), relation);
+}
+
 // Reports why the arguments don't fit the candidate. Returns the span it reported at
-static Span report_unfit_argument(Checker* me, Candidate const* candidate, Args* args, Span call_span, ErrorCtx* errs) {
+static Span report_unfit_argument(
+    Checker* me, Candidate const* candidate, Args* args, CallInfo const* info, Span call_span, ErrorCtx* errs
+) {
+    if (!this_fits(me, candidate, info, TY_RELATION_ASSIGNABLE)) {
+        Ty const* target = ty_instantiate(me, candidate->sig->this_type, candidate->mapper);
+        ty_report_unfit_this(me, info->this_arg, target, info->this_span, errs);
+        return info->this_span;
+    }
     ParamShape shape = param_shape(me, candidate->sig, candidate->mapper);
     check_args(me, &shape, args, false);
     Ty const* arg_type = nullptr;
@@ -469,11 +496,12 @@ static Span report_unfit_argument(Checker* me, Candidate const* candidate, Args*
 }
 
 static void report_no_match(
-    Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallExpr const* call,
+    Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
 ) {
+    CallExpr const* call = info->call;
     if (unfit_count == 1) {
-        report_unfit_argument(me, &unfit[0], args, call_span, errs);
+        report_unfit_argument(me, &unfit[0], args, info, call_span, errs);
         return;
     }
     ErrorCtx collected = error_ctx_init();
@@ -489,7 +517,7 @@ static void report_no_match(
     }
     for (u32 i = first; i < unfit_count; i++) {
         error_ctx_clear(&collected);
-        Span span = report_unfit_argument(me, &unfit[i], args, call_span, &collected);
+        Span span = report_unfit_argument(me, &unfit[i], args, info, call_span, &collected);
         if (i == first) common_span = span;
         same_span &= span.sv.buf == common_span.sv.buf && span.sv.size == common_span.sv.size;
         Error* under = parent;
@@ -512,15 +540,6 @@ static void report_no_match(
     head.span = same_span && span_valid(common_span) ? common_span : call->callable.inner_span;
     error_ctx_append_error(errs, head);
 }
-
-// What a call brings besides its arguments
-typedef struct CallInfo {
-    CallExpr const* call;
-    Ty const* contextual; // contextual type of the call expression, may be null
-    VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
-    TyList type_args;
-    Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
-} CallInfo;
 
 static u32 min_type_arguments(Checker* me, Signature const* sig) {
     u32 min = sig->type_params.len;
@@ -595,7 +614,7 @@ static TyMapper const* candidate_mapper(
 ) {
     if (!sig->type_params.len) return nullptr;
     return info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
-        infer_type_arguments(me, sig, args, info->contextual, skip_sensitive);
+        infer_type_arguments(me, sig, args, info->contextual, info->this_arg, skip_sensitive);
 }
 
 static Resolution resolve_with_signatures(
@@ -640,6 +659,7 @@ static Resolution resolve_with_signatures(
                 check_args(me, &shape, args, false);
                 fits = first_unfit_argument(me, &shape, args, rounds[round], false, &arg_type, &param_type) < 0;
             }
+            fits = fits && this_fits(me, &candidate, info, rounds[round]);
             if (fits) {
                 ret.chosen = candidate;
             } else {
@@ -657,7 +677,7 @@ static Resolution resolve_with_signatures(
             if (!type_argument_arity_ok) {
                 report_type_argument_arity(me, signatures, count, info, errs);
             } else if (unfit_count) {
-                report_no_match(me, unfit, unfit_count, count, args, call, call_span, errs);
+                report_no_match(me, unfit, unfit_count, count, args, info, call_span, errs);
             } else {
                 report_arity(me, signatures, count, args, call, errs);
             }
@@ -685,6 +705,21 @@ static Resolution resolve_with_signatures(
     }
     free(unfit);
     return ret;
+}
+
+// What `this` is in a call (tsc's getThisArgumentType): the receiver of a method call, else void
+static Ty const* this_argument(Checker* me, CallExpr const* call, Span call_span, Span* span_out) {
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    while (callee->tag == EXPR_UNARY_OP && callee->unary_op->op == UNARY_OP_RIGHT_BANG) callee = &callee->unary_op->expr;
+    if (callee->tag != EXPR_PROPERTY) {
+        *span_out = call_span;
+        return ty_intrinsic(me, TY_VOID);
+    }
+    PropertyExpr const* property = callee->property;
+    *span_out = property->expr.outer_span;
+    Ty const* receiver = ty_expr_type(me, &property->expr);
+    return property->optional_chain ? ty_non_nullable(me, receiver) : receiver;
 }
 
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
@@ -796,8 +831,17 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         }
     }
 
+    CallInfo with_this = *info;
+    if (!call->uses_new) {
+        bool any_this = false;
+        for (u32 i = 0; i < count && !any_this; i++) {
+            signature_resolve(me, signatures[i]);
+            any_this = signatures[i]->this_type != nullptr;
+        }
+        if (any_this) with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
+    }
     Args args = collect_args(me, call);
-    Resolution resolution = resolve_with_signatures(me, signatures, count, &args, info, call_span, errs);
+    Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
     ret = resolution.ret;
     if (info->chosen_out) *info->chosen_out = resolution.chosen;
     free(args.data);

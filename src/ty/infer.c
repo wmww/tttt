@@ -102,6 +102,7 @@ static void collect_infer_params(Checker* me, Inference* inf, Ty const* target, 
                 u32 count = kind ? members->construct_count : members->call_count;
                 for (u32 i = 0; i < count; i++) {
                     signature_resolve(me, list[i]);
+                    if (list[i]->this_type) collect_infer_params(me, inf, list[i]->this_type, depth + 1);
                     for (u32 j = 0; j < list[i]->param_count; j++) {
                         collect_infer_params(me, inf, list[i]->params[j].type, depth + 1);
                     }
@@ -210,6 +211,9 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
     // bivariantly, and tsc infers as if they were covariant
     bool flip = compiler_options()->strict_function_types && !(target->flags & SIGNATURE_METHOD);
     if (flip) inf->contravariant = !inf->contravariant;
+    if (source->this_type && target->this_type) {
+        infer_from(me, inf, ty_instantiate(me, source->this_type, base), target->this_type);
+    }
     for (u32 i = 0; i < target->param_count; i++) {
         SigParam const* target_param = &target->params[i];
         if (target_param->rest) {

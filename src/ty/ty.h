@@ -377,6 +377,7 @@ struct Signature {
     SigParam const* params;
     u32 param_count;
     u32 min_args;
+    Ty const* this_type; // `this: T`, not among params. Null if not declared
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
     // that is in the middle of being checked
     LazyState ret_state;
@@ -517,8 +518,8 @@ struct Checker {
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
     Ty const* array_target;
     Ty const* readonly_array_target;
-    Ty const* global_types[9]; // GlobalType in relate.c: String, Number... looked up on first use
-    bool global_types_resolved[9];
+    Ty const* global_types[11]; // GlobalType in relate.c: String, Number... looked up on first use
+    bool global_types_resolved[11];
     u32 instantiation_depth;
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
@@ -594,6 +595,7 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 // members.c
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
+Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // relate.c, with Function/Object members
 // The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
 Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* prop_type(Checker* me, Prop const* prop);
@@ -763,6 +765,7 @@ static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2345
+void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker
 // `object[index]` / `object.name`: TS2538, TS2493, TS2339...

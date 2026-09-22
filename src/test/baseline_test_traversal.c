@@ -70,7 +70,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     }
     object = ty_apparent_type(checker, object);
     if (!(object->flags & TYF_OBJECT)) return;
-    Prop const* prop = ty_get_prop(checker, object, name);
+    Prop const* prop = ty_get_object_prop(checker, object, name);
     if (!prop) {
         info->missing_in_member = true;
         return;
@@ -693,7 +693,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         .declarations = vec_span_clone(info.declarations),
                         .allow_declaration_empty = true,
                         .namespaces = vec_span_clone(namespaces),
-                        .span = my outer_span,
+                        .span = my inner_span,
                         .name = span_valid(info.name_span) ? info.name_span : my property->prop.outer_span,
                         .name_is_value = info.name_is_value,
                     });

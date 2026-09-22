@@ -36,6 +36,8 @@ typedef enum GlobalType {
     GLOBAL_FUNCTION,
     GLOBAL_OBJECT,
     GLOBAL_REGEXP,
+    GLOBAL_CALLABLE_FUNCTION,
+    GLOBAL_NEWABLE_FUNCTION,
     GLOBAL_EMPTY_OBJECT, // Not a global: the `{}` type
 } GlobalType;
 
@@ -110,7 +112,7 @@ static u64 relation_key(Ty const* source, Ty const* target) {
 // Globals
 
 static Ty const* global_type(Checker* me, GlobalType which) {
-    static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp" };
+    static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp", "CallableFunction", "NewableFunction" };
     if (!my global_types_resolved[which]) {
         my global_types_resolved[which] = true;
         if (which == GLOBAL_EMPTY_OBJECT) {
@@ -412,6 +414,31 @@ static Ty const* tuple_as_array(Checker* me, Ty const* tuple) {
     return ty_array(me, element, shape->readonly);
 }
 
+// A property of an object type, including those it has as a function (`Function`, or `CallableFunction` under
+// strictBindCallApply like tsc's globalCallableFunctionType) and as an object (`Object`)
+Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name) {
+    Prop const* prop = ty_get_prop(me, ty, name);
+    // The object of a const enum isn't a real object (tsc's skipObjectFunctionPropertyAugment)
+    bool const_enum = ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_ENUM_OBJECT &&
+        ty->declared.symbol && (ty->declared.symbol->flags & SYMBOL_CONST_ENUM);
+    if (!prop && !const_enum) {
+        Members const* members = ty_members(me, ty);
+        Ty const* fallback = nullptr;
+        if (members->call_count || members->construct_count) {
+            if (compiler_options()->strict_bind_call_apply) {
+                fallback = global_type(me, members->call_count ? GLOBAL_CALLABLE_FUNCTION : GLOBAL_NEWABLE_FUNCTION);
+            }
+            if (!fallback) fallback = global_type(me, GLOBAL_FUNCTION);
+        }
+        if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
+        if (!prop) {
+            fallback = global_type(me, GLOBAL_OBJECT);
+            if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
+        }
+    }
+    return prop;
+}
+
 static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
@@ -442,16 +469,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         return ret;
     }
     if (!(ty->flags & TYF_OBJECT)) return ret;
-    Prop const* prop = ty_get_prop(me, ty, name);
-    if (!prop) {
-        Members const* members = ty_members(me, ty);
-        Ty const* fallback = members->call_count || members->construct_count ? global_type(me, GLOBAL_FUNCTION) : nullptr;
-        if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
-        if (!prop) {
-            fallback = global_type(me, GLOBAL_OBJECT);
-            if (fallback && fallback != ty) prop = ty_get_prop(me, fallback, name);
-        }
-    }
+    Prop const* prop = ty_get_object_prop(me, ty, name);
     if (prop) {
         ret.found = true;
         ret.type = prop_type(me, prop);
@@ -566,6 +584,17 @@ static Ternary compare_signatures(
     bool strict = st->relation != TY_RELATION_COMPARABLE && compiler_options()->strict_function_types &&
         !(target->flags & (SIGNATURE_METHOD | SIGNATURE_CONSTRUCT));
     Ternary result = TERNARY_TRUE;
+    // A source that says what `this` is needs a target that agrees (a `void` one is called any way)
+    if (source->this_type && !(source->this_type->flags & TYF_VOID) && target->this_type) {
+        Ternary related = TERNARY_FALSE;
+        if (!strict) related = is_related_to(me, st, source->this_type, target->this_type, false);
+        if (!related) related = is_related_to(me, st, target->this_type, source->this_type, report);
+        if (!related) {
+            if (report) report_line(st, 2685, cstr_d("The 'this' types of each signature are incompatible."));
+            return TERNARY_FALSE;
+        }
+        result &= related;
+    }
     u32 source_count = param_count_of(source);
     u32 count = source_count > target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
@@ -1699,6 +1728,11 @@ static bool signatures_identical(
         }
         source = instantiate_signature(me, source, target->type_params);
     }
+    if (source->this_type && target->this_type &&
+        !union_types_compare(me, source->this_type, target->this_type, partial)
+    ) {
+        return false;
+    }
     u32 target_len = param_count_of(target);
     for (u32 i = 0; i < target_len; i++) {
         if (!union_types_compare(me, type_at_position(me, target, i), type_at_position(me, source, i), partial)) return false;
@@ -1758,6 +1792,16 @@ static TyPredicate const* union_predicate(Checker* me, Signature* const* sigs, u
     return ret;
 }
 
+// The `this` of a union signature: what every member's says (getUnionSignatures)
+static Ty const* union_this_type(Checker* me, Signature* const* composites, u32 count) {
+    Ty const* stack_buf[16];
+    u32 len = 0;
+    for (u32 i = 0; i < count && len < c_arraylen(stack_buf); i++) {
+        if (composites[i]->this_type) stack_buf[len++] = composites[i]->this_type;
+    }
+    return len ? ty_intersection(me, stack_buf, len, nullptr, (TyList){0}) : nullptr;
+}
+
 // A signature with the parameters of `base` returning what any of `composites` returns (tsc's createUnionSignature)
 static Signature* union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
     Ty const** return_types = malloc(sizeof(Ty const*) * count);
@@ -1773,6 +1817,7 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
         .params = base->params,
         .param_count = base->param_count,
         .min_args = base->min_args,
+        .this_type = union_this_type(me, composites, count),
         .ret_state = LAZY_STATE_DONE,
         .ret = ty_union_subtype_reduced(me, return_types, count),
         .predicate_done = true,
@@ -1855,6 +1900,12 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         params[longest_count] = (SigParam){ .name = checker_atom(me, c_sv("args")), .type = ty_array(me, rest, false), .rest = true };
     }
     Ty const* return_types[2] = { signature_return_type(me, left), ty_instantiate(me, signature_return_type(me, right), mapper) };
+    // The `this` types are combined like parameters (combineUnionThisParam, combineIntersectionThisParam)
+    Ty const* this_type = left->this_type ? left->this_type : right->this_type ? ty_instantiate(me, right->this_type, mapper) : nullptr;
+    if (left->this_type && right->this_type) {
+        Ty const* both[2] = { left->this_type, ty_instantiate(me, right->this_type, mapper) };
+        this_type = intersection ? ty_union(me, both, 2, nullptr, (TyList){0}) : ty_intersection(me, both, 2, nullptr, (TyList){0});
+    }
     Signature* ret = arena_new(&my arena, Signature);
     *ret = (Signature){
         .flags = left->flags & SIGNATURE_CONSTRUCT,
@@ -1865,6 +1916,7 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
         .params = params,
         .param_count = count,
         .min_args = left->min_args > right->min_args ? left->min_args : right->min_args,
+        .this_type = this_type,
         .ret_state = LAZY_STATE_DONE,
         .ret = intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) : ty_union_subtype_reduced(me, return_types, 2),
         .predicate_done = true,
