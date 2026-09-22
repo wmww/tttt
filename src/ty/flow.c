@@ -945,12 +945,29 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
     return ret;
 }
 
-// tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property
-// TODO: destructured discriminants (`const { kind } = x`), aliases of them
+// `const k = x.kind`: the initializer of a const variable without a type annotation, if it is an access (tsc's
+// getCandidateDiscriminantPropertyAccess)
+static Expr const* aliased_access(Expr const* expr) {
+    if (expr->tag != EXPR_IDENTIFIER) return nullptr;
+    Symbol const* symbol = expr->identifier.target;
+    if (!symbol || !symbol->is_const || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
+    Binding const* binding = symbol->decls[0].node;
+    if (binding->parent || binding->has_explicit_type || !binding->source || binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
+        return nullptr;
+    }
+    InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+    return initialized->value.tag == EXPR_PROPERTY ? &initialized->value : nullptr;
+}
+
+// tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property, or a const alias
+// of that
+// TODO: destructured discriminants (`const { kind } = x`)
 static PropertyExpr const* discriminant_access(FlowQuery* q, Expr const* expr, Ty const* computed) {
     Checker* me = q->me;
     if (q->declared->kind != TY_UNION && computed->kind != TY_UNION) return nullptr;
     expr = skip_reference_wrappers(expr);
+    Expr const* aliased = aliased_access(expr);
+    if (aliased) expr = aliased;
     if (expr->tag != EXPR_PROPERTY || !is_matching_reference(me, q->reference, &expr->property->expr)) return nullptr;
     Atom const* name = access_name(me, expr->property);
     if (!name) return nullptr;

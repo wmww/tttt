@@ -121,6 +121,29 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) return ty_rest_element_type(me, object);
 
     Atom const* name = ty_literal_name(me, index);
+    if (object->kind == TY_INTERSECTION && (index->flags & TYF_NUMBER_LITERAL)) {
+        // The element of a tuple member is a property (tsc's tuples have "0", "1", ...), and the index signatures of
+        // the other members don't take part
+        TyList parts = object->composite.types;
+        Ty const** found = malloc(sizeof(Ty const*) * parts.len);
+        panic_if(!found, "out of memory");
+        u32 len = 0;
+        bool some_tuple = false;
+        for (u32 i = 0; i < parts.len; i++) {
+            Ty const* part = ty_apparent_type(me, parts.data[i]);
+            if (ty_is_tuple(part)) {
+                some_tuple = true;
+                Ty const* element = access(me, part, index, depth + 1);
+                if (element) found[len++] = element;
+            } else if (name) {
+                FoundProp prop = ty_find_prop(me, part, name);
+                if (prop.found) found[len++] = prop.flags & PROP_OPTIONAL ? with_undefined(me, prop.type) : prop.type;
+            }
+        }
+        Ty const* ret = some_tuple && len ? ty_intersection(me, found, len, nullptr, (TyList){0}) : nullptr;
+        free(found);
+        if (ret) return ret;
+    }
     if (name) {
         FoundProp prop = ty_find_prop(me, object, name);
         if (prop.found) return prop.flags & PROP_OPTIONAL ? with_undefined(me, prop.type) : prop.type;

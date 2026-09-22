@@ -43,6 +43,8 @@ static bool kind_uses_context(Expr const* expr) {
         case EXPR_CALL:
         case EXPR_AS_TYPE:
             return true;
+        case EXPR_UNARY_OP:
+            return expr->unary_op->op == UNARY_OP_RIGHT_BANG;
         case EXPR_BINARY_OP:
             switch (expr->binary_op->op) {
                 case BINARY_OP_OR_OR:
@@ -1115,7 +1117,12 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             return identifier_flow_type(me, expr, &used_before_assigned);
         }
         case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
-        case EXPR_UNARY_OP: return check_unary(me, expr->unary_op);
+        case EXPR_UNARY_OP:
+            // `x!` has the contextual type of its operand
+            if (expr->unary_op->op == UNARY_OP_RIGHT_BANG && ctx.contextual) {
+                return ty_non_nullable(me, check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual }));
+            }
+            return check_unary(me, expr->unary_op);
 
         case EXPR_PROPERTY: {
             bool optional = false;

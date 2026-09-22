@@ -23526,7 +23526,7 @@ const baselines = {
         types: true,
     },
     'nonnullAssertionPropegatesContextualType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
