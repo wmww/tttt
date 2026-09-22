@@ -5,9 +5,15 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-20, after plan 06: module resolution and tsconfig; numbers below this first bullet are older)
-- **Now: `./fasttest.sh` 1849 / 13163 fully pass** (errors 6814, symbols 8514, types 3897). `./realworld.py` runs the
-  corpus **from its own tsconfig** (`tttt -p`, 223 files incl. `@types/node`): 1752 diagnostics, 0.59 s (tsgo 0.72).
+## State (2026-09-21, after the triage following plan 06; numbers below the first two bullets are older)
+- **Now: `./fasttest.sh` 1971 / 13163 fully pass** (errors 6907, symbols 8787, types 3974). `./realworld.py` runs the
+  corpus from its own tsconfig (`tttt -p`, 223 files incl. `@types/node`): **0 parse, 0 name, 1751 type
+  diagnostics**, 0.6-0.7 s (tsgo 0.72). The triage session found that **the `^^^` underline lines of the types
+  baseline hide 1445 fully passing tests** (`TTTT_IGNORE_UNDERLINES=1`: 3350 full, types 6334): they encode which
+  parts of a printed type tsc's declaration emitter *reused from the source* (parameter names and annotations), see
+  `plans/07_underlines.md`. Until that is done the types component under-reports by 60% and `failstats.py` can't see
+  type-string bugs in half the suite. JS files now have the cheap gate (`allowJs`/`checkJs`, TS6504), diagnostics
+  without a file exist (TS5xxx option validation, TS2688), the harness typechecks next to parse errors like tsc.
   Plans 04 (binder), 05 (flow/narrowing) and 06 (module resolution) are done; each moved the suite by a whole category
   in one go. **Module resolution (plan 06)** is tsc's algorithm as a pure module (`src/module_resolution.c`: classic,
   node10, node16/nodenext/bundler with `exports`/`imports`/conditions, `paths`/`baseUrl`/`rootDirs`, `typesVersions`,
@@ -81,8 +87,8 @@ types components) are the oracle, not the goal.
   and mutates shared state (blocks parallel bind). Narrowing keys its caches on reference identity -> symbol identity,
   so it can't be built on copies. Plan 04 = symbols/binder (replace, don't patch; it's small), plan 05 = flow graph +
   narrowing on top of it.
-- JS files (~900 tests parsed as TS) get the cheap gate only (skip without `allowJs`, no checker errors without
-  `checkJs`) in a triage-sized task; real JS/JSDoc support waits until TS itself works on real code.
+- JS files (~900 tests parsed as TS) have the cheap gate (skip without `allowJs`, no semantic errors without
+  `checkJs`, done); real JS/JSDoc support waits until TS itself works on real code.
 
 ## Architecture assessment
 What exists is a clean, small, direct-style checker: hand-written backtracking parser straight from `char*`
@@ -138,15 +144,15 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
   plan 04 must cover bind). Parse + bind are now 4x the typecheck phase on the bench: they're where the time is.
 - JS files, JSX, JSDoc, project references, declaration emit: all absent (tsconfig and module resolution exist
   since plan 06). Declaration/JS emit is out of scope for now (typechecker only, `--noEmit` semantics).
-- readme.md still says development is halted; update when convenient.
 
 ## Where this is going (rough order)
 1. ~~Measurement tooling~~ done. Parser gaps (cheap, large, independent of the type core) slot in alongside 2.
 2. ~~Type core redesign~~ done (8 sessions).
 3. ~~Real-world corpus parses and runs end to end~~ done (plan 03); it is the pinned benchmark and second oracle.
 3b. ~~Persistent symbols / new binder (plan 04)~~ done, then bind-time flow graph + narrowing (plan 05).
-4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); JS files
-   (`allowJs`/`checkJs`), diagnostics without a file (option validation, TS2688).
+4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
+   diagnostics without a file~~ done (triage). **Types baseline underlines (plan 07)**: the one remaining harness
+   item, and the biggest item of any kind by test count.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark.
