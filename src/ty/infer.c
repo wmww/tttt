@@ -155,12 +155,6 @@ static void infer_with_priority(Checker* me, Inference* inf, Ty const* source, T
     inf->priority = saved;
 }
 
-static u32 candidate_count(Inference const* inf) {
-    u32 count = 0;
-    for (u32 i = 0; i < inf->len; i++) count += inf->params[i].co_len + inf->params[i].contra_len;
-    return count;
-}
-
 // A type parameter of the source signature isn't something to infer: it stands for its constraint (tsc's
 // getBaseSignature, roughly)
 static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) {
@@ -495,9 +489,12 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         }
         for (u32 s = 0; s < sources.len; s++) {
             if (source_done[s]) continue;
-            u32 before = candidate_count(inf);
+            // Used up if something was inferred from it as directly as the naked type parameter would be
+            u32 saved = inf->hit_priority;
+            inf->hit_priority = UINT32_MAX;
             infer_from(me, inf, sources.data[s], targets.data[t]);
-            if (candidate_count(inf) != before) source_done[s] = true;
+            if (inf->hit_priority == inf->priority) source_done[s] = true;
+            if (saved < inf->hit_priority) inf->hit_priority = saved;
         }
     }
     if (naked_count) {
@@ -525,6 +522,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
         if (!param || param->fixed || (source->flags & TYF_ERROR) || source == ty_intrinsic(me, TY_SILENT_NEVER)) return;
+        if (inf->priority < inf->hit_priority) inf->hit_priority = inf->priority;
         if (!param->has_priority || inf->priority < param->priority) {
             param->co_len = 0;
             param->contra_len = 0;

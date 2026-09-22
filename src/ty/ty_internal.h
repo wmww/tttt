@@ -94,6 +94,7 @@ typedef struct Inference {
     bool collect_infer_params; // conditional types: every `infer X` met in the target becomes a parameter
     // Walk state
     u32 priority;
+    u32 hit_priority; // The best priority an inference was made at since it was last reset (tsc's inferencePriority)
     bool contravariant;
     Ty const* original_target;
     u32 depth;
