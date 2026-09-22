@@ -70,6 +70,22 @@ static Args collect_args(Checker* me, CallExpr const* call) {
                 }
                 continue;
             }
+            if (ty_is_tuple(operand)) {
+                // `[a, b, ...rest]`: the leading elements are arguments of their own, the rest a spread (tsc's
+                // getEffectiveCallArguments). HACK: optional elements and a rest before the end aren't expanded
+                TupleShape const* shape = operand->reference.target->declared.tuple;
+                TyList elements = ty_reference_args(me, operand);
+                u32 leading = 0;
+                while (leading < shape->arity && !shape->flags[leading]) leading++;
+                if (leading + 1 == shape->arity && (shape->flags[leading] & TUPLE_ELEMENT_REST)) {
+                    for (u32 j = 0; j < leading; j++) {
+                        args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true });
+                    }
+                    if (args.spread_index < 0) args.spread_index = (i32)args.len;
+                    args_push(&args, (Arg){ .expr = i, .type = ty_rest_element_type(me, elements.data[leading]), .spread = true });
+                    continue;
+                }
+            }
             Ty const* element = ty_intrinsic(me, TY_ANY);
             if (ty_is_array(me, operand) || ty_is_tuple(operand)) element = ty_rest_element_type(me, operand);
             if (args.spread_index < 0) args.spread_index = (i32)args.len;
