@@ -55,10 +55,10 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   instantiating a node that mentions no type parameter returns the node's type, alias arguments and all.
 - tsc prints string-named enum members as `(typeof E)["b c"]`; we print `E.b c`. Members of ambient non-const enums
   without initializer should be computed (no value); `ty_resolve_enum` auto-increments.
-- Intersection reduction: `A & B` with conflicting discriminants (`kind: 'a'` & `kind: 'b'`) or conflicting
-  privates is `never` in tsc, with TS2339's "The intersection 'A & B' was reduced to 'never' because..." message
-  (intersectionReduction, intersectionReductionStrict, intersectionWithConflictingPrivates, typeGuardsWithInstanceOf,
-  orderMattersForSignatureGroupIdentity: the symbols component lost these when property symbols on unions arrived).
+- Intersection reduction: conflicting discriminants reduce to `never` since plan 08 (`has_conflicting_discriminants`,
+  at construction and only for non-generic object members; tsc does it lazily in getReducedType, so a generic
+  intersection instantiated later isn't re-checked). Conflicting privates don't reduce, and TS2339's "The intersection
+  'A & B' was reduced to 'never' because..." message doesn't exist (intersectionWithConflictingPrivates).
 - Optional chaining has no semantics beyond stripping null/undefined from the receiver (`a?.b`, `a?.[i]`, `f?.()`):
   the result doesn't get `| undefined`, and the rest of the chain isn't short-circuited.
 - `check_with()` (ty/expr.c) computes an expression with a contextual type without going through the LazyType, so it

@@ -492,6 +492,58 @@ static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
     free(unions);
 }
 
+// tsc's isLiteralType: what a property can discriminate by
+static bool is_literal_like(Ty const* t) {
+    if (t->flags & (TYF_BOOLEAN | TYF_ENUM_LITERAL)) return true;
+    if (t->kind == TY_UNION) {
+        for (u32 i = 0; i < t->composite.types.len; i++) {
+            if (!is_literal_like(t->composite.types.data[i])) return false;
+        }
+        return true;
+    }
+    return t->kind == TY_LITERAL || (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE));
+}
+
+// Object types that both have a required property whose types are disjoint, one of them a literal (`{ kind: "a" }
+// & { kind: "b" }`): the intersection is never (tsc's isDiscriminantWithNeverType, via getReducedType). Remembered
+// per member list, since it looks at every property
+static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u32 len) {
+    u32 objects = 0;
+    for (u32 i = 0; i < len; i++) {
+        if ((types[i]->flags & TYF_OBJECT) && !(types[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) objects++;
+    }
+    if (objects < 2 || len > 30) return false;
+    u64 key[32] = { KEY_DISCRIMINANT_CONFLICT };
+    for (u32 i = 0; i < len; i++) key[1 + i] = types[i]->id;
+    void const** slot = intern_slot(me, &my links, key, 1 + len);
+    if (*slot) return (uintptr_t)*slot == 2;
+    *slot = (void const*)1; // (While working it out: no conflict)
+    bool conflict = false;
+    for (u32 i = 0; i < len && !conflict; i++) {
+        Ty const* a = types[i];
+        if (!(a->flags & TYF_OBJECT) || (a->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        Members const* members = ty_members(me, a);
+        for (u32 p = 0; p < members->prop_count && !conflict; p++) {
+            Prop const* prop = members->props[p];
+            if (prop->flags & PROP_OPTIONAL) continue;
+            Ty const* a_type = prop_type(me, prop);
+            for (u32 j = i + 1; j < len && !conflict; j++) {
+                Ty const* b = types[j];
+                if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+                Prop const* other = ty_get_prop(me, b, prop->name);
+                if (!other || (other->flags & PROP_OPTIONAL)) continue;
+                Ty const* b_type = prop_type(me, other);
+                if (!is_literal_like(a_type) && !is_literal_like(b_type)) continue;
+                Ty const* both[2] = { a_type, b_type };
+                conflict = (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) != 0;
+            }
+        }
+    }
+    // (The slot may have moved while the members were resolved)
+    *intern_slot(me, &my links, key, 1 + len) = (void const*)(uintptr_t)(conflict ? 2 : 1);
+    return conflict;
+}
+
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
     if (len == 1) return types[0];
     TyBuf buf = {0};
@@ -567,6 +619,7 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
         if (compiler_options()->strict_null_checks && (includes & TYF_NULLABLE) && (includes & (TYF_OBJECT | TYF_NON_PRIMITIVE))) {
             is_never = true;
         }
+        if (!is_never && out >= 2 && has_conflicting_discriminants(me, buf.data, out)) is_never = true;
         if (is_never) {
             ret = my intrinsics[TY_NEVER];
         } else if (out == 0) {

@@ -30901,7 +30901,7 @@ const baselines = {
         types: false,
     },
     'typeVariableConstraintIntersections': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47547,7 +47547,7 @@ const baselines = {
     },
     'typeGuardsWithInstanceOf': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeGuardsWithInstanceOfByConstructorSignature': {
@@ -61882,12 +61882,12 @@ const baselines = {
     },
     'intersectionReduction': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionReductionStrict': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'intersectionThisTypes': {
@@ -62568,7 +62568,7 @@ const baselines = {
     'neverIntersectionNotCallable': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'neverType': {
         errors: true,
@@ -63533,12 +63533,12 @@ const baselines = {
     'stringLiteralTypesAsTags01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesAsTags02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesAsTags03': {
         errors: true,
