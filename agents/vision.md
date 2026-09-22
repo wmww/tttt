@@ -5,70 +5,37 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-21, after the triage following plan 06; numbers below the first two bullets are older)
-- **Now: `./fasttest.sh` 1971 / 13163 fully pass** (errors 6907, symbols 8787, types 3974). `./realworld.py` runs the
-  corpus from its own tsconfig (`tttt -p`, 223 files incl. `@types/node`): **0 parse, 0 name, 1751 type
-  diagnostics**, 0.6-0.7 s (tsgo 0.72). The triage session found that **the `^^^` underline lines of the types
-  baseline hide 1445 fully passing tests** (`TTTT_IGNORE_UNDERLINES=1`: 3350 full, types 6334): they encode which
-  parts of a printed type tsc's declaration emitter *reused from the source* (parameter names and annotations), see
-  `plans/07_underlines.md`. Until that is done the types component under-reports by 60% and `failstats.py` can't see
-  type-string bugs in half the suite. JS files now have the cheap gate (`allowJs`/`checkJs`, TS6504), diagnostics
-  without a file exist (TS5xxx option validation, TS2688), the harness typechecks next to parse errors like tsc.
-  Plans 04 (binder), 05 (flow/narrowing) and 06 (module resolution) are done; each moved the suite by a whole category
-  in one go. **Module resolution (plan 06)** is tsc's algorithm as a pure module (`src/module_resolution.c`: classic,
-  node10, node16/nodenext/bundler with `exports`/`imports`/conditions, `paths`/`baseUrl`/`rootDirs`, `typesVersions`,
-  type reference directives, automatic `@types`, symlinks), `src/tsconfig.c` (`extends`, `files`/`include`/`exclude`)
-  behind the CLI and the harness, and the harness lives in tsc's virtual filesystem layout (`/.src`). Spurious TS2307
-  went from 348 tests to 44. What's left on that side is small and listed in `hacks.md` ("Module resolution"): the
-  biggest is that **JS files are still parsed as TypeScript** and json modules are `any`.
-- ~28.7k LoC of C in `src/` (30.7k after plan 06) (parser 5.0k, type core `src/ty/` 9.5k, display 1.4k). Inherited from a solo human
-  project halted in 2025, ported onto the cleat stdlib, then had its type core replaced (below).
-- `./fasttest.sh`: **1684 / 13163 tests fully pass** (errors 6401, symbols 8401, types 3733; `./passcount.py`).
-  History, like for like denominators and what each session moved are in `measurements.md` and the git log.
-- **`./realworld.py` (tsc's own `src/compiler`, 193k lines, clean under tsc): 0 syntax errors, 117 name errors, 9699
-  type errors, 0.9 s** (tsc 4.9 s, tsgo 0.78 s, 1.27 s single-threaded; tttt: parse + bind 0.27 s, typecheck 0.6 s). Plan 03 got it
-  from "1119 syntax errors, then heap corruption" to running end to end in one session; the parser needed regex
-  literals, `?.()`, `else` after `b;`, the comma operator, real destructuring patterns, right-associative assignment
-  and a dozen small things; the checker needed `keyof` of a union not to be a cross product, and its first real
-  profile found two silly hot spots worth 3x (line numbers of diagnostics, properties of intersections).
-  **After plan 04: 7754 diagnostics, 1 name error, 0.79 s**: stage 1 fixed the binder bug behind the DOM
-  `Node` (an import merged with a local function); nearly all of the rest is missing narrowing (plan 05).
-- **The binder is new (plan 04 stage 1)**: tsc-shaped symbols with flags and exclude masks, persistent scopes, alias
-  symbols for every import/export form, one exports table per namespace, `var` hoisting, a lib overlay instead of
-  copying 20k declarations per test program (suite 5.1 s -> 3.2 s). It raised every component and removed almost all
-  `log_error` noise in one session, like the type core flips did. Stage 2 moved the type side onto it: the checker
-  knows things by `Symbol*` (`ty_type_of_symbol`, `ty_declared_type_of`, `SymbolLinks`), `Declaration`/`MergedType`/
-  the `typeof` twins are deleted, lib-internal references see a program's augmentations (`binder_redirect`). Pass
-  counts flat, RSS -20..30%. Stages 3 + 4 finished it: the parser lists every module a file names (import types and
-  `import()` included), ambient and pattern modules, module augmentation, `export =`, `export as namespace`,
-  `globalThis` as a namespace, type names printed by symbol accessibility from the enclosing scope (the
-  written-type-name hack is gone), tsc's root file rule in the test harness. 1576 -> 1684 tests, and the corpus now
-  runs with its real options and `@types/node`: **7754 diagnostics, 1 name error, 0.79 s (tsgo 0.83)**. Not reached:
-  name resolution <= 40 ms (72 ms, memory-bound: `measurements.md`), per-file arenas (the audit of what still writes
-  to shared state during declare/resolve is in `hacks.md`). **Module resolution** (typeRoots, paths, package.json
-  exports) is now the visible gap on the module side: its own plan, see `todo.md`.
-- **The type core migration is finished.** Every type is a `Ty` (`src/ty/`): interned, arena-allocated, id-carrying,
-  lazily resolved members, mapper instantiation, tsc-shaped relations (id-keyed caches, maybe-stack, variances),
-  calls/overloads/two-pass inference, contextual typing through one `ty_check_expr(expr, contextual)`, conditional/
-  mapped/indexed types, functions, namespaces and merged declarations. The value-semantic `Type` trees, `TYPE_NEW`,
-  legacy views, clone-and-substitute generics, shadow mode are deleted; `Type` is now `TypeNode`, syntax only. It took
-  8 sessions, every one of which raised pass counts, made the suite faster and removed `log_error` noise; nothing in
-  `Ty` itself had to be redesigned. `documentation.md` describes the result, `hacks.md` what's unfinished in it.
-- The last link nodes (`TYPE_LAZY`, `TYPE_REF`, binding `TYPE_INDEXED`) and `type_clone` are deleted too: `TypeNode`
-  is what the parser made, bindings know their parent pattern (`ty_binding_type()`), a function type is a
-  `FunctionImpl`. What's left of the old world: the statement/expression walk finds its checker through a thread local.
-- The test harness parses every compiler option into one `CompilerOptions` (`src/compiler_options.h`, tsc's defaults
-  resolved, also behind `tttt --target/--lib/--strict...`), runs multi-value directives as separate configurations
-  with tsc's baseline names, and picks the default lib by target like tsc. The *checker* still only reads four of the
-  options; harness-only directives (`@libFiles`, `@noImplicitReferences`, tsconfig files) are ignored. ~900 tests are
-  JS files (`@allowJs`), which tttt parses as TypeScript: the largest source of junk diagnostics, needs its own plan.
-- Measurement: `./failstats.py` (why tests fail, in aggregate) and `./bench.sh` (vs tsc and tsgo), results in
-  `measurements.md`. Headlines: 15% of tests (2017) still get a spurious syntax error (a flat tail, much of it JS files
-  and error-recovery fidelity); the most missed diagnostics are TS2322 and TS2339 (narrowing, freshness/excess
-  properties, honest property-not-found), the most spurious TS2304 (JS/module syntax, missing module resolution).
-  Perf on the (easy, synthetic) corpus tttt can check: **0.55 s vs tsc 3.3 s and tsgo 0.45 s (1.0 s single-threaded)**,
-  RSS between the two. Typecheck is 87 ms of that; **parse (175 ms) and name resolution (166 ms) now dominate**, and
-  tttt still does far less checking work than they do, so there is no perf lead yet - only no evidence of a deficit.
+## State (2026-09-22, insights after the triage following plan 06)
+- **Suite: `./fasttest.sh` 1971 / 13163 fully pass** (errors 6907, symbols 8787, types 3974). The types component
+  under-reports by ~60%: the `^^^` underline lines of the types baseline (which parts of a printed type tsc's
+  declaration emitter reused from source) hide 1445 otherwise fully passing tests (`TTTT_IGNORE_UNDERLINES=1`: 3350
+  full, types 6334). Plan 07 fixes that.
+- **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
+  under tsc): **0 parse, 0 name, 1751 type diagnostics**, 0.6-0.7 s wall (tsgo 0.72 s, tsc 4.7 s). The count has been
+  flat for three plans. 810 of it is one contextual-typing bug in one file; the rest is mostly calls/inference
+  (TS2345/2769/2322 ~510), "not callable" (78), narrowing leftovers, iteration and `this` types. Plan 08.
+- ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
+  corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
+  (interned, id-keyed relations, mapper instantiation, two-pass inference, contextual typing, conditional/mapped/
+  indexed types: 8 sessions), flow graph + narrowing (plan 05), module resolution + tsconfig (plan 06), compiler
+  options in one struct, multi-config tests, JS gate (`allowJs`/`checkJs`), diagnostics without a file.
+  `documentation.md` describes the architecture, `hacks.md` what is approximated in each part.
+- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, `this` types, the iteration protocol
+  and well-known/unique symbols, reverse mapped types, decorators checking, declaration emit (out of scope).
+- History: every foundation plan (type core, binder, flow, modules) moved the suite by a whole category in one go and
+  made it faster. Per-plan numbers are in `measurements.md` and the git log.
+
+## Course correction (insights, 2026-09-22)
+- **The corpus is stalling while the suite rises.** 1750 / 1752 / 1751 diagnostics across plan 05, plan 06 and the
+  triage. That's the pattern the previous course correction (below) warned about. The suite work was not wasted
+  (module resolution was needed), but the corpus is now the next thing: plan 08 works it down root cause by root
+  cause, with the suite as a regression check, and ends with the first bench/profile where tttt does all of the
+  work tsgo does. Until then the perf headline stays "no evidence of a deficit", not "faster".
+- **Plan 07 (underlines) first anyway**: it's one or two sessions, fully planned, and makes the types component
+  a real measurement for everything after it. It's harness fidelity, so it gets a budget (see `todo.md`) and must
+  not grow into a port of tsc's node-reuse edge cases.
+- The spread of the corpus count is smaller than it looks: rank buckets by root cause, not by code (one mapped type
+  with an `as` clause = 810 TS7006). The same goes for `failstats.py`.
 
 ## Course correction (insights, after the type core migration)
 - **tttt had never parsed a real program** until plan 03 (see State). The test suite barely contains regex literals,
@@ -132,9 +99,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type *printing* (alias preservation, union
   ordering by type id, truncation). Union order by creation id is something an interned design can mimic and a
   tree design cannot. Keep this in mind when designing ids.
-- Perf: on real code tttt is at 0.9 s next to tsgo's 0.78 s (1.27 s single-threaded), parse + bind healthy (0.27 s
-  for 9.9 MB, 41 bytes RSS per source byte). **Not a result yet**: tttt fails most calls early and spends time
-  rendering 9.8k errors, tsgo does all the work and reports nothing. Fix correctness on the corpus first, re-profile
+- Perf: on real code tttt is at 0.6-0.7 s next to tsgo's 0.72 s, parse + bind healthy. **Not a result yet**: tttt
+  still fails ~1750 checks early (a failed call skips work), tsgo does all the work and reports nothing. Fix correctness on the corpus first, re-profile
   when the error count is down (the first profile paid for itself at once), and don't trust the synthetic 0.6 s
   headline for anything.
 - Parser robustness: error recovery paths are barely exercised under valgrind (plan 03's heap corruption turned out
@@ -153,6 +119,7 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
    diagnostics without a file~~ done (triage). **Types baseline underlines (plan 07)**: the one remaining harness
    item, and the biggest item of any kind by test count.
+4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison.
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
-6. Parallelism and perf tuning against the benchmark.
+6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.
