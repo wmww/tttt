@@ -519,6 +519,7 @@ struct Checker {
     Ty const* global_types[9]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[9];
     u32 instantiation_depth;
+    u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
     bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589

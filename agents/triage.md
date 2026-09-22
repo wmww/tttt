@@ -73,12 +73,11 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
 - Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
   callee without explicit types), TS1225 (no such parameter), inferred predicates (tsc 5.5), `x is T` where the
   function returns a non-boolean (TS2322 on return).
-- Aliased conditions (`const sf = a && b; if (sf) a.x`) and inferred predicates in `filter(f => f !== undefined)`:
-  see `hacks.md` "Narrowing". 10+7+5 TS2339/TS18048 in the corpus.
+- Inferred predicates in `filter(f => f !== undefined)`: see `hacks.md` "Narrowing".
 - `unknown` where tsc infers a type (~20 TS18046 in the corpus; suite: intraExpressionInferences,
   inferFromGenericFunctionReturnTypes2, mappedTypeRecursiveInference, reverseMappedUnionInference, promiseChaining).
-- Reverse mapped type inference (`{ [K in keyof T]: Box<T[K]> }` as a parameter type) doesn't exist; `infer_from`
-  only sees through the homomorphic `T[K]` template (reverseMappedTupleContext).
+- Reverse mapped types (plan 08) are eager objects, no arrays/tuples, cut at depth 4 (`reverse_mapped_type`); tsc's are
+  lazy. Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
 - Permissive instantiation for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any".
 - Circular aliases: `type N<T, K extends string> = T | { [P in K]: N<T, K> }[K]` is `any` + TS2589-ish in tsc

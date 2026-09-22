@@ -6728,7 +6728,7 @@ const baselines = {
     'controlFlowCommaExpressionAssertionWithinTernary': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowCommaExpressionFunctionCall': {
         errors: true,
@@ -37002,12 +37002,12 @@ const baselines = {
     },
     'controlFlowAliasingCatchVariables(useunknownincatchvariables=false)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'controlFlowAliasingCatchVariables(useunknownincatchvariables=true)': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowAssignmentExpression': {

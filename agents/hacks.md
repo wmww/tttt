@@ -217,8 +217,8 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `Statement.span` (16 bytes per statement) exists only for TS7027 ranges and `last_assignment_end`.
 
 ## Narrowing (`ty/flow.c`, the hooks in `ty/expr.c`; plan 05 stage 2)
-- Not there (each has a TODO in `flow.c`): aliased conditions (`const ok = typeof x === "string"; if (ok)`),
-  destructured discriminants (`const { kind } = x`), `x.constructor === C`, `[Symbol.hasInstance]` predicates,
+- Aliased conditions (`aliased_condition`, plan 08) only narrow identifier references (tsc also readonly properties).
+- Not there (each has a TODO in `flow.c`): destructured discriminants (`const { kind } = x`), `x.constructor === C`, `[Symbol.hasInstance]` predicates,
   `"a" in x` intersecting with `Record<"a", unknown>` when no member is known to have the property, `unknown`
   narrowed by the cases of a `switch`, `switch (x?.kind)` removing nullish, inferred type predicates (tsc 5.5),
   the key property map tsc uses for big unions (`getKeyPropertyName()`: an optimisation, but it also changes which
@@ -254,7 +254,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   generation number in `Checker.links`: the entries of finished generations are garbage until the checker dies.
 - `LazyMemo.hits`: expression memos allow 8 re-entrant evaluations before they answer the error type. It's a runaway
   guard, not a design: tsc has no expression-level cycle detection at all.
-- Aliased conditions (`const ok = x && f(x); if (ok) x.y`, tsc 4.4), narrowing by destructured discriminants
+- Narrowing by destructured discriminants
   (`dependentDestructuredVariables`), inferred type predicates (tsc 5.5: `xs.filter(x => x !== undefined)`) and `in`
   adding `Record<"a", unknown>` to `object`/`unknown` (`inKeywordTypeguard`) don't exist. They show as spurious
   TS18048 / TS2339 now that property access is checked.

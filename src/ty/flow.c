@@ -1483,13 +1483,43 @@ static Ty const* narrow_by_assertion(FlowQuery* q, Ty const* type, Expr const* e
     return narrow_type(q, type, expr, true, false);
 }
 
+// A reference that stays what it is: a const variable, or a parameter or `let` that is never assigned (tsc's
+// isConstantReference, without readonly properties)
+static bool is_constant_reference(Expr const* reference) {
+    if (reference->tag != EXPR_IDENTIFIER) return false;
+    Symbol const* symbol = reference->identifier.target;
+    return symbol && (symbol->is_const || !symbol->is_assigned);
+}
+
+// `const ok = typeof x === "string"; if (ok) x`: the initializer of a const variable without a type annotation that
+// a condition consists of, if the reference can be narrowed through it (tsc inlines up to five levels)
+static Expr const* aliased_condition(FlowQuery* q, Expr const* condition) {
+    if (q->me->flow_inline_level >= 5 || is_matching_reference(q->me, q->reference, condition)) return nullptr;
+    Symbol const* symbol = condition->identifier.target;
+    if (!symbol || !symbol->is_const || symbol->decl_count != 1 || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE) return nullptr;
+    Binding const* binding = symbol->decls[0].node;
+    if (binding->parent || binding->has_explicit_type || !binding->source || binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) {
+        return nullptr;
+    }
+    InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+    if (initialized->value.tag == EXPR_IMPLICIT_ANY || !is_constant_reference(q->reference)) return nullptr;
+    return &initialized->value;
+}
+
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish) {
     if (nullish) return narrow_by_optionality(q, type, expr, assume_true);
     switch (expr->tag) {
-        case EXPR_IDENTIFIER:
-            // TODO: aliased conditions (`const ok = typeof x === "string"`)
+        case EXPR_IDENTIFIER: {
             if (expr->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) return type;
+            Expr const* aliased = aliased_condition(q, expr);
+            if (aliased) {
+                q->me->flow_inline_level++;
+                Ty const* ret = narrow_type(q, type, aliased, assume_true, false);
+                q->me->flow_inline_level--;
+                return ret;
+            }
             return narrow_by_truthiness(q, type, expr, assume_true);
+        }
         case EXPR_PROPERTY:
             return narrow_by_truthiness(q, type, expr, assume_true);
         case EXPR_CALL:
