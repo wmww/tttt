@@ -604,6 +604,8 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple); // The array a tuple also is
+Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
+Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper); // infer.c
 Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);
 bool ty_signatures_identical(Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return);
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count);

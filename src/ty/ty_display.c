@@ -381,6 +381,60 @@ void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
     display_signature(me, d, sig, ": ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
 }
 
+static Atom const* numbered_name(Checker* me, csview base, char const* suffix_format, u32 n) {
+    char buf[256];
+    int len = snprintf(buf, sizeof buf, "%.*s", (int)base.size, base.buf);
+    if (len < 0 || len >= (int)sizeof buf) len = 0;
+    int more = snprintf(buf + len, sizeof buf - (size_t)len, suffix_format, n);
+    if (more > 0) len += more;
+    if (len >= (int)sizeof buf) len = (int)sizeof buf - 1;
+    return checker_atom(me, c_sv(buf, (isize_t)len));
+}
+
+// What tsc names an unlabeled element of a rest tuple (getTupleElementLabel): after the rest parameter
+static Atom const* rest_element_label(Checker* me, SigParam const* rest, u32 index, unsigned char flags) {
+    Binding const* binding = rest->decl ? &rest->decl->initializer.binding : nullptr;
+    if (binding && binding->tag == BINDING_IDENTIFIER) {
+        return flags & TUPLE_ELEMENT_REST ? rest->name : numbered_name(me, atom_sv(rest->name), "_%u", index);
+    }
+    if (binding) return numbered_name(me, c_sv("arg"), "_%u", index); // TODO: names out of an array pattern
+    return numbered_name(me, atom_sv(rest->name), "_%u", index);
+}
+
+// tsc prints a rest parameter of tuple type as the parameters it stands for (getExpandedParameters), unless a rest
+// element comes before the end. Null when there's nothing to expand
+static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* count_out) {
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return nullptr;
+    SigParam const* rest = &sig->params[sig->param_count - 1];
+    if (!ty_is_tuple(rest->type)) return nullptr;
+    TupleShape const* shape = rest->type->reference.target->declared.tuple;
+    for (u32 i = 0; i + 1 < shape->arity; i++) {
+        if (shape->flags[i] & TUPLE_ELEMENT_REST) return nullptr;
+    }
+    TyList elements = ty_reference_args(me, rest->type);
+    u32 count = sig->param_count - 1 + shape->arity;
+    SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
+    memcpy(params, sig->params, sizeof(SigParam) * (sig->param_count - 1));
+    for (u32 i = 0; i < shape->arity; i++) {
+        Atom const* name = shape->names && shape->names[i] ? shape->names[i] : rest_element_label(me, rest, i, shape->flags[i]);
+        // Labels are made unique: `[a: A, a: B]` prints `a: A, a_1: B`
+        Atom const* base = name;
+        for (u32 counter = 1, j = sig->param_count - 1; j < sig->param_count - 1 + i; j++) {
+            if (params[j].name != name) continue;
+            name = numbered_name(me, atom_sv(base), "_%u", counter++);
+            j = sig->param_count - 2;
+        }
+        params[sig->param_count - 1 + i] = (SigParam){
+            .name = name,
+            .type = elements.data[i],
+            .optional = (shape->flags[i] & TUPLE_ELEMENT_OPTIONAL) != 0,
+            .rest = (shape->flags[i] & TUPLE_ELEMENT_REST) != 0,
+        };
+    }
+    *count_out = count;
+    return params;
+}
+
 static void display_signature(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     d.widen_literals = false;
     signature_resolve(me, sig);
@@ -401,8 +455,11 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     bool reusable = d.underline && function;
     display_type_params(me, d, sig->type_params, reusable);
     out_lit(d, "(");
-    for (u32 i = 0; i < sig->param_count; i++) {
-        SigParam const* param = &sig->params[i];
+    u32 param_count = sig->param_count;
+    SigParam const* params = expanded_params(me, sig, &param_count);
+    if (!params) params = sig->params;
+    for (u32 i = 0; i < param_count; i++) {
+        SigParam const* param = &params[i];
         if (i) out_lit(d, ", ");
         if (param->rest) out_lit(d, "...");
         Binding const* name_binding = param->decl ? &param->decl->initializer.binding : nullptr;

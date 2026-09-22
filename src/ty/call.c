@@ -48,43 +48,25 @@ static bool is_empty_tuple(Ty const* ty) {
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
 }
 
-static bool is_fixed_tuple(Ty const* ty) {
-    if (is_empty_tuple(ty)) return true;
-    if (!ty_is_tuple(ty)) return false;
-    TupleShape const* shape = ty->reference.target->declared.tuple;
-    for (u32 i = 0; i < shape->arity; i++) {
-        if (shape->flags[i]) return false;
-    }
-    return true;
-}
-
 static Args collect_args(Checker* me, CallExpr const* call) {
     Args args = { .spread_index = -1 };
     for_each (i, vec_expr, &call->args) {
         if (i->tag == EXPR_SPREAD) {
             Ty const* operand = ty_expr_type(me, i->spread);
-            if (is_fixed_tuple(operand)) {
-                TyList elements = is_empty_tuple(operand) ? (TyList){0} : ty_reference_args(me, operand);
-                for (u32 j = 0; j < elements.len; j++) {
-                    args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true });
-                }
-                continue;
-            }
-            if (ty_is_tuple(operand)) {
-                // `[a, b, ...rest]`: the leading elements are arguments of their own, the rest a spread (tsc's
-                // getEffectiveCallArguments). HACK: optional elements and a rest before the end aren't expanded
-                TupleShape const* shape = operand->reference.target->declared.tuple;
-                TyList elements = ty_reference_args(me, operand);
-                u32 leading = 0;
-                while (leading < shape->arity && !shape->flags[leading]) leading++;
-                if (leading + 1 == shape->arity && (shape->flags[leading] & TUPLE_ELEMENT_REST)) {
-                    for (u32 j = 0; j < leading; j++) {
+            if (ty_is_tuple(operand) || is_empty_tuple(operand)) {
+                // Each element is an argument of its own, a rest element stands for any number of them (tsc's
+                // getEffectiveCallArguments)
+                TupleShape const* shape = ty_is_tuple(operand) ? operand->reference.target->declared.tuple : operand->declared.tuple;
+                TyList elements = ty_is_tuple(operand) ? ty_reference_args(me, operand) : (TyList){0};
+                for (u32 j = 0; j < shape->arity; j++) {
+                    if (shape->flags[j] & TUPLE_ELEMENT_REST) {
+                        if (args.spread_index < 0) args.spread_index = (i32)args.len;
+                        args_push(&args, (Arg){ .expr = i, .type = ty_rest_element_type(me, elements.data[j]), .spread = true });
+                    } else {
                         args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true });
                     }
-                    if (args.spread_index < 0) args.spread_index = (i32)args.len;
-                    args_push(&args, (Arg){ .expr = i, .type = ty_rest_element_type(me, elements.data[leading]), .spread = true });
-                    continue;
                 }
+                continue;
             }
             Ty const* element = ty_intrinsic(me, TY_ANY);
             if (ty_is_array(me, operand) || ty_is_tuple(operand)) element = ty_rest_element_type(me, operand);
@@ -97,12 +79,6 @@ static Args collect_args(Checker* me, CallExpr const* call) {
     return args;
 }
 
-static Ty const* with_undefined(Checker* me, Ty const* type) {
-    if (!compiler_options()->strict_null_checks) return type;
-    Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
-    return ty_union(me, parts, 2, nullptr, (TyList){0});
-}
-
 static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const* mapper) {
     signature_resolve(me, sig);
     ParamShape shape = { .min = sig->min_args };
@@ -113,7 +89,7 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
         SigParam const* param = &sig->params[i];
         Ty const* type = ty_instantiate(me, param->type, mapper);
         if (!param->rest) {
-            shape.types[shape.count++] = param->optional ? with_undefined(me, type) : type;
+            shape.types[shape.count++] = param->optional ? ty_optional_param_type(me, type) : type;
             continue;
         }
         if (type->kind == TY_TYPE_PARAM) {
@@ -137,7 +113,7 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
                     break;
                 }
                 bool optional = (tuple->flags[j] & TUPLE_ELEMENT_OPTIONAL) != 0;
-                shape.types[shape.count++] = optional ? with_undefined(me, elements.data[j]) : elements.data[j];
+                shape.types[shape.count++] = optional ? ty_optional_param_type(me, elements.data[j]) : elements.data[j];
                 if (optional) counting_required = false;
                 if (counting_required) shape.min++;
             }

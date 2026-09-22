@@ -173,6 +173,35 @@ static TyMapper const* base_signature_mapper(Checker* me, Signature const* sig) 
     return ty_mapper_new(me, sig->type_params, (TyList){ .data = targets, .len = sig->type_params.len });
 }
 
+// What an optional parameter holds: `undefined` too, under strictNullChecks (tsc's addOptionality)
+Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
+    if (!compiler_options()->strict_null_checks) return type;
+    Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
+// The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
+// getRestTypeAtPosition, less its shortcut for a lone rest parameter)
+Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper) {
+    u32 arity = sig->param_count > from ? sig->param_count - from : 0;
+    unsigned char* flags = calloc(arity ? arity : 1, 1);
+    Atom const** names = calloc(arity ? arity : 1, sizeof(Atom const*));
+    Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
+    for (u32 j = 0; j < arity; j++) {
+        SigParam const* param = &sig->params[from + j];
+        flags[j] = (param->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (param->rest ? TUPLE_ELEMENT_REST : 0);
+        names[j] = param->name;
+        elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
+    }
+    TupleShape shape = { .arity = arity, .flags = flags, .names = names };
+    Ty const* target = ty_tuple_target(me, &shape);
+    Ty const* ret = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
+    free(flags);
+    free(names);
+    free(elements);
+    return ret;
+}
+
 static void infer_from_signatures(Checker* me, Inference* inf, Signature const* source, Signature const* target) {
     signature_resolve(me, source);
     signature_resolve(me, target);
@@ -188,23 +217,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
             if (i < source->param_count && source->params[i].rest && i + 1 == source->param_count) {
                 infer_from(me, inf, ty_instantiate(me, source->params[i].type, base), target_param->type);
             } else {
-                u32 arity = source->param_count > i ? source->param_count - i : 0;
-                unsigned char* flags = calloc(arity ? arity : 1, 1);
-                Atom const** names = calloc(arity ? arity : 1, sizeof(Atom const*));
-                Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
-                for (u32 j = 0; j < arity; j++) {
-                    SigParam const* source_param = &source->params[i + j];
-                    flags[j] = (source_param->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (source_param->rest ? TUPLE_ELEMENT_REST : 0);
-                    names[j] = source_param->name;
-                    elements[j] = ty_instantiate(me, source_param->type, base);
-                }
-                TupleShape shape = { .arity = arity, .flags = flags, .names = names };
-                Ty const* tuple_target = ty_tuple_target(me, &shape);
-                Ty const* tuple = arity ? ty_reference(me, tuple_target, (TyList){ .data = elements, .len = arity }) : tuple_target;
-                infer_from(me, inf, tuple, target_param->type);
-                free(flags);
-                free(names);
-                free(elements);
+                infer_from(me, inf, ty_signature_params_tuple(me, source, i, base), target_param->type);
             }
             break;
         }

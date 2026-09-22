@@ -482,9 +482,12 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
     return ty_intrinsic(me, TY_ANY);
 }
 
-// The type of parameter i, null if there's none. A rest parameter stands for every position from its own on
+// The type of parameter i, null if there's none. A rest parameter stands for every position from its own on. An
+// optional parameter holds undefined too (tsc's getTypeAtPosition)
 static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
-    if (i < sig->param_count && !sig->params[i].rest) return sig->params[i].type;
+    if (i < sig->param_count && !sig->params[i].rest) {
+        return sig->params[i].optional ? ty_optional_param_type(me, sig->params[i].type) : sig->params[i].type;
+    }
     if (sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 >= sig->param_count) {
         Ty const* rest = sig->params[sig->param_count - 1].type;
         if (ty_is_tuple(rest)) {

@@ -685,6 +685,12 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
     return ret;
 }
 
+// `[b?: number]` has an element of type `number | undefined` (tsc's addOptionality)
+static Ty const* tuple_element_type(Checker* me, TupleElement const* element, LowerCtx ctx) {
+    Ty const* type = ty_from_node(me, &element->type, ctx);
+    return element->optional ? ty_optional_param_type(me, type) : type;
+}
+
 static Ty const* lower_tuple(Checker* me, TypeNode const* node, LowerCtx ctx) {
     Ty const* target = tuple_target_of_node(me, node);
     u32 arity = (u32)vec_tuple_element_size(&node->tuple.elements);
@@ -692,7 +698,7 @@ static Ty const* lower_tuple(Checker* me, TypeNode const* node, LowerCtx ctx) {
     Ty const** args = malloc(sizeof(Ty const*) * arity);
     for_each (i, vec_tuple_element, &node->tuple.elements) {
         // TODO: tsc keeps the element type of a rest element (`T` for `...T[]`), this keeps what was written
-        args[i_index] = ty_from_node(me, &i->type, ctx);
+        args[i_index] = tuple_element_type(me, i, ctx);
     }
     Ty const* ret = ty_reference(me, target, (TyList){ .data = args, .len = arity });
     free(args);
@@ -814,8 +820,9 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     deferred->state = LAZY_STATE_IN_FLIGHT;
     TypeNode const* node = deferred->node;
     for (u32 i = 0; i < len; i++) {
-        TypeNode const* element = node->tag == TYPE_ARRAY ? node->array.element : &vec_tuple_element_at(&node->tuple.elements, i)->type;
-        args[i] = ty_instantiate(me, ty_from_node(me, element, deferred->ctx), deferred->mapper);
+        Ty const* element = node->tag == TYPE_ARRAY ? ty_from_node(me, node->array.element, deferred->ctx) :
+            tuple_element_type(me, vec_tuple_element_at(&node->tuple.elements, i), deferred->ctx);
+        args[i] = ty_instantiate(me, element, deferred->mapper);
     }
     deferred->args = (TyList){ .data = args, .len = len };
     deferred->state = LAZY_STATE_DONE;

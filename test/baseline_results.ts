@@ -6511,7 +6511,7 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24578,7 +24578,7 @@ const baselines = {
     'parameterListAsTupleType': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parameterNamesInTypeParameterList': {
         errors: false,
@@ -42308,7 +42308,7 @@ const baselines = {
     'readonlyRestParameters': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralShorthandProperties': {
         errors: true,
@@ -46596,7 +46596,7 @@ const baselines = {
         types: false,
     },
     'callWithSpread5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

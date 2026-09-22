@@ -390,7 +390,7 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
     for (u32 i = 0; i < sig->param_count; i++) {
         SigParam const* param = &sig->params[i];
         if (!param->rest) {
-            if (i == index && !as_rest) return param->type;
+            if (i == index && !as_rest) return param->optional ? ty_optional_param_type(me, param->type) : param->type;
             continue;
         }
         if (index < i) return nullptr;
@@ -402,7 +402,8 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
         if (ty_is_array(me, param->type) || (param->type->flags & TYF_ANY)) return ty_rest_element_type(me, param->type);
         return ty_access(me, param->type, ty_intrinsic(me, TY_NUMBER));
     }
-    return nullptr;
+    // A rest parameter where the signature has plain ones: the tuple of those left
+    return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
 }
 
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
