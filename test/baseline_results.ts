@@ -24256,9 +24256,9 @@ const baselines = {
         types: true,
     },
     'overEagerReturnTypeSpecialization': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'overload1': {
         errors: false,
@@ -30626,9 +30626,9 @@ const baselines = {
         types: true,
     },
     'typeParameterFixingWithContextSensitiveArguments5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterHasSelfAsConstraint': {
         errors: false,

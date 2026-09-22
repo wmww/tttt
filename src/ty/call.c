@@ -297,6 +297,25 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
 }
 
+// Whether checking a context-sensitive argument against `param_type` fixes type parameter `param`: its parameters are
+// typed for good, so what they mention is decided. The contextual return type isn't (tsc instantiates it with the
+// non-fixing mapper). Anything other than a single signature is taken to decide everything it mentions
+static bool fixed_by_argument(Checker* me, Ty const* param_type, Ty const* param) {
+    if (!param_type) return false;
+    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+    TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
+    Members const* members = param_type->kind == TY_ANONYMOUS ? ty_members(me, param_type) : nullptr;
+    if (!members || members->call_count != 1 || members->prop_count || members->construct_count) {
+        return ty_instantiate(me, param_type, probe) != param_type;
+    }
+    Signature const* contextual = members->call[0];
+    signature_resolve(me, contextual);
+    for (u32 i = 0; i < contextual->param_count; i++) {
+        if (ty_instantiate(me, contextual->params[i].type, probe) != contextual->params[i].type) return true;
+    }
+    return false;
+}
+
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
 static TyMapper const* infer_type_arguments(
     Checker* me, Signature const* sig, Args* args, Ty const* contextual, bool skip_sensitive
@@ -330,10 +349,12 @@ static TyMapper const* infer_type_arguments(
         if (i >= shape.count && shape.rest_variadic) break;
         if (!arg->context_sensitive) continue;
         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
-        for (u32 j = 0; j < inf.len; j++) {
-            if (inf.params[j].co_len || inf.params[j].contra_len) inf.params[j].fixed = so_far->targets[j];
-        }
         Ty const* param_type = shape_type_at(&shape, i);
+        for (u32 j = 0; j < inf.len; j++) {
+            if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, param_type, sig->type_params.data[j])) {
+                inf.params[j].fixed = so_far->targets[j];
+            }
+        }
         arg->type = ty_check_expr(me, arg->expr, param_type ? ty_instantiate(me, param_type, so_far) : nullptr);
         infer_from_arg(me, &inf, &shape, args, i);
     }
