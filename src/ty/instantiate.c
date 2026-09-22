@@ -353,7 +353,10 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             TyList args = ty->reference.args;
             Ty const** buf = args.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * args.len);
             TyList mapped = instantiate_list(me, args, mapper, buf, args.len);
-            Ty const* ret = mapped.data == args.data ? ty : ty_reference(me, ty->reference.target, mapped);
+            Ty const* this_arg = ty->reference.this_arg;
+            Ty const* mapped_this = this_arg ? ty_instantiate(me, this_arg, mapper) : nullptr;
+            Ty const* ret = mapped.data == args.data && mapped_this == this_arg ? ty :
+                ty_reference_with_this(me, ty->reference.target, mapped, mapped_this);
             if (buf != stack_buf) free(buf);
             return ret;
         }

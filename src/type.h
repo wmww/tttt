@@ -35,11 +35,13 @@ typedef enum ThisKind {
     THIS_CLASS_STATIC,   // symbol: the class
     THIS_ANY,            // A function that isn't a method or arrow function
     THIS_PARAMETER,      // symbol: the `this` parameter
+    THIS_INTERFACE,      // symbol: the interface (only a `this` type means something there)
 } ThisKind;
 
 typedef struct ThisRef {
     ThisKind kind;
     Symbol const* symbol;
+    struct InterfaceDecl* interface; // THIS_INTERFACE: the declaration, which learns that it mentions `this`
 } ThisRef;
 g_declare_vec(TupleElement, tuple_element);
 

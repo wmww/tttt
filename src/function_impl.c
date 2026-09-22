@@ -86,7 +86,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (i->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
-            function_scope->this_ref = (ThisRef){ THIS_PARAMETER, i->initializer.binding.symbol };
+            function_scope->this_ref = (ThisRef){ .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol };
         }
     }
 

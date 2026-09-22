@@ -130,6 +130,13 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
     return ty_reference(me, declared, declared->declared.type_params);
 }
 
+bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
+    if (function->constructed_class || function->ret_explicit || !function->has_body) return false;
+    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
+    FunctionReturn const* memo = intern_get(&my links, key, 2);
+    return memo && memo->state == LAZY_STATE_IN_FLIGHT;
+}
+
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     if (function->constructed_class) return ty_class_instance_type(me, function->constructed_class);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);

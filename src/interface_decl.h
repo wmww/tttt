@@ -12,6 +12,7 @@ typedef struct InterfaceDecl {
     VecSpannedType extends;
     TypeNode type;
     Symbol* symbol;
+    bool contains_this; // A `this` type is written somewhere in it (tsc's NodeFlags.ContainsThis), set when resolving
 } InterfaceDecl;
 
 void interface_decl_drop(InterfaceDecl* me);

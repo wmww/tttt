@@ -437,16 +437,20 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
   evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
   side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.
-- `builder_add_class_items`: no parameter properties (`constructor(public x)`, the parser doesn't even keep the
-  modifier), no `this` type parameter, no accessibility (private/protected are ordinary members), computed member names
-  only if the item has a `name_string`.
+- `builder_add_class_items`: no accessibility (private/protected are ordinary members).
+- `this` types (plan 10 stage 1): `Prop.thisless` follows tsc's syntactic isThisless* rules, so every class member
+  without annotations is instantiated once per class (and per derived class: inherited members are the base's with
+  this-argument = the derived `this`). No `this is T` as a *property* type (`isFSO: this is FileSystemObject`
+  doesn't parse, typeGuardOfFormThisMember), no TS2526 for `this` outside a class/interface, `this` in a static member
+  is the static side (tsc: error), relations compare a reference with a this-argument structurally with the plain one
+  (tsc: the this-argument is one more covariant type argument).
 - `ty_resolve_enum` / `evaluate` (enums.c): no template literals or `const` variable references in initializers, members
   of ambient enums without initializer auto-increment (tsc: computed). Declaration-merged enums don't get this far
   (`declaration_init` refuses a second namespace). String-named members print as `E.b c`, not `(typeof E)["b c"]`.
 - `relate.c` gaps: no excess property checks / freshness, no weak type check, no private/protected/nominal class
   rules, no discriminated-union decomposition of the source, no optionality of parameters (`undefined` isn't added
   under strictNullChecks), signatures/index signatures of a source intersection aren't combined (properties are),
-  `this` types. `compare_signatures`: generic source signatures are unified positionally with same-arity generic
+  `compare_signatures`: generic source signatures are unified positionally with same-arity generic
   targets, else erased to `any` (tsc instantiates the source in the context of the target; needs inference).
   Array<S> -> ReadonlyArray<T> is a shortcut on the element types (`structured_related`).
 - `get_variances`: arrays, tuples and synthetic targets are hardcoded covariant (tsc does the same for arrays and
@@ -488,9 +492,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `registered_type_param`: `infer X` and mapped-type keys are `DECLARATION_TYPE` declarations, indistinguishable
   from aliases unless the conditional/mapped type that introduces them was lowered first (true whenever lowering
   starts from the enclosing declaration or annotation, which is the only way they're in scope).
-- `lower_identifier`: `this` types and a bare generic class name inside its own body lower to the class applied to
-  its own type parameters; there is no `this` type parameter yet. The `object` keyword is recognised by being a
-  builtin declaration named "object".
+- `lower_identifier`: the `object` keyword is recognised by being a builtin declaration named "object".
 - `lower` (composites): skips the `any` placeholder `parse_type` makes for a leading `&`.
 - `lower_tuple`: rest elements keep the written type (`...T[]` holds `T[]`), tsc holds the element type. Tuple
   targets have no members yet (`length`, numeric props, array methods).

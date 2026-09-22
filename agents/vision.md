@@ -6,20 +6,21 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-22, after plan 09)
-- **Suite: `./fasttest.sh` 3935 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plans 08/09's corpus fixes moved the suite by +439 on the side.
+- **Suite: `./fasttest.sh` 4107 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plans 08-10's corpus fixes moved the suite by +611 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 109 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
-  plan 09 took the iteration bucket, 203 -> 109). What is left is mostly three category-sized gaps (higher-order
-  generic function inference, `this` types, fresh/regular literals: plan 08 "Progress") plus a tail of ~25 singles.
-- `this` types are the biggest single suite blocker found so far: ~242 types baselines fail only on them.
+  under tsc): **0 parse, 0 name, 95 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
+  plan 09 took the iteration bucket, 203 -> 109, plan 10 stage 1 the `this` cascades, -> 95). What is left is mostly
+  two category-sized gaps (higher-order generic function inference, fresh/regular literals: plan 08 "Progress") plus
+  a tail of ~25 singles.
+- `this` types (plan 10) landed in stage 1 (+172 full passes); contextual `this` (stage 2) is next.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
   corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
   (interned, id-keyed relations, mapper instantiation, two-pass inference, contextual typing, conditional/mapped/
   indexed types: 8 sessions), flow graph + narrowing (plan 05), module resolution + tsconfig (plan 06), compiler
   options in one struct, multi-config tests, JS gate (`allowJs`/`checkJs`), diagnostics without a file.
   `documentation.md` describes the architecture, `hacks.md` what is approximated in each part.
-- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, `this` types, reverse mapped types,
+- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, contextual `this`, reverse mapped types,
   decorators checking, declaration emit (out of scope). The iteration protocol, unique symbols and generators landed
   in plan 09 (`ty/iterate.c`).
 - History: every foundation plan (type core, binder, flow, modules) moved the suite by a whole category in one go and

@@ -167,6 +167,12 @@ static void call_signatures(Checker* me, Ty const* ty, SigList* out) {
         out->data = out->inline_data;
         out->cap = c_arraylen(out->inline_data);
     }
+    if (ty->flags & TYF_DEFERRED) {
+        // `this["entries"]`: what it is at least
+        Ty const* constraint = ty_base_constraint(me, ty);
+        if (!constraint || constraint == ty) return;
+        ty = constraint;
+    }
     TyList parts = ty->kind == TY_INTERSECTION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
         Ty const* part = ty_apparent_type(me, parts.data[i]);

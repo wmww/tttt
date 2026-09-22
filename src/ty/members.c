@@ -106,6 +106,47 @@ static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 
     prop->decl_span_count += count;
 }
 
+// tsc's isThislessType: types that syntactically can't mention `this` (keywords, literals, arrays of those, names
+// whose type arguments are those). Anything else is assumed to
+static bool type_node_is_thisless(TypeNode const* node) {
+    switch (node->tag) {
+        case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_NEVER: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER:
+        case TYPE_STRING: case TYPE_SYMBOL: case TYPE_BIGINT: case TYPE_VALUE: case TYPE_UNIQUE_SYMBOL:
+            return true;
+        case TYPE_ARRAY:
+            return type_node_is_thisless(node->array.element);
+        case TYPE_IDENTIFIER:
+            if (node->identifier->keyword == KEYWORD_IDENTIFIER_THIS) return false;
+            for_each (i, vec_spanned_type, &node->identifier->generic_params) {
+                if (!type_node_is_thisless(&i->type)) return false;
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
+// tsc's isThislessVariableLikeDeclaration: an annotation that is thisless, or neither an annotation nor an initializer
+static bool binding_is_thisless(bool has_type, TypeNode const* type, bool has_initializer) {
+    return has_type ? type_node_is_thisless(type) : !has_initializer;
+}
+
+// tsc's isThislessFunctionLikeDeclaration
+static bool function_is_thisless(FunctionImpl const* function) {
+    if (!function->is_constructor && !(function->ret_explicit && type_node_is_thisless(&function->ret))) return false;
+    for_each (i, vec_function_arg, &function->args) {
+        InitializedBinding const* binding = &i->initializer;
+        if (!binding_is_thisless(binding->binding.has_explicit_type, &binding->binding.explicit_type,
+                binding->value.tag != EXPR_IMPLICIT_ANY)) {
+            return false;
+        }
+    }
+    for_each (i, vec_generic_item, &function->generic.items) {
+        if (i->extends_explicit && !type_node_is_thisless(&i->extends)) return false;
+    }
+    return true;
+}
+
 // Adds the members written in (or, for classes/enums/namespaces, evaluated by the legacy checker into) an Interface
 static void builder_add_interface_member(
     Checker* me, MembersBuilder* builder, InterfaceMember const* i, LowerCtx ctx, Symbol const* parent
@@ -138,6 +179,7 @@ static void builder_add_interface_member(
                         functions[count] = i->type.callable->function;
                         existing->overloads = functions;
                         existing->overload_count = count + 1;
+                        existing->thisless &= function_is_thisless(i->type.callable->function);
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     }
                     break;
@@ -148,6 +190,8 @@ static void builder_add_interface_member(
                 prop->node = &i->type;
                 prop->ctx = ctx;
                 prop->ctx.method = is_method;
+                prop->thisless = i->type.tag == TYPE_CALLABLE ?
+                    function_is_thisless(i->type.callable->function) : type_node_is_thisless(&i->type);
                 if (i->optional) prop->flags |= PROP_OPTIONAL;
                 if (i->readonly) prop->flags |= PROP_READONLY;
                 if (is_method) prop->flags |= PROP_METHOD;
@@ -337,6 +381,8 @@ static void builder_add_class_items(
                 } else {
                     prop->lazy = &i->field.lazy_type;
                 }
+                prop->thisless = binding_is_thisless(i->field.has_explicit_type, &i->field.explicit_type,
+                    i->field.value.tag != EXPR_IMPLICIT_ANY);
                 if (i->field.is_optional) prop->flags |= PROP_OPTIONAL;
                 if (i->field.is_readonly) prop->flags |= PROP_READONLY;
             }   break;
@@ -407,6 +453,8 @@ static void builder_add_class_items(
                     if (!prop) break;
                     prop->function = functions[0];
                     prop->flags |= PROP_METHOD;
+                    prop->thisless = true;
+                    for (u32 f = 0; f < count; f++) prop->thisless &= function_is_thisless(functions[f]);
                     prop_add_decl_spans(me, prop, spans, span_count);
                     if (i->method.is_optional) prop->flags |= PROP_OPTIONAL;
                     if (count > 1) {
@@ -439,6 +487,8 @@ static void builder_add_class_items(
                     } else {
                         prop->lazy = &arg->initializer.lazy_type;
                     }
+                    prop->thisless = binding_is_thisless(binding->has_explicit_type, &binding->explicit_type,
+                        arg->initializer.value.tag != EXPR_IMPLICIT_ANY);
                     if (arg->explicit_optional) prop->flags |= PROP_OPTIONAL;
                     if (arg->is_readonly_property) prop->flags |= PROP_READONLY;
                     builder_push(builder, props, prop);
@@ -662,9 +712,13 @@ bool ty_has_unresolved_base(Checker* me, Ty const* ty) {
 
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple);
 
+// The members as declared: own members, then what the bases add. For a type with a `this` type these mention it, and
+// the bases are taken with the this-argument being it (tsc's resolveDeclaredMembers + the base part of
+// resolveObjectTypeMembers)
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
-    LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 };
+    Ty const* this_param = ty->declared.this_param;
+    LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 || this_param };
     MembersBuilder builder = {0};
     if (ty->declared.merged_value) {
         builder_add_merged_value(me, &builder, ty->declared.merged_value);
@@ -688,14 +742,14 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     Ty const* base = nullptr;
                     Symbol const* base_decl = nullptr;
                     if (class_base(me, node->node, ctx, &base, &base_decl) && base != ty) {
-                        builder_add_inherited(me, &builder, base);
+                        builder_add_inherited(me, &builder, this_param ? ty_with_this_arg(me, base, this_param) : base);
                     }
                 } else if (node->kind == SYMBOL_DECL_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->node;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
                         Ty const* base = ty_from_node(me, &extends->type, ctx);
                         if (base != ty && (base->flags & TYF_OBJECT)) {
-                            builder_add_inherited(me, &builder, base);
+                            builder_add_inherited(me, &builder, this_param ? ty_with_this_arg(me, base, this_param) : base);
                         }
                     }
                 }
@@ -747,10 +801,17 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     return builder_finish(me, &builder);
 }
 
-static Members const* resolve_instantiated_members(Checker* me, Ty const* target, TyMapper const* mapper, bool applies_type_args) {
-    Members const* source = ty_members(me, target);
+// `this_only`: the mapper only says what `this` is, so members that can't mention it are shared rather than
+// instantiated (tsc's createInstantiatedSymbolTable with mappingThisOnly)
+static Members const* instantiate_members(
+    Checker* me, Members const* source, TyMapper const* mapper, bool applies_type_args, bool this_only
+) {
     MembersBuilder builder = {0};
     for (u32 i = 0; i < source->prop_count; i++) {
+        if (this_only && source->props[i]->thisless) {
+            builder_push(&builder, props, source->props[i]);
+            continue;
+        }
         Prop* prop = arena_new(&my arena, Prop);
         *prop = (Prop){
             .name = source->props[i]->name,
@@ -793,6 +854,44 @@ static Members const* resolve_instantiated_members(Checker* me, Ty const* target
         builder.mapped = mapped;
     }
     return builder_finish(me, &builder);
+}
+
+static Members const* resolve_instantiated_members(Checker* me, Ty const* target, TyMapper const* mapper, bool applies_type_args) {
+    return instantiate_members(me, ty_members(me, target), mapper, applies_type_args, false);
+}
+
+// The raw members of a declared type with a `this` type (see resolve_declared_members()), memoised in Ty.declared.raw
+static Members const* declared_raw_members(Checker* me, Ty const* declared) {
+    TyObjectState* state = declared->declared.raw;
+    switch (state->members_state) {
+        case LAZY_STATE_DONE: return state->members;
+        case LAZY_STATE_IN_FLIGHT: return &empty_members; // `interface A extends A`
+        case LAZY_STATE_NOT_STARTED: break;
+    }
+    state->members_state = LAZY_STATE_IN_FLIGHT;
+    state->members = resolve_declared_members(me, declared);
+    state->members_state = LAZY_STATE_DONE;
+    return state->members;
+}
+
+// The members of `target` (a declared type with a `this` type) applied to type arguments and a this-argument (tsc's
+// resolveTypeReferenceMembers)
+static Members const* resolve_members_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg) {
+    TyList params = target->declared.type_params;
+    Ty const** sources = arena_new_n(&my arena, Ty const*, params.len + 1);
+    Ty const** targets = arena_new_n(&my arena, Ty const*, params.len + 1);
+    bool this_only = true;
+    for (u32 i = 0; i < params.len; i++) {
+        sources[i] = params.data[i];
+        targets[i] = args.data[i];
+        this_only &= args.data[i] == params.data[i];
+    }
+    sources[params.len] = target->declared.this_param;
+    targets[params.len] = this_arg;
+    TyMapper const* mapper = ty_mapper_new(
+        me, (TyList){ .data = sources, .len = params.len + 1 }, (TyList){ .data = targets, .len = params.len + 1 }
+    );
+    return instantiate_members(me, declared_raw_members(me, target), mapper, false, this_only);
 }
 
 // The property names a mapped type key produces: the key itself, or the `as` clause instantiated for it
@@ -996,11 +1095,20 @@ static Members const* resolve_members(Checker* me, Ty const* ty) {
 static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
     switch (ty->kind) {
         case TY_DECLARED:
+            if (ty->declared.this_param) {
+                // As a type of its own it is the class/interface applied to its own type parameters, `this` included
+                Ty const* self = ty->declared.type_params.len ? ty_reference(me, ty, ty->declared.type_params) : ty;
+                return resolve_members_with_this(me, ty, ty->declared.type_params, self);
+            }
             return resolve_declared_members(me, ty);
 
         case TY_REFERENCE: {
             Ty const* target = ty->reference.target;
             if (target->declared.kind == TY_DECLARED_TUPLE_TARGET) return resolve_tuple_members(me, ty);
+            if (target->declared.this_param) {
+                Ty const* this_arg = ty->reference.this_arg ? ty->reference.this_arg : ty;
+                return resolve_members_with_this(me, target, ty_reference_args(me, ty), this_arg);
+            }
             TyMapper const* mapper = ty_mapper_new(me, target->declared.type_params, ty_reference_args(me, ty));
             return resolve_instantiated_members(me, target, mapper, false);
         }
@@ -1214,6 +1322,16 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     sig->ret = ret;
     sig->ret_state = LAZY_STATE_DONE;
     return ret;
+}
+
+bool ty_signature_return_in_flight(Checker* me, Signature const* sig) {
+    for (u32 depth = 0; sig && depth < 64; depth++) {
+        if (sig->ret_state == LAZY_STATE_DONE) return false;
+        if (sig->ret_state == LAZY_STATE_IN_FLIGHT) return true;
+        if (!sig->target) return sig->function && !sig->function->is_type && ty_function_return_in_flight(me, sig->function);
+        sig = sig->target;
+    }
+    return false;
 }
 
 // Only ever from an annotation, so asking doesn't infer a return type (TODO: tsc 5.5 infers `x is T` for functions

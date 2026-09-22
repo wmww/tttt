@@ -257,6 +257,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (span_equals(my identifier->name, "object")) {
                 break;
             }
+            if (my identifier->keyword == KEYWORD_IDENTIFIER_THIS) break; // A `this` type isn't an identifier to tsc
             if (my identifier->target && !span_valid(my identifier->target->name_span)) {
                 break;
             }

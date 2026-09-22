@@ -1111,7 +1111,7 @@ ThisRef scope_get_this(Scope const* me, bool type_else_value) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
         ThisKind kind = scope->this_ref.kind;
         if (!kind) continue;
-        bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC;
+        bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC || kind == THIS_INTERFACE;
         if (!type_else_value || is_class) return scope->this_ref;
     }
     return (ThisRef){0};

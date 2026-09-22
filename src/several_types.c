@@ -1,4 +1,5 @@
 #include "several_types.h"
+#include "interface_decl.h"
 #include "flow.h"
 #include "source_file.h"
 #include "ty/ty.h"
@@ -169,6 +170,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             ThisRef this_ref = scope_get_this(names, true);
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
+            if (this_ref.interface) this_ref.interface->contains_this = true;
         }
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);

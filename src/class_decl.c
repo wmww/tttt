@@ -164,7 +164,7 @@ void class_decl_add_names(ClassDecl* me, Scope* scope, bool exported) {
 
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
-    this_scope->this_ref = (ThisRef){ static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, my symbol };
+    this_scope->this_ref = (ThisRef){ .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol };
 
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {

@@ -50,7 +50,13 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint); tttt reports TS2370 there (@types/node
   events.d.ts x4 in the corpus) and presumably mis-relates such types elsewhere. Category-sized-ish: needs a Ty kind
   or a flag on indexed/type-param references made in a conditional's true branch.
-- **`this` types**: `plans/10_this_types.md`.
+- **`this` types**: `plans/10_this_types.md` stages 2-3 (contextual `this`, TS2683/TS2684, class/interface checks).
+- Overloaded methods with callback parameters that mention the other type (typedArraysCrossAssignability01, lost to plan
+  10 because `array: this` now resolves): `interface A<T> { reduce(cb: (p: number, array: A<T>) => number): number;
+  reduce(cb: (p: number, array: A<T>) => number, init: number): number; readonly [Symbol.toStringTag]: "a" }` and the
+  same `B` with "b": `a = b` blames `reduce` (tsc: `[Symbol.toStringTag]`, reduce is related through the in-progress
+  B -> A pair). One overload works, two don't: something in the N x M signature comparison (erasure? caching of a
+  result that depended on a maybe?) loses the assumption.
 - **Target-gated diagnostics** now possible (`compiler_options()->target` exists): TS18028 (private identifiers <
   ES2015), TS2705/TS2468 (async needs `Promise`), TS1375/TS1378 (top-level await), TS2802 (iteration needs
   `downlevelIteration`), TS1056 (accessors, ES3), TS2583/TS2584/TS2580/TS2582/TS2581 "Cannot find name" flavours

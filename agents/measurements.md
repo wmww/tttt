@@ -2,6 +2,14 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 10 stage 1: `this` types: real corpus 109 -> 95
+Suite: **4107 full of 13163** (was 3935), errors 7234, symbols 9168, types 7233 (+336). Lost: typedArraysCrossAssignability01
+(a pre-existing overload relation bug `this` now reaches, triage.md). Real corpus: **95 type diagnostics** (TS2558 38,
+TS2345 31, TS2322 16, TS2370 4, TS7022 4, TS2678 1, TS2339 1): the resolutionCache.ts/builder.ts `this` cascades are
+gone. `./bench.sh`: real corpus wall **0.64 s** (tsgo 0.78, tsgo single-threaded 1.33, tsc 5.07), typecheck 424 ms
+(414: the this-only sharing of thisless members keeps it small), RSS 360 MB. Synthetic corpus 1.43 s (tsgo 1.56; it
+grew to 737 tests because more of them pass now, not comparable to the 1.34 s before).
+
 ## 2026-09-22, plan 09: iteration protocol, unique symbols, generators: real corpus 203 -> 109
 Suite: **3935 full of 13163** (was 3714), errors 7227, symbols 9135, types 6896. Lost: generatorTypeCheck45/46 (a
 pre-existing inference gap generators now reach, triage.md). Real corpus: **109 type diagnostics** (TS2558 38,

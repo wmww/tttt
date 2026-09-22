@@ -79,6 +79,24 @@ Atom const* ty_qualified_name(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
+// tsc's isThislessInterface (negated): an interface has a `this` type if one of its declarations mentions `this` or
+// extends a class or an interface that has one
+static bool interface_has_this(Symbol const* symbol, u32 depth) {
+    if (depth > 32) return false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = symbol->decls[i].node;
+        if (interface_decl->contains_this) return true;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            if (extends->type.tag != TYPE_IDENTIFIER || extends->type.identifier->import_ref) continue;
+            Symbol const* base = extends->type.identifier->target;
+            if (!base || !(base->flags & SYMBOL_INTERFACE) || (base->flags & SYMBOL_CLASS)) return true;
+            if (base != symbol && interface_has_this(base, depth + 1)) return true;
+        }
+    }
+    return false;
+}
+
 static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind kind) {
     Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
     ret->declared.kind = kind;
@@ -94,6 +112,10 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
             if (&interface_decl->generic != first) {
                 unify_type_params(me, ret->declared.type_params, &interface_decl->generic);
             }
+        }
+        if (kind == TY_DECLARED_CLASS_INSTANCE || interface_has_this(symbol, 0)) {
+            ret->declared.this_param = ty_this_type_param(me, ret);
+            ret->declared.raw = arena_new(&my arena, TyObjectState);
         }
     }
     return ret;
@@ -273,6 +295,10 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
 
     Ty const* declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
+            // `this` is the class's or interface's own `this` type parameter
+            if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && declared->kind == TY_DECLARED && declared->declared.this_param) {
+                return declared->declared.this_param;
+            }
             if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
                 // TODO: `this` and a bare `C` inside generic class C are the class's own instantiation
                 // (type arguments = its type parameters), and `this` is really its own type parameter

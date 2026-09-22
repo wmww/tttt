@@ -37,6 +37,15 @@ an interface `clone(): this`). It fails on all three components.
   `isThislessVariableLikeDeclaration`, syntactic) are *not* instantiated, they're shared. Without this, every
   non-generic class would instantiate all its members on first use. Adopt it.
 
+## Progress
+**Stage 1 done (2026-09-22)**: suite 3935 -> 4107, corpus 109 -> 95, typecheck +2%. What it is: `documentation.md`
+"`this` types"; what it leaves out: `hacks.md` "`this` types (plan 10 stage 1)". Fixed on the way: return-type
+inference from a contextual type that mentions an outer type parameter (`const y: MAC<T> = createMAC()` was
+`unknown`), TS2739 vs TS2740 cutoff, signatures whose return type is being inferred are `any` in relations (tsc's
+isResolvingReturnTypeOfSignature). Deviation from the plan: no relation rule for this-arguments (a reference with
+one is compared structurally), nothing needed it yet. Stage 1's item 6 (flow): `this instanceof D` and `this is T`
+predicates on methods work (typeGuardFunctionOfFormThis passes); `this is T` as a property type doesn't parse.
+
 ## Stage 1: the `this` type parameter and this-arguments
 1. `Ty.declared` gets a `this_param` (a `TY_TYPE_PARAM` flagged as a this type, printing `this`) for classes and
    non-thisless interfaces, made in `make_declared`. The binder needs a type-meaning `this` for interfaces

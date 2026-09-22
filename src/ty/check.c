@@ -155,6 +155,9 @@ static void check_access(
         if (!ty_access(me, object, index)) report_no_property(me, object, index, 2339, index_span, errs);
         return;
     }
+    // `this` is checked as its apparent type, the class with this-argument `this` (tsc's isThisTypeParameter case of
+    // reportNonexistentProperty). TODO: other type parameters
+    if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
     if (object->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
     if (object->flags & TYF_UNKNOWN) {
         if (object_is_named) {

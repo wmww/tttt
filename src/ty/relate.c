@@ -370,10 +370,16 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
 // Apparent types and property lookup
 
 static Ty const* apparent_type(Checker* me, Ty const* ty) {
-    for (u32 depth = 0; ty->kind == TY_TYPE_PARAM && depth < 16; depth++) {
-        Ty const* constraint = ty_param_constraint(me, ty);
-        if (!constraint || constraint == ty) return global_type(me, GLOBAL_EMPTY_OBJECT);
-        ty = constraint;
+    if (ty->kind == TY_TYPE_PARAM) {
+        // Through the constraint, which sees the type parameter as its `this` (`this.x` inside a class is `this`'s
+        // x, and so is `t.x` for `t: T` with `T extends C`: tsc's getApparentType + getTypeWithThisArgument)
+        Ty const* param = ty;
+        for (u32 depth = 0; ty->kind == TY_TYPE_PARAM && depth < 16; depth++) {
+            Ty const* constraint = ty_param_constraint(me, ty);
+            if (!constraint || constraint == ty) return global_type(me, GLOBAL_EMPTY_OBJECT);
+            ty = constraint;
+        }
+        if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION)) return ty_with_this_arg(me, ty, param);
     }
     u32 f = ty->flags;
     Ty const* global = nullptr;
@@ -619,8 +625,12 @@ static Ternary compare_signatures(
         result &= related;
     }
 
+    // A return type that is being inferred further up the stack is any here, without making that inference circular
+    // (tsc's isResolvingReturnTypeOfSignature)
+    if (ty_signature_return_in_flight(me, target)) return result;
     Ty const* target_return = signature_return_type(me, target);
     if (target_return->flags & (TYF_VOID | TYF_ANY)) return result;
+    if (ty_signature_return_in_flight(me, source)) return result;
     Ty const* source_return = signature_return_type(me, source);
     // A type predicate is only assignable to the same predicate (a `boolean` target takes any)
     TyPredicate const* target_predicate = signature_predicate(me, target);
@@ -756,7 +766,7 @@ static Ternary props_related(
     // A primitive is shown as itself, not as the global interface its properties come from
     if (report && !source_is_apparent) {
         // Missing properties get a message of their own instead of the generic head
-        Atom const* missing[4];
+        Atom const* missing[5];
         u32 missing_count = 0;
         for (u32 i = 0; i < target_members->prop_count; i++) {
             Prop const* target_prop = target_members->props[i];
@@ -775,14 +785,14 @@ static Ternary props_related(
                 cstr_drop(&name);
             } else {
                 cstr names = cstr_null;
-                u32 shown = missing_count > 4 ? 4 : missing_count;
+                u32 shown = missing_count > 5 ? 4 : missing_count;
                 for (u32 i = 0; i < shown; i++) {
                     if (i) cstr_append_lit(&names, ", ");
                     cstr name = ty_prop_name_cstr(me, missing[i]);
                     cstr_append_s(&names, name);
                     cstr_drop(&name);
                 }
-                if (missing_count > 4) {
+                if (missing_count > 5) { // (tsc's arbitrary cutoff: the first four and a count, from six on)
                     report_line(st, 2740, cstr_d(
                         "Type '", source_str, "' is missing the following properties from type '", target_str, "': ",
                         names, ", and ", missing_count - 4, " more."

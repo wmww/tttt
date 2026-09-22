@@ -502,9 +502,11 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         case THIS_ANY: return any_type(me);
         case THIS_PARAMETER: break;
         case THIS_CLASS_STATIC: return ty_static_type_of(me, decl);
+        case THIS_INTERFACE: return any_type(me);
         case THIS_CLASS_INSTANCE: {
-            // The instance type, for a generic class applied to its own parameters
+            // The class's `this` type (else the instance type, for a generic class applied to its own parameters)
             Ty const* declared = ty_declared_type_of(me, decl);
+            if (declared->kind == TY_DECLARED && declared->declared.this_param) return declared->declared.this_param;
             if (declared->kind == TY_DECLARED && declared->declared.type_params.len) {
                 return ty_reference(me, declared, declared->declared.type_params);
             }

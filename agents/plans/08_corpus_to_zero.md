@@ -57,11 +57,12 @@ undefined-returning functions, optional spreads, returnMapper for argument conte
 
 **Plan 09 (iteration protocol, unique symbols, generators): 203 -> 109.** No TS2495/TS2461/TS18046/TS2769 left.
 
-What is left (109), by root cause, biggest first:
+**Plan 10 stage 1 (`this` types): 109 -> 95.** The `this` cascades are gone (resolutionCache.ts, builder.ts).
+
+What is left (95), by root cause, biggest first:
 - **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`,
   plus the nodeFactory.ts/parenthesizerRules.ts object-literal-with-generic-methods TS2322s): plan 11 (sketch).
-- **`this` types** (TS7022 13; resolutionCache.ts `perFileCache.set(...).get(...)` TS7006 x3; builder.ts
-  `arrayFrom(x.keys()).sort(cmp).map(key => ...)`: `sort()` returns `this`): plan 10.
+- TS7022 x4 (binder.ts 3398, checker.ts 4415/16469/47011): unexplored, were hidden among the `this` ones.
 - **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): plan 11 (sketch).
 - Unexplored singles (~25): substitution types (TS2370 x4 in @types/node events.d.ts, `(...args: T[K]) => void` in
   the true branch of `T[K] extends unknown[]`, triage.md); `Mutable<T>`/`T & {...}` generic relations in nodeFactory.ts

@@ -495,10 +495,16 @@ static void display_signature(Checker* me, TyDisplay d, Signature const* sig, ch
     // alone and doesn't mention its own type parameters (fresh ones in tsc). Inside a reused annotation everything is
     // reused but what has no annotation (`(x) => void` prints its `any` synthetically)
     Signature const* root = sig;
-    while (root->target) root = root->target;
+    bool this_only = true; // Instantiated only with what `this` is (every method of a class): no fresh type parameters
+    for (; root->target; root = root->target) {
+        for (u32 i = 0; root->mapper && i < root->mapper->len; i++) {
+            Ty const* source = root->mapper->sources[i];
+            this_only &= source->kind == TY_TYPE_PARAM && source->param.state->is_this;
+        }
+    }
     signature_resolve(me, root);
     bool instantiated = root != sig;
-    if (instantiated && root->type_params.len) d.fresh_params = root->type_params;
+    if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
     FunctionImpl const* function = root->class_instance ? nullptr : root->function;
     bool reusable = d.underline && function;
     display_type_params(me, d, sig->type_params, reusable);
@@ -886,9 +892,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     }
                 }
                 out_declared_name(me, d, target, SYMBOL_TYPE);
-                out_lit(d, "<");
-                display_list(me, d, args);
-                out_lit(d, ">");
+                if (args.len) { // (None: a class or interface with only a this-argument)
+                    out_lit(d, "<");
+                    display_list(me, d, args);
+                    out_lit(d, ">");
+                }
             }
         }   break;
 

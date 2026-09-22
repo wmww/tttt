@@ -186,6 +186,7 @@ typedef struct TyParamState {
     LazyState fallback_state;
     Ty const* fallback;
     bool is_infer; // declared by `infer X` in the extends type of a conditional type
+    bool is_this; // The `this` type of a class or interface (Ty.declared.this_param), prints as `this`
 } TyParamState;
 
 struct Ty {
@@ -224,12 +225,21 @@ struct Ty {
             Symbol const* merged_value;
             Atom const* name;
             TyList type_params;
+            // Classes, and interfaces that mention `this` (tsc's isThislessInterface): the polymorphic `this` type, a
+            // type parameter constrained to the type itself. `state` has the members with `this` = the type itself,
+            // `raw` the members as declared (mentioning this_param), what references instantiate. Null otherwise
+            Ty const* this_param;
+            TyObjectState* raw;
             TupleShape const* tuple;
             TyObjectState* state;
         } declared;
         struct {
             Ty const* target; // TY_DECLARED
             TyList args; // Don't read directly, use ty_reference_args(): empty until resolved if `deferred` is set
+            // What the target's `this` type is in the members (tsc's getTypeWithThisArgument): null means the reference
+            // itself. Part of the identity: `C` with this-argument `T` (the apparent type of `T extends C`) is a
+            // reference of its own, even to a target without type parameters
+            Ty const* this_arg;
             // A deferred reference (tsc's deferred type reference): an array or tuple node inside the type alias that
             // is being resolved, `type Json = string | Json[]`. Identity is (node, mapper), arguments resolve on
             // first use
@@ -317,6 +327,8 @@ struct Prop {
     Atom const* name;
     u32 flags;
     Symbol const* parent; // the declared type it was declared in, may be null
+    // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
+    bool thisless;
     // Exactly one source of the type (or it is known from the start): a node to lower, what the AST evaluates lazily
     // (an inferred class field, an accessor), a method, the overloads of a method, a symbol, a target to instantiate
     TypeNode const* node;
@@ -590,7 +602,12 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
 Ty const* ty_synthetic_type_param(Checker* me, csview name);
+Ty const* ty_this_type_param(Checker* me, Ty const* declared); // Only make_declared() should call this
 Ty const* ty_reference(Checker* me, Ty const* target, TyList args);
+Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg);
+// tsc's getTypeWithThisArgument: the type with `this` in its members being `this_arg`. The type itself if it has no
+// `this` type (or `this_arg` is the type itself)
+Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg);
 Ty const* ty_array(Checker* me, Ty const* element, bool readonly);
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
@@ -618,6 +635,7 @@ Ty const* prop_type(Checker* me, Prop const* prop);
 bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
 void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
+bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack
 TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
@@ -735,6 +753,7 @@ Ty const* ty_object_literal(
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
+bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function);
 
 // Control flow queries (ty/flow.c)
 typedef struct FlowNode FlowNode;

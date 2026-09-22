@@ -701,28 +701,67 @@ Ty const* ty_synthetic_type_param(Checker* me, csview name) {
     return make_type_param(me, nullptr, checker_atom(me, name));
 }
 
+// The `this` type of a class or interface: constrained to the type as seen from inside (applied to its own type
+// parameters)
+Ty const* ty_this_type_param(Checker* me, Ty const* declared) {
+    Ty const* ret = make_type_param(me, nullptr, checker_atom(me, c_sv("this")));
+    TyParamState* state = ret->param.state;
+    state->is_this = true;
+    state->constraint = declared->declared.type_params.len ?
+        ty_reference(me, declared, declared->declared.type_params) : declared;
+    state->constraint_state = LAZY_STATE_DONE;
+    return ret;
+}
+
 // References
 
-Ty const* ty_reference(Checker* me, Ty const* target, TyList args) {
+Ty const* ty_reference_with_this(Checker* me, Ty const* target, TyList args, Ty const* this_arg) {
     check(target->kind == TY_DECLARED);
-    if (!target->declared.type_params.len) return target;
+    if (!target->declared.this_param) this_arg = nullptr;
+    if (!target->declared.type_params.len && !this_arg) return target;
     check(args.len == target->declared.type_params.len);
     u64 stack_key[32];
-    u32 count = 2 + args.len;
+    u32 count = 3 + args.len;
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = KEY_REFERENCE;
     key[1] = target->id;
-    for (u32 i = 0; i < args.len; i++) key[2 + i] = args.data[i]->id;
+    key[2] = this_arg ? this_arg->id : 0;
+    for (u32 i = 0; i < args.len; i++) key[3 + i] = args.data[i]->id;
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
-        Ty* ret = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (ty_list_flags(args) & TYF_COULD_CONTAIN_TYPE_VARIABLES));
+        u32 flags = ty_list_flags(args) | (this_arg ? this_arg->flags : 0);
+        Ty* ret = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (flags & TYF_COULD_CONTAIN_TYPE_VARIABLES));
         ret->reference.target = target;
         ret->reference.args = ty_list_copy(me, args.data, args.len);
+        ret->reference.this_arg = this_arg;
         ret->reference.state = arena_new(&my arena, TyObjectState);
         *slot = ret;
     }
     return *slot;
+}
+
+Ty const* ty_reference(Checker* me, Ty const* target, TyList args) {
+    return ty_reference_with_this(me, target, args, nullptr);
+}
+
+Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg) {
+    if (ty == this_arg) return ty;
+    if (ty->kind == TY_INTERSECTION) {
+        TyBuf parts = {0};
+        for (u32 i = 0; i < ty->composite.types.len; i++) ty_buf_push(&parts, ty_with_this_arg(me, ty->composite.types.data[i], this_arg));
+        Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    if (ty->kind == TY_DECLARED && ty->declared.this_param) {
+        return ty_reference_with_this(me, ty, ty->declared.type_params, this_arg);
+    }
+    if (ty->kind == TY_REFERENCE && !ty->reference.deferred && ty->reference.target->declared.this_param) {
+        if (ty->reference.this_arg == this_arg) return ty;
+        return ty_reference_with_this(me, ty->reference.target, ty_reference_args(me, ty), this_arg);
+    }
+    return ty;
 }
 
 static Ty const* make_synthetic_target(Checker* me, char const* name) {

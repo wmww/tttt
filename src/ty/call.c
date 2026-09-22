@@ -377,7 +377,7 @@ static TyMapper const* infer_type_arguments(
     OuterInference self = { .sig = sig, .inf = &inf };
 
     TyMapper const* return_mapper = nullptr;
-    if (contextual && !(contextual->flags & (TYF_ANY | TYF_COULD_CONTAIN_TYPE_VARIABLES)) && true) {
+    if (contextual && !(contextual->flags & TYF_ANY)) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             infer_types(me, &inf, contextual, return_type, INFER_PRIORITY_RETURN_TYPE);
