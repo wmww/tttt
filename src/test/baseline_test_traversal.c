@@ -902,7 +902,10 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_EXPORT_DEFAULT_EXPR:
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
-            if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED) {
+            // (A bare `return;` returns an implicit undefined literal, a written `undefined` is an expression)
+            if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED ||
+                csview_equals(my expr.inner_span.sv, "undefined")
+            ) {
                 ctx->any_keeps_underline = my tag == STATEMENT_EXPORT_DEFAULT_EXPR; // Of an export assignment
                 expr_compile_test_info(&my expr, ctx);
             }
