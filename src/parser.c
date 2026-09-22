@@ -2721,6 +2721,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber.declarations = vec_span_single(span_from(a));
             ret->interface_memeber.readonly = modifiers.includes[MODIFIER_READONLY];
+            // `readonly [K in T]: X` (the modifier went to the list before the key was known to be mapped)
+            InterfaceMember* member = &ret->interface_memeber;
+            if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped.readonly) {
+                member->key.mapped.readonly = 1;
+            }
         } else if (parse_function_args(&p, true, false, true, &func)) {
             modifier_list_validate_during_parse(&p, &modifiers, name_span, MODIFIER_VALIDATION_FLAG_TYPE_MEMEBER | MODIFIER_VALIDATION_FLAG_METHOD);
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;

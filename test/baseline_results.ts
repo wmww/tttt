@@ -20397,7 +20397,7 @@ const baselines = {
     },
     'mappedTypeWithCombinedTypeMappers': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeWithNameClauseAppliedToArrayType': {
@@ -23737,12 +23737,12 @@ const baselines = {
     },
     'objectFreeze': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectFreezeLiteralsDontWiden': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectFromEntries': {
@@ -23982,7 +23982,7 @@ const baselines = {
     },
     'omitTypeHelperModifiers01': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'omitTypeTestErrors01': {
@@ -23992,7 +23992,7 @@ const baselines = {
     },
     'omitTypeTests01': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'omittedExpressionForOfLoop': {
@@ -24907,7 +24907,7 @@ const baselines = {
     },
     'partialTypeNarrowedToByTypeGuard': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'partiallyAmbientClodule': {
@@ -28702,12 +28702,12 @@ const baselines = {
     },
     'stripMembersOptionality(exactoptionalpropertytypes=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'stripMembersOptionality(exactoptionalpropertytypes=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'structural1': {
@@ -28777,7 +28777,7 @@ const baselines = {
     },
     'substitutionTypeNoMergeOfAssignableType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'substitutionTypePassedToExtends': {
@@ -61857,7 +61857,7 @@ const baselines = {
     },
     'intersectionAsWeakTypeSource': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'intersectionMemberOfUnionNarrowsCorrectly': {
@@ -62312,7 +62312,7 @@ const baselines = {
     },
     'mappedTypes2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypes3': {
@@ -62332,7 +62332,7 @@ const baselines = {
     },
     'mappedTypes6': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypesAndObjects': {
@@ -63207,7 +63207,7 @@ const baselines = {
     },
     'objectRestReadonly': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restElementMustBeLast': {

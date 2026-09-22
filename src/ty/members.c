@@ -891,10 +891,18 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                 *prop = (Prop){
                     .name = name,
                     .flags = flags,
-                    .parent = modifiers_prop ? modifiers_prop->parent : nullptr,
                     .target = template,
                     .mapper = mapper,
                 };
+                // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers)
+                Prop const* declared = modifiers_prop;
+                while (declared && declared->target && !declared->decl_span_count) declared = declared->target;
+                if (declared) {
+                    prop->name_span = declared->name_span;
+                    prop->decl_spans = declared->decl_spans;
+                    prop->decl_span_count = declared->decl_span_count;
+                    prop->name_is_value = declared->name_is_value;
+                }
                 builder_push(&builder, props, prop);
             } else {
                 Ty const* value = ty_instantiate(me, mapped->template, mapper);
