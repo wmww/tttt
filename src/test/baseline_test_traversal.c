@@ -154,6 +154,14 @@ void initialized_binding_compile_test_info(
     }
 }
 
+// The type of an optional property includes undefined, like tsc's type of its symbol
+static Ty const* optional_member_type(Ty const* type, bool optional) {
+    if (!optional || !compiler_options()->strict_null_checks) return type;
+    Checker* checker = current_checker;
+    Ty const* parts[2] = { type, ty_intrinsic(checker, TY_UNDEFINED) };
+    return ty_union(checker, parts, 2, nullptr, (TyList){0});
+}
+
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
@@ -163,7 +171,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .span = my key.span,
                 .name_is_value = my key.name_is_value,
             });
-            baseline_test_case_add_type_node(ctx, my key.span, &my type);
+            baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
             break;
 
         case INTERFACE_KEY_INDEX:
@@ -180,7 +188,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .name = my key.expr.ref->outer_span,
                 .name_is_value = true,
             });
-            baseline_test_case_add_type_node(ctx, my key.span, &my type);
+            baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
             expr_compile_test_info(my key.expr.ref, ctx);
             break;
 
@@ -495,7 +503,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my method.name_span,
                 .name_is_value = my method.name_is_value,
             });
-            baseline_test_case_add_type(ctx, my method.name_span, class_item_get_type(me));
+            baseline_test_case_add_type(ctx, my method.name_span, optional_member_type(class_item_get_type(me), my method.is_optional));
             function_impl_compile_test_info(&my method.func, ctx);
         }   break;
 
@@ -506,7 +514,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my field.name_span,
                 .name_is_value = my field.name_is_value,
             });
-            baseline_test_case_add_type(ctx, my field.name_span, class_item_get_type(me));
+            baseline_test_case_add_type(ctx, my field.name_span, optional_member_type(class_item_get_type(me), my field.is_optional));
 
             if (my field.has_explicit_type) {
                 type_compile_test_info(&my field.explicit_type, ctx);

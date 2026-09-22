@@ -972,8 +972,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
             Ty const* contextual = memo && memo->done ? memo->context : nullptr;
             Ty const* callee_type = ty_expr_type(checker, callee);
-            // `a?.b()`: the undefined of a chain that ended isn't called, see chain_object_type()
-            if (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee)) callee_type = ty_non_nullable(checker, callee_type);
+            // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended, see
+            // chain_object_type()
+            if (my call->optional_chain || (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee))) {
+                callee_type = ty_non_nullable(checker, callee_type);
+            }
             ty_call_typecheck(checker, callee_type, my call, contextual, my outer_span, errs);
             for_each (i, vec_expr, &my call->args) {
                 expr_typecheck(i, errs);

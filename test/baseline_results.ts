@@ -2173,7 +2173,7 @@ const baselines = {
     'avoidNarrowingUsingConstVariableFromBindingElementWithLiteralInitializer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitCallExpressionInSyncFunction': {
         errors: false,
@@ -6073,7 +6073,7 @@ const baselines = {
     'contextualTypeBasedOnIntersectionWithAnyInTheMix2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix3': {
         errors: false,
@@ -6783,7 +6783,7 @@ const baselines = {
     'controlFlowInitializedDestructuringVariables': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowInstanceof': {
         errors: true,
@@ -8298,7 +8298,7 @@ const baselines = {
     'declarationEmitOptionalMethod': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitOutFileBundlePaths': {
         errors: true,
@@ -9253,17 +9253,17 @@ const baselines = {
     'deleteExpressionMustBeOptional(strict=true)': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=false)': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'deleteExpressionMustBeOptional_exactOptionalPropertyTypes(exactoptionalpropertytypes=true)': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'deleteOperator1': {
         errors: false,
@@ -9393,7 +9393,7 @@ const baselines = {
     'destructureOptionalParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructureTupleWithVariableElement': {
         errors: false,
@@ -9698,7 +9698,7 @@ const baselines = {
     'discriminatedUnionWithIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminatingUnionWithUnionPropertyAgainstUndefinedWithoutStrictNullChecks': {
         errors: false,
@@ -15508,7 +15508,7 @@ const baselines = {
     'homomorphicMappedTypeIntersectionAssignability': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'homomorphicMappedTypeNesting': {
         errors: true,
@@ -15548,7 +15548,7 @@ const baselines = {
     'identicalTypesNoDifferByCheckOrder': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'identifierStartAfterNumericLiteral': {
         errors: false,
@@ -18328,7 +18328,7 @@ const baselines = {
     'intersectionOfTypeVariableHasApparentSignatures': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionPropertyCheck': {
         errors: false,
@@ -18378,12 +18378,12 @@ const baselines = {
     'intersectionsAndOptionalProperties': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndOptionalProperties2(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndOptionalProperties2(exactoptionalpropertytypes=true)': {
         errors: false,
@@ -18393,7 +18393,7 @@ const baselines = {
     'intersectionsAndOptionalProperties3(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndOptionalProperties3(exactoptionalpropertytypes=true)': {
         errors: false,
@@ -22503,7 +22503,7 @@ const baselines = {
     'nestedFreshLiteral': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedGenericConditionalTypeWithGenericImportType': {
         errors: true,
@@ -23493,7 +23493,7 @@ const baselines = {
     'nonNullableWithNullableGenericIndexedAccessArg': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonObjectUnionNestedExcessPropertyCheck': {
         errors: false,
@@ -29518,7 +29518,7 @@ const baselines = {
     'templateExpressionAsPossiblyDiscriminantValue': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateExpressionNoInlininingOfConstantBindingWithInitializer': {
         errors: true,
@@ -30298,7 +30298,7 @@ const baselines = {
     'typeGuardNarrowsIndexedAccessOfKnownProperty2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty3': {
         errors: true,
@@ -30703,7 +30703,7 @@ const baselines = {
     'typePredicateAcceptingPartialOfRefinedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicateFreshLiteralWidening': {
         errors: false,
@@ -38298,7 +38298,7 @@ const baselines = {
     'enumErrorOnConstantBindingWithInitializer': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumErrors': {
         errors: false,
@@ -38893,7 +38893,7 @@ const baselines = {
     'logicalAssignment9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_exportEmpty': {
         errors: false,
@@ -46911,7 +46911,7 @@ const baselines = {
         types: false,
     },
     'callChain.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -46921,7 +46921,7 @@ const baselines = {
         types: false,
     },
     'callChain': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47001,7 +47001,7 @@ const baselines = {
         types: false,
     },
     'thisMethodCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47021,7 +47021,7 @@ const baselines = {
         types: false,
     },
     'elementAccessChain': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -47106,7 +47106,7 @@ const baselines = {
         types: true,
     },
     'optionalChainingInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47126,7 +47126,7 @@ const baselines = {
         types: false,
     },
     'propertyAccessChain': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -62558,7 +62558,7 @@ const baselines = {
     'optionalMethods': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'neverInference': {
         errors: false,
@@ -64723,12 +64723,12 @@ const baselines = {
     'optionalProperties01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalProperties02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchCaseWithIntersectionTypes01': {
         errors: true,
@@ -65523,12 +65523,12 @@ const baselines = {
     'genericContextualTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericContextualTypes3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericFunctionParameters': {
         errors: true,

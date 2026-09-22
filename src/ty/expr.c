@@ -121,6 +121,13 @@ static Ty const* union_of_two(Checker* me, Ty const* a, Ty const* b) {
     return ty_union_subtype_reduced(me, parts, 2);
 }
 
+// What an optional chain that may have ended evaluates to (tsc's getOptionalType: no subtype reduction, so a `void`
+// result stays `void | undefined`)
+static Ty const* optional_type(Checker* me, Ty const* ty) {
+    Ty const* parts[2] = { ty, ty_intrinsic(me, TY_UNDEFINED) };
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
 static Ty const* widen_enum_literals(Checker* me, Ty const* ty) {
     if (ty->kind == TY_LITERAL && (ty->flags & TYF_ENUM_LITERAL)) return ty_enum_of_member(me, ty);
     if (ty->kind == TY_UNION && !ty->alias && !(ty->flags & TYF_BOOLEAN)) {
@@ -1095,7 +1102,7 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
-    return optional ? union_of_two(me, ret, ty_intrinsic(me, TY_UNDEFINED)) : ret;
+    return optional ? optional_type(me, ret) : ret;
 }
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
@@ -1115,7 +1122,7 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* ret = ty_access(me, object, ty_expr_type(me, &expr->property->prop));
             if (!ret) return any_type(me);
             ret = access_flow_type(me, expr, ret);
-            return optional ? union_of_two(me, ret, ty_intrinsic(me, TY_UNDEFINED)) : ret;
+            return optional ? optional_type(me, ret) : ret;
         }
 
         case EXPR_GENERIC_PARAMS: {
