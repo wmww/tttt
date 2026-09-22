@@ -312,35 +312,78 @@ static bool is_arity_smaller(Checker* me, Signature const* sig, FunctionImpl con
     return sig->param_count < required;
 }
 
+// tsc's getContextualCallSignature: the call signatures that don't take fewer parameters than the function has
+// required ones. Several are combined into one (getIntersectedSignatures), under noImplicitAny only
+static Signature const* contextual_call_signature(Checker* me, Ty const* type, FunctionImpl const* function) {
+    TyList parts = type->kind == TY_INTERSECTION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    Signature const* stack_buf[16];
+    Signature const** applicable = stack_buf;
+    u32 cap = c_arraylen(stack_buf);
+    u32 count = 0;
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = type->kind == TY_INTERSECTION ? ty_apparent_type(me, parts.data[i]) : parts.data[i];
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* members = ty_members(me, part);
+        for (u32 j = 0; j < members->call_count; j++) {
+            if (is_arity_smaller(me, members->call[j], function)) continue;
+            if (count == cap) {
+                cap *= 2;
+                Signature const** grown = malloc(sizeof(Signature const*) * cap);
+                panic_if(!grown, "out of memory");
+                memcpy(grown, applicable, sizeof(Signature const*) * count);
+                if (applicable != stack_buf) free(applicable);
+                applicable = grown;
+            }
+            applicable[count++] = members->call[j];
+        }
+    }
+    Signature const* ret = count == 1 ? applicable[0] : nullptr;
+    if (count > 1 && compiler_options()->no_implicit_any) {
+        ret = applicable[0];
+        signature_resolve(me, ret);
+        for (u32 i = 1; i < count && ret; i++) {
+            Signature const* right = applicable[i];
+            signature_resolve(me, right);
+            if (right == ret) continue;
+            ret = ty_type_params_identical(me, ret->type_params, right->type_params) ?
+                ty_combine_intersection_signatures(me, ret, right) : nullptr;
+        }
+    }
+    if (applicable != stack_buf) free(applicable);
+    if (ret) signature_resolve(me, ret);
+    return ret;
+}
+
+// tsc's getContextualSignature: of a union, the signature its members have in common (up to return types)
 static Signature const* contextual_signature(Checker* me, Ty const* contextual, FunctionImpl const* function, u32 depth) {
     if (!contextual || depth > 8 || (contextual->flags & TYF_ANY)) return nullptr;
     if (contextual->kind == TY_UNION) {
-        Signature const* found = nullptr;
-        for (u32 i = 0; i < contextual->composite.types.len; i++) {
+        Signature* stack_buf[16];
+        Signature** found = stack_buf;
+        u32 count = 0;
+        u32 len = contextual->composite.types.len;
+        if (len > c_arraylen(stack_buf)) {
+            found = malloc(sizeof(Signature*) * len);
+            panic_if(!found, "out of memory");
+        }
+        Signature const* ret = nullptr;
+        bool compatible = true;
+        for (u32 i = 0; i < len && compatible; i++) {
             Signature const* sig = contextual_signature(me, contextual->composite.types.data[i], function, depth + 1);
             if (!sig) continue;
-            // TODO: tsc combines the signatures of the members if their parameters are identical
-            if (found) return found;
-            found = sig;
+            if (count && !ty_signatures_identical(me, found[0], sig, false, true)) compatible = false;
+            else found[count++] = (Signature*)sig;
         }
-        return found;
+        if (compatible && count) ret = count == 1 ? found[0] : ty_union_signature(me, found[0], found, count);
+        if (found != stack_buf) free(found);
+        return ret;
     }
     if (contextual->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual ? contextual_signature(me, constraint, function, depth + 1) : nullptr;
     }
     if (!(contextual->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
-    if (contextual->kind == TY_INTERSECTION) {
-        for (u32 i = 0; i < contextual->composite.types.len; i++) {
-            Signature const* sig = contextual_signature(me, contextual->composite.types.data[i], function, depth + 1);
-            if (sig) return sig;
-        }
-        return nullptr;
-    }
-    Members const* members = ty_members(me, contextual);
-    if (members->call_count != 1 || is_arity_smaller(me, members->call[0], function)) return nullptr;
-    signature_resolve(me, members->call[0]);
-    return members->call[0];
+    return contextual_call_signature(me, contextual, function);
 }
 
 static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index, bool as_rest) {
@@ -833,8 +876,74 @@ static Signature const* single_call_signature(Checker* me, Ty const* ty) {
     return members->call[0];
 }
 
+// tsc's isPossiblyDiscriminantValue: what can say which member of a union an object literal is meant to be
+static bool is_possibly_discriminant_value(Expr const* expr) {
+    switch (expr->tag) {
+        case EXPR_LITERAL:
+        case EXPR_IDENTIFIER:
+            return true;
+        case EXPR_PROPERTY:
+            return is_possibly_discriminant_value(&expr->property->expr);
+        case EXPR_TEMPLATE:
+            return !expr->template_->tag;
+        default:
+            return false;
+    }
+}
+
+// tsc's discriminateContextualTypeByObjectMembers: the members of a union contextual type that the literal's
+// discriminant properties fit
+static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextual, ObjectExpr const* object) {
+    TyList types = contextual->composite.types;
+    if (types.len > 64) return contextual;
+    // 0: excluded, 1: maybe, 3: included
+    unsigned char include[64];
+    u32 const primitive = TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL | TYF_BOOLEAN | TYF_LITERAL | TYF_ENUM |
+        TYF_NULLABLE | TYF_VOID;
+    for (u32 i = 0; i < types.len; i++) include[i] = types.data[i]->flags & primitive ? 0 : 3;
+    for_each (item, vec_object_expr_item, object) {
+        bool candidate = item->tag == OBJECT_ITEM_SHORTHAND ||
+            (item->tag == OBJECT_ITEM_PROPERTY && is_possibly_discriminant_value(&item->value));
+        if (!candidate || item->computed_key) continue;
+        Atom const* name = checker_atom(me, cstr_sv(&item->name_string));
+        if (!ty_is_discriminant_property(me, contextual, name)) continue;
+        Ty const* value = ty_expr_type(me, &item->value);
+        Ty const* key = ty_string_literal(me, atom_sv(name));
+        bool matched = false;
+        for (u32 i = 0; i < types.len; i++) {
+            if (!include[i]) continue;
+            Ty const* target = ty_access(me, types.data[i], key);
+            bool related = false;
+            if (target) {
+                Ty const* const* parts = &value;
+                u32 count = 1;
+                if (value->kind == TY_UNION) {
+                    parts = value->composite.types.data;
+                    count = value->composite.types.len;
+                }
+                for (u32 j = 0; j < count && !related; j++) related = ty_is_related(me, parts[j], target, TY_RELATION_ASSIGNABLE);
+            }
+            if (related) matched = true;
+            else include[i] = 1;
+        }
+        for (u32 i = 0; i < types.len; i++) {
+            if (include[i] == 1) include[i] = matched ? 0 : 3;
+        }
+    }
+    Ty const* kept[64];
+    u32 len = 0;
+    for (u32 i = 0; i < types.len; i++) {
+        if (include[i]) kept[len++] = types.data[i];
+    }
+    if (len == types.len || !len) return contextual;
+    return ty_union(me, kept, len, nullptr, (TyList){0});
+}
+
 static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     ObjectExpr const* object = &expr->object;
+    if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
+        ctx.contextual = discriminate_by_object_members(me, ctx.contextual, object);
+    }
     LiteralBuilder builder = {0};
     // Accessor pairs share a property: the declarations of both halves
     Span* accessor_spans = nullptr;

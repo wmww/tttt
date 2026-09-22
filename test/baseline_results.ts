@@ -5946,7 +5946,7 @@ const baselines = {
         types: false,
     },
     'contextualOverloadListFromArrayUnion': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5991,12 +5991,12 @@ const baselines = {
         types: true,
     },
     'contextualSignatureInArrayElementLibEs2015': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'contextualSignatureInArrayElementLibEs5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -31291,9 +31291,9 @@ const baselines = {
         types: false,
     },
     'unionCallMixedTypeParameterPresence': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'unionErrorMessageOnMatchingDiscriminant': {
         errors: false,
@@ -46471,8 +46471,8 @@ const baselines = {
         types: false,
     },
     'functionExpressionContextualTyping1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'functionExpressionContextualTyping2': {
@@ -65607,8 +65607,8 @@ const baselines = {
     },
     'contextualTypeWithUnionTypeCallSignatures': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contextualTypeWithUnionTypeIndexSignatures': {
         errors: true,

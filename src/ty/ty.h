@@ -604,6 +604,11 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple); // The array a tuple also is
+Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);
+bool ty_signatures_identical(Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return);
+Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count);
+bool ty_type_params_identical(Checker* me, TyList source, TyList target);
+bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name); // flow.c
 Signature* const* ty_union_signatures(Checker* me, TyList members, bool construct, u32* count_out);
 typedef struct CallEffects {
     bool has_predicate;

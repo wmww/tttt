@@ -959,6 +959,10 @@ static Expr const* aliased_access(Expr const* expr) {
     return initialized->value.tag == EXPR_PROPERTY ? &initialized->value : nullptr;
 }
 
+bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name) {
+    return is_discriminant_property(me, type, name);
+}
+
 // tsc's getDiscriminantPropertyAccess(): `expr` if it is `reference.name` for a discriminant property, or a const alias
 // of that
 // TODO: destructured discriminants (`const { kind } = x`)

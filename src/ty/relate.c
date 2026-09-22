@@ -1755,7 +1755,7 @@ static TyPredicate const* union_predicate(Checker* me, Signature* const* sigs, u
     return ret;
 }
 
-// A signature with the parameters of `base` returning what any of `composites` return_types (tsc's createUnionSignature)
+// A signature with the parameters of `base` returning what any of `composites` returns (tsc's createUnionSignature)
 static Signature* union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
     Ty const** return_types = malloc(sizeof(Ty const*) * count);
     panic_if(!return_types, "out of memory");
@@ -1805,8 +1805,9 @@ static u32 find_matching_signatures(
 }
 
 // tsc's combineSignaturesOfUnionMembers: one signature taking what both take (parameter types intersected, the longer
-// parameter list), returning what either return_types
-static Signature* combine_union_signatures(Checker* me, Signature const* left, Signature const* right) {
+// parameter list), returning what either returns. `intersection`: combineSignaturesOfIntersectionMembers, the other
+// way around (parameter types united, the return types intersected), for contextual signatures
+static Signature* combine_signatures(Checker* me, Signature const* left, Signature const* right, bool intersection) {
     signature_resolve(me, left);
     signature_resolve(me, right);
     TyMapper const* mapper = left->type_params.len && right->type_params.len ?
@@ -1827,7 +1828,7 @@ static Signature* combine_union_signatures(Checker* me, Signature const* left, S
         Ty const* shorter_type = param_type_at(me, shorter, i);
         shorter_type = shorter_type ? shorter == right ? ty_instantiate(me, shorter_type, mapper) : shorter_type : unknown;
         Ty const* both[2] = { longest_type, shorter_type };
-        Ty const* type = ty_intersection(me, both, 2, nullptr, (TyList){0});
+        Ty const* type = intersection ? ty_union(me, both, 2, nullptr, (TyList){0}) : ty_intersection(me, both, 2, nullptr, (TyList){0});
         bool is_rest = either_rest && !extra_rest && i == longest_count - 1;
         bool optional = i >= longest->min_args && i >= shorter->min_args;
         Atom const* left_name = i < left->param_count && !left->params[i].rest ? left->params[i].name : nullptr;
@@ -1862,13 +1863,25 @@ static Signature* combine_union_signatures(Checker* me, Signature const* left, S
         .param_count = count,
         .min_args = left->min_args > right->min_args ? left->min_args : right->min_args,
         .ret_state = LAZY_STATE_DONE,
-        .ret = ty_union_subtype_reduced(me, return_types, 2),
+        .ret = intersection ? ty_intersection(me, return_types, 2, nullptr, (TyList){0}) : ty_union_subtype_reduced(me, return_types, 2),
         .predicate_done = true,
     };
     return ret;
 }
 
-static bool type_params_identical(Checker* me, TyList source, TyList target) {
+Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right) {
+    return combine_signatures(me, left, right, true);
+}
+
+bool ty_signatures_identical(Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return) {
+    return signatures_identical(me, source, target, partial, ignore_return);
+}
+
+Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
+    return union_signature(me, base, composites, count);
+}
+
+bool ty_type_params_identical(Checker* me, TyList source, TyList target) {
     if (source.len != target.len) return false;
     if (!source.len) return true;
     TyMapper const* mapper = ty_mapper_new(me, target, source);
@@ -1928,12 +1941,12 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
             for (u32 j = 0; j < master.len && compatible; j++) {
                 signature_resolve(me, combined[j]);
                 if (sig->type_params.len && combined[j]->type_params.len &&
-                    !type_params_identical(me, sig->type_params, combined[j]->type_params)
+                    !ty_type_params_identical(me, sig->type_params, combined[j]->type_params)
                 ) {
                     compatible = false;
                 }
             }
-            for (u32 j = 0; j < master.len && compatible; j++) combined[j] = combine_union_signatures(me, combined[j], sig);
+            for (u32 j = 0; j < master.len && compatible; j++) combined[j] = combine_signatures(me, combined[j], sig, false);
         }
         if (compatible) {
             result = combined;
