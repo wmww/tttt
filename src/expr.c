@@ -551,6 +551,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             // Also when it can't be narrowed (`f().x`): the checker finds out when it makes the reference key
             my property->flow = flow_builder_reference(flow, my outer_span);
             my property->assignment_target = assignment_target;
+            if (my property->expr.tag == EXPR_IDENTIFIER &&
+                (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL)
+            ) {
+                my property->expr.identifier.constraint_position = true;
+            }
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
             } else {
@@ -602,6 +607,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             }
             Expr* callee = &my call->callable;
             while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+            if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
             if (callee->tag == EXPR_FUNCTION && !my call->uses_new) {
                 // An immediately invoked function expression is part of this flow, after its arguments
                 for_each (i, vec_expr, &my call->args) {

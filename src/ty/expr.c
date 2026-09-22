@@ -471,10 +471,49 @@ static bool includes_undefined(Ty const* ty) {
 
 static Ty const* base_type_of_literal(Checker* me, Ty const* ty) { return ty_base_type_of_literal(me, ty); }
 
+static bool is_generic_with_union_constraint(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_generic_with_union_constraint(me, ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    if (ty->kind != TY_TYPE_PARAM && !(ty->flags & TYF_DEFERRED)) return false;
+    Ty const* constraint = ty_base_constraint(me, ty);
+    return constraint && constraint != ty && ((constraint->flags & TYF_NULLABLE) || constraint->kind == TY_UNION);
+}
+
+static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
+    Ty const* constraint = ty->kind == TY_TYPE_PARAM || (ty->flags & TYF_DEFERRED) ? ty_base_constraint(me, ty) : nullptr;
+    return constraint ? constraint : ty;
+}
+
+// tsc's getNarrowableTypeForReference: in a constraint position, a generic type with a union constraint is narrowed as
+// its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads `flags` of Ctx)
+static Ty const* narrowable_type(Checker* me, IdentifierExpr const* identifier, Ty const* type) {
+    if (!identifier->constraint_position) return type;
+    Ty const* const* members = &type;
+    u32 count = 1;
+    if (type->kind == TY_UNION) {
+        members = type->composite.types.data;
+        count = type->composite.types.len;
+    }
+    bool some = false;
+    for (u32 i = 0; i < count && !some; i++) some = is_generic_with_union_constraint(me, members[i]);
+    if (!some) return type;
+    if (count == 1) return base_constraint_or_type(me, type);
+    Ty const** mapped = malloc(sizeof(Ty const*) * count);
+    panic_if(!mapped, "out of memory");
+    for (u32 i = 0; i < count; i++) mapped[i] = base_constraint_or_type(me, members[i]);
+    Ty const* ret = ty_union(me, mapped, count, nullptr, (TyList){0});
+    free(mapped);
+    return ret;
+}
+
 // The tail of tsc's checkIdentifier(): a variable or parameter has the type control flow gives it where it is read
 static Ty const* identifier_flow_type(Checker* me, Expr const* expr, bool* used_before_assigned) {
     IdentifierExpr const* identifier = &expr->identifier;
-    Ty const* type = ty_identifier_reference_type(me, identifier);
+    Ty const* type = narrowable_type(me, identifier, ty_identifier_reference_type(me, identifier));
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         return identifier->flow ? ty_flow_type(me, expr, type, type, identifier->flow) : type;

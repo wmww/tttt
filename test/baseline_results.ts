@@ -10953,7 +10953,7 @@ const baselines = {
     'enumPropertyAccess': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'enumPropertyAccessBeforeInitalisation': {
         errors: false,
@@ -13843,7 +13843,7 @@ const baselines = {
     'functionCallOnConstrainedTypeVariable': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionDeclarationWithArgumentOfTypeFunctionTypeArray': {
         errors: true,
@@ -22312,8 +22312,8 @@ const baselines = {
     },
     'narrowingOfQualifiedNames': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'narrowingOrderIndependent': {
         errors: true,
@@ -37237,8 +37237,8 @@ const baselines = {
     },
     'switchWithConstrainedTypeVariable': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeGuardsAsAssertions': {
         errors: false,

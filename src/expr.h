@@ -39,6 +39,9 @@ typedef struct IdentifierExpr {
     uint8_t assignment_target; // FlowAssignmentKind: the reference is being assigned to, so it has its declared type
     // Never "used before assigned": part of `typeof x` written as a type, or inside the binding pattern that declares it
     bool assume_initialized;
+    // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
+    // is narrowed as its constraint
+    bool constraint_position;
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);
