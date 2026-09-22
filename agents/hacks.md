@@ -345,6 +345,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   isn't checked at all because the parser drops shorthand defaults (`ObjectExprItem.shorthand_default`). The array
   pattern's own type isn't the tuple tsc gives it. Expando assignments to functions (`foo.constructor = 1`, nullPropertyName)
   are checked against the existing member.
+- **Array literal types aren't marked** (tsc's ObjectFlags.ArrayLiteral clones the array reference): inference
+  approximates tsc's unionObjectAndArrayLiteralCandidates with `Inference.array_literals`, the types of array literal
+  arguments (not array literals nested in other arguments). Object literal types are marked (`anonymous.object_literal`).
 - **No evolving arrays** (`let x = []` then `x.push(1)`, tsc's autoArrayType): `initialized_binding_evaluate_assigned_type`
   gives an unannotated variable initialized with `[]` the type `any[]` under noImplicitAny. Everywhere else `[]` is
   `never[]` under strictNullChecks like in tsc.

@@ -241,6 +241,38 @@ static TyMapper const* outer_inference_mapper(Checker* me, OuterInference const*
     return ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
 }
 
+// What the contextual return type alone says about the type parameters (tsc's InferenceContext.returnMapper, from
+// cloneInferredPartOfContext): the ones it says nothing about stay themselves. Null if it says nothing
+static TyMapper const* return_inference_mapper(Checker* me, Signature const* sig, Inference* inf) {
+    TyList params = sig->type_params;
+    Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    bool any = false;
+    for (u32 i = 0; i < params.len; i++) {
+        results[i] = inf->params[i].co_len || inf->params[i].contra_len ? inference_call_result(me, inf, i, true) : nullptr;
+        any |= results[i] != nullptr;
+        if (!results[i]) results[i] = params.data[i];
+    }
+    return any ? ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len }) : nullptr;
+}
+
+// tsc's instantiateInstantiableTypes: only type variables, at the top level or in unions and intersections
+static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper const* mapper) {
+    if (type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return ty_instantiate(me, type, mapper);
+    if (type->kind != TY_UNION && type->kind != TY_INTERSECTION) return type;
+    TyList parts = type->composite.types;
+    Ty const** mapped = malloc(sizeof(Ty const*) * (parts.len ? parts.len : 1));
+    panic_if(!mapped, "out of memory");
+    bool changed = false;
+    for (u32 i = 0; i < parts.len; i++) {
+        mapped[i] = instantiate_instantiable(me, parts.data[i], mapper);
+        changed |= mapped[i] != parts.data[i];
+    }
+    Ty const* ret = !changed ? type : type->kind == TY_UNION ?
+        ty_union(me, mapped, parts.len, nullptr, (TyList){0}) : ty_intersection(me, mapped, parts.len, nullptr, (TyList){0});
+    free(mapped);
+    return ret;
+}
+
 // The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
 // `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
 static TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
@@ -288,6 +320,12 @@ static TyMapper const* inference_mapper(Checker* me, Signature const* sig, Infer
 
 static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape, Args const* args, u32 i) {
     Ty const* param_type = shape_type_at(shape, i);
+    Arg const* arg = &args->data[i];
+    if (arg->type && !arg->spread && !arg->part_of_spread && arg->expr->tag == EXPR_ARRAY && ty_is_array(me, arg->type)) {
+        inf->array_literals = realloc(inf->array_literals, sizeof(Ty const*) * (inf->array_literal_count + 1));
+        panic_if(!inf->array_literals, "out of memory");
+        inf->array_literals[inf->array_literal_count++] = arg->type;
+    }
     if (param_type && args->data[i].type) infer_types(me, inf, args->data[i].type, param_type, INFER_PRIORITY_NORMAL);
 }
 
@@ -327,10 +365,12 @@ static TyMapper const* infer_type_arguments(
     }
     OuterInference self = { .sig = sig, .inf = &inf };
 
+    TyMapper const* return_mapper = nullptr;
     if (contextual && !(contextual->flags & (TYF_ANY | TYF_COULD_CONTAIN_TYPE_VARIABLES)) && true) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             infer_types(me, &inf, contextual, return_type, INFER_PRIORITY_RETURN_TYPE);
+            return_mapper = return_inference_mapper(me, sig, &inf);
         }
     }
 
@@ -346,7 +386,13 @@ static TyMapper const* infer_type_arguments(
             continue;
         }
         my outer_inference = &self;
-        check_arg(me, &shape, args, i);
+        if (return_mapper && !arg->spread && !arg->part_of_spread) {
+            // What the return type says about the type parameters helps type the argument (a tuple, a literal)
+            Ty const* param_type = shape_type_at(&shape, i);
+            arg->type = ty_check_expr(me, arg->expr, param_type ? instantiate_instantiable(me, param_type, return_mapper) : nullptr);
+        } else {
+            check_arg(me, &shape, args, i);
+        }
         my outer_inference = nullptr;
         infer_from_arg(me, &inf, &shape, args, i);
     }

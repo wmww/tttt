@@ -24,6 +24,7 @@ void inference_drop(Inference* inf) {
     }
     free(inf->params);
     free(inf->visited);
+    free(inf->array_literals);
     *inf = (Inference){0};
 }
 
@@ -696,6 +697,15 @@ static Ty const* common_subtype(Checker* me, Ty const* const* types, u32 len) {
     return ret;
 }
 
+// tsc's isObjectOrArrayLiteralType
+static bool is_literal_candidate(Inference const* inf, Ty const* candidate) {
+    if (candidate->kind == TY_ANONYMOUS && candidate->anonymous.object_literal) return true;
+    for (u32 i = 0; i < inf->array_literal_count; i++) {
+        if (inf->array_literals[i] == candidate) return true;
+    }
+    return false;
+}
+
 Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals) {
     InferParam* param = &inf->params[i];
     if (param->fixed) return param->fixed;
@@ -706,9 +716,32 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         for (u32 j = 0; j < param->co_len; j++) {
             candidates[j] = widen ? ty_widened_literal(me, param->co[j]) : param->co[j];
         }
+        // Several object literals are one candidate, their union (tsc's unionObjectAndArrayLiteralCandidates; array
+        // literals aren't told apart from other arrays here)
+        u32 len = param->co_len;
+        if (len > 1) {
+            Ty const** literals = malloc(sizeof(Ty const*) * len);
+            u32 literal_count = 0;
+            for (u32 j = 0; j < len; j++) {
+                if (is_literal_candidate(inf, candidates[j])) literals[literal_count++] = candidates[j];
+            }
+            if (literal_count > 1) {
+                // (Where the first one was: tsc puts it last, which only matters for ties)
+                Ty const* merged = ty_union_subtype_reduced(me, literals, literal_count);
+                u32 kept = 0;
+                bool placed = false;
+                for (u32 j = 0; j < len; j++) {
+                    bool literal = is_literal_candidate(inf, candidates[j]);
+                    if (!literal) candidates[kept++] = candidates[j];
+                    else if (!placed) candidates[kept++] = merged, placed = true;
+                }
+                len = kept;
+            }
+            free(literals);
+        }
         co = param->priority == INFER_PRIORITY_RETURN_TYPE ?
-            ty_union(me, candidates, param->co_len, nullptr, (TyList){0}) :
-            common_supertype(me, candidates, param->co_len);
+            ty_union(me, candidates, len, nullptr, (TyList){0}) :
+            common_supertype(me, candidates, len);
         free(candidates);
     }
     Ty const* contra = param->contra_len ? common_subtype(me, param->contra, param->contra_len) : nullptr;

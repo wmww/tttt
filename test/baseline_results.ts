@@ -11141,9 +11141,9 @@ const baselines = {
         types: true,
     },
     'errorMessagesIntersectionTypes02': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorMessagesIntersectionTypes03': {
         errors: false,
@@ -17246,7 +17246,7 @@ const baselines = {
         types: false,
     },
     'inferentialTypingWithObjectLiteralProperties': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -23746,7 +23746,7 @@ const baselines = {
         types: false,
     },
     'objectFromEntries': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30121,7 +30121,7 @@ const baselines = {
         types: true,
     },
     'typeArgInference2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30131,7 +30131,7 @@ const baselines = {
         types: true,
     },
     'typeArgInferenceWithNull': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
