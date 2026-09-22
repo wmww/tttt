@@ -840,19 +840,6 @@ static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start)
     return ty_reference(me, ty_tuple_target(me, &rest_shape), (TyList){ .data = elements.data + start, .len = rest_shape.arity });
 }
 
-static Ty const* without_undefined(Checker* me, Ty const* ty) {
-    if (ty->flags & TYF_UNDEFINED) return ty_intrinsic(me, TY_NEVER);
-    if (ty->kind != TY_UNION) return ty;
-    TyList members = ty->composite.types;
-    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
-    u32 len = 0;
-    for (u32 i = 0; i < members.len; i++) {
-        if (!(members.data[i]->flags & TYF_UNDEFINED)) kept[len++] = members.data[i];
-    }
-    Ty const* ret = len == members.len ? ty : ty_union(me, kept, len, nullptr, (TyList){0});
-    free(kept);
-    return ret;
-}
 
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
 // of what its pattern is assigned
@@ -878,7 +865,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
     if (binding->default_value) {
         // `[x = 1]`: undefined is replaced by the default
-        Ty const* types[2] = { without_undefined(me, ret), nullptr };
+        Ty const* types[2] = { ty_without_undefined(me, ret), nullptr };
         // Not ty_check_expr() with types[0] as the contextual type: only the uncontextual path detects `[x = x]`
         types[1] = ty_widened_for_declaration(me, ty_expr_type(me, binding->default_value), true);
         ret = ret->flags & TYF_ANY ? ret : ty_union(me, types, 2, nullptr, (TyList){0});

@@ -2,6 +2,7 @@
 #include "scope.h"
 #include "class_decl.h"
 #include "enum_decl.h"
+#include "compiler_options.h"
 
 // Members of object types are resolved on first use, never at construction. That's what makes recursive types legal:
 // `interface List<T> { tail: List<T> }` only needs the *identity* of `List<T>` to describe its members.
@@ -875,7 +876,10 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                 }
                 u32 flags = modifiers_prop ? modifiers_prop->flags & (PROP_OPTIONAL | PROP_READONLY) : 0;
                 if (mapped->optional > 0) flags |= PROP_OPTIONAL;
-                if (mapped->optional < 0) flags &= ~(u32)PROP_OPTIONAL;
+                if (mapped->optional < 0 && (flags & PROP_OPTIONAL)) {
+                    flags &= ~(u32)PROP_OPTIONAL;
+                    if (compiler_options()->strict_null_checks) flags |= PROP_STRIP_UNDEFINED;
+                }
                 if (mapped->readonly > 0) flags |= PROP_READONLY;
                 if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
                 Prop* prop = arena_new(&my arena, Prop);
@@ -1017,6 +1021,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Ty const* type;
     if (prop->target) {
         type = ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
+        if (prop->flags & PROP_STRIP_UNDEFINED) type = ty_without_undefined(me, type); // (Only set with strictNullChecks)
     } else if (prop->overload_count) {
         type = ty_anonymous_from_overloads(me, prop->overloads, prop->overload_count, prop->ctx);
     } else if (prop->symbol) {

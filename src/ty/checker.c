@@ -852,6 +852,20 @@ Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
     return ret;
 }
 
+Ty const* ty_without_undefined(Checker* me, Ty const* type) {
+    if (type->kind != TY_UNION) return type->flags & TYF_UNDEFINED ? ty_intrinsic(me, TY_NEVER) : type;
+    TyList members = type->composite.types;
+    Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+    panic_if(!kept, "out of memory");
+    u32 len = 0;
+    for (u32 i = 0; i < members.len; i++) {
+        if (!(members.data[i]->flags & TYF_UNDEFINED)) kept[len++] = members.data[i];
+    }
+    Ty const* ret = len == members.len ? type : ty_union(me, kept, len, nullptr, (TyList){0});
+    free(kept);
+    return ret;
+}
+
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
     if ((!branch->node && !branch->source) || branch->state == LAZY_STATE_DONE) return branch->type;
     if (branch->state == LAZY_STATE_IN_FLIGHT) return ty_intrinsic(me, TY_ERROR);

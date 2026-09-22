@@ -303,6 +303,7 @@ typedef enum PropFlags {
     PROP_OPTIONAL = 1 << 0,
     PROP_READONLY = 1 << 1,
     PROP_METHOD   = 1 << 2,
+    PROP_STRIP_UNDEFINED = 1 << 3, // `-?` made it required: undefined is taken out of its type (tsc's StripOptional)
 } PropFlags;
 
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
@@ -584,6 +585,7 @@ Ty const* ty_conditional(
 );
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
 Ty const* ty_non_nullable(Checker* me, Ty const* ty);
+Ty const* ty_without_undefined(Checker* me, Ty const* ty); // Removes undefined only (tsc's getTypeWithFacts(NEUndefined))
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
     return ty_cond_branch_type(me, &conditional->conditional.branches[which]);

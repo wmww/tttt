@@ -28701,14 +28701,14 @@ const baselines = {
         types: true,
     },
     'stripMembersOptionality(exactoptionalpropertytypes=false)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'stripMembersOptionality(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'structural1': {
         errors: true,
