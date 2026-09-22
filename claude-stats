@@ -6,7 +6,9 @@ printf \
     "$(~/playground/personal/tools/cc-tokens -r ~/tttt/ \
         | grep -P '^TOTAL' \
         | awk '{print $5}')" \
-    - - \
+   $((~/playground/personal/tools/cc-usage \
+       | awk '/Session/ {print $4} /Weekly, Fable/ {print $4}') \
+       || echo - -) \
     "$(tokei -t C,'C Header' ~/tttt/ \
         | awk '/Total/ {print $3}')" \
     "$(echo \
@@ -14,6 +16,3 @@ printf \
             / "$(cat test/baseline_results.ts | grep -P '(true|false)' | wc -l)"))%" \
         | sed -E 's/(...)$/.\1/')"
 
-#    $((~/playground/personal/tools/cc-usage \
-#        | awk '/Session/ {print $4} /Weekly, Fable/ {print $4}') \
-#        || echo - -) \
