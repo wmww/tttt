@@ -63,11 +63,11 @@ static TyMapper const* mapper_with(Checker* me, TyMapper const* mapper, Ty const
 
 static TyCondBranch instantiate_branch(Checker* me, TyCondBranch const* branch, TyMapper const* mapper) {
     TyCondBranch ret = *branch;
-    if (branch->node && branch->state != LAZY_STATE_DONE) {
+    if ((branch->node || branch->source) && branch->state != LAZY_STATE_DONE) {
         ret.mapper = compose_mappers(me, branch->mapper, mapper);
         ret.state = LAZY_STATE_NOT_STARTED;
-    } else {
-        ret = (TyCondBranch){ .type = ty_instantiate(me, branch->type, mapper) };
+    } else if (branch->type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+        ret = (TyCondBranch){ .source = branch->type, .mapper = mapper };
     }
     return ret;
 }

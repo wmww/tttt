@@ -389,11 +389,14 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
         bool sorted = true;
         for (u32 i = 1; i < buf.len && sorted; i++) sorted = ty_cmp_id(&buf.data[i - 1], &buf.data[i]) <= 0;
         if (!sorted) qsort(buf.data, buf.len, sizeof(Ty const*), ty_cmp_id);
+        bool strict_null_checks = compiler_options()->strict_null_checks;
         u32 out = 0;
         for (u32 i = 0; i < buf.len; i++) {
             Ty const* t = buf.data[i];
             if (out && buf.data[out - 1] == t) continue;
             if (t->kind == TY_INTRINSIC && (t->flags & TYF_NEVER)) continue;
+            // Without strictNullChecks null and undefined are in every type, so a union doesn't keep them
+            if (!strict_null_checks && (t->flags & TYF_NULLABLE)) continue;
             if (t->kind == TY_LITERAL && (
                 ((t->flags & TYF_STRING_LITERAL) && (includes & TYF_STRING)) ||
                 ((t->flags & TYF_NUMBER_LITERAL) && (includes & TYF_NUMBER)) ||
@@ -402,7 +405,10 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
             buf.data[out++] = t;
         }
         if (out == 0) {
-            ret = my intrinsics[TY_NEVER];
+            // Nothing but null and undefined (without strictNullChecks): null wins, like in tsc's getUnionType
+            TyIntrinsic only = TY_NEVER;
+            if (!strict_null_checks) only = includes & TYF_NULL ? TY_NULL : includes & TYF_UNDEFINED ? TY_UNDEFINED : TY_NEVER;
+            ret = my intrinsics[only];
         } else if (out == 1) {
             ret = buf.data[0];
         } else {
@@ -832,22 +838,23 @@ Ty const* ty_non_nullable(Checker* me, Ty const* ty) {
 }
 
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
-    if (!branch->node || branch->state == LAZY_STATE_DONE) return branch->type;
+    if ((!branch->node && !branch->source) || branch->state == LAZY_STATE_DONE) return branch->type;
     if (branch->state == LAZY_STATE_IN_FLIGHT) return ty_intrinsic(me, TY_ERROR);
     branch->state = LAZY_STATE_IN_FLIGHT;
-    branch->type = ty_instantiate(me, ty_from_node(me, branch->node, branch->ctx), branch->mapper);
+    Ty const* source = branch->node ? ty_from_node(me, branch->node, branch->ctx) : branch->source;
+    branch->type = ty_instantiate(me, source, branch->mapper);
     branch->state = LAZY_STATE_DONE;
     return branch->type;
 }
 
 static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
-    if (!branch->node) {
+    if (!branch->node && !branch->source) {
         key[0] = branch->type->id;
         key[1] = 0;
         return 2;
     }
     u32 count = 0;
-    key[count++] = (u64)(uintptr_t)branch->node;
+    key[count++] = branch->node ? (u64)(uintptr_t)branch->node : (u64)(uintptr_t)branch->source;
     key[count++] = branch->mapper ? branch->mapper->len : 0;
     for (u32 i = 0; branch->mapper && i < branch->mapper->len && count + 2 <= 24; i++) {
         key[count++] = branch->mapper->sources[i]->id;

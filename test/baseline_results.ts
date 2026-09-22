@@ -2696,9 +2696,9 @@ const baselines = {
         types: true,
     },
     'cachedContextualTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cachedModuleResolution1': {
         errors: true,
@@ -3341,7 +3341,7 @@ const baselines = {
         types: false,
     },
     'circularConstructorWithReturn': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -3368,7 +3368,7 @@ const baselines = {
     'circularInferredTypeOfVariable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularInlineMappedGenericTupleTypeNoCrash': {
         errors: false,
@@ -5753,7 +5753,7 @@ const baselines = {
     'constraintWithIndexedAccess': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constraints0': {
         errors: false,
@@ -9248,7 +9248,7 @@ const baselines = {
     'deleteExpressionMustBeOptional(strict=false)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'deleteExpressionMustBeOptional(strict=true)': {
         errors: false,
@@ -9701,7 +9701,7 @@ const baselines = {
         types: true,
     },
     'discriminatingUnionWithUnionPropertyAgainstUndefinedWithoutStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9906,7 +9906,7 @@ const baselines = {
         types: true,
     },
     'doubleMixinConditionalTypeBaseClassWorks': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -13453,7 +13453,7 @@ const baselines = {
     'fatarrowfunctionsOptionalArgsErrors4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fieldAndGetterWithSameName': {
         errors: false,
@@ -13503,7 +13503,7 @@ const baselines = {
     'findLast(target=es2022)': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'findLast(target=esnext)': {
         errors: true,
@@ -14378,7 +14378,7 @@ const baselines = {
     'functionsWithImplicitReturnTypeAssignableToUndefined(strictnullchecks=false)': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'functionsWithImplicitReturnTypeAssignableToUndefined(strictnullchecks=true)': {
         errors: true,
@@ -20588,12 +20588,12 @@ const baselines = {
     'metadataOfClassFromAlias': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'metadataOfClassFromAlias2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'metadataOfClassFromModule': {
         errors: true,
@@ -22368,7 +22368,7 @@ const baselines = {
     'narrowingTypeofUndefined1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingTypeofUndefined2': {
         errors: false,
@@ -23548,7 +23548,7 @@ const baselines = {
     'null': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullKeyword': {
         errors: false,
@@ -24768,7 +24768,7 @@ const baselines = {
     'parseGenericArrowRatherThanLeftShift': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseImportAttributesError': {
         errors: false,
@@ -25588,7 +25588,7 @@ const baselines = {
     'promiseTypeInferenceUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseTypeStrictNull': {
         errors: true,
@@ -27043,7 +27043,7 @@ const baselines = {
     'restUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restUnion2': {
         errors: true,
@@ -27561,7 +27561,7 @@ const baselines = {
         types: true,
     },
     'signatureLengthMismatchWithOptionalParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27628,7 +27628,7 @@ const baselines = {
     'slightlyIndirectedDeepObjectLiteralElaborations': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMap-Comment1': {
         errors: true,
@@ -28768,7 +28768,7 @@ const baselines = {
     'substitutionTypeForIndexedAccessType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'substitutionTypeForNonGenericIndexedAccessType': {
         errors: true,
@@ -31113,7 +31113,7 @@ const baselines = {
     'uncaughtCompilerError1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uncaughtCompilerError2': {
         errors: false,
@@ -31446,7 +31446,7 @@ const baselines = {
         types: true,
     },
     'unknownSymbolOffContextualType1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -32798,7 +32798,7 @@ const baselines = {
     'noPropertyAccessFromIndexSignature1': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'ambientDeclarations': {
         errors: true,
@@ -39363,7 +39363,7 @@ const baselines = {
     'symbolProperty59': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'symbolProperty6': {
         errors: false,
@@ -65553,7 +65553,7 @@ const baselines = {
     'keyofInferenceLowerPriorityThanReturn': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noInfer': {
         errors: false,

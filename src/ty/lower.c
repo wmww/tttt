@@ -292,6 +292,9 @@ typedef struct FreeParams {
     // and since nothing outside a node can mention what's declared inside it, they're simply taken out at the end
     Ty const* bound[MAX_FREE_PARAMS];
     u32 bound_len;
+    // Inside the extends type of a conditional being walked, which is what declares its `infer` type parameters.
+    // Walking a node inside an extends type on its own (`(...args: any) => infer R`), R is free
+    u32 in_extends;
 } FreeParams;
 
 static void free_params_bind(FreeParams* out, Ty const* param) {
@@ -354,7 +357,12 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 
         case TYPE_INFERRED:
             if (node->inferred->symbol_ref) {
-                free_params_bind(out, ty_type_param(me, node->inferred->symbol_ref));
+                Ty const* param = ty_type_param(me, node->inferred->symbol_ref);
+                if (out->in_extends) {
+                    free_params_bind(out, param);
+                } else {
+                    free_params_add(out, param);
+                }
             }
             collect_free_params(me, &node->inferred->extends, out);
             break;
@@ -408,7 +416,9 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
 
         case TYPE_TERNARY:
             collect_free_params(me, &node->ternary->maybe_sub, out);
+            out->in_extends++;
             collect_free_params(me, &node->ternary->maybe_super, out);
+            out->in_extends--;
             collect_free_params(me, &node->ternary->if_true, out);
             collect_free_params(me, &node->ternary->if_false, out);
             break;

@@ -281,8 +281,11 @@ struct Ty {
 };
 
 struct TyCondBranch {
-    Ty const* type; // null until lowered if `node` is set
+    Ty const* type; // null until lowered if `node` or `source` is set
     TypeNode const* node;
+    // Or a type to instantiate with `mapper` when the branch is picked: instantiating both branches of a conditional
+    // up front would resolve what the untaken one mentions (`Awaited<V>` inside `Awaited<number>`) and never end
+    Ty const* source;
     LowerCtx ctx;
     TyMapper const* mapper;
     LazyState state;
