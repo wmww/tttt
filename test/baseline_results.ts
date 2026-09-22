@@ -1503,7 +1503,7 @@ const baselines = {
     'assignToFn': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignToInvalidLHS': {
         errors: true,
@@ -10623,7 +10623,7 @@ const baselines = {
     'emitOneLineVariableDeclarationRemoveCommentsFalse': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitPinnedCommentsOnTopOfFile': {
         errors: true,
@@ -12268,7 +12268,7 @@ const baselines = {
     'excessPropertyChecksWithNestedIntersections': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyErrorForFunctionTypes': {
         errors: false,
@@ -14103,7 +14103,7 @@ const baselines = {
     'functionOverloads39': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloads4': {
         errors: false,
@@ -15398,7 +15398,7 @@ const baselines = {
     'getterSetterNonAccessor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getterSetterSubtypeAssignment': {
         errors: false,
@@ -25233,7 +25233,7 @@ const baselines = {
     'privacyCheckAnonymousFunctionParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyCheckAnonymousFunctionParameter2': {
         errors: true,
@@ -37073,7 +37073,7 @@ const baselines = {
     'controlFlowElementAccess': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'controlFlowElementAccess2': {
         errors: true,
@@ -41438,12 +41438,12 @@ const baselines = {
     'optionalBindingParameters1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalBindingParameters2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalBindingParameters3': {
         errors: false,
@@ -41458,12 +41458,12 @@ const baselines = {
     'optionalBindingParametersInOverloads1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalBindingParametersInOverloads2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithAssignmentPattern1': {
         errors: true,
@@ -41673,7 +41673,7 @@ const baselines = {
     'for-of36': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of37': {
         errors: false,
@@ -47638,22 +47638,22 @@ const baselines = {
     'typeSatisfaction_propertyValueConformance1(nopropertyaccessfromindexsignature=false)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_propertyValueConformance1(nopropertyaccessfromindexsignature=true)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_propertyValueConformance2(nouncheckedindexedaccess=false)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_propertyValueConformance2(nouncheckedindexedaccess=true)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_propertyValueConformance3': {
         errors: false,
@@ -49858,7 +49858,7 @@ const baselines = {
     'interfaceWithPropertyOfEveryType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceWithPropertyThatIsPrivateInBaseType': {
         errors: false,
@@ -64148,12 +64148,12 @@ const baselines = {
     'typeParameterAsTypeParameterConstraintTransitively': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterAsTypeParameterConstraintTransitively2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'wrappedAndRecursiveConstraints': {
         errors: true,

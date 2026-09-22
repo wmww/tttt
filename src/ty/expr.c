@@ -245,7 +245,6 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
 static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty const* contextual, u32 depth) {
     if (!contextual || depth > 8) return false;
     if (contextual->kind == TY_UNION || contextual->kind == TY_INTERSECTION) {
-        if ((contextual->flags & TYF_BOOLEAN) && (literal->flags & TYF_BOOLEAN_LITERAL)) return false;
         for (u32 i = 0; i < contextual->composite.types.len; i++) {
             if (is_literal_of_contextual_type(me, literal, contextual->composite.types.data[i], depth + 1)) return true;
         }
