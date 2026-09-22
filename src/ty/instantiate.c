@@ -93,7 +93,8 @@ static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper,
 }
 
 // A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
-// the template, not an object with the array methods mapped (tsc's instantiateMappedType). Null if this isn't that
+// the template, not an object with the array methods mapped, and with a union for T a union (tsc's
+// instantiateMappedType). Null if this isn't that
 static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
     // Asking for the members of every object type that gets instantiated would defeat their laziness, so look at the
     // syntax first
@@ -106,7 +107,26 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     MappedInfo const* mapped = ty_members(me, ty)->mapped;
     if (!mapped || mapped->name_type || !mapped->modifiers_type || mapped->modifiers_type->kind != TY_TYPE_PARAM) return nullptr;
     Ty const* list = ty_instantiate(me, mapped->modifiers_type, mapper);
-    if (list == mapped->modifiers_type || list->kind != TY_REFERENCE) return nullptr;
+    if (list == mapped->modifiers_type) return nullptr;
+    if (list->kind == TY_UNION) {
+        // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
+        // name it was written with. Primitives map to themselves
+        u32 len = list->composite.types.len;
+        Ty const** parts = malloc(sizeof(Ty const*) * len);
+        panic_if(!parts, "out of memory");
+        u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
+        for (u32 i = 0; i < len; i++) {
+            Ty const* part = list->composite.types.data[i];
+            parts[i] = part->flags & mappable ? ty_instantiate(me, ty, mapper_with(me, mapper, mapped->modifiers_type, part)) : part;
+        }
+        Ty const* alias_buf[16];
+        TyList alias_args = ty->alias_args.len <= c_arraylen(alias_buf) ?
+            instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf)) : (TyList){0};
+        Ty const* ret = ty_union(me, parts, len, alias_args.len == ty->alias_args.len ? ty->alias : nullptr, alias_args);
+        free(parts);
+        return ret;
+    }
+    if (list->kind != TY_REFERENCE) return nullptr;
 
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
