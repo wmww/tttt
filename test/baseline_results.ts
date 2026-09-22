@@ -46186,12 +46186,12 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnInstantiatedCallSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'comparisonOperatorWithNoRelationshipObjectsOnInstantiatedConstructorSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -49,6 +49,7 @@ enum {
     KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
     KEY_SYNTHETIC_ACCESS, // Binding (an element of an object pattern) -> Expr `init.name`, see destructured_flow_type()
     KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants
+    KEY_ERASED_SIGNATURE, // Signature -> the signature with its type parameters replaced by any (relate.c)
 };
 
 // Doesn't insert, unlike intern_slot()

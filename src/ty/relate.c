@@ -667,6 +667,20 @@ static Ternary compare_signatures(
     return result & related;
 }
 
+// tsc's getErasedSignature: every type parameter is any
+static Signature const* erased_signature(Checker* me, Signature const* sig) {
+    signature_resolve(me, sig);
+    if (!sig->type_params.len) return sig;
+    u64 key[2] = { KEY_ERASED_SIGNATURE, (u64)(uintptr_t)sig };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (!*slot) {
+        Ty const** anys = arena_new_n(&my arena, Ty const*, sig->type_params.len);
+        for (u32 i = 0; i < sig->type_params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+        *slot = instantiate_signature(me, sig, (TyList){ .data = anys, .len = sig->type_params.len });
+    }
+    return *slot;
+}
+
 static Ternary signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool construct, bool report
 ) {
@@ -678,6 +692,9 @@ static Ternary signatures_related(
     u32 target_count = construct ? target_members->construct_count : target_members->call_count;
     if (!target_count) return TERNARY_TRUE;
     Ternary result = TERNARY_TRUE;
+    // Only a signature compared with a single one keeps its type parameters (tsc's signaturesRelatedTo: the N * M
+    // comparison erases them, and so does comparability)
+    bool erase = st->relation == TY_RELATION_COMPARABLE || source_count != 1 || target_count != 1;
     for (u32 i = 0; i < target_count; i++) {
         Signature const* target_sig = target_sigs[i];
         Ternary related = TERNARY_FALSE;
@@ -690,7 +707,10 @@ static Ternary signatures_related(
                 continue;
             }
             isize_t saved = vec_ty_report_line_size(&st->lines);
-            related = compare_signatures(me, st, source_sig, target_sig, report && source_count == 1 && target_count == 1);
+            related = compare_signatures(
+                me, st, erase ? erased_signature(me, source_sig) : source_sig, erase ? erased_signature(me, target_sig) : target_sig,
+                report && source_count == 1 && target_count == 1
+            );
             if (related) report_truncate(st, saved);
         }
         if (!related) {
