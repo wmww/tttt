@@ -4021,7 +4021,7 @@ const baselines = {
         types: false,
     },
     'classdecl': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4326,7 +4326,7 @@ const baselines = {
         types: false,
     },
     'collisionRestParameterClassConstructor': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4406,7 +4406,7 @@ const baselines = {
         types: true,
     },
     'collisionSuperAndParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4416,7 +4416,7 @@ const baselines = {
         types: true,
     },
     'collisionSuperAndPropertyNameAsConstuctorParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4496,12 +4496,12 @@ const baselines = {
         types: false,
     },
     'collisionThisExpressionAndParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'collisionThisExpressionAndPropertyNameAsConstuctorParameter': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4776,7 +4776,7 @@ const baselines = {
         types: true,
     },
     'commentOnSignature1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -4966,7 +4966,7 @@ const baselines = {
         types: true,
     },
     'commentsOverloads': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5821,7 +5821,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -5836,7 +5836,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5856,7 +5856,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -7076,7 +7076,7 @@ const baselines = {
         types: true,
     },
     'declFileConstructors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -10066,12 +10066,12 @@ const baselines = {
         types: true,
     },
     'duplicateConstructorOverloadSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'duplicateConstructorOverloadSignature2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11596,7 +11596,7 @@ const baselines = {
         types: false,
     },
     'es6ClassTest2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17336,7 +17336,7 @@ const baselines = {
         types: true,
     },
     'infinitelyExpandingOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25296,7 +25296,7 @@ const baselines = {
         types: false,
     },
     'privacyFunc': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25331,7 +25331,7 @@ const baselines = {
         types: true,
     },
     'privacyGloFunc': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28466,7 +28466,7 @@ const baselines = {
         types: false,
     },
     'staticPrototypePropertyOnClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31806,7 +31806,7 @@ const baselines = {
         types: false,
     },
     'unusedLocalsAndParametersOverloadSignatures': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34771,7 +34771,7 @@ const baselines = {
         types: false,
     },
     'constructorImplementationWithDefaultValues': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34786,7 +34786,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloadsWithOptionalParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39776,7 +39776,7 @@ const baselines = {
         types: true,
     },
     'emitClassDeclarationOverloadInES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39786,7 +39786,7 @@ const baselines = {
         types: false,
     },
     'emitClassDeclarationWithExtensionAndTypeArgumentInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39836,7 +39836,7 @@ const baselines = {
         types: false,
     },
     'emitClassDeclarationWithTypeArgumentAndOverloadInES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62526,7 +62526,7 @@ const baselines = {
         types: false,
     },
     'typesWithSpecializedConstructSignatures': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62831,12 +62831,12 @@ const baselines = {
         types: true,
     },
     'constructSignaturesWithIdenticalOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'constructSignaturesWithOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63266,7 +63266,7 @@ const baselines = {
         types: true,
     },
     'functionLiteralForOverloads2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63296,7 +63296,7 @@ const baselines = {
         types: false,
     },
     'typeQueryOnClass': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -63316,7 +63316,7 @@ const baselines = {
         types: true,
     },
     'typeofClass2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

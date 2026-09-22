@@ -243,12 +243,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
 
-    int constructor_count = 0;
+    int constructor_count = 0; // Implementations
     for_each (i, vec_class_item, &my items) {
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
                 function_impl_typecheck(&i->constructor.func, errs);
-                constructor_count++;
+                if (i->constructor.func.has_body) constructor_count++; // Overloads are fine
                 break;
 
             case CLASS_ITEM_METHOD:
@@ -277,7 +277,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     if (constructor_count > 1) {
         for_each (i, vec_class_item, &my items) {
-            if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
+            if (i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
                 check(span_valid(i->constructor.name_span));
                 check(span_valid(i->constructor.func.full_span));
                 error_ctx_error_d(
