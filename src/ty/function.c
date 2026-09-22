@@ -55,7 +55,10 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             // Function expressions that can't return don't (declarations are `void`)
             ret = ty_intrinsic(me, TY_NEVER);
         } else if (!returned.len) {
-            ret = ty_intrinsic(me, TY_VOID);
+            // `undefined` if that's what the context wants (tsc's getReturnTypeFromBody, TS 5.1)
+            Ty const* contextual = function->is_async ? nullptr : ty_contextual_return_type(me, function);
+            bool undefined = contextual && contextual->kind != TY_UNION && (contextual->flags & TYF_UNDEFINED);
+            ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_VOID);
         } else {
             if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {
                 ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
