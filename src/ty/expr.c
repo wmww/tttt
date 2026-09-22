@@ -958,10 +958,33 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                     Prop const* prop = members->props[j];
                     Prop const* origin = prop;
                     while (origin->target) origin = origin->target;
+                    ObjectLiteralProp* existing = literal_builder_find(&builder, prop->name);
+                    if (existing && (prop->flags & PROP_OPTIONAL)) {
+                        // An optional property may not be there: what was there before stays possible, and so does
+                        // its being required (tsc's getSpreadType)
+                        Ty const* left = existing->type;
+                        Ty const* right = ty_without_undefined(me, prop_type(me, prop));
+                        if (ty_without_undefined(me, left) != right) {
+                            existing->type = union_of_two(me, left, right);
+                            existing->asserted = nullptr;
+                        }
+                        u32 count = existing->decl_span_count + origin->decl_span_count;
+                        Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
+                        for (u32 k = 0; k < existing->decl_span_count; k++) spans[k] = existing->decl_spans[k];
+                        for (u32 k = 0; k < origin->decl_span_count; k++) spans[existing->decl_span_count + k] = origin->decl_spans[k];
+                        existing->decl_spans = spans;
+                        existing->decl_span_count = count;
+                        continue;
+                    }
+                    // The annotation of the property it comes from still says what it is, unless instantiated
+                    TypeNode const* annotation = origin->node && origin->node->parsed && !origin->lazy && !origin->function &&
+                        !origin->overload_count && !origin->symbol && prop_type(me, prop) == prop_type(me, origin) ?
+                        origin->node : nullptr;
                     literal_builder_add(&builder, (ObjectLiteralProp){
                         .name = prop->name,
                         .flags = prop->flags & (u32)~PROP_READONLY,
                         .type = prop_type(me, prop),
+                        .asserted = annotation,
                         .name_span = origin->name_span,
                         .decl_spans = origin->decl_spans,
                         .decl_span_count = origin->decl_span_count,

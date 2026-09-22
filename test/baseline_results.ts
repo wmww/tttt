@@ -7653,7 +7653,7 @@ const baselines = {
     'declarationEmitComputedPropertyNameEnum1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedPropertyNameEnum2': {
         errors: true,
@@ -7663,7 +7663,7 @@ const baselines = {
     'declarationEmitComputedPropertyNameEnum3': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedPropertyNameSymbol1': {
         errors: false,
@@ -28278,7 +28278,7 @@ const baselines = {
     'spreadTypeRemovesReadonly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadsAndContextualTupleTypes': {
         errors: false,
@@ -63423,7 +63423,7 @@ const baselines = {
     'spreadContextualTypedBindingPattern': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadDuplicate': {
         errors: false,
