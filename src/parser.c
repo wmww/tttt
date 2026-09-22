@@ -1269,6 +1269,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         hop_whitespace(&p);
     }
 
+    Anchor value_anchor = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "any")) {
         *ret = type_any;
     } else if (hop_start_if_ends_on_word_break(&p, "unknown")) {
@@ -1323,12 +1324,14 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         }));
     } else if (parse_type_compat_literal(&p, &ret->value)) {
         ret->tag = TYPE_VALUE;
+        ret->value_span = span_from(value_anchor);
     } else if (hop_start(&p, "-")) {
         hop_whitespace(&p);
         if (parse_number(&p, &ret->value.number)) {
             ret->tag = TYPE_VALUE;
             ret->value.tag = VALUE_NUMBER;
             ret->value.number = -ret->value.number;
+            ret->value_span = span_from(value_anchor);
         } else {
             return parse_fail(&p);
         }

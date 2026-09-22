@@ -74,7 +74,10 @@ typedef struct TypeNode {
             bool self_referential_error;
             Span unkown_symbol_span; // Used by tests
         } any;
-        Value value;
+        struct {
+            Value value;
+            Span value_span; // Where it was written, if it was (for the types baseline)
+        };
         IdentifierType* identifier;
         InferredType* inferred;
         CallableType* callable;

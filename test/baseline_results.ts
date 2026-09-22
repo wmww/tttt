@@ -2168,7 +2168,7 @@ const baselines = {
     'avoidListingPropertiesForTypesWithOnlyCallOrConstructSignatures': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'avoidNarrowingUsingConstVariableFromBindingElementWithLiteralInitializer': {
         errors: true,
@@ -5988,7 +5988,7 @@ const baselines = {
     'contextualSignatureConditionalTypeInstantiationUsingDefault': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualSignatureInArrayElementLibEs2015': {
         errors: false,
@@ -6983,7 +6983,7 @@ const baselines = {
     'curiousNestedConditionalEvaluationResult': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'customAsyncIterator': {
         errors: true,
@@ -9008,7 +9008,7 @@ const baselines = {
     'decoratorWithNegativeLiteralTypeNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorWithUnderscoreMethod': {
         errors: true,
@@ -9718,7 +9718,7 @@ const baselines = {
     'distributiveConditionalTypeNeverIntersection1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessors1': {
         errors: false,
@@ -11128,7 +11128,7 @@ const baselines = {
     'errorMessageOnIntersectionsWithDiscriminants01': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorMessageOnObjectLiteralType': {
         errors: false,
@@ -17078,7 +17078,7 @@ const baselines = {
     'inferTInParentheses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTupleFromBindingPattern': {
         errors: true,
@@ -17138,7 +17138,7 @@ const baselines = {
     'inferenceExactOptionalProperties1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceExactOptionalProperties2': {
         errors: false,
@@ -20618,7 +20618,7 @@ const baselines = {
     'metadataOfUnionWithNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'metadataReferencedWithinFilteredUnion': {
         errors: true,
@@ -22268,7 +22268,7 @@ const baselines = {
     'narrowingByDiscriminantInLoop': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingByTypeofInSwitch': {
         errors: false,
@@ -25138,7 +25138,7 @@ const baselines = {
     'prefixedNumberLiteralAssignToNumberLiteralType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'preserveConstEnums': {
         errors: true,
@@ -27143,7 +27143,7 @@ const baselines = {
     'reverseMappedTypeAssignableToIndex': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeContextualTypeNotCircular': {
         errors: false,
@@ -27613,7 +27613,7 @@ const baselines = {
     'singletonLabeledTuple': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'slashBeforeVariableDeclaration1': {
         errors: true,
@@ -37013,7 +37013,7 @@ const baselines = {
     'controlFlowAssignmentExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowAssignmentPatternOrder': {
         errors: false,
@@ -46888,7 +46888,7 @@ const baselines = {
     'nullishCoalescingOperator_not_strict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralErrors': {
         errors: false,
@@ -62268,7 +62268,7 @@ const baselines = {
     'mappedTypeErrors2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeIndexSignatureModifiers': {
         errors: true,
