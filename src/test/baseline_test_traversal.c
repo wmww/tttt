@@ -861,7 +861,10 @@ static bool vec_expr_contains_elements_other_than_undefined(VecExpr const* me) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
-    if (my tag == EXPR_ARRAY && !vec_expr_contains_elements_other_than_undefined(&my array)) {
+    // Without strictNullChecks `[]` and `[undefined]` are undefined[] before widening (tsc's undefinedWideningType)
+    if (my tag == EXPR_ARRAY && !compiler_options()->strict_null_checks &&
+        !vec_expr_contains_elements_other_than_undefined(&my array)
+    ) {
         Checker* checker = current_checker;
         Ty const* undefined_array = ty_array(checker, ty_intrinsic(checker, TY_UNDEFINED), false);
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, undefined_array);

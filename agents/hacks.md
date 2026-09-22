@@ -345,6 +345,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   isn't checked at all because the parser drops shorthand defaults (`ObjectExprItem.shorthand_default`). The array
   pattern's own type isn't the tuple tsc gives it. Expando assignments to functions (`foo.constructor = 1`, nullPropertyName)
   are checked against the existing member.
+- **No evolving arrays** (`let x = []` then `x.push(1)`, tsc's autoArrayType): `initialized_binding_evaluate_assigned_type`
+  gives an unannotated variable initialized with `[]` the type `any[]` under noImplicitAny. Everywhere else `[]` is
+  `never[]` under strictNullChecks like in tsc.
 - **No fresh/regular literal type pairs.** Every literal type that comes out of an expression counts as fresh: it
   widens at a mutable location (`ty_widened_for_declaration`, `check_for_mutable_location`), so `const c: 1 = 1; let x = c`
   gives `number` where tsc says `1`. No object literal freshness either (no excess property checks, TS2353).

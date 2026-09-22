@@ -5083,7 +5083,7 @@ const baselines = {
     'comparableRelationBidirectional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compareTypeParameterConstrainedByLiteralToLiteral': {
         errors: true,
@@ -6803,7 +6803,7 @@ const baselines = {
     'controlFlowLoopAnalysis': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowManyCallExpressionStatementsPerf': {
         errors: true,
@@ -12208,7 +12208,7 @@ const baselines = {
     'evolvingArrayResolvedAssert': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'evolvingArrayTypeInAssert': {
         errors: true,
@@ -17038,7 +17038,7 @@ const baselines = {
     'inferFromNestedSameShapeTuple': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferObjectTypeFromStringLiteralToKeyof': {
         errors: false,
@@ -23998,7 +23998,7 @@ const baselines = {
     'omittedExpressionForOfLoop': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'operationsAvailableOnPromisedType': {
         errors: false,
@@ -24603,7 +24603,7 @@ const baselines = {
     'parameterPropertyInConstructor4': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'parameterPropertyInConstructorWithPrologues': {
         errors: true,
@@ -25623,7 +25623,7 @@ const baselines = {
     'propagateNonInferrableType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propagationOfPromiseInitialization': {
         errors: true,
@@ -30058,7 +30058,7 @@ const baselines = {
     'tupleTypeInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tupleTypes': {
         errors: false,
@@ -30313,12 +30313,12 @@ const baselines = {
     'typeGuardNarrowsIndexedAccessOfKnownProperty5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty7': {
         errors: true,
@@ -38793,22 +38793,22 @@ const baselines = {
     'logicalAssignment4(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment4(target=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment4(target=es2021)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment4(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment5(target=es2015)': {
         errors: false,
@@ -38831,44 +38831,44 @@ const baselines = {
         types: false,
     },
     'logicalAssignment6(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment6(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment6(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment6(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment7(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment7(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment7(target=es2021)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment7(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment8(target=es2015)': {
         errors: true,
@@ -62561,7 +62561,7 @@ const baselines = {
         types: true,
     },
     'neverInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63943,7 +63943,7 @@ const baselines = {
     'variadicTuples3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'wideningTuples1': {
         errors: false,
@@ -65603,7 +65603,7 @@ const baselines = {
     'strictNullChecksNoWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeWithUnionTypeCallSignatures': {
         errors: true,

@@ -1141,8 +1141,8 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
         } else if (count) {
             element = elements[0];
         } else {
-            // TODO: tsc says never[] under strictNullChecks, and an unannotated variable gets an evolving any[]
-            element = any_type(me);
+            // `[]` (an unannotated variable initialized with it is an evolving array in tsc, see binding.c)
+            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_NEVER) : any_type(me);
         }
         ret = ty_array(me, element, false);
     }

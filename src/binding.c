@@ -260,6 +260,15 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
         if (contextual) return contextual;
     }
     Ty const* ret = initialized_binding_check_value(me);
+    // HACK: `let x = []` is an evolving array in tsc (autoArrayType, under noImplicitAny), which grows with what is
+    // pushed. Not there yet: it's any[] like before `[]` was never[]
+    Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;
+    if (!my binding.has_explicit_type && my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array) &&
+        compiler_options()->no_implicit_any && symbol && !symbol->is_parameter && !symbol->is_ambient &&
+        (symbol->flags & SYMBOL_VARIABLE)
+    ) {
+        return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
+    }
     if (!my binding.has_explicit_type) {
         ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
     }

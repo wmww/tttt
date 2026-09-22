@@ -688,6 +688,11 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
 // `[b?: number]` has an element of type `number | undefined` (tsc's addOptionality)
 static Ty const* tuple_element_type(Checker* me, TupleElement const* element, LowerCtx ctx) {
     Ty const* type = ty_from_node(me, &element->type, ctx);
+    // `...args: Args` of an array type is a rest element of its elements (tsc's createNormalizedTypeReference), a
+    // plain array whatever alias it went by
+    if (element->rest && type->kind == TY_REFERENCE && ty_is_array(me, type) && type->alias) {
+        return ty_array(me, ty_reference_args(me, type).data[0], false);
+    }
     return element->optional ? ty_optional_param_type(me, type) : type;
 }
 
@@ -703,6 +708,24 @@ static Ty const* lower_tuple(Checker* me, TypeNode const* node, LowerCtx ctx) {
     Ty const* ret = ty_reference(me, target, (TyList){ .data = args, .len = arity });
     free(args);
     return ret;
+}
+
+// tsc's getArrayElementTypeNode: what `...x: N` spreads if N is syntactically an array
+static TypeNode const* array_element_type_node(TypeNode const* node) {
+    if (node->tag == TYPE_ARRAY) return node->array.element;
+    if (node->tag == TYPE_TUPLE && vec_tuple_element_size(&node->tuple.elements) == 1) {
+        TupleElement const* only = vec_tuple_element_at(&node->tuple.elements, 0);
+        if (only->rest) return array_element_type_node(&only->type);
+    }
+    return nullptr;
+}
+
+// A rest element whose type isn't written as an array: tsc flags it Variadic (getRestTypeElementFlags)
+static bool tuple_node_has_variadic(TypeNode const* node) {
+    for_each (i, vec_tuple_element, &node->tuple.elements) {
+        if (i->rest && !array_element_type_node(&i->type)) return true;
+    }
+    return false;
 }
 
 // Deferred references, see Ty.reference.deferred
@@ -993,10 +1016,13 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
             }
             return ty_array(me, ty_from_node(me, node->array.element, ctx), node->array.readonly);
 
-        case TYPE_TUPLE:
-            if ((alias || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
-                return ty_deferred_reference(me, node, ctx, nullptr, alias, alias_args);
+        case TYPE_TUPLE: {
+            // A tuple with a variadic element (going by the syntax) isn't deferred in tsc, so it goes by no alias
+            bool variadic = tuple_node_has_variadic(node);
+            if (((alias && !variadic) || (ctx.in_alias && node_reaches_alias_in_flight(me, node, 0)))) {
+                return ty_deferred_reference(me, node, ctx, nullptr, variadic ? nullptr : alias, alias_args);
             }
+        }
             return lower_tuple(me, node, ctx);
 
         case TYPE_INDEXED: {
