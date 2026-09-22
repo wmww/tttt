@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 08 session 1: real corpus 1751 -> 440
+Suite: **3571 full of 13163** (was 3496). Real corpus: **440 type diagnostics** (1751), see plan 08 "Progress" for
+what's left. `./bench.sh`: real corpus wall **0.61 s** (tsgo 0.73, tsgo single-threaded 1.35, tsc 4.87), load+parse
+152 ms, resolve 78 ms, typecheck 381 ms (373 in plan 06: the ~1300 calls and bodies that no longer fail early cost
+almost nothing), RSS 341 MB. Synthetic corpus 1.15 s (tsgo 1.39). Not a result yet: 440 checks still stop early.
+
 ## 2026-09-22, plan 07: types baseline underlines
 Suite: **3496 full of 13163** (was 1971), errors 6907, symbols 8787, **types 6364** (3974). 0 tests lost a component.
 `TTTT_IGNORE_UNDERLINES=1` now gives 3537 full / types 6437 (it was 3350 / 6334 before plan 07: other fixes since),

@@ -25,6 +25,29 @@ The distribution (2026-09-22) is much less spread than it looks:
 - TS2495 25, TS2461 10, TS2556 12, TS7022 12: iteration protocol and `this` types (`triage.md` "Category-sized").
   If they are the last thing standing, they get their own plan (09) rather than a hack.
 
+## Progress
+**Session 1 (2026-09-22): 1751 -> 440**, suite 3496 -> 3571, no component lost that isn't explained in `hacks.md`.
+One commit per root cause (`git log --grep "Plan 08"`): mapped types with `as` clauses (-694), inference to
+`T & {}` (-292), optional calls, conditional `infer` inside function/object types + non-strict unions dropping
+null/undefined + lazy conditional branches, TS2392 on constructor overloads, destructuring/property assignment
+targets, Pick modifiers + intersection sources vs index signatures, reverse mapped types + Record inference +
+`keyof` precedence, distributive conditional constraints, tuple rest spreads, aliased conditions, `-?`.
+
+What is left (440), by root cause, biggest first:
+- **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) =>
+  ...)` returning a generic function): tsc's "propagated type parameters" in `inferFromSignatures` /
+  `getOrCreateTypeFromSignature` when a generic function is passed where a non-generic single-signature function
+  type is expected and the result is a function. Category-sized: its own plan.
+- **Iteration protocol** (plan 09): TS2461/TS2495 ~25, and most of the `unknown`s (TS18046, TS2345 "'unknown' is not
+  assignable", ~40): `arrayFrom(set)`, `arrayFrom(map.entries())`, destructuring iterables, for-of over `Set`/
+  `Iterable<T>`.
+- **Fresh vs regular literal types** (`hacks.md`, Expressions): `createComparator(operator, ...)` returns
+  `{ operator: string }` because a parameter typed `"<" | ">="` widens like a literal expression (semver.ts 12).
+  Needs fresh/regular pairs; also a plan (touches widening everywhere).
+- Smaller, unexplored: TS2769 11, `JsxCallLike` properties (12, union narrowing by kind?), `Extract<NamedEvaluation,
+  Pick<...>>` (8), `Mutable<T>` (6), `ResolutionWithResolvedFileName | (Resolution & {})` (4), TS2370 (4),
+  `cache`/`top` possibly undefined (12: narrowing), `this` types (TS7022).
+
 ## How
 This is a loop, not a design. Each iteration:
 1. `./realworld.py`, pick the biggest bucket by *root cause* (group by message shape and file, read the source line).

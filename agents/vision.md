@@ -5,15 +5,13 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, insights after the triage following plan 06)
-- **Suite: `./fasttest.sh` 3496 / 13163 fully pass** (errors 6907, symbols 8787, types 6364). Plan 07 (types
-  baseline underlines, tsc's node reuse) took it from 1971 in one session: the types component is now a real
-  measurement of type *printing* (ignoring underlines would only add 73 more), so `failstats.py`'s types numbers mean
-  something again.
+## State (2026-09-22, after plan 08's first session)
+- **Suite: `./fasttest.sh` 3571 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plan 08's corpus fixes moved the suite by +75 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 1751 type diagnostics**, 0.6-0.7 s wall (tsgo 0.72 s, tsc 4.7 s). The count has been
-  flat for three plans. 810 of it is one contextual-typing bug in one file; the rest is mostly calls/inference
-  (TS2345/2769/2322 ~510), "not callable" (78), narrowing leftovers, iteration and `this` types. Plan 08.
+  under tsc): **0 parse, 0 name, 440 type diagnostics** (1751 at the start of plan 08, flat for three plans before).
+  What is left is mostly three category-sized gaps (iteration protocol, higher-order generic function inference,
+  fresh/regular literals: plan 08 "Progress") plus a tail of small root causes.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
   corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
   (interned, id-keyed relations, mapper instantiation, two-pass inference, contextual typing, conditional/mapped/
