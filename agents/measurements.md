@@ -2,6 +2,12 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 08 session 2: real corpus 365 -> 239
+Suite: **3607 full of 13163** (was 3573), errors 7039+, symbols 8796+, types 6464+. Real corpus: **239 type
+diagnostics** (plan 08 "Progress" has what's left). `./bench.sh`: real corpus wall **0.62 s** (tsgo 0.74, tsgo
+single-threaded 1.26, tsc 4.74), load+parse 150 ms, resolve 78 ms, typecheck 398 ms (381 at 440 diagnostics),
+RSS 353 MB. Synthetic corpus 1.25 s (tsgo 1.42). Still not the result: ~240 checks stop early.
+
 ## 2026-09-22, plan 08 session 1: real corpus 1751 -> 365
 Suite: **3573 full of 13163** (was 3496). Real corpus: **365 type diagnostics** (1751; bench below taken at 440), see plan 08 "Progress" for
 what's left. `./bench.sh`: real corpus wall **0.61 s** (tsgo 0.73, tsgo single-threaded 1.35, tsc 4.87), load+parse

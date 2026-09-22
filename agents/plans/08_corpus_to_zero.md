@@ -35,20 +35,34 @@ targets, Pick modifiers + intersection sources vs index signatures, reverse mapp
 discriminant-conflict intersection reduction, generic mapped targets + `T[K]` write types, `switch (x?.kind)`,
 destructuring flow types, rest tuple parameters in signature relations.
 
-What is left (365), by root cause, biggest first:
-- **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) =>
-  ...)` returning a generic function): tsc's "propagated type parameters" in `inferFromSignatures` /
-  `getOrCreateTypeFromSignature` when a generic function is passed where a non-generic single-signature function
-  type is expected and the result is a function. Category-sized: its own plan.
-- **Iteration protocol** (plan 09): TS2461/TS2495 ~25, and most of the `unknown`s (TS18046, TS2345 "'unknown' is not
-  assignable", ~40): `arrayFrom(set)`, `arrayFrom(map.entries())`, destructuring iterables, for-of over `Set`/
-  `Iterable<T>`.
-- **Fresh vs regular literal types** (`hacks.md`, Expressions): `createComparator(operator, ...)` returns
-  `{ operator: string }` because a parameter typed `"<" | ">="` widens like a literal expression (semver.ts 12).
-  Needs fresh/regular pairs; also a plan (touches widening everywhere).
-- Smaller, unexplored: TS2769 10 (visitEachChildWorker overloads vs `NodesVisitor`: generic signature relations),
-  `Mutable<T>` (6), `ResolutionWithResolvedFileName | (Resolution & {})` (4), TS2370 (4, @types/node events.d.ts),
-  `Expression` vs `BindableStaticNameExpression` (3), `this` types (TS7022).
+**Session 2 (2026-09-22): 365 -> 239**, suite 3573 -> 3607, nothing lost. Root causes: `Mutable<T>` to T (mapped
+type to type parameter rule), `x && y` with a generic x, binding element defaults under a written type + pattern
+display, tsc's union signatures for union callees (getUnionSignatures), SkipContextSensitive overload passes,
+fixing only the type parameters a lambda's parameters mention, homomorphic mapped types distributing over unions,
+`x!` passing its contextual type on, const aliases of discriminants, tuple elements of intersections, tuple members
+(`length`, array methods), boolean literals under a `boolean` contextual type (+9 suite), inferred type predicates
+(TS 5.5), getNarrowableTypeForReference (constraint positions), contextual signatures from overloads/unions plus
+discriminated object literal contexts. Also harness: `true`/`false`/`-1` literal type nodes in the types baseline
+(+13 suite).
+
+What is left (239), by root cause, biggest first:
+- **Iteration protocol** (plan 09): TS2495 25, TS2461 10, and most of TS2345/TS2322/TS18046 with `unknown`
+  (~70): `arrayFrom(set)`, `arrayFrom(map.entries())`, destructuring iterables, for-of over `Set`/`Iterable<T>`.
+- **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`
+  returning a generic function): tsc's "propagated type parameters" in `inferFromSignatures` /
+  `getOrCreateTypeFromSignature`. Category-sized: plan 10.
+- **`this` types** (TS7022 13, `m.set(...)` chains). Category-sized; also blocks ~242 types baselines on its own
+  (measured: `>this : this` vs tttt's `>this : C`), so it is worth a plan soon.
+- **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): `createComparator(operator, ...)` returns
+  `{ operator: string }`. Plan-sized (touches widening everywhere).
+- Small, unexplored (~40): TS7006 12 (parenthesizerRules `node => ...` assigned to a `let` whose type comes from a
+  Map get; resolutionCache `forEach((resolution, name, mode) =>` on a custom map interface; `(...args) =>` assigned to
+  a method of an interface; setters `set onSubstituteNode(value)` in an object literal with a contextual type);
+  TS2769 7 (visitEachChildWorker vs `NodesVisitor` generic signatures, `every(members, m => ...)` where `m` is
+  `unknown`, `concatenate(x, map(..., f => [a, f]))` array-literal-as-tuple under a contextual type); TS2370 4
+  (@types/node events.d.ts: rest parameter of a generic type); TS2339 2 (`IdentifierNameMap.add` through a
+  MultiMap-style intersection, `emittedFiles` on a union with an object literal type missing it: tsc normalizes
+  object literal unions); TS18048 3; emitHelpers-like EmitHelper errors are gone.
 
 ## How
 This is a loop, not a design. Each iteration:

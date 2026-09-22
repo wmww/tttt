@@ -26,7 +26,8 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   147 in the corpus at last count), `Array.from(map.keys())` is `unknown[]`, array destructuring of iterables:
   needs `[Symbol.iterator]()` through well-known symbol property names, and unique symbols for `[Symbol.iterator]()
   {}` computed members (today they go through `InterfaceMember`/`INTERFACE_KEY_EXPR`, print as `() => any`).
-- **`this` types**: `this` inside methods prints as `C` (tsc: `this`), `m.set("a", 1)` on a `Map` returns the
+- **`this` types**: ~242 types baselines fail *only* on `this` lines, 969 have some (measured 2026-09-22 by comparing
+  dumps: `>this : this` 5148 times). `this` inside methods prints as `C` (tsc: `this`), `m.set("a", 1)` on a `Map` returns the
   error type instead of the map, `xs.slice().sort()` in for-of gives TS7022 (12 in the corpus), intersections and
   fluent classes (intersectionThisTypes, fluentClasses). Needs the `this` type parameter of classes/interfaces.
 - **Target-gated diagnostics** now possible (`compiler_options()->target` exists): TS18028 (private identifiers <
@@ -71,9 +72,21 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   (spreadBooleanRespectsFreshness); a union filtered to the members of an alias prints `string | false` where tsc
   says `FooBase`.
 - Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
-  callee without explicit types), TS1225 (no such parameter), inferred predicates (tsc 5.5), `x is T` where the
+  callee without explicit types), TS1225 (no such parameter), `x is T` where the
   function returns a non-boolean (TS2322 on return).
-- Inferred predicates in `filter(f => f !== undefined)`: see `hacks.md` "Narrowing".
+- Interface method overloads print per declaration in the types/symbols baselines (`getFalseType(fresh?: boolean):
+  number; getFalseType(): number;` shows `(fresh?: boolean) => number` and `() => number` on the two lines, tsc the
+  merged `{ (...): number; (): number; }` with both declarations; probe `test/probes/plan08/contextual_overloads.ts`).
+- The symbols of mapped-type properties (`Mutable<A>`'s `flags`: tsc `Symbol(flags, Decl(...))`, we `Symbol(A.flags)`)
+  and of union properties (tsc lists every member's declaration, we print `Symbol(flags)`); probe
+  `test/probes/plan08/mutable_union.ts`.
+- Bigint literal types (`type A = 1n`) don't parse in type position (TS1005).
+- A type parameter's constraint prints uninstantiated in instantiated signatures (`<S extends T>` where tsc prints
+  `<S extends number | null>` for `Array<number | null>.filter`); T_1-style renaming of clashing type parameter names
+  in overload lists is missing.
+- Destructured parameters without a type annotation don't get the type the pattern implies (`({ a = 1 }) => a` is
+  `{ a?: number }` in tsc, `any` here), and computed keys in patterns miss their symbol lines (probe
+  `binding_pattern_display.ts`).
 - `unknown` where tsc infers a type (~20 TS18046 in the corpus; suite: intraExpressionInferences,
   inferFromGenericFunctionReturnTypes2, mappedTypeRecursiveInference, reverseMappedUnionInference, promiseChaining).
 - Reverse mapped types (plan 08) are eager objects, no arrays/tuples, cut at depth 4 (`reverse_mapped_type`); tsc's are

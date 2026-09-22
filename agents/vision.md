@@ -5,13 +5,14 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, after plan 08's first session)
-- **Suite: `./fasttest.sh` 3573 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plan 08's corpus fixes moved the suite by +77 on the side.
+## State (2026-09-22, after plan 08's second session)
+- **Suite: `./fasttest.sh` 3607 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plan 08's corpus fixes moved the suite by +111 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 365 type diagnostics** (1751 at the start of plan 08, flat for three plans before).
-  What is left is mostly three category-sized gaps (iteration protocol, higher-order generic function inference,
-  fresh/regular literals: plan 08 "Progress") plus a tail of small root causes.
+  under tsc): **0 parse, 0 name, 239 type diagnostics** (1751 at the start of plan 08, flat for three plans before).
+  What is left is mostly four category-sized gaps (iteration protocol, higher-order generic function inference,
+  `this` types, fresh/regular literals: plan 08 "Progress") plus a tail of ~40 small root causes.
+- `this` types are the biggest single suite blocker found so far: ~242 types baselines fail only on them.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
   corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
   (interned, id-keyed relations, mapper instantiation, two-pass inference, contextual typing, conditional/mapped/

@@ -220,7 +220,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Aliased conditions (`aliased_condition`, plan 08) only narrow identifier references (tsc also readonly properties).
 - Not there (each has a TODO in `flow.c`): destructured discriminants (`const { kind } = x`), `x.constructor === C`, `[Symbol.hasInstance]` predicates,
   `"a" in x` intersecting with `Record<"a", unknown>` when no member is known to have the property, `unknown`
-  narrowed by the cases of a `switch`, inferred type predicates (tsc 5.5),
+  narrowed by the cases of a `switch`,
   the key property map tsc uses for big unions (`getKeyPropertyName()`: an optimisation, but it also changes which
   members `getNarrowedType()` starts from), erasure of generic construct signatures in `constructor_instance_type()`.
 - `narrowed_by_candidate_member()`: tsc tries the strict subtype relation, then the (non-strict) subtype relation.
@@ -255,7 +255,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - `LazyMemo.hits`: expression memos allow 8 re-entrant evaluations before they answer the error type. It's a runaway
   guard, not a design: tsc has no expression-level cycle detection at all.
 - Narrowing by destructured discriminants
-  (`dependentDestructuredVariables`), inferred type predicates (tsc 5.5: `xs.filter(x => x !== undefined)`) and `in`
+  (`dependentDestructuredVariables`) and `in`
   adding `Record<"a", unknown>` to `object`/`unknown` (`inKeywordTypeguard`) don't exist. They show as spurious
   TS18048 / TS2339 now that property access is checked.
 
@@ -360,11 +360,17 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   function bodies (`function_impl_enter_return_context`), because `statement_collect_return_types` and
   `statement_typecheck` have no parameter for it.
 - `assign_contextual_signature`: assigned once per function expression (tsc's ContextChecked), from the first contextual
-  type that has a usable signature. A union context takes the first member signature (tsc: only if they agree), generic
-  contextual signatures aren't instantiated (their type parameters leak into the parameter types), no contextual
-  `this`, and `is_arity_smaller` is the only filter.
-- `infer_type_arguments` second pass: before each context-sensitive argument *every* type parameter that has candidates
-  is fixed (tsc fixes the ones the contextual parameter type mentions). Inference from the contextual return type only
+  type that has a usable signature. Generic contextual signatures aren't instantiated (their type parameters leak into
+  the parameter types), no contextual `this`. `discriminate_by_object_members` skips the optional properties a literal
+  leaves out and tsc's getMatchingUnionConstituentForObjectLiteral shortcut.
+- `ty_infer_type_predicate` (flow.c): builds its synthetic condition flow nodes and reference `Expr` in the arena on
+  every call of `signature_predicate` for an unannotated function (once per signature, memoized there).
+- `narrowable_type` (expr.c, tsc's getNarrowableTypeForReference): only the constraint-position trigger, marked on
+  identifiers by the resolve walk (`IdentifierExpr.constraint_position`); property access chains (`a.b.c` with a
+  generic `a.b`) and the "contextual type without generic types" trigger are missing.
+- `infer_type_arguments` second pass: a type parameter is fixed before a context-sensitive argument if the contextual
+  signature's parameter types mention it (`fixed_by_argument`: probed by instantiating with `unknown`; anything that
+  isn't a single-signature object type fixes everything it mentions). Inference from the contextual return type only
   happens when that type has no type variables (no outer inference context, no return mapper). Still no reverse mapped
   types: `contravariantOnlyInferenceFromAnnotatedFunction`, `reverseMappedTypeInferenceSameSource1` and friends used to
   pass because object literal arguments only had to be *comparable*; that mitigation is gone.
