@@ -53,6 +53,12 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error);
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
 /// Builds the message from a display sequence. noop and returns null if me is null. Returned Error can be used to add
 /// related errors, but is owned by the ErrorCtx. Additional calls into this ErrorCtx invalidate returned Error.
+/// A diagnostic without a file (tsc's global and option diagnostics). They sort before every other error
+Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message);
+#define error_ctx_global_error_d(me, ts_code, ...) \
+    error_ctx_global_error_s(me, ts_code, cstr_d(__VA_ARGS__))
+/// Semantic diagnostics (name resolution and typecheck) are not reported inside files that are SourceFile.unchecked
+void error_ctx_remove_unchecked(ErrorCtx* me);
 #define error_ctx_error_d(me, span, ts_code, ...) \
     error_ctx_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 

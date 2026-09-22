@@ -583,6 +583,8 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 // members.c
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
+// The type whose members a value of `ty` has: `String` for a string, the constraint of a type parameter...
+Ty const* ty_apparent_type(Checker* me, Ty const* ty);
 Ty const* prop_type(Checker* me, Prop const* prop);
 bool ty_has_unresolved_base(Checker* me, Ty const* ty); // HACK: see has_unresolved_base()
 void signature_resolve(Checker* me, Signature const* sig);

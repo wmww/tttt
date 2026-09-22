@@ -165,6 +165,7 @@ typedef struct CompilerOptions {
     StrList types;
     StrList module_suffixes;
     StrList custom_conditions;
+    StrList removed_options; // Options tsc no longer has that were given a value anyway (TS5102), in tsc's spelling
     bool base_url_set, paths_set, type_roots_set, types_set;
 
     // Which options were given explicitly, the rest get their defaults from compiler_options_resolve()

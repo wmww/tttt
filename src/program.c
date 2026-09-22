@@ -329,6 +329,42 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 // Loads the file at the given path, adds it to the program, and returns a SourceFile for it. Returns nullptr on error.
 // Only loads each file once, even if paths aren't expressed identically. Calls itself recursively to load imports and
 // referenced files.
+static bool path_is_js(csview path) {
+    return csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".mjs") ||
+        csview_ends_with(path, ".cjs");
+}
+
+// `// @ts-check` (1) or `// @ts-nocheck` (-1) in the comments at the top of a file, the last one wins. 0 without
+static int source_check_directive(csview contents) {
+    int ret = 0;
+    const char* c = contents.buf;
+    const char* end = contents.buf + contents.size;
+    while (c < end) {
+        while (c < end && (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n')) c++;
+        if (c + 1 >= end || c[0] != '/' || (c[1] != '/' && c[1] != '*')) break;
+        const char* comment_end;
+        if (c[1] == '/') {
+            comment_end = c;
+            while (comment_end < end && *comment_end != '\n') comment_end++;
+        } else {
+            csview rest = csview_from_range(c + 2, end);
+            isize close = csview_find_sv(rest, c_sv("*/"));
+            comment_end = close == c_NPOS ? end : rest.buf + close + 2;
+        }
+        // tsc: /^\/\/\/?\s*@ts-(no)?check/, single line comments only
+        if (c[1] == '/') {
+            const char* p = c + 2;
+            if (p < comment_end && *p == '/') p++;
+            while (p < comment_end && (*p == ' ' || *p == '\t')) p++;
+            csview text = csview_from_range(p, comment_end);
+            if (csview_starts_with(text, "@ts-nocheck")) ret = -1;
+            else if (csview_starts_with(text, "@ts-check")) ret = 1;
+        }
+        c = comment_end;
+    }
+    return ret;
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
@@ -363,6 +399,10 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts")) {
         source_file->is_declaration = true;
     }
+
+    source_file->is_js = path_is_js(path);
+    int check_directive = source_check_directive(cstr_sv(&source_file->contents));
+    source_file->unchecked = check_directive ? check_directive < 0 : source_file->is_js && !my options.check_js;
 
     if (my loading_stdlib) {
         source_file->is_stdlib = true;
@@ -409,6 +449,22 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
 failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+
+    if (path_is_js(path) && !my options.allow_js) {
+        // Not part of the program. tsc still wants the file to exist, so does the caller
+        if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");
+        cstr shown = program_path_for_message(me, path);
+        Error* error = error_ctx_global_error_d(
+            my errs, 6504, "File '", shown, "' is a JavaScript file. Did you mean to enable the 'allowJs' option?"
+        );
+        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+        error_sub_error_d(
+            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Root file specified for compilation"
+        );
+        cstr_drop(&shown);
+        return ok(nullptr);
+    }
+
     set_compiler_options(&my options);
 
     // Add the source file to the program
@@ -452,8 +508,15 @@ void program_load_automatic_types(Program* me) {
     set_compiler_options(&my options);
     StrList names = module_resolver_automatic_types(program_resolver(me));
     for (isize i = 0; i < names.count; i++) {
-        // TODO: TS2688 for an entry of `types` that isn't found (a diagnostic without a file)
-        ignore program_load_type_reference(me, cstr_sv(&names.items[i]), c_sv(""));
+        if (program_load_type_reference(me, cstr_sv(&names.items[i]), c_sv(""))) continue;
+        cstr const* name = &names.items[i];
+        Error* error = error_ctx_global_error_d(my errs, 2688, "Cannot find type definition file for '", *name, "'.");
+        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+        error_sub_error_d(
+            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE,
+            my options.types_set ? "Entry point of type library '" : "Entry point for implicit type library '",
+            *name, my options.types_set ? "' specified in compilerOptions" : "'"
+        );
     }
     str_list_drop(&names);
     clear_compiler_options();
@@ -463,8 +526,88 @@ void program_copy_globals_from(Program* me, Program const* other) {
     binder_set_parent(my binder, other->binder);
 }
 
+// tsc's verifyCompilerOptions(), the part that doesn't depend on emit. Diagnostics without a file: with a tsconfig tsc
+// puts them on the option there, which we don't
+static void program_validate_options(Program* me) {
+    CompilerOptions const* o = &my options;
+    if (cstr_size(&o->config_dir)) return;
+    for (isize i = 0; i < o->removed_options.count; i++) {
+        cstr const* name = &o->removed_options.items[i];
+        Error* error = error_ctx_global_error_d(
+            my errs, 5102, "Option '", *name, "' has been removed. Please remove it from your configuration."
+        );
+        const char* instead = cstr_equals(name, "out") ? "outFile" :
+            cstr_equals(name, "importsNotUsedAsValues") || cstr_equals(name, "preserveValueImports") ?
+                "verbatimModuleSyntax" : nullptr;
+        if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
+    }
+    if (o->target == SCRIPT_TARGET_ES3) {
+        error_ctx_global_error_d(
+            my errs, 5108, "Option 'target=ES3' has been removed. Please remove it from your configuration."
+        );
+    }
+    if (o->resolve_json_module) {
+        if (o->module_resolution == MODULE_RESOLUTION_CLASSIC) {
+            error_ctx_global_error_d(
+                my errs, 5070,
+                "Option '--resolveJsonModule' cannot be specified when 'moduleResolution' is set to 'classic'."
+            );
+        } else if (o->module == MODULE_KIND_NONE || o->module == MODULE_KIND_SYSTEM || o->module == MODULE_KIND_UMD) {
+            error_ctx_global_error_d(
+                my errs, 5071,
+                "Option '--resolveJsonModule' cannot be specified when 'module' is set to 'none', 'system', or 'umd'."
+            );
+        }
+    }
+    bool modern_resolution = o->module_resolution >= MODULE_RESOLUTION_NODE16;
+    static const char* const needs_modern[] = { "resolvePackageJsonExports", "resolvePackageJsonImports", "customConditions" };
+    bool const given[] = {
+        o->is_set[COMPILER_OPTION_resolve_package_json_exports] && o->resolve_package_json_exports,
+        o->is_set[COMPILER_OPTION_resolve_package_json_imports] && o->resolve_package_json_imports,
+        o->custom_conditions.count > 0,
+    };
+    for (isize i = 0; i < 3 && !modern_resolution; i++) {
+        if (given[i]) error_ctx_global_error_d(
+            my errs, 5098, "Option '", needs_modern[i],
+            "' can only be used when 'moduleResolution' is set to 'node16', 'nodenext', or 'bundler'."
+        );
+    }
+    bool node_module = o->module >= MODULE_KIND_NODE16 && o->module <= MODULE_KIND_NODENEXT;
+    bool node_resolution = o->module_resolution == MODULE_RESOLUTION_NODE16 ||
+        o->module_resolution == MODULE_RESOLUTION_NODENEXT;
+    bool es_module = o->module >= MODULE_KIND_ES2015 && o->module <= MODULE_KIND_ESNEXT;
+    if (o->module_resolution == MODULE_RESOLUTION_BUNDLER && !es_module && o->module != MODULE_KIND_PRESERVE) {
+        error_ctx_global_error_d(
+            my errs, 5095,
+            "Option 'bundler' can only be used when 'module' is set to 'preserve' or to 'es2015' or later."
+        );
+    }
+    if (node_module && !node_resolution) {
+        const char* module_name = o->module == MODULE_KIND_NODE16 ? "Node16" :
+            o->module == MODULE_KIND_NODE18 ? "Node18" : "NodeNext";
+        error_ctx_global_error_d(
+            my errs, 5109, "Option 'moduleResolution' must be set to '",
+            o->module == MODULE_KIND_NODENEXT ? "NodeNext" : "Node16",
+            "' (or left unspecified) when option 'module' is set to '", module_name, "'."
+        );
+    } else if (node_resolution && !node_module) {
+        const char* name = o->module_resolution == MODULE_RESOLUTION_NODE16 ? "Node16" : "NodeNext";
+        error_ctx_global_error_d(
+            my errs, 5110, "Option 'module' must be set to '", name, "' when option 'moduleResolution' is set to '",
+            name, "'."
+        );
+    }
+    if (o->emit_decorator_metadata && !o->experimental_decorators) {
+        error_ctx_global_error_d(
+            my errs, 5052,
+            "Option 'emitDecoratorMetadata' cannot be specified without specifying option 'experimentalDecorators'."
+        );
+    }
+}
+
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
+    program_validate_options(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
 
@@ -503,6 +646,8 @@ void program_resolve_names(Program* me) {
         block_lookup_names_container(&source->ast, false, c_sv("file"), span_null, source->scope, my errs);
     }
 
+    error_ctx_remove_unchecked(my errs);
+
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;
     CHANGE_PHASE(PROGRAM_PHASE_RESOLVING_NAMES, PROGRAM_PHASE_NAMES_RESOLVED);
@@ -534,10 +679,11 @@ void program_typecheck(Program* me) {
 
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (!source->is_stdlib) {
+        if (!source->is_stdlib && !source->unchecked) {
             block_typecheck(&source->ast, (BlockTypecheckCtx){0}, my errs);
         }
     }
+    error_ctx_remove_unchecked(my errs);
 
     clear_compiler_options();
     my errs->phase = ERROR_PHASE_UNKOWN;

@@ -26,6 +26,71 @@ static inline VecSpan declaration_get_spans(Symbol const* me) {
 }
 
 // `A.B.C` as spans
+// What the symbols baseline says about a property access, gathered over the members of a union or intersection
+typedef struct PropSymbolInfo {
+    bool found;
+    u32 member_count; // Members of the object type that have the property
+    bool missing_in_member; // Some member of a union has no such property: no symbol at all, like tsc
+    Symbol const* parent;
+    Span name_span;
+    bool name_is_value;
+    VecSpan declarations;
+} PropSymbolInfo;
+
+static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* name, PropSymbolInfo* info, u32 depth) {
+    if (depth > 8) return;
+    if (object->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        Ty const* constraint = ty_base_constraint(checker, object);
+        if (constraint) object = constraint;
+    }
+    if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) {
+        PropSymbolInfo inner = { .declarations = vec_span_init() };
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            collect_prop_symbol(checker, object->composite.types.data[i], name, &inner, depth + 1);
+        }
+        bool keep = inner.found && (object->kind == TY_INTERSECTION || !inner.missing_in_member);
+        if (keep) {
+            if (!info->found) {
+                info->found = true;
+                info->parent = inner.parent;
+                info->name_span = inner.name_span;
+                info->name_is_value = inner.name_is_value;
+            }
+            info->member_count += inner.member_count;
+            for_each (k, vec_span, &inner.declarations) {
+                bool seen = false;
+                for_each (l, vec_span, &info->declarations) seen |= span_cmp(*l, *k) == 0 && l->sv.size == k->sv.size;
+                if (!seen) vec_span_push(&info->declarations, *k);
+            }
+        } else if (object->kind == TY_UNION) {
+            info->missing_in_member = true;
+        }
+        vec_span_drop(&inner.declarations);
+        return;
+    }
+    object = ty_apparent_type(checker, object);
+    if (!(object->flags & TYF_OBJECT)) return;
+    Prop const* prop = ty_get_prop(checker, object, name);
+    if (!prop) {
+        info->missing_in_member = true;
+        return;
+    }
+    Prop const* root = prop;
+    while (root->target && !root->decl_span_count) root = root->target;
+    if (!info->found) {
+        info->found = true;
+        info->parent = prop->parent;
+        info->name_span = root->name_span;
+        info->name_is_value = root->name_is_value;
+    }
+    info->member_count++;
+    for (u32 j = 0; j < root->decl_span_count; j++) {
+        bool seen = false;
+        for_each (k, vec_span, &info->declarations) seen |= span_cmp(*k, root->decl_spans[j]) == 0 && k->sv.size == root->decl_spans[j].sv.size;
+        if (!seen) vec_span_push(&info->declarations, root->decl_spans[j]);
+    }
+}
+
 static void push_symbol_path(VecSpan* out, Symbol const* symbol) {
     if (symbol->parent && !symbol->parent->is_module) push_symbol_path(out, symbol->parent);
     vec_span_push(out, symbol->name_span);
@@ -578,32 +643,27 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_PROPERTY: {
             bool has_compiled_expr_info = false;
-            // The symbol of the property, if the object's type has one by that name
+            // The symbol of the property: the declarations of the property of every member of the (apparent) object
+            // type that has one, like tsc's synthetic union/intersection property symbols. The parent is the first
+            // member's, so a union of two interfaces gets the plain name like tsc's synthetic symbol
             Checker* checker = current_checker;
             Ty const* object = ty_expr_type(checker, &my property->expr);
             Ty const* key = ty_expr_type(checker, &my property->prop);
-            if (object->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
-                Ty const* constraint = ty_base_constraint(checker, object);
-                if (constraint) object = constraint;
+            PropSymbolInfo info = {0};
+            if ((key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL)) {
+                collect_prop_symbol(checker, object, key->literal.string, &info, 0);
             }
-            Prop const* prop = (object->flags & TYF_OBJECT) && (key->flags & TYF_STRING_LITERAL) && !(key->flags & TYF_ENUM_LITERAL) ?
-                ty_get_prop(checker, object, key->literal.string) :
-                nullptr;
-            if (prop) {
-                Prop const* root = prop;
-                while (root->target && !root->decl_span_count) root = root->target;
-                VecSpan declarations = vec_span_init();
-                for (u32 j = 0; j < root->decl_span_count; j++) vec_span_push(&declarations, root->decl_spans[j]);
+            if (info.found) {
                 VecSpan namespaces = vec_span_init();
-                if (prop->parent) push_symbol_path(&namespaces, prop->parent);
+                if (info.parent && info.member_count == 1) push_symbol_path(&namespaces, info.parent);
                 if (my property->form == PROPERTY_EXPR_DOT) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
-                        .declarations = vec_span_clone(declarations),
+                        .declarations = vec_span_clone(info.declarations),
                         .allow_declaration_empty = true,
                         .namespaces = vec_span_clone(namespaces),
                         .span = my outer_span,
-                        .name = span_valid(root->name_span) ? root->name_span : my property->prop.outer_span,
-                        .name_is_value = root->name_is_value,
+                        .name = span_valid(info.name_span) ? info.name_span : my property->prop.outer_span,
+                        .name_is_value = info.name_is_value,
                     });
                 }
                 expr_compile_test_info(&my property->expr, ctx);
@@ -611,17 +671,17 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 // tsc has no line for the name in a private name access (`a.#b`)
                 if (my property->prop.tag == EXPR_LITERAL && !csview_starts_with(my property->prop.outer_span.sv, "#")) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
-                        .declarations = vec_span_clone(declarations),
+                        .declarations = vec_span_clone(info.declarations),
                         .allow_declaration_empty = true,
                         .namespaces = vec_span_clone(namespaces),
                         .span = my property->prop.outer_span,
-                        .name = root->name_span,
-                        .name_is_value = root->name_is_value,
+                        .name = info.name_span,
+                        .name_is_value = info.name_is_value,
                     });
                 }
                 vec_span_drop(&namespaces);
-                vec_span_drop(&declarations);
             }
+            vec_span_drop(&info.declarations);
 
             if (!has_compiled_expr_info) {
                 expr_compile_test_info(&my property->expr, ctx);

@@ -189,7 +189,7 @@ static_failable check_files(Options const* opts, returns int) {
     if (name_errors) ret = 1;
     phase_done(opts, "resolve names", &last);
 
-    if (!opts->quiet) {
+    if (!opts->quiet && source) {
         println(color_good, "Parsed:", color_normal);
         println(debug_d(&source->ast), "\n");
     }

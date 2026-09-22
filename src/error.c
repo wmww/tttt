@@ -117,6 +117,8 @@ void error_ctx_clear(ErrorCtx* me) {
 }
 
 static int error_cmp(Error const* a, Error const* b) {
+    // Errors without a file come first (error_ctx_global_error_s() orders them)
+    if (!span_valid(a->span)) return -1;
     // TODO: sort based on sorce file
     int ret = span_cmp(a->span, b->span);
     if (ret) {
@@ -154,6 +156,38 @@ Error* error_ctx_append_error(ErrorCtx* me, Error error) {
         error_drop(&error);
         return nullptr;
     }
+}
+
+Error* error_ctx_global_error_s(ErrorCtx* me, unsigned ts_code, cstr message) {
+    if (!me) {
+        cstr_drop(&message);
+        return nullptr;
+    }
+    // tsc sorts diagnostics without a file by code, then by message
+    intptr_t index = 0;
+    while (index < vec_error_size(&my errors)) {
+        Error const* other = vec_error_at(&my errors, index);
+        if (span_valid(other->span) || other->ts_code > ts_code ||
+            (other->ts_code == ts_code && cstr_cmp(&other->message, &message) > 0)) break;
+        index++;
+    }
+    Error error = { .message = message, .ts_code = ts_code, .phase = my phase };
+    return vec_error_insert_n(&my errors, index, &error, 1).ref;
+}
+
+void error_ctx_remove_unchecked(ErrorCtx* me) {
+    intptr_t kept = 0;
+    for (intptr_t i = 0; i < vec_error_size(&my errors); i++) {
+        Error* error = vec_error_at_mut(&my errors, i);
+        SourceFile const* source = error->span.source;
+        if (source && source->unchecked && error->phase >= ERROR_PHASE_RESOLVE_NAMES) {
+            error_drop(error);
+        } else {
+            if (kept != i) my errors.data[kept] = *error;
+            kept++;
+        }
+    }
+    my errors.size = kept;
 }
 
 Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {

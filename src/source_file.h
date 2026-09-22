@@ -52,6 +52,11 @@ typedef struct SourceFile {
     bool is_stdlib;
     bool is_module;
     bool is_declaration;
+    // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
+    bool is_js;
+    // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
+    // `// @ts-check`, any file with `// @ts-nocheck`
+    bool unchecked;
     // With node16/node18/nodenext modules or resolution: whether the file is an ES module, the package.json that has a
     // say in that (as messages name it, empty if there is none) and whether it says (src/module_resolution.h)
     bool is_esm;

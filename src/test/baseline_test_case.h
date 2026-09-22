@@ -65,6 +65,7 @@ typedef struct BaselineTestCase {
     cstr lib_list;
     bool no_types_and_symbols; // @noTypesAndSymbols: tsc writes no .types and .symbols baselines for this test
     cstr formatted_errors;
+    cstr formatted_global_errors; // The `!!!` lines of diagnostics without a file
     VecBaselineTestFile files;
     // A unit named tsconfig.json: its options (under the directives) and its files are the roots
     bool has_tsconfig;

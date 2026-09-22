@@ -99,6 +99,7 @@ void compiler_options_drop(CompilerOptions* me) {
     str_list_drop(&my types);
     str_list_drop(&my module_suffixes);
     str_list_drop(&my custom_conditions);
+    str_list_drop(&my removed_options);
 }
 
 void str_list_push(StrList* me, csview item) {
@@ -158,6 +159,22 @@ void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList subs
 
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value) {
     value = csview_trim_whitespace(value);
+
+    static const char* const removed[] = {
+        "noImplicitUseStrict", "keyofStringsOnly", "suppressExcessPropertyErrors", "suppressImplicitAnyIndexErrors",
+        "noStrictGenericChecks", "charset", "out", "importsNotUsedAsValues", "preserveValueImports",
+    };
+    for (isize i = 0; i < (isize)c_arraylen(removed); i++) {
+        // tsc complains about a truthy value: not `false`, not an empty string
+        cstr lowercase = cstr_from(removed[i]);
+        cstr_lowercase(&lowercase);
+        bool found = name_equals(name, cstr_str(&lowercase)) && value.size && !name_equals(value, "false");
+        for (isize j = 0; j < my removed_options.count && found; j++) {
+            if (cstr_equals(&my removed_options.items[j], removed[i])) found = false;
+        }
+        if (found) str_list_push(&my removed_options, csview_from(removed[i]));
+        cstr_drop(&lowercase);
+    }
 
 #define X(field, lowercase, strict_family) \
     if (name_equals(name, lowercase)) { \

@@ -22,6 +22,26 @@ void baseline_test_result_drop(BaselineTestResult* me) {
     cstr_drop(&my name);
 }
 
+static bool is_underline_line(csview line) {
+    csview t = csview_trim_whitespace(line);
+    if (t.size < 2 || t.buf[0] != '>') return false;
+    isize colon = csview_find_sv(t, c_sv(" : "));
+    if (colon == c_NPOS) return false;
+    for (isize i = 1; i < colon; i++) if (t.buf[i] != ' ') return false;
+    for (isize i = colon + 3; i < t.size; i++) if (t.buf[i] != '^' && t.buf[i] != ' ') return false;
+    return true;
+}
+
+static cstr without_underlines(csview text) {
+    cstr ret = cstr_null;
+    for_each (i, lines_sv, text) {
+        if (is_underline_line(i)) continue;
+        cstr_append_sv(&ret, i);
+        cstr_append_lit(&ret, "\n");
+    }
+    return ret;
+}
+
 static bool compare_outputs(
     csview test_name,
     const char* output_name,
@@ -43,6 +63,18 @@ static bool compare_outputs(
     }
 
     csview expected_sv = cstr_sv(&expected);
+    if (getenv("TTTT_IGNORE_UNDERLINES")) {
+        // Measurement: how the types component would do if the `^^^` underline lines (tsc's declaration emitter
+        // marking which parts of a printed type it synthesised, see agents/plans/07_underlines.md) were right
+        cstr ours = without_underlines(our_result);
+        cstr theirs = without_underlines(expected_sv);
+        bool eq = cstr_eq(&ours, &theirs);
+        c_drop(cstr, &ours, &theirs);
+        if (eq) {
+            cstr_drop(&expected);
+            return true;
+        }
+    }
     if (csview_cmp(&our_result, &expected_sv) == 0) {
         cstr_drop(&expected);
         return true;

@@ -21,7 +21,7 @@ CompilerOptions* program_options(Program* me);
 
 // Parses the given file, loads all imports, adds them to the program and returns the SourceFile for the given path.
 // Can be called multiple times. Fails if path can't be read; problems inside the file are reported through the
-// program's ErrorCtx instead
+// program's ErrorCtx instead. A JavaScript file without `allowJs` is such a problem (TS6504) and gives null
 failable program_load(Program* me, csview path, returns SourceFile*);
 
 // The packages that are part of every program: the `types` option, else everything in the type roots (`typeRoots`,

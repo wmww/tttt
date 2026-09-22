@@ -61,6 +61,7 @@ typedef enum WhitespaceType {
 typedef struct ExprCtx {
     bool reject_in_operator;
     bool reject_operators;
+    bool entity_name; // The operand of a `typeof` type: `a.b.c<T>`, no calls and no `[i]` (that is an indexed access type)
     bool is_parsing_ternary;
     int min_precedence;
 } ExprCtx;
@@ -1226,6 +1227,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         Expr expr;
         ExprCtx expr_ctx = {
             .reject_operators = true,
+            .entity_name = true,
         };
         if (!parse_expr(&p, expr_ctx, &expr)) {
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
@@ -3277,7 +3279,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         p.pos += 2;
     }
 
-    if (new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
+    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
         *left_and_ret = expr_call(
             span_from(a),
             c_new(CallExpr, {
@@ -3290,7 +3292,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (new_keyword_precedence > ctx.min_precedence && *p.pos == '`') {
+    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && *p.pos == '`') {
         Anchor template_a = anchor(&p);
         cstr plain_string = cstr_null;
         if (!parse_template(&p, &parsed.args)) {
@@ -3322,7 +3324,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (parse_bracket_prop(&p, &parsed.expr_a)) {
+    if (!ctx.entity_name && parse_bracket_prop(&p, &parsed.expr_a)) {
         *left_and_ret = expr_property(
             span_from(a),
             c_new(PropertyExpr, {

@@ -471,7 +471,9 @@ static void format_error_tree(
     int indent_level
 ) {
     // Add the prefix for toplevel errors, this "global" string will appear at the top of the output file
-    if (indent_level == 0) {
+    if (indent_level == 0 && !span_valid(error->span)) {
+        cstr_append_d(global_target, DEFAULT_DISPLAY, "error TS", error->ts_code, ": ");
+    } else if (indent_level == 0) {
         unsigned line = span_line_index(error->span);
         unsigned col = span_col_index(error->span);
         const char* filename = error->span.source ? (
@@ -525,6 +527,8 @@ static void process_errors(BaselineTestCase* me) {
 
     for_each (error, vec_error, &my error_ctx->errors) {
         if (!span_valid(error->span)) {
+            // A diagnostic without a file: listed before the first file
+            format_error_tree(&my formatted_errors, &my formatted_global_errors, error, error, nullptr, 0);
             continue;
         }
 
@@ -677,17 +681,9 @@ BaselineTestCase run_baseline_test_case(
         }
     }
 
-    // Yes, the correct logic seems to be to only show type errors if there were no parse errors, but name errors are
-    // shown reguardless
-    bool typecheck = error_ctx_empty(errs);
-
+    // tsc reports type errors next to parse errors (getPreEmitDiagnostics() is all of them)
     program_resolve_names(program);
-
-    if (typecheck) {
-        program_typecheck(program);
-    } else {
-        program_make_current(program); // The traversal below looks at types either way
-    }
+    program_typecheck(program);
 
     set_compiler_options(program_options(program));
     for_each (i, vec_baseline_test_file, &ret.files) {
@@ -712,6 +708,7 @@ void baseline_test_case_drop(BaselineTestCase* me) {
     free(my error_ctx);
     cstr_drop(&my lib_list);
     cstr_drop(&my formatted_errors);
+    cstr_drop(&my formatted_global_errors);
     vec_baseline_test_file_drop(&my files);
     vec_cstr_drop(&my links);
     vec_cstr_drop(&my directives);
@@ -828,6 +825,9 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
 
     cstr_append_s(target, my formatted_errors);
     cstr_append_lit(target, "\r\n");
+    if (cstr_size(&my formatted_global_errors)) {
+        cstr_append_d(target, DEFAULT_DISPLAY, my formatted_global_errors);
+    }
 
     for_each (i, vec_baseline_test_file, &my files) {
         cstr_append_d(

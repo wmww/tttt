@@ -100,13 +100,6 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     c_drop(cstr, &name, &object_str);
 }
 
-static bool is_js_file(SourceFile const* file) {
-    if (!file) return false;
-    csview path = file->display_path_override ? csview_from(file->display_path_override) : cstr_sv(&file->canonical_path);
-    return csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".mjs") ||
-        csview_ends_with(path, ".cjs");
-}
-
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -187,7 +180,7 @@ static void check_access(
     if (!error_if_not_found) return;
     // HACK: no expando members yet (`function f() {} f.x = 1`, and everything JS files declare by assignment:
     // `this.x = 1`, `module.exports.x`, prototype assignments), so callables and JS files are let through
-    if (is_js_file(index_span.source)) return;
+    if (index_span.source && index_span.source->is_js) return;
     if (object->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, object);
         if (members->call_count && !members->construct_count) return;
