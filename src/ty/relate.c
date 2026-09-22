@@ -1307,11 +1307,22 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
     if (my variance_depth && ty_members(me, target)->mapped) my variance_unreliable = true;
     if (apparent->kind == TY_INTERSECTION) {
-        // Signatures and index signatures of intersections aren't combined yet, properties are
+        // HACK: the signatures and index signatures of an intersection aren't combined (tsc concatenates signatures
+        // and intersects index infos), each kind has to be satisfied by one member on its own
         Ternary result = props_related(me, st, apparent, target, report, false);
         Members const* target_members = ty_members(me, target);
-        if (result && (target_members->call_count || target_members->construct_count || target_members->index_count)) {
-            return TERNARY_FALSE;
+        TyList parts = apparent->composite.types;
+        for (u32 kind = 0; kind < 3 && result; kind++) {
+            u32 count = kind == 0 ? target_members->call_count : kind == 1 ? target_members->construct_count : target_members->index_count;
+            if (!count) continue;
+            Ternary some = TERNARY_FALSE;
+            for (u32 i = 0; i < parts.len && !some; i++) {
+                Ty const* part = apparent_type(me, parts.data[i]);
+                if (!(part->flags & TYF_OBJECT)) continue;
+                some = kind == 2 ? index_signatures_related(me, st, part, target, false) :
+                    signatures_related(me, st, part, target, kind == 1, false);
+            }
+            result &= some;
         }
         return result;
     }

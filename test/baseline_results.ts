@@ -15556,7 +15556,7 @@ const baselines = {
         types: false,
     },
     'identityAndDivergentNormalizedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

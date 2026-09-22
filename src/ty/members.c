@@ -183,6 +183,10 @@ static void builder_add_interface_member(
                 TypeNode const* in_type = &i->key.mapped.in_type;
                 if (in_type->tag == TYPE_KEYOF) {
                     mapped->modifiers_type = ty_from_node(me, &in_type->keyof->interface, mapped_ctx);
+                } else if (mapped->constraint->kind == TY_TYPE_PARAM) {
+                    // `[P in K]` with `K extends keyof T` (Pick) takes its modifiers from T too
+                    Ty const* constraint = ty_param_constraint(me, mapped->constraint);
+                    if (constraint && constraint->kind == TY_KEYOF) mapped->modifiers_type = constraint->keyof.operand;
                 }
                 mapped->readonly = i->key.mapped.readonly;
                 mapped->optional = i->key.mapped.optional;
