@@ -226,7 +226,7 @@ const baselines = {
         types: true,
     },
     'abstractClassUnionInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -2343,7 +2343,7 @@ const baselines = {
     'betterErrorForUnionCall': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bigIntWithTargetES2016': {
         errors: false,
@@ -12291,7 +12291,7 @@ const baselines = {
         types: false,
     },
     'exhaustiveSwitchCheckCircularity': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22376,7 +22376,7 @@ const baselines = {
         types: false,
     },
     'narrowingUnionToNeverAssigment': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65581,7 +65581,7 @@ const baselines = {
         types: false,
     },
     'unionTypeInference': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -65696,7 +65696,7 @@ const baselines = {
         types: false,
     },
     'unionTypeMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

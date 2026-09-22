@@ -322,8 +322,10 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `infer_from` (infer.c): no reverse mapped types (only the homomorphic `T[K]` template is seen through), no template
   literal inference, alias type arguments are only used for deferred types (there are no variances for aliases), no
   `InferencePriority` beyond naked-type-variable and return-type, type predicates don't exist (parser drops `x is T`).
-- `resolve_call` on a union callee: resolved member by member and the results unioned; tsc builds one combined
-  signature and reports TS2349 when it can't.
+- `ty_union_signatures` (relate.c, tsc's getUnionSignatures): tsc's identity relation is approximated as "the same
+  `Ty`, or a strict subtype both ways"; union signatures aren't cached per union type (built on every call); `this`
+  parameters aren't intersected (there are none). `resolve_call` still falls back to member-by-member resolution when
+  some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
 - `report_arity`: no "An argument for 'x' was not provided" related info; the span for too few arguments is the
   callee's `inner_span`, not tsc's name-of-the-property-access rule.
 - `signature_resolve` / `structural_signature`: a `this` parameter is dropped from the parameter list and never checked

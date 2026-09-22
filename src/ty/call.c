@@ -668,8 +668,30 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     if (apparent->flags & TYF_ANY) return any;
 
     bool construct = call->uses_new || call->is_extends;
-    if (apparent->kind == TY_UNION) {
-        // TODO: tsc resolves a union of callables against one combined signature (and TS2349s if there isn't one)
+    // A union is called through the signatures its members have in common (tsc's getUnionSignatures)
+    Signature* const* union_sigs = nullptr;
+    u32 union_count = 0;
+    if (apparent->kind == TY_UNION) union_sigs = ty_union_signatures(me, apparent->composite.types, construct, &union_count);
+    if (apparent->kind == TY_UNION && !union_sigs && !call->is_extends) {
+        bool all_have = true;
+        for (u32 i = 0; i < apparent->composite.types.len && all_have; i++) {
+            Members const* members = ty_members(me, ty_apparent_type(me, apparent->composite.types.data[i]));
+            all_have = construct ? members->construct_count > 0 : members->call_count > 0;
+        }
+        if (all_have) {
+            if (errs) {
+                cstr rendered = ty_to_cstr(me, callee);
+                Error* e = error_ctx_error_d(errs, call->callable.outer_span, construct ? 2351 : 2349,
+                    construct ? "This expression is not constructable." : "This expression is not callable.");
+                error_sub_error_d(e, span_null, TS_CODE_NONE, "Each member of the union type '", rendered, "' has ",
+                    construct ? "construct " : "", "signatures, but none of those signatures are compatible with each other.");
+                cstr_drop(&rendered);
+            }
+            return any;
+        }
+    }
+    if (apparent->kind == TY_UNION && !union_sigs) {
+        // TODO: tsc's errors for unions with members that can't be called ("Not all constituents of type ...")
         Ty const** return_types = malloc(sizeof(Ty const*) * apparent->composite.types.len);
         for (u32 i = 0; i < apparent->composite.types.len; i++) {
             return_types[i] = resolve_call(me, apparent->composite.types.data[i], info, call_span, errs);
@@ -684,6 +706,12 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     u32 count = 0;
     u32 other_count = 0; // signatures of the kind that wasn't asked for
     TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+    if (union_sigs) {
+        parts.len = 0;
+        signatures = malloc(sizeof(Signature*) * union_count);
+        panic_if(!signatures, "out of memory");
+        for (u32 i = 0; i < union_count; i++) signatures[count++] = union_sigs[i];
+    }
     for (u32 i = 0; i < parts.len; i++) {
         Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
         Signature* const* list = construct ? members->construct : members->call;

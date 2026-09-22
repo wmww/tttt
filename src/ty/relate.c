@@ -338,8 +338,13 @@ static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
     return ret;
 }
 
+// Whether a literal source is shown widened: not against `never` (tsc wants `assertNever(x)` errors to show x as is)
+static bool report_widens(Checker* me, Ty const* target) {
+    return !(target->flags & TYF_NEVER) && !could_have_singletons(me, target);
+}
+
 cstr ty_report_source_cstr(Checker* me, Ty const* source, Ty const* target) {
-    bool widen = !could_have_singletons(me, target);
+    bool widen = report_widens(me, target);
     return display_for_report(me, widen ? ty_widened_literal(me, source) : source, widen);
 }
 
@@ -348,7 +353,7 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         st->override_next_head--;
         return;
     }
-    bool widen = !could_have_singletons(me, target);
+    bool widen = report_widens(me, target);
     cstr source_str = display_for_report(me, widen ? ty_widened_literal(me, source) : source, widen);
     cstr target_str = display_for_report(me, target, false);
     if (st->relation == TY_RELATION_COMPARABLE) {
@@ -1639,4 +1644,302 @@ bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation r
 
 void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out) {
     check_related(me, source, target, relation, out);
+}
+
+// Union signatures (tsc's getUnionSignatures): what a union of callables can be called with
+
+// tsc's identity relation, approximated: the same type, or each a subtype of the other
+static bool types_identical(Checker* me, Ty const* a, Ty const* b) {
+    return a == b || (ty_is_related(me, a, b, TY_RELATION_STRICT_SUBTYPE) && ty_is_related(me, b, a, TY_RELATION_STRICT_SUBTYPE));
+}
+
+static bool union_types_compare(Checker* me, Ty const* t, Ty const* s, bool partial) {
+    return partial ? t == s || ty_is_related(me, t, s, TY_RELATION_STRICT_SUBTYPE) : types_identical(me, t, s);
+}
+
+static Ty const* type_at_position(Checker* me, Signature const* sig, u32 i) {
+    Ty const* ret = param_type_at(me, sig, i);
+    return ret ? ret : ty_intrinsic(me, TY_ANY);
+}
+
+// tsc's compareSignaturesIdentical: `partial` lets the source have more (optional) parameters, whose types are then
+// only compared by subtype
+static bool signatures_identical(
+    Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return
+) {
+    if (source == target) return true;
+    signature_resolve(me, source);
+    signature_resolve(me, target);
+    bool same_shape = param_count_of(source) == param_count_of(target) && source->min_args == target->min_args &&
+        has_rest(me, source) == has_rest(me, target);
+    if (!same_shape && !(partial && source->min_args <= target->min_args)) return false;
+    if (source->type_params.len != target->type_params.len) return false;
+    if (target->type_params.len) {
+        TyMapper const* mapper = ty_mapper_new(me, source->type_params, target->type_params);
+        Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+        for (u32 i = 0; i < target->type_params.len; i++) {
+            Ty const* s = source->type_params.data[i];
+            Ty const* t = target->type_params.data[i];
+            if (s == t) continue;
+            Ty const* s_constraint = ty_param_constraint(me, s);
+            Ty const* t_constraint = ty_param_constraint(me, t);
+            Ty const* s_default = ty_param_default(me, s);
+            Ty const* t_default = ty_param_default(me, t);
+            if (!union_types_compare(me, s_constraint ? ty_instantiate(me, s_constraint, mapper) : unknown,
+                    t_constraint ? t_constraint : unknown, partial) ||
+                !union_types_compare(me, s_default ? ty_instantiate(me, s_default, mapper) : unknown,
+                    t_default ? t_default : unknown, partial)
+            ) {
+                return false;
+            }
+        }
+        source = instantiate_signature(me, source, target->type_params);
+    }
+    u32 target_len = param_count_of(target);
+    for (u32 i = 0; i < target_len; i++) {
+        if (!union_types_compare(me, type_at_position(me, target, i), type_at_position(me, source, i), partial)) return false;
+    }
+    if (ignore_return) return true;
+    TyPredicate const* source_predicate = signature_predicate(me, source);
+    TyPredicate const* target_predicate = signature_predicate(me, target);
+    if (source_predicate || target_predicate) {
+        if (!source_predicate || !target_predicate || source_predicate->is_this != target_predicate->is_this ||
+            source_predicate->asserts != target_predicate->asserts ||
+            source_predicate->param_index != target_predicate->param_index
+        ) {
+            return false;
+        }
+        if (source_predicate->type == target_predicate->type) return true;
+        return source_predicate->type && target_predicate->type &&
+            union_types_compare(me, source_predicate->type, target_predicate->type, partial);
+    }
+    return union_types_compare(me, signature_return_type(me, source), signature_return_type(me, target), partial);
+}
+
+typedef struct SignatureList {
+    Signature* const* data;
+    u32 len;
+} SignatureList;
+
+static Signature* find_matching_signature(
+    Checker* me, SignatureList list, Signature const* sig, bool partial, bool ignore_return
+) {
+    for (u32 i = 0; i < list.len; i++) {
+        if (signatures_identical(me, list.data[i], sig, partial, ignore_return)) return list.data[i];
+    }
+    return nullptr;
+}
+
+// The predicate of a signature standing for several (tsc's getUnionOrIntersectionTypePredicate): only if they all
+// have one of the same kind on the same parameter, of the union of their types
+static TyPredicate const* union_predicate(Checker* me, Signature* const* sigs, u32 count) {
+    TyPredicate const* first = nullptr;
+    Ty const** types = malloc(sizeof(Ty const*) * count);
+    panic_if(!types, "out of memory");
+    for (u32 i = 0; i < count; i++) {
+        TyPredicate const* predicate = signature_predicate(me, sigs[i]);
+        if (!predicate || !predicate->type || (first && (first->is_this != predicate->is_this ||
+            first->asserts != predicate->asserts || first->param_index != predicate->param_index))
+        ) {
+            free(types);
+            return nullptr;
+        }
+        if (!first) first = predicate;
+        types[i] = predicate->type;
+    }
+    TyPredicate* ret = arena_new(&my arena, TyPredicate);
+    *ret = *first;
+    ret->type = ty_union(me, types, count, nullptr, (TyList){0});
+    free(types);
+    return ret;
+}
+
+// A signature with the parameters of `base` returning what any of `composites` return_types (tsc's createUnionSignature)
+static Signature* union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
+    Ty const** return_types = malloc(sizeof(Ty const*) * count);
+    panic_if(!return_types, "out of memory");
+    for (u32 i = 0; i < count; i++) return_types[i] = signature_return_type(me, composites[i]);
+    Signature* ret = arena_new(&my arena, Signature);
+    *ret = (Signature){
+        .flags = base->flags,
+        .name_span = base->name_span,
+        .decl_span = base->decl_span,
+        .state = LAZY_STATE_DONE,
+        .type_params = base->type_params,
+        .params = base->params,
+        .param_count = base->param_count,
+        .min_args = base->min_args,
+        .ret_state = LAZY_STATE_DONE,
+        .ret = ty_union_subtype_reduced(me, return_types, count),
+        .predicate_done = true,
+        .predicate = union_predicate(me, composites, count),
+    };
+    free(return_types);
+    return ret;
+}
+
+// tsc's findMatchingSignatures: a signature of list `index` and its match in every other list, or none
+static u32 find_matching_signatures(
+    Checker* me, SignatureList const* lists, u32 list_count, Signature* sig, u32 index, Signature** out
+) {
+    if (sig->type_params.len) {
+        // Generic signatures have to match exactly, and only the first list's are looked at
+        if (index > 0) return 0;
+        for (u32 i = 1; i < list_count; i++) {
+            if (!find_matching_signature(me, lists[i], sig, false, false)) return 0;
+        }
+        out[0] = sig;
+        return 1;
+    }
+    u32 count = 0;
+    for (u32 i = 0; i < list_count; i++) {
+        Signature* match = i == index ? sig : find_matching_signature(me, lists[i], sig, false, true);
+        if (!match) match = find_matching_signature(me, lists[i], sig, true, true);
+        if (!match) return 0;
+        bool seen = false;
+        for (u32 j = 0; j < count; j++) seen |= out[j] == match;
+        if (!seen) out[count++] = match;
+    }
+    return count;
+}
+
+// tsc's combineSignaturesOfUnionMembers: one signature taking what both take (parameter types intersected, the longer
+// parameter list), returning what either return_types
+static Signature* combine_union_signatures(Checker* me, Signature const* left, Signature const* right) {
+    signature_resolve(me, left);
+    signature_resolve(me, right);
+    TyMapper const* mapper = left->type_params.len && right->type_params.len ?
+        ty_mapper_new(me, right->type_params, left->type_params) : nullptr;
+    u32 left_count = param_count_of(left);
+    u32 right_count = param_count_of(right);
+    Signature const* longest = left_count >= right_count ? left : right;
+    Signature const* shorter = longest == left ? right : left;
+    u32 longest_count = longest == left ? left_count : right_count;
+    bool either_rest = has_rest(me, left) || has_rest(me, right);
+    bool extra_rest = either_rest && !has_rest(me, longest);
+    u32 count = longest_count + (extra_rest ? 1 : 0);
+    SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
+    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+    for (u32 i = 0; i < longest_count; i++) {
+        Ty const* longest_type = param_type_at(me, longest, i);
+        if (longest == right) longest_type = ty_instantiate(me, longest_type, mapper);
+        Ty const* shorter_type = param_type_at(me, shorter, i);
+        shorter_type = shorter_type ? shorter == right ? ty_instantiate(me, shorter_type, mapper) : shorter_type : unknown;
+        Ty const* both[2] = { longest_type, shorter_type };
+        Ty const* type = ty_intersection(me, both, 2, nullptr, (TyList){0});
+        bool is_rest = either_rest && !extra_rest && i == longest_count - 1;
+        bool optional = i >= longest->min_args && i >= shorter->min_args;
+        Atom const* left_name = i < left->param_count && !left->params[i].rest ? left->params[i].name : nullptr;
+        Atom const* right_name = i < right->param_count && !right->params[i].rest ? right->params[i].name : nullptr;
+        Atom const* name = left_name == right_name || !right_name ? left_name : !left_name ? right_name : nullptr;
+        if (!name) {
+            char buf[16];
+            snprintf(buf, sizeof buf, "arg%u", i);
+            name = checker_atom(me, c_sv(buf, (isize_t)strlen(buf)));
+        }
+        params[i] = (SigParam){
+            .name = name,
+            .type = is_rest ? ty_array(me, type, false) : type,
+            .optional = optional && !is_rest,
+            .rest = is_rest,
+        };
+    }
+    if (extra_rest) {
+        Ty const* rest = type_at_position(me, shorter, longest_count);
+        if (shorter == right) rest = ty_instantiate(me, rest, mapper);
+        params[longest_count] = (SigParam){ .name = checker_atom(me, c_sv("args")), .type = ty_array(me, rest, false), .rest = true };
+    }
+    Ty const* return_types[2] = { signature_return_type(me, left), ty_instantiate(me, signature_return_type(me, right), mapper) };
+    Signature* ret = arena_new(&my arena, Signature);
+    *ret = (Signature){
+        .flags = left->flags & SIGNATURE_CONSTRUCT,
+        .name_span = left->name_span,
+        .decl_span = left->decl_span,
+        .state = LAZY_STATE_DONE,
+        .type_params = left->type_params.len ? left->type_params : right->type_params,
+        .params = params,
+        .param_count = count,
+        .min_args = left->min_args > right->min_args ? left->min_args : right->min_args,
+        .ret_state = LAZY_STATE_DONE,
+        .ret = ty_union_subtype_reduced(me, return_types, 2),
+        .predicate_done = true,
+    };
+    return ret;
+}
+
+static bool type_params_identical(Checker* me, TyList source, TyList target) {
+    if (source.len != target.len) return false;
+    if (!source.len) return true;
+    TyMapper const* mapper = ty_mapper_new(me, target, source);
+    for (u32 i = 0; i < source.len; i++) {
+        Ty const* s = ty_param_constraint(me, source.data[i]);
+        Ty const* t = ty_param_constraint(me, target.data[i]);
+        Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+        if (!types_identical(me, s ? s : unknown, t ? ty_instantiate(me, t, mapper) : unknown)) return false;
+    }
+    return true;
+}
+
+// The call (or construct) signatures of a union whose members are all callable (tsc's getUnionSignatures): those
+// every member has (up to extra optional parameters), returning the union of what they return. Failing that, when at
+// most one member is overloaded, its signatures combined with the others'. Null (and 0) if there are none
+Signature* const* ty_union_signatures(Checker* me, TyList members, bool construct, u32* count_out) {
+    *count_out = 0;
+    SignatureList* lists = malloc(sizeof(SignatureList) * members.len);
+    panic_if(!lists, "out of memory");
+    u32 total = 0;
+    i32 overloaded = -2; // -2: no list with more than one signature, -1: several
+    for (u32 i = 0; i < members.len; i++) {
+        Members const* m = ty_members(me, ty_apparent_type(me, members.data[i]));
+        lists[i] = construct ? (SignatureList){ m->construct, m->construct_count } : (SignatureList){ m->call, m->call_count };
+        if (!lists[i].len) {
+            free(lists);
+            return nullptr;
+        }
+        if (lists[i].len > 1) overloaded = overloaded == -2 ? (i32)i : -1;
+        total += lists[i].len;
+    }
+    Signature** result = arena_new_n(&my arena, Signature*, total);
+    u32 result_count = 0;
+    Signature** matches = malloc(sizeof(Signature*) * members.len);
+    panic_if(!matches, "out of memory");
+    for (u32 i = 0; i < members.len; i++) {
+        for (u32 j = 0; j < lists[i].len; j++) {
+            Signature* sig = lists[i].data[j];
+            signature_resolve(me, sig);
+            SignatureList so_far = { result, result_count };
+            if (result_count && find_matching_signature(me, so_far, sig, false, true)) continue;
+            u32 match_count = find_matching_signatures(me, lists, members.len, sig, i, matches);
+            if (!match_count) continue;
+            result[result_count++] = match_count > 1 ? union_signature(me, sig, matches, match_count) : sig;
+        }
+    }
+    free(matches);
+    if (!result_count && overloaded != -1) {
+        SignatureList master = lists[overloaded >= 0 ? overloaded : 0];
+        Signature** combined = arena_new_n(&my arena, Signature*, master.len);
+        for (u32 j = 0; j < master.len; j++) combined[j] = master.data[j];
+        bool compatible = true;
+        for (u32 i = 0; i < members.len && compatible; i++) {
+            if (lists[i].data == master.data) continue;
+            Signature* sig = lists[i].data[0];
+            signature_resolve(me, sig);
+            for (u32 j = 0; j < master.len && compatible; j++) {
+                signature_resolve(me, combined[j]);
+                if (sig->type_params.len && combined[j]->type_params.len &&
+                    !type_params_identical(me, sig->type_params, combined[j]->type_params)
+                ) {
+                    compatible = false;
+                }
+            }
+            for (u32 j = 0; j < master.len && compatible; j++) combined[j] = combine_union_signatures(me, combined[j], sig);
+        }
+        if (compatible) {
+            result = combined;
+            result_count = master.len;
+        }
+    }
+    free(lists);
+    *count_out = result_count;
+    return result_count ? result : nullptr;
 }
