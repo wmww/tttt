@@ -1276,6 +1276,14 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     if (my variance_depth && ((source->flags | target->flags) & TYF_DEFERRED)) my variance_unreliable = true;
     switch ((TyKind)target->kind) {
         case TY_TYPE_PARAM: {
+            // `{ [P in Q]: X }` is related to T if keyof T is related to Q and X to T[P] (`Mutable<T>` to T)
+            MappedInfo const* mapped = source->kind == TY_ANONYMOUS ? ty_members(me, source)->mapped : nullptr;
+            if (mapped && !mapped->name_type && mapped->optional <= 0 &&
+                is_related_to(me, st, ty_keyof(me, target), mapped->constraint, false)
+            ) {
+                Ternary related = is_related_to(me, st, mapped->template, ty_indexed(me, target, mapped->type_param), report);
+                if (related) return related;
+            }
             if (comparable) {
                 Ty const* constraint = ty_param_constraint(me, target);
                 if (constraint && constraint != target) {
