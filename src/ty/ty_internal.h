@@ -77,7 +77,9 @@ typedef struct InferParam {
 typedef enum InferPriority {
     INFER_PRIORITY_NORMAL = 0,
     INFER_PRIORITY_NAKED_TYPE_VARIABLE = 1, // to a naked type parameter in a union with other things
-    INFER_PRIORITY_RETURN_TYPE = 2,
+    INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE = 2, // T from a reverse mapped type (`{ [K in keyof T]: X<T[K]> }`)
+    INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT = 3, // K from the keys of the source (`{ [P in K]: X }`)
+    INFER_PRIORITY_RETURN_TYPE = 4,
 } InferPriority;
 
 #define INFER_MAX_DEPTH 24
@@ -117,9 +119,9 @@ Ty const* ty_global_function_type(Checker* me); // Null without a lib
 Ty const* ty_global_object_type(Checker* me); // Null without a lib
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
-// The property name a key type stands for (a string or number literal), null if none
 // The property name a string or number literal type stands for, null for other types
 Atom const* ty_literal_name(Checker* me, Ty const* literal);
+// The property name a key type stands for (a string or number literal), null if none
 Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);
 typedef struct FoundProp {
     Ty const* type;

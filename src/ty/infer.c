@@ -57,11 +57,12 @@ static bool visited_add(Inference* inf, Ty const* source, Ty const* target) {
 }
 
 static InferParam* inference_param(Inference* inf, Ty const* ty) {
-    if (ty->kind != TY_TYPE_PARAM) return nullptr;
+    // (An indexed access is inferred to by reverse mapped types: `T[K]`, see reverse_mapped_prop_type())
+    if (ty->kind != TY_TYPE_PARAM && ty->kind != TY_INDEXED) return nullptr;
     for (u32 i = 0; i < inf->len; i++) {
         if (inf->params[i].param == ty) return &inf->params[i];
     }
-    if (inf->collect_infer_params && ty->param.state->is_infer) {
+    if (inf->collect_infer_params && ty->kind == TY_TYPE_PARAM && ty->param.state->is_infer) {
         if (inf->len == inf->cap) {
             inf->cap *= 2;
             inf->params = realloc(inf->params, inf->cap * sizeof(InferParam));
@@ -238,6 +239,92 @@ static bool is_empty_tuple(Ty const* ty) {
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
 }
 
+// What a property of type `source` says about `T[K]` in the template of `{ [K in keyof T]: Template }` (tsc's
+// inferReverseMappedType): the template is inferred to with `T[K]` as the one type variable
+static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    Ty const* indexed = ty_indexed(me, operand, mapped->type_param);
+    Inference inf;
+    inference_init(&inf, (TyList){ .data = &indexed, .len = 1 });
+    infer_types(me, &inf, source, mapped->template, INFER_PRIORITY_NORMAL);
+    Ty const* ret = inference_conditional_result(me, &inf, 0);
+    inference_drop(&inf);
+    return ret ? ret : ty_intrinsic(me, TY_UNKNOWN_);
+}
+
+// The T for which `{ [K in keyof T]: Template }` would be `source` (tsc's createReverseMappedType), eagerly. Null if
+// the source isn't an object with properties or a string index
+static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    if (!(source->flags & TYF_OBJECT) || ty_is_array(me, source) || ty_is_tuple(source)) return nullptr; // TODO: arrays, tuples
+    Members const* members = ty_members(me, source);
+    IndexInfo string_index = {0};
+    bool has_string_index = false;
+    for (u32 i = 0; i < members->index_count; i++) {
+        if (members->index[i].key->flags & TYF_STRING) {
+            string_index = members->index[i];
+            has_string_index = true;
+        }
+    }
+    if (!members->prop_count && !has_string_index) return nullptr;
+    // A recursive mapped type (`{ [K in keyof V]: Foo<V[K]> }`) reverse maps its property types again, all the way
+    // down: tsc's reverse mapped types resolve their members lazily, these are built right away and cut off
+    if (my reverse_mapped_depth >= 4) return nullptr;
+    my reverse_mapped_depth++;
+    ObjectLiteralProp* props = calloc(members->prop_count + 1, sizeof(ObjectLiteralProp));
+    panic_if(!props, "out of memory");
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        u32 flags = prop->flags & (PROP_OPTIONAL | PROP_READONLY);
+        if (mapped->optional > 0) flags &= ~(u32)PROP_OPTIONAL; // `?` in the mapped type: T's property needn't be
+        if (mapped->readonly > 0) flags &= ~(u32)PROP_READONLY;
+        props[i] = (ObjectLiteralProp){
+            .name = prop->name,
+            .flags = flags,
+            .type = reverse_mapped_prop_type(me, prop_type(me, prop), mapped, operand),
+        };
+    }
+    if (has_string_index) string_index.value = reverse_mapped_prop_type(me, string_index.value, mapped, operand);
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, &string_index, has_string_index ? 1 : 0);
+    free(props);
+    my reverse_mapped_depth--;
+    return ret;
+}
+
+// tsc's inferToMappedType: `{ [K in keyof T]: X }` infers T by reverse mapping the source, `{ [P in K]: X }` infers
+// the keys of the source to K and its property types to X. False if the constraint says nothing to infer to
+static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, MappedInfo const* mapped, Ty const* constraint) {
+    if (constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) {
+        bool any = false;
+        for (u32 i = 0; i < constraint->composite.types.len; i++) {
+            any |= infer_to_mapped(me, inf, source, mapped, constraint->composite.types.data[i]);
+        }
+        return any;
+    }
+    if (constraint->kind == TY_KEYOF) {
+        InferParam* param = inference_param(inf, constraint->keyof.operand);
+        if (param && !param->fixed) {
+            Ty const* reversed = reverse_mapped_type(me, source, mapped, constraint->keyof.operand);
+            if (reversed) {
+                infer_with_priority(me, inf, reversed, constraint->keyof.operand, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
+            }
+        }
+        return true;
+    }
+    if (constraint->kind == TY_TYPE_PARAM && inference_param(inf, constraint)) {
+        infer_with_priority(me, inf, ty_keyof(me, source), constraint, INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT);
+        Members const* members = ty_members(me, source);
+        u32 count = members->prop_count + members->index_count;
+        if (!count) return true;
+        Ty const** types = malloc(sizeof(Ty const*) * count);
+        panic_if(!types, "out of memory");
+        for (u32 i = 0; i < members->prop_count; i++) types[i] = prop_type(me, members->props[i]);
+        for (u32 i = 0; i < members->index_count; i++) types[members->prop_count + i] = members->index[i].value;
+        infer_from(me, inf, ty_union(me, types, count, nullptr, (TyList){0}), mapped->template);
+        free(types);
+        return true;
+    }
+    return false;
+}
+
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if ((ty_is_tuple(source) || is_empty_tuple(source)) && ty_is_tuple(target)) {
         TupleShape const* source_shape = ty_is_tuple(source) ? source->reference.target->declared.tuple : source->declared.tuple;
@@ -299,13 +386,14 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
 
     Members const* target_members = ty_members(me, target);
     if (target_members->mapped) {
-        // `{ [K in keyof T]: X<T[K]> }`. TODO: reverse-mapped inference. For a plain homomorphic `T[K]` template
-        // (Partial, Readonly...) the source itself is the candidate
         MappedInfo const* mapped = target_members->mapped;
         if (mapped->modifiers_type && mapped->template->kind == TY_INDEXED &&
             mapped->template->indexed.object == mapped->modifiers_type && mapped->template->indexed.index == mapped->type_param
         ) {
+            // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate
             infer_from(me, inf, source, mapped->modifiers_type);
+        } else if (!mapped->name_type) {
+            infer_to_mapped(me, inf, source, mapped, mapped->constraint);
         }
         return;
     }
@@ -417,7 +505,7 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
 
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
-    if (target->kind == TY_TYPE_PARAM) {
+    if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);
         if (!param || param->fixed || (source->flags & TYF_ERROR) || source == ty_intrinsic(me, TY_SILENT_NEVER)) return;
         if (!param->has_priority || inf->priority < param->priority) {

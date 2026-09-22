@@ -183,6 +183,7 @@ static void builder_add_interface_member(
                 TypeNode const* in_type = &i->key.mapped.in_type;
                 if (in_type->tag == TYPE_KEYOF) {
                     mapped->modifiers_type = ty_from_node(me, &in_type->keyof->interface, mapped_ctx);
+                    mapped->keyof_constraint = true;
                 } else if (mapped->constraint->kind == TY_TYPE_PARAM) {
                     // `[P in K]` with `K extends keyof T` (Pick) takes its modifiers from T too
                     Ty const* constraint = ty_param_constraint(me, mapped->constraint);
@@ -813,6 +814,17 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
     Ty const* const* keys;
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
+    Ty const** member_keys = nullptr;
+    if (mapped->name_type && mapped->keyof_constraint && mapped->modifiers_type && (mapped->modifiers_type->flags & TYF_OBJECT)) {
+        // `[K in keyof T as N<K>]` goes by the members of T (tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType):
+        // a string index is the key `string` alone, and the property names aren't absorbed by it like in `keyof T`
+        Members const* source = ty_members(me, mapped->modifiers_type);
+        member_keys = arena_new_n(&my arena, Ty const*, source->prop_count + source->index_count);
+        key_count = 0;
+        for (u32 i = 0; i < source->prop_count; i++) member_keys[key_count++] = ty_string_literal(me, atom_sv(source->props[i]->name));
+        for (u32 i = 0; i < source->index_count; i++) member_keys[key_count++] = source->index[i].key;
+        keys = member_keys;
+    }
     u32 const usable = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL;
     for (u32 i = 0; i < key_count; i++) {
         Ty const* name_type = mapped_key_name(me, mapped, keys[i]);

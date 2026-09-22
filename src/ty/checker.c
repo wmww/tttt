@@ -732,7 +732,22 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         ty_buf_drop(&parts);
         return ret;
     }
-    if (operand->kind == TY_INTERSECTION) {
+    // `keyof (T & {})` (NonNullable<T>, LowInfer<T>) stays as it is, like in tsc's shouldDeferIndexType
+    bool defer = false;
+    if (operand->kind == TY_INTERSECTION && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        bool has_variable = false, has_empty_object = false;
+        for (u32 i = 0; i < operand->composite.types.len; i++) {
+            Ty const* t = operand->composite.types.data[i];
+            has_variable |= t->kind == TY_TYPE_PARAM || (t->flags & TYF_DEFERRED);
+            if (t->kind == TY_ANONYMOUS) {
+                Members const* members = ty_members(me, t);
+                has_empty_object |= !members->prop_count && !members->call_count && !members->construct_count &&
+                    !members->index_count && !members->mapped;
+            }
+        }
+        defer = has_variable && has_empty_object;
+    }
+    if (operand->kind == TY_INTERSECTION && !defer) {
         TyBuf parts = {0};
         for (u32 i = 0; i < operand->composite.types.len; i++) {
             ty_buf_push(&parts, ty_keyof(me, operand->composite.types.data[i]));
@@ -743,7 +758,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     }
     // The property names of `List<T>` don't depend on T: only type variables and generic mapped types defer
     bool named_object = (operand->kind == TY_REFERENCE && !ty_is_tuple(operand)) || operand->kind == TY_DECLARED;
-    if ((operand->flags & TYF_OBJECT) && (!(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || named_object)) {
+    if (!defer && (operand->flags & TYF_OBJECT) && (!(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || named_object)) {
         Members const* members = ty_members(me, operand);
         if (!members->mapped) {
             TyBuf parts = {0};

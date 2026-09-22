@@ -93,6 +93,7 @@ typedef enum TypePrecedence {
     TYPE_PRECEDENCE_TERNARY,
     TYPE_PRECEDENCE_UNION,
     TYPE_PRECEDENCE_INTERSECTION,
+    TYPE_PRECEDENCE_OPERATOR, // The operand of `keyof`: `keyof A & B` is `(keyof A) & B`, `keyof A[]` is `keyof (A[])`
 } TypePrecedence;
 
 static bool hop_token(Parser* parent);
@@ -1300,7 +1301,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         *ret = type_string;
     } else if (hop_start_if_ends_on_word_break(&p, "keyof")) {
         hop_whitespace(&p);
-        expect_type(&p, min_precedence, &parsed.type);
+        expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &parsed.type);
         *ret = type_keyof(c_new(KeyofType, {
             .interface = parsed.type,
         }));

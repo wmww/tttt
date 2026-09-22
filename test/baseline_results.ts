@@ -3348,7 +3348,7 @@ const baselines = {
     'circularContextualMappedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularContextualReturnType': {
         errors: true,
@@ -14811,7 +14811,7 @@ const baselines = {
         types: false,
     },
     'genericFunctionInference2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -26353,7 +26353,7 @@ const baselines = {
     'recursiveTupleTypeInference': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveTupleTypes1': {
         errors: true,
@@ -27136,7 +27136,7 @@ const baselines = {
         types: false,
     },
     'reverseMappedTupleContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -27158,10 +27158,10 @@ const baselines = {
     'reverseMappedTypeDeepDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeInferenceSameSource1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -62311,12 +62311,12 @@ const baselines = {
         types: false,
     },
     'mappedTypes2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'mappedTypes3': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

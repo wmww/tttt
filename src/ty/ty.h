@@ -397,6 +397,7 @@ typedef struct MappedInfo {
     Ty const* name_type; // `as` clause, may be null
     Ty const* template;
     Ty const* modifiers_type; // `T` of a homomorphic `[K in keyof T]`: where optional/readonly come from. May be null
+    bool keyof_constraint; // The constraint is written `keyof T` (not `K extends keyof T`): the keys are T's members
     signed char readonly; // -1 remove, +1 add
     signed char optional;
 } MappedInfo;
@@ -518,6 +519,7 @@ struct Checker {
     Ty const* global_types[9]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[9];
     u32 instantiation_depth;
+    u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
     bool instantiation_limit_hit; // Set when ty_instantiate() gave up; whoever reports errors turns it into TS2589
     RelationCache relations[TY_RELATION_COUNT];
