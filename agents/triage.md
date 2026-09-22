@@ -31,6 +31,11 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   result is `any`: typesWithPrivateConstructor/typesWithProtectedConstructor lost their symbols component when
   `Object` members started resolving (`c.constructor` now finds `Object.constructor`, tsc has `any`), an honest loss.
   Also `this` parameters: no contextual `this` from a contextual signature's `this` (getContextualThisParameterType).
+- **Writes to readonly properties aren't checked** (TS2540, see the count in the commit that added this line; readonly
+  mapped types only became readonly with plan 08 session 3, so the flags are now there to check).
+- Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
+  without lib es2015): some circularity through error types. Probe: test/probes/plan08/alias_optional_chain.ts minus
+  its `@target`.
 - **`this` types**: ~242 types baselines fail *only* on `this` lines, 969 have some (measured 2026-09-22 by comparing
   dumps: `>this : this` 5148 times). `this` inside methods prints as `C` (tsc: `this`), `m.set("a", 1)` on a `Map` returns the
   error type instead of the map, `xs.slice().sort()` in for-of gives TS7022 (12 in the corpus), intersections and

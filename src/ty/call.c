@@ -223,6 +223,24 @@ static Ty const* instantiate_outer(Checker* me, Signature const* sig, Ty const* 
     return sig->mapper ? ty_instantiate(me, ty, sig->mapper) : ty;
 }
 
+// A generic call inferring from its arguments, as the calls nested in them see it (tsc's getInferenceContext)
+typedef struct OuterInference {
+    Signature const* sig;
+    Inference* inf;
+} OuterInference;
+
+// What the outer call has inferred so far, the rest being silent never (which nothing is inferred from): tsc's
+// cloneInferenceContext(outerContext, InferenceFlags.NoDefault)
+static TyMapper const* outer_inference_mapper(Checker* me, OuterInference const* outer) {
+    TyList params = outer->sig->type_params;
+    Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    for (u32 i = 0; i < params.len; i++) {
+        results[i] = inference_call_result(me, outer->inf, i, false);
+        if (!results[i]) results[i] = ty_intrinsic(me, TY_SILENT_NEVER);
+    }
+    return ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+}
+
 // The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
 // `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
 static TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
@@ -300,6 +318,15 @@ static TyMapper const* infer_type_arguments(
     inference_init(&inf, sig->type_params);
     ParamShape shape = param_shape(me, sig, nullptr);
 
+    // Nested in an argument of another generic call, the contextual type mentions its type parameters: what it has
+    // inferred so far stands in for them
+    OuterInference const* outer = my outer_inference;
+    my outer_inference = nullptr;
+    if (contextual && outer && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        contextual = ty_instantiate(me, contextual, outer_inference_mapper(me, outer));
+    }
+    OuterInference self = { .sig = sig, .inf = &inf };
+
     if (contextual && !(contextual->flags & (TYF_ANY | TYF_COULD_CONTAIN_TYPE_VARIABLES)) && true) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
@@ -318,7 +345,9 @@ static TyMapper const* infer_type_arguments(
             any_sensitive = true;
             continue;
         }
+        my outer_inference = &self;
         check_arg(me, &shape, args, i);
+        my outer_inference = nullptr;
         infer_from_arg(me, &inf, &shape, args, i);
     }
     // Second pass: each context-sensitive argument sees what is known by then, which is thereby decided
@@ -350,6 +379,7 @@ static TyMapper const* infer_type_arguments(
 
     TyMapper const* mapper = inference_mapper(me, sig, &inf, false);
     inference_drop(&inf);
+    my outer_inference = outer;
     return mapper;
 }
 

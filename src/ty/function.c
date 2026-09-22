@@ -91,7 +91,10 @@ Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     }
     memo->state = LAZY_STATE_IN_FLIGHT;
     FlowIsolation isolation = ty_flow_isolate(me);
+    struct OuterInference const* outer = my outer_inference; // (Nothing in the body is an argument of that call)
+    my outer_inference = nullptr;
     memo->type = infer_return_type(me, function);
+    my outer_inference = outer;
     ty_flow_restore(me, isolation);
     memo->state = LAZY_STATE_DONE;
     return memo->type;
