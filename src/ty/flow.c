@@ -2054,3 +2054,100 @@ Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, T
     if (result.type == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return declared;
     return result.type;
 }
+
+// Inferred type predicates (tsc's getTypePredicateFromBody): `x => x !== undefined` is `(x: T | undefined) => x is T`
+
+// The expression of the one `return` of a body, null if there are several, a bare one, or none
+static bool find_single_return(Statement const* statement, Statement const** found);
+
+static bool find_single_return_in(VecStatement const* statements, Statement const** found) {
+    for_each (i, vec_statement, statements) {
+        if (!find_single_return(i, found)) return false;
+    }
+    return true;
+}
+
+static bool find_single_return(Statement const* statement, Statement const** found) {
+    switch (statement->tag) {
+        case STATEMENT_BLOCK: return find_single_return_in(&statement->block.statements, found);
+        case STATEMENT_IF_ELSE: return find_single_return_in(&statement->if_else.statements, found);
+        case STATEMENT_FOR_LOOP:
+            return find_single_return(&statement->for_loop->initialization, found) &&
+                find_single_return(&statement->for_loop->body, found);
+        case STATEMENT_FOR_EACH_LOOP: return find_single_return(&statement->for_each_loop->body, found);
+        case STATEMENT_SWITCH:
+            for_each (i, vec_switch_case, &statement->switch_->cases) {
+                if (!find_single_return_in(&i->statements, found)) return false;
+            }
+            return true;
+        case STATEMENT_TRY_CATCH:
+            return find_single_return_in(&statement->try_catch->try_block.statements, found) &&
+                find_single_return_in(&statement->try_catch->catch_block.statements, found) &&
+                find_single_return_in(&statement->try_catch->finally_block.statements, found);
+        case STATEMENT_LABELED: return find_single_return(statement->labeled.body, found);
+        case STATEMENT_RETURN_EXPR:
+            if (*found || statement_is_bare_return(statement)) return false;
+            *found = statement;
+            return true;
+        default: return true;
+    }
+}
+
+// tsc's checkIfExpressionRefinesParameter: the type the parameter has where `expr` is true, if that says something
+// and nothing of it is left where `expr` is false
+static Ty const* refined_parameter_type(Checker* me, Expr const* expr, FlowNode* antecedent, Expr const* reference, Ty const* init) {
+    FlowNode* when_true = arena_new(&my arena, FlowNode);
+    *when_true = (FlowNode){ .flags = FLOW_TRUE_CONDITION, .antecedent = antecedent, .node = expr };
+    Ty const* true_type = ty_flow_type(me, reference, init, init, when_true);
+    if (true_type == init) return nullptr;
+    FlowNode* when_false = arena_new(&my arena, FlowNode);
+    *when_false = (FlowNode){ .flags = FLOW_FALSE_CONDITION, .antecedent = antecedent, .node = expr };
+    Ty const* false_type = ty_flow_type(me, reference, init, true_type, when_false);
+    return false_type->flags & TYF_NEVER ? true_type : nullptr;
+}
+
+TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function) {
+    if (!function->has_body || function->is_type || function->is_async || function->is_generator ||
+        function->is_constructor || function->accessor || function->constructed_class
+    ) {
+        return nullptr;
+    }
+    Statement const* single = nullptr;
+    if (!find_single_return_in(&function->body.statements, &single) || !single) return nullptr;
+    if (ty_function_end_reachability(me, function) != FLOW_REACH_NO) return nullptr;
+    Expr const* expr = &single->expr;
+    FlowIsolation isolation = ty_flow_isolate(me);
+    TyPredicate* ret = nullptr;
+    Ty const* returned = ty_expr_type(me, expr);
+    if (returned->flags & TYF_BOOLEAN) {
+        FlowNode* antecedent = single->flow;
+        if (!antecedent) {
+            antecedent = arena_new(&my arena, FlowNode);
+            *antecedent = (FlowNode){ .flags = FLOW_START };
+        }
+        u32 index = 0;
+        for_each (i, vec_function_arg, &function->args) {
+            Binding const* binding = &i->initializer.binding;
+            if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+            u32 at = index++;
+            Symbol const* symbol = binding->tag == BINDING_IDENTIFIER ? binding->symbol : nullptr;
+            if (!symbol || i->rest || symbol->is_assigned) continue;
+            Ty const* init = ty_type_of_symbol(me, symbol);
+            if (!init || (init->flags & TYF_BOOLEAN)) continue;
+            Expr* reference = arena_new(&my arena, Expr);
+            *reference = (Expr){ .tag = EXPR_IDENTIFIER, .inner_span = binding->content_span, .outer_span = binding->content_span };
+            reference->identifier = (IdentifierExpr){ .name = binding->content_span, .target = symbol, .symbol = symbol };
+            Ty const* refined = refined_parameter_type(me, expr, antecedent, reference, init);
+            if (!refined) continue;
+            ret = arena_new(&my arena, TyPredicate);
+            *ret = (TyPredicate){
+                .param_index = (i32)at,
+                .param_name = checker_atom(me, binding->content_span.sv),
+                .type = refined,
+            };
+            break;
+        }
+    }
+    ty_flow_restore(me, isolation);
+    return ret;
+}

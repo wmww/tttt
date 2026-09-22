@@ -602,6 +602,7 @@ void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
+TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple); // The array a tuple also is
 Signature* const* ty_union_signatures(Checker* me, TyList members, bool construct, u32* count_out);
 typedef struct CallEffects {

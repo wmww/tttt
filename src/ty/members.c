@@ -1232,6 +1232,8 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
             predicate->type = ty_from_node(me, &node->type, ctx);
         }
         sig->predicate = predicate;
+    } else if (sig->function && !sig->function->ret_explicit && sig->param_count) {
+        sig->predicate = ty_infer_type_predicate(me, sig->function);
     }
     return sig->predicate;
 }
