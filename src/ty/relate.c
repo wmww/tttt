@@ -1076,6 +1076,82 @@ static Ty const* constraint_of_indexed(Checker* me, Ty const* indexed) {
     return ret == indexed || (ret->flags & TYF_DEFERRED) ? nullptr : ret;
 }
 
+// A mapped type whose keys aren't known yet as the target (tsc's isGenericMappedType branch of
+// structuredTypeRelatedTo): S is related to `{ [P in Q]: T }` if Q is related to keyof S and S[Q] to T, to
+// `{ [P in Q]: X[P] }` if S is related to X. With `?`, the keys S has in common with Q are enough
+static Ternary generic_mapped_target_related(
+    Checker* me, RelationState* st, Ty const* source, MappedInfo const* mapped, bool report
+) {
+    Ty const* template = mapped->template;
+    if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.object == source &&
+        template->indexed.index == mapped->type_param
+    ) {
+        return TERNARY_TRUE;
+    }
+    if (mapped->optional < 0 || (source->kind == TY_ANONYMOUS && ty_members(me, source)->mapped)) return TERNARY_FALSE;
+    Ty const* target_keys = mapped->name_type ? mapped->name_type : mapped->constraint;
+    Ty const* source_keys = ty_keyof(me, source);
+    if (mapped->optional > 0) {
+        Ty const* both[2] = { target_keys, source_keys };
+        Ty const* common = ty_intersection(me, both, 2, nullptr, (TyList){0});
+        if (common->flags & TYF_NEVER) return TERNARY_FALSE;
+        // The keys that are known: S[K] against the template with P = K
+        TyBuf known = {0};
+        Ty const* const* members = &common;
+        u32 count = 1;
+        if (common->kind == TY_UNION) {
+            members = common->composite.types.data;
+            count = common->composite.types.len;
+        }
+        for (u32 i = 0; i < count; i++) {
+            if (!(members[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ty_buf_push(&known, members[i]);
+        }
+        Ternary related = TERNARY_FALSE;
+        if (known.len && !mapped->name_type) {
+            Ty const* keys = ty_union(me, known.data, known.len, nullptr, (TyList){0});
+            TyMapper const* mapper = ty_mapper_new(
+                me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &keys, .len = 1 }
+            );
+            related = is_related_to(me, st, ty_indexed(me, source, keys), ty_instantiate(me, template, mapper), report);
+        }
+        ty_buf_drop(&known);
+        return related;
+    }
+    if (!is_related_to(me, st, target_keys, source_keys, false)) return TERNARY_FALSE;
+    if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.index == mapped->type_param) {
+        return is_related_to(me, st, source, template->indexed.object, report);
+    }
+    // S[P] against the template, with P as Q on both sides (P has no constraint of its own here)
+    TyMapper const* mapper = ty_mapper_new(
+        me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &mapped->constraint, .len = 1 }
+    );
+    return is_related_to(me, st, ty_indexed(me, source, target_keys), ty_instantiate(me, template, mapper), report);
+}
+
+// What can be written to `T[K]` whatever T and K turn out to be (tsc's AccessFlags.Writing): through a union
+// constraint of T, a value has to fit every member's property, so it's the intersection
+static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
+    Ty const* object = indexed->indexed.object;
+    Ty const* object_constraint = object->kind == TY_TYPE_PARAM ? ty_param_constraint(me, object) : nullptr;
+    if (object_constraint && object_constraint->kind == TY_UNION) {
+        Ty const* index = indexed->indexed.index;
+        Ty const* index_constraint = index->kind == TY_TYPE_PARAM ? ty_param_constraint(me, index) : nullptr;
+        if (index_constraint) index = index_constraint;
+        TyList members = object_constraint->composite.types;
+        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!parts, "out of memory");
+        bool resolved = true;
+        for (u32 i = 0; i < members.len && resolved; i++) {
+            parts[i] = ty_indexed(me, members.data[i], index);
+            resolved = !(parts[i]->flags & TYF_DEFERRED) && parts[i]->kind != TY_TYPE_PARAM;
+        }
+        Ty const* ret = resolved ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : nullptr;
+        free(parts);
+        return ret;
+    }
+    return constraint_of_indexed(me, indexed);
+}
+
 // A distributive conditional type with its check type replaced by the constraint (tsc's
 // getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C. Null if that's no different
 static Ty const* distributive_constraint(Checker* me, Ty const* conditional) {
@@ -1209,7 +1285,7 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
                 if (related) related &= is_related_to(me, st, source->indexed.index, target->indexed.index, false);
                 if (related) return related;
             }
-            Ty const* constraint = constraint_of_indexed(me, target);
+            Ty const* constraint = write_constraint_of_indexed(me, target);
             if (constraint) {
                 Ternary related = is_related_to(me, st, source, constraint, false);
                 if (related) return related;
@@ -1231,6 +1307,16 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
         }   break;
 
         default: break;
+    }
+
+    // A mapped type whose keys aren't known yet (target side first, like in tsc)
+    MappedInfo const* target_mapped = target->kind == TY_ANONYMOUS ? ty_members(me, target)->mapped : nullptr;
+    if (target_mapped && !my variance_depth) {
+        Ternary related = generic_mapped_target_related(me, st, source, target_mapped, report);
+        // HACK: a generic source falls through to the member-by-member comparison, which a mapped type without
+        // members passes: it stands in for tsc's rules between two generic mapped types (mappedTypeRelatedTo), a
+        // homomorphic Readonly<T> and T, and the like, which don't exist here yet
+        if (related || !(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return related;
     }
 
     // Generic sources
@@ -1334,7 +1420,7 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
 
     Ty const* apparent = source->kind == TY_INTERSECTION ? source : apparent_type(me, source);
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
-    if (my variance_depth && ty_members(me, target)->mapped) my variance_unreliable = true;
+    if (my variance_depth && target_mapped) my variance_unreliable = true;
     if (apparent->kind == TY_INTERSECTION) {
         // HACK: the signatures and index signatures of an intersection aren't combined (tsc concatenates signatures
         // and intersects index infos), each kind has to be satisfied by one member on its own

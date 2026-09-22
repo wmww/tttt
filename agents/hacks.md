@@ -393,6 +393,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   treats that as a construct signature too.
 
 ## Type core (`src/ty/`): known gaps
+- Relations to a generic mapped type (`generic_mapped_target_related`, relate.c) follow tsc's isGenericMappedType
+  rule, but only a source without type variables gets its answer: a generic one that fails it falls through to the
+  member-by-member comparison, which a mapped type without members passes. That permissive fallback stands in for
+  mappedTypeRelatedTo (generic mapped to generic mapped), homomorphic `Readonly<T>` to `T`, and the like. The mapped
+  type parameter P gets no constraint when lowered, so `S[P]` is compared as `S[Q]`. Target `T[K]` uses the write type
+  (intersection over a union constraint of T, `write_constraint_of_indexed`).
 - `class_base`: the base class is found syntactically (`extends Name`, `extends Name<Args>`, `extends ns.Name`); tsc
   evaluates the expression and takes the return type of its construct signatures (mixins, `extends f()`). The static
   side inherits properties from the base's static side and, without a constructor of its own, its construct signatures.

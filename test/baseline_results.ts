@@ -47396,7 +47396,7 @@ const baselines = {
         types: true,
     },
     'typeGuardOfFormTypeOfFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
