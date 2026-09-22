@@ -757,6 +757,7 @@ static bool prop_has_explicit_type(Prop const* prop) {
     // HACK: the template of a mapped type (`Readonly<Services>`), where tsc asks the property it was mapped from
     if (!prop->name) return true;
     if (prop->symbol) return symbol_has_explicit_type(prop->symbol);
+    if (prop->flags & (PROP_GETTER | PROP_SETTER)) return prop->function->ret_explicit;
     return prop->node || prop->function || prop->overload_count;
 }
 

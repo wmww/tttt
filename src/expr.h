@@ -42,6 +42,9 @@ typedef struct IdentifierExpr {
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position;
+    // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
+    // contextually typed (ty_contextual_this_type())
+    FunctionImpl const* this_function;
 } IdentifierExpr;
 
 void identifier_expr_drop(IdentifierExpr* me);

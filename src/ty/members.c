@@ -1200,7 +1200,9 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
     Ty const* type;
-    if (prop->target) {
+    if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
+        type = ty_object_literal_accessor_type(me, prop->function, prop->flags & PROP_GETTER);
+    } else if (prop->target) {
         type = ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
         if (prop->flags & PROP_STRIP_UNDEFINED) type = ty_without_undefined(me, type); // (Only set with strictNullChecks)
     } else if (prop->overload_count) {
@@ -1410,7 +1412,7 @@ Ty const* ty_object_literal(
         words_push(&words, (u64)(uintptr_t)props[i].name);
         words_push(&words, props[i].flags);
         words_push(&words, (u64)(uintptr_t)props[i].name_span.sv.buf);
-        words_push(&words, props[i].type->id);
+        words_push(&words, props[i].type ? props[i].type->id : (u64)(uintptr_t)props[i].accessor);
     }
     for (u32 i = 0; i < index_count; i++) {
         words_push(&words, 3);
@@ -1427,12 +1429,14 @@ Ty const* ty_object_literal(
             prop->name = props[i].name;
             prop->flags = props[i].flags;
             prop->type = props[i].type;
-            prop->type_state = LAZY_STATE_DONE;
+            prop->type_state = props[i].type ? LAZY_STATE_DONE : LAZY_STATE_NOT_STARTED;
+            prop->function = props[i].accessor;
             prop->name_span = props[i].name_span;
             prop->name_is_value = props[i].name_is_value;
             prop->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
-            flags |= props[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
+            flags |= props[i].type ? props[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES : TYF_COULD_CONTAIN_TYPE_VARIABLES;
             builder_push(&builder, props, prop);
         }
         for (u32 i = 0; i < index_count; i++) {

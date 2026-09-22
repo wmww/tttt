@@ -604,7 +604,10 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
 
     Ty const* ret = nullptr;
     if (includes & TYF_NEVER) {
-        ret = my intrinsics[TY_NEVER];
+        // (The silent never, what inference hasn't found yet, survives: tsc's getIntersectionType)
+        bool silent = false;
+        for (u32 i = 0; i < buf.len; i++) silent |= buf.data[i] == my intrinsics[TY_SILENT_NEVER];
+        ret = my intrinsics[silent ? TY_SILENT_NEVER : TY_NEVER];
     } else if (includes & TYF_ANY) {
         ret = my intrinsics[includes_error ? TY_ERROR : TY_ANY];
     } else if (first_union) {

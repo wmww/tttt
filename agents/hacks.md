@@ -346,8 +346,12 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   some member has no signatures of the kind (tsc: TS2349 "Not all constituents of type ... are callable").
 - `report_arity`: no "An argument for 'x' was not provided" related info; the span for too few arguments is the
   callee's `inner_span`, not tsc's name-of-the-property-access rule.
-- `signature_resolve` / `structural_signature`: a `this` parameter is dropped from the parameter list and never checked
-  against the receiver.
+- Contextual `this` (`ty_contextual_this_type`, plan 10 stage 2): the object literal's contextual type is remembered
+  when it is checked (`KEY_LITERAL_CONTEXT`, the last one wins) and so is its enclosing literal (`KEY_LITERAL_PARENT`),
+  since there are no parent pointers; a `this` asked for before the literal was checked falls back to the literal's
+  own type. `ThisType<T>` is recognised by name (a global `ThisType`), and its argument isn't instantiated with the
+  inference in progress (tsc: getMapperFromContext(getInferenceContext(literal))). No TS7041 (`this` captured by an
+  arrow function at the top level), no TS7017 on `typeof globalThis`.
 - `instantiate_outer` (call.c): an instantiated generic signature shares its type parameters with its target (the TODO
   in `signature_resolve`), so constraints and defaults have to be pushed through the signature's mapper chain by hand.
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name.

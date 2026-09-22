@@ -199,6 +199,12 @@ static void check_access(
     }
     if (object->flags & TYF_NULLABLE) return; // TODO: TS18050 (the value 'undefined' cannot be used here)
     if (ty_access(me, object, index)) return;
+    // What `typeof globalThis` doesn't have is any (TS7017 under noImplicitAny, TODO)
+    if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE && object->declared.namespace_symbol &&
+        object->declared.namespace_symbol->is_global_this
+    ) {
+        return;
+    }
     report_no_property(me, object, index, 2339, index_span, errs);
 }
 

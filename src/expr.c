@@ -29,6 +29,16 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             ThisRef this_ref = scope_get_this(names, false);
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
+            my this_function = this_ref.function;
+            if (!this_ref.kind) {
+                // At the top level: of a script `typeof globalThis`, of a module `undefined`; in a namespace an error
+                Scope const* file = names;
+                while (file->parent && file->kind != SCOPE_MODULE && file->kind != SCOPE_SCRIPT && file->kind != SCOPE_NAMESPACE) {
+                    file = file->parent;
+                }
+                if (file->kind == SCOPE_SCRIPT) my this_kind = THIS_GLOBAL;
+                if (file->kind == SCOPE_NAMESPACE) my this_kind = THIS_NAMESPACE;
+            }
         } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && my module_ref) {
             // `import("./a")`
             if (my module_ref->file) {
@@ -74,6 +84,15 @@ static bool plausible_operand(Ty const* ty) {
 void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     if (ty_identifier_used_before_assigned(current_checker, me)) {
         error_ctx_error_d(errs, my name, 2454, "Variable '", my name, "' is used before being assigned.");
+    }
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
+        error_ctx_error_d(errs, my name, 2331, "'this' cannot be referenced in a module or namespace body.");
+    }
+    // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
+        !(my this_function && ty_contextual_this_type(current_checker, my this_function))
+    ) {
+        error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
     }
 }
 
@@ -466,6 +485,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             BinaryOp op = my binary_op->op;
             Expr* left = &my binary_op->left;
             Expr* right = &my binary_op->right;
+            // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`
+            if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !span_valid(right->function->arrow_span) &&
+                left->tag == EXPR_PROPERTY
+            ) {
+                right->function->this_assigned_object = &left->property->expr;
+            }
             if (binary_op_is_logical(op) || binary_op_is_logical_assignment(op)) {
                 if (true_target) {
                     expr_lookup_names_logical(me, names, errs, true_target, false_target);
@@ -660,6 +685,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
                     if (i->tag != OBJECT_ITEM_PROPERTY) i->value.function->member_name = i->name_span;
+                    // tsc's getContainingObjectLiteral: methods, accessors, `a: function () {}` (not arrows)
+                    if (!span_valid(i->value.function->arrow_span)) i->value.function->this_literal = me;
                 }
                 if (i->tag == OBJECT_ITEM_SETTER && !i->computed_key) {
                     for_each (other, vec_object_expr_item, &my object) {

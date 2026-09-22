@@ -320,6 +320,10 @@ typedef enum PropFlags {
     PROP_READONLY = 1 << 1,
     PROP_METHOD   = 1 << 2,
     PROP_STRIP_UNDEFINED = 1 << 3, // `-?` made it required: undefined is taken out of its type (tsc's StripOptional)
+    // An accessor of an object literal (Prop.function): typed on first use by the getter's return type, else the setter's
+    // parameter, like tsc's lazily resolved accessor symbols (a getter's body can mention `this`, the literal's type)
+    PROP_GETTER = 1 << 4,
+    PROP_SETTER = 1 << 5,
 } PropFlags;
 
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
@@ -725,6 +729,9 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
 // The type an unannotated parameter got from the contextual signature of its function expression, null if none
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter);
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
+Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function); // null if nothing says what `this` is
+// The type of an object literal accessor property: the getter's widened return type, else the setter's parameter
+Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter);
 bool ty_expr_is_context_sensitive(Expr const* expr);
 // The type of the property an item of an object literal made (what the `.types` baseline shows at its name)
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item);
@@ -737,7 +744,8 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
 typedef struct ObjectLiteralProp {
     Atom const* name;
     u32 flags; // PropFlags
-    Ty const* type;
+    Ty const* type; // Null for an accessor (PROP_GETTER/PROP_SETTER): `accessor` has it
+    FunctionImpl const* accessor;
     Span name_span;
     Span const* decl_spans;
     u32 decl_span_count;

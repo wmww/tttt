@@ -46,6 +46,16 @@ isResolvingReturnTypeOfSignature). Deviation from the plan: no relation rule for
 one is compared structurally), nothing needed it yet. Stage 1's item 6 (flow): `this instanceof D` and `this is T`
 predicates on methods work (typeGuardFunctionOfFormThis passes); `this is T` as a property type doesn't parse.
 
+**Stage 2 mostly done (2026-09-22)**: suite 4107 -> 4110 (types +41), corpus unchanged (95, no spurious TS2683 under
+the corpus' strict mode). Contextual `this` from a contextual signature's `this` parameter, the object literal
+(`ThisType<T>` through enclosing literals, else the contextual type, else the literal's type) or the object of
+`o.m = function`, all under noImplicitThis like tsc; TS2683; top-level `this` (`typeof globalThis` in scripts),
+TS2331 in namespaces; non-arrow functions without a `this` parameter are context sensitive (won back
+generatorTypeCheck45/46); object literal accessors are typed lazily (their bodies can ask for the literal's type).
+Signatures already printed and checked their `this` parameters (TS2684), the notes saying otherwise were stale.
+Left: TS7041, TS7017, the ThisType argument isn't instantiated with the inference in progress; lost
+silentNeverPropagation (triage.md). Stage 3 not started.
+
 ## Stage 1: the `this` type parameter and this-arguments
 1. `Ty.declared` gets a `this_param` (a `TY_TYPE_PARAM` flagged as a this type, printing `this`) for classes and
    non-thisless interfaces, made in `make_declared`. The binder needs a type-meaning `this` for interfaces

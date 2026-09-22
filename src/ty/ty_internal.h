@@ -38,6 +38,9 @@ enum {
     KEY_MARKER,         // (declared type id, parameter index, which) -> marker instantiation
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
+    KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
+    KEY_LITERAL_CONTEXT, // Object literal Expr -> the contextual type it is being checked with (for `this` in methods)
+    KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
     KEY_ITERATION_TYPES, // (type id, which) -> TyIterationTypes, see iterate.c
     KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for

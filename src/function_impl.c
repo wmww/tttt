@@ -73,7 +73,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     function_scope->flow = &flow;
     function_scope->function = me;
 
-    if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY };
+    if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me };
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {

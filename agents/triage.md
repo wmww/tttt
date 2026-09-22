@@ -29,6 +29,10 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   lost their errors component to this once generators were typed (plan 09).
 - `expandoFunctionSymbolProperty`: `f[symb] = ...` on a function declaration isn't an expando property (only `f.x =`
   is?), so `f` misses `[symb]` (TS2741). Found by plan 09.
+- `silentNeverPropagation` (lost to plan 10 stage 2 when object literal methods became context sensitive, like in
+  tsc): `convert(createModule({ a: 12 }, { foo() { return true } }))` infers the inner TActions from the return type
+  context `ModuleWithState<{a}> & {foo(): boolean}` and fixes it before the method's own candidate is seen. tsc only
+  fixes what a contextual *signature's parameters* mention (the method has none).
 - `asyncYieldStarContextualType`: `promise.then(mapper)` with a generic `mapper` is higher-order inference (plan 11).
 - Late bound index signatures (TS 5.x): `[k]: T` in a class/interface with an entity-name key of type string/number/
   symbol is an index signature in tsc (getIndexInfosOfIndexSymbol); tttt drops the member (hacks.md "Computed member
@@ -40,7 +44,6 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   (no TS2341 in 36 tests, TS2445 22, TS2673/TS2674 8). `new C()` on a private constructor should be an error whose
   result is `any`: typesWithPrivateConstructor/typesWithProtectedConstructor lost their symbols component when
   `Object` members started resolving (`c.constructor` now finds `Object.constructor`, tsc has `any`), an honest loss.
-  Also `this` parameters: no contextual `this` from a contextual signature's `this` (getContextualThisParameterType).
 - **Writes to readonly properties aren't checked** (TS2540, see the count in the commit that added this line; readonly
   mapped types only became readonly with plan 08 session 3, so the flags are now there to check).
 - Spurious TS7022 on `const can = composite && o?.e && !out` when the type of `e` mentions an unresolved name (`Map`
@@ -151,8 +154,6 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   tsc's discriminated-union decomposition of the source (`typeRelatedToDiscriminatedType`).
 - Optional parameters print as `x?: T` in signatures; tsc prints `x?: T | undefined` under strictNullChecks (the
   annotation is reused and `| undefined` added synthetically: `TyDisplay.reused` can express that now).
-- Signatures don't print their `this` parameter (`method(this: C, q: string)` prints `(q: string) => void`; tsc
-  prints it). Found by plan 07's probes.
 - Union member order: tsc's order is type id order, literal types are made when the type node is first resolved;
   we lower annotations eagerly in a different order (`stringLiteralsWithEqualityChecks03`, `y: "p" | "q" | 1` as
   `1 | "p" | "q"`, `typeof x`'s union built on first use). Worth a failstats pass over diffs that differ only by

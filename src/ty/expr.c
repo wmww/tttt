@@ -419,6 +419,60 @@ Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* pa
     return intern_get(&my links, key, 2);
 }
 
+// tsc's ThisType<T> marker in a contextual type (getThisTypeFromContextualType): T, null if there's none
+static Ty const* this_type_marker(Checker* me, Ty const* contextual) {
+    if (contextual->kind == TY_UNION || contextual->kind == TY_INTERSECTION) {
+        TyBuf found = {0};
+        for (u32 i = 0; i < contextual->composite.types.len; i++) {
+            Ty const* part = this_type_marker(me, contextual->composite.types.data[i]);
+            if (part) {
+                ty_buf_push(&found, part);
+                if (contextual->kind == TY_INTERSECTION) break;
+            }
+        }
+        Ty const* ret = found.len ? ty_union(me, found.data, found.len, nullptr, (TyList){0}) : nullptr;
+        ty_buf_drop(&found);
+        return ret;
+    }
+    if (contextual->kind != TY_REFERENCE) return nullptr;
+    Symbol const* symbol = contextual->reference.target->declared.symbol;
+    if (!symbol || symbol->parent || !csview_equals(symbol->name, "ThisType")) return nullptr;
+    TyList args = ty_reference_args(me, contextual);
+    return args.len == 1 ? args.data[0] : nullptr;
+}
+
+// tsc's getContextualThisParameterType: what `this` is in a function expression or object literal method that doesn't
+// declare it. Null: nothing says (it's any)
+Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
+    u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
+    Ty const* from_signature = intern_get(&my links, this_key, 2);
+    if (from_signature) return from_signature;
+    if (!compiler_options()->no_implicit_this) return nullptr;
+    if (function->this_literal) {
+        Expr const* literal = function->this_literal;
+        u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)literal };
+        Ty const* contextual = intern_get(&my links, context_key, 2);
+        // A ThisType<T> marker in the contextual type of the literal or of the literals it is a property value of
+        // (tsc's getThisTypeOfObjectLiteral)
+        Expr const* outer = literal;
+        for (u32 depth = 0; outer && depth < 32; depth++) {
+            u64 key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)outer };
+            Ty const* outer_context = intern_get(&my links, key, 2);
+            if (!outer_context) break;
+            Ty const* marker = this_type_marker(me, ty_apparent_type(me, outer_context));
+            if (marker) return marker;
+            u64 parent_key[2] = { KEY_LITERAL_PARENT, (u64)(uintptr_t)outer };
+            outer = intern_get(&my links, parent_key, 2);
+        }
+        if (contextual) return ty_widened_for_declaration(me, ty_non_nullable(me, contextual), false);
+        return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
+    }
+    if (function->this_assigned_object) {
+        return ty_widened_for_declaration(me, ty_expr_type(me, function->this_assigned_object), true);
+    }
+    return nullptr;
+}
+
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function) {
     u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
     return intern_get(&my links, key, 2);
@@ -432,6 +486,10 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
     Signature const* sig = contextual_signature(me, contextual, function, 0);
     if (!sig) return;
     *intern_slot(me, &my links, done_key, 2) = sig;
+    if (sig->this_type) {
+        u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
+        *intern_slot(me, &my links, this_key, 2) = sig->this_type;
+    }
     u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
@@ -467,12 +525,19 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
 
 bool ty_expr_is_context_sensitive(Expr const* expr) {
     switch (expr->tag) {
-        case EXPR_FUNCTION:
-            if (vec_generic_item_size(&expr->function->generic.items)) return false;
-            for_each (i, vec_function_arg, &expr->function->args) {
+        case EXPR_FUNCTION: {
+            FunctionImpl const* function = expr->function;
+            if (vec_generic_item_size(&function->generic.items)) return false;
+            for_each (i, vec_function_arg, &function->args) {
                 if (!i->initializer.binding.has_explicit_type) return true;
             }
-            return false;
+            // A function expression's `this` is contextually typed too, unless it declares one (tsc's
+            // hasContextSensitiveParameters)
+            if (span_valid(function->arrow_span)) return false;
+            FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
+            return !(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
+                span_equals(first->initializer.binding.content_span, "this"));
+        }
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &expr->object) {
                 if (ty_expr_is_context_sensitive(&i->value)) return true;
@@ -499,10 +564,15 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     Symbol const* decl = identifier->target;
     switch (identifier->this_kind) {
         case THIS_NONE: break;
-        case THIS_ANY: return any_type(me);
+        case THIS_ANY: {
+            Ty const* contextual = identifier->this_function ? ty_contextual_this_type(me, identifier->this_function) : nullptr;
+            return contextual ? contextual : any_type(me);
+        }
         case THIS_PARAMETER: break;
         case THIS_CLASS_STATIC: return ty_static_type_of(me, decl);
         case THIS_INTERFACE: return any_type(me);
+        case THIS_GLOBAL: return my binder->global_this ? ty_type_of_symbol(me, my binder->global_this) : any_type(me);
+        case THIS_NAMESPACE: return any_type(me);
         case THIS_CLASS_INSTANCE: {
             // The class's `this` type (else the instance type, for a generic class applied to its own parameters)
             Ty const* declared = ty_declared_type_of(me, decl);
@@ -964,6 +1034,17 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (ctx.contextual && ctx.contextual->kind == TY_UNION) {
         ctx.contextual = discriminate_by_object_members(me, ctx.contextual, object);
     }
+    if (ctx.contextual) {
+        // What `this` in its methods goes by (ty_contextual_this_type())
+        u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)expr };
+        *intern_slot(me, &my links, context_key, 2) = ctx.contextual;
+    }
+    for_each (i, vec_object_expr_item, object) {
+        if (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_OBJECT) {
+            u64 parent_key[2] = { KEY_LITERAL_PARENT, (u64)(uintptr_t)&i->value };
+            *intern_slot(me, &my links, parent_key, 2) = expr;
+        }
+    }
     LiteralBuilder builder = {0};
     // Accessor pairs share a property: the declarations of both halves
     Span* accessor_spans = nullptr;
@@ -1034,19 +1115,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (key) member_context = contextual_prop_type(me, ctx.contextual, key);
         }
         ExprCtx member_ctx = { .contextual = member_context, .is_const = ctx.is_const };
-        Ty const* type;
+        Ty const* type = nullptr;
+        bool is_accessor = i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
         switch (i->tag) {
             case OBJECT_ITEM_GETTER:
-            case OBJECT_ITEM_SETTER: {
-                Signature const* sig = single_call_signature(me, ty_expr_type(me, &i->value));
-                if (!sig) {
-                    type = any_type(me);
-                } else if (i->tag == OBJECT_ITEM_GETTER) {
-                    type = widen_literals(me, signature_return_type(me, sig));
-                } else {
-                    type = sig->param_count ? sig->params[0].type : any_type(me);
-                }
-            }   break;
+            case OBJECT_ITEM_SETTER:
+                // Typed when asked (PROP_GETTER/PROP_SETTER), unless it's an index signature's
+                if (!name) type = ty_object_literal_accessor_type(me, i->value.function, i->tag == OBJECT_ITEM_GETTER);
+                break;
             case OBJECT_ITEM_METHOD:
                 type = check_with(me, &i->value, member_ctx);
                 break;
@@ -1076,15 +1152,17 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
 
         ObjectLiteralProp* existing = literal_builder_find(&builder, name);
-        bool is_accessor = i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER;
-        if (existing && is_accessor && existing->decl_span_count == 1) {
+        if (existing && is_accessor && existing->decl_span_count == 1 && existing->accessor) {
             // The other half of an accessor pair. The getter decides the type
             Span* both = arena_new_n(&my arena, Span, 2);
             both[0] = existing->decl_spans[0];
             both[1] = i->span;
             existing->decl_spans = both;
             existing->decl_span_count = 2;
-            if (i->tag == OBJECT_ITEM_GETTER) existing->type = type;
+            if (i->tag == OBJECT_ITEM_GETTER) {
+                existing->accessor = i->value.function;
+                existing->flags = (existing->flags & ~(u32)PROP_SETTER) | PROP_GETTER;
+            }
             continue;
         }
         TypeNode const* asserted = nullptr;
@@ -1097,11 +1175,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         *decl_span = i->span;
         u32 flags = 0;
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD;
+        if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER;
+        if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
         if (ctx.is_const) flags |= PROP_READONLY;
         literal_builder_add(&builder, (ObjectLiteralProp){
             .name = name,
             .flags = flags,
             .type = type,
+            .accessor = is_accessor ? i->value.function : nullptr,
             .name_span = i->name_span,
             .decl_spans = decl_span,
             .decl_span_count = 1,
@@ -1113,6 +1194,14 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const* ret = ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, true);
     free(builder.props);
     return ret;
+}
+
+Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* accessor, bool getter) {
+    Signature const* sig = single_call_signature(me, ty_function_type(me, accessor));
+    if (!sig) return any_type(me);
+    if (getter) return widen_literals(me, signature_return_type(me, sig));
+    signature_resolve(me, sig);
+    return sig->param_count ? sig->params[0].type : any_type(me);
 }
 
 Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectExprItem const* item) {
