@@ -81,6 +81,8 @@ typedef struct InitializedBinding {
     Expr value;
     bool abstract_literals;
     LazyType lazy_type;
+    // The unannotated parameter of a setter: the getter of the same property, whose return type it has
+    struct FunctionImpl const* getter;
 } InitializedBinding;
 
 void initialized_binding_drop(InitializedBinding* me);

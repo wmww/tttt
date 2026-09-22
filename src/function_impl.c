@@ -147,6 +147,15 @@ Ty const* function_impl_evaluate_type(FunctionImpl* me) {
     return ty_function_type(current_checker, me);
 }
 
+void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl const* getter) {
+    for_each (i, vec_function_arg, &setter->args) {
+        bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
+        if (is_this) continue;
+        if (!i->initializer.binding.has_explicit_type) i->initializer.getter = getter;
+        return;
+    }
+}
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     generic_typecheck(&my generic, errs);
 
@@ -265,7 +274,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         if (!i->initializer.binding.has_explicit_type &&
             i->initializer.value.tag == EXPR_IMPLICIT_ANY
         ) {
-            if (compiler_options()->no_implicit_any && !ty_contextual_parameter_type(current_checker, &i->initializer)) {
+            if (compiler_options()->no_implicit_any && !i->initializer.getter &&
+                !ty_contextual_parameter_type(current_checker, &i->initializer)
+            ) {
                 binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
             }
         }

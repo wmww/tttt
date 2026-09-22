@@ -243,7 +243,7 @@ const baselines = {
     'abstractPropertyBasics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'abstractPropertyInConstructor': {
         errors: false,
@@ -323,7 +323,7 @@ const baselines = {
     'accessorWithLineTerminator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorWithRestParam': {
         errors: false,
@@ -348,7 +348,7 @@ const baselines = {
     'accessorsInAmbientContext': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessors_spec_section-4.5_error-cases': {
         errors: false,
@@ -4703,7 +4703,7 @@ const baselines = {
     'commentOnClassAccessor2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnClassMethod1': {
         errors: true,
@@ -7511,22 +7511,22 @@ const baselines = {
         types: true,
     },
     'declarationEmitCastReusesTypeNode1(strictnullchecks=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitCastReusesTypeNode1(strictnullchecks=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitCastReusesTypeNode2(strictnullchecks=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitCastReusesTypeNode2(strictnullchecks=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7561,7 +7561,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitClassAccessorsJs1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -17438,7 +17438,7 @@ const baselines = {
     'inheritanceMemberAccessorOverridingMethod': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inheritanceMemberAccessorOverridingProperty': {
         errors: false,
@@ -32018,7 +32018,7 @@ const baselines = {
     'unusedPrivateMembers': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedPrivateMethodInClass1': {
         errors: false,
@@ -35063,7 +35063,7 @@ const baselines = {
     'classWithStaticMembers': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorHasPrototypeProperty': {
         errors: true,
@@ -35073,12 +35073,12 @@ const baselines = {
     'derivedClassFunctionOverridesBaseClassAccessor': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassIncludesInheritedMembers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassOverridesIndexersWithAssignmentCompatibility': {
         errors: true,
@@ -35148,22 +35148,22 @@ const baselines = {
     'derivedClassWithPrivateInstanceShadowingProtectedInstance': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassWithPrivateInstanceShadowingPublicInstance': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassWithPrivateStaticShadowingProtectedStatic': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedClassWithPrivateStaticShadowingPublicStatic': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'derivedGenericClassWithAny': {
         errors: false,
@@ -35558,7 +35558,7 @@ const baselines = {
     'privateNameClassExpressionLoop': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameComputedPropertyName1(target=es2015)': {
         errors: true,
@@ -36178,7 +36178,7 @@ const baselines = {
     'privateNamesIncompatibleModifiersJs': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNamesInterfaceExtendingClass': {
         errors: false,
@@ -36338,7 +36338,7 @@ const baselines = {
     'accessorsOverrideProperty2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorsOverrideProperty3': {
         errors: false,
@@ -36353,7 +36353,7 @@ const baselines = {
     'accessorsOverrideProperty5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorsOverrideProperty6': {
         errors: false,
@@ -36688,7 +36688,7 @@ const baselines = {
     'accessorWithMismatchedAccessibilityModifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'accessorsAreNotContextuallyTyped': {
         errors: true,
@@ -36793,7 +36793,7 @@ const baselines = {
     'propertyOverridesAccessors2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyOverridesAccessors3': {
         errors: false,
@@ -36898,7 +36898,7 @@ const baselines = {
     'twoAccessorsWithSameName2': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'staticIndexSignature1': {
         errors: false,
@@ -45906,19 +45906,19 @@ const baselines = {
         types: true,
     },
     'logicalAssignment11(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment11(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'logicalAssignment11(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiteralInference': {
         errors: true,
@@ -55693,7 +55693,7 @@ const baselines = {
     'parserMemberAccessor1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserMemberAccessorDeclaration1': {
         errors: true,
@@ -58278,7 +58278,7 @@ const baselines = {
     'constructorNameInObjectLiteralAccessor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypedSpecialAssignment': {
         errors: false,
@@ -58801,7 +58801,7 @@ const baselines = {
         types: false,
     },
     'thisPropertyAssignmentInherited': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -62533,12 +62533,12 @@ const baselines = {
     'classWithOnlyPublicMembersEquivalentToInterface': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classWithOnlyPublicMembersEquivalentToInterface2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classWithOptionalParameter': {
         errors: true,
@@ -62863,7 +62863,7 @@ const baselines = {
     'numericIndexerConstrainsPropertyDeclarations': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numericIndexerConstrainsPropertyDeclarations2': {
         errors: false,
@@ -62878,7 +62878,7 @@ const baselines = {
     'stringIndexerConstrainsPropertyDeclarations': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringIndexerConstrainsPropertyDeclarations2': {
         errors: false,
@@ -63771,7 +63771,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInObjectLiterals2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -370,8 +370,7 @@ static void expr_lookup_names_logical(Expr* me, Scope* names, ErrorCtx* errs, Fl
     }
     flow_set_current(flow, flow_finish_label(pre_right));
     if (is_assignment) {
-        flow->true_target = true_target;
-        flow->false_target = false_target;
+        // The right side is a logical expression of its own (tsc's isTopLevelLogicalExpression)
         expr_lookup_names(&my binary_op->right, names, errs);
         flow_assignment_target(flow, &my binary_op->left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });
         flow_add_conditions(flow, me, true_target, false_target);
@@ -647,6 +646,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
                     if (i->tag != OBJECT_ITEM_PROPERTY) i->value.function->member_name = i->name_span;
+                }
+                if (i->tag == OBJECT_ITEM_SETTER && !i->computed_key) {
+                    for_each (other, vec_object_expr_item, &my object) {
+                        if (other->tag == OBJECT_ITEM_GETTER && !other->computed_key && cstr_eq(&other->name_string, &i->name_string)) {
+                            function_impl_pair_setter(i->value.function, other->value.function);
+                            break;
+                        }
+                    }
                 }
                 flow->assignment_target = assignment_target; // A pattern: the values are the targets
                 expr_lookup_names(&i->value, names, errs);

@@ -91,5 +91,7 @@ Ty const* function_impl_evaluate_type(FunctionImpl* me);
 // What return expressions are contextually typed by. Returns the enclosing function's, to be put back
 Ty const* function_impl_enter_return_context(FunctionImpl const* me);
 // The checks on a parameter list. `is_type`: a function type or signature, which can't have initializers
+// A setter's unannotated parameter has the type the getter of the same property returns
+void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl const* getter);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

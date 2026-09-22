@@ -251,6 +251,9 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
 
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Checker* checker = current_checker;
+    if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type && my getter) {
+        return ty_function_return_type(checker, my getter);
+    }
     if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type) {
         // A parameter of a function expression gets its type from the contextual signature
         Ty const* contextual = ty_contextual_parameter_type(checker, me);

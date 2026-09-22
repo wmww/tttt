@@ -196,6 +196,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                     }
                     if (other->method.accessor == CLASS_ACCESSOR_GET && !i->method.accessor_getter) {
                         i->method.accessor_getter = other;
+                        if (i->method.accessor == CLASS_ACCESSOR_SET) function_impl_pair_setter(&i->method.func, &other->method.func);
                     }
                 }
             }
