@@ -220,7 +220,7 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Aliased conditions (`aliased_condition`, plan 08) only narrow identifier references (tsc also readonly properties).
 - Not there (each has a TODO in `flow.c`): destructured discriminants (`const { kind } = x`), `x.constructor === C`, `[Symbol.hasInstance]` predicates,
   `"a" in x` intersecting with `Record<"a", unknown>` when no member is known to have the property, `unknown`
-  narrowed by the cases of a `switch`, `switch (x?.kind)` removing nullish, inferred type predicates (tsc 5.5),
+  narrowed by the cases of a `switch`, inferred type predicates (tsc 5.5),
   the key property map tsc uses for big unions (`getKeyPropertyName()`: an optimisation, but it also changes which
   members `getNarrowedType()` starts from), erasure of generic construct signatures in `constructor_instance_type()`.
 - `narrowed_by_candidate_member()`: tsc tries the strict subtype relation, then the (non-strict) subtype relation.

@@ -1681,7 +1681,20 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
     } else if (needle->tag == EXPR_LITERAL && needle->literal.tag == VALUE_BOOLEAN && needle->literal.boolean) {
         type = narrow_by_switch_on_true(q, type, clause);
     } else {
-        // TODO: `switch (x?.kind)` says x isn't nullish in the cases that aren't `undefined`
+        // `switch (x?.kind)`: in clauses whose cases are all something other than undefined, x isn't nullish (tsc's
+        // narrowTypeBySwitchOptionalChainContainment)
+        if (compiler_options()->strict_null_checks && clause->clause_start != clause->clause_end &&
+            optional_chain_contains_reference(me, needle, q->reference)
+        ) {
+            TyBuf switch_types = {0};
+            switch_clause_types(me, clause->switch_, &switch_types);
+            bool every = true;
+            for (u32 i = clause->clause_start; i < clause->clause_end; i++) {
+                every &= !(switch_types.data[i]->flags & (TYF_UNDEFINED | TYF_NEVER));
+            }
+            ty_buf_drop(&switch_types);
+            if (every) type = type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
+        }
         PropertyExpr const* access = discriminant_access(q, needle, type);
         if (access) type = narrow_by_discriminant(q, type, access, narrow_prop_by_switch, clause);
     }
