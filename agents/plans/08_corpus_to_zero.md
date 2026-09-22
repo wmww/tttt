@@ -60,9 +60,9 @@ What is left (203), by root cause, biggest first:
   `unknown` (`arrayFrom(map.values())`, for-of over `Set`/`Map`/`Iterable<T>`, destructuring iterables). Also the
   `TS7006 key` in builder.ts (arrayFrom) and `TS2365` in executeCommandLine.ts (reduceLeftIterator).
 - **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`,
-  plus the nodeFactory.ts/parenthesizerRules.ts object-literal-with-generic-methods TS2322s): plan 10.
-- **`this` types** (TS7022 13; resolutionCache.ts `perFileCache.set(...).get(...)` TS7006 x3): plan 09 or its own.
-- **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): plan 10.
+  plus the nodeFactory.ts/parenthesizerRules.ts object-literal-with-generic-methods TS2322s): plan 11 (sketch).
+- **`this` types** (TS7022 13; resolutionCache.ts `perFileCache.set(...).get(...)` TS7006 x3): plan 10.
+- **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): plan 11 (sketch).
 - Unexplored singles (~25): substitution types (TS2370 x4 in @types/node events.d.ts, `(...args: T[K]) => void` in
   the true branch of `T[K] extends unknown[]`, triage.md); `Mutable<T>`/`T & {...}` generic relations in nodeFactory.ts
   5073-7176; NodeArray<Node> vs NodeArray<ModifierLike> (parser.ts 3557/7976/9676, checker.ts 7968/50523: likely a

@@ -116,7 +116,9 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 3b. ~~Persistent symbols / new binder (plan 04)~~ done, then bind-time flow graph + narrowing (plan 05).
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
-4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison.
+4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison. What
+   plan 08's loop can't do is category-sized and planned: iteration protocol + unique symbols + generators (plan 09),
+   `this` types (plan 10), fresh literals + higher-order generic inference (plan 11, a sketch).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.

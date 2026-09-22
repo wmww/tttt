@@ -22,10 +22,7 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   triage after plan 06). parserGreaterThanTokenAmbiguity12-19 (`1 >> = 2` parses as an assignment and gets TS2364)
   and restParamModifier (TS1014 on top of tsc's error) regressed honestly. tsc's baseline for a file with syntax
   errors includes its type errors, so recovery has to produce the same AST shape.
-- **Iteration protocol.** `for (x of iterable)` gives TS2495 for anything that isn't an array or string (`for-of13`,
-  147 in the corpus at last count), `Array.from(map.keys())` is `unknown[]`, array destructuring of iterables:
-  needs `[Symbol.iterator]()` through well-known symbol property names, and unique symbols for `[Symbol.iterator]()
-  {}` computed members (today they go through `InterfaceMember`/`INTERFACE_KEY_EXPR`, print as `() => any`).
+- **Iteration protocol, unique symbols, generators**: `plans/09_iteration_protocol.md`.
 - **Member accessibility is not checked at all**: `private`/`protected` members and constructors are ordinary ones
   (no TS2341 in 36 tests, TS2445 22, TS2673/TS2674 8). `new C()` on a private constructor should be an error whose
   result is `any`: typesWithPrivateConstructor/typesWithProtectedConstructor lost their symbols component when
@@ -40,10 +37,7 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   tsc knows `T[K]` is an array (getSubstitutionType / getImpliedConstraint); tttt reports TS2370 there (@types/node
   events.d.ts x4 in the corpus) and presumably mis-relates such types elsewhere. Category-sized-ish: needs a Ty kind
   or a flag on indexed/type-param references made in a conditional's true branch.
-- **`this` types**: ~242 types baselines fail *only* on `this` lines, 969 have some (measured 2026-09-22 by comparing
-  dumps: `>this : this` 5148 times). `this` inside methods prints as `C` (tsc: `this`), `m.set("a", 1)` on a `Map` returns the
-  error type instead of the map, `xs.slice().sort()` in for-of gives TS7022 (12 in the corpus), intersections and
-  fluent classes (intersectionThisTypes, fluentClasses). Needs the `this` type parameter of classes/interfaces.
+- **`this` types**: `plans/10_this_types.md`.
 - **Target-gated diagnostics** now possible (`compiler_options()->target` exists): TS18028 (private identifiers <
   ES2015), TS2705/TS2468 (async needs `Promise`), TS1375/TS1378 (top-level await), TS2802 (iteration needs
   `downlevelIteration`), TS1056 (accessors, ES3), TS2583/TS2584/TS2580/TS2582/TS2581 "Cannot find name" flavours
@@ -81,8 +75,8 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   contextual self-references can still overflow the stack).
 - `super.x` is `any`: `super` has no target symbol and no type (`super.throw()` isn't a never call).
 - Relations ignore symbol-keyed members: `{ length: unknown }` is a strict subtype of `Iterable<any>`
-  (typeGuardNarrowByUntypedField).
-- No fresh/regular literal types: `[x]` with `x: string | false` gives `(string | boolean)[]`
+  (typeGuardNarrowByUntypedField). Plan 09 stage 1.
+- No fresh/regular literal types (plan 11 sketch): `[x]` with `x: string | false` gives `(string | boolean)[]`
   (spreadBooleanRespectsFreshness); a union filtered to the members of an alias prints `string | false` where tsc
   says `FooBase`.
 - Type predicates: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
