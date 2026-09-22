@@ -220,6 +220,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_SYMBOL:
+        case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
             break;
 
@@ -519,9 +520,11 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .declarations = declarations,
                 .namespaces = vec_span_single(class_name),
                 .span = my method.name_span,
-                .name_is_value = my method.name_is_value,
+                .name = my method.computed_key ? my method.computed_key->outer_span : span_null,
+                .name_is_value = my method.name_is_value || my method.computed_key,
             });
             baseline_test_case_add_type(ctx, my method.name_span, optional_member_type(class_item_get_type(me), my method.is_optional));
+            if (my method.computed_key) expr_compile_test_info(my method.computed_key, ctx);
             function_impl_compile_test_info(&my method.func, ctx);
         }   break;
 
@@ -530,9 +533,11 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .declarations = vec_span_single(my span),
                 .namespaces = vec_span_single(class_name),
                 .span = my field.name_span,
-                .name_is_value = my field.name_is_value,
+                .name = my field.computed_key ? my field.computed_key->outer_span : span_null,
+                .name_is_value = my field.name_is_value || my field.computed_key,
             });
             baseline_test_case_add_type(ctx, my field.name_span, optional_member_type(class_item_get_type(me), my field.is_optional));
+            if (my field.computed_key) expr_compile_test_info(my field.computed_key, ctx);
 
             if (my field.has_explicit_type) {
                 type_compile_test_info(&my field.explicit_type, ctx);

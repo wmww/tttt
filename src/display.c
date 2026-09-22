@@ -547,6 +547,7 @@ static void display_type_inner(Display d, TypeNode const* me) {
         case TYPE_NUMBER: display_colored(d, color_type, "number"); break;
         case TYPE_STRING: display_colored(d, color_type, "string"); break;
         case TYPE_SYMBOL: display_colored(d, color_type, "symbol"); break;
+        case TYPE_UNIQUE_SYMBOL: display_colored(d, color_type, "unique symbol"); break;
         case TYPE_BIGINT: display_colored(d, color_type, "bigint"); break;
 
         case TYPE_VALUE:

@@ -23,6 +23,7 @@ enum {
     KEY_INDEXED,
     KEY_CONDITIONAL,
     KEY_ANONYMOUS_INSTANCE,
+    KEY_UNIQUE_SYMBOL,
     // First word of every key in Checker.links
     KEY_TYPE_PARAM,     // Symbol -> Ty
     KEY_SYMBOL_LINKS,   // Symbol -> SymbolLinks
@@ -38,6 +39,7 @@ enum {
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
+    KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c

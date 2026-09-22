@@ -311,6 +311,40 @@ Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol c
     return *slot;
 }
 
+Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl) {
+    if (!decl->key) return my intrinsics[TY_ES_SYMBOL];
+    u64 key[2] = { KEY_UNIQUE_SYMBOL, (u64)(uintptr_t)decl->key };
+    void const** slot = intern_slot(me, &my types, key, 2);
+    if (!*slot) {
+        Ty* ret = ty_alloc(me, TY_LITERAL, TYF_UNIQUE_ES_SYMBOL);
+        ret->literal.value = (Value){ .tag = VALUE_UNDEFINED };
+        ret->literal.unique = decl;
+        csview name = span_valid(decl->member) ? decl->member.sv : decl->owner ? decl->owner->name : c_sv("");
+        cstr escaped = cstr_d("__@", name, "@", ret->id);
+        ret->literal.string = checker_atom(me, cstr_sv(&escaped));
+        cstr_drop(&escaped);
+        *slot = ret;
+        u64 name_key[2] = { KEY_UNIQUE_SYMBOL_NAME, (u64)(uintptr_t)ret->literal.string };
+        *intern_slot(me, &my links, name_key, 2) = ret;
+    }
+    return *slot;
+}
+
+Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty) {
+    if (ty->flags & TYF_UNIQUE_ES_SYMBOL) return my intrinsics[TY_ES_SYMBOL];
+    if (ty->kind == TY_UNION) {
+        bool any = false;
+        for (u32 i = 0; i < ty->composite.types.len; i++) any |= (ty->composite.types.data[i]->flags & TYF_UNIQUE_ES_SYMBOL) != 0;
+        if (!any) return ty;
+        TyBuf buf = {0};
+        for (u32 i = 0; i < ty->composite.types.len; i++) ty_buf_push(&buf, ty_widened_unique_symbol(me, ty->composite.types.data[i]));
+        Ty const* ret = ty_union(me, buf.data, buf.len, nullptr, (TyList){0});
+        ty_buf_drop(&buf);
+        return ret;
+    }
+    return ty;
+}
+
 Ty const* ty_string_literal(Checker* me, csview sv) {
     Value value = { .tag = VALUE_STRING, .string = cstr_from_sv(sv) };
     Ty const* ret = ty_literal(me, &value);
@@ -400,7 +434,8 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
             if (t->kind == TY_LITERAL && (
                 ((t->flags & TYF_STRING_LITERAL) && (includes & TYF_STRING)) ||
                 ((t->flags & TYF_NUMBER_LITERAL) && (includes & TYF_NUMBER)) ||
-                ((t->flags & TYF_BIGINT_LITERAL) && (includes & TYF_BIGINT))
+                ((t->flags & TYF_BIGINT_LITERAL) && (includes & TYF_BIGINT)) ||
+                ((t->flags & TYF_UNIQUE_ES_SYMBOL) && (includes & TYF_ES_SYMBOL))
             )) continue;
             buf.data[out++] = t;
         }
@@ -426,6 +461,7 @@ static u32 primitive_family(Ty const* t) {
     if (t->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL)) return TYF_NUMBER;
     if (t->flags & (TYF_BIGINT | TYF_BIGINT_LITERAL)) return TYF_BIGINT;
     if (t->flags & TYF_BOOLEAN_LITERAL) return TYF_BOOLEAN_LITERAL;
+    if (t->flags & TYF_UNIQUE_ES_SYMBOL) return TYF_ES_SYMBOL;
     return t->flags & (TYF_ES_SYMBOL | TYF_VOID | TYF_UNDEFINED | TYF_NULL);
 }
 
@@ -766,8 +802,15 @@ static Ty const* intern_deferred(Checker* me, u64 const* key, u32 count, TyKind 
     return *slot;
 }
 
-static Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
-    return ty_string_literal(me, atom_sv(name));
+Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
+    Ty const* unique = ty_unique_symbol_of_name(me, name);
+    return unique ? unique : ty_string_literal(me, atom_sv(name));
+}
+
+Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name) {
+    if (name->len < 4 || memcmp(name->str, "__@", 3) != 0) return nullptr;
+    u64 key[2] = { KEY_UNIQUE_SYMBOL_NAME, (u64)(uintptr_t)name };
+    return intern_get(&my links, key, 2);
 }
 
 Ty const* ty_keyof(Checker* me, Ty const* operand) {

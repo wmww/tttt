@@ -6,6 +6,7 @@
 #include "callable_type.h"
 #include "function_impl.h"
 #include "ty/ty.h"
+#include "flow.h"
 
 void interface_member_drop(InterfaceMember* me) {
     vec_span_drop(&my declarations);
@@ -28,6 +29,11 @@ void interface_member_drop(InterfaceMember* me) {
 }
 
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
+    // `readonly k: unique symbol`. The owner is set by the interface declaration, if there is one
+    if (my type.tag == TYPE_UNIQUE_SYMBOL && my readonly && my key.tag == INTERFACE_KEY_NAME) {
+        my type.unique_symbol.key = me;
+        my type.unique_symbol.member = my key.span;
+    }
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: break;
         case INTERFACE_KEY_INDEX: type_lookup_names(&my key.index.type, names, errs); break;
@@ -63,8 +69,11 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
 
         case INTERFACE_KEY_EXPR:
             Ty const* key_type = expr_get_type(my key.expr.ref);
-            // `unique symbol` is parsed as plain symbol, and an any key is never an error
-            if (!(key_type->flags & (TYF_LITERAL | TYF_ENUM | TYF_NULLABLE | TYF_ANY | TYF_ES_SYMBOL))) {
+            // tsc's checkGrammarForInvalidDynamicName: a key that isn't a literal or unique symbol type is only an error if
+            // it isn't an entity name either (those are late bound index signatures). An any key is never an error
+            if (!(key_type->flags & (TYF_LITERAL | TYF_ENUM | TYF_NULLABLE | TYF_ANY | TYF_UNIQUE_ES_SYMBOL)) &&
+                !expr_is_entity_name(my key.expr.ref)
+            ) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&

@@ -126,12 +126,14 @@ typedef enum TyFlags {
     TYF_INTERSECTION    = 1 << 20,
     TYF_DEFERRED        = 1 << 21, // keyof, indexed access, conditional
     TYF_ENUM            = 1 << 22, // an enum member without a constant value (tsc's computed enum type), TY_LITERAL
+    TYF_UNIQUE_ES_SYMBOL = 1 << 23, // `unique symbol`, one per declaration: TY_LITERAL with `literal.unique`
     // Cached facts
     TYF_ERROR                        = 1 << 24, // the `any` that stands for "an error was already reported"
     TYF_COULD_CONTAIN_TYPE_VARIABLES = 1 << 25, // if unset, instantiate() is the identity
     TYF_FRESH_LITERAL                = 1 << 26, // TODO: fresh/regular literal pairs for widening
 
     TYF_NULLABLE = TYF_UNDEFINED | TYF_NULL,
+    TYF_ES_SYMBOL_LIKE = TYF_ES_SYMBOL | TYF_UNIQUE_ES_SYMBOL,
     TYF_LITERAL = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL,
 } TyFlags;
 
@@ -204,6 +206,9 @@ struct Ty {
             // value isn't constant has TYF_ENUM instead of a literal flag, and no value
             Symbol const* enum_decl;
             Symbol const* enum_member;
+            // Unique symbols (TYF_UNIQUE_ES_SYMBOL): the declaration. `string` is the escaped property name its
+            // members are keyed by (tsc's `__@name@id`)
+            UniqueSymbolDecl const* unique;
         } literal;
         struct {
             Symbol const* symbol; // null for synthesized ones
@@ -573,6 +578,12 @@ Ty const* ty_literal(Checker* me, Value const* value);
 Ty const* ty_enum_literal(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_enum_computed_member(Checker* me, Symbol const* enum_decl, Symbol const* member);
 Ty const* ty_string_literal(Checker* me, csview sv);
+Ty const* ty_unique_symbol(Checker* me, UniqueSymbolDecl const* decl); // `symbol` if decl->key is null
+Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbol at a mutable location is `symbol`
+// The type of a property name as a key: the unique symbol a `[sym]` member is named by (null if it isn't one), else
+// the string literal
+Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name);
+Ty const* ty_prop_name_literal(Checker* me, Atom const* name);
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
@@ -813,8 +824,13 @@ typedef struct TyDisplay {
     // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
     // mentions them is reused inside of it
     TyList fresh_params;
+    // Print a unique symbol type as `unique symbol` rather than `typeof sym` (types baseline), unless `nested` in
+    // something other than a union (tsc's AllowUniqueESSymbolType)
+    bool unique_symbols;
+    bool nested;
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
+cstr ty_prop_name_cstr(Checker* me, Atom const* name); // As messages show it: `x`, `[Symbol.iterator]`

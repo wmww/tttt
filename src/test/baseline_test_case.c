@@ -1085,7 +1085,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
     cstr rendered = cstr_null;
     cstr underline = cstr_null;
-    ty_display(current_checker, (TyDisplay){ .target = &rendered, .enclosing = my enclosing, .underline = &underline }, type);
+    ty_display(current_checker, (TyDisplay){ .target = &rendered, .enclosing = my enclosing, .underline = &underline, .unique_symbols = true }, type);
     add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
     c_drop(cstr, &rendered, &underline);
 }

@@ -227,7 +227,19 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
     binding_add_names(&my binding, &my lazy_type, scope, props);
 }
 
+// A `const` declaration of a variable can have a unique symbol type: its annotation and a `Symbol()` initializer say so
+void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* initializer) {
+    if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL) annotation->unique_symbol = decl;
+    if (initializer && initializer->tag == EXPR_CALL && !initializer->call->uses_new) initializer->call->unique_symbol = decl;
+}
+
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
+    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && my binding.symbol->is_const) {
+        unique_symbol_decl_mark(
+            (UniqueSymbolDecl){ .key = my binding.symbol, .owner = my binding.symbol },
+            &my binding.explicit_type, &my value
+        );
+    }
     binding_lookup_names(&my binding, names, errs);
     expr_lookup_names(&my value, names, errs);
     if (my value.tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
@@ -271,6 +283,10 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     }
     if (!my binding.has_explicit_type) {
         ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
+        // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
+        if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != symbol) {
+            ret = ty_intrinsic(checker, TY_ES_SYMBOL);
+        }
     }
     return ret;
 }

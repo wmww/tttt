@@ -1340,7 +1340,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     } else if (parse_inferred_type(&p, &parsed.inferred)) {
         *ret = type_inferred(c_new(InferredType, parsed.inferred));
     } else if (parse_unique_symbol_type(&p)) {
-        *ret = type_symbol;
+        *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){
@@ -2528,6 +2528,37 @@ static bool is_construct_signature_start(const char* pos) {
     return *pos == '(' || *pos == '<';
 }
 
+// tsc's isUnambiguouslyIndexSignature: `[x:`, `[x,`, `[x?:`, `[x?,`, `[x?]`
+static bool is_index_signature_start(const char* pos) {
+    if (*pos++ != '[') return false;
+    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
+    if (!is_identifier_start_char(*pos)) return false;
+    while (is_identifier_char(*pos)) pos++;
+    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
+    if (*pos == ':' || *pos == ',') return true;
+    if (*pos != '?') return false;
+    pos++;
+    while (*pos == ' ' || *pos == '\t' || *pos == '\n' || *pos == '\r') pos++;
+    return *pos == ':' || *pos == ',' || *pos == ']';
+}
+
+// The `[k]` of a class member
+static bool parse_class_computed_key(Parser* parent, Expr** ret) {
+    Parser p = parser(parent);
+    if (*p.pos != '[' || is_index_signature_start(p.pos)) return parse_fail(&p);
+    p.pos++;
+    hop_whitespace(&p);
+    Expr key;
+    if (!parse_expr(&p, expr_ctx_null, &key)) return parse_fail(&p);
+    hop_whitespace(&p);
+    if (!hop_char(&p, ']')) {
+        expr_drop(&key);
+        return parse_fail(&p);
+    }
+    *ret = c_new(Expr, key);
+    return parse_success(&p);
+}
+
 static bool parse_class_item(Parser* parent, bool is_type, bool is_abstract, ClassItem* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
@@ -2569,9 +2600,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     Span name_span;
     cstr name_string;
     bool name_is_value;
+    Expr* computed_key = nullptr;
+    Anchor name_anchor = anchor(&p);
     if (!is_type && *p.pos == '#' && is_identifier_start_char(p.pos[1])) {
         // Private name, the `#` is part of the name
-        Anchor name_anchor = anchor(&p);
         p.pos++;
         Span ignored;
         parse_identifier_or_keyword(&p, &ignored);
@@ -2582,6 +2614,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         // `new (...): T` / `new <T>(...): T` is a construct signature, not a method called `new`
         name_span = span_null;
         name_string = cstr_null;
+        name_is_value = false;
+    } else if (!is_type && parse_class_computed_key(&p, &computed_key)) {
+        // `[k]: T = x`, `[k]() {}`: the name is the key's source text, see ClassItem
+        name_span = span_from(name_anchor);
+        name_string = cstr_from_span(name_span);
         name_is_value = false;
     } else if (!parse_name_or_value(&p, &name_span, &name_string, &name_is_value)) {
         name_span = span_null;
@@ -2646,6 +2683,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     .name_span = name_span,
                     .is_optional = optional,
                     .name_is_value = name_is_value,
+                    .computed_key = computed_key,
                     .func = func,
                     .accessor = is_getter ? CLASS_ACCESSOR_GET : (is_setter ? CLASS_ACCESSOR_SET : CLASS_ACCESSOR_NONE),
                 }
@@ -2663,6 +2701,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
                     .name_is_value = name_is_value,
+                    .computed_key = computed_key,
                 }
             };
 

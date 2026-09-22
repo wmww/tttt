@@ -264,7 +264,7 @@ static u32 type_facts(Checker* me, Ty const* ty, u32 mask) {
         return TF_TYPEOF_EQ_OBJECT | (TF_ALL_TYPEOF_NE & ~TF_TYPEOF_NE_OBJECT) | TF_EQ_NULL | TF_EQ_UNDEFINED_OR_NULL |
             TF_NE_UNDEFINED | TF_FALSY | TF_IS_NULL;
     }
-    if (flags & TYF_ES_SYMBOL) {
+    if (flags & TYF_ES_SYMBOL_LIKE) {
         u32 facts = TF_TYPEOF_EQ_SYMBOL | (TF_ALL_TYPEOF_NE & ~TF_TYPEOF_NE_SYMBOL) | TF_NOT_NULLISH | TF_TRUTHY;
         return strict ? facts : facts | TF_MAYBE_NULLISH;
     }
@@ -930,7 +930,7 @@ static bool is_literal_type(Ty const* ty) {
 }
 
 static Ty const* prop_type_by_name(Checker* me, Ty const* ty, Atom const* name) {
-    return ty_access(me, ty, ty_string_literal(me, atom_sv(name)));
+    return ty_access(me, ty, ty_prop_name_literal(me, name));
 }
 
 // tsc's isDiscriminantProperty(): the members of the union have different types for it, a literal type among them
@@ -1540,7 +1540,7 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
         readonly = prop.found && (prop.flags & PROP_READONLY);
     }
     if (!readonly) return nullptr;
-    Ty const* type = ty_access(me, object, ty_string_literal(me, atom_sv(name)));
+    Ty const* type = ty_access(me, object, ty_prop_name_literal(me, name));
     return type ? type : ty_intrinsic(me, TY_UNKNOWN_);
 }
 

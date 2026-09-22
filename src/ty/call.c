@@ -188,7 +188,7 @@ static bool has_primitive_constraint(Checker* me, Ty const* param) {
     if (constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < constraint->composite.types.len; i++) {
             Ty const* part = constraint->composite.types.data[i];
-            if ((part->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
+            if ((part->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
                 part->kind == TY_KEYOF
             ) {
                 return true;
@@ -196,7 +196,7 @@ static bool has_primitive_constraint(Checker* me, Ty const* param) {
         }
         return (constraint->flags & TYF_BOOLEAN) != 0;
     }
-    return (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
+    return (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM)) ||
         constraint->kind == TY_KEYOF;
 }
 

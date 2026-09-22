@@ -86,6 +86,7 @@ typedef struct InitializedBinding {
 } InitializedBinding;
 
 void initialized_binding_drop(InitializedBinding* me);
+void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* initializer);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs);
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs);

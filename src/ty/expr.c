@@ -151,7 +151,7 @@ static Ty const* widen_enum_literals(Checker* me, Ty const* ty) {
 }
 
 static Ty const* widen_literals(Checker* me, Ty const* ty) {
-    return widen_enum_literals(me, ty_widened_literal(me, ty));
+    return ty_widened_unique_symbol(me, widen_enum_literals(me, ty_widened_literal(me, ty)));
 }
 
 // Without strictNullChecks `null` and `undefined` widen to `any`
@@ -256,7 +256,8 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
         if (!constraint || constraint == contextual) return false;
         if (constraint->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_BOOLEAN | TYF_ES_SYMBOL)) {
             u32 f = literal->flags;
-            return ((constraint->flags & TYF_STRING) && (f & TYF_STRING_LITERAL)) ||
+            return ((constraint->flags & TYF_ES_SYMBOL) && (f & TYF_UNIQUE_ES_SYMBOL)) ||
+                ((constraint->flags & TYF_STRING) && (f & TYF_STRING_LITERAL)) ||
                 ((constraint->flags & TYF_NUMBER) && (f & TYF_NUMBER_LITERAL)) ||
                 ((constraint->flags & TYF_BIGINT) && (f & TYF_BIGINT_LITERAL)) ||
                 ((constraint->flags & TYF_BOOLEAN) && (f & TYF_BOOLEAN_LITERAL));
@@ -264,6 +265,7 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
         return is_literal_of_contextual_type(me, literal, constraint, depth + 1);
     }
     if (contextual->kind == TY_KEYOF) return (literal->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) != 0;
+    if ((contextual->flags & TYF_ES_SYMBOL_LIKE) && (literal->flags & TYF_UNIQUE_ES_SYMBOL)) return true;
     u32 kinds = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL;
     return contextual->kind == TY_LITERAL && (contextual->flags & literal->flags & kinds) != 0;
 }
@@ -830,7 +832,7 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
 
 Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number) {
     if (key->kind != TY_LITERAL || (key->flags & TYF_ENUM)) return nullptr;
-    if (key->flags & TYF_STRING_LITERAL) return key->literal.string;
+    if (key->flags & (TYF_STRING_LITERAL | TYF_UNIQUE_ES_SYMBOL)) return key->literal.string;
     if (!(key->flags & TYF_NUMBER_LITERAL)) return nullptr;
     cstr rendered = cstr_null;
     cstr_append_value_js(&rendered, &key->literal.value);
@@ -843,7 +845,7 @@ Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number)
 typedef struct LiteralBuilder {
     ObjectLiteralProp* props;
     u32 count, cap;
-    IndexInfo index[2];
+    IndexInfo index[3];
     u32 index_count;
 } LiteralBuilder;
 
@@ -899,7 +901,7 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
     if (types.len > 64) return contextual;
     // 0: excluded, 1: maybe, 3: included
     unsigned char include[64];
-    u32 const primitive = TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL | TYF_BOOLEAN | TYF_LITERAL | TYF_ENUM |
+    u32 const primitive = TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_BOOLEAN | TYF_LITERAL | TYF_ENUM |
         TYF_NULLABLE | TYF_VOID;
     for (u32 i = 0; i < types.len; i++) include[i] = types.data[i]->flags & primitive ? 0 : 3;
     for_each (item, vec_object_expr_item, object) {
@@ -909,7 +911,7 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
         Atom const* name = checker_atom(me, cstr_sv(&item->name_string));
         if (!ty_is_discriminant_property(me, contextual, name)) continue;
         Ty const* value = ty_expr_type(me, &item->value);
-        Ty const* key = ty_string_literal(me, atom_sv(name));
+        Ty const* key = ty_prop_name_literal(me, name);
         bool matched = false;
         for (u32 i = 0; i < types.len; i++) {
             if (!include[i]) continue;
@@ -1011,7 +1013,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // The type
         Ty const* member_context = nullptr;
         if (ctx.contextual) {
-            Ty const* key = name ? ty_string_literal(me, atom_sv(name)) : key_type;
+            Ty const* key = name ? ty_prop_name_literal(me, name) : key_type;
             if (key) member_context = contextual_prop_type(me, ctx.contextual, key);
         }
         ExprCtx member_ctx = { .contextual = member_context, .is_const = ctx.is_const };
@@ -1037,10 +1039,11 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
 
         if (!name) {
-            // A key that's only known to be some string or number becomes an index signature. TODO: unique symbol
-            // keys and unions of literals, for now the member is left out of the type
-            if (!(key_type->flags & (TYF_STRING | TYF_NUMBER | TYF_ANY))) continue;
-            Ty const* index_key = ty_intrinsic(me, key_type->flags & TYF_NUMBER ? TY_NUMBER : TY_STRING);
+            // A key that's only known to be some string, number or symbol becomes an index signature. TODO: unions of
+            // literals, for now the member is left out of the type
+            if (!(key_type->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL | TYF_ANY))) continue;
+            Ty const* index_key = ty_intrinsic(me,
+                key_type->flags & TYF_NUMBER ? TY_NUMBER : key_type->flags & TYF_ES_SYMBOL ? TY_ES_SYMBOL : TY_STRING);
             IndexInfo* existing = nullptr;
             for (u32 j = 0; j < builder.index_count; j++) {
                 if (builder.index[j].key == index_key) existing = &builder.index[j];
@@ -1270,12 +1273,25 @@ static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is
     return object;
 }
 
+// `Symbol()` or `Symbol.for()` with the global `Symbol` (tsc's isSymbolOrSymbolForCall)
+static bool is_symbol_call(Checker* me, CallExpr const* call) {
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
+    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(callee->identifier.name.sv, "Symbol")) return false;
+    Symbol const* global = program_get_global(my program, c_sv("Symbol"), SYMBOL_VALUE);
+    return global && binder_redirect(my binder, callee->identifier.target) == global;
+}
+
 static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
+    // The initializer of a `const` (or a `static readonly` property) makes a new unique symbol
+    if (call->unique_symbol.key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {
+        ret = ty_unique_symbol(me, &call->unique_symbol);
+    }
     return optional ? optional_type(me, ret) : ret;
 }
 

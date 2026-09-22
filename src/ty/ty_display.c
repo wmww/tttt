@@ -188,7 +188,55 @@ static bool is_numeric_name(csview sv) {
     return sv.size == 1 || sv.buf[0] != '0';
 }
 
-static void display_prop_name(TyDisplay d, Atom const* name) {
+// How a unique symbol is written as an expression: `sym`, `C.key`, `Symbol.iterator`
+static void out_unique_symbol_name(Checker* me, TyDisplay d, UniqueSymbolDecl const* decl) {
+    Symbol const* owner = decl->owner;
+    if (!span_valid(decl->member)) {
+        if (owner) out_symbol_name(me, d, owner, SYMBOL_VALUE);
+        return;
+    }
+    if (owner && (owner->flags & SYMBOL_INTERFACE)) {
+        // A member of `SymbolConstructor` is reached through the global variable of that type, `Symbol`. HACK: tsc
+        // finds any variable whose type is the interface (getSymbolChain), this only knows the `XConstructor` pattern
+        csview name = owner->name;
+        isize_t suffix = (isize_t)strlen("Constructor");
+        if (name.size > suffix && !owner->parent && csview_ends_with(name, "Constructor")) {
+            csview value_name = csview_from_n(name.buf, name.size - suffix);
+            if (program_get_global(my program, value_name, SYMBOL_VALUE)) {
+                out(d, value_name);
+                out_lit(d, ".");
+                out(d, decl->member.sv);
+                return;
+            }
+        }
+    }
+    if (owner) {
+        out_symbol_name(me, d, owner, SYMBOL_VALUE);
+        out_lit(d, ".");
+    }
+    out(d, decl->member.sv);
+}
+
+static void display_prop_name(Checker* me, TyDisplay d, Atom const* name);
+
+cstr ty_prop_name_cstr(Checker* me, Atom const* name) {
+    cstr ret = cstr_null;
+    if (ty_unique_symbol_of_name(me, name)) {
+        display_prop_name(me, (TyDisplay){ .target = &ret }, name);
+    } else {
+        cstr_append_sv(&ret, atom_sv(name));
+    }
+    return ret;
+}
+
+static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
+    Ty const* unique = ty_unique_symbol_of_name(me, name);
+    if (unique) {
+        out_lit(d, "[");
+        out_unique_symbol_name(me, d, unique->literal.unique);
+        out_lit(d, "]");
+        return;
+    }
     csview sv = atom_sv(name);
     if (is_identifier_name(sv) || is_numeric_name(sv)) {
         out(d, sv);
@@ -607,7 +655,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if (type_members && type_members->call_count && !type_members->prop_count) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
-                display_prop_name(d, prop->name);
+                display_prop_name(me, d, prop->name);
                 if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
                 display_signature(me, d, type_members->call[j], ": ", false);
                 out_lit(d, "; ");
@@ -615,7 +663,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             continue;
         }
         if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
-        display_prop_name(d, prop->name);
+        display_prop_name(me, d, prop->name);
         if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
         out_lit(d, ": ");
         // The annotation of a property signature unless instantiated, or the type assertion of an object literal's
@@ -625,7 +673,15 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             annotation = prop->node;
         }
-        ty_display(me, reused_if(d, annotation && (d.reused || reuses(me, d, annotation))), type);
+        TyDisplay prop_d = reused_if(d, annotation && (d.reused || reuses(me, d, annotation)));
+        // The property that declares a unique symbol shows it as one (tsc's serializeTypeForDeclaration)
+        if ((type->flags & TYF_UNIQUE_ES_SYMBOL) && prop->node && prop->node->tag == TYPE_UNIQUE_SYMBOL &&
+            prop->node->unique_symbol.key == type->literal.unique->key
+        ) {
+            prop_d.nested = false;
+            prop_d.reused = d.reused; // Printed, not reused: tsc doesn't reuse a `unique symbol` annotation
+        }
+        ty_display(me, prop_d, type);
         out_lit(d, "; ");
     }
     out_lit(d, "}");
@@ -721,6 +777,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
 
+    // `unique symbol` is only for the type itself and the members of a union: nested in anything else (a property, a
+    // parameter, a type argument) tsc prints `typeof sym`
+    bool unique_symbol = d.unique_symbols && !d.nested;
+    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) d.nested = true;
+
     // Widening only reaches through the structure of expression types (temporaries lowered from the legacy checker)
     if (d.widen_literals && !(ty->kind == TY_LITERAL || ty->kind == TY_UNION ||
         (ty->kind == TY_ANONYMOUS && !ty->anonymous.node && !ty->anonymous.overload_count && !ty->anonymous.target))
@@ -754,7 +815,15 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 ty_display(me, widened, ty_widened_literal(me, ty));
                 break;
             }
-            if (ty->literal.enum_decl) {
+            if (ty->flags & TYF_UNIQUE_ES_SYMBOL) {
+                // The types baseline says `unique symbol` (tsc's AllowUniqueESSymbolType), messages name the symbol
+                if (unique_symbol) {
+                    out_lit(d, "unique symbol");
+                } else {
+                    out_lit(d, "typeof ");
+                    out_unique_symbol_name(me, d, ty->literal.unique);
+                }
+            } else if (ty->literal.enum_decl) {
                 // The only member of an enum is the enum. TODO(fresh literals): tsc prints the *fresh* type of the
                 // expression `E.x` as `E.x` even then (error messages); `.types` baselines show the widened `E`
                 out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_TYPE);

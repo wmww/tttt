@@ -262,6 +262,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     if ((sf & TYF_NUMBER_LITERAL) && (tf & TYF_NUMBER)) return true;
     if ((sf & TYF_BIGINT_LITERAL) && (tf & TYF_BIGINT)) return true;
     if ((sf & TYF_BOOLEAN_LITERAL) && (tf & TYF_BOOLEAN)) return true;
+    if ((sf & TYF_UNIQUE_ES_SYMBOL) && (tf & TYF_ES_SYMBOL)) return true;
     if ((sf & TYF_UNDEFINED) && (tf & (TYF_UNDEFINED | TYF_VOID))) return true;
     if ((sf & TYF_NULL) && (tf & TYF_NULL)) return true;
     if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
@@ -380,7 +381,7 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         if (f & (TYF_STRING | TYF_STRING_LITERAL)) global = global_type(me, GLOBAL_STRING);
         else if (f & (TYF_NUMBER | TYF_NUMBER_LITERAL)) global = global_type(me, GLOBAL_NUMBER);
         else if (f & (TYF_BOOLEAN | TYF_BOOLEAN_LITERAL)) global = global_type(me, GLOBAL_BOOLEAN);
-        else if (f & TYF_ES_SYMBOL) global = global_type(me, GLOBAL_SYMBOL);
+        else if (f & TYF_ES_SYMBOL_LIKE) global = global_type(me, GLOBAL_SYMBOL);
         else if (f & (TYF_BIGINT | TYF_BIGINT_LITERAL)) global = global_type(me, GLOBAL_BIGINT);
         else if (f & TYF_NON_PRIMITIVE) global = global_type(me, GLOBAL_EMPTY_OBJECT);
         else return ty;
@@ -767,16 +768,19 @@ static Ternary props_related(
             cstr source_str = display_for_report(me, source, true);
             cstr target_str = display_for_report(me, target, false);
             if (missing_count == 1) {
+                cstr name = ty_prop_name_cstr(me, missing[0]);
                 report_line(st, 2741, cstr_d(
-                    "Property '", atom_sv(missing[0]), "' is missing in type '", source_str, "' but required in type '",
-                    target_str, "'."
+                    "Property '", name, "' is missing in type '", source_str, "' but required in type '", target_str, "'."
                 ));
+                cstr_drop(&name);
             } else {
                 cstr names = cstr_null;
                 u32 shown = missing_count > 4 ? 4 : missing_count;
                 for (u32 i = 0; i < shown; i++) {
                     if (i) cstr_append_lit(&names, ", ");
-                    cstr_append_sv(&names, atom_sv(missing[i]));
+                    cstr name = ty_prop_name_cstr(me, missing[i]);
+                    cstr_append_s(&names, name);
+                    cstr_drop(&name);
                 }
                 if (missing_count > 4) {
                     report_line(st, 2740, cstr_d(
@@ -813,11 +817,11 @@ static Ternary props_related(
             if (report) {
                 cstr source_str = display_for_report(me, source, true);
                 cstr target_str = display_for_report(me, target, false);
+                cstr name = ty_prop_name_cstr(me, target_prop->name);
                 report_line(st, 2327, cstr_d(
-                    "Property '", atom_sv(target_prop->name), "' is optional in type '", source_str,
-                    "' but required in type '", target_str, "'."
+                    "Property '", name, "' is optional in type '", source_str, "' but required in type '", target_str, "'."
                 ));
-                c_drop(cstr, &source_str, &target_str);
+                c_drop(cstr, &source_str, &target_str, &name);
             }
             return TERNARY_FALSE;
         }
@@ -834,7 +838,9 @@ static Ternary props_related(
         Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
             if (report) {
-                report_line(st, 2326, cstr_d("Types of property '", atom_sv(target_prop->name), "' are incompatible."));
+                cstr name = ty_prop_name_cstr(me, target_prop->name);
+                report_line(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
+                cstr_drop(&name);
             }
             return TERNARY_FALSE;
         }
@@ -882,17 +888,19 @@ static Ternary index_signatures_related(Checker* me, RelationState* st, Ty const
                 return TERNARY_FALSE;
             }
             result &= related;
-        } else if (has_inferable_index(source) && !(target_info->key->flags & TYF_ES_SYMBOL)) {
+        } else if (has_inferable_index(source)) {
             // An object literal type is related if each of its properties the signature applies to is
             for (u32 j = 0; j < source_members->prop_count; j++) {
                 Prop const* prop = source_members->props[j];
+                bool symbol_named = ty_unique_symbol_of_name(me, prop->name) != nullptr;
                 if ((target_info->key->flags & TYF_NUMBER) && !is_numeric_prop_name(prop->name)) continue;
+                if (((target_info->key->flags & TYF_ES_SYMBOL) != 0) != symbol_named) continue;
                 Ternary related = is_related_to(me, st, prop_type(me, prop), target_info->value, report);
                 if (!related) {
                     if (report) {
-                        report_line(st, 2530, cstr_d(
-                            "Property '", atom_sv(prop->name), "' is incompatible with index signature."
-                        ));
+                        cstr name = ty_prop_name_cstr(me, prop->name);
+                        report_line(st, 2530, cstr_d("Property '", name, "' is incompatible with index signature."));
+                        cstr_drop(&name);
                     }
                     return TERNARY_FALSE;
                 }

@@ -1,4 +1,5 @@
 #include "class_decl.h"
+#include "binding.h"
 #include "flow.h"
 #include "ty/ty.h"
 #include "statement.h"
@@ -16,12 +17,20 @@ void class_item_drop(ClassItem* me) {
 
         case CLASS_ITEM_METHOD:
             cstr_drop(&my method.name_string);
+            if (my method.computed_key) {
+                expr_drop(my method.computed_key);
+                free(my method.computed_key);
+            }
             function_impl_drop(&my method.func);
             lazy_type_drop(&my method.accessor_type);
             break;
 
         case CLASS_ITEM_FIELD:
             cstr_drop(&my field.name_string);
+            if (my field.computed_key) {
+                expr_drop(my field.computed_key);
+                free(my field.computed_key);
+            }
             type_drop(&my field.explicit_type);
             expr_drop(&my field.value);
             lazy_type_drop(&my field.lazy_type);
@@ -52,7 +61,10 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
     check(my tag == CLASS_ITEM_FIELD);
     Checker* checker = current_checker;
     if (my field.has_explicit_type) return ty_of_node(&my field.explicit_type);
-    return ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly);
+    Ty const* ret = ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly);
+    // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
+    if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != me) ret = ty_intrinsic(checker, TY_ES_SYMBOL);
+    return ret;
 }
 
 Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
@@ -101,6 +113,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_METHOD:
+            if (my method.computed_key) expr_lookup_names(my method.computed_key, names, errs);
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
@@ -109,6 +122,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case CLASS_ITEM_FIELD:
+            if (my field.computed_key) expr_lookup_names(my field.computed_key, names, errs);
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);
             type_lookup_names(&my field.explicit_type, names, errs);
             if (my field.value.tag == EXPR_IMPLICIT_ANY) {
@@ -184,6 +198,12 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     }
 
     for_each (i, vec_class_item, &my items) {
+        if (i->tag == CLASS_ITEM_FIELD && i->field.is_static && i->field.is_readonly && !i->field.computed_key) {
+            unique_symbol_decl_mark(
+                (UniqueSymbolDecl){ .key = i, .owner = my symbol, .member = i->field.name_span },
+                &i->field.explicit_type, &i->field.value
+            );
+        }
         if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
             for_each (other, vec_class_item, &my items) {
                 if (other->tag == CLASS_ITEM_METHOD &&
@@ -210,6 +230,25 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 
     class_members_lookup_names(me, names, errs, true);
     class_members_lookup_names(me, names, errs, false);
+}
+
+// TS1166/TS1168: the key of a property or of a method overload has to be something the class can be typed by
+static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
+    bool field = item->tag == CLASS_ITEM_FIELD;
+    Expr* key = field ? item->field.computed_key : item->method.computed_key;
+    expr_typecheck(key, errs);
+    if (!field && item->method.func.has_body) return; // Only overload signatures are restricted
+    Ty const* key_type = expr_get_type(key);
+    // tsc's checkGrammarForInvalidDynamicName: an entity name that isn't a literal is a late bound index signature
+    if (key_type->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_ANY) || expr_is_entity_name(key)) return;
+    Span span = field ? item->field.name_span : item->method.name_span;
+    if (field) {
+        error_ctx_error_d(errs, span, 1166,
+            "A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.");
+    } else {
+        error_ctx_error_d(errs, span, 1168,
+            "A computed property name in a method overload must refer to an expression whose type is a literal type or a 'unique symbol' type.");
+    }
 }
 
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
@@ -253,10 +292,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_METHOD:
+                if (i->method.computed_key) class_computed_key_typecheck(i, errs);
                 function_impl_typecheck(&i->method.func, errs);
                 break;
 
             case CLASS_ITEM_FIELD: {
+                if (i->field.computed_key) class_computed_key_typecheck(i, errs);
                 expr_typecheck(&i->field.value, errs);
                 if (i->field.has_explicit_type) {
                     ty_check_assignable(

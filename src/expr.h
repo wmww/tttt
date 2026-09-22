@@ -353,6 +353,8 @@ typedef struct CallExpr {
     Expr callable;
     // PERF: types of each argument should be cached
     VecExpr args;
+    // The initializer of a declaration that can have a unique symbol type: `Symbol()` makes one (set when resolving)
+    UniqueSymbolDecl unique_symbol;
 } CallExpr;
 
 // Template

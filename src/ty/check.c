@@ -78,6 +78,7 @@ Ty const* ty_of_node(TypeNode const* node) {
 
 // A string literal index reads as a property name, anything else as its type
 static cstr index_name(Checker* me, Ty const* index) {
+    if (index->flags & TYF_UNIQUE_ES_SYMBOL) return ty_prop_name_cstr(me, index->literal.string);
     if ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL)) {
         return cstr_from_sv(atom_sv(index->literal.string));
     }
@@ -119,7 +120,7 @@ static void check_access(
         return;
     }
     if (index->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) return; // TODO: TS2536 against `keyof` of the object
-    if (!(index->flags & (TYF_ANY | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL | TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
+    if (!(index->flags & (TYF_ANY | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
         cstr index_str = ty_to_cstr(me, index);
         error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
         cstr_drop(&index_str);

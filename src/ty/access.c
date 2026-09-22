@@ -12,7 +12,7 @@ static Ty const* with_undefined(Checker* me, Ty const* type) {
 }
 
 Atom const* ty_literal_name(Checker* me, Ty const* index) {
-    if (!(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return nullptr;
+    if (!(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return nullptr;
     if (index->literal.string) return index->literal.string;
     cstr rendered = cstr_null;
     cstr_append_value_js(&rendered, &index->literal.value);
@@ -37,7 +37,7 @@ static Ty const* access_index_infos(Checker* me, Ty const* object, Ty const* ind
         for (u32 i = 0; i < members->index_count; i++) {
             IndexInfo const* info = &members->index[i];
             bool applies = pass == 0 ?
-                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (index->flags & TYF_ES_SYMBOL)) :
+                ((info->key->flags & TYF_NUMBER) && numeric) || ((info->key->flags & TYF_ES_SYMBOL) && (index->flags & TYF_ES_SYMBOL_LIKE)) :
                 (info->key->flags & TYF_STRING) && (stringish || numeric);
             if (applies) return info->value;
         }
@@ -63,7 +63,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (object->flags & TYF_ANY) return object;
     if (object->flags & TYF_NEVER) return object;
     if (index->flags & TYF_ANY) return ty_intrinsic(me, TY_ANY);
-    bool simple = (index->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL | TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    bool simple = (index->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (!simple) return nullptr;
 
     if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {

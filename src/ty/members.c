@@ -118,7 +118,6 @@ static void builder_add_interface_member(
                 if (i->key.tag == INTERFACE_KEY_NAME) {
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
-                    // TODO: unique symbol keys (`[Symbol.iterator]`) are silently left out
                     Ty const* key = ty_expr_type(me, i->key.expr.ref);
                     name = ty_literal_name(me, key);
                     if (!name) break;
@@ -300,7 +299,16 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
 static Prop* builder_add_class_prop(
     Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
 ) {
-    Atom const* name = checker_atom(me, cstr_sv(name_string));
+    Expr const* computed_key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->method.computed_key;
+    Atom const* name;
+    if (computed_key) {
+        // Only a literal or unique symbol key names a member (tsc's late bound names), anything else is left out
+        bool is_number = false;
+        name = ty_property_name_of_key(me, ty_expr_type(me, computed_key), &is_number);
+        if (!name) return nullptr;
+    } else {
+        name = checker_atom(me, cstr_sv(name_string));
+    }
     Prop* existing = builder_find_prop(builder, name);
     if (existing) return nullptr;
     Prop* prop = arena_new(&my arena, Prop);
@@ -827,11 +835,11 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
         Members const* source = ty_members(me, mapped->modifiers_type);
         member_keys = arena_new_n(&my arena, Ty const*, source->prop_count + source->index_count);
         key_count = 0;
-        for (u32 i = 0; i < source->prop_count; i++) member_keys[key_count++] = ty_string_literal(me, atom_sv(source->props[i]->name));
+        for (u32 i = 0; i < source->prop_count; i++) member_keys[key_count++] = ty_prop_name_literal(me, source->props[i]->name);
         for (u32 i = 0; i < source->index_count; i++) member_keys[key_count++] = source->index[i].key;
         keys = member_keys;
     }
-    u32 const usable = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL;
+    u32 const usable = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL_LIKE;
     for (u32 i = 0; i < key_count; i++) {
         Ty const* name_type = mapped_key_name(me, mapped, keys[i]);
         if (name_type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return members;

@@ -30,9 +30,10 @@ typedef struct ClassItem {
             bool is_static;
             bool is_optional;
             bool is_abstract;
-            cstr name_string;
+            cstr name_string; // For a computed key, its source text: what accessor pairs and overloads are matched by
             Span name_span;
             bool name_is_value;
+            Expr* computed_key; // Owned, `[k]() {}`. Null otherwise
             FunctionImpl func;
             // Accessors (`get x() {}`/`set x(v) {}`) are methods that show up as a property of accessor_type
             enum {
@@ -51,9 +52,10 @@ typedef struct ClassItem {
             bool is_readonly;
             bool is_optional;
             bool is_abstract;
-            cstr name_string;
+            cstr name_string; // See method.name_string
             Span name_span;
             bool name_is_value;
+            Expr* computed_key; // Owned, `[k]: T`. Null otherwise
             bool has_explicit_type;
             Span explicit_type_span;
             TypeNode explicit_type;

@@ -43,6 +43,15 @@ typedef struct ThisRef {
 } ThisRef;
 g_declare_vec(TupleElement, tuple_element);
 
+// A declaration that can have a `unique symbol` type (tsc's isValidESSymbolDeclaration): a `const` variable, a `static
+// readonly` class property or a `readonly` property signature. Set by the resolve walk on its `unique symbol`
+// annotation and on a `Symbol()` initializer, which then both mean the same type
+typedef struct UniqueSymbolDecl {
+    void const* key; // What the type's identity is. Null: not such a declaration, the type is plain `symbol`
+    Symbol const* owner; // The variable, or the class/interface the member belongs to (may be null for type literals)
+    Span member; // The member's name, empty for a variable
+} UniqueSymbolDecl;
+
 typedef struct TypeNode {
     enum {
         TYPE_ANY = 0,
@@ -67,6 +76,7 @@ typedef struct TypeNode {
         TYPE_TERNARY,
         TYPE_UNION,
         TYPE_INTERSECTION,
+        TYPE_UNIQUE_SYMBOL,
     } tag;
     bool parsed : 1;
     union {
@@ -95,6 +105,7 @@ typedef struct TypeNode {
         TypeofType* typeof_;
         TernaryType* ternary;
         VecTypeNode composite; // used for both TYPE_UNION and TYPE_INTERSECTION
+        UniqueSymbolDecl unique_symbol;
     };
 } TypeNode;
 

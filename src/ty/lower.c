@@ -338,6 +338,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_SYMBOL:
+        case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
             break;
@@ -985,6 +986,7 @@ static Ty const* lower(Checker* me, TypeNode const* node, LowerCtx outer_ctx, Sy
         case TYPE_NUMBER: return ty_intrinsic(me, TY_NUMBER);
         case TYPE_STRING: return ty_intrinsic(me, TY_STRING);
         case TYPE_SYMBOL: return ty_intrinsic(me, TY_ES_SYMBOL);
+        case TYPE_UNIQUE_SYMBOL: return ty_unique_symbol(me, &node->unique_symbol);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
         case TYPE_VALUE: return ty_literal(me, &node->value);
         case TYPE_IDENTIFIER: {

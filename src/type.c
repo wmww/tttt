@@ -58,6 +58,7 @@ void type_drop(TypeNode* me) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_SYMBOL:
+        case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
             break;
 
@@ -131,6 +132,7 @@ static void type_add_inferred_names(TypeNode const* me, Scope* scope) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_SYMBOL:
+        case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
             break;
@@ -217,6 +219,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_SYMBOL:
+        case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
         case TYPE_INFERRED:
@@ -275,6 +278,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_NUMBER:
         case TYPE_STRING:
         case TYPE_SYMBOL:
+        case TYPE_UNIQUE_SYMBOL:
         case TYPE_BIGINT:
         case TYPE_VALUE:
         case TYPE_INFERRED:
