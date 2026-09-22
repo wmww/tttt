@@ -480,13 +480,37 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
 static Ty const* param_type_at(Checker* me, Signature const* sig, u32 i) {
     if (i < sig->param_count && !sig->params[i].rest) return sig->params[i].type;
     if (sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 >= sig->param_count) {
-        return rest_element_type(me, sig->params[sig->param_count - 1].type);
+        Ty const* rest = sig->params[sig->param_count - 1].type;
+        if (ty_is_tuple(rest)) {
+            // `...args: [a: A, b?: B, ...c: C[]]` is parameters of their own
+            TupleShape const* shape = rest->reference.target->declared.tuple;
+            TyList elements = ty_reference_args(me, rest);
+            u32 j = i + 1 - sig->param_count;
+            bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
+            if (j >= shape->arity) return ends_in_rest ? rest_element_type(me, elements.data[shape->arity - 1]) : nullptr;
+            if (shape->flags[j] & TUPLE_ELEMENT_REST) return rest_element_type(me, elements.data[j]);
+            return elements.data[j];
+        }
+        return rest_element_type(me, rest);
     }
     return nullptr;
 }
 
-static bool has_rest(Signature const* sig) {
-    return sig->param_count && sig->params[sig->param_count - 1].rest;
+// How many parameters a signature has, with a rest tuple of fixed length counted as its elements
+static u32 param_count_of(Signature const* sig) {
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->param_count;
+    Ty const* rest = sig->params[sig->param_count - 1].type;
+    if (!ty_is_tuple(rest)) return sig->param_count;
+    return sig->param_count - 1 + rest->reference.target->declared.tuple->arity;
+}
+
+// Takes any number of arguments: a rest parameter that isn't a tuple of fixed length
+static bool has_rest(Checker* me, Signature const* sig) {
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return false;
+    Ty const* rest = sig->params[sig->param_count - 1].type;
+    if (!ty_is_tuple(rest)) return true;
+    TupleShape const* shape = rest->reference.target->declared.tuple;
+    return shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
 }
 
 static Signature const* instantiate_signature(Checker* me, Signature const* sig, TyList targets) {
@@ -519,11 +543,12 @@ static Ternary compare_signatures(
         }
     }
 
-    if (!has_rest(target) && source->min_args > target->param_count) {
+    u32 target_count = param_count_of(target);
+    if (!has_rest(me, target) && source->min_args > target_count) {
         if (report) {
             report_line(st, 2849, cstr_d(
                 "Target signature provides too few arguments. Expected ", source->min_args, " or more, but got ",
-                target->param_count, "."
+                target_count, "."
             ));
         }
         return TERNARY_FALSE;
@@ -532,7 +557,8 @@ static Ternary compare_signatures(
     bool strict = st->relation != TY_RELATION_COMPARABLE && compiler_options()->strict_function_types &&
         !(target->flags & (SIGNATURE_METHOD | SIGNATURE_CONSTRUCT));
     Ternary result = TERNARY_TRUE;
-    u32 count = source->param_count > target->param_count ? source->param_count : target->param_count;
+    u32 source_count = param_count_of(source);
+    u32 count = source_count > target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
         Ty const* source_type = param_type_at(me, source, i);
         Ty const* target_type = param_type_at(me, target, i);

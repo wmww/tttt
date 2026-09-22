@@ -19811,7 +19811,7 @@ const baselines = {
         types: true,
     },
     'lambdaParameterWithTupleArgsHasCorrectAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
