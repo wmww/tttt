@@ -1517,12 +1517,37 @@ static Ty const* narrow_by_assertion(FlowQuery* q, Ty const* type, Expr const* e
     return narrow_type(q, type, expr, true, false);
 }
 
-// A reference that stays what it is: a const variable, or a parameter or `let` that is never assigned (tsc's
-// isConstantReference, without readonly properties)
-static bool is_constant_reference(Expr const* reference) {
-    if (reference->tag != EXPR_IDENTIFIER) return false;
-    Symbol const* symbol = reference->identifier.target;
-    return symbol && (symbol->is_const || !symbol->is_assigned);
+// The declared type of a constant reference (see below), null if it isn't one
+static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32 depth) {
+    if (depth > 8) return nullptr;
+    reference = skip_reference_wrappers(reference);
+    if (reference->tag == EXPR_IDENTIFIER) {
+        if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return ty_identifier_reference_type(me, &reference->identifier);
+        Symbol const* symbol = reference->identifier.target;
+        if (reference->identifier.keyword || !symbol || !(symbol->is_const || !symbol->is_assigned)) return nullptr;
+        return ty_identifier_reference_type(me, &reference->identifier);
+    }
+    if (reference->tag != EXPR_PROPERTY) return nullptr;
+    Ty const* object = constant_reference_type(me, &reference->property->expr, depth + 1);
+    Atom const* name = object ? access_name(me, reference->property) : nullptr;
+    if (!name) return nullptr;
+    // A property of a union is readonly if it is in some member
+    object = ty_apparent_type(me, object);
+    TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+    bool readonly = false;
+    for (u32 i = 0; i < parts.len && !readonly; i++) {
+        FoundProp prop = ty_find_prop(me, ty_apparent_type(me, parts.data[i]), name);
+        readonly = prop.found && (prop.flags & PROP_READONLY);
+    }
+    if (!readonly) return nullptr;
+    Ty const* type = ty_access(me, object, ty_string_literal(me, atom_sv(name)));
+    return type ? type : ty_intrinsic(me, TY_UNKNOWN_);
+}
+
+// A reference that stays what it is (tsc's isConstantReference): `this`, a const variable, a parameter or `let` that
+// is never assigned, or a readonly property of one of those
+static bool is_constant_reference(Checker* me, Expr const* reference) {
+    return constant_reference_type(me, reference, 0) != nullptr;
 }
 
 // `const ok = typeof x === "string"; if (ok) x`: the initializer of a const variable without a type annotation that
@@ -1536,7 +1561,7 @@ static Expr const* aliased_condition(FlowQuery* q, Expr const* condition) {
         return nullptr;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    if (initialized->value.tag == EXPR_IMPLICIT_ANY || !is_constant_reference(q->reference)) return nullptr;
+    if (initialized->value.tag == EXPR_IMPLICIT_ANY || !is_constant_reference(q->me, q->reference)) return nullptr;
     return &initialized->value;
 }
 
