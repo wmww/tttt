@@ -6,10 +6,10 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal.
 
 ## State (2026-09-22, after plan 08's first session)
-- **Suite: `./fasttest.sh` 3571 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plan 08's corpus fixes moved the suite by +75 on the side.
+- **Suite: `./fasttest.sh` 3573 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plan 08's corpus fixes moved the suite by +77 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 440 type diagnostics** (1751 at the start of plan 08, flat for three plans before).
+  under tsc): **0 parse, 0 name, 365 type diagnostics** (1751 at the start of plan 08, flat for three plans before).
   What is left is mostly three category-sized gaps (iteration protocol, higher-order generic function inference,
   fresh/regular literals: plan 08 "Progress") plus a tail of small root causes.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole

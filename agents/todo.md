@@ -1,7 +1,7 @@
 # Todo
 Sessions in order. Delete entries as they complete. See `vision.md` ("Course correction") for why.
 
-1. **Execution: plan 08 continued** (`plans/08_corpus_to_zero.md`, "Progress" lists what's left of the 440). The
+1. **Execution: plan 08 continued** (`plans/08_corpus_to_zero.md`, "Progress" lists what's left of the 365). The
    small unexplored buckets first (`JsxCallLike`, `Extract<NamedEvaluation, Pick<...>>`, TS2769, `Mutable<T>`, the
    narrowing leftovers), one root cause per commit. Stop when what's left is covered by the plans below.
 2. **Planning: plan 09**, the iteration protocol + well-known/unique symbols (`[Symbol.iterator]` members,
