@@ -45,24 +45,30 @@ fixing only the type parameters a lambda's parameters mention, homomorphic mappe
 discriminated object literal contexts. Also harness: `true`/`false`/`-1` literal type nodes in the types baseline
 (+13 suite).
 
-What is left (239), by root cause, biggest first:
-- **Iteration protocol** (plan 09): TS2495 25, TS2461 10, and most of TS2345/TS2322/TS18046 with `unknown`
-  (~70): `arrayFrom(set)`, `arrayFrom(map.entries())`, destructuring iterables, for-of over `Set`/`Iterable<T>`.
-- **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`
-  returning a generic function): tsc's "propagated type parameters" in `inferFromSignatures` /
-  `getOrCreateTypeFromSignature`. Category-sized: plan 10.
-- **`this` types** (TS7022 13, `m.set(...)` chains). Category-sized; also blocks ~242 types baselines on its own
-  (measured: `>this : this` vs tttt's `>this : C`), so it is worth a plan soon.
-- **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): `createComparator(operator, ...)` returns
-  `{ operator: string }`. Plan-sized (touches widening everywhere).
-- Small, unexplored (~40): TS7006 12 (parenthesizerRules `node => ...` assigned to a `let` whose type comes from a
-  Map get; resolutionCache `forEach((resolution, name, mode) =>` on a custom map interface; `(...args) =>` assigned to
-  a method of an interface; setters `set onSubstituteNode(value)` in an object literal with a contextual type);
-  TS2769 7 (visitEachChildWorker vs `NodesVisitor` generic signatures, `every(members, m => ...)` where `m` is
-  `unknown`, `concatenate(x, map(..., f => [a, f]))` array-literal-as-tuple under a contextual type); TS2370 4
-  (@types/node events.d.ts: rest parameter of a generic type); TS2339 2 (`IdentifierNameMap.add` through a
-  MultiMap-style intersection, `emittedFiles` on a union with an object literal type missing it: tsc normalizes
-  object literal unions); TS18048 3; emitHelpers-like EmitHelper errors are gone.
+**Session 3 (2026-09-22, the small tail): 239 -> 203**, suite 3607 -> 3714, nothing lost that isn't explained in a
+commit. Root causes: contextual rest parameters/tuple spreads/optional parameters (getRestTypeAtPosition,
+getEffectiveCallArguments, addOptionality), `this` parameters + strictBindCallApply (CallableFunction), setters typed
+by their getter, `x ||= a || b` flow, bottom-up flow queries typing lambdas without their assignment's context,
+readonly properties as constant references, readonly mapped types (the parser lost `readonly` before a mapped key!),
+nested generic calls seeing the outer inference (NoDefault clone), `readonly T[][]` precedence, TS2339 on arrays,
+erased signatures for overloaded relations, object literals and optional properties in subtype reduction, `[]` as
+never[], variadic tuple aliases, union inference priority (hit_priority), covariant-vs-contravariant tie rule,
+undefined-returning functions, optional spreads, returnMapper for argument contexts + literal candidate union.
+
+What is left (203), by root cause, biggest first:
+- **Iteration protocol** (plan 09): TS2495 25, TS2461 10, TS18046 21, TS2769 3, and ~60 TS2345/TS2322 with
+  `unknown` (`arrayFrom(map.values())`, for-of over `Set`/`Map`/`Iterable<T>`, destructuring iterables). Also the
+  `TS7006 key` in builder.ts (arrayFrom) and `TS2365` in executeCommandLine.ts (reduceLeftIterator).
+- **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`,
+  plus the nodeFactory.ts/parenthesizerRules.ts object-literal-with-generic-methods TS2322s): plan 10.
+- **`this` types** (TS7022 13; resolutionCache.ts `perFileCache.set(...).get(...)` TS7006 x3): plan 09 or its own.
+- **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): plan 10.
+- Unexplored singles (~25): substitution types (TS2370 x4 in @types/node events.d.ts, `(...args: T[K]) => void` in
+  the true branch of `T[K] extends unknown[]`, triage.md); `Mutable<T>`/`T & {...}` generic relations in nodeFactory.ts
+  5073-7176; NodeArray<Node> vs NodeArray<ModifierLike> (parser.ts 3557/7976/9676, checker.ts 7968/50523: likely a
+  `visitNodes`/`createNodeArray` inference); `Type | undefined` not narrowed (checker.ts 14692/18877/13348,
+  moduleSpecifiers.ts 418/428); core.ts 2467 `[...any[]]` to T; commandLineParser.ts 4277; parser.ts 2414;
+  classThis.ts 138; IdentifierNameMap `add` (MultiMap-style intersection); checker.ts 32308 reduceLeft overloads.
 
 ## How
 This is a loop, not a design. Each iteration:
