@@ -4589,6 +4589,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
+    // `for await (x of y)`. TODO: TS1103/TS1431/TS1432 where it isn't allowed
+    bool is_await = hop_start_if_ends_on_word_break(&p, "await");
+    if (is_await) hop_whitespace(&p);
 
     expect_char(&p, '(');
     hop_whitespace(&p);
@@ -4669,6 +4672,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
             .tag = STATEMENT_FOR_EACH_LOOP,
             .for_each_loop = c_new(ForEachLoopStatement, {
                 .keyword = keyword_is_in ? FOR_EACH_LOOP_IN : FOR_EACH_LOOP_OF,
+                .is_await = is_await && !keyword_is_in,
                 .iterable = right_expr,
                 .body = body,
             })

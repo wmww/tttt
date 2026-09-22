@@ -22,6 +22,7 @@ void function_impl_drop(FunctionImpl* me) {
     }
     lazy_type_drop(&my lazy_type);
     block_drop(&my body);
+    free(my yields);
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, bool exported) {
@@ -111,6 +112,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     if (!flow_is_unreachable(flow.current) && my has_body) my end_flow = flow.current;
     my has_explicit_return = flow.has_explicit_return;
     my has_bare_return = flow.has_bare_return;
+    my yields = flow.yields;
+    my yield_count = flow.yield_count;
+    flow.yields = nullptr;
     if (flow.return_target) {
         flow_add_antecedent(&flow, flow.return_target, flow.current);
         flow.current = flow_finish_label(flow.return_target);
@@ -132,8 +136,12 @@ TypeNode function_impl_into_type(FunctionImpl me) {
 Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
     Checker* checker = current_checker;
     Ty const* outer = checker->return_context;
-    if (my is_async || my is_generator) {
-        checker->return_context = nullptr; // TODO: the awaited/yielded parts of the annotation
+    if (my is_generator) {
+        // What the annotation (or the contextual type) says the generator returns
+        TyIterationTypes const* context = ty_generator_context(checker, me);
+        checker->return_context = context && !(context->return_type->flags & (TYF_ANY | TYF_VOID)) ? context->return_type : nullptr;
+    } else if (my is_async) {
+        checker->return_context = nullptr; // TODO: the awaited part of the annotation
     } else if (my ret_explicit) {
         Ty const* annotated = ty_from_node(checker, &my ret, (LowerCtx){ .generic = true });
         checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;

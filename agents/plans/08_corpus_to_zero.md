@@ -55,13 +55,13 @@ erased signatures for overloaded relations, object literals and optional propert
 never[], variadic tuple aliases, union inference priority (hit_priority), covariant-vs-contravariant tie rule,
 undefined-returning functions, optional spreads, returnMapper for argument contexts + literal candidate union.
 
-What is left (203), by root cause, biggest first:
-- **Iteration protocol** (plan 09): TS2495 25, TS2461 10, TS18046 21, TS2769 3, and ~60 TS2345/TS2322 with
-  `unknown` (`arrayFrom(map.values())`, for-of over `Set`/`Map`/`Iterable<T>`, destructuring iterables). Also the
-  `TS7006 key` in builder.ts (arrayFrom) and `TS2365` in executeCommandLine.ts (reduceLeftIterator).
+**Plan 09 (iteration protocol, unique symbols, generators): 203 -> 109.** No TS2495/TS2461/TS18046/TS2769 left.
+
+What is left (109), by root cause, biggest first:
 - **Higher-order generic function inference** (TS2558 38, nodeFactory.ts `memoizeOne(<T>(kind: T["kind"]) => ...)`,
   plus the nodeFactory.ts/parenthesizerRules.ts object-literal-with-generic-methods TS2322s): plan 11 (sketch).
-- **`this` types** (TS7022 13; resolutionCache.ts `perFileCache.set(...).get(...)` TS7006 x3): plan 10.
+- **`this` types** (TS7022 13; resolutionCache.ts `perFileCache.set(...).get(...)` TS7006 x3; builder.ts
+  `arrayFrom(x.keys()).sort(cmp).map(key => ...)`: `sort()` returns `this`): plan 10.
 - **Fresh vs regular literal types** (semver.ts 13 TS2345 + TS2678): plan 11 (sketch).
 - Unexplored singles (~25): substitution types (TS2370 x4 in @types/node events.d.ts, `(...args: T[K]) => void` in
   the true branch of `T[K] extends unknown[]`, triage.md); `Mutable<T>`/`T & {...}` generic relations in nodeFactory.ts

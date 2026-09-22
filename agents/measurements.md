@@ -2,6 +2,22 @@
 Recorded output of `./failstats.py` and `./bench.sh`. Replace (don't append forever) when re-measuring; keep the
 date and commit. History is in git.
 
+## 2026-09-22, plan 09: iteration protocol, unique symbols, generators: real corpus 203 -> 109
+Suite: **3935 full of 13163** (was 3714), errors 7227, symbols 9135, types 6896. Lost: generatorTypeCheck45/46 (a
+pre-existing inference gap generators now reach, triage.md). Real corpus: **109 type diagnostics** (TS2558 38,
+TS2345 32, TS2322 16, TS7022 13, TS2370 4, TS7006 4, TS2678 1, TS2339 1). `./bench.sh`: real corpus wall **0.64 s**
+(tsgo 0.76, tsgo single-threaded 1.27, tsc 4.81), load+parse 149 ms, resolve 78 ms, typecheck 414 ms (399: iteration
+now does the work that used to fail early, the fast path keeps it cheap), RSS 358 MB. Synthetic corpus 1.34 s (tsgo
+1.55).
+
+Callgrind of the real corpus (6.2 G Ir, typecheck 76%): iteration doesn't show up. The top is relations reached
+from narrowing: `ty_flow_type` 43% inclusive; 4.3 M top-level `ty_is_related` calls (19.5% inclusive), 2.7 M of them
+from `narrowed_type` (tsc's getNarrowedType relates every union member to the candidate), 0.8 M from
+`assigned_is_assignable`; `is_simple_related` alone is 10.5% self (6.4 M calls, ~100 Ir each: worth a look, it runs
+`ty_is_enum_union`/`compiler_options()` on every pair); `ty_union` 15% inclusive with qsort 3.3% (member sorting).
+Candidates for a perf session: a per-(member, candidate) cache or tsc's `narrowedTypes` cache in narrowing, a cheaper
+`is_simple_related` prefix, sorted-merge instead of qsort for unions built from sorted inputs.
+
 ## 2026-09-22, plan 08 session 3 (the small tail): real corpus 239 -> 203
 Suite: **3714 full of 13163** (was 3607), errors 7060+, symbols 8871+, types 6525+. Real corpus: **203 type
 diagnostics** (plan 08 "Progress"). `./bench.sh`: real corpus wall **0.63 s** (tsgo 0.76, tsgo single-threaded 1.29,

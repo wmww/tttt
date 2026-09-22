@@ -1,6 +1,7 @@
 #include "ty/ty_internal.h"
 #include "program.h"
 #include "statement.h"
+#include "compiler_options.h"
 
 // The types of functions: declarations, function expressions, methods, accessors and constructors. A function's type is
 // an anonymous object type with one signature that is read straight off the FunctionImpl (members.c); what's here is
@@ -25,6 +26,7 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
 
 typedef struct FunctionReturn {
     LazyState state;
+    bool circular; // Asked for while being inferred
     Ty const* type;
 } FunctionReturn;
 
@@ -36,6 +38,55 @@ static Ty const* promise_of(Checker* me, FunctionImpl const* function, Ty const*
     return ty_reference(me, promise, (TyList){ .data = &type, .len = 1 });
 }
 
+// tsc's getReturnTypeFromBody for a generator: Generator<yielded, returned, what the context sends>
+static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function, TyBuf* returned) {
+    bool async = function->is_async;
+    TyIterationTypes const* context = ty_generator_context(me, function);
+    TyBuf yields = {0};
+    for (u32 i = 0; i < function->yield_count; i++) {
+        UnaryOpExpr const* yield = function->yields[i]->unary_op;
+        ty_expr_type(me, function->yields[i]); // Checks the operand with the contextual type it gets from there
+        Ty const* type;
+        if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
+            type = ty_intrinsic(me, TY_UNDEFINED); // A bare `yield`
+        } else if (yield->op == UNARY_OP_YIELD_STAR) {
+            u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
+            Ty const* delegate = ty_expr_type(me, &yield->expr);
+            type = ty_iterated_type(me, use, delegate, span_null, nullptr);
+            if (!ty_iteration_types_of_iterable(me, delegate, use)) {
+                // tsc reports TS2488 from right here, and printing the type in the message can find this very return
+                // type in progress (`yield* foo` inside foo makes foo's return type any). HACK: print it too
+                cstr printed = ty_to_cstr(me, delegate);
+                cstr_drop(&printed);
+            }
+        } else {
+            type = ty_expr_type(me, &yield->expr);
+        }
+        if (async) type = ty_awaited(me, type);
+        ty_buf_push(&yields, type);
+    }
+    Ty const* yield_type = yields.len ? ty_union_subtype_reduced(me, yields.data, yields.len) : nullptr;
+    ty_buf_drop(&yields);
+
+    // Returns as for other functions (checkAndAggregateReturnExpressionTypes), without them `void`
+    bool implicit_return = ty_function_end_reachability(me, function) == FLOW_REACH_YES;
+    Ty const* return_type = nullptr;
+    Ty const* fallback = ty_intrinsic(me, TY_VOID);
+    if (!returned->len && !function->has_bare_return && !implicit_return && function->is_expression) {
+        fallback = ty_intrinsic(me, TY_NEVER);
+    } else if (returned->len) {
+        if (compiler_options()->strict_null_checks && (function->has_bare_return || implicit_return)) {
+            ty_buf_push(returned, ty_intrinsic(me, TY_UNDEFINED));
+        }
+        return_type = ty_union_subtype_reduced(me, returned->data, returned->len);
+    }
+    if (yield_type) yield_type = ty_widened_return_type(me, yield_type, context ? context->yield_type : nullptr);
+    if (return_type) return_type = ty_widened_return_type(me, return_type, context ? context->return_type : nullptr);
+    Ty const* next_type = context ? context->next_type : ty_intrinsic(me, TY_UNKNOWN_);
+    return ty_generator_type(me, async, yield_type ? yield_type : ty_intrinsic(me, TY_NEVER),
+        return_type ? return_type : fallback, next_type);
+}
+
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     Ty const* outer_context = function_impl_enter_return_context(function);
     TyBuf returned = {0};
@@ -44,8 +95,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
 
     Ty const* ret;
     if (function->is_generator) {
-        // TODO: Generator<TYield, TReturn, TNext>/AsyncGenerator<...> inferred from the yields and returns
-        ret = ty_intrinsic(me, TY_ANY);
+        ret = infer_generator_type(me, function, &returned);
     } else {
         // tsc: checkAndAggregateReturnExpressionTypes(). Only what is certain about the end of the body counts until
         // reachability knows about `never` calls and exhaustive switches
@@ -89,7 +139,9 @@ Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     FunctionReturn* memo = (FunctionReturn*)*slot;
     switch (memo->state) {
         case LAZY_STATE_DONE: return memo->type;
-        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR); // TODO: TS7023 implicitly any, references itself
+        case LAZY_STATE_IN_FLIGHT:
+            memo->circular = true;
+            return ty_intrinsic(me, TY_ERROR); // TODO: TS7023 implicitly any, references itself
         case LAZY_STATE_NOT_STARTED: break;
     }
     memo->state = LAZY_STATE_IN_FLIGHT;
@@ -97,6 +149,8 @@ Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
     struct OuterInference const* outer = my outer_inference; // (Nothing in the body is an argument of that call)
     my outer_inference = nullptr;
     memo->type = infer_return_type(me, function);
+    // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
+    if (memo->circular) memo->type = ty_intrinsic(me, TY_ANY);
     my outer_inference = outer;
     ty_flow_restore(me, isolation);
     memo->state = LAZY_STATE_DONE;

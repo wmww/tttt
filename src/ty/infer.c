@@ -712,7 +712,10 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
     Ty const* co = nullptr;
     if (param->co_len) {
         Ty const** candidates = malloc(sizeof(Ty const*) * param->co_len);
-        bool widen = !keep_literals && param->top_level;
+        // tsc only widens fresh literal types: what the contextual return type gives (priority ReturnType) comes from
+        // annotations and never is. TODO(fresh literals): this stands in for freshness
+        bool widen = !keep_literals && param->top_level &&
+            !(param->has_priority && param->priority == INFER_PRIORITY_RETURN_TYPE);
         for (u32 j = 0; j < param->co_len; j++) {
             candidates[j] = widen ? ty_widened_literal(me, param->co[j]) : param->co[j];
         }

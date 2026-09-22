@@ -5,13 +5,13 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal.
 
-## State (2026-09-22, after plan 08's second session)
-- **Suite: `./fasttest.sh` 3714 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
-  a real measurement of type *printing*; plan 08's corpus fixes moved the suite by +218 on the side.
+## State (2026-09-22, after plan 09)
+- **Suite: `./fasttest.sh` 3935 / 13163 fully pass**. Plan 07 (types baseline underlines) made the types component
+  a real measurement of type *printing*; plans 08/09's corpus fixes moved the suite by +439 on the side.
 - **Real corpus: `./realworld.py`** (tsc's own `src/compiler` via its tsconfig, 223 files incl. `@types/node`, clean
-  under tsc): **0 parse, 0 name, 203 type diagnostics** (1751 at the start of plan 08, flat for three plans before).
-  What is left is mostly four category-sized gaps (iteration protocol, higher-order generic function inference,
-  `this` types, fresh/regular literals: plan 08 "Progress") plus a tail of ~40 small root causes.
+  under tsc): **0 parse, 0 name, 109 type diagnostics** (1751 at the start of plan 08, flat for three plans before;
+  plan 09 took the iteration bucket, 203 -> 109). What is left is mostly three category-sized gaps (higher-order
+  generic function inference, `this` types, fresh/regular literals: plan 08 "Progress") plus a tail of ~25 singles.
 - `this` types are the biggest single suite blocker found so far: ~242 types baselines fail only on them.
 - ~31k LoC of C in `src/`. Done and holding: parser (hand-written, backtracking, no tokenizer; parses the whole
   corpus), binder (tsc-shaped symbols, persistent scopes, aliases, lib overlay: plan 04), the `Ty` type core
@@ -19,8 +19,9 @@ types components) are the oracle, not the goal.
   indexed types: 8 sessions), flow graph + narrowing (plan 05), module resolution + tsconfig (plan 06), compiler
   options in one struct, multi-config tests, JS gate (`allowJs`/`checkJs`), diagnostics without a file.
   `documentation.md` describes the architecture, `hacks.md` what is approximated in each part.
-- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, `this` types, the iteration protocol
-  and well-known/unique symbols, reverse mapped types, decorators checking, declaration emit (out of scope).
+- Absent: JS/JSDoc semantics (~900 tests now fail quietly behind the gate), JSX, `this` types, reverse mapped types,
+  decorators checking, declaration emit (out of scope). The iteration protocol, unique symbols and generators landed
+  in plan 09 (`ty/iterate.c`).
 - History: every foundation plan (type core, binder, flow, modules) moved the suite by a whole category in one go and
   made it faster. Per-plan numbers are in `measurements.md` and the git log.
 
@@ -117,8 +118,8 @@ throughout, scaffolding = a `TYPE_NEW` tag + one-layer legacy views, all deleted
 4. ~~Harness fidelity (compiler options, multi-config tests)~~ done; ~~module resolution~~ done (plan 06); ~~JS gate,
    diagnostics without a file~~ done (triage). ~~Types baseline underlines (plan 07)~~ done (+1525 full passes).
 4b. **Real corpus to zero diagnostics (plan 08)**, then bench + profile it: the first honest perf comparison. What
-   plan 08's loop can't do is category-sized and planned: iteration protocol + unique symbols + generators (plan 09),
-   `this` types (plan 10), fresh literals + higher-order generic inference (plan 11, a sketch).
+   plan 08's loop can't do is category-sized and planned: ~~iteration protocol + unique symbols + generators (plan
+   09)~~ done, `this` types (plan 10), fresh literals + higher-order generic inference (plan 11, a sketch).
 5. Broad feature fill driven by the aggregation tool: classes, overloads, inference, mapped/conditional/template
    types, enums, namespaces, decorators, JSX, JS/JSDoc.
 6. Parallelism and perf tuning against the benchmark. Single-threaded tttt must beat single-threaded tsgo first.

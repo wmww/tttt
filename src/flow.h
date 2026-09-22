@@ -167,6 +167,10 @@ typedef struct FlowBuilder {
     uint8_t assignment_target;
     bool next_function_is_iife;
     bool ambient;
+    // The `yield` expressions of the container (a generator), in source order. malloc'd, the function takes them
+    struct Expr const** yields;
+    u32 yield_count;
+    u32 yield_cap;
     FlowDumpEntry* dump; // TTTT_DUMP_FLOW: everything that happened, in order
     u32 dump_count;
     u32 dump_cap;

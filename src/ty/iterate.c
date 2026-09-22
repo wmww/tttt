@@ -551,3 +551,38 @@ bool ty_elides_default_type_args(Checker* me, Ty const* target) {
     return target == state->globals[IG_ITERABLE] || target == state->globals[IG_ITERABLE_ITERATOR] ||
         target == state->globals[IG_ASYNC_ITERABLE] || target == state->globals[IG_ASYNC_ITERABLE_ITERATOR];
 }
+
+// Generators
+
+// tsc's getIterationTypesOfGeneratorFunctionReturnType: what a generator's return type says it yields, returns and is
+// sent. Null if it says nothing
+TyIterationTypes const* ty_generator_return_iteration_types(Checker* me, Ty const* ret, bool async) {
+    if (ret->flags & TYF_ANY) return any_types(me);
+    TyIterationTypes const* types =
+        ty_iteration_types_of_iterable(me, ret, async ? ITERATION_ASYNC_GENERATOR_RETURN : ITERATION_GENERATOR_RETURN);
+    return types ? types : ty_iteration_types_of_iterator(me, ret, async);
+}
+
+// What a generator's `yield`s and `return`s are about: its annotation, else its contextual return type. Null if neither
+// says anything
+TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator) {
+    Ty const* ret = generator->ret_explicit ?
+        ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true }) : ty_contextual_return_type(me, generator);
+    if (!ret || (ret->flags & TYF_ANY)) return nullptr;
+    return ty_generator_return_iteration_types(me, ret, generator->is_async);
+}
+
+// tsc's createGeneratorType: `Generator<Y, R, N>` (`AsyncGenerator`), else `IterableIterator` of old libs, else `{}`
+Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type) {
+    IterationState const* state = iteration_state(me);
+    if (async) {
+        yield_type = ty_awaited(me, yield_type);
+        return_type = ty_awaited(me, return_type);
+    }
+    Ty const* args[3] = { yield_type, return_type, next_type };
+    Ty const* target = state->globals[async ? IG_ASYNC_GENERATOR : IG_GENERATOR];
+    if (!target || target->declared.type_params.len != 3) target = state->globals[async ? IG_ASYNC_ITERABLE_ITERATOR : IG_ITERABLE_ITERATOR];
+    if (!target) return ty_empty_object_type(me);
+    u32 count = target->declared.type_params.len < 3 ? target->declared.type_params.len : 3;
+    return ty_reference(me, target, (TyList){ .data = args, .len = count });
+}

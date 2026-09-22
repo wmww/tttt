@@ -303,6 +303,7 @@ zsview unary_op_get_zv(UnaryOp op);
 typedef struct UnaryOpExpr {
     UnaryOp op;
     Expr expr;
+    FunctionImpl const* generator; // `yield`: the generator it is in (set when resolving), null if there's none
 } UnaryOpExpr;
 
 // Property

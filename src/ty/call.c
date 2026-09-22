@@ -79,6 +79,15 @@ static Args collect_args(Checker* me, CallExpr const* call) {
     return args;
 }
 
+static bool accepts_void(Ty const* ty) {
+    if (ty->flags & TYF_VOID) return true;
+    if (ty->kind != TY_UNION) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & TYF_VOID) return true;
+    }
+    return false;
+}
+
 static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const* mapper) {
     signature_resolve(me, sig);
     ParamShape shape = { .min = sig->min_args };
@@ -124,6 +133,8 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
         }
         break;
     }
+    // Trailing parameters that accept void can be left out (tsc's getMinArgumentCount): `resolve()` of a Promise<void>
+    while (shape.min > 0 && shape.min <= shape.count && accepts_void(shape.types[shape.min - 1])) shape.min--;
     return shape;
 }
 

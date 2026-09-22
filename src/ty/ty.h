@@ -810,6 +810,9 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
 // What for-of, spread and array destructuring get from a value: the yield type, below ES2015 the element type of an
 // array (or string). Reports TS2488/TS2495/TS2461/TS2802... to `errs` if it isn't iterable (then it's any)
 Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* ty, Span span, ErrorCtx* errs);
+TyIterationTypes const* ty_generator_return_iteration_types(Checker* me, Ty const* ret, bool async);
+TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator);
+Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type);
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co

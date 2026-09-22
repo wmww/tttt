@@ -69,6 +69,8 @@ typedef struct FunctionImpl {
     FlowNode* return_flow; // Constructors: every way out
     bool has_explicit_return; // A reachable `return`
     bool has_bare_return; // A reachable `return;`
+    struct Expr const** yields; // Generators: every `yield` of the body, in source order (malloc'd, owned)
+    u32 yield_count;
     Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)

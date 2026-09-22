@@ -102,8 +102,13 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Private names (`#x`): the `#` is just part of the member name string. No TS18028 target check, no "not accessible
   outside class" (TS18013), no `#x in obj`.
 - `p!: T` / `let x!: T`: the `!` is hopped and forgotten (class fields only; `let resp!: T` still doesn't parse).
-- Generator methods/functions (`FunctionImpl.is_generator`): inferred return type is `any`, `yield`/`yield*`
-  expressions are `any`, returns aren't checked against the declared type. Needs `Generator<Y, R, N>` inference.
+- Generators (`infer_generator_type`, `check_yield`): no next type is inferred from what the `yield`s are used as
+  (tsc's `nextTypes` from the yield's contextual type): it's the contextual/declared TNext or `unknown`. No TS7055/TS7057
+  (implicit any generators), no check that the annotation can be a generator's return type (TS2322 "A generator
+  cannot have a 'void' type annotation"), returns aren't checked against the annotation's TReturn.
+- `infer_generator_type`: a `yield*` of something that isn't iterable prints its type, because tsc reports TS2488 from
+  inside the return type inference and the message can find the return type in progress (makes `yield* foo` inside
+  `foo` any, YieldExpression6_es6). Faithful to what tsc observably does, but it is a side effect of printing.
 - Async functions (`FunctionImpl.is_async`, `promise_decl`): inferred return is `Promise<T>` built from the global
   `Promise` looked up by name during name resolution (`any` if the lib has none, eg target ES5 without `@lib`); returning a promise nests instead of flattening; returns aren't checked against the declared type;
   no TS1064/TS2705. `type_awaited` only unwraps types literally named `Promise`/`PromiseLike`.
@@ -113,8 +118,16 @@ Suboptimal-but-working code. Prefer function names over line numbers.
 - Decorators (`ClassDecl.decorators`, `ClassItem.decorators`, `FunctionArg.decorators`): parsed, name-resolved,
   typechecked and traversed as ordinary expressions. Nothing checks that they're valid decorators for their target
   (TS1238/TS1240/TS1241...), and `@experimentalDecorators` ordering rules (`export @dec class`, TS1206) aren't applied.
-- `interface_member_typecheck`: TS1166/1168/1169 are skipped when the computed key's type is `any` or `symbol`
-  (`unique symbol` is parsed as `symbol`), because `[Symbol.iterator]` can't be represented yet.
+- Computed member names (`interface_member_typecheck`, `class_computed_key_typecheck`): TS1166/1168/1169 exempt entity
+  names like tsc, but tsc then makes a *late bound index signature* of an entity-name key whose type is string/number/
+  symbol (`[k]: T` with `k: string` is `[x: string]: T`, getIndexInfosOfIndexSymbol); here the member is dropped.
+- `ClassItem.method/field.name_string` of a computed key (`[Symbol.iterator]() {}`) is the key's source text: that's
+  what accessor pairs and overloads are matched by (tsc matches the late bound symbol, `["a"]` and `a` pair there).
+- Unique symbols: the escaped property name of one (`__@sym@12`, `Ty.literal.string`) is mapped back to its type by a
+  checker-wide table (`ty_unique_symbol_of_name`), so a *string* property named `__@x@3` would be taken for a symbol.
+  `out_unique_symbol_name`: a member of an interface is reached through the global variable named like the interface
+  without `Constructor` (`SymbolConstructor.iterator` -> `Symbol.iterator`); tsc finds any variable of that type.
+  No TS1330-1335 (misplaced `unique symbol`: it's plain `symbol` there, silently).
 - `variable_statement_typecheck` TS1254: any property access is accepted as a "literal enum reference".
 - `EnumCase.name`/`full_name`: string-literal member names take their name from the source text between the quotes
   (escapes not processed); enum member types still print as `E.b c` rather than `(typeof E)["b c"]`.
@@ -297,11 +310,16 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   `unknown[]` constraint only exists once the signature that declares `A1` was resolved (`imply_rest_constraint`),
   which depends on evaluation order. tsc derives it from the position of the `infer` (getInferTypeConstraint).
 - `generic_params_expr_typecheck` (`f<A>` outside a call): constraints are checked against the first signature only.
-- `for_each_loop_statement_evaluate_var_type`: `for..in` is `string`, `for..of` only knows arrays and strings (TS2495
-  for everything else, iterables are `any`).
-- `ty_function_return_type`: `void` when there's no `return` (tsc: `never` if the end isn't reachable), generators are
-  `any`, async wraps in `Promise<T>` without awaiting `T`. A function whose return type is being inferred further up
-  the stack is `any` without TS7023.
+- `for_each_loop_statement_evaluate_var_type`: `for..in` is `string` (no `Extract<keyof T, string>`); `for await`
+  doesn't parse.
+- Iteration (`ty/iterate.c`): no TS2763-2765 (the next type of an iterator vs what for-of/spread/destructuring send),
+  no TS2489/TS2490 (an iterator without `next()`/`value`: it just isn't iterable), errors are only reported at the top
+  (tsc adds related info). Array destructuring *assignments* (`[a, b] = it`) check against the iterated type but the
+  array literal target still types as an array, not a tuple (tsc's inDestructuringPattern), and a binding pattern
+  isn't the contextual type of its initializer (`var [a, [b]] = [1, [2]]` gives `(number | number[])[]`).
+- `ty_function_return_type`: `void` when there's no `return` (tsc: `never` if the end isn't reachable), async wraps in
+  `Promise<T>` without awaiting `T`. A return type that is asked for while it's being inferred makes it `any` (tsc's
+  failed popTypeResolution), without TS7023.
 - `lower` TYPE_TYPEOF: `typeof x` is the type of the expression `x`, narrowed like any reference (tsc narrows type
   queries too, but only identifiers and property paths exist there).
 - `baseline_test_case_add_symbol_value`: an enum member shows as `E.x` by hand (wants fresh literal types). The
@@ -333,7 +351,7 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 - `instantiate_outer` (call.c): an instantiated generic signature shares its type parameters with its target (the TODO
   in `signature_resolve`), so constraints and defaults have to be pushed through the signature's mapper chain by hand.
 - `ty_awaited`: `Promise<T>`/`PromiseLike<T>` by name.
-- `ty_access`: no unique symbol keys, `null`/`undefined`
+- `ty_access`: `null`/`undefined`
   members of a union object are skipped silently (TS18047/18048 aren't reported), optional chaining isn't known here.
 
 ## Expressions (`ty/expr.c`), contextual typing, the call passes
@@ -389,8 +407,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   *constraint* (tsc: `T & {}`), which loses `T`.
 - `ty_unresolved`: an unresolved type name lowers to an error-`any` that prints as the written name (tsc does the same);
   it's a `TY_INTRINSIC` with `TYF_ANY | TYF_ERROR`, interned by name in the literal table.
-- `check_object`: computed keys that aren't string/number literals or plain string/number/any are **left out of the
-  type** (unique symbols, unions of literals). A setter-only property takes its parameter type, no `this` typing for
+- `check_object`: computed keys that aren't literals, unique symbols or plain string/number/symbol/any are **left out
+  of the type** (unions of literals). A setter-only property takes its parameter type, no `this` typing for
   methods, duplicate names: last one wins silently. Spread copies the apparent type's properties (no optionality
   handling, no generic spread).
 - `check_array`: an empty array literal is `any[]` (tsc: `never[]` under strictNullChecks, evolving `any[]` for an

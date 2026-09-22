@@ -819,10 +819,9 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
         case UNARY_OP_DELETE: return ty_intrinsic(me, TY_BOOLEAN);
         case UNARY_OP_AWAIT: return ty_awaited(me, ty_expr_type(me, operand));
 
-        // TODO: what a yield evaluates to is decided by the generator's TNext, which needs generators to be typed
         case UNARY_OP_YIELD:
         case UNARY_OP_YIELD_STAR:
-            return any_type(me);
+            impossible; // check_yield()
 
         case UNARY_OP_PLUS:
         case UNARY_OP_MINUS:
@@ -1312,6 +1311,39 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     return optional ? optional_type(me, ret) : ret;
 }
 
+// What a `yield` evaluates to: what the generator is sent (its TNext), for `yield*` what the delegate returns (tsc's
+// checkYieldExpression). The operand is checked with the yield type as its contextual type, a `yield*` operand with a
+// generator that yields that, returns what the `yield*` itself is expected to be and is sent the same
+static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx) {
+    FunctionImpl const* generator = yield->generator;
+    Expr const* operand = &yield->expr;
+    if (!generator) {
+        if (operand->tag != EXPR_IMPLICIT_ANY) ty_expr_type(me, operand);
+        return any_type(me);
+    }
+    bool async = generator->is_async;
+    TyIterationTypes const* context = ty_generator_context(me, generator);
+    if (yield->op == UNARY_OP_YIELD_STAR) {
+        Ty const* operand_context = nullptr;
+        if (context) {
+            Ty const* silent = ty_intrinsic(me, TY_SILENT_NEVER);
+            Ty const* yield_type = context->yield_type;
+            Ty const* return_type = ctx.contextual ? ctx.contextual : silent;
+            operand_context = ty_generator_type(me, false, yield_type, return_type, context->next_type);
+            if (async) {
+                Ty const* both[2] = { operand_context, ty_generator_type(me, true, yield_type, return_type, context->next_type) };
+                operand_context = ty_union(me, both, 2, nullptr, (TyList){0});
+            }
+        }
+        Ty const* delegate_type = check_with(me, operand, (ExprCtx){ .contextual = operand_context });
+        u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
+        TyIterationTypes const* delegate = ty_iteration_types_of_iterable(me, delegate_type, use);
+        return delegate ? delegate->return_type : any_type(me);
+    }
+    if (operand->tag != EXPR_IMPLICIT_ANY) check_with(me, operand, (ExprCtx){ .contextual = context ? context->yield_type : nullptr });
+    return context ? context->next_type : any_type(me);
+}
+
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
     switch (expr->tag) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
@@ -1322,6 +1354,9 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
         case EXPR_BINARY_OP: return check_binary(me, expr->binary_op, ctx);
         case EXPR_UNARY_OP:
+            if (expr->unary_op->op == UNARY_OP_YIELD || expr->unary_op->op == UNARY_OP_YIELD_STAR) {
+                return check_yield(me, expr->unary_op, ctx);
+            }
             // `x!` has the contextual type of its operand
             if (expr->unary_op->op == UNARY_OP_RIGHT_BANG && ctx.contextual) {
                 return ty_non_nullable(me, check_with(me, &expr->unary_op->expr, (ExprCtx){ .contextual = ctx.contextual }));

@@ -214,7 +214,8 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             return ty_intrinsic(checker, TY_STRING);
 
         case FOR_EACH_LOOP_OF:
-            return ty_iterated_type(checker, ITERATION_FOR_OF, iterable, my iterable.outer_span, nullptr);
+            return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
+                my iterable.outer_span, nullptr);
     }
     impossible;
 }
@@ -1209,7 +1210,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    ty_iterated_type(checker, ITERATION_FOR_OF, iterable_type, my for_each_loop->iterable.outer_span, errs);
+                    ty_iterated_type(checker, my for_each_loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
+                        iterable_type, my for_each_loop->iterable.outer_span, errs);
                     break;
             }
 

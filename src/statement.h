@@ -227,6 +227,7 @@ typedef struct ForEachLoopStatement {
         FOR_EACH_LOOP_IN,
         FOR_EACH_LOOP_OF,
     } keyword;
+    bool is_await; // `for await (x of y)`
     struct {
         enum {
             FOR_EACH_LOOP_STATEMENT,

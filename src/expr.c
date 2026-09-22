@@ -540,6 +540,20 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     }
                     break;
 
+                case UNARY_OP_YIELD:
+                case UNARY_OP_YIELD_STAR:
+                    expr_lookup_names(operand, names, errs);
+                    if (flow->function && flow->function->is_generator) {
+                        my unary_op->generator = flow->function;
+                        if (flow->yield_count == flow->yield_cap) {
+                            flow->yield_cap = flow->yield_cap ? flow->yield_cap * 2 : 4;
+                            flow->yields = realloc(flow->yields, sizeof(Expr const*) * flow->yield_cap);
+                            panic_if(!flow->yields, "out of memory");
+                        }
+                        flow->yields[flow->yield_count++] = me;
+                    }
+                    break;
+
                 default:
                     expr_lookup_names(operand, names, errs);
                     break;
@@ -764,9 +778,12 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
         case EXPR_ARRAY: {
             if (expr_is_perenthisized(target)) break;
             bool array_like = source && ty_extends_array(checker, source);
+            // What isn't an array has to be iterable (tsc's checkArrayLiteralAssignment)
+            Ty const* iterated = source && !array_like ?
+                ty_iterated_type(checker, ITERATION_DESTRUCTURING, source, target->outer_span, errs) : nullptr;
             u32 index = 0;
             for_each (i, vec_expr, &target->array) {
-                Ty const* element = nullptr;
+                Ty const* element = iterated;
                 if (i->tag == EXPR_SPREAD) {
                     assignment_target_typecheck(i->spread, nullptr, errs); // TODO: the rest of the array or tuple
                 } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
@@ -806,6 +823,28 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Er
     }
     error_ctx_error_d(errs, target->outer_span, 2364,
         "The left-hand side of an assignment expression must be a variable or a property access.");
+}
+
+// tsc's checkYieldExpression: a `yield*` operand has to be iterable, and what is yielded has to be what the annotation
+// says the generator yields
+static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    UnaryOpExpr const* yield = my unary_op;
+    FunctionImpl const* generator = yield->generator;
+    if (!generator) return;
+    bool async = generator->is_async;
+    Ty const* yielded;
+    Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? my outer_span : yield->expr.outer_span;
+    if (yield->op == UNARY_OP_YIELD_STAR) {
+        u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
+        yielded = ty_iterated_type(checker, use, ty_expr_type(checker, &yield->expr), span, errs);
+    } else {
+        yielded = yield->expr.tag == EXPR_IMPLICIT_ANY ? ty_intrinsic(checker, TY_UNDEFINED) : ty_expr_type(checker, &yield->expr);
+    }
+    if (async) yielded = ty_awaited(checker, yielded);
+    if (!generator->ret_explicit) return;
+    TyIterationTypes const* declared = ty_generator_context(checker, generator);
+    if (declared) ty_check_assignable(checker, yielded, declared->yield_type, span, errs);
 }
 
 static void binary_op_typecheck(
@@ -968,9 +1007,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 case UNARY_OP_RIGHT_MINUS_MINUS:
                 case UNARY_OP_DELETE:
                 case UNARY_OP_AWAIT:
+                    // TODO: add typechecking
+                    break;
+
                 case UNARY_OP_YIELD:
                 case UNARY_OP_YIELD_STAR:
-                    // TODO: add typechecking
+                    yield_typecheck(me, errs);
                     break;
 
                 case UNARY_OP_RIGHT_BANG:

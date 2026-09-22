@@ -1191,7 +1191,10 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     signature_resolve(me, sig);
     switch (sig->ret_state) {
         case LAZY_STATE_DONE: return sig->ret;
-        case LAZY_STATE_IN_FLIGHT: return ty_intrinsic(me, TY_ERROR);
+        case LAZY_STATE_IN_FLIGHT:
+            // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
+            if (!sig->target && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
+            return ty_intrinsic(me, TY_ERROR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     sig->ret_state = LAZY_STATE_IN_FLIGHT;

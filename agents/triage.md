@@ -22,7 +22,20 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   triage after plan 06). parserGreaterThanTokenAmbiguity12-19 (`1 >> = 2` parses as an assignment and gets TS2364)
   and restParamModifier (TS1014 on top of tsc's error) regressed honestly. tsc's baseline for a file with syntax
   errors includes its type errors, so recovery has to produce the same AST shape.
-- **Iteration protocol, unique symbols, generators**: `plans/09_iteration_protocol.md`.
+- **Contextual signatures of nested function expressions in generic calls**: `foo("", function () { return x =>
+  x.length }, p => undefined)` with `fun: () => (x: T) => U` checks the inner lambda against the *uninstantiated*
+  `(x: T) => U` (TS2345 "Type 'string' is not assignable to type 'T'"). tsc instantiates contextual signatures with
+  the inference context's nonFixingMapper (instantiateContextualType, ContextFlags.Signature). generatorTypeCheck45/46
+  lost their errors component to this once generators were typed (plan 09).
+- `expandoFunctionSymbolProperty`: `f[symb] = ...` on a function declaration isn't an expando property (only `f.x =`
+  is?), so `f` misses `[symb]` (TS2741). Found by plan 09.
+- `asyncYieldStarContextualType`: `promise.then(mapper)` with a generic `mapper` is higher-order inference (plan 11).
+- Late bound index signatures (TS 5.x): `[k]: T` in a class/interface with an entity-name key of type string/number/
+  symbol is an index signature in tsc (getIndexInfosOfIndexSymbol); tttt drops the member (hacks.md "Computed member
+  names"). overrideLateBindableIndexSignature1 and friends.
+- An array literal that is a destructuring assignment target (`[a, b] = m`) types as an array, tsc makes it a tuple of
+  the targets' types (checkArrayLiteral inDestructuringPattern); a binding pattern isn't the contextual type of its
+  initializer (`var [, , [, b]] = [3, 5, [0, 1]]` gets TS2461 at ES5, declarationEmitDestructuringArrayPattern5).
 - **Member accessibility is not checked at all**: `private`/`protected` members and constructors are ordinary ones
   (no TS2341 in 36 tests, TS2445 22, TS2673/TS2674 8). `new C()` on a private constructor should be an error whose
   result is `any`: typesWithPrivateConstructor/typesWithProtectedConstructor lost their symbols component when
@@ -74,8 +87,6 @@ Uninvestigated items. Triage sessions drain this. Everything here was re-checked
   has no cycle detection (`let [x = x] = []` used to recurse forever; `lower_binding_access` avoids it, other
   contextual self-references can still overflow the stack).
 - `super.x` is `any`: `super` has no target symbol and no type (`super.throw()` isn't a never call).
-- Relations ignore symbol-keyed members: `{ length: unknown }` is a strict subtype of `Iterable<any>`
-  (typeGuardNarrowByUntypedField). Plan 09 stage 1.
 - No fresh/regular literal types (plan 11 sketch): `[x]` with `x: string | false` gives `(string | boolean)[]`
   (spreadBooleanRespectsFreshness); a union filtered to the members of an alias prints `string | false` where tsc
   says `FooBase`.
