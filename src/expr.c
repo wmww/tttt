@@ -1080,9 +1080,18 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             class_decl_typecheck(my class_decl, errs);
             break;
 
-        case EXPR_SPREAD:
+        case EXPR_SPREAD: {
             expr_typecheck(my spread, errs);
-            break;
+            // `...x` of an array literal or a call: what isn't an array has to be iterable. Not in a destructuring
+            // assignment, where `x` is assigned to (`[...x] = e`)
+            Checker* checker = current_checker;
+            bool target = (my spread->tag == EXPR_IDENTIFIER && my spread->identifier.assignment_target) ||
+                (my spread->tag == EXPR_PROPERTY && my spread->property->assignment_target);
+            Ty const* operand = expr_get_type(my spread);
+            if (!target && !(operand->flags & TYF_ANY) && !ty_extends_array(checker, operand)) {
+                ty_iterated_type(checker, ITERATION_SPREAD, operand, my spread->outer_span, errs);
+            }
+        }   break;
 
         case EXPR_REGEX:
             break;

@@ -493,6 +493,7 @@ typedef enum TyIntrinsic {
     TY_VOID,
     TY_NEVER,
     TY_SILENT_NEVER,
+    TY_IMPLICIT_NEVER, // The element type of `[]` under strictNullChecks (tsc's implicitNeverType)
     TY_UNREACHABLE_NEVER, // Control flow: after a call that never returns. A reference there has its declared type
     TY_NON_PRIMITIVE,
     TY_INTRINSIC_COUNT,
@@ -552,6 +553,7 @@ struct Checker {
     u32 flow_shared_cap;
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     bool variance_unreliable; // structurally: set when they go through something that isn't (relate.c)
+    struct IterationState const* iteration; // The lib's iteration interfaces, looked up on first use (iterate.c)
 };
 
 // checker.c
@@ -779,6 +781,36 @@ static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
     my flow_expr_generation = saved.expr_generation;
 }
 
+// iterate.c: the iteration protocol (tsc's IterationUse and getIterationTypesOfIterable)
+typedef enum IterationUse {
+    ITERATION_ALLOWS_SYNC = 1 << 0,
+    ITERATION_ALLOWS_ASYNC = 1 << 1,
+    ITERATION_ALLOWS_STRING = 1 << 2,
+    ITERATION_FOR_OF_FLAG = 1 << 3,
+    ITERATION_YIELD_STAR_FLAG = 1 << 4,
+    ITERATION_SPREAD_FLAG = 1 << 5,
+    ITERATION_DESTRUCTURING_FLAG = 1 << 6,
+    ITERATION_FOR_OF = ITERATION_ALLOWS_SYNC | ITERATION_ALLOWS_STRING | ITERATION_FOR_OF_FLAG,
+    ITERATION_FOR_AWAIT_OF = ITERATION_ALLOWS_SYNC | ITERATION_ALLOWS_ASYNC | ITERATION_ALLOWS_STRING | ITERATION_FOR_OF_FLAG,
+    ITERATION_YIELD_STAR = ITERATION_ALLOWS_SYNC | ITERATION_YIELD_STAR_FLAG,
+    ITERATION_ASYNC_YIELD_STAR = ITERATION_ALLOWS_SYNC | ITERATION_ALLOWS_ASYNC | ITERATION_YIELD_STAR_FLAG,
+    ITERATION_SPREAD = ITERATION_ALLOWS_SYNC | ITERATION_SPREAD_FLAG,
+    ITERATION_DESTRUCTURING = ITERATION_ALLOWS_SYNC | ITERATION_DESTRUCTURING_FLAG,
+    ITERATION_GENERATOR_RETURN = ITERATION_ALLOWS_SYNC,
+    ITERATION_ASYNC_GENERATOR_RETURN = ITERATION_ALLOWS_ASYNC,
+} IterationUse;
+typedef struct TyIterationTypes {
+    Ty const* yield_type;
+    Ty const* return_type;
+    Ty const* next_type;
+} TyIterationTypes;
+// What iterating a value of the type gives (every member of a union has to iterate), null if it doesn't
+TyIterationTypes const* ty_iteration_types_of_iterable(Checker* me, Ty const* ty, u32 use);
+TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty, bool async); // null: not an iterator
+// What for-of, spread and array destructuring get from a value: the yield type, below ES2015 the element type of an
+// array (or string). Reports TS2488/TS2495/TS2461/TS2802... to `errs` if it isn't iterable (then it's any)
+Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* ty, Span span, ErrorCtx* errs);
+
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2345
@@ -824,10 +856,7 @@ typedef struct TyDisplay {
     // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
     // mentions them is reused inside of it
     TyList fresh_params;
-    // Print a unique symbol type as `unique symbol` rather than `typeof sym` (types baseline), unless `nested` in
-    // something other than a union (tsc's AllowUniqueESSymbolType)
-    bool unique_symbols;
-    bool nested;
+    bool unique_symbols; // Print unique symbol types as `unique symbol` rather than `typeof sym` (types baseline)
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

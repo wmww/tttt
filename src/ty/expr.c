@@ -216,7 +216,13 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
     u32 index = *(u32 const*)arg;
     Value value = value_number(index);
     Ty const* ret = ty_access(me, object, ty_literal(me, &value));
-    return ret ? ret : ty_access(me, object, ty_intrinsic(me, TY_NUMBER));
+    if (!ret) ret = ty_access(me, object, ty_intrinsic(me, TY_NUMBER));
+    if (!ret && (compiler_options()->target >= SCRIPT_TARGET_ES2015 || compiler_options()->downlevel_iteration)) {
+        // Anything iterable: what it yields (tsc's getIteratedTypeOrElementType for IterationUse.Element)
+        TyIterationTypes const* types = ty_iteration_types_of_iterable(me, object, ITERATION_ALLOWS_SYNC);
+        if (types) ret = types->yield_type;
+    }
+    return ret;
 }
 
 static Ty const* contextual_element_type(Checker* me, Ty const* contextual, u32 index) {
@@ -431,12 +437,22 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
         u32 at = index++;
-        if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
+        // A parameter with an initializer takes the contextual type too (tsc's getContextuallyTypedParameterType)
+        if (i->initializer.binding.has_explicit_type) continue;
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
         if (param_memo && param_memo->evaluation_started) continue;
         Ty const* type = signature_type_at(me, sig, at, i->rest);
         if (!type) continue;
         if (i->rest && !ty_is_array(me, type) && !ty_is_tuple(type) && !(type->flags & TYF_TYPE_PARAM)) type = ty_array(me, type, false);
+        if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) {
+            // An initializer that doesn't fit the contextual type but is wider than it wins (tsc's
+            // assignContextualParameterTypes): `(max = 3) => {}` against `(max: 1 | 2) => void` takes a number
+            Ty const* initializer = ty_expr_type(me, &i->initializer.value);
+            if (!ty_is_related(me, initializer, type, TY_RELATION_ASSIGNABLE)) {
+                Ty const* widened = ty_widened_for_declaration(me, initializer, true);
+                if (ty_is_related(me, type, widened, TY_RELATION_ASSIGNABLE)) type = widened;
+            }
+        }
         u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
         *intern_slot(me, &my links, key, 2) = type;
     }
@@ -454,7 +470,7 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
         case EXPR_FUNCTION:
             if (vec_generic_item_size(&expr->function->generic.items)) return false;
             for_each (i, vec_function_arg, &expr->function->args) {
-                if (!i->initializer.binding.has_explicit_type && i->initializer.value.tag == EXPR_IMPLICIT_ANY) return true;
+                if (!i->initializer.binding.has_explicit_type) return true;
             }
             return false;
         case EXPR_OBJECT:
@@ -1141,7 +1157,8 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* operand = ty_expr_type(me, i->spread);
             if (as_tuple) {
                 flags[count] = TUPLE_ELEMENT_REST;
-                elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) ? operand : ty_array(me, any_type(me), false);
+                elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) ?
+                    operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
             } else {
                 elements[count++] = ty_expr_type(me, i);
             }
@@ -1168,7 +1185,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             element = elements[0];
         } else {
             // `[]` (an unannotated variable initialized with it is an evolving array in tsc, see binding.c)
-            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_NEVER) : any_type(me);
+            element = compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_IMPLICIT_NEVER) : any_type(me);
         }
         ret = ty_array(me, element, false);
     }
@@ -1372,9 +1389,10 @@ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
 
         case EXPR_SPREAD: {
-            // The type of each spread element. TODO: iterables, which are `any` for now
+            // The type of each spread element: of an array its elements, of anything else what iterating it gives
             Ty const* operand = ty_expr_type(me, expr->spread);
-            return ty_is_array(me, operand) || ty_is_tuple(operand) ? ty_rest_element_type(me, operand) : any_type(me);
+            if (ty_is_array(me, operand) || ty_is_tuple(operand)) return ty_rest_element_type(me, operand);
+            return ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr);
         }
     }
     impossible;

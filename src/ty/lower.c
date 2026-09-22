@@ -151,7 +151,18 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
             TypeDecl const* type_decl = decl->node;
             TyList params = ty_type_params_of(me, &type_decl->generic);
             LowerCtx ctx = { .generic = params.len > 0, .in_alias = true };
-            ret = lower(me, &type_decl->type, ctx, symbol, params);
+            TypeNode const* body = &type_decl->type;
+            if (body->tag == TYPE_IDENTIFIER && body->identifier->target && !vec_span_size(&body->identifier->namespaces) &&
+                csview_equals(body->identifier->name.sv, "intrinsic") &&
+                symbol_find_decl(body->identifier->target, SYMBOL_DECL_BUILTIN)
+            ) {
+                // `type X = intrinsic`: what the checker makes of the name. TODO: Uppercase<S> & co. are any
+                bool undefined = csview_equals(symbol->name, "BuiltinIteratorReturn") &&
+                    compiler_options()->strict_builtin_iterator_return;
+                ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_ANY);
+            } else {
+                ret = lower(me, body, ctx, symbol, params);
+            }
         } else if (decl->kind == SYMBOL_DECL_BUILTIN) {
             // The `object` keyword is a builtin alias whose node is an empty interface
             ret = csview_equals(symbol->name, "object") ?
@@ -914,10 +925,14 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     if (!parent) return binding->source ? lazy_type_get(binding->source) : ty_intrinsic(me, TY_ANY);
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
     bool in_array = parent->tag == BINDING_ARRAY;
-    // TODO: iterables. No TS2339-style errors from here either
-    if (in_array && !ty_extends_array(me, object)) return ty_intrinsic(me, TY_ANY);
+    // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives
+    // (tsc's getTypeForBindingElement). TODO: no TS2339-style errors from here
+    bool array_like = in_array && (object->flags & TYF_ANY || ty_extends_array(me, object));
     Ty const* ret;
-    if (binding->rest && in_array) {
+    if (in_array && !array_like) {
+        Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
+        ret = binding->rest ? ty_array(me, element, false) : element;
+    } else if (binding->rest && in_array) {
         ret = binding_rest_elements(me, object, binding->parent_index);
     } else if (binding->rest) {
         ret = object; // TODO: without the properties the pattern names, methods and accessors (tsc's getRestType())

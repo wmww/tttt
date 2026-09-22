@@ -68,8 +68,8 @@ static Args collect_args(Checker* me, CallExpr const* call) {
                 }
                 continue;
             }
-            Ty const* element = ty_intrinsic(me, TY_ANY);
-            if (ty_is_array(me, operand) || ty_is_tuple(operand)) element = ty_rest_element_type(me, operand);
+            Ty const* element = ty_is_array(me, operand) || ty_is_tuple(operand) ?
+                ty_rest_element_type(me, operand) : ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr);
             if (args.spread_index < 0) args.spread_index = (i32)args.len;
             args_push(&args, (Arg){ .expr = i, .type = element, .spread = true });
         } else {

@@ -187,9 +187,7 @@ void binding_typecheck(Binding* me, ErrorCtx* errs) {
 
         case BINDING_ARRAY:
             Ty const* type = ty_binding_type(current_checker, me, (LowerCtx){ .generic = true });
-            if (!ty_extends_array(current_checker, type)) {
-                error_ctx_error_d(errs, my content_span, 2461, "Type '", type, "' is not an array type.");
-            }
+            ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, my content_span, errs);
             for_each (i, vec_binding, &my array) {
                 binding_typecheck(i, errs);
             }
@@ -266,8 +264,8 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type && my getter) {
         return ty_function_return_type(checker, my getter);
     }
-    if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type) {
-        // A parameter of a function expression gets its type from the contextual signature
+    if (!my binding.has_explicit_type) {
+        // A parameter of a function expression gets its type from the contextual signature, initializer or not
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
     }

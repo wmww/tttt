@@ -971,7 +971,7 @@ const baselines = {
         types: true,
     },
     'argumentsObjectIterator01_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -981,7 +981,7 @@ const baselines = {
         types: true,
     },
     'argumentsObjectIterator02_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -991,7 +991,7 @@ const baselines = {
         types: true,
     },
     'argumentsObjectIterator03_ES6': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -6106,7 +6106,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeIterableUnions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6531,9 +6531,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedParametersWithInitializers3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedParametersWithInitializers4': {
         errors: true,
@@ -6546,8 +6546,8 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedSymbolNamedProperties': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'contextuallyTypingOrOperator': {
@@ -12161,7 +12161,7 @@ const baselines = {
         types: false,
     },
     'esNextWeakRefs_IterableWeakMap': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -17008,7 +17008,7 @@ const baselines = {
     'indirectUniqueSymbolDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inexistentPropertyInsideToStringType': {
         errors: false,
@@ -19838,7 +19838,7 @@ const baselines = {
     'lateBoundConstraintTypeChecksCorrectly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundDestructuringImplicitAnyError': {
         errors: false,
@@ -20218,7 +20218,7 @@ const baselines = {
     'mapConstructor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mapConstructorOnReadonlyTuple': {
         errors: true,
@@ -20856,8 +20856,8 @@ const baselines = {
         types: false,
     },
     'modularizeLibrary_Dom.iterable': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib': {
@@ -20916,9 +20916,9 @@ const baselines = {
         types: false,
     },
     'modularizeLibrary_Worker.iterable': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAliasAsFunctionArgument': {
         errors: true,
@@ -26543,12 +26543,12 @@ const baselines = {
     'regexMatchAll-esnext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'regexMatchAll': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'regexpExecAndMatchTypeUsages(strict=false)': {
         errors: false,
@@ -28678,7 +28678,7 @@ const baselines = {
     'stringMatchAll': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringPropCodeGen': {
         errors: true,
@@ -30148,12 +30148,12 @@ const baselines = {
     'typeArgumentInferenceApparentType1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentInferenceApparentType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentInferenceOrdering': {
         errors: true,
@@ -30268,12 +30268,12 @@ const baselines = {
     'typeGuardNarrowByMutableUntypedField': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowByUntypedField': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty1': {
         errors: true,
@@ -30931,14 +30931,14 @@ const baselines = {
         types: true,
     },
     'typedArrays-es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typedArrays-es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typedArrays': {
         errors: true,
@@ -32641,9 +32641,9 @@ const baselines = {
         types: false,
     },
     'webworkerIterable': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'wellKnownSymbolExpando': {
         errors: true,
@@ -40791,7 +40791,7 @@ const baselines = {
         types: false,
     },
     'destructuringArrayBindingPatternAndAssignment4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41236,7 +41236,7 @@ const baselines = {
         types: true,
     },
     'iterableArrayPattern1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41246,12 +41246,12 @@ const baselines = {
         types: false,
     },
     'iterableArrayPattern11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'iterableArrayPattern12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41291,7 +41291,7 @@ const baselines = {
         types: false,
     },
     'iterableArrayPattern2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41301,14 +41301,14 @@ const baselines = {
         types: false,
     },
     'iterableArrayPattern21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'iterableArrayPattern22': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern23': {
         errors: false,
@@ -41333,17 +41333,17 @@ const baselines = {
     'iterableArrayPattern27': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern28': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern29': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern3': {
         errors: true,
@@ -41351,9 +41351,9 @@ const baselines = {
         types: false,
     },
     'iterableArrayPattern30': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableArrayPattern4': {
         errors: true,
@@ -41381,7 +41381,7 @@ const baselines = {
         types: false,
     },
     'iterableArrayPattern9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41541,17 +41541,17 @@ const baselines = {
         types: true,
     },
     'for-of12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'for-of13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'for-of14': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41566,17 +41566,17 @@ const baselines = {
         types: false,
     },
     'for-of17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of19': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41586,22 +41586,22 @@ const baselines = {
         types: true,
     },
     'for-of20': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of21': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of22': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of23': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41611,22 +41611,22 @@ const baselines = {
         types: true,
     },
     'for-of25': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'for-of26': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of27': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'for-of28': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41646,7 +41646,7 @@ const baselines = {
         types: false,
     },
     'for-of31': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41676,19 +41676,19 @@ const baselines = {
         types: true,
     },
     'for-of37': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of38': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of39': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of4': {
         errors: true,
@@ -41696,9 +41696,9 @@ const baselines = {
         types: true,
     },
     'for-of40': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of41': {
         errors: true,
@@ -41721,12 +41721,12 @@ const baselines = {
         types: true,
     },
     'for-of45': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'for-of46': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41741,7 +41741,7 @@ const baselines = {
         types: false,
     },
     'for-of49': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -41751,9 +41751,9 @@ const baselines = {
         types: true,
     },
     'for-of50': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of51': {
         errors: false,
@@ -41786,14 +41786,14 @@ const baselines = {
         types: true,
     },
     'for-of57': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of58': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'for-of6': {
         errors: true,
@@ -42408,7 +42408,7 @@ const baselines = {
     'iteratorSpreadInArray11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iteratorSpreadInArray2': {
         errors: true,
@@ -42441,7 +42441,7 @@ const baselines = {
         types: false,
     },
     'iteratorSpreadInArray8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42491,22 +42491,22 @@ const baselines = {
         types: false,
     },
     'iteratorSpreadInCall6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'iteratorSpreadInCall7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'iteratorSpreadInCall8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'iteratorSpreadInCall9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -44258,12 +44258,12 @@ const baselines = {
     'generatorOverloads1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorOverloads2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorOverloads3': {
         errors: false,
@@ -44278,7 +44278,7 @@ const baselines = {
     'generatorOverloads5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck1': {
         errors: true,
@@ -44288,22 +44288,22 @@ const baselines = {
     'generatorTypeCheck10': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck14': {
         errors: true,
@@ -44323,32 +44323,32 @@ const baselines = {
     'generatorTypeCheck17': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck18': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck19': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck20': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck21': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck22': {
         errors: true,
@@ -44393,7 +44393,7 @@ const baselines = {
     'generatorTypeCheck3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck30': {
         errors: true,
@@ -44572,12 +44572,12 @@ const baselines = {
     },
     'generatorTypeCheck62': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck63': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'generatorTypeCheck7': {
@@ -46473,7 +46473,7 @@ const baselines = {
     'functionExpressionContextualTyping1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionExpressionContextualTyping2': {
         errors: false,
@@ -46497,8 +46497,8 @@ const baselines = {
     },
     'iterableContextualTyping1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'objectLiteralContextualTyping': {
         errors: false,
@@ -46598,7 +46598,7 @@ const baselines = {
     'callWithSpread5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callWithSpreadES6': {
         errors: false,
@@ -47601,9 +47601,9 @@ const baselines = {
         types: true,
     },
     'typeSatisfaction_contextualTyping3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeSatisfaction_ensureInterfaceImpl': {
         errors: true,
@@ -49443,7 +49443,7 @@ const baselines = {
     'generatorReturnTypeFallback.5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorReturnTypeIndirectReferenceToGlobalType': {
         errors: true,
@@ -61181,9 +61181,9 @@ const baselines = {
         types: true,
     },
     'ES3For-ofTypeCheck4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES3For-ofTypeCheck6': {
         errors: true,
@@ -61331,7 +61331,7 @@ const baselines = {
         types: false,
     },
     'ES5For-of36': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61381,7 +61381,7 @@ const baselines = {
         types: false,
     },
     'ES5For-ofTypeCheck11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61391,14 +61391,14 @@ const baselines = {
         types: true,
     },
     'ES5For-ofTypeCheck13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'ES5For-ofTypeCheck14': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-ofTypeCheck2': {
         errors: true,
@@ -61411,14 +61411,14 @@ const baselines = {
         types: true,
     },
     'ES5For-ofTypeCheck4': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-ofTypeCheck5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-ofTypeCheck6': {
         errors: true,
@@ -61426,19 +61426,19 @@ const baselines = {
         types: true,
     },
     'ES5For-ofTypeCheck7': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5For-ofTypeCheck8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ES5For-ofTypeCheck9': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ES5for-of32': {
         errors: true,
@@ -62563,7 +62563,7 @@ const baselines = {
     'neverInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'neverIntersectionNotCallable': {
         errors: false,
@@ -63991,14 +63991,14 @@ const baselines = {
         types: true,
     },
     'builtinIteratorReturn(strictbuiltiniteratorreturn=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'builtinIteratorReturn(strictbuiltiniteratorreturn=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularTypeAliasForUnionWithClass': {
         errors: true,
@@ -65726,12 +65726,12 @@ const baselines = {
         types: false,
     },
     'uniqueSymbols': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'uniqueSymbolsDeclarations': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

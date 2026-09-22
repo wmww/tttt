@@ -210,6 +210,7 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_VOID] = make_intrinsic(me, "void", TYF_VOID);
     my intrinsics[TY_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_SILENT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
+    my intrinsics[TY_IMPLICIT_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
     return me;

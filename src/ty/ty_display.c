@@ -674,13 +674,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             annotation = prop->node;
         }
         TyDisplay prop_d = reused_if(d, annotation && (d.reused || reuses(me, d, annotation)));
-        // The property that declares a unique symbol shows it as one (tsc's serializeTypeForDeclaration)
-        if ((type->flags & TYF_UNIQUE_ES_SYMBOL) && prop->node && prop->node->tag == TYPE_UNIQUE_SYMBOL &&
-            prop->node->unique_symbol.key == type->literal.unique->key
-        ) {
-            prop_d.nested = false;
-            prop_d.reused = d.reused; // Printed, not reused: tsc doesn't reuse a `unique symbol` annotation
-        }
+        // Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol
+        if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL) prop_d.reused = d.reused;
         ty_display(me, prop_d, type);
         out_lit(d, "; ");
     }
@@ -777,11 +772,6 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
 
-    // `unique symbol` is only for the type itself and the members of a union: nested in anything else (a property, a
-    // parameter, a type argument) tsc prints `typeof sym`
-    bool unique_symbol = d.unique_symbols && !d.nested;
-    if (ty->kind != TY_UNION && ty->kind != TY_INTERSECTION) d.nested = true;
-
     // Widening only reaches through the structure of expression types (temporaries lowered from the legacy checker)
     if (d.widen_literals && !(ty->kind == TY_LITERAL || ty->kind == TY_UNION ||
         (ty->kind == TY_ANONYMOUS && !ty->anonymous.node && !ty->anonymous.overload_count && !ty->anonymous.target))
@@ -816,8 +806,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 break;
             }
             if (ty->flags & TYF_UNIQUE_ES_SYMBOL) {
-                // The types baseline says `unique symbol` (tsc's AllowUniqueESSymbolType), messages name the symbol
-                if (unique_symbol) {
+                // The types baseline says `unique symbol` (tsc's AllowUniqueESSymbolType), messages name the symbol, and
+                // so does an annotation that is reused (it says `typeof sym`: the one that says `unique symbol` declares
+                // the symbol, and tsc doesn't reuse that one)
+                if (d.unique_symbols && !d.reused) {
                     out_lit(d, "unique symbol");
                 } else {
                     out_lit(d, "typeof ");
@@ -885,6 +877,14 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 display_parenthesized_if(me, d, args.data[0], needs_parens_in_array(me, args.data[0]));
                 out_lit(d, "[]");
             } else {
+                if (ty_elides_default_type_args(me, target)) {
+                    // `Iterable<T>` for `Iterable<T, any, any>` (tsc does this for four lib types only)
+                    while (args.len) {
+                        Ty const* fallback = ty_param_default(me, target->declared.type_params.data[args.len - 1]);
+                        if (fallback != args.data[args.len - 1]) break;
+                        args.len--;
+                    }
+                }
                 out_declared_name(me, d, target, SYMBOL_TYPE);
                 out_lit(d, "<");
                 display_list(me, d, args);

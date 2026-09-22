@@ -869,7 +869,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
         union_members(&name_type, &names, &name_count);
         for (u32 j = 0; j < name_count; j++) {
             Ty const* prop_name = names[j];
-            if (prop_name->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+            if (prop_name->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) {
                 Atom const* name = ty_literal_name(me, prop_name);
                 Prop* existing = builder_find_prop(&builder, name);
                 if (existing) {
@@ -884,7 +884,7 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
                 }
                 // Modifiers come from the property the key (not the name it's mapped to) names
                 Prop const* modifiers_prop = nullptr;
-                if (modifiers && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
+                if (modifiers && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) {
                     modifiers_prop = ty_get_prop(me, modifiers, ty_literal_name(me, key));
                 }
                 u32 flags = modifiers_prop ? modifiers_prop->flags & (PROP_OPTIONAL | PROP_READONLY) : 0;

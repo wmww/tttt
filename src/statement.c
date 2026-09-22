@@ -214,14 +214,7 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             return ty_intrinsic(checker, TY_STRING);
 
         case FOR_EACH_LOOP_OF:
-            // TODO: iterables
-            if (ty_extends_array(checker, iterable) ||
-                ty_is_related(checker, iterable, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE)
-            ) {
-                Ty const* element = ty_access(checker, iterable, ty_intrinsic(checker, TY_NUMBER));
-                if (element) return element;
-            }
-            return ty_intrinsic(checker, TY_ANY);
+            return ty_iterated_type(checker, ITERATION_FOR_OF, iterable, my iterable.outer_span, nullptr);
     }
     impossible;
 }
@@ -1216,12 +1209,7 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
                     break;
 
                 case FOR_EACH_LOOP_OF:
-                    if (!ty_extends_array(checker, iterable_type) &&
-                        !ty_is_related(checker, iterable_type, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE)
-                    ) {
-                        error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2495,
-                            "Type '", iterable_type, "' is not an array type or a string type.");
-                    }
+                    ty_iterated_type(checker, ITERATION_FOR_OF, iterable_type, my for_each_loop->iterable.outer_span, errs);
                     break;
             }
 

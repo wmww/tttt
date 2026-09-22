@@ -39,6 +39,7 @@ enum {
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
+    KEY_ITERATION_TYPES, // (type id, which) -> TyIterationTypes, see iterate.c
     KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
@@ -142,5 +143,6 @@ FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
 Ty const* ty_rest_element_type(Checker* me, Ty const* rest);
 // Type parameter `index` of a generic declared type was measured as contravariant
 bool ty_type_param_is_contravariant(Checker* me, Ty const* target, u32 index);
+bool ty_elides_default_type_args(Checker* me, Ty const* target); // iterate.c
 bool ty_is_tuple(Ty const* ty); // Not the empty tuple, which is its own target (TY_DECLARED)
 bool ty_is_array(Checker* me, Ty const* ty);
