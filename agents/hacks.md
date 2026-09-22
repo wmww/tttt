@@ -20,10 +20,21 @@ Suboptimal-but-working code. Prefer function names over line numbers.
   unused locals, `exactOptionalPropertyTypes`...) is carried but inert. `compiler_options()` is a global like the
   `ErrorConfig` it replaced, set around load/resolve/check by `program.c`; becomes a `Checker`/`Program` field read
   through a context when signatures get one.
-- `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@libFiles` (react.d.ts,
-  the `typescript` API for APISample_*: ~40 tests with a spurious TS2307), `@baselineFile`, `@fullEmitPaths`. Bad
-  option values are ignored too (tsc's harness throws). A `tsconfig.json` unit is honoured for options and roots, its
-  own diagnostics (TS5xxx option validation, TS18003 no inputs) are not produced.
+- `baseline_test_case.c: apply_setting`: harness-only directives that are still ignored: `@libFiles` (99 of its 100
+  uses are `react.d.ts`: nothing until JSX), `@baselineFile`, `@fullEmitPaths`. Bad option values are ignored too
+  (tsc's harness throws). A `tsconfig.json` unit is honoured for options and roots; option diagnostics
+  (`program_validate_options`) are skipped when there is one, since tsc then puts them on the option's json span.
+- `error_ctx_global_error_s`: diagnostics without a file are `Error`s with a null span, sorted first (by code, then
+  message, like tsc), shown by the harness before the first file (`formatted_global_errors`). The CLI's
+  `display_error` prints them as `[unkown file]:2`. `error_ctx_error_s` still drops errors with an invalid span.
+- `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the JS gate is a *filter* run after name resolution and
+  after typechecking (semantic errors in an unchecked file are removed from the ErrorCtx), not a skip: names are
+  still resolved (imports from an unchecked file need its exports) and `block_typecheck` is skipped only for the
+  whole-file case. `check_access()` keeps its own "JS file: no TS2339" gate on top (`is_js`), because expando
+  members don't exist. `program_load` refuses a `.js` root without `allowJs` (TS6504) but a `.js` file reached
+  through an import is refused by `program_load_module_ref` with `MODULE_REF_IS_JS` (TS7016-style), two paths.
+- `TTTT_IGNORE_UNDERLINES=1` (`compare_outputs`): the types component compared without its `^^^` lines, a
+  measurement for `plans/07_underlines.md`, not a mode to save results in.
 - `baseline_test_result_run`: with `@noTypesAndSymbols` the symbols and types components count as *passed*, so the
   per-component totals include ~900 free passes. A test without types/symbols baselines is run before we know
   whether it should have had any.
@@ -432,8 +443,9 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
 ## Module resolution (`src/module_resolution.c`, `src/tsconfig.c`, plan 06)
 - A resolved `.json` module is `any` (`MODULE_REF_IS_JSON`): the file isn't parsed into a type, `path_is_script` keeps
   it out of the harness' program too. `requireOfJson*`, `jsonFileImport*` (~35 tests).
-- A `.js` file that resolves with `allowJs` is loaded and parsed **as TypeScript** (the JS gate is still missing, see
-  `todo.md`): CommonJS `exports.x =` files give TS2306 "is not a module" (27 tests) and TS2304 for `exports`/`module`.
+- A `.js` file that resolves with `allowJs` is loaded and parsed **as TypeScript**; without `checkJs` its semantic
+  diagnostics are dropped (`SourceFile.unchecked`), but its *shape* is still wrong: CommonJS `exports.x =` files
+  are not modules (TS2306 in the importer, 27 tests), JSDoc types are comments. See `triage.md`.
 - JavaScript from a package is never part of the program (`maxNodeModuleJsDepth` is taken as 0, the option isn't read).
 - `apply_realpath` only runs for node_modules results, like tsc, but tsc also keeps the *original* path
   (`originalPath`) for declaration emit and for "is this the same package" checks (TS2300-style duplicate package
@@ -442,9 +454,8 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   `.ts`) is not implemented: `nodeNextPackageSelfNameWithOutDir*`, `nodeNextPackageImportMapRootDir`, 8 tests.
 - TS7016 has no elaboration ("Try `npm i --save-dev @types/x`..." needs package ids) and no "alternate result"
   chain (TS6278: types exist but `exports` hides them; tsc re-resolves without exports to find out).
-- `types` entries and automatic `@types` packages that don't resolve are silent: TS2688 needs a diagnostic without a
-  file (`program_load_automatic_types`). The harness prints those at the top of the errors baseline; `ErrorCtx` drops
-  errors without a span. Same for every tsconfig/option diagnostic (TS5xxx: 5110 23 tests, 5095 15, 5098...).
+- Automatic `@types` packages that don't resolve are silent (tsc: silent too); `types` entries get TS2688
+  (`program_load_automatic_types`). TS5055/TS5056/TS6054 and the outFile/sourceMap family need emit paths: not done.
 - Windows-style rooted names (`c:/root/...`, `A:/foo`) are not paths to us (3 tests).
 - `/// <reference lib="..." />` only works between lib files (same directory); in a program file it is ignored,
   because the harness keeps libs in a shared lib program a test can't add to.
@@ -458,3 +469,37 @@ The algorithms are meant to stay; what's listed is where they stop short of tsc.
   `allowJs` in `include` depends on the option having been read before the files are collected (it has).
 - `main.c`: strict by default *only without* a tsconfig; command line options override the config's. `--lib`/`--target`
   default (`default_libs`) only when neither the config nor the command line decides.
+
+## Comment catalogue (2026-09-21, `grep -rnE "\b(PERF|HACK|TODO|FIXME)\b" src`, 155 comments; the ones not above)
+Checker gaps marked in the code, by function:
+- `class_decl_typecheck`: `implements Foo` is lowered as a type but never checked (TS2420).
+  `interface_decl_typecheck`: an `extends` target isn't checked for TS2312/TS2430.
+- `check_access`: indexing with a type parameter / deferred index type returns silently instead of TS2536.
+- `lower_type_args`: a missing required type argument without default becomes any/error, no TS2314.
+  `lower_identifier`: `import("./a").B.C` with a missing intermediate member gives `any`, no TS2339.
+  `binding_rest_elements`: a rest binding from a readonly array/tuple loses `readonly`.
+  `append_qualified_name`: always fully qualifies (the traversal has the accessibility walk, error messages don't).
+- `scope_add_port`: `export as namespace N` never reports TS2686 on use; `export` inside a namespace body is dropped
+  silently instead of TS1194. `scope_default_export_table`: default export outside a module isn't diagnosed (TS1319).
+- `ty_identifier_reference_type`: a bare `this` where nothing declares one is `undefined` (tsc: `typeof globalThis`
+  or implicit any). `binary_result`: no TS2695 for the unused left side of a comma expression.
+- `binary_op_typecheck` (expr.c): `<`/`>`/`<=`/`>=`/`in`/`instanceof` have no checks; assignment to a property
+  expression isn't checked against the property's type (identifier targets are); `+` redoes the relation checks
+  evaluation already did. `expr_typecheck`: `delete`/`await`/`yield` unchecked (no TS1064); `as`/`satisfies` never
+  report TS2352 for non-overlapping types.
+- `prop_type` (ty/members.c): an in-flight (cyclic) property type is the error type silently, no TS2502.
+- `for_in_accepts` (statement.c): a type parameter should be judged by its constraint (spurious TS2407 possible).
+- `binding_add_names`: literal types on an exported binding aren't widened the way tsc does for
+  `defaultNamedExportWithType1`.
+- `instantiate_anonymous` (ty/instantiate.c): instantiation expressions are never instantiated a second time.
+- `ty_union_subtype_reduced`: subtype reduction bails above 64 members (quadratic check).
+Parser: `is_identifier_char` is ASCII-only (no Unicode ID_Start/ID_Continue); `parse_identifier` excludes keywords
+by a chain of `span_equals`; `parse_binary_op` is an if/else chain; `parse_class_decl` gives a generic trailing-comma
+error for `extends B, C`; `parse_regex` fails instead of TS1161; numeric separators (`string_helpers.c`) never
+report TS6188/6189; `parse_string` had dropped every escape but `\n`/`\r` until this catalogue found it
+(`parse_string_escape` now, `display_string_literal` in `ty_display.c` mirrors tsc's `escapeString`).
+Perf notes in the code: `CallExpr` argument types recomputed per use; `Value.object` refcount churn; `IdentifierType`
+could be split into a small common case; `CallableType`/`FunctionImpl` two allocations; `DEBUG_ALLOCATOR` always
+on; `error_cmp` orders by span only (a TODO says "by file first"; files are separate ErrorCtx passes in practice).
+`engine.c` (used by the harness to read `test/baseline_results.ts`, nothing else): no let/const/var distinction,
+property assignment on arrays dropped, `value_loose_eq` stringifies; irrelevant unless it grows a second user.

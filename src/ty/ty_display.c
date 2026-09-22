@@ -103,17 +103,46 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
     }
 }
 
+// tsc's escapeString() with a double quote: named escapes, other control characters and U+2028/2029/0085 as \uXXXX
 static void display_string_literal(TyDisplay d, csview sv) {
     out_lit(d, "\"");
     for (isize_t i = 0; i < sv.size; i++) {
-        char c = sv.buf[i];
+        unsigned char c = (unsigned char)sv.buf[i];
         switch (c) {
             case '"': out_lit(d, "\\\""); break;
             case '\\': out_lit(d, "\\\\"); break;
             case '\n': out_lit(d, "\\n"); break;
             case '\r': out_lit(d, "\\r"); break;
             case '\t': out_lit(d, "\\t"); break;
-            default: out(d, csview_from_n(&c, 1)); break;
+            case '\v': out_lit(d, "\\v"); break;
+            case '\f': out_lit(d, "\\f"); break;
+            case '\b': out_lit(d, "\\b"); break;
+            case 0:
+                if (i + 1 < sv.size && sv.buf[i + 1] >= '0' && sv.buf[i + 1] <= '9') out_lit(d, "\\x00");
+                else out_lit(d, "\\0");
+                break;
+            default: {
+                u32 code = 0;
+                if (c < 0x20) {
+                    code = c;
+                } else if (c == 0xC2 && i + 1 < sv.size && (unsigned char)sv.buf[i + 1] == 0x85) {
+                    code = 0x85;
+                    i += 1;
+                } else if (c == 0xE2 && i + 2 < sv.size && (unsigned char)sv.buf[i + 1] == 0x80 &&
+                    ((unsigned char)sv.buf[i + 2] == 0xA8 || (unsigned char)sv.buf[i + 2] == 0xA9)
+                ) {
+                    code = (unsigned char)sv.buf[i + 2] == 0xA8 ? 0x2028 : 0x2029;
+                    i += 2;
+                }
+                if (code) {
+                    char buf[8];
+                    snprintf(buf, sizeof buf, "\\u%04X", code);
+                    out(d, csview_from(buf));
+                } else {
+                    out(d, csview_from_n(&sv.buf[i], 1));
+                }
+                break;
+            }
         }
     }
     out_lit(d, "\"");

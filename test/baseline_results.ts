@@ -3958,7 +3958,7 @@ const baselines = {
     'classStaticPropertyAccess': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticPropertyTypeGuard': {
         errors: true,
@@ -5676,8 +5676,8 @@ const baselines = {
         types: false,
     },
     'constEnumSyntheticNodesComments': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'constEnumToStringNoComments': {
@@ -23533,7 +23533,7 @@ const baselines = {
     'nonstrictTemplateWithNotOctalPrintsAsIs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'normalizedIntersectionTooComplex': {
         errors: false,
@@ -25011,9 +25011,9 @@ const baselines = {
         types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot_differentRootTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot_multipleAliases': {
         errors: true,
@@ -27423,7 +27423,7 @@ const baselines = {
     'shouldNotPrintNullEscapesIntoOctalLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sideEffectImports1(module=commonjs,nouncheckedsideeffectimports=false)': {
         errors: true,
@@ -27686,9 +27686,9 @@ const baselines = {
         types: true,
     },
     'sourceMap-StringLiteralWithNewLine': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapForFunctionInInternalModuleWithCommentPrecedingStatement01': {
         errors: true,
@@ -28661,9 +28661,9 @@ const baselines = {
         types: false,
     },
     'stringLiteralPropertyNameWithLineContinuation1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'stringLiteralsErrors': {
         errors: false,
@@ -42683,42 +42683,42 @@ const baselines = {
     'templateStringControlCharacterEscapes01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes01_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes02_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes03': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes03_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes04': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringControlCharacterEscapes04_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringInArray': {
         errors: true,
@@ -42998,22 +42998,22 @@ const baselines = {
     'templateStringMultiline1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringMultiline1_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringMultiline2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringMultiline2_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringMultiline3': {
         errors: true,
@@ -43058,42 +43058,42 @@ const baselines = {
     'templateStringTermination2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination2_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination3_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination4_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringTermination5_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated1': {
         errors: false,
@@ -43108,52 +43108,52 @@ const baselines = {
     'templateStringUnterminated2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated2_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated3_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated4_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringUnterminated5_ES6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWhitespaceEscapes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWhitespaceEscapes1_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWhitespaceEscapes2': {
         errors: true,
@@ -43168,12 +43168,12 @@ const baselines = {
     'templateStringWithBackslashEscapes01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithBackslashEscapes01_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringWithCommentsInArrowFunction': {
         errors: true,
@@ -43593,52 +43593,52 @@ const baselines = {
     'unicodeExtendedEscapesInStrings01(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings01(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings02(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings02(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings03(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings03(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings04(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings04(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings05(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings05(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings06(target=es5)': {
         errors: true,
@@ -43763,12 +43763,12 @@ const baselines = {
     'unicodeExtendedEscapesInStrings18(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings18(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings19(target=es5)': {
         errors: false,
@@ -43813,12 +43813,12 @@ const baselines = {
     'unicodeExtendedEscapesInStrings23(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings23(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings24(target=es5)': {
         errors: false,
@@ -43833,62 +43833,62 @@ const baselines = {
     'unicodeExtendedEscapesInStrings25(target=es5)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInStrings25(target=es6)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates01(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates01(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates02(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates02(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates03(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates03(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates04(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates04(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates05(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates05(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates06(target=es5)': {
         errors: true,
@@ -44013,12 +44013,12 @@ const baselines = {
     'unicodeExtendedEscapesInTemplates18(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates18(target=es6)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unicodeExtendedEscapesInTemplates19(target=es5)': {
         errors: false,
@@ -57583,7 +57583,7 @@ const baselines = {
     'parserS7.3_A1.1_T2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserS7.6.1.1_A1.10': {
         errors: true,
@@ -59238,7 +59238,7 @@ const baselines = {
     'scannerS7.3_A1.1_T2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerS7.4_A2_T2': {
         errors: false,
@@ -63526,7 +63526,7 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypesAndTuples01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -63636,9 +63636,9 @@ const baselines = {
         types: false,
     },
     'stringLiteralTypesWithTemplateStrings01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralTypesWithTemplateStrings02': {
         errors: false,

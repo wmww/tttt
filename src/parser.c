@@ -102,6 +102,89 @@ static ModuleRef* add_module_ref(Parser* p, cstr path, Span span) {
     return source_file_add_module_ref((SourceFile*)p->shared->source, path, span);
 }
 
+static int hex_digit_value(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+static void append_code_point(cstr* str, u32 code) {
+    char buf[8];
+    int n = cutf8_encode(buf, code);
+    cstr_append_n(str, buf, n);
+}
+
+// The escape sequence after a backslash (p is on the character after it): appends its value and moves past it.
+// False for a malformed \x or \u escape (nothing consumed beyond the letter, the caller reports)
+static bool parse_string_escape(Parser* p, cstr* str) {
+    char c = *p->pos;
+    p->pos++;
+    switch (c) {
+        case 'n': cstr_append_lit(str, "\n"); return true;
+        case 'r': cstr_append_lit(str, "\r"); return true;
+        case 't': cstr_append_lit(str, "\t"); return true;
+        case 'b': cstr_append_lit(str, "\b"); return true;
+        case 'f': cstr_append_lit(str, "\f"); return true;
+        case 'v': cstr_append_lit(str, "\v"); return true;
+        case '0':
+            if (*p->pos >= '0' && *p->pos <= '9') break; // Legacy octal, tsc reports it; the value is the digits
+            cstr_append_n(str, "\0", 1);
+            return true;
+        case '\r':
+            if (*p->pos == '\n') p->pos++;
+            return true; // Line continuation
+        case '\n':
+            return true;
+        case 'x': {
+            int hi = hex_digit_value(p->pos[0]);
+            int lo = hi < 0 ? -1 : hex_digit_value(p->pos[1]);
+            if (lo < 0) return false;
+            p->pos += 2;
+            append_code_point(str, (u32)(hi * 16 + lo));
+            return true;
+        }
+        case 'u': {
+            u32 code = 0;
+            if (*p->pos == '{') {
+                const char* q = p->pos + 1;
+                int digits = 0;
+                for (; hex_digit_value(*q) >= 0; q++, digits++) code = code * 16 + (u32)hex_digit_value(*q);
+                if (!digits || *q != '}' || code > 0x10FFFF) return false;
+                p->pos = q + 1;
+            } else {
+                for (int i = 0; i < 4; i++) {
+                    int v = hex_digit_value(p->pos[i]);
+                    if (v < 0) return false;
+                    code = code * 16 + (u32)v;
+                }
+                p->pos += 4;
+                // A surrogate pair written as two \u escapes is one code point
+                if (code >= 0xD800 && code <= 0xDBFF && p->pos[0] == '\\' && p->pos[1] == 'u') {
+                    u32 low = 0;
+                    bool valid = true;
+                    for (int i = 0; i < 4 && valid; i++) {
+                        int v = hex_digit_value(p->pos[2 + i]);
+                        if (v < 0) valid = false; else low = low * 16 + (u32)v;
+                    }
+                    if (valid && low >= 0xDC00 && low <= 0xDFFF) {
+                        code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
+                        p->pos += 6;
+                    }
+                }
+            }
+            append_code_point(str, code);
+            return true;
+        }
+        default: break;
+    }
+    // Any other character stands for itself (`\'`, `\"`, `\\`, `\a`); a multi-byte one is copied whole
+    int size = cutf8_chr_size(p->pos - 1);
+    cstr_append_n(str, p->pos - 1, size > 0 ? size : 1);
+    p->pos += (size > 1 ? size - 1 : 0);
+    return true;
+}
+
 static bool parse_literal(Parser* parent, Value* ret);
 static bool parse_binary_op(Parser* parent, BinaryOp* op);
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
@@ -3167,11 +3250,10 @@ static bool parse_string(Parser* parent, cstr* ret) {
             break;
         } else if (*p.pos == '\\' && *(p.pos + 1)) {
             p.pos++;
-            switch (*p.pos) {
-                case 'n': cstr_append_lit(&str, "\n"); break;
-                case 'r': cstr_append_lit(&str, "\r"); break;
-                default: break; // TODO
+            if (!parse_string_escape(&p, &str)) {
+                parse_error(&p, span_from_pos(&p), 1125, "Hexadecimal digit expected.");
             }
+            continue;
         } else if (*p.pos == '\r') {
             // Ignore?
         } else {

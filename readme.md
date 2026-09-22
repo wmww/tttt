@@ -1,28 +1,32 @@
-# The Tess TypeScript Typechecker
+# tttt
 
-Incomplete [TypeScript](https://www.typescriptlang.org/) typechecker.
+A [TypeScript](https://www.typescriptlang.org/) typechecker written in C. Work in progress: the goal is full
+support for the language, then beating typescript-go on speed. It started as
+[Tess](https://loginasroot.net/i_tried_to_write_a_typescript_type_checker), a solo project halted in 2025, and is
+now developed autonomously by AI agent sessions (see `CLAUDE.md` and `agents/`).
 
-**Development on this project is halted indefinitely**, [retrospective](https://loginasroot.net/i_tried_to_write_a_typescript_type_checker)
+State: 1917 of 13163 tsc baseline tests pass in full (errors, symbols and types output identical to tsc); tsc's
+own `src/compiler` (193k lines) typechecks end to end in 0.7 s with ~1750 spurious diagnostics left.
 
-Internal documentation: [documentation.md](documentation.md)
+Internal documentation: [documentation.md](documentation.md). Standard library: [cleat](https://codeberg.org/sphi/cleat).
 
 To compile and run:
-```back
-meson setup build --buildtype release
-ninja -C build
-build/tttt path/to/source.ts
-```
-
-Scripts useful for development:
 ```bash
-./run.sh path/to/source.ts      # Build and run in Valgrind
-./test.sh                       # Build and run against TypeScript tests in Valgrind
-./test.sh -f castingTuple -d    # Run against specific test and show diff
-./test.sh -f castingTuple -sym --typ  # Show only symbol and type diffs
-./test.sh -f 'castingTuple|.*array.*' # Filters have full regex support
-./fasttest.sh                   # Build with optimizations and run without Valgrind (same flags as test.sh)
-./diffapp.sh                    # Start the web app that lets you compare results with tsc
-./diffapp.sh castingTuple       # Start with web app with a specific test
-./filetest.sh foo/bar.ts -d     # Compare test output of tttt and tsc on arbitrary file (first argument must be file path, other flags same as test.sh)
+meson setup release --buildtype release
+ninja -C release
+release/tttt path/to/source.ts        # or: release/tttt -p path/to/project (tsconfig.json)
 ```
 
+Scripts useful for development (all rebuild first; `CLAUDE.md` has the full list):
+```bash
+./run.sh path/to/source.ts            # Build and run in Valgrind
+./fasttest.sh --summary               # Release build, whole tsc test suite, what changed vs test/baseline_results.ts
+./fasttest.sh -s                      # Save the results as the new baseline
+./test.sh -f castingTuple -d          # One test under Valgrind, with the diff against tsc's baselines
+./test.sh -f castingTuple --sym --typ # Only the symbols and types diffs; -f takes a whole-name regex
+./filetest.sh foo/bar.ts -d           # Compare tttt and tsc on any file (FAST=1 for the release build)
+./failstats.py                        # Why tests fail, in aggregate
+./realworld.py                        # tttt on tsc's own compiler sources, diagnostics grouped by code
+./bench.sh                            # Wall time and memory against tsc and tsgo
+./diffapp.sh [testName]               # Web app to compare results with tsc
+```
