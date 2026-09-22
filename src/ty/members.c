@@ -119,16 +119,8 @@ static void builder_add_interface_member(
                 } else {
                     // TODO: unique symbol keys (`[Symbol.iterator]`) are silently left out
                     Ty const* key = ty_expr_type(me, i->key.expr.ref);
-                    if (key->flags & TYF_STRING_LITERAL) {
-                        name = key->literal.string;
-                    } else if (key->flags & TYF_NUMBER_LITERAL) {
-                        cstr rendered = cstr_null;
-                        cstr_append_value_js(&rendered, &key->literal.value);
-                        name = checker_atom(me, cstr_sv(&rendered));
-                        cstr_drop(&rendered);
-                    } else {
-                        break;
-                    }
+                    name = ty_literal_name(me, key);
+                    if (!name) break;
                 }
                 bool is_method = i->key.tag == INTERFACE_KEY_NAME && (i->is_method || i->key.name_is_member_function) &&
                     i->type.tag == TYPE_CALLABLE;
@@ -784,24 +776,48 @@ static Members const* resolve_instantiated_members(Checker* me, Ty const* target
     return builder_finish(me, &builder);
 }
 
-// A mapped type whose key type is known has ordinary members: a property per literal key, an index signature per
-// primitive key. Returns the members unchanged while the key type is generic (or something this can't expand yet)
+// The property names a mapped type key produces: the key itself, or the `as` clause instantiated for it
+static Ty const* mapped_key_name(Checker* me, MappedInfo const* mapped, Ty const* key) {
+    if (!mapped->name_type) return key;
+    TyMapper const* mapper = ty_mapper_new(
+        me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
+    );
+    return ty_instantiate(me, mapped->name_type, mapper);
+}
+
+// The members of a union, or `*ty` itself, or nothing for `never`. Points into `ty`, which must outlive the result
+static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* count) {
+    Ty const* ty = *ty_ref;
+    *out = ty_ref;
+    *count = 1;
+    if (ty->kind == TY_UNION) {
+        *out = ty->composite.types.data;
+        *count = ty->composite.types.len;
+    } else if (ty->flags & TYF_NEVER) {
+        *count = 0;
+    }
+}
+
+// A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
+// clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
+// generic (or something this can't expand yet)
 static Members const* expand_mapped(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
-    if (!mapped || mapped->name_type) return members; // TODO: `as` clauses
+    if (!mapped) return members;
     Ty const* constraint = mapped->constraint;
     if (constraint->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return members;
-    Ty const* const* keys = &constraint;
-    u32 key_count = 1;
-    if (constraint->kind == TY_UNION) {
-        keys = constraint->composite.types.data;
-        key_count = constraint->composite.types.len;
-    } else if (constraint->flags & TYF_NEVER) {
-        key_count = 0;
-    }
+    Ty const* const* keys;
+    u32 key_count;
+    union_members(&constraint, &keys, &key_count);
+    u32 const usable = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL;
     for (u32 i = 0; i < key_count; i++) {
-        if (!(keys[i]->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL))) {
-            return members;
+        Ty const* name_type = mapped_key_name(me, mapped, keys[i]);
+        if (name_type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_ANY | TYF_DEFERRED)) return members;
+        Ty const* const* names;
+        u32 name_count;
+        union_members(&name_type, &names, &name_count);
+        for (u32 j = 0; j < name_count; j++) {
+            if (!(names[j]->flags & usable)) return members;
         }
     }
     Ty const* modifiers = mapped->modifiers_type;
@@ -817,47 +833,63 @@ static Members const* expand_mapped(Checker* me, Members const* members) {
         TyMapper const* mapper = ty_mapper_new(
             me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
         );
-        if (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
-            Atom const* name = key->literal.string;
-            if (!name) {
-                cstr rendered = cstr_null;
-                cstr_append_value_js(&rendered, &key->literal.value);
-                name = checker_atom(me, cstr_sv(&rendered));
-                cstr_drop(&rendered);
+        Ty const* name_type = mapped_key_name(me, mapped, key);
+        Ty const* const* names;
+        u32 name_count;
+        union_members(&name_type, &names, &name_count);
+        for (u32 j = 0; j < name_count; j++) {
+            Ty const* prop_name = names[j];
+            if (prop_name->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) {
+                Atom const* name = ty_literal_name(me, prop_name);
+                Prop* existing = builder_find_prop(&builder, name);
+                if (existing) {
+                    // Two keys with one name (members of different enums with the same value, or an `as` clause
+                    // mapping several keys to one name): the property is about both
+                    Ty const* both[2] = { existing->mapper->targets[0], key };
+                    Ty const* merged = ty_union(me, both, 2, nullptr, (TyList){0});
+                    existing->mapper = ty_mapper_new(
+                        me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &merged, .len = 1 }
+                    );
+                    continue;
+                }
+                // Modifiers come from the property the key (not the name it's mapped to) names
+                Prop const* modifiers_prop = nullptr;
+                if (modifiers && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
+                    modifiers_prop = ty_get_prop(me, modifiers, ty_literal_name(me, key));
+                }
+                u32 flags = modifiers_prop ? modifiers_prop->flags & (PROP_OPTIONAL | PROP_READONLY) : 0;
+                if (mapped->optional > 0) flags |= PROP_OPTIONAL;
+                if (mapped->optional < 0) flags &= ~(u32)PROP_OPTIONAL;
+                if (mapped->readonly > 0) flags |= PROP_READONLY;
+                if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
+                Prop* prop = arena_new(&my arena, Prop);
+                *prop = (Prop){
+                    .name = name,
+                    .flags = flags,
+                    .parent = modifiers_prop ? modifiers_prop->parent : nullptr,
+                    .target = template,
+                    .mapper = mapper,
+                };
+                builder_push(&builder, props, prop);
+            } else {
+                Ty const* value = ty_instantiate(me, mapped->template, mapper);
+                IndexInfo* existing = nullptr;
+                for (u32 k = 0; k < builder.index_count; k++) {
+                    if (builder.index[k].key == prop_name) existing = &builder.index[k];
+                }
+                if (existing) {
+                    Ty const* both[2] = { existing->value, value };
+                    existing->value = ty_union(me, both, 2, nullptr, (TyList){0});
+                    continue;
+                }
+                IndexInfo info = {
+                    .key = prop_name,
+                    .value = value,
+                    .param_name = checker_atom(me, c_sv("x")),
+                    .readonly = mapped->readonly > 0,
+                };
+                builder_push(&builder, index, info);
             }
-            Prop* existing = builder_find_prop(&builder, name);
-            if (existing) {
-                // Two keys with one name (members of different enums with the same value): the property is about both
-                Ty const* both[2] = { existing->mapper->targets[0], key };
-                Ty const* merged = ty_union(me, both, 2, nullptr, (TyList){0});
-                existing->mapper = ty_mapper_new(
-                    me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &merged, .len = 1 }
-                );
-                continue;
-            }
-            Prop const* modifiers_prop = modifiers ? ty_get_prop(me, modifiers, name) : nullptr;
-            u32 flags = modifiers_prop ? modifiers_prop->flags & (PROP_OPTIONAL | PROP_READONLY) : 0;
-            if (mapped->optional > 0) flags |= PROP_OPTIONAL;
-            if (mapped->optional < 0) flags &= ~(u32)PROP_OPTIONAL;
-            if (mapped->readonly > 0) flags |= PROP_READONLY;
-            if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
-            Prop* prop = arena_new(&my arena, Prop);
-            *prop = (Prop){
-                .name = name,
-                .flags = flags,
-                .parent = modifiers_prop ? modifiers_prop->parent : nullptr,
-                .target = template,
-                .mapper = mapper,
-            };
-            builder_push(&builder, props, prop);
-        } else {
-            IndexInfo info = {
-                .key = key,
-                .value = ty_instantiate(me, mapped->template, mapper),
-                .param_name = checker_atom(me, c_sv("x")),
-                .readonly = mapped->readonly > 0,
-            };
-            builder_push(&builder, index, info);
         }
     }
     return builder_finish(me, &builder);

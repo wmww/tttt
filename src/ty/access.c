@@ -11,7 +11,7 @@ static Ty const* with_undefined(Checker* me, Ty const* type) {
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
 
-static Atom const* index_name(Checker* me, Ty const* index) {
+Atom const* ty_literal_name(Checker* me, Ty const* index) {
     if (!(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return nullptr;
     if (index->literal.string) return index->literal.string;
     cstr rendered = cstr_null;
@@ -120,7 +120,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
     if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) return ty_rest_element_type(me, object);
 
-    Atom const* name = index_name(me, index);
+    Atom const* name = ty_literal_name(me, index);
     if (name) {
         FoundProp prop = ty_find_prop(me, object, name);
         if (prop.found) return prop.flags & PROP_OPTIONAL ? with_undefined(me, prop.type) : prop.type;

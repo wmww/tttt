@@ -118,6 +118,8 @@ Ty const* ty_global_object_type(Checker* me); // Null without a lib
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
 // The property name a key type stands for (a string or number literal), null if none
+// The property name a string or number literal type stands for, null for other types
+Atom const* ty_literal_name(Checker* me, Ty const* literal);
 Atom const* ty_property_name_of_key(Checker* me, Ty const* key, bool* is_number);
 typedef struct FoundProp {
     Ty const* type;

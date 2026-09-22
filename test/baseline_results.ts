@@ -20401,7 +20401,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeWithNameClauseAppliedToArrayType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -62246,7 +62246,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeAsClauses': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
