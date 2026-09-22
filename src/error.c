@@ -26,15 +26,21 @@ void display_error(Display d, Error const* me) {
     }
 
     display_s(d, prefix);
-    display_color(d, color_path);
-    display_str(d, my span.source ? cstr_str(&my span.source->canonical_path) : "[unkown file]");
-    display_color(d, color_line_number);
-    display_lit(d, ":");
-    display_i64(d, line);
+    if (span_valid(my span) && my span.source) {
+        display_color(d, color_path);
+        display_str(d, cstr_str(&my span.source->canonical_path));
+        display_color(d, color_line_number);
+        display_lit(d, ":");
+        display_i64(d, line);
+    }
     display_color(d, color_implicit);
-    display_lit(d, " [TS");
-    display_i64(d, my ts_code);
-    display_lit(d, "] ");
+    // Related information without a code has none to show (a diagnostic without a file is still an error)
+    if (my ts_code || !d.indent) {
+        if (span_valid(my span)) display_lit(d, " ");
+        display_lit(d, "[TS");
+        display_i64(d, my ts_code);
+        display_lit(d, "] ");
+    }
     display_color(d, color_error);
     display_s(d, my message);
     display_color(d, color_normal);
