@@ -1344,8 +1344,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     } else if (parse_identifier_type(&p, &parsed.identifier)) {
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (parse_tuple(&p, &parsed.tuple_elements)){
-        *ret = type_tuple(parsed.tuple_elements, span_valid(readonly_span));
-        readonly_span = span_null;
+        *ret = type_tuple(parsed.tuple_elements, false);
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
@@ -1361,13 +1360,18 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
 
     ret->parsed = true;
 
-    if (parse_type_right_side(&p, min_precedence, ret)) {
-        if (ret->tag == TYPE_ARRAY && span_valid(readonly_span)) {
+    if (span_valid(readonly_span)) {
+        // `readonly` applies to the whole postfix chain: `readonly T[][]` is a readonly array of `T[]`
+        while (parse_type_right_side(&p, TYPE_PRECEDENCE_OPERATOR, ret)) {}
+        if (ret->tag == TYPE_ARRAY) {
             ret->array.readonly = true;
             readonly_span = span_null;
+        } else if (ret->tag == TYPE_TUPLE) {
+            ret->tuple.readonly = true;
+            readonly_span = span_null;
         }
-        while (parse_type_right_side(&p, min_precedence, ret)) {}
     }
+    while (parse_type_right_side(&p, min_precedence, ret)) {}
 
     if (span_valid(readonly_span)) {
         parse_error(

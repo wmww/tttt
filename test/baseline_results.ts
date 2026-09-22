@@ -17022,7 +17022,7 @@ const baselines = {
     },
     'inferFromGenericFunctionReturnTypes1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferFromGenericFunctionReturnTypes2': {
@@ -30226,7 +30226,7 @@ const baselines = {
         types: true,
     },
     'typeCheckingInsideFunctionExpressionInArray': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31176,7 +31176,7 @@ const baselines = {
         types: false,
     },
     'undefinedSymbolReferencedInArrayLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46916,7 +46916,7 @@ const baselines = {
         types: false,
     },
     'callChain.3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

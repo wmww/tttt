@@ -177,9 +177,10 @@ static void check_access(
                 "' has no element at index '", &index->literal.value, "'.");
             cstr_drop(&object_str);
         }
+        if (!(index->flags & TYF_STRING_LITERAL)) return;
+    } else if (ty_is_array(me, object) && !(index->flags & TYF_STRING_LITERAL)) {
         return;
     }
-    if (ty_is_array(me, object)) return;
 
     if (!error_if_not_found) return;
     // HACK: no expando members yet (`function f() {} f.x = 1`, and everything JS files declare by assignment:
