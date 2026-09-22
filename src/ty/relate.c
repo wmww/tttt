@@ -738,6 +738,14 @@ static bool is_numeric_prop_name(Atom const* name) {
     return true;
 }
 
+static bool requires_optional_properties(Checker* me, Ty const* source) {
+    Ty const* literal = source->kind == TY_ANONYMOUS && source->anonymous.target ? source->anonymous.target : source;
+    if (literal->kind == TY_ANONYMOUS && literal->anonymous.object_literal) return false;
+    if (is_tuple(source)) return false;
+    // `[]` (never[]; tsc's isEmptyArrayLiteralType)
+    return !(ty_is_array(me, source) && (ty_reference_args(me, source).data[0]->flags & TYF_NEVER));
+}
+
 static Ternary props_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent
 ) {
@@ -794,7 +802,11 @@ static Ternary props_related(
         Prop const* target_prop = target_members->props[i];
         FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
         if (!source_prop.found) {
-            if ((target_prop->flags & PROP_OPTIONAL) && st->relation != TY_RELATION_STRICT_SUBTYPE) continue;
+            // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out
+            // (tsc's requireOptionalProperties)
+            if ((target_prop->flags & PROP_OPTIONAL) && (st->relation != TY_RELATION_STRICT_SUBTYPE || !requires_optional_properties(me, source))) {
+                continue;
+            }
             return TERNARY_FALSE;
         }
         if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable) {

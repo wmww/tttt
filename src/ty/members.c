@@ -1270,9 +1270,12 @@ static void words_push(WordBuf* me, u64 word) {
 
 // The type of an object literal expression: properties with known types, interned by shape (names, types, and where
 // each property was written, since the symbols baseline tells two literals of one shape apart)
-Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count) {
+Ty const* ty_object_literal(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, bool literal
+) {
     WordBuf words = {0};
     words_push(&words, KEY_STRUCTURAL);
+    words_push(&words, literal);
     for (u32 i = 0; i < count; i++) {
         words_push(&words, 1);
         words_push(&words, (u64)(uintptr_t)props[i].name);
@@ -1310,6 +1313,7 @@ Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 cou
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
+        fresh->anonymous.object_literal = literal;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
         fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;

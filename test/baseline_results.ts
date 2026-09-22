@@ -46503,7 +46503,7 @@ const baselines = {
     'objectLiteralContextualTyping': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parenthesizedContexualTyping1': {
         errors: false,

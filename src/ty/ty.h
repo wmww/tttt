@@ -250,6 +250,7 @@ struct Ty {
             // only cares about these. If unknown (the node has parts that aren't syntax), assume every one in scope
             TyList free_params;
             bool free_params_unknown;
+            bool object_literal; // Made by an object literal expression (ty_object_literal())
             TyObjectState* state;
         } anonymous;
         struct {
@@ -712,7 +713,10 @@ typedef struct ObjectLiteralProp {
     bool name_is_value;
     TypeNode const* asserted; // See Prop.asserted
 } ObjectLiteralProp;
-Ty const* ty_object_literal(Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count);
+// `literal`: the type of an object literal expression (tsc's ObjectFlags.ObjectLiteral), else a synthesized one
+Ty const* ty_object_literal(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, bool literal
+);
 
 // function.c
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);

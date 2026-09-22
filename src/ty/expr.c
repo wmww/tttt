@@ -1067,7 +1067,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         });
     }
     free(accessor_spans);
-    Ty const* ret = ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count);
+    Ty const* ret = ty_object_literal(me, builder.props, builder.count, builder.index, builder.index_count, true);
     free(builder.props);
     return ret;
 }

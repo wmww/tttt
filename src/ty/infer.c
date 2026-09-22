@@ -300,7 +300,7 @@ static Ty const* reverse_mapped_type(Checker* me, Ty const* source, MappedInfo c
         };
     }
     if (has_string_index) string_index.value = reverse_mapped_prop_type(me, string_index.value, mapped, operand);
-    Ty const* ret = ty_object_literal(me, props, members->prop_count, &string_index, has_string_index ? 1 : 0);
+    Ty const* ret = ty_object_literal(me, props, members->prop_count, &string_index, has_string_index ? 1 : 0, false);
     free(props);
     my reverse_mapped_depth--;
     return ret;
