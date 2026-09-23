@@ -762,6 +762,9 @@ Ty const* ty_object_literal(
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);
 // The return type of a function: its annotation, else inferred from the `return`s of its body
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function);
+// The return type of a function expression that is an argument of the generic call inferring now: the calls it returns
+// see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
+Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function);
 
 // Control flow queries (ty/flow.c)

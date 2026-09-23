@@ -2247,7 +2247,7 @@ const baselines = {
     },
     'badInferenceLowerPriorityThanGoodInference': {
         errors: false,
-        symbols: true,
+        symbols: false,
         types: false,
     },
     'badOverloadError': {
@@ -6091,7 +6091,7 @@ const baselines = {
         types: false,
     },
     'contextualTypeCaching': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -6456,9 +6456,9 @@ const baselines = {
         types: true,
     },
     'contextualTypingWithFixedTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypingWithGenericAndNonGenericSignature': {
         errors: true,

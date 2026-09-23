@@ -1119,6 +1119,35 @@ void statement_collect_return_types(Statement const* me, TyBuf* out) {
     }
 }
 
+bool statement_any_return(Statement const* me, bool (*pred)(Expr const*)) {
+    switch (my tag) {
+        case STATEMENT_BLOCK: return statements_any_return(&my block.statements, pred);
+        case STATEMENT_IF_ELSE: return statements_any_return(&my if_else.statements, pred);
+        case STATEMENT_FOR_LOOP:
+            return statement_any_return(&my for_loop->initialization, pred) || statement_any_return(&my for_loop->body, pred);
+        case STATEMENT_FOR_EACH_LOOP: return statement_any_return(&my for_each_loop->body, pred);
+        case STATEMENT_SWITCH:
+            for_each (i, vec_switch_case, &my switch_->cases) {
+                if (statements_any_return(&i->statements, pred)) return true;
+            }
+            return false;
+        case STATEMENT_TRY_CATCH:
+            return statements_any_return(&my try_catch->try_block.statements, pred) ||
+                statements_any_return(&my try_catch->catch_block.statements, pred) ||
+                statements_any_return(&my try_catch->finally_block.statements, pred);
+        case STATEMENT_LABELED: return statement_any_return(my labeled.body, pred);
+        case STATEMENT_RETURN_EXPR: return !statement_is_bare_return(me) && pred(&my expr);
+        default: return false;
+    }
+}
+
+bool statements_any_return(VecStatement const* statements, bool (*pred)(Expr const*)) {
+    for_each (i, vec_statement, statements) {
+        if (statement_any_return(i, pred)) return true;
+    }
+    return false;
+}
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
     // checkSourceElement(); an error only when allowUnreachableCode is explicitly false)

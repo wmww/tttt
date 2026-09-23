@@ -190,12 +190,17 @@ static inline bool statement_is_bare_return(Statement const* me) {
     return my tag == STATEMENT_RETURN_EXPR && my expr.tag == EXPR_LITERAL && my expr.literal.tag == VALUE_UNDEFINED &&
         csview_starts_with(my expr.outer_span.sv, "return");
 }
+// Whether pred holds for the expression of some non-bare `return` (not looking into nested functions, tsc's
+// forEachReturnStatement)
+bool statement_any_return(Statement const* me, bool (*pred)(Expr const*));
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 #define g_class_key Statement, statement
 #define g_declared
 #define g_no_clone
 #include <cleat/generic/vec.h>
+
+bool statements_any_return(VecStatement const* statements, bool (*pred)(Expr const*));
 
 // Source directive statement (the XML thingys defined at the top level)
 

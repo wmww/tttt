@@ -342,21 +342,27 @@ static void infer_from_arg(Checker* me, Inference* inf, ParamShape const* shape,
 
 // Whether checking a context-sensitive argument against `param_type` fixes type parameter `param`: its parameters are
 // typed for good, so what they mention is decided. The contextual return type isn't (tsc instantiates it with the
-// non-fixing mapper). Anything other than a single signature is taken to decide everything it mentions
-static bool fixed_by_argument(Checker* me, Ty const* param_type, Ty const* param) {
-    if (!param_type) return false;
-    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
-    TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
-    Members const* members = param_type->kind == TY_ANONYMOUS ? ty_members(me, param_type) : nullptr;
+// non-fixing mapper), except for the parameters of a function it returns (`() => x => x.length`), which are typed for
+// good too. Anything other than a single signature is taken to decide everything it mentions
+static bool fixed_by_type(Checker* me, Ty const* type, TyMapper const* probe, bool top, u32 depth) {
+    Members const* members = type->kind == TY_ANONYMOUS ? ty_members(me, type) : nullptr;
     if (!members || members->call_count != 1 || members->prop_count || members->construct_count) {
-        return ty_instantiate(me, param_type, probe) != param_type;
+        return top && ty_instantiate(me, type, probe) != type;
     }
     Signature const* contextual = members->call[0];
     signature_resolve(me, contextual);
     for (u32 i = 0; i < contextual->param_count; i++) {
         if (ty_instantiate(me, contextual->params[i].type, probe) != contextual->params[i].type) return true;
     }
-    return false;
+    return depth < 8 && fixed_by_type(me, signature_return_type(me, contextual), probe, false, depth + 1);
+}
+
+static bool fixed_by_argument(Checker* me, Arg const* arg, Ty const* param_type, Ty const* param) {
+    if (!param_type) return false;
+    Ty const* unknown = ty_intrinsic(me, TY_UNKNOWN_);
+    TyMapper const* probe = ty_mapper_new(me, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &unknown, .len = 1 });
+    // (Only a function argument returns what the contextual return type says)
+    return fixed_by_type(me, param_type, probe, true, arg->expr->tag == EXPR_FUNCTION ? 0 : 8);
 }
 
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
@@ -404,6 +410,9 @@ static TyMapper const* infer_type_arguments(
         } else {
             check_arg(me, &shape, args, i);
         }
+        // A function argument's return type is computed while the calls it returns still see this one (tsc computes it
+        // as it checks the argument)
+        if (arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread) ty_argument_return_type(me, arg->expr->function);
         my outer_inference = nullptr;
         infer_from_arg(me, &inf, &shape, args, i);
     }
@@ -415,7 +424,7 @@ static TyMapper const* infer_type_arguments(
         TyMapper const* so_far = inference_mapper(me, sig, &inf, true);
         Ty const* param_type = shape_type_at(&shape, i);
         for (u32 j = 0; j < inf.len; j++) {
-            if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, param_type, sig->type_params.data[j])) {
+            if ((inf.params[j].co_len || inf.params[j].contra_len) && fixed_by_argument(me, arg, param_type, sig->type_params.data[j])) {
                 inf.params[j].fixed = so_far->targets[j];
             }
         }

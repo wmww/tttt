@@ -1,4 +1,5 @@
 #include "ty/ty_internal.h"
+#include "statement.h"
 #include "flow.h"
 #include "binding.h"
 #include "compiler_options.h"
@@ -533,10 +534,17 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
             }
             // A function expression's `this` is contextually typed too, unless it declares one (tsc's
             // hasContextSensitiveParameters)
-            if (span_valid(function->arrow_span)) return false;
-            FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
-            return !(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
-                span_equals(first->initializer.binding.content_span, "this"));
+            if (!span_valid(function->arrow_span)) {
+                FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
+                if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
+                    span_equals(first->initializer.binding.content_span, "this"))
+                ) {
+                    return true;
+                }
+            }
+            // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
+            return !function->ret_explicit && function->has_body &&
+                statements_any_return(&function->body.statements, ty_expr_is_context_sensitive);
         }
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &expr->object) {

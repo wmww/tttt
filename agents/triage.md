@@ -38,6 +38,15 @@ plans 11-15 or `bugs/` are gone from here; see those files.
   tsc): `convert(createModule({ a: 12 }, { foo() { return true } }))` infers the inner TActions from the return type
   context `ModuleWithState<{a}> & {foo(): boolean}` and fixes it before the method's own candidate is seen. tsc only
   fixes what a contextual *signature's parameters* mention (the method has none).
+- **Context-free type of return-sensitive functions** (lost `badInferenceLowerPriorityThanGoodInference` in plan 11
+  stage 0, when `() => ({ a: 1, b: x => {} })` became context sensitive like in tsc): tsc's first round types such an
+  argument (no sensitive parameters, sensitive through its returned expression) as a return-only signature whose
+  return type is checked with `SkipContextSensitive` (nested sensitive functions are non-inferrable `anyFunctionType`,
+  nothing memoised: `links.contextFreeType` in checkFunctionExpressionOrObjectLiteralMethod), and infers from that.
+  tttt skips the whole argument in pass 1, so `a`'s candidate arrives only in pass 2, after `b`'s `x` is typed with
+  `unknown`. Needs a "skip context sensitive" check mode (no memos, sensitive functions -> a non-inferrable marker).
+- Non-strict display: `get(k: string): T | undefined` prints `(k: string) => T` in the types baseline without
+  strictNullChecks; tsc keeps the written `| undefined` (probe: any interface method returning `T | undefined`).
 - Late bound index signatures (TS 5.x): `[k]: T` in a class/interface with an entity-name key of type string/number/
   symbol is an index signature in tsc (getIndexInfosOfIndexSymbol); tttt drops the member (hacks.md "Computed member
   names"). overrideLateBindableIndexSignature1 and friends.
